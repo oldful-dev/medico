@@ -1,0 +1,77 @@
+# ──────────────────────────────────────────────
+#  Medico – Root .gitignore
+# ──────────────────────────────────────────────
+
+# ───── Dependencies ─────
+**/node_modules/
+**/.pnp
+**/.pnp.*
+**/.yarn/*
+!**/.yarn/patches
+!**/.yarn/plugins
+!**/.yarn/releases
+!**/.yarn/versions
+
+# ───── Environment Variables ─────
+.env
+.env.*
+!.env.example
+
+# ───── Build Outputs ─────
+**/dist/
+**/build/
+**/.next/
+**/out/
+
+# ───── Prisma ─────
+backend/.prisma/
+
+# ───── Expo / React Native ─────
+mobile/.expo/
+mobile/web-build/
+mobile/ios/
+mobile/android/
+mobile/.metro-health-check*
+mobile/.kotlin/
+
+# ───── Testing ─────
+**/coverage/
+
+# ───── Debug Logs ─────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ───── OS Files ─────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ───── IDE / Editor ─────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ───── Secrets & Certificates ─────
+*.pem
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# ───── TypeScript ─────
+*.tsbuildinfo
+next-env.d.ts
+
+# ───── Vercel ─────
+.vercel
+
+# ───── Misc ─────
+*.orig.*
+.gemini/

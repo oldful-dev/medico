@@ -1,0 +1,844 @@
+// ──────────────────────────────────────────────────────────
+//  Medico Backend — Prisma Schema
+//  Database: PostgreSQL (Supabase)
+//  Every model maps 1-to-1 with the spec & admin panel UI
+// ──────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ======================== ENUMS ========================
+
+enum AdminRole {
+  SUPER_ADMIN
+  CITY_ADMIN
+  CARE_MANAGER
+  SUPPORT_AGENT
+  BILLING_EXECUTIVE
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BLOCKED
+}
+
+enum HealthTag {
+  NORMAL
+  DIABETIC
+  HYPERTENSION
+  CARDIAC
+  OTHER
+}
+
+enum BookingStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  SLA_BREACH
+}
+
+enum ServiceType {
+  DOCTOR_HOME_VISIT
+  HOSPITAL_TRIP
+  HOME_NURSE
+  INSURANCE
+  BLOOD_TEST
+  MEDICINES
+  PHYSIO_FITNESS
+  EQUIPMENT_RENTAL
+  HOME_ESSENTIALS
+  CLUB_EVENTS
+  TIFFIN
+  TECH_HELPER
+  PAPERWORK_LEGAL
+}
+
+enum ShiftDuration {
+  SHORT_VISIT
+  TWELVE_HOUR
+  TWENTY_FOUR_HOUR
+}
+
+enum CaregiverVerification {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum CaregiverShift {
+  MORNING
+  AFTERNOON
+  EVENING
+  NIGHT
+  FLEXIBLE
+}
+
+enum BillingCycle {
+  QUARTERLY
+  BIANNUAL
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRING
+  EXPIRED
+  PAUSED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  INITIATED
+  SUCCESS
+  FAILED
+  REFUND_INITIATED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  UPI
+  CARD
+  NETBANKING
+  WALLET
+}
+
+enum RefundType {
+  SLA_BREACH
+  COMPASSIONATE
+  CANCELLATION
+  OTHER
+}
+
+enum SOSStatus {
+  ACTIVE
+  RESPONDING
+  RESOLVED
+}
+
+enum NotificationChannel {
+  EMAIL
+  WHATSAPP
+  PUSH
+  SMS
+}
+
+enum LegalDocType {
+  TERMS_AND_CONDITIONS
+  PRIVACY_POLICY
+  REFUND_POLICY
+  DISCLAIMER
+}
+
+enum LegalDocStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum InsuranceAppStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum UIConfigType {
+  HOME_BANNER
+  SERVICE_CARD
+  PROMO_SECTION
+  CATEGORY_STRIP
+  CUSTOM
+}
+
+// ======================== MODELS ========================
+
+// ─── 1. Admin ───────────────────────────────────────────
+
+model Admin {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  phone         String?
+  passwordHash  String
+  role          AdminRole @default(CITY_ADMIN)
+  cityId        String?
+  city          City?     @relation(fields: [cityId], references: [id])
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  refreshToken  String?
+
+  auditLogs     AuditLog[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("admins")
+}
+
+// ─── 2. City ────────────────────────────────────────────
+
+model City {
+  id            String    @id @default(uuid())
+  name          String    @unique
+  code          String    @unique        // e.g. "BLR", "HYD"
+  stateCode     String                   // e.g. "KA-29"
+  isEnabled     Boolean   @default(true)
+  isComingSoon  Boolean   @default(false)
+  sequence      Int       @default(0)    // for User ID generation
+
+  admins        Admin[]
+  users         User[]
+  bookings      Booking[]
+  caregivers    Caregiver[]
+  sosAlerts     SOSAlert[]
+  notificationLogs NotificationLog[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("cities")
+}
+
+// ─── 3. User (App End User / Senior Citizen) ────────────
+
+model User {
+  id                String      @id @default(uuid())
+  uniqueUserId      String      @unique           // MED-BLR-00001
+  name              String
+  phone             String      @unique
+  email             String?
+  gender            String?                        // male, female, other
+  dateOfBirth       DateTime?
+  profileImageUrl   String?
+  preferredLanguage String      @default("en")
+  healthTag         HealthTag   @default(NORMAL)
+  status            UserStatus  @default(ACTIVE)
+
+  cityId            String
+  city              City        @relation(fields: [cityId], references: [id])
+
+  addresses         Address[]
+  emergencyContacts EmergencyContact[]
+  medicalCards      MedicalCard[]
+  healthReports     HealthReport[]
+  bookings          Booking[]
+  subscriptions     Subscription[]
+  payments          Payment[]
+  sosAlerts         SOSAlert[]
+  insuranceApps     InsuranceApplication[]
+  waitlistEntries   WaitlistEntry[]
+
+  otpCode           String?
+  otpExpiresAt      DateTime?
+  refreshToken      String?
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@map("users")
+}
+
+// ─── 3a. Address ────────────────────────────────────────
+
+model Address {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label       String   @default("Home")        // Home, Office, etc.
+  line1       String
+  line2       String?
+  cityName    String
+  state       String
+  pincode     String
+  landmark    String?
+  latitude    Float?
+  longitude   Float?
+  isDefault   Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("addresses")
+}
+
+// ─── 3b. Emergency Contact ──────────────────────────────
+
+model EmergencyContact {
+  id           String  @id @default(uuid())
+  userId       String
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  phone        String
+  relationship String             // spouse, child, sibling, parent, friend, other
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("emergency_contacts")
+}
+
+// ─── 3c. Medical Card ───────────────────────────────────
+
+model MedicalCard {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bloodGroup      String?
+  allergies       String[]                   // array of allergy strings
+  chronicConditions String[]
+  currentMedications String[]
+  lastUpdated     DateTime @default(now())
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("medical_cards")
+}
+
+// ─── 3d. Health Report ──────────────────────────────────
+
+model HealthReport {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  fileUrl      String
+  fileType     String                         // pdf, jpg, png
+  uploadedBy   String   @default("user")      // user | admin
+  flagSeverity String?                        // Critical, High, Normal
+  flagNote     String?                        // OCR flag description
+  reportDate   DateTime @default(now())
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("health_reports")
+}
+
+// ─── 4. Service ─────────────────────────────────────────
+
+model Service {
+  id              String      @id @default(uuid())
+  name            String
+  slug            String      @unique           // doctor-home-visit
+  icon            String?                        // emoji or URL
+  tagline         String?
+  description     String?
+  pricingText     String?                        // "₹799 / visit"
+  heroImageUrl    String?
+  route           String?                        // /services/doctor-visit
+  sortOrder       Int         @default(0)
+  isEnabled       Boolean     @default(true)
+  serviceType     ServiceType
+  formFieldsJson  Json?                          // dynamic form field config
+
+  bookings        Booking[]
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@map("services")
+}
+
+// ─── 5. Booking ─────────────────────────────────────────
+
+model Booking {
+  id              String        @id @default(uuid())
+  bookingCode     String        @unique          // BK-4501
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  serviceId       String
+  service         Service       @relation(fields: [serviceId], references: [id])
+  cityId          String
+  city            City          @relation(fields: [cityId], references: [id])
+  caregiverId     String?
+  caregiver       Caregiver?    @relation(fields: [caregiverId], references: [id])
+
+  scheduledDate   DateTime
+  scheduledTime   String?
+  addressLine     String?
+  latitude        Float?
+  longitude       Float?
+
+  // Doctor Visit specific
+  symptoms        String[]
+  doctorType      String?                        // general-physician, physiotherapist
+  prescriptionUrl String?
+
+  // Nurse Care specific
+  staffType       String?                        // qualified-nurse, bedside-attendant
+  shiftDuration   ShiftDuration?
+  startDate       DateTime?
+  endDate         DateTime?
+  requirements    String[]
+
+  // Transportation specific
+  pickupAddress   String?
+  dropAddress     String?
+  vehicleType     String?
+
+  // Common
+  amount          Float         @default(0)
+  status          BookingStatus @default(PENDING)
+  adminNotes      String?
+  isEscalated     Boolean       @default(false)
+  isSLABreached   Boolean       @default(false)
+  slaDeadline     DateTime?
+  formDataJson    Json?                          // dynamic form field responses
+
+  payments        Payment[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("bookings")
+}
+
+// ─── 6. Caregiver ───────────────────────────────────────
+
+model Caregiver {
+  id                  String                @id @default(uuid())
+  name                String
+  phone               String                @unique
+  email               String?
+  specialization      String?
+  qualification       String?
+  profileImageUrl     String?
+  documentsJson       Json?                 // array of {name, url, type}
+
+  cityId              String
+  city                City                  @relation(fields: [cityId], references: [id])
+
+  policeVerification  CaregiverVerification @default(PENDING)
+  isAvailable         Boolean               @default(true)
+  shiftType           CaregiverShift        @default(FLEXIBLE)
+
+  performanceRating   Float                 @default(0)
+  totalBookings       Int                   @default(0)
+  salary              Float                 @default(0)
+  payoutNotes         String?
+
+  bookings            Booking[]
+  sosAlerts           SOSAlert[]
+
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  @@map("caregivers")
+}
+
+// ─── 7. Plan ────────────────────────────────────────────
+
+model Plan {
+  id              String    @id @default(uuid())
+  name            String    @unique              // Basic Care, Care Plus, Premium Care
+  description     String?
+  benefits        String?                        // comma-separated or rich text
+  quarterlyPrice  Float     @default(0)
+  biannualPrice   Float     @default(0)
+  yearlyPrice     Float     @default(0)
+  isVisible       Boolean   @default(true)
+  sortOrder       Int       @default(0)
+
+  subscriptions   Subscription[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("plans")
+}
+
+// ─── 8. Subscription ────────────────────────────────────
+
+model Subscription {
+  id              String             @id @default(uuid())
+  userId          String
+  user            User               @relation(fields: [userId], references: [id])
+  planId          String
+  plan            Plan               @relation(fields: [planId], references: [id])
+
+  billingCycle    BillingCycle
+  startDate       DateTime
+  expiryDate      DateTime
+  amount          Float              @default(0)
+
+  status          SubscriptionStatus @default(ACTIVE)
+  autoRenew       Boolean            @default(false)
+  pausedAt        DateTime?
+  resumedAt       DateTime?
+  cancelledAt     DateTime?
+
+  // Compassionate clause
+  compassionateExtensionDays Int     @default(0)
+  compassionateReason        String?
+
+  payments        Payment[]
+
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@map("subscriptions")
+}
+
+// ─── 9. Payment ─────────────────────────────────────────
+
+model Payment {
+  id                  String        @id @default(uuid())
+  userId              String
+  user                User          @relation(fields: [userId], references: [id])
+
+  bookingId           String?
+  booking             Booking?      @relation(fields: [bookingId], references: [id])
+  subscriptionId      String?
+  subscription        Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  amount              Float
+  currency            String        @default("INR")
+  paymentMethod       PaymentMethod?
+  couponCode          String?
+  discountAmount      Float         @default(0)
+
+  razorpayOrderId     String?       @unique
+  razorpayPaymentId   String?       @unique
+  razorpaySignature   String?
+
+  status              PaymentStatus @default(INITIATED)
+
+  // Refund
+  refundId            String?
+  refundType          RefundType?
+  refundReason        String?
+  refundAmount        Float?
+  refundedAt          DateTime?
+
+  invoice             Invoice?
+
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  @@map("payments")
+}
+
+// ─── 10. Invoice ────────────────────────────────────────
+
+model Invoice {
+  id              String   @id @default(uuid())
+  paymentId       String   @unique
+  payment         Payment  @relation(fields: [paymentId], references: [id])
+
+  invoiceNumber   String   @unique              // INV-2026-0001
+  invoiceDate     DateTime @default(now())
+  subtotal        Float
+  gstRate         Float    @default(18)         // percent
+  gstAmount       Float
+  totalAmount     Float
+  pdfUrl          String?
+  emailSentAt     DateTime?
+
+  // Billing info snapshot
+  billingName     String?
+  billingAddress  String?
+  billingGstin    String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("invoices")
+}
+
+// ─── 11. SOS Alert ──────────────────────────────────────
+
+model SOSAlert {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  cityId          String
+  city            City      @relation(fields: [cityId], references: [id])
+
+  latitude        Float?
+  longitude       Float?
+  addressSnapshot String?
+
+  responderId     String?
+  responder       Caregiver? @relation(fields: [responderId], references: [id])
+
+  status          SOSStatus @default(ACTIVE)
+  resolvedAt      DateTime?
+  resolvedNotes   String?
+
+  // Notification tracking
+  adminNotified   Boolean   @default(false)
+  familyNotified  Boolean   @default(false)
+  callLogNotes    String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("sos_alerts")
+}
+
+// ─── 12. Notification Log ───────────────────────────────
+
+model NotificationLog {
+  id            String              @id @default(uuid())
+  channel       NotificationChannel
+  recipientId   String?                          // userId or adminId
+  recipientType String   @default("user")        // user | admin
+  templateId    String?
+  subject       String?
+  body          String?
+  metadata      Json?                            // extra payload
+  cityId        String?
+  city          City?    @relation(fields: [cityId], references: [id])
+  isSent        Boolean  @default(false)
+  sentAt        DateTime?
+  errorMessage  String?
+
+  createdAt     DateTime @default(now())
+
+  @@map("notification_logs")
+}
+
+// ─── 13. Notification Template ──────────────────────────
+
+model NotificationTemplate {
+  id            String              @id @default(uuid())
+  name          String
+  channel       NotificationChannel
+  subject       String?
+  bodyTemplate  String                           // supports {{variable}} placeholders
+  isActive      Boolean             @default(true)
+
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@map("notification_templates")
+}
+
+// ─── 14. Legal Document ─────────────────────────────────
+
+model LegalDocument {
+  id            String        @id @default(uuid())
+  type          LegalDocType
+  title         String
+  content       String                           // HTML / Markdown rich text
+  version       Int           @default(1)
+  status        LegalDocStatus @default(DRAFT)
+  publishedAt   DateTime?
+  editedBy      String?                          // admin ID
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("legal_documents")
+}
+
+// ─── 15. Product (Wellness Store) ───────────────────────
+
+model Product {
+  id            String    @id @default(uuid())
+  name          String
+  description   String?
+  imageUrl      String?
+  price         Float     @default(0)
+  mrp           Float     @default(0)
+  stock         Int       @default(0)
+  isEnabled     Boolean   @default(true)
+
+  categoryId    String
+  category      Category  @relation(fields: [categoryId], references: [id])
+
+  waitlist      WaitlistEntry[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("products")
+}
+
+// ─── 16. Category (Wellness Store) ──────────────────────
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  slug        String    @unique
+  imageUrl    String?
+  sortOrder   Int       @default(0)
+  isEnabled   Boolean   @default(true)
+
+  products    Product[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("categories")
+}
+
+// ─── 17. Waitlist Entry ─────────────────────────────────
+
+model WaitlistEntry {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  notified    Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@map("waitlist_entries")
+}
+
+// ─── 18. Audit Log ──────────────────────────────────────
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  adminId     String?
+  admin       Admin?   @relation(fields: [adminId], references: [id])
+  action      String                             // e.g. "USER_BLOCKED", "PLAN_PRICE_UPDATED"
+  entity      String                             // e.g. "User", "Plan", "Booking"
+  entityId    String?
+  oldValue    Json?
+  newValue    Json?
+  ipAddress   String?
+  userAgent   String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([adminId])
+  @@map("audit_logs")
+}
+
+// ─── 19. UI Config (Server-Driven UI) ───────────────────
+
+model UIConfig {
+  id            String       @id @default(uuid())
+  type          UIConfigType @default(CUSTOM)
+  key           String       @unique              // unique key for lookup
+  label         String
+  iconUrl       String?
+  heroImageUrl  String?
+  bannerColor   String?
+  ctaText       String?
+  ctaRoute      String?
+  configJson    Json?                              // arbitrary config payload
+  sortOrder     Int          @default(0)
+  isVisible     Boolean      @default(true)
+  version       Int          @default(1)
+  publishedAt   DateTime?
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@map("ui_configs")
+}
+
+// ─── 20. Insurance Application ──────────────────────────
+
+model InsuranceApplication {
+  id                    String             @id @default(uuid())
+  userId                String
+  user                  User               @relation(fields: [userId], references: [id])
+  planName              String
+  applicantName         String
+  applicantAge          Int
+  applicantGender       String
+  preExistingConditions String[]
+  documentsJson         Json?                      // [{name, url}]
+  premium               Float              @default(0)
+  status                InsuranceAppStatus @default(DRAFT)
+  reviewNotes           String?
+
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@map("insurance_applications")
+}
+
+// ─── 21. Coupon ─────────────────────────────────────────
+
+model Coupon {
+  id            String    @id @default(uuid())
+  code          String    @unique
+  description   String?
+  discountType  String    @default("percentage")   // percentage | flat
+  discountValue Float     @default(0)
+  maxDiscount   Float?
+  minOrderValue Float?
+  usageLimit    Int?
+  usedCount     Int       @default(0)
+  isActive      Boolean   @default(true)
+  validFrom     DateTime  @default(now())
+  validUntil    DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("coupons")
+}
+
+// ─── 22. Media Asset (Content Library) ──────────────────
+
+model MediaAsset {
+  id          String   @id @default(uuid())
+  fileName    String
+  fileUrl     String
+  fileType    String                             // image, video, pdf, document
+  fileSize    Int      @default(0)               // bytes
+  folder      String   @default("general")       // logical folder
+  altText     String?
+  uploadedBy  String?                            // admin ID
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("media_assets")
+}
+
+// ─── 23. Support Ticket ─────────────────────────────────
+
+model SupportTicket {
+  id            String   @id @default(uuid())
+  ticketCode    String   @unique                 // TKT-0001
+  userId        String?
+  subject       String
+  description   String?
+  category      String?                          // billing, service, technical, general
+  priority      String   @default("medium")      // low, medium, high, critical
+  status        String   @default("open")        // open, in-progress, resolved, closed
+  assignedTo    String?                          // admin ID
+  resolvedAt    DateTime?
+  resolutionNote String?
+
+  messages      TicketMessage[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("support_tickets")
+}
+
+model TicketMessage {
+  id          String        @id @default(uuid())
+  ticketId    String
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId    String                             // userId or adminId
+  senderType  String        @default("user")     // user | admin
+  message     String
+  attachments Json?                              // [{name, url}]
+
+  createdAt   DateTime      @default(now())
+
+  @@map("ticket_messages")
+}
