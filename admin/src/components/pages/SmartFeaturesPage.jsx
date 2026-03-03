@@ -1,189 +1,153 @@
 "use client";
-import { useState } from "react";
-import { Brain, Activity, Clock, Heart, Shield, AlertTriangle, RefreshCw, Pause, TrendingUp } from "lucide-react";
-
-const ocrFlags = [
-    { user: "Rajesh Kumar", flag: "Blood Glucose: 320 mg/dL", severity: "Critical", detected: "Feb 23, 2026", action: "Alert Sent" },
-    { user: "Anita Sharma", flag: "BP: 180/110 mmHg", severity: "Critical", detected: "Feb 22, 2026", action: "Doctor Notified" },
-    { user: "Lakshmi Devi", flag: "HbA1c: 9.2%", severity: "High", detected: "Feb 21, 2026", action: "Alert Sent" },
-    { user: "Venkat Reddy", flag: "Cholesterol: 280 mg/dL", severity: "Medium", detected: "Feb 20, 2026", action: "Pending Review" },
-];
-
-const refillReminders = [
-    { user: "Rajesh Kumar", medicine: "Metformin 500mg", lastOrder: "Feb 01, 2026", nextDue: "Feb 28, 2026", status: "Reminder Sent" },
-    { user: "Anita Sharma", medicine: "Amlodipine 5mg", lastOrder: "Feb 05, 2026", nextDue: "Mar 05, 2026", status: "Scheduled" },
-    { user: "Suresh Patel", medicine: "Atorvastatin 10mg", lastOrder: "Jan 20, 2026", nextDue: "Feb 20, 2026", status: "Overdue" },
-];
-
-const slaBreaches = [
-    { bookingId: "BK-4506", service: "Doctor Home Visit", expectedTime: "2:00 PM", actualTime: "3:15 PM", delay: "75 min", caregiver: "Dr. Ravi" },
-    { bookingId: "BK-4498", service: "Blood Test", expectedTime: "10:00 AM", actualTime: "11:30 AM", delay: "90 min", caregiver: "Lab Team 2" },
-    { bookingId: "BK-4490", service: "Medicine Delivery", expectedTime: "4:00 PM", actualTime: "6:20 PM", delay: "140 min", caregiver: "PharmaCare" },
-];
-
-const compassionateClauses = [
-    { user: "Kamala Iyer", reason: "Hospitalization", extension: "30 days", approvedBy: "Arun Kumar", date: "Feb 20, 2026" },
-    { user: "Ramu Prasad", reason: "Family Emergency", extension: "15 days", approvedBy: "Priya Sharma", date: "Feb 18, 2026" },
-];
+import { useState, useEffect } from "react";
+import { Brain, Heart, RefreshCw, Pause, AlertTriangle, Search } from "lucide-react";
+import { subscriptionAPI, bookingAPI, reportAPI } from "@/lib/api";
+import { showToast, formatDate, formatCurrency } from "@/lib/hooks";
 
 export default function SmartFeaturesPage() {
-    const [activeTab, setActiveTab] = useState("ocr");
+    const [activeTab, setActiveTab] = useState("compassionate");
+    const [subs, setSubs] = useState([]);
+    const [bookings, setBookings] = useState([]);
+    const [refundData, setRefundData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => { loadData(); }, [activeTab]);
+
+    async function loadData() {
+        setLoading(true);
+        try {
+            if (activeTab === 'compassionate' || activeTab === 'pause') {
+                const r = await subscriptionAPI.getAll();
+                setSubs(r.data?.data || []);
+            }
+            if (activeTab === 'sla') {
+                const r = await bookingAPI.getAll({ status: 'SLA_BREACH' });
+                setBookings(r.data?.data?.bookings || r.data?.data || []);
+            }
+            if (activeTab === 'refunds') {
+                const r = await reportAPI.refundAnalysis();
+                setRefundData(r.data?.data);
+            }
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
+    }
+
+    async function applyCompassionate(subId) {
+        const days = prompt('Extension days:');
+        if (!days) return;
+        const reason = prompt('Reason:');
+        if (reason === null) return;
+        try { await subscriptionAPI.compassionate(subId, { days: parseInt(days), reason }); showToast('Compassionate extension applied'); loadData(); }
+        catch (e) { showToast(e.response?.data?.message || 'Failed', 'error'); }
+    }
+
+    async function pauseSubscription(id) {
+        try { await subscriptionAPI.pause(id); showToast('Subscription paused'); loadData(); }
+        catch (e) { showToast('Failed', 'error'); }
+    }
+
+    async function resumeSubscription(id) {
+        try { await subscriptionAPI.resume(id); showToast('Subscription resumed'); loadData(); }
+        catch (e) { showToast('Failed', 'error'); }
+    }
+
+    const tabs = [
+        { key: 'compassionate', label: 'Compassionate Clause', icon: Heart },
+        { key: 'pause', label: 'Pause Credits', icon: Pause },
+        { key: 'sla', label: 'SLA Breach Tracker', icon: AlertTriangle },
+        { key: 'refunds', label: 'Refund Analysis', icon: RefreshCw },
+    ];
 
     return (
         <div>
-            <div className="page-header">
-                <h2>Advanced Smart Features</h2>
-                <p>AI-powered health intelligence, automation, and compliance tracking</p>
-            </div>
-
+            <div className="page-header"><h2 style={{ display: "flex", alignItems: "center", gap: 8 }}><Brain size={28} /> Advanced Smart Features</h2><p>AI-powered tools and automation for healthcare operations</p></div>
             <div className="tabs mb-6">
-                {[
-                    { id: "ocr", label: "OCR Health Flags" },
-                    { id: "refill", label: "Auto-Refill Reminders" },
-                    { id: "compassionate", label: "Compassionate Clause" },
-                    { id: "pause-credits", label: "Pause Credits" },
-                    { id: "sla", label: "SLA Breach Tracker" },
-                ].map(t => (
-                    <button key={t.id} className={`tab ${activeTab === t.id ? "active" : ""}`} onClick={() => setActiveTab(t.id)}>{t.label}</button>
-                ))}
+                {tabs.map(t => <button key={t.key} className={`tab ${activeTab === t.key ? "active" : ""}`} onClick={() => setActiveTab(t.key)}><t.icon size={14} /> {t.label}</button>)}
             </div>
 
-            {activeTab === "ocr" && (
-                <>
-                    <div className="stats-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
-                        <div className="stat-card" style={{ borderColor: "rgba(239,68,68,0.3)" }}><div className="stat-card-value" style={{ color: "var(--accent-danger)" }}>{ocrFlags.filter(f => f.severity === "Critical").length}</div><div className="stat-card-label">Critical Flags</div></div>
-                        <div className="stat-card"><div className="stat-card-value" style={{ color: "var(--accent-warning)" }}>{ocrFlags.filter(f => f.severity === "High").length}</div><div className="stat-card-label">High Priority</div></div>
-                        <div className="stat-card"><div className="stat-card-value">{ocrFlags.filter(f => f.severity === "Medium").length}</div><div className="stat-card-label">Medium Priority</div></div>
-                        <div className="stat-card"><div className="stat-card-value">{ocrFlags.length}</div><div className="stat-card-label">Total Flags (30 days)</div></div>
-                    </div>
-                    <div className="card">
-                        <div className="card-header"><h3 style={{ display: "flex", alignItems: "center", gap: 8 }}><Activity size={18} color="var(--accent-danger)" /> OCR Health Flag Engine</h3></div>
-                        <div className="card-body" style={{ padding: 0 }}>
-                            <table className="data-table">
-                                <thead><tr><th>User</th><th>Detected Flag</th><th>Severity</th><th>Detected On</th><th>Action Status</th></tr></thead>
-                                <tbody>
-                                    {ocrFlags.map((f, i) => (
-                                        <tr key={i}>
-                                            <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{f.user}</td>
-                                            <td>{f.flag}</td>
-                                            <td><span className={`badge ${f.severity === "Critical" ? "badge-danger" : f.severity === "High" ? "badge-warning" : "badge-info"}`}>{f.severity}</span></td>
-                                            <td className="text-sm">{f.detected}</td>
-                                            <td><span className={`badge ${f.action === "Pending Review" ? "badge-warning" : "badge-success"}`}>{f.action}</span></td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </>
+            {loading && <p className="text-muted" style={{ padding: 24 }}>Loading...</p>}
+
+            {!loading && activeTab === "compassionate" && (
+                <div className="card"><div className="card-header"><h3>Compassionate Clause — Active Subscriptions</h3></div><div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
+                    <table className="data-table">
+                        <thead><tr><th>User</th><th>Plan</th><th>Status</th><th>Expiry</th><th>Extension Days</th><th>Reason</th><th>Action</th></tr></thead>
+                        <tbody>
+                            {subs.filter(s => s.status === 'ACTIVE' || s.status === 'EXPIRING').map(s => (
+                                <tr key={s.id}>
+                                    <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{s.user?.name || '—'}</td>
+                                    <td>{s.plan?.name || '—'}</td>
+                                    <td><span className={`badge ${s.status === 'ACTIVE' ? 'badge-success' : 'badge-warning'}`}>{s.status}</span></td>
+                                    <td className="text-sm">{formatDate(s.expiryDate)}</td>
+                                    <td>{s.compassionateExtensionDays > 0 ? <span className="badge badge-info">{s.compassionateExtensionDays} days</span> : '—'}</td>
+                                    <td className="text-sm">{s.compassionateReason || '—'}</td>
+                                    <td><button className="btn btn-sm btn-primary" onClick={() => applyCompassionate(s.id)}><Heart size={12} /> Extend</button></td>
+                                </tr>
+                            ))}
+                            {subs.filter(s => s.status === 'ACTIVE' || s.status === 'EXPIRING').length === 0 && <tr><td colSpan={7} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No active subscriptions</td></tr>}
+                        </tbody>
+                    </table>
+                </div></div>
             )}
 
-            {activeTab === "refill" && (
-                <div className="card">
-                    <div className="card-header"><h3 style={{ display: "flex", alignItems: "center", gap: 8 }}><RefreshCw size={18} /> Auto-Refill Reminder System</h3></div>
-                    <div className="card-body" style={{ padding: 0 }}>
-                        <table className="data-table">
-                            <thead><tr><th>User</th><th>Medicine</th><th>Last Order</th><th>Next Due</th><th>Status</th><th>Actions</th></tr></thead>
-                            <tbody>
-                                {refillReminders.map((r, i) => (
-                                    <tr key={i}>
-                                        <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{r.user}</td>
-                                        <td>{r.medicine}</td>
-                                        <td className="text-sm">{r.lastOrder}</td>
-                                        <td className="text-sm">{r.nextDue}</td>
-                                        <td><span className={`badge ${r.status === "Overdue" ? "badge-danger" : r.status === "Reminder Sent" ? "badge-success" : "badge-info"}`}>{r.status}</span></td>
-                                        <td><button className="btn btn-sm btn-primary">Send Reminder</button></td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            {!loading && activeTab === "pause" && (
+                <div className="card"><div className="card-header"><h3>Subscription Pause / Resume</h3></div><div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
+                    <table className="data-table">
+                        <thead><tr><th>User</th><th>Plan</th><th>Status</th><th>Start</th><th>Expiry</th><th>Paused At</th><th>Action</th></tr></thead>
+                        <tbody>
+                            {subs.map(s => (
+                                <tr key={s.id}>
+                                    <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{s.user?.name || '—'}</td>
+                                    <td>{s.plan?.name || '—'}</td>
+                                    <td><span className={`badge ${s.status === 'ACTIVE' ? 'badge-success' : s.status === 'PAUSED' ? 'badge-warning' : 'badge-default'}`}>{s.status}</span></td>
+                                    <td className="text-sm">{formatDate(s.startDate)}</td>
+                                    <td className="text-sm">{formatDate(s.expiryDate)}</td>
+                                    <td className="text-sm">{s.pausedAt ? formatDate(s.pausedAt) : '—'}</td>
+                                    <td>
+                                        {s.status === 'ACTIVE' && <button className="btn btn-sm btn-warning" onClick={() => pauseSubscription(s.id)}><Pause size={12} /> Pause</button>}
+                                        {s.status === 'PAUSED' && <button className="btn btn-sm btn-success" onClick={() => resumeSubscription(s.id)}>▶ Resume</button>}
+                                    </td>
+                                </tr>
+                            ))}
+                            {subs.length === 0 && <tr><td colSpan={7} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No subscriptions</td></tr>}
+                        </tbody>
+                    </table>
+                </div></div>
             )}
 
-            {activeTab === "compassionate" && (
-                <div className="card">
-                    <div className="card-header"><h3 style={{ display: "flex", alignItems: "center", gap: 8 }}><Heart size={18} color="var(--accent-danger)" /> Compassionate Clause Automation</h3></div>
-                    <div className="card-body" style={{ padding: 0 }}>
-                        <table className="data-table">
-                            <thead><tr><th>User</th><th>Reason</th><th>Extension</th><th>Approved By</th><th>Date</th></tr></thead>
-                            <tbody>
-                                {compassionateClauses.map((c, i) => (
-                                    <tr key={i}>
-                                        <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{c.user}</td>
-                                        <td>{c.reason}</td>
-                                        <td><span className="badge badge-success">{c.extension}</span></td>
-                                        <td className="text-sm">{c.approvedBy}</td>
-                                        <td className="text-sm">{c.date}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            {!loading && activeTab === "sla" && (
+                <div className="card"><div className="card-header"><h3>SLA Breached Bookings</h3></div><div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
+                    <table className="data-table">
+                        <thead><tr><th>Code</th><th>User</th><th>Service</th><th>City</th><th>Amount</th><th>Status</th><th>SLA Deadline</th></tr></thead>
+                        <tbody>
+                            {bookings.map(b => (
+                                <tr key={b.id}>
+                                    <td><code style={{ fontSize: 11, color: "var(--accent-danger)" }}>{b.bookingCode}</code></td>
+                                    <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{b.user?.name || '—'}</td>
+                                    <td className="text-sm">{b.service?.name || '—'}</td>
+                                    <td className="text-sm">{b.city?.name || '—'}</td>
+                                    <td>{formatCurrency(b.amount)}</td>
+                                    <td><span className="badge badge-danger">SLA BREACH</span></td>
+                                    <td className="text-sm">{b.slaDeadline ? formatDate(b.slaDeadline) : '—'}</td>
+                                </tr>
+                            ))}
+                            {bookings.length === 0 && <tr><td colSpan={7} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No SLA breaches 🎉</td></tr>}
+                        </tbody>
+                    </table>
+                </div></div>
             )}
 
-            {activeTab === "pause-credits" && (
-                <div className="grid-2">
-                    <div className="card">
-                        <div className="card-header"><h3>Subscription Pause Credits</h3></div>
-                        <div className="card-body">
-                            <div className="flex justify-between items-center mb-4">
-                                <div><div className="font-medium">Allow Subscription Pause</div><div className="text-sm text-muted">Users can pause up to 30 days/year</div></div>
-                                <label className="toggle-switch"><input type="checkbox" defaultChecked /><span className="toggle-slider"></span></label>
-                            </div>
-                            <div className="flex justify-between items-center mb-4">
-                                <div><div className="font-medium">Auto-Credit Pause Days</div><div className="text-sm text-muted">Extend expiry by paused days</div></div>
-                                <label className="toggle-switch"><input type="checkbox" defaultChecked /><span className="toggle-slider"></span></label>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <div><div className="font-medium">Max Pause Per Year</div><div className="text-sm text-muted">Maximum pause duration per subscription</div></div>
-                                <input className="form-input" defaultValue="30" style={{ width: 80, textAlign: "center" }} />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="card">
-                        <div className="card-header"><h3>Currently Paused</h3></div>
-                        <div className="card-body">
-                            {[
-                                { user: "Mohan Rao", pausedSince: "Feb 15, 2026", daysRemaining: 12 },
-                                { user: "Kavita Joshi", pausedSince: "Feb 18, 2026", daysRemaining: 22 },
-                            ].map((p, i) => (
-                                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: i === 0 ? "1px solid var(--border-color)" : "none" }}>
-                                    <div>
-                                        <div className="font-medium">{p.user}</div>
-                                        <div className="text-sm text-muted">Paused since {p.pausedSince}</div>
-                                    </div>
-                                    <span className="badge badge-warning">{p.daysRemaining} days left</span>
-                                </div>
+            {!loading && activeTab === "refunds" && (
+                <div className="card"><div className="card-header"><h3>Refund Analysis</h3></div><div className="card-body">
+                    {refundData ? (
+                        <div className="stats-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
+                            <div><div className="text-sm text-muted">Total Refunds</div><div style={{ fontSize: 24, fontWeight: 700 }}>{refundData.totalRefunds || 0}</div></div>
+                            <div><div className="text-sm text-muted">Total Amount</div><div style={{ fontSize: 24, fontWeight: 700, color: "var(--accent-danger)" }}>{formatCurrency(refundData.totalRefundAmount || 0)}</div></div>
+                            {refundData.byType && Object.entries(refundData.byType).map(([type, data]) => (
+                                <div key={type}><div className="text-sm text-muted">{type.replace(/_/g, ' ')}</div><div style={{ fontSize: 20, fontWeight: 600 }}>{data.count || 0}<span className="text-sm text-muted" style={{ marginLeft: 8 }}>{formatCurrency(data.amount || 0)}</span></div></div>
                             ))}
                         </div>
-                    </div>
-                </div>
-            )}
-
-            {activeTab === "sla" && (
-                <div className="card">
-                    <div className="card-header"><h3 style={{ display: "flex", alignItems: "center", gap: 8 }}><AlertTriangle size={18} color="var(--accent-warning)" /> SLA Breach Tracker</h3></div>
-                    <div className="card-body" style={{ padding: 0 }}>
-                        <table className="data-table">
-                            <thead><tr><th>Booking ID</th><th>Service</th><th>Expected</th><th>Actual</th><th>Delay</th><th>Caregiver</th><th>Actions</th></tr></thead>
-                            <tbody>
-                                {slaBreaches.map((b, i) => (
-                                    <tr key={i}>
-                                        <td><code style={{ fontSize: 12, color: "var(--accent-primary-light)" }}>{b.bookingId}</code></td>
-                                        <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{b.service}</td>
-                                        <td className="text-sm">{b.expectedTime}</td>
-                                        <td className="text-sm">{b.actualTime}</td>
-                                        <td><span className="badge badge-danger">{b.delay}</span></td>
-                                        <td>{b.caregiver}</td>
-                                        <td><button className="btn btn-sm btn-warning">Investigate</button></td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                    ) : <p className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No refund data available</p>}
+                </div></div>
             )}
         </div>
     );

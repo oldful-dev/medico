@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────
-//  Medico Backend — Main Server Entry Point
+//  Oldful Backend — Main Server Entry Point
 // ──────────────────────────────────────────────
 
 require('dotenv').config();
@@ -48,7 +48,7 @@ app.use(helmet());
 // ─── CORS ───────────────────────────────────────────────
 app.use(cors({
   origin: [
-    process.env.ADMIN_FRONTEND_URL || 'http://localhost:3000',
+    process.env.ADMIN_FRONTEND_URL || 'http://localhost:3001',
     process.env.APP_FRONTEND_URL || 'http://localhost:8081',
   ],
   credentials: true,
@@ -78,7 +78,7 @@ app.use(morgan('combined', {
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,
-    message: 'Medico API is running',
+    message: 'Oldful API is running',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
   });
@@ -113,7 +113,7 @@ app.use(errorHandler);
 
 // ─── Start Server ───────────────────────────────────────
 app.listen(PORT, () => {
-  logger.info(`🚀 Medico Backend running on port ${PORT}`);
+  logger.info(`🚀 Oldful Backend running on port ${PORT}`);
   logger.info(`📋 Environment: ${process.env.NODE_ENV}`);
 
   // Initialize background cron jobs

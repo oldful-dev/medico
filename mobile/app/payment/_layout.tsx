@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 
 export default function PaymentLayout() {
     return (
-        <Stack>
+        <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="checkout" options={{ title: 'Checkout' }} />
             <Stack.Screen name="payment-method" options={{ title: 'Payment Method' }} />
             <Stack.Screen name="payment-success" options={{ title: 'Payment Successful' }} />

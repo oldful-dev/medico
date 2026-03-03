@@ -1,111 +1,132 @@
 "use client";
-import { useState } from "react";
-import { LifeBuoy, Plus, MessageSquare, Clock, CheckCircle, AlertTriangle, User, Search } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MessageSquare, CheckCircle, Eye, Send, ChevronLeft, ChevronRight } from "lucide-react";
+import { supportAPI } from "@/lib/api";
+import { showToast, formatDateTime, timeAgo } from "@/lib/hooks";
 
-const tickets = [
-    { id: "TKT-1250", user: "Rajesh Kumar", subject: "Doctor didn't arrive on time", category: "Booking", priority: "High", status: "Open", assignee: "Vikram Singh", created: "Feb 23, 2026", sla: "2h remaining" },
-    { id: "TKT-1249", user: "Anita Sharma", subject: "Refund not received for BK-4421", category: "Payment", priority: "Medium", status: "In Progress", assignee: "Vikram Singh", created: "Feb 22, 2026", sla: "On track" },
-    { id: "TKT-1248", user: "Venkat Reddy", subject: "Unable to update emergency contact", category: "Account", priority: "Low", status: "Resolved", assignee: "Support Team", created: "Feb 21, 2026", sla: "Met" },
-    { id: "TKT-1247", user: "Priya Menon", subject: "Medicine delivery delayed by 3 hours", category: "Service", priority: "High", status: "Open", assignee: "—", created: "Feb 23, 2026", sla: "1h remaining" },
-    { id: "TKT-1246", user: "Suresh Patel", subject: "Subscription not activating after payment", category: "Payment", priority: "Critical", status: "Escalated", assignee: "Arun Kumar", created: "Feb 22, 2026", sla: "Breached" },
-];
-
-const priorityColors = { "Critical": "badge-danger", "High": "badge-warning", "Medium": "badge-info", "Low": "badge-default" };
-const statusColors = { "Open": "badge-warning", "In Progress": "badge-info", "Resolved": "badge-success", "Escalated": "badge-danger", "Closed": "badge-default" };
+const statusColors = { open: 'badge-warning', 'in-progress': 'badge-info', resolved: 'badge-success', closed: 'badge-default' };
+const priorityColors = { low: 'badge-default', medium: 'badge-info', high: 'badge-warning', critical: 'badge-danger' };
 
 export default function SupportPage() {
-    const [showModal, setShowModal] = useState(false);
-    const [selectedTicket, setSelectedTicket] = useState(null);
+    const [tickets, setTickets] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filters, setFilters] = useState({ status: '', priority: '' });
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const [selected, setSelected] = useState(null);
+    const [reply, setReply] = useState('');
+    const limit = 20;
+
+    useEffect(() => { loadTickets(); }, [page, filters]);
+
+    async function loadTickets() {
+        try { setLoading(true); const params = { page, limit, ...filters }; Object.keys(params).forEach(k => !params[k] && delete params[k]); const r = await supportAPI.getTickets(params); setTickets(r.data?.data?.tickets || r.data?.data || []); setTotal(r.data?.data?.total || 0); }
+        catch (e) { console.error(e); } finally { setLoading(false); }
+    }
+
+    async function viewTicket(id) {
+        try { const r = await supportAPI.getTicketById(id); setSelected(r.data?.data); setReply(''); }
+        catch (e) { showToast('Failed to load ticket', 'error'); }
+    }
+
+    async function resolveTicket(id) {
+        const note = prompt('Resolution note:');
+        if (note === null) return;
+        try { await supportAPI.resolveTicket(id, { resolutionNote: note }); showToast('Ticket resolved'); setSelected(null); loadTickets(); }
+        catch (e) { showToast('Failed', 'error'); }
+    }
+
+    async function handleReply() {
+        if (!reply.trim()) return;
+        try { await supportAPI.addMessage(selected.id, { message: reply, senderType: 'admin', senderId: 'admin' }); showToast('Reply sent'); viewTicket(selected.id); setReply(''); }
+        catch (e) { showToast('Failed', 'error'); }
+    }
+
+    async function updateStatus(id, status) {
+        try { await supportAPI.updateTicket(id, { status }); showToast(`Status: ${status}`); loadTickets(); if (selected?.id === id) viewTicket(id); }
+        catch (e) { showToast('Failed', 'error'); }
+    }
 
     return (
         <div>
-            <div className="page-header">
-                <h2>Support & Ticketing System</h2>
-                <p>Manage customer support tickets, assign agents, and track SLA</p>
-            </div>
-
-            <div className="stats-grid" style={{ gridTemplateColumns: "repeat(5, 1fr)" }}>
-                <div className="stat-card"><div className="stat-card-value">{tickets.filter(t => t.status === "Open").length}</div><div className="stat-card-label">Open</div></div>
-                <div className="stat-card"><div className="stat-card-value">{tickets.filter(t => t.status === "In Progress").length}</div><div className="stat-card-label">In Progress</div></div>
-                <div className="stat-card"><div className="stat-card-value">{tickets.filter(t => t.status === "Escalated").length}</div><div className="stat-card-label">Escalated</div></div>
-                <div className="stat-card"><div className="stat-card-value">{tickets.filter(t => t.status === "Resolved").length}</div><div className="stat-card-label">Resolved</div></div>
-                <div className="stat-card"><div className="stat-card-value">92%</div><div className="stat-card-label">SLA Compliance</div></div>
+            <div className="page-header"><h2>Support & Ticketing System</h2><p>Manage customer support tickets</p></div>
+            <div className="stats-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+                <div className="stat-card"><div className="stat-card-value" style={{ color: "var(--accent-warning)" }}>{tickets.filter(t => t.status === 'open').length}</div><div className="stat-card-label">Open</div></div>
+                <div className="stat-card"><div className="stat-card-value" style={{ color: "var(--accent-primary-light)" }}>{tickets.filter(t => t.status === 'in-progress').length}</div><div className="stat-card-label">In Progress</div></div>
+                <div className="stat-card"><div className="stat-card-value" style={{ color: "var(--accent-success)" }}>{tickets.filter(t => t.status === 'resolved').length}</div><div className="stat-card-label">Resolved</div></div>
+                <div className="stat-card"><div className="stat-card-value">{tickets.filter(t => t.priority === 'critical').length}</div><div className="stat-card-label">Critical</div></div>
             </div>
 
             <div className="filter-bar">
-                <input className="form-input" placeholder="Search tickets..." style={{ maxWidth: 260 }} />
-                <select className="form-select" style={{ width: 140 }}><option>All Status</option><option>Open</option><option>In Progress</option><option>Escalated</option><option>Resolved</option></select>
-                <select className="form-select" style={{ width: 140 }}><option>All Priority</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
-                <button className="btn btn-primary" onClick={() => setShowModal(true)}><Plus size={16} /> Raise Ticket</button>
+                <select className="form-select" style={{ width: 160 }} value={filters.status} onChange={e => { setFilters({ ...filters, status: e.target.value }); setPage(1); }}>
+                    <option value="">All Status</option>{Object.keys(statusColors).map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <select className="form-select" style={{ width: 160 }} value={filters.priority} onChange={e => { setFilters({ ...filters, priority: e.target.value }); setPage(1); }}>
+                    <option value="">All Priority</option>{Object.keys(priorityColors).map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
             </div>
 
-            <div className="card">
-                <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
-                    <table className="data-table">
-                        <thead><tr><th>Ticket ID</th><th>User</th><th>Subject</th><th>Category</th><th>Priority</th><th>Assignee</th><th>SLA</th><th>Status</th><th>Actions</th></tr></thead>
-                        <tbody>
-                            {tickets.map(t => (
-                                <tr key={t.id}>
-                                    <td><code style={{ fontSize: 12, color: "var(--accent-primary-light)" }}>{t.id}</code></td>
-                                    <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{t.user}</td>
-                                    <td className="text-sm">{t.subject}</td>
-                                    <td><span className="badge badge-default">{t.category}</span></td>
-                                    <td><span className={`badge ${priorityColors[t.priority]}`}>{t.priority}</span></td>
-                                    <td className="text-sm">{t.assignee}</td>
-                                    <td><span className={`badge ${t.sla === "Breached" ? "badge-danger" : t.sla === "Met" ? "badge-success" : "badge-warning"}`}>{t.sla}</span></td>
-                                    <td><span className={`badge ${statusColors[t.status]}`}>{t.status}</span></td>
-                                    <td><button className="btn btn-sm btn-secondary" onClick={() => setSelectedTicket(t)}>View</button></td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            <div className="card"><div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
+                <table className="data-table">
+                    <thead><tr><th>Ticket</th><th>Subject</th><th>Category</th><th>Priority</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        {loading ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: 24 }}>Loading...</td></tr> :
+                            tickets.length === 0 ? <tr><td colSpan={7} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No tickets</td></tr> :
+                                tickets.map(t => (
+                                    <tr key={t.id}>
+                                        <td><code style={{ fontSize: 11, color: "var(--accent-primary-light)" }}>{t.ticketCode}</code></td>
+                                        <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{t.subject}</td>
+                                        <td className="text-sm">{t.category || '—'}</td>
+                                        <td><span className={`badge ${priorityColors[t.priority] || 'badge-default'}`}>{t.priority}</span></td>
+                                        <td><span className={`badge ${statusColors[t.status] || 'badge-default'}`}>{t.status}</span></td>
+                                        <td className="text-sm">{timeAgo(t.createdAt)}</td>
+                                        <td>
+                                            <div className="flex gap-2">
+                                                <button className="btn btn-sm btn-secondary" onClick={() => viewTicket(t.id)}><Eye size={14} /></button>
+                                                {t.status !== 'resolved' && t.status !== 'closed' && <button className="btn btn-sm btn-success" onClick={() => resolveTicket(t.id)}><CheckCircle size={14} /></button>}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                    </tbody>
+                </table>
+            </div></div>
 
-            {selectedTicket && (
-                <div className="modal-overlay" onClick={() => setSelectedTicket(null)}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header"><h3>Ticket {selectedTicket.id}</h3><button onClick={() => setSelectedTicket(null)} className="btn btn-sm btn-secondary">✕</button></div>
-                        <div className="modal-body">
-                            <div className="form-row">
-                                <div className="form-group"><label className="form-label">User</label><input className="form-input" value={selectedTicket.user} readOnly /></div>
-                                <div className="form-group"><label className="form-label">Category</label><input className="form-input" value={selectedTicket.category} readOnly /></div>
-                            </div>
-                            <div className="form-group"><label className="form-label">Subject</label><input className="form-input" value={selectedTicket.subject} readOnly /></div>
-                            <div className="form-row">
-                                <div className="form-group"><label className="form-label">Priority</label>
-                                    <select className="form-select" defaultValue={selectedTicket.priority}><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
-                                </div>
-                                <div className="form-group"><label className="form-label">Assign To</label>
-                                    <select className="form-select" defaultValue={selectedTicket.assignee}><option>Vikram Singh</option><option>Support Team</option><option>Arun Kumar</option></select>
-                                </div>
-                            </div>
-                            <div className="form-group"><label className="form-label">Status</label>
-                                <select className="form-select" defaultValue={selectedTicket.status}><option>Open</option><option>In Progress</option><option>Escalated</option><option>Resolved</option><option>Closed</option></select>
-                            </div>
-                            <div className="form-group"><label className="form-label">Internal Notes</label><textarea className="form-textarea" placeholder="Add internal notes..."></textarea></div>
-                        </div>
-                        <div className="modal-footer"><button className="btn btn-secondary" onClick={() => setSelectedTicket(null)}>Cancel</button><button className="btn btn-primary">Update Ticket</button></div>
-                    </div>
-                </div>
-            )}
+            {total > limit && <div className="flex justify-between items-center mt-4"><span className="text-sm text-muted">Page {page}</span><div className="flex gap-2"><button className="btn btn-sm btn-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}><ChevronLeft size={14} /></button><button className="btn btn-sm btn-secondary" disabled={page * limit >= total} onClick={() => setPage(page + 1)}><ChevronRight size={14} /></button></div></div>}
 
-            {showModal && (
-                <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header"><h3>Raise New Ticket</h3><button onClick={() => setShowModal(false)} className="btn btn-sm btn-secondary">✕</button></div>
-                        <div className="modal-body">
-                            <div className="form-group"><label className="form-label">User</label><input className="form-input" placeholder="Search user..." /></div>
-                            <div className="form-group"><label className="form-label">Subject</label><input className="form-input" placeholder="Brief description" /></div>
-                            <div className="form-row">
-                                <div className="form-group"><label className="form-label">Category</label><select className="form-select"><option>Booking</option><option>Payment</option><option>Service</option><option>Account</option><option>Other</option></select></div>
-                                <div className="form-group"><label className="form-label">Priority</label><select className="form-select"><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></div>
+            {selected && (
+                <div className="modal-overlay" onClick={() => setSelected(null)}><div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 650 }}>
+                    <div className="modal-header"><h3>{selected.ticketCode} — {selected.subject}</h3><button onClick={() => setSelected(null)} className="btn btn-sm btn-secondary">✕</button></div>
+                    <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                        <div className="form-row mb-4"><div className="form-group"><label className="form-label">Status</label><span className={`badge ${statusColors[selected.status]}`}>{selected.status}</span></div><div className="form-group"><label className="form-label">Priority</label><span className={`badge ${priorityColors[selected.priority]}`}>{selected.priority}</span></div></div>
+                        {selected.description && <div className="form-group"><label className="form-label">Description</label><div className="text-sm">{selected.description}</div></div>}
+
+                        <div className="form-group"><label className="form-label">Conversation</label>
+                            <div style={{ border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: 12, maxHeight: 300, overflowY: 'auto' }}>
+                                {(selected.messages || []).map((msg, i) => (
+                                    <div key={i} style={{ marginBottom: 12, textAlign: msg.senderType === 'admin' ? 'right' : 'left' }}>
+                                        <div style={{ display: 'inline-block', background: msg.senderType === 'admin' ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.04)', padding: '8px 12px', borderRadius: 10, maxWidth: '80%' }}>
+                                            <div className="text-sm">{msg.message}</div>
+                                            <div className="text-sm text-muted" style={{ fontSize: 10, marginTop: 4 }}>{msg.senderType === 'admin' ? 'Admin' : 'User'} • {timeAgo(msg.createdAt)}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {(!selected.messages || selected.messages.length === 0) && <p className="text-muted text-sm" style={{ textAlign: 'center' }}>No messages yet</p>}
                             </div>
-                            <div className="form-group"><label className="form-label">Description</label><textarea className="form-textarea" placeholder="Detailed description..."></textarea></div>
                         </div>
-                        <div className="modal-footer"><button className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button><button className="btn btn-primary">Create Ticket</button></div>
+                        {selected.status !== 'resolved' && selected.status !== 'closed' && (
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                <input className="form-input" style={{ flex: 1 }} placeholder="Type your reply..." value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleReply()} />
+                                <button className="btn btn-primary" onClick={handleReply}><Send size={14} /></button>
+                            </div>
+                        )}
                     </div>
-                </div>
+                    <div className="modal-footer">
+                        {selected.status === 'open' && <button className="btn btn-info" onClick={() => updateStatus(selected.id, 'in-progress')}>Start Working</button>}
+                        {selected.status !== 'resolved' && selected.status !== 'closed' && <button className="btn btn-success" onClick={() => resolveTicket(selected.id)}>Resolve</button>}
+                        <button className="btn btn-secondary" onClick={() => setSelected(null)}>Close</button>
+                    </div>
+                </div></div>
             )}
         </div>
     );

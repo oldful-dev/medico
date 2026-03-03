@@ -167,7 +167,7 @@ const verifyPayment = async (req, res, next) => {
                 gstAmount,
                 totalAmount: payment.amount,
                 billingName: payment.user.name,
-                description: 'Medico Healthcare Services',
+                description: 'Oldful Healthcare Services',
             });
 
             const { url } = await uploadToCloudinary(pdfBuffer, 'invoices', 'raw');
@@ -181,7 +181,7 @@ const verifyPayment = async (req, res, next) => {
             if (payment.user.email) {
                 await sendEmail({
                     to: payment.user.email,
-                    subject: `Invoice ${invoiceNumber} - Medico Healthcare`,
+                    subject: `Invoice ${invoiceNumber} - Oldful Healthcare`,
                     html: `<p>Dear ${payment.user.name},</p><p>Your payment of ₹${payment.amount} was successful.</p><p>Invoice: ${invoiceNumber}</p>`,
                 });
 

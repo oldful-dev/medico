@@ -1,36 +1,114 @@
-// Notification Service - Push notifications, in-app alerts
-// PRD: "Coming Soon" city notifications, booking updates, SOS alerts
+// ──────────────────────────────────────────────
+//  Notification Service — Push notifications
+//  Uses expo-notifications for device registration
+//  Uses expo-device for device type detection
+// ──────────────────────────────────────────────
+
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import { Platform } from 'react-native';
+import { storageService, STORAGE_KEYS } from './storageService';
 
 export interface PushNotification {
-  id: string;
-  title: string;
-  body: string;
-  data?: Record<string, any>;
-  timestamp: Date;
-  read: boolean;
+    id: string;
+    title: string;
+    body: string;
+    data?: Record<string, any>;
+    timestamp: Date;
+    read: boolean;
 }
 
+// Configure notification display behavior
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+    }),
+});
+
 export const notificationService = {
-  requestPermission: async (): Promise<boolean> => {
-    // TODO: Request push notification permission
-    throw new Error('Not implemented');
-  },
+    /**
+     * Request push notification permission
+     */
+    requestPermission: async (): Promise<boolean> => {
+        if (!Device.isDevice) {
+            console.warn('Push notifications are not available on simulator');
+            return false;
+        }
 
-  registerForPush: async (): Promise<string> => {
-    // TODO: Register device for push notifications, return token
-    throw new Error('Not implemented');
-  },
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
 
-  getNotifications: async (): Promise<PushNotification[]> => {
-    // TODO: Fetch notification history
-    throw new Error('Not implemented');
-  },
+        if (existingStatus !== 'granted') {
+            const { status } = await Notifications.requestPermissionsAsync();
+            finalStatus = status;
+        }
 
-  markAsRead: async (notificationId: string): Promise<void> => {
-    // TODO: Mark notification as read
-  },
+        return finalStatus === 'granted';
+    },
 
-  scheduleLocalNotification: async (title: string, body: string, triggerDate: Date): Promise<void> => {
-    // TODO: Schedule local notification
-  },
+    /**
+     * Register device for push notifications
+     * Returns the Expo push token
+     */
+    registerForPush: async (): Promise<string | null> => {
+        const hasPermission = await notificationService.requestPermission();
+        if (!hasPermission) return null;
+
+        try {
+            const tokenData = await Notifications.getExpoPushTokenAsync();
+            const token = tokenData.data;
+
+            // Persist push token locally
+            await storageService.setItem(STORAGE_KEYS.PUSH_TOKEN, token);
+
+            // Configure Android notification channel
+            if (Platform.OS === 'android') {
+                await Notifications.setNotificationChannelAsync('default', {
+                    name: 'Default',
+                    importance: Notifications.AndroidImportance.HIGH,
+                    vibrationPattern: [0, 250, 250, 250],
+                    lightColor: '#048357',
+                });
+            }
+
+            return token;
+        } catch (error) {
+            console.error('Failed to get push token:', error);
+            return null;
+        }
+    },
+
+    /**
+     * Schedule a local notification
+     */
+    scheduleLocalNotification: async (
+        title: string,
+        body: string,
+        triggerSeconds: number = 1
+    ): Promise<void> => {
+        await Notifications.scheduleNotificationAsync({
+            content: { title, body, sound: 'default' },
+            trigger: { seconds: triggerSeconds },
+        });
+    },
+
+    /**
+     * Add a listener for incoming notifications
+     */
+    addNotificationListener: (
+        callback: (notification: Notifications.Notification) => void
+    ): Notifications.Subscription => {
+        return Notifications.addNotificationReceivedListener(callback);
+    },
+
+    /**
+     * Add a listener for notification responses (taps)
+     */
+    addResponseListener: (
+        callback: (response: Notifications.NotificationResponse) => void
+    ): Notifications.Subscription => {
+        return Notifications.addNotificationResponseReceivedListener(callback);
+    },
 };

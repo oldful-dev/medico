@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "f20d4f08-d7cc-4385-a8ac-9cfe1ab0caad"
+      }
+    },
+    "android": {
+      "package": "com.oldfuldev.medico"
+    }
+  }
+}

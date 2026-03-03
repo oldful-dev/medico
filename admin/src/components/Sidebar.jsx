@@ -61,10 +61,10 @@ export default function Sidebar({ collapsed, open, currentPage, setCurrentPage, 
             }} />}
             <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${open ? 'open' : ''}`}>
                 <div className="sidebar-header">
-                    <div className="sidebar-logo">M</div>
+                    <div className="sidebar-logo">O</div>
                     {!collapsed && (
                         <div className="sidebar-brand">
-                            <h1>Medico</h1>
+                            <h1>Oldful</h1>
                             <span>Admin Panel</span>
                         </div>
                     )}

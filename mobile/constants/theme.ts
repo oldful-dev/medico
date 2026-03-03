@@ -39,10 +39,21 @@ export const Colors = {
 };
 
 export const Typography = {
+  // Headlines — Poppins
+  headline: {
+    bold: 'Poppins-Bold',
+    semiBold: 'Poppins-SemiBold',
+  },
+  // Descriptions / Body — Lexend Deca
+  body: {
+    light: 'LexendDeca-Light',
+    regular: 'LexendDeca-Regular',
+    medium: 'LexendDeca-Medium',
+  },
   fontFamily: {
-    regular: 'System',
-    medium: 'System',
-    bold: 'System',
+    regular: 'LexendDeca-Regular',
+    medium: 'LexendDeca-Medium',
+    bold: 'Poppins-Bold',
   },
   fontSize: {
     xs: 10,

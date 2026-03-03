@@ -1,5 +1,14 @@
-// Auth Context - Global authentication state
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+// ──────────────────────────────────────────────
+//  Auth Context — Global authentication state
+//  Integrates with:
+//    - storageService (persist tokens to AsyncStorage)
+//    - apiClient (set/clear Bearer token)
+//    - authService (backend OTP + token refresh)
+// ──────────────────────────────────────────────
+
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { apiClient } from '@/services/api/apiClient';
+import { storageService, STORAGE_KEYS } from '@/services/device/storageService';
 
 interface AuthState {
     isAuthenticated: boolean;
@@ -9,8 +18,8 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-    login: (token: string, userId: string) => void;
-    logout: () => void;
+    login: (accessToken: string, refreshToken: string, userId: string) => Promise<void>;
+    logout: () => Promise<void>;
     setLoading: (loading: boolean) => void;
 }
 
@@ -24,12 +33,83 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token: null,
     });
 
-    const login = (token: string, userId: string) => {
-        setState({ isAuthenticated: true, isLoading: false, userId, token });
+    // ─── Boot: Restore tokens from AsyncStorage ──────
+    useEffect(() => {
+        (async () => {
+            try {
+                // Short artificial delay (500ms) to allow the app container to mount 
+                // and avoid split-second white flashes before the state takes over.
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                const { accessToken, refreshToken } = await storageService.getAuthTokens();
+                const userId = await storageService.getItem(STORAGE_KEYS.USER_ID);
+
+                if (accessToken && refreshToken && userId) {
+                    // Hydrate apiClient with stored tokens
+                    apiClient.setAuthToken(accessToken);
+                    apiClient.setRefreshToken(refreshToken);
+
+                    setState({
+                        isAuthenticated: true,
+                        isLoading: false,
+                        userId,
+                        token: accessToken,
+                    });
+                } else {
+                    setState(prev => ({ ...prev, isLoading: false }));
+                }
+            } catch {
+                setState(prev => ({ ...prev, isLoading: false }));
+            }
+        })();
+    }, []);
+
+    // ─── Register callback: when apiClient refreshes the token, persist it ──
+    useEffect(() => {
+        apiClient.setTokenRefreshedCallback(async (newAccessToken: string) => {
+            await storageService.setItem(STORAGE_KEYS.AUTH_TOKEN, newAccessToken);
+            setState(prev => ({ ...prev, token: newAccessToken }));
+        });
+
+        apiClient.setAuthFailureCallback(async () => {
+            // Token refresh failed — force logout
+            await logout();
+        });
+    }, []);
+
+    // ─── Login ────────────────────────────────────────
+    const login = async (accessToken: string, refreshToken: string, userId: string) => {
+        // Persist tokens
+        await storageService.saveAuthTokens(accessToken, refreshToken);
+        await storageService.setItem(STORAGE_KEYS.USER_ID, userId);
+
+        // Configure apiClient
+        apiClient.setAuthToken(accessToken);
+        apiClient.setRefreshToken(refreshToken);
+
+        setState({
+            isAuthenticated: true,
+            isLoading: false,
+            userId,
+            token: accessToken,
+        });
     };
 
-    const logout = () => {
-        setState({ isAuthenticated: false, isLoading: false, userId: null, token: null });
+    // ─── Logout ───────────────────────────────────────
+    const logout = async () => {
+        try {
+            // Tell the backend to invalidate the refresh token
+            await apiClient.post('/auth/logout').catch(() => { }); // best-effort
+        } finally {
+            apiClient.clearAuthToken();
+            await storageService.clearAuthTokens();
+            setState({
+                isAuthenticated: false,
+                isLoading: false,
+                userId: null,
+                token: null,
+            });
+        }
     };
 
     const setLoading = (loading: boolean) => {

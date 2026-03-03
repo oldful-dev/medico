@@ -1,137 +1,78 @@
 "use client";
-import { useState } from "react";
-import { CreditCard, Download, RotateCcw, RefreshCw, FileText, Search, DollarSign } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { useState, useEffect } from "react";
+import { DollarSign, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { paymentAPI } from "@/lib/api";
+import { formatCurrency, formatDateTime, showToast } from "@/lib/hooks";
 
-const transactions = [
-    { id: "TXN-9001", user: "Rajesh Kumar", type: "Subscription", amount: "₹27,999", status: "Success", method: "UPI", date: "Feb 23, 2026", invoice: true },
-    { id: "TXN-9002", user: "Anita Sharma", type: "Booking", amount: "₹799", status: "Success", method: "Card", date: "Feb 23, 2026", invoice: true },
-    { id: "TXN-9003", user: "Venkat Reddy", type: "Booking", amount: "₹1,299", status: "Failed", method: "UPI", date: "Feb 23, 2026", invoice: false },
-    { id: "TXN-9004", user: "Priya Menon", type: "Refund", amount: "-₹499", status: "Processed", method: "—", date: "Feb 22, 2026", invoice: true },
-    { id: "TXN-9005", user: "Suresh Patel", type: "Subscription", amount: "₹2,999", status: "Success", method: "Net Banking", date: "Feb 22, 2026", invoice: true },
-    { id: "TXN-9006", user: "Lakshmi Devi", type: "Booking", amount: "₹299", status: "Success", method: "UPI", date: "Feb 22, 2026", invoice: true },
-];
-
-const revenueBreakdown = [
-    { name: "Subscriptions", value: 68, color: "#6366f1" },
-    { name: "Booking Fees", value: 22, color: "#06b6d4" },
-    { name: "Add-ons", value: 7, color: "#10b981" },
-    { name: "Others", value: 3, color: "#64748b" },
-];
-
-const monthlyRevenue = [
-    { month: "Sep", revenue: 52000 }, { month: "Oct", revenue: 58000 }, { month: "Nov", revenue: 61000 },
-    { month: "Dec", revenue: 64000 }, { month: "Jan", revenue: 69000 }, { month: "Feb", revenue: 73500 },
-];
-
-const chartTooltipStyle = { backgroundColor: '#1a2035', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', color: '#f1f5f9', fontSize: '12px' };
+const statusColors = { INITIATED: 'badge-default', SUCCESS: 'badge-success', FAILED: 'badge-danger', REFUND_INITIATED: 'badge-warning', REFUNDED: 'badge-info' };
 
 export default function PaymentsPage() {
+    const [payments, setPayments] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const [refundModal, setRefundModal] = useState(null);
+    const [refundData, setRefundData] = useState({ refundType: 'CANCELLATION', refundReason: '', refundAmount: 0 });
+    const limit = 20;
+
+    useEffect(() => { loadPayments(); }, [page]);
+
+    async function loadPayments() {
+        try { setLoading(true); const r = await paymentAPI.getAll({ page, limit }); setPayments(r.data?.data?.payments || r.data?.data || []); setTotal(r.data?.data?.total || 0); }
+        catch (e) { console.error(e); } finally { setLoading(false); }
+    }
+
+    async function handleRefund() {
+        try {
+            await paymentAPI.initiateRefund({ paymentId: refundModal.id, ...refundData });
+            showToast('Refund initiated'); setRefundModal(null); loadPayments();
+        } catch (e) { showToast(e.response?.data?.message || 'Refund failed', 'error'); }
+    }
+
     return (
         <div>
-            <div className="page-header">
-                <h2>Payment & Invoice Management</h2>
-                <p>View transactions, process refunds, and manage invoices</p>
-            </div>
-
-            <div className="stats-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
-                <div className="stat-card">
-                    <div className="stat-card-header"><div className="stat-card-icon green"><DollarSign size={22} /></div></div>
-                    <div className="stat-card-value">₹73.5K</div>
-                    <div className="stat-card-label">This Month Revenue</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-card-header"><div className="stat-card-icon blue"><CreditCard size={22} /></div></div>
-                    <div className="stat-card-value">1,247</div>
-                    <div className="stat-card-label">Total Transactions</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-card-header"><div className="stat-card-icon red"><RotateCcw size={22} /></div></div>
-                    <div className="stat-card-value">₹12.4K</div>
-                    <div className="stat-card-label">Refunds Processed</div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-card-header"><div className="stat-card-icon yellow"><RefreshCw size={22} /></div></div>
-                    <div className="stat-card-value">8</div>
-                    <div className="stat-card-label">Failed Payments</div>
-                </div>
-            </div>
-
-            <div className="grid-2 mb-6">
-                <div className="card">
-                    <div className="card-header"><h3>Monthly Revenue Trend</h3></div>
-                    <div className="card-body">
-                        <ResponsiveContainer width="100%" height={220}>
-                            <BarChart data={monthlyRevenue}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                                <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
-                                <YAxis stroke="#64748b" fontSize={12} tickFormatter={v => `₹${v / 1000}K`} />
-                                <Tooltip contentStyle={chartTooltipStyle} formatter={v => [`₹${v.toLocaleString()}`]} />
-                                <Bar dataKey="revenue" fill="#6366f1" radius={[6, 6, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-                <div className="card">
-                    <div className="card-header"><h3>Revenue Breakdown</h3></div>
-                    <div className="card-body" style={{ display: "flex", alignItems: "center" }}>
-                        <ResponsiveContainer width="50%" height={200}>
-                            <PieChart>
-                                <Pie data={revenueBreakdown} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value">
-                                    {revenueBreakdown.map((e, i) => <Cell key={i} fill={e.color} />)}
-                                </Pie>
-                                <Tooltip contentStyle={chartTooltipStyle} formatter={v => [`${v}%`]} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <div style={{ flex: 1 }}>
-                            {revenueBreakdown.map((r, i) => (
-                                <div key={i} className="flex items-center gap-2 mb-2">
-                                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: r.color }} />
-                                    <span className="text-sm" style={{ flex: 1 }}>{r.name}</span>
-                                    <span className="text-sm font-bold">{r.value}%</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+            <div className="page-header"><h2>Payments & Invoices</h2><p>Track transactions, process refunds</p></div>
             <div className="card">
-                <div className="card-header">
-                    <h3>All Transactions</h3>
-                    <div className="flex gap-2">
-                        <input className="form-input" placeholder="Search..." style={{ width: 200, padding: "6px 12px", fontSize: 13 }} />
-                        <button className="btn btn-secondary btn-sm"><Download size={14} /> Export</button>
-                    </div>
-                </div>
                 <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
                     <table className="data-table">
-                        <thead>
-                            <tr><th>Txn ID</th><th>User</th><th>Type</th><th>Amount</th><th>Method</th><th>Date</th><th>Status</th><th>Actions</th></tr>
-                        </thead>
+                        <thead><tr><th>Date</th><th>User</th><th>Amount</th><th>Method</th><th>Status</th><th>Booking</th><th>Coupon</th><th>Actions</th></tr></thead>
                         <tbody>
-                            {transactions.map(txn => (
-                                <tr key={txn.id}>
-                                    <td><code style={{ fontSize: 12, color: "var(--accent-primary-light)" }}>{txn.id}</code></td>
-                                    <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{txn.user}</td>
-                                    <td><span className={`badge ${txn.type === "Refund" ? "badge-warning" : txn.type === "Subscription" ? "badge-purple" : "badge-info"}`}>{txn.type}</span></td>
-                                    <td style={{ fontWeight: 600, color: txn.type === "Refund" ? "var(--accent-danger)" : "var(--text-primary)" }}>{txn.amount}</td>
-                                    <td className="text-sm">{txn.method}</td>
-                                    <td className="text-sm">{txn.date}</td>
-                                    <td><span className={`badge ${txn.status === "Success" ? "badge-success" : txn.status === "Failed" ? "badge-danger" : "badge-warning"}`}>{txn.status}</span></td>
-                                    <td>
-                                        <div className="flex gap-2">
-                                            {txn.status === "Failed" && <button className="btn btn-sm btn-warning"><RefreshCw size={14} /> Retry</button>}
-                                            {txn.status === "Success" && <button className="btn btn-sm btn-secondary"><RotateCcw size={14} /> Refund</button>}
-                                            {txn.invoice && <button className="btn btn-sm btn-secondary"><Download size={14} /></button>}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            {loading ? <tr><td colSpan={8} style={{ textAlign: 'center', padding: 24 }}>Loading...</td></tr> :
+                                payments.length === 0 ? <tr><td colSpan={8} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No payments found</td></tr> :
+                                    payments.map(p => (
+                                        <tr key={p.id}>
+                                            <td className="text-sm">{formatDateTime(p.createdAt)}</td>
+                                            <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{p.user?.name || '—'}</td>
+                                            <td>{formatCurrency(p.amount)}</td>
+                                            <td className="text-sm">{p.paymentMethod || '—'}</td>
+                                            <td><span className={`badge ${statusColors[p.status] || 'badge-default'}`}>{p.status}</span></td>
+                                            <td className="text-sm"><code>{p.booking?.bookingCode || p.subscription?.plan?.name || '—'}</code></td>
+                                            <td className="text-sm">{p.couponCode || '—'}</td>
+                                            <td>
+                                                {p.status === 'SUCCESS' && !p.refundId && (
+                                                    <button className="btn btn-sm btn-warning" onClick={() => { setRefundModal(p); setRefundData({ refundType: 'CANCELLATION', refundReason: '', refundAmount: p.amount }); }}><RefreshCw size={14} /> Refund</button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
                         </tbody>
                     </table>
                 </div>
             </div>
+            {total > limit && <div className="flex justify-between items-center mt-4"><span className="text-sm text-muted">Page {page}</span><div className="flex gap-2"><button className="btn btn-sm btn-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}><ChevronLeft size={14} /></button><button className="btn btn-sm btn-secondary" disabled={page * limit >= total} onClick={() => setPage(page + 1)}><ChevronRight size={14} /></button></div></div>}
+
+            {refundModal && (
+                <div className="modal-overlay" onClick={() => setRefundModal(null)}><div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 450 }}>
+                    <div className="modal-header"><h3>Process Refund</h3><button onClick={() => setRefundModal(null)} className="btn btn-sm btn-secondary">✕</button></div>
+                    <div className="modal-body">
+                        <p className="text-sm mb-4">Payment: {formatCurrency(refundModal.amount)} — {refundModal.user?.name}</p>
+                        <div className="form-group"><label className="form-label">Refund Type</label><select className="form-select" value={refundData.refundType} onChange={e => setRefundData({ ...refundData, refundType: e.target.value })}>{['SLA_BREACH', 'COMPASSIONATE', 'CANCELLATION', 'OTHER'].map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}</select></div>
+                        <div className="form-group"><label className="form-label">Refund Amount</label><input className="form-input" type="number" value={refundData.refundAmount} onChange={e => setRefundData({ ...refundData, refundAmount: parseFloat(e.target.value) || 0 })} /></div>
+                        <div className="form-group"><label className="form-label">Reason</label><textarea className="form-input" rows={2} value={refundData.refundReason} onChange={e => setRefundData({ ...refundData, refundReason: e.target.value })} /></div>
+                    </div>
+                    <div className="modal-footer"><button className="btn btn-secondary" onClick={() => setRefundModal(null)}>Cancel</button><button className="btn btn-warning" onClick={handleRefund}>Process Refund</button></div>
+                </div></div>
+            )}
         </div>
     );
 }

@@ -1,99 +1,79 @@
 "use client";
-import { useState } from "react";
-import { DollarSign, Save, RefreshCw } from "lucide-react";
-
-const pricingCategories = [
-    {
-        category: "Booking Fees",
-        items: [
-            { id: 1, name: "Doctor Home Visit", currentPrice: "₹799", minPrice: "₹499", maxPrice: "₹1,499" },
-            { id: 2, name: "Blood Test", currentPrice: "₹299", minPrice: "₹199", maxPrice: "₹599" },
-            { id: 3, name: "Home Nurse (per day)", currentPrice: "₹1,299", minPrice: "₹899", maxPrice: "₹2,499" },
-            { id: 4, name: "Hospital Trip", currentPrice: "₹499", minPrice: "₹299", maxPrice: "₹999" },
-            { id: 5, name: "Physio Session", currentPrice: "₹699", minPrice: "₹399", maxPrice: "₹1,299" },
-        ]
-    },
-    {
-        category: "Service Fees",
-        items: [
-            { id: 6, name: "Platform Fee", currentPrice: "₹49", minPrice: "₹0", maxPrice: "₹99" },
-            { id: 7, name: "Priority Booking Fee", currentPrice: "₹99", minPrice: "₹49", maxPrice: "₹199" },
-            { id: 8, name: "Emergency Surcharge", currentPrice: "₹199", minPrice: "₹99", maxPrice: "₹499" },
-        ]
-    },
-    {
-        category: "Add-ons",
-        items: [
-            { id: 9, name: "Dedicated Care Manager", currentPrice: "₹999/mo", minPrice: "₹499", maxPrice: "₹1,999" },
-            { id: 10, name: "Extra Family Member", currentPrice: "₹499/mo", minPrice: "₹299", maxPrice: "₹999" },
-            { id: 11, name: "Report Digitization", currentPrice: "₹149", minPrice: "₹99", maxPrice: "₹299" },
-        ]
-    },
-    {
-        category: "Special Services",
-        items: [
-            { id: 12, name: "Tech Helper Visit", currentPrice: "₹399", minPrice: "₹249", maxPrice: "₹699" },
-            { id: 13, name: "Travel Event Ticket", currentPrice: "₹199", minPrice: "₹99", maxPrice: "₹499" },
-            { id: 14, name: "Tiffin (per meal)", currentPrice: "₹149", minPrice: "₹99", maxPrice: "₹249" },
-            { id: 15, name: "Equipment Rent (per day)", currentPrice: "₹99", minPrice: "₹49", maxPrice: "₹299" },
-        ]
-    },
-];
+import { useState, useEffect } from "react";
+import { DollarSign, Plus, Edit2, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import { planAPI, serviceAPI } from "@/lib/api";
+import { showToast, formatCurrency } from "@/lib/hooks";
 
 export default function PricingPage() {
-    const [hasChanges, setHasChanges] = useState(false);
+    const [plans, setPlans] = useState([]);
+    const [services, setServices] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function load() {
+            try {
+                const [pRes, sRes] = await Promise.all([planAPI.getAll(), serviceAPI.getAll()]);
+                setPlans(pRes.data?.data || []);
+                setServices(sRes.data?.data || []);
+            } catch (e) { console.error(e); }
+            finally { setLoading(false); }
+        }
+        load();
+    }, []);
+
+    if (loading) return <div className="page-header"><h2>Loading Pricing Engine...</h2></div>;
 
     return (
         <div>
-            <div className="page-header">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div>
-                        <h2>Pricing Engine</h2>
-                        <p>Dynamic pricing control — changes reflect without app update</p>
+            <div className="page-header"><h2>Pricing Engine</h2><p>Overview of all plans and service pricing</p></div>
+
+            <div className="stats-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
+                {plans.map(p => (
+                    <div key={p.id} className="card" style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.05))" }}>
+                        <div className="card-header"><h3>{p.name}</h3><span className={`badge ${p.isVisible ? 'badge-success' : 'badge-default'}`}>{p.isVisible ? 'Active' : 'Hidden'}</span></div>
+                        <div className="card-body">
+                            <p className="text-sm text-muted mb-4">{p.description || 'No description'}</p>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16, textAlign: "center" }}>
+                                <div style={{ background: "rgba(255,255,255,0.03)", padding: "12px 8px", borderRadius: 10 }}>
+                                    <div className="text-sm text-muted">Quarterly</div>
+                                    <div style={{ fontSize: 20, fontWeight: 700, color: "var(--accent-primary-light)" }}>{formatCurrency(p.quarterlyPrice)}</div>
+                                    <div className="text-sm text-muted">/3 months</div>
+                                </div>
+                                <div style={{ background: "rgba(255,255,255,0.03)", padding: "12px 8px", borderRadius: 10 }}>
+                                    <div className="text-sm text-muted">Biannual</div>
+                                    <div style={{ fontSize: 20, fontWeight: 700, color: "var(--accent-success)" }}>{formatCurrency(p.biannualPrice)}</div>
+                                    <div className="text-sm text-muted">/6 months</div>
+                                </div>
+                                <div style={{ background: "rgba(255,255,255,0.03)", padding: "12px 8px", borderRadius: 10 }}>
+                                    <div className="text-sm text-muted">Yearly</div>
+                                    <div style={{ fontSize: 20, fontWeight: 700, color: "var(--accent-warning)" }}>{formatCurrency(p.yearlyPrice)}</div>
+                                    <div className="text-sm text-muted">/year</div>
+                                </div>
+                            </div>
+                            {p.benefits && <div className="text-sm" style={{ color: "var(--text-secondary)" }}>{p.benefits}</div>}
+                        </div>
                     </div>
-                    <div className="flex gap-2">
-                        <button className="btn btn-secondary"><RefreshCw size={16} /> Reset All</button>
-                        <button className={`btn ${hasChanges ? "btn-primary" : "btn-secondary"}`} disabled={!hasChanges}>
-                            <Save size={16} /> Publish Changes
-                        </button>
-                    </div>
-                </div>
+                ))}
             </div>
 
-            {pricingCategories.map((cat, ci) => (
-                <div key={ci} className="card mb-6">
-                    <div className="card-header">
-                        <h3>{cat.category}</h3>
-                        <span className="badge badge-info">{cat.items.length} items</span>
-                    </div>
-                    <div className="card-body" style={{ padding: 0 }}>
-                        <table className="data-table">
-                            <thead>
-                                <tr><th>Service</th><th>Current Price</th><th>New Price</th><th>Min</th><th>Max</th><th>Status</th></tr>
-                            </thead>
-                            <tbody>
-                                {cat.items.map(item => (
-                                    <tr key={item.id}>
-                                        <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{item.name}</td>
-                                        <td><span className="badge badge-info">{item.currentPrice}</span></td>
-                                        <td>
-                                            <input
-                                                className="form-input"
-                                                defaultValue={item.currentPrice}
-                                                style={{ width: 120, padding: "6px 10px", fontSize: 13 }}
-                                                onChange={() => setHasChanges(true)}
-                                            />
-                                        </td>
-                                        <td className="text-sm text-muted">{item.minPrice}</td>
-                                        <td className="text-sm text-muted">{item.maxPrice}</td>
-                                        <td><span className="badge badge-success">Live</span></td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+            <div className="card mt-6">
+                <div className="card-header"><h3>Service Pricing Reference</h3></div>
+                <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
+                    <table className="data-table">
+                        <thead><tr><th>Service</th><th>Type</th><th>Pricing Text</th><th>Status</th></tr></thead>
+                        <tbody>
+                            {services.map(s => (
+                                <tr key={s.id}>
+                                    <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{s.icon} {s.name}</td>
+                                    <td className="text-sm">{s.serviceType?.replace(/_/g, ' ')}</td>
+                                    <td><span className="badge badge-success">{s.pricingText || '—'}</span></td>
+                                    <td><span className={`badge ${s.isEnabled ? 'badge-success' : 'badge-default'}`}>{s.isEnabled ? 'Active' : 'Disabled'}</span></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
-            ))}
+            </div>
         </div>
     );
 }

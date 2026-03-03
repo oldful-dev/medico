@@ -142,11 +142,11 @@ const generateWelcomeSLAPDF = async (userData) => {
             doc.fontSize(14).font('Helvetica-Bold').text('Emergency Contacts');
             doc.moveDown(0.5);
             doc.fontSize(10).font('Helvetica');
-            doc.text('Medico SOS Helpline: 1800-MEDICO (24/7)');
+            doc.text('Oldful SOS Helpline: 1800-OLDFUL (24/7)');
             doc.text(`Your Emergency Contact: ${userData.emergencyContactName || 'Not set'} - ${userData.emergencyContactPhone || 'Not set'}`);
 
             doc.moveDown(2);
-            doc.fontSize(8).text('This document is a binding service level agreement between Medico Healthcare and the member.', { align: 'center' });
+            doc.fontSize(8).text('This document is a binding service level agreement between Oldful Healthcare and the member.', { align: 'center' });
 
             doc.end();
         } catch (error) {

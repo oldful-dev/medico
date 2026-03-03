@@ -1,66 +1,139 @@
-// User Service - Profile CRUD, emergency contacts, address management
-import { apiClient } from './apiClient';
+// ──────────────────────────────────────────────
+//  User Service — Wired to backend user routes
+//  GET    /api/users/profile
+//  PUT    /api/users/profile
+//  POST   /api/users                   (create new user post-OTP)
+//  POST   /api/users/:id/emergency-contacts
+//  DELETE /api/users/:userId/emergency-contacts/:contactId
+//  POST   /api/users/:id/addresses
+//  PUT    /api/users/:userId/addresses/:addressId
+//  POST   /api/users/:id/medical-card
+//  POST   /api/users/:id/health-reports
+// ──────────────────────────────────────────────
+
+import { apiClient, ApiResponse } from './apiClient';
+
+// ─── Types (aligned with Prisma schema) ───────
 
 export interface UserProfile {
-  userId: string;
-  name: string;
-  phoneNumber: string;
-  gender: string;
-  dateOfBirth?: string;
-  email?: string;
-  address?: Address;
-  emergencyContacts: EmergencyContact[];
-  preferredLanguage?: string;
-  city: string;
+    id: string;
+    uniqueUserId: string;
+    name: string;
+    phone: string;
+    email?: string;
+    gender?: string;
+    dateOfBirth?: string;
+    profileImageUrl?: string;
+    preferredLanguage: string;
+    healthTag: string;
+    status: string;
+    cityId: string;
+    addresses?: Address[];
+    emergencyContacts?: EmergencyContact[];
+    medicalCards?: MedicalCard[];
+}
+
+export interface CreateUserPayload {
+    name: string;
+    phone: string;
+    gender?: string;
+    dateOfBirth?: string;
+    email?: string;
+    cityId: string;
+    preferredLanguage?: string;
 }
 
 export interface Address {
-  line1: string;
-  line2?: string;
-  city: string;
-  state: string;
-  pincode: string;
-  landmark?: string;
-  coordinates?: {
-    latitude: number;
-    longitude: number;
-  };
+    id?: string;
+    label: string;       // Home, Office, etc.
+    line1: string;
+    line2?: string;
+    cityName: string;
+    state: string;
+    pincode: string;
+    landmark?: string;
+    latitude?: number;
+    longitude?: number;
+    isDefault?: boolean;
 }
 
 export interface EmergencyContact {
-  id: string;
-  name: string;
-  phoneNumber: string;
-  relationship: string;
+    id?: string;
+    name: string;
+    phone: string;
+    relationship: string;
 }
 
+export interface MedicalCard {
+    id?: string;
+    bloodGroup?: string;
+    allergies: string[];
+    chronicConditions: string[];
+    currentMedications: string[];
+}
+
+export interface HealthReportUploadResult {
+    id: string;
+    title: string;
+    fileUrl: string;
+    fileType: string;
+}
+
+// ─── Service ──────────────────────────────────
+
 export const userService = {
-  getProfile: async (): Promise<UserProfile> => {
-    // TODO: GET /users/profile
-    throw new Error('Not implemented');
-  },
+    /**
+     * GET /api/users/profile
+     * Fetch the authenticated user's profile.
+     */
+    getProfile: async (): Promise<ApiResponse<UserProfile>> => {
+        return apiClient.get<UserProfile>('/users/profile');
+    },
 
-  createProfile: async (data: Partial<UserProfile>): Promise<UserProfile> => {
-    // TODO: POST /users/profile
-    throw new Error('Not implemented');
-  },
+    /**
+     * PUT /api/users/profile
+     * Update the authenticated user's profile fields.
+     */
+    updateProfile: async (data: Partial<UserProfile>): Promise<ApiResponse<UserProfile>> => {
+        return apiClient.put<UserProfile>('/users/profile', data);
+    },
 
-  updateProfile: async (data: Partial<UserProfile>): Promise<UserProfile> => {
-    // TODO: PUT /users/profile
-    throw new Error('Not implemented');
-  },
+    /**
+     * POST /api/users
+     * Called after OTP verification for new users to complete registration.
+     */
+    createUser: async (data: CreateUserPayload): Promise<ApiResponse<UserProfile>> => {
+        return apiClient.post<UserProfile>('/users', data);
+    },
 
-  addEmergencyContact: async (contact: Omit<EmergencyContact, 'id'>): Promise<EmergencyContact> => {
-    // TODO: POST /users/emergency-contacts
-    throw new Error('Not implemented');
-  },
+    // ─── Emergency Contacts ──────────────────────
+    addEmergencyContact: async (userId: string, contact: Omit<EmergencyContact, 'id'>): Promise<ApiResponse<EmergencyContact>> => {
+        return apiClient.post<EmergencyContact>(`/users/${userId}/emergency-contacts`, contact);
+    },
 
-  removeEmergencyContact: async (contactId: string): Promise<void> => {
-    // TODO: DELETE /users/emergency-contacts/:id
-  },
+    removeEmergencyContact: async (userId: string, contactId: string): Promise<ApiResponse> => {
+        return apiClient.delete(`/users/${userId}/emergency-contacts/${contactId}`);
+    },
 
-  updateAddress: async (address: Address): Promise<Address> => {
-    // TODO: PUT /users/address
-    throw new Error('Not implemented');
-  },
+    // ─── Addresses ───────────────────────────────
+    addAddress: async (userId: string, address: Omit<Address, 'id'>): Promise<ApiResponse<Address>> => {
+        return apiClient.post<Address>(`/users/${userId}/addresses`, address);
+    },
+
+    updateAddress: async (userId: string, addressId: string, address: Partial<Address>): Promise<ApiResponse<Address>> => {
+        return apiClient.put<Address>(`/users/${userId}/addresses/${addressId}`, address);
+    },
+
+    // ─── Medical Card ────────────────────────────
+    upsertMedicalCard: async (userId: string, data: Omit<MedicalCard, 'id'>): Promise<ApiResponse<MedicalCard>> => {
+        return apiClient.post<MedicalCard>(`/users/${userId}/medical-card`, data);
+    },
+
+    // ─── Health Reports ──────────────────────────
+    uploadHealthReport: async (userId: string, file: any, title: string): Promise<ApiResponse<HealthReportUploadResult>> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('title', title);
+        return apiClient.upload<HealthReportUploadResult>(`/users/${userId}/health-reports`, formData);
+    },
 };

@@ -3,10 +3,10 @@
 // ──────────────────────────────────────────────
 
 const cron = require('node-cron');
-const prisma = require('./config/database');
-const { logger } = require('./config/logger');
-const { sendExpiryReminder } = require('./utils/notifications');
-const { calculateExpiryDate } = require('./utils/helpers');
+const prisma = require('../config/database');
+const { logger } = require('../config/logger');
+const { sendExpiryReminder } = require('../utils/notifications');
+const { calculateExpiryDate } = require('../utils/helpers');
 
 const initCronJobs = () => {
     // ─── 1. Plan Expiry Reminder (Daily at 9 AM) ─────────

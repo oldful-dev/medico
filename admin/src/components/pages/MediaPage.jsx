@@ -1,90 +1,82 @@
 "use client";
-import { useState } from "react";
-import { Image, Upload, Trash2, Copy, Search, FolderOpen, File } from "lucide-react";
-
-const mediaFiles = [
-    { id: 1, name: "hero-doctor-visit.jpg", type: "Image", size: "245 KB", dimensions: "1200×600", uploaded: "Feb 22, 2026", category: "Hero Banners" },
-    { id: 2, name: "icon-nurse.svg", type: "Icon", size: "4 KB", dimensions: "64×64", uploaded: "Feb 20, 2026", category: "Icons" },
-    { id: 3, name: "banner-blood-test.png", type: "Image", size: "180 KB", dimensions: "1080×540", uploaded: "Feb 18, 2026", category: "Hero Banners" },
-    { id: 4, name: "icon-medicine.svg", type: "Icon", size: "3 KB", dimensions: "64×64", uploaded: "Feb 15, 2026", category: "Icons" },
-    { id: 5, name: "hero-physio.jpg", type: "Image", size: "310 KB", dimensions: "1200×600", uploaded: "Feb 10, 2026", category: "Hero Banners" },
-    { id: 6, name: "icon-equipment.svg", type: "Icon", size: "5 KB", dimensions: "64×64", uploaded: "Feb 08, 2026", category: "Icons" },
-    { id: 7, name: "promo-annual-plan.png", type: "Image", size: "420 KB", dimensions: "1080×1080", uploaded: "Feb 05, 2026", category: "Promotions" },
-    { id: 8, name: "store-banner.jpg", type: "Image", size: "280 KB", dimensions: "1200×400", uploaded: "Feb 01, 2026", category: "Store" },
-];
-
-const categories = ["All", "Hero Banners", "Icons", "Promotions", "Store"];
+import { useState, useEffect } from "react";
+import { Upload, Trash2, Copy, Image, FileText, Film } from "lucide-react";
+import { mediaAPI } from "@/lib/api";
+import { showToast, formatDateTime } from "@/lib/hooks";
 
 export default function MediaPage() {
-    const [selectedCategory, setSelectedCategory] = useState("All");
-    const [viewMode, setViewMode] = useState("grid");
+    const [assets, setAssets] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState('');
+    const [uploading, setUploading] = useState(false);
 
-    const filtered = selectedCategory === "All" ? mediaFiles : mediaFiles.filter(f => f.category === selectedCategory);
+    useEffect(() => { loadAssets(); }, [filter]);
+
+    async function loadAssets() {
+        try { setLoading(true); const params = filter ? { folder: filter } : {}; const r = await mediaAPI.getAll(params); setAssets(r.data?.data || []); }
+        catch (e) { console.error(e); } finally { setLoading(false); }
+    }
+
+    async function handleUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('folder', filter || 'general');
+        try { setUploading(true); await mediaAPI.upload(formData); showToast('File uploaded'); loadAssets(); }
+        catch (er) { showToast(er.response?.data?.message || 'Upload failed', 'error'); }
+        finally { setUploading(false); e.target.value = ''; }
+    }
+
+    async function deleteAsset(id) {
+        if (!confirm('Delete this file?')) return;
+        try { await mediaAPI.delete(id); showToast('Deleted'); loadAssets(); }
+        catch (e) { showToast('Failed', 'error'); }
+    }
+
+    function copyUrl(url) { navigator.clipboard.writeText(url); showToast('URL copied'); }
+    function formatSize(bytes) { if (bytes < 1024) return bytes + ' B'; if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'; return (bytes / 1048576).toFixed(1) + ' MB'; }
+
+    const typeIcon = (type) => { if (type?.includes('image')) return <Image size={16} />; if (type?.includes('video')) return <Film size={16} />; return <FileText size={16} />; };
 
     return (
         <div>
-            <div className="page-header">
-                <h2>Content & Media Library</h2>
-                <p>Upload and manage images, icons, and banners with cloud storage integration</p>
-            </div>
-
+            <div className="page-header"><h2>Content & Media Library</h2><p>Upload and manage media assets</p></div>
             <div className="filter-bar">
-                <div className="tabs" style={{ marginBottom: 0 }}>
-                    {categories.map(c => (
-                        <button key={c} className={`tab ${selectedCategory === c ? "active" : ""}`} onClick={() => setSelectedCategory(c)}>{c}</button>
-                    ))}
-                </div>
-                <div style={{ marginLeft: "auto" }} className="flex gap-2">
-                    <button className="btn btn-primary"><Upload size={16} /> Upload</button>
-                </div>
+                <label className="btn btn-primary" style={{ cursor: 'pointer' }}>
+                    <Upload size={16} /> {uploading ? 'Uploading...' : 'Upload File'}
+                    <input type="file" hidden onChange={handleUpload} disabled={uploading} />
+                </label>
+                <select className="form-select" style={{ width: 180 }} value={filter} onChange={e => setFilter(e.target.value)}>
+                    <option value="">All Folders</option>
+                    <option value="general">General</option><option value="services">Services</option><option value="banners">Banners</option><option value="products">Products</option>
+                </select>
             </div>
 
-            <div className="card">
-                <div className="card-body" style={{ padding: 0 }}>
-                    <table className="data-table">
-                        <thead><tr><th>Preview</th><th>Filename</th><th>Type</th><th>Size</th><th>Dimensions</th><th>Category</th><th>Uploaded</th><th>Actions</th></tr></thead>
-                        <tbody>
-                            {filtered.map(file => (
-                                <tr key={file.id}>
-                                    <td>
-                                        <div style={{
-                                            width: 48, height: 48, borderRadius: "var(--radius-sm)",
-                                            background: file.type === "Icon" ? "var(--bg-glass)" : "var(--gradient-primary)",
-                                            display: "flex", alignItems: "center", justifyContent: "center"
-                                        }}>
-                                            {file.type === "Icon" ? <File size={20} color="var(--text-muted)" /> : <Image size={20} color="white" />}
-                                        </div>
-                                    </td>
-                                    <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{file.name}</td>
-                                    <td><span className={`badge ${file.type === "Icon" ? "badge-info" : "badge-purple"}`}>{file.type}</span></td>
-                                    <td className="text-sm">{file.size}</td>
-                                    <td className="text-sm text-muted">{file.dimensions}</td>
-                                    <td><span className="badge badge-default">{file.category}</span></td>
-                                    <td className="text-sm">{file.uploaded}</td>
-                                    <td>
-                                        <div className="flex gap-2">
-                                            <button className="btn btn-sm btn-secondary" title="Copy URL"><Copy size={14} /></button>
-                                            <button className="btn btn-sm btn-secondary" title="Delete"><Trash2 size={14} /></button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div className="card mt-6">
-                <div className="card-header"><h3>Upload New Media</h3></div>
-                <div className="card-body">
-                    <div style={{ border: "2px dashed var(--border-color)", borderRadius: "var(--radius-lg)", padding: 48, textAlign: "center" }}>
-                        <Upload size={48} color="var(--text-muted)" />
-                        <h4 style={{ marginTop: 16, color: "var(--text-secondary)" }}>Drop files here or click to upload</h4>
-                        <p className="text-sm text-muted mt-2">PNG, JPG, SVG, WebP • Max 10MB per file • Auto-optimized for mobile</p>
-                        <button className="btn btn-primary mt-4">Browse Files</button>
-                    </div>
-                </div>
-            </div>
+            <div className="card"><div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
+                <table className="data-table">
+                    <thead><tr><th>Type</th><th>File Name</th><th>Folder</th><th>Size</th><th>Uploaded</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        {loading ? <tr><td colSpan={6} style={{ textAlign: 'center', padding: 24 }}>Loading...</td></tr> :
+                            assets.length === 0 ? <tr><td colSpan={6} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No media files</td></tr> :
+                                assets.map(a => (
+                                    <tr key={a.id}>
+                                        <td>{typeIcon(a.fileType)}</td>
+                                        <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{a.fileName}</td>
+                                        <td className="text-sm"><span className="badge badge-default">{a.folder}</span></td>
+                                        <td className="text-sm">{formatSize(a.fileSize)}</td>
+                                        <td className="text-sm">{formatDateTime(a.createdAt)}</td>
+                                        <td>
+                                            <div className="flex gap-2">
+                                                <button className="btn btn-sm btn-secondary" onClick={() => copyUrl(a.fileUrl)}><Copy size={14} /></button>
+                                                <button className="btn btn-sm btn-danger" onClick={() => deleteAsset(a.id)}><Trash2 size={14} /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                    </tbody>
+                </table>
+            </div></div>
         </div>
     );
 }

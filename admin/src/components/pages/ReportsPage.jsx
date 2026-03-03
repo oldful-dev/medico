@@ -1,156 +1,114 @@
 "use client";
-import { useState } from "react";
-import { BarChart3, Download, TrendingUp, Users, DollarSign, Star, RotateCcw, UserCheck } from "lucide-react";
-import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-
-const revenueData = [
-    { month: "Aug", revenue: 42000 }, { month: "Sep", revenue: 48000 }, { month: "Oct", revenue: 52000 },
-    { month: "Nov", revenue: 58000 }, { month: "Dec", revenue: 61000 }, { month: "Jan", revenue: 69000 }, { month: "Feb", revenue: 73500 },
-];
-
-const serviceUsage = [
-    { service: "Doctor Visit", usage: 2840 }, { service: "Blood Test", usage: 2100 },
-    { service: "Home Nurse", usage: 1560 }, { service: "Physio", usage: 980 },
-    { service: "Medicines", usage: 1800 }, { service: "Hospital Trip", usage: 720 },
-    { service: "Tiffin", usage: 1340 }, { service: "Equipment", usage: 450 },
-];
-
-const cityGrowth = [
-    { month: "Sep", blr: 10200, hyd: 7100, chn: 4800, mum: 2900, del: 2100 },
-    { month: "Oct", blr: 10800, hyd: 7600, chn: 5200, mum: 3200, del: 2500 },
-    { month: "Nov", blr: 11300, hyd: 8000, chn: 5600, mum: 3500, del: 2800 },
-    { month: "Dec", blr: 11800, hyd: 8400, chn: 5900, mum: 3700, del: 3100 },
-    { month: "Jan", blr: 12100, hyd: 8700, chn: 6000, mum: 3900, del: 3300 },
-    { month: "Feb", blr: 12400, hyd: 8900, chn: 6200, mum: 4100, del: 3500 },
-];
+import { useState, useEffect } from "react";
+import { BarChart3, Download } from "lucide-react";
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { reportAPI } from "@/lib/api";
+import { formatCurrency } from "@/lib/hooks";
 
 const chartTooltipStyle = { backgroundColor: '#1a2035', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', color: '#f1f5f9', fontSize: '12px' };
+const colors = ["#6366f1", "#06b6d4", "#8b5cf6", "#10b981", "#f59e0b", "#ef4444", "#ec4899", "#64748b"];
 
 export default function ReportsPage() {
-    const [reportType, setReportType] = useState("revenue");
+    const [revByCity, setRevByCity] = useState([]);
+    const [revByPlan, setRevByPlan] = useState([]);
+    const [svcUsage, setSvcUsage] = useState([]);
+    const [cgPerf, setCgPerf] = useState([]);
+    const [retention, setRetention] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function load() {
+            try {
+                const [c, p, s, cg, r] = await Promise.all([
+                    reportAPI.revenueByCity(), reportAPI.revenueByPlan(), reportAPI.serviceUsage(), reportAPI.caregiverPerformance(), reportAPI.customerRetention(),
+                ]);
+                setRevByCity(c.data?.data || []);
+                setRevByPlan(p.data?.data || []);
+                setSvcUsage(s.data?.data || []);
+                setCgPerf(cg.data?.data || []);
+                setRetention(r.data?.data);
+            } catch (e) { console.error(e); }
+            finally { setLoading(false); }
+        }
+        load();
+    }, []);
+
+    async function exportCSV(type) {
+        try {
+            const res = await reportAPI.exportCSV(type);
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a'); link.href = url; link.download = `${type}-report.csv`; link.click();
+        } catch (e) { console.error(e); }
+    }
+
+    if (loading) return <div className="page-header"><h2>Loading Reports...</h2></div>;
 
     return (
         <div>
             <div className="page-header">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div>
-                        <h2>Reports & Analytics</h2>
-                        <p>Comprehensive insights across all operations</p>
-                    </div>
-                    <div className="flex gap-2">
-                        <button className="btn btn-secondary"><Download size={16} /> Export CSV</button>
-                        <button className="btn btn-primary"><Download size={16} /> Export PDF</button>
-                    </div>
-                </div>
+                <h2>Reports & Analytics</h2>
+                <p>Comprehensive business intelligence</p>
             </div>
 
-            <div className="tabs mb-6">
-                {["revenue", "services", "cities", "caregivers", "retention"].map(t => (
-                    <button key={t} className={`tab ${reportType === t ? "active" : ""}`} onClick={() => setReportType(t)}>
-                        {t.charAt(0).toUpperCase() + t.slice(1)}
-                    </button>
-                ))}
+            <div className="filter-bar">
+                <button className="btn btn-secondary" onClick={() => exportCSV('bookings')}><Download size={14} /> Export Bookings</button>
+                <button className="btn btn-secondary" onClick={() => exportCSV('payments')}><Download size={14} /> Export Payments</button>
+                <button className="btn btn-secondary" onClick={() => exportCSV('users')}><Download size={14} /> Export Users</button>
             </div>
 
-            {reportType === "revenue" && (
-                <>
-                    <div className="stats-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
-                        <div className="stat-card"><div className="stat-card-value">₹73.5K</div><div className="stat-card-label">This Month</div></div>
-                        <div className="stat-card"><div className="stat-card-value">₹3.99L</div><div className="stat-card-label">This Quarter</div></div>
-                        <div className="stat-card"><div className="stat-card-value">₹8.42L</div><div className="stat-card-label">This Year</div></div>
-                        <div className="stat-card"><div className="stat-card-value">₹12.4K</div><div className="stat-card-label">Refunds</div></div>
-                    </div>
-                    <div className="card">
-                        <div className="card-header"><h3>Revenue Trend</h3></div>
-                        <div className="card-body">
-                            <ResponsiveContainer width="100%" height={300}>
-                                <AreaChart data={revenueData}>
-                                    <defs><linearGradient id="rGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6366f1" stopOpacity={0.3} /><stop offset="100%" stopColor="#6366f1" stopOpacity={0} /></linearGradient></defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                                    <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
-                                    <YAxis stroke="#64748b" fontSize={12} tickFormatter={v => `₹${v / 1000}K`} />
-                                    <Tooltip contentStyle={chartTooltipStyle} formatter={v => [`₹${v.toLocaleString()}`]} />
-                                    <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2} fill="url(#rGrad)" />
-                                </AreaChart>
+            <div className="grid-2">
+                <div className="card">
+                    <div className="card-header"><h3>Revenue by City</h3></div>
+                    <div className="card-body">
+                        {revByCity.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={280}>
+                                <BarChart data={revByCity}><CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" /><XAxis dataKey="cityName" stroke="#64748b" fontSize={12} /><YAxis stroke="#64748b" fontSize={12} /><Tooltip contentStyle={chartTooltipStyle} /><Bar dataKey="totalRevenue" fill="#6366f1" radius={[6, 6, 0, 0]} /></BarChart>
                             </ResponsiveContainer>
-                        </div>
-                    </div>
-                </>
-            )}
-
-            {reportType === "services" && (
-                <div className="card">
-                    <div className="card-header"><h3>Service Usage This Month</h3></div>
-                    <div className="card-body">
-                        <ResponsiveContainer width="100%" height={350}>
-                            <BarChart data={serviceUsage} layout="vertical">
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                                <XAxis type="number" stroke="#64748b" fontSize={12} />
-                                <YAxis type="category" dataKey="service" stroke="#64748b" fontSize={12} width={100} />
-                                <Tooltip contentStyle={chartTooltipStyle} />
-                                <Bar dataKey="usage" fill="#6366f1" radius={[0, 6, 6, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        ) : <p className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No data</p>}
                     </div>
                 </div>
-            )}
-
-            {reportType === "cities" && (
                 <div className="card">
-                    <div className="card-header"><h3>City-wise User Growth</h3></div>
-                    <div className="card-body">
-                        <ResponsiveContainer width="100%" height={350}>
-                            <LineChart data={cityGrowth}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                                <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
-                                <YAxis stroke="#64748b" fontSize={12} />
-                                <Tooltip contentStyle={chartTooltipStyle} />
-                                <Line type="monotone" dataKey="blr" stroke="#6366f1" name="Bangalore" strokeWidth={2} />
-                                <Line type="monotone" dataKey="hyd" stroke="#06b6d4" name="Hyderabad" strokeWidth={2} />
-                                <Line type="monotone" dataKey="chn" stroke="#10b981" name="Chennai" strokeWidth={2} />
-                                <Line type="monotone" dataKey="mum" stroke="#f59e0b" name="Mumbai" strokeWidth={2} />
-                                <Line type="monotone" dataKey="del" stroke="#ef4444" name="Delhi" strokeWidth={2} />
-                            </LineChart>
-                        </ResponsiveContainer>
+                    <div className="card-header"><h3>Service Usage</h3></div>
+                    <div className="card-body" style={{ display: "flex", alignItems: "center", gap: 24 }}>
+                        {svcUsage.length > 0 ? (
+                            <>
+                                <ResponsiveContainer width="50%" height={240}>
+                                    <PieChart><Pie data={svcUsage.map((s, i) => ({ ...s, color: colors[i % colors.length] }))} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={4} dataKey="bookingCount">{svcUsage.map((_, i) => <Cell key={i} fill={colors[i % colors.length]} />)}</Pie><Tooltip contentStyle={chartTooltipStyle} /></PieChart>
+                                </ResponsiveContainer>
+                                <div style={{ flex: 1 }}>{svcUsage.map((s, i) => <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}><div style={{ width: 10, height: 10, borderRadius: "50%", background: colors[i % colors.length] }} /><span style={{ flex: 1, fontSize: 13, color: "var(--text-secondary)" }}>{s.name}</span><span style={{ fontWeight: 600, fontSize: 13 }}>{s.bookingCount}</span></div>)}</div>
+                            </>
+                        ) : <p className="text-muted" style={{ textAlign: 'center', width: '100%', padding: 24 }}>No data</p>}
                     </div>
                 </div>
-            )}
+            </div>
 
-            {reportType === "caregivers" && (
+            <div className="grid-2">
                 <div className="card">
                     <div className="card-header"><h3>Caregiver Performance</h3></div>
-                    <div className="card-body" style={{ padding: 0 }}>
+                    <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
                         <table className="data-table">
-                            <thead><tr><th>Caregiver</th><th>Bookings</th><th>Rating</th><th>On-Time %</th><th>SLA Breaches</th><th>Revenue Generated</th></tr></thead>
+                            <thead><tr><th>Name</th><th>Rating</th><th>Bookings</th><th>City</th></tr></thead>
                             <tbody>
-                                {[
-                                    { name: "Dr. Meena", bookings: 156, rating: 4.8, onTime: "96%", breaches: 2, revenue: "₹1.24L" },
-                                    { name: "Nurse Lakshmi", bookings: 210, rating: 4.9, onTime: "98%", breaches: 1, revenue: "₹2.73L" },
-                                    { name: "Dr. Ravi", bookings: 132, rating: 4.7, onTime: "94%", breaches: 4, revenue: "₹1.05L" },
-                                    { name: "Physio Ram", bookings: 98, rating: 4.6, onTime: "92%", breaches: 3, revenue: "₹68.5K" },
-                                ].map((c, i) => (
-                                    <tr key={i}>
-                                        <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{c.name}</td>
-                                        <td>{c.bookings}</td>
-                                        <td><span className="flex items-center gap-1"><Star size={14} fill="#f59e0b" color="#f59e0b" />{c.rating}</span></td>
-                                        <td><span className="badge badge-success">{c.onTime}</span></td>
-                                        <td><span className={`badge ${c.breaches > 3 ? "badge-danger" : "badge-warning"}`}>{c.breaches}</span></td>
-                                        <td style={{ fontWeight: 600 }}>{c.revenue}</td>
-                                    </tr>
-                                ))}
+                                {cgPerf.map((c, i) => <tr key={i}><td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{c.name}</td><td>{c.performanceRating?.toFixed(1) || '—'}</td><td>{c.totalBookings}</td><td className="text-sm">{c.city?.name || '—'}</td></tr>)}
+                                {cgPerf.length === 0 && <tr><td colSpan={4} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No data</td></tr>}
                             </tbody>
                         </table>
                     </div>
                 </div>
-            )}
-
-            {reportType === "retention" && (
-                <div className="stats-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-                    <div className="stat-card"><div className="stat-card-value text-success">87.3%</div><div className="stat-card-label">Customer Retention Rate</div></div>
-                    <div className="stat-card"><div className="stat-card-value">4.2%</div><div className="stat-card-label">Monthly Churn Rate</div></div>
-                    <div className="stat-card"><div className="stat-card-value">₹18,420</div><div className="stat-card-label">Avg. Customer Lifetime Value</div></div>
+                <div className="card">
+                    <div className="card-header"><h3>Customer Retention</h3></div>
+                    <div className="card-body">
+                        {retention ? (
+                            <div className="stats-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
+                                <div><div className="text-sm text-muted">Total Users</div><div style={{ fontSize: 24, fontWeight: 700 }}>{retention.totalUsers || 0}</div></div>
+                                <div><div className="text-sm text-muted">Active Subscribers</div><div style={{ fontSize: 24, fontWeight: 700, color: "var(--accent-success)" }}>{retention.activeSubscribers || 0}</div></div>
+                                <div><div className="text-sm text-muted">Retention Rate</div><div style={{ fontSize: 24, fontWeight: 700, color: "var(--accent-primary-light)" }}>{retention.retentionRate || '—'}%</div></div>
+                                <div><div className="text-sm text-muted">Churn Rate</div><div style={{ fontSize: 24, fontWeight: 700, color: "var(--accent-danger)" }}>{retention.churnRate || '—'}%</div></div>
+                            </div>
+                        ) : <p className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No data</p>}
+                    </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 }

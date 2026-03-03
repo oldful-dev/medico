@@ -99,14 +99,14 @@ const sendWelcomeNotifications = async (user) => {
     // Welcome Email
     await sendEmail({
         to: user.email,
-        subject: `Welcome to Medico, ${user.name}! 🎉`,
+        subject: `Welcome to Oldful, ${user.name}! 🎉`,
         html: `
-      <h1>Welcome to Medico Healthcare!</h1>
+      <h1>Welcome to Oldful Healthcare!</h1>
       <p>Dear ${user.name},</p>
-      <p>Your Medico ID is: <strong>${user.uniqueUserId}</strong></p>
+      <p>Your Oldful ID is: <strong>${user.uniqueUserId}</strong></p>
       <p>You now have access to premium healthcare services at your doorstep.</p>
-      <p>Download the Medico app and start booking services today!</p>
-      <p>Best regards,<br>Team Medico</p>
+      <p>Download the Oldful app and start booking services today!</p>
+      <p>Best regards,<br>Team Oldful</p>
     `,
     });
 
@@ -149,7 +149,7 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
       <p>Dear ${user.name},</p>
       <p>Your <strong>${plan.name}</strong> plan expires on <strong>${new Date(expiryDate).toLocaleDateString('en-IN')}</strong> (${daysLeft} days remaining).</p>
       <p>Renew now to continue enjoying uninterrupted healthcare services.</p>
-      <p>Best regards,<br>Team Medico</p>
+      <p>Best regards,<br>Team Oldful</p>
     `,
     });
 

@@ -1,0 +1,395 @@
+import React from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    Image,
+    Platform,
+    ScrollView,
+    TextInput,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { locationService } from '@/services/device/locationService';
+
+// ─── Figma Assets ───
+const imgHero = require('@/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png'); // Grocery bag icon
+const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
+const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
+
+export default function GroceryRunScreen() {
+    const router = useRouter();
+    const insets = useSafeAreaInsets();
+    const [address, setAddress] = React.useState('Fetching address...');
+
+    React.useEffect(() => {
+        (async () => {
+            try {
+                const hasPermission = await locationService.requestPermission();
+                if (hasPermission) {
+                    const coords = await locationService.getCurrentLocation();
+                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
+                    setAddress(fetchedAddress);
+                } else {
+                    setAddress('Location permission denied');
+                }
+            } catch (err) {
+                console.log("Failed to fetch address", err);
+                setAddress('Location unavailable');
+            }
+        })();
+    }, []);
+
+    return (
+        <View style={styles.screen}>
+            {/* White/light content status bar text over dark green header */}
+            <View style={{ backgroundColor: '#048357', height: insets.top }} />
+            <StatusBar style="light" backgroundColor="#048357" />
+
+            {/* ─── Custom Dark Green Header ─── */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Grocery Run</Text>
+                <View style={{ width: 40 }} /> {/* spacer for center alignment */}
+            </View>
+
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+                {/* ─── Hero Section ─── */}
+                <View style={styles.heroSection}>
+                    <Image source={imgHero} style={styles.heroImage} resizeMode="contain" />
+                    <View style={styles.heroTextContainer}>
+                        <Text style={styles.heroTitle}>Grocery Run</Text>
+                        <Text style={styles.heroSubtitle}>Concierge{"\n"}Services</Text>
+                    </View>
+                </View>
+
+                <Text style={styles.heroDescription}>
+                    Book a certified Grocery run and installations in your home
+                </Text>
+
+                {/* ─── Order Details ─── */}
+                <View style={styles.card}>
+                    <Text style={styles.sectionTitle}>What do you need?</Text>
+                    <View style={styles.textAreaContainer}>
+                        <TextInput
+                            style={styles.textArea}
+                            placeholder="e.g. 1L Milk, 2 Dozen Eggs, Bread..."
+                            multiline
+                            numberOfLines={4}
+                            textAlignVertical="top"
+                            placeholderTextColor="#898989"
+                        />
+                    </View>
+
+                    <Text style={[styles.sectionTitle, { marginTop: 15 }]}>Preferred Store (Optional)</Text>
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="e.g. DMart, Reliance Fresh or 'Any nearby'"
+                            placeholderTextColor="#898989"
+                        />
+                    </View>
+                </View>
+
+                {/* ─── Delivery Schedule ─── */}
+                <View style={styles.card}>
+                    <Text style={styles.sectionTitle}>Delivery Time</Text>
+                    <TouchableOpacity style={styles.datePickerButton}>
+                        <Ionicons name="calendar-outline" size={20} color="#048357" style={{ marginRight: 10 }} />
+                        <Text style={styles.datePickerText}>Select Date & Time</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* ─── Location Card ─── */}
+                <View style={styles.locationCard}>
+                    <Text style={styles.sectionTitle}>Location</Text>
+                    <View style={styles.locationContainer}>
+                        <View style={styles.locationInputBox}>
+                            <Ionicons name="location-outline" size={18} color="#048357" style={styles.locationIcon} />
+                            <Text style={styles.locationTextPrimary} numberOfLines={1}>
+                                {address}
+                            </Text>
+                        </View>
+                        <Image source={imgMap} style={styles.mapImage} />
+                    </View>
+                </View>
+
+                {/* ─── Upload Card (Scrap Items Section placeholder in design) ─── */}
+                <View style={styles.uploadCard}>
+                    <View style={styles.uploadDashedBox}>
+                        <Ionicons name="cloud-upload-outline" size={40} color="#048357" style={styles.uploadCloudIcon} />
+                        <Text style={styles.uploadTitle}>Upload Handwritten List</Text>
+                        <Text style={styles.uploadSubtitle}>JPG,  PNG or PDF, file size no more than 10MB</Text>
+
+                        <TouchableOpacity style={styles.uploadButton}>
+                            <Text style={styles.uploadButtonText}>SELECT IMAGE</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* ─── Book Service Button ─── */}
+                <View style={styles.buttonContainer}>
+                    <TouchableOpacity style={styles.bookButton} activeOpacity={0.8}>
+                        <Text style={styles.bookButtonText}>Book Service</Text>
+                    </TouchableOpacity>
+                </View>
+
+            </ScrollView>
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    screen: {
+        flex: 1,
+        backgroundColor: '#FDFDE8', // Light cream color matching Figma
+    },
+
+    /* ─── Header ─── */
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#048357',
+        paddingHorizontal: 16,
+        paddingBottom: 15,
+        paddingTop: 10,
+    },
+    backButton: {
+        padding: 5,
+    },
+    headerTitle: {
+        flex: 1,
+        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontSize: 20,
+        color: '#FFFFFF',
+        textAlign: 'center',
+        letterSpacing: -0.24,
+    },
+
+    scrollContent: {
+        paddingHorizontal: 17,
+        paddingTop: 30,
+        paddingBottom: 40,
+    },
+
+    /* ─── Hero Section ─── */
+    heroSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 15,
+        marginVertical: 10,
+        marginBottom: 20,
+        justifyContent: 'center',
+    },
+    heroImage: {
+        width: 109,
+        height: 109,
+        marginRight: 10,
+    },
+    heroTextContainer: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    heroTitle: {
+        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontSize: 20,
+        color: '#555555',
+        marginBottom: 2,
+        letterSpacing: -0.24,
+        textAlign: 'center',
+    },
+    heroSubtitle: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 15,
+        color: '#777777',
+        letterSpacing: -0.24,
+        textAlign: 'center',
+    },
+    heroDescription: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 14,
+        color: '#848484',
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 25,
+        letterSpacing: -0.24,
+        paddingHorizontal: 10,
+    },
+
+    /* ─── Cards Shared ─── */
+    card: {
+        backgroundColor: '#FFFDFD',
+        borderRadius: 13,
+        padding: 18,
+        paddingVertical: 20,
+        marginBottom: 15,
+        elevation: 1, // Subtle drop shadow as implied by the white box on cream bg
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+    },
+    locationCard: {
+        backgroundColor: '#FFFDFD',
+        borderRadius: 13,
+        padding: 18,
+        marginBottom: 20,
+        elevation: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+    },
+    sectionTitle: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontSize: 16,
+        color: '#2F2F2F',
+        marginBottom: 14,
+        letterSpacing: -0.24,
+    },
+
+    /* ─── Inputs ─── */
+    textAreaContainer: {
+        borderWidth: 1,
+        borderColor: '#D9D9D9',
+        borderRadius: 8,
+        padding: 10,
+        minHeight: 100,
+    },
+    textArea: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 14,
+        color: '#2F2F2F',
+    },
+    inputContainer: {
+        borderWidth: 1,
+        borderColor: '#D9D9D9',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        height: 40,
+        justifyContent: 'center',
+    },
+    input: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 14,
+        color: '#2F2F2F',
+    },
+    datePickerButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#D9D9D9',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        height: 40,
+    },
+    datePickerText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 14,
+        color: '#555555',
+    },
+
+    /* ─── Location Section Details ─── */
+    locationContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    locationInputBox: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 0.8,
+        borderColor: '#D9D9D9',
+        borderRadius: 8,
+        height: 38,
+        paddingHorizontal: 10,
+        marginRight: 10,
+    },
+    locationIcon: {
+        marginRight: 6,
+    },
+    locationTextPrimary: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 14,
+        color: '#2F2F2F',
+    },
+    locationTextBold: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+    },
+    mapImage: {
+        width: 69,
+        height: 69,
+        borderRadius: 15,
+    },
+
+    /* ─── Upload (Scrap) Card ─── */
+    uploadCard: {
+        alignItems: 'center',
+        marginBottom: 30,
+        paddingHorizontal: 10,
+    },
+    uploadDashedBox: {
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: '#1E1E1E',
+        borderRadius: 20,
+        width: '100%',
+        paddingVertical: 18,
+        alignItems: 'center',
+    },
+    uploadCloudIcon: {
+        marginBottom: 8,
+    },
+    uploadTitle: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 10,
+        color: '#2F2F2F',
+        marginBottom: 4,
+    },
+    uploadSubtitle: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 8,
+        color: '#555555',
+        marginBottom: 12,
+    },
+    uploadButton: {
+        borderWidth: 1,
+        borderColor: '#048357',
+        borderRadius: 14,
+        paddingVertical: 6,
+        paddingHorizontal: 16,
+        backgroundColor: '#FFFFFF',
+    },
+    uploadButtonText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 8,
+        color: '#02743F',
+        textTransform: 'uppercase',
+    },
+
+    /* ─── Main Action Button ─── */
+    buttonContainer: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    bookButton: {
+        backgroundColor: '#02743F',
+        width: 281,
+        height: 45,
+        borderRadius: 22.5,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    bookButtonText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontSize: 14,
+        color: '#FFFFFF',
+    },
+});

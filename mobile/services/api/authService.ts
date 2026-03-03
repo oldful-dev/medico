@@ -1,38 +1,75 @@
-// Auth Service - OTP login, token management, session handling
-import { apiClient } from './apiClient';
+// ──────────────────────────────────────────────
+//  Auth Service — Wired to backend auth routes
+//  POST /api/auth/request-otp
+//  POST /api/auth/verify-otp
+//  POST /api/auth/user/refresh
+//  POST /api/auth/logout
+// ──────────────────────────────────────────────
 
-export interface LoginRequest {
-  phoneNumber: string;
+import { apiClient, ApiResponse } from './apiClient';
+
+// ─── Request / Response Types ─────────────────
+
+export interface RequestOTPPayload {
+    phoneNumber: string;
 }
 
-export interface OTPVerifyRequest {
-  phoneNumber: string;
-  otp: string;
+export interface VerifyOTPPayload {
+    phoneNumber: string;
+    otp: string;
 }
 
-export interface AuthResponse {
-  token: string;
-  userId: string;
-  isNewUser: boolean;
+export interface VerifyOTPResponseData {
+    isNewUser: boolean;
+    phoneNumber?: string; // returned when isNewUser = true
+    accessToken?: string;
+    refreshToken?: string;
+    user?: {
+        id: string;
+        uniqueUserId: string;
+        name: string;
+        phone: string;
+    };
 }
+
+export interface RefreshTokenResponseData {
+    accessToken: string;
+}
+
+// ─── Service ──────────────────────────────────
 
 export const authService = {
-  requestOTP: async (data: LoginRequest): Promise<void> => {
-    // TODO: POST /auth/request-otp
-  },
+    /**
+     * POST /api/auth/request-otp
+     * Triggers OTP delivery via WhatsApp to the given phone number.
+     */
+    requestOTP: async (data: RequestOTPPayload): Promise<ApiResponse> => {
+        return apiClient.post('/auth/request-otp', data);
+    },
 
-  verifyOTP: async (data: OTPVerifyRequest): Promise<AuthResponse> => {
-    // TODO: POST /auth/verify-otp
-    throw new Error('Not implemented');
-  },
+    /**
+     * POST /api/auth/verify-otp
+     * Verifies OTP. Returns tokens for existing users, or isNewUser flag for new registrations.
+     */
+    verifyOTP: async (data: VerifyOTPPayload): Promise<ApiResponse<VerifyOTPResponseData>> => {
+        return apiClient.post<VerifyOTPResponseData>('/auth/verify-otp', data);
+    },
 
-  logout: async (): Promise<void> => {
-    // TODO: POST /auth/logout
-    apiClient.clearAuthToken();
-  },
+    /**
+     * POST /api/auth/user/refresh
+     * Exchanges a valid refresh token for a new access token.
+     */
+    refreshToken: async (refreshToken: string): Promise<ApiResponse<RefreshTokenResponseData>> => {
+        return apiClient.post<RefreshTokenResponseData>('/auth/user/refresh', { refreshToken });
+    },
 
-  refreshToken: async (): Promise<string> => {
-    // TODO: POST /auth/refresh
-    throw new Error('Not implemented');
-  },
+    /**
+     * POST /api/auth/logout
+     * Invalidates the server-side refresh token. Requires auth header.
+     */
+    logout: async (): Promise<ApiResponse> => {
+        const response = await apiClient.post('/auth/logout');
+        apiClient.clearAuthToken();
+        return response;
+    },
 };

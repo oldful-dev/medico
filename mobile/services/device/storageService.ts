@@ -1,42 +1,82 @@
-// Storage Service - AsyncStorage wrapper for local data persistence
-// Used for auth tokens, user preferences, onboarding state
+// ──────────────────────────────────────────────
+//  Storage Service — AsyncStorage wrapper
+//  Persists auth tokens, user profile, preferences
+// ──────────────────────────────────────────────
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// ─── Storage Keys ─────────────────────────────
+
+export const STORAGE_KEYS = {
+    AUTH_TOKEN: 'oldful_auth_token',
+    REFRESH_TOKEN: 'oldful_refresh_token',
+    USER_PROFILE: 'oldful_user_profile',
+    USER_ID: 'oldful_user_id',
+    ONBOARDING_COMPLETED: 'oldful_onboarding_completed',
+    SELECTED_CITY: 'oldful_selected_city',
+    PREFERRED_LANGUAGE: 'oldful_preferred_language',
+    PUSH_TOKEN: 'oldful_push_token',
+} as const;
+
+// ─── Service ──────────────────────────────────
 
 export const storageService = {
-  setItem: async (key: string, value: string): Promise<void> => {
-    // TODO: AsyncStorage.setItem
-  },
+    setItem: async (key: string, value: string): Promise<void> => {
+        await AsyncStorage.setItem(key, value);
+    },
 
-  getItem: async (key: string): Promise<string | null> => {
-    // TODO: AsyncStorage.getItem
-    return null;
-  },
+    getItem: async (key: string): Promise<string | null> => {
+        return AsyncStorage.getItem(key);
+    },
 
-  removeItem: async (key: string): Promise<void> => {
-    // TODO: AsyncStorage.removeItem
-  },
+    removeItem: async (key: string): Promise<void> => {
+        await AsyncStorage.removeItem(key);
+    },
 
-  clear: async (): Promise<void> => {
-    // TODO: AsyncStorage.clear
-  },
+    clear: async (): Promise<void> => {
+        await AsyncStorage.clear();
+    },
 
-  // Typed helpers
-  setObject: async (key: string, value: any): Promise<void> => {
-    // TODO: JSON.stringify + setItem
-  },
+    // ─── Typed Helpers ───────────────────────────
+    setObject: async (key: string, value: any): Promise<void> => {
+        await AsyncStorage.setItem(key, JSON.stringify(value));
+    },
 
-  getObject: async <T>(key: string): Promise<T | null> => {
-    // TODO: getItem + JSON.parse
-    return null;
-  },
+    getObject: async <T>(key: string): Promise<T | null> => {
+        const raw = await AsyncStorage.getItem(key);
+        if (!raw) return null;
+        try {
+            return JSON.parse(raw) as T;
+        } catch {
+            return null;
+        }
+    },
+
+    // ─── Auth-Specific Helpers ───────────────────
+    saveAuthTokens: async (accessToken: string, refreshToken: string): Promise<void> => {
+        await AsyncStorage.multiSet([
+            [STORAGE_KEYS.AUTH_TOKEN, accessToken],
+            [STORAGE_KEYS.REFRESH_TOKEN, refreshToken],
+        ]);
+    },
+
+    getAuthTokens: async (): Promise<{ accessToken: string | null; refreshToken: string | null }> => {
+        const pairs = await AsyncStorage.multiGet([
+            STORAGE_KEYS.AUTH_TOKEN,
+            STORAGE_KEYS.REFRESH_TOKEN,
+        ]);
+        return {
+            accessToken: pairs[0][1],
+            refreshToken: pairs[1][1],
+        };
+    },
+
+    clearAuthTokens: async (): Promise<void> => {
+        await AsyncStorage.multiRemove([
+            STORAGE_KEYS.AUTH_TOKEN,
+            STORAGE_KEYS.REFRESH_TOKEN,
+            STORAGE_KEYS.USER_ID,
+            STORAGE_KEYS.USER_PROFILE,
+        ]);
+    },
 };
-
-// Storage keys
-export const STORAGE_KEYS = {
-  AUTH_TOKEN: 'auth_token',
-  REFRESH_TOKEN: 'refresh_token',
-  USER_PROFILE: 'user_profile',
-  ONBOARDING_COMPLETED: 'onboarding_completed',
-  SELECTED_CITY: 'selected_city',
-  PREFERRED_LANGUAGE: 'preferred_language',
-  PUSH_TOKEN: 'push_token',
-} as const;

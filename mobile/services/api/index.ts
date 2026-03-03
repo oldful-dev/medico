@@ -1,6 +1,18 @@
-export { apiClient } from './apiClient';
+// ──────────────────────────────────────────────
+//  Barrel Export — All API Services
+// ──────────────────────────────────────────────
+
+export { apiClient, ApiError } from './apiClient';
+export type { ApiResponse, PaginatedApiResponse } from './apiClient';
+
 export { authService } from './authService';
 export { userService } from './userService';
 export { bookingService } from './bookingService';
-export { insuranceService } from './insuranceService';
 export { paymentService } from './paymentService';
+export { insuranceService } from './insuranceService';
+export { serviceCatalogService } from './serviceCatalogService';
+export { planService } from './planService';
+export { cityService } from './cityService';
+export { uiConfigService } from './uiConfigService';
+export { legalService } from './legalService';
+export { storeService } from './storeService';
