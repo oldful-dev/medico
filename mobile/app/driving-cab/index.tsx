@@ -24,6 +24,8 @@ export default function DrivingCabScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [pickupLocation, setPickupLocation] = React.useState('');
+    const [dropLocation, setDropLocation] = React.useState('');
+    const [vehiclePref, setVehiclePref] = React.useState('');
     const [isFetchingLocation, setIsFetchingLocation] = React.useState(true);
 
     React.useEffect(() => {
@@ -97,6 +99,8 @@ export default function DrivingCabScreen() {
                             style={styles.input}
                             placeholder="Enter Drop Location"
                             placeholderTextColor="#898989"
+                            value={dropLocation}
+                            onChangeText={setDropLocation}
                         />
                     </View>
                 </View>
@@ -110,6 +114,8 @@ export default function DrivingCabScreen() {
                             style={styles.input}
                             placeholder="e.g. Sedan, SUV, Mini..."
                             placeholderTextColor="#898989"
+                            value={vehiclePref}
+                            onChangeText={setVehiclePref}
                         />
                     </View>
                 </View>
@@ -125,7 +131,21 @@ export default function DrivingCabScreen() {
 
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>
-                    <TouchableOpacity style={styles.bookButton} activeOpacity={0.8}>
+                    <TouchableOpacity
+                        style={styles.bookButton}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            router.push({
+                                pathname: '/service-confirmation',
+                                params: {
+                                    serviceName: 'Driver / Cab Booking',
+                                    description: `Pickup: ${pickupLocation}\nDrop: ${dropLocation}\nVehicle: ${vehiclePref}`,
+                                    address: pickupLocation,
+                                    fee: '₹149 (Booking Fee)'
+                                }
+                            });
+                        }}
+                    >
                         <Text style={styles.bookButtonText}>Book Service</Text>
                     </TouchableOpacity>
                 </View>

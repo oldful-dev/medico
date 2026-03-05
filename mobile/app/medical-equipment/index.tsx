@@ -27,6 +27,26 @@ export default function MedicalEquipmentScreen() {
     const router = useRouter();
     const [selectedEquipment, setSelectedEquipment] = useState('wheelchair');
     const [selectedDuration, setSelectedDuration] = useState('Monthly');
+    const [address, setAddress] = useState('Fetching address...');
+
+    React.useEffect(() => {
+        (async () => {
+            const { locationService } = await import('@/services/device/locationService');
+            try {
+                const hasPermission = await locationService.requestPermission();
+                if (hasPermission) {
+                    const coords = await locationService.getCurrentLocation();
+                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
+                    setAddress(fetchedAddress);
+                } else {
+                    setAddress('Location permission denied');
+                }
+            } catch (err) {
+                console.log("Failed to fetch address", err);
+                setAddress('Location unavailable');
+            }
+        })();
+    }, []);
 
     return (
         <View style={styles.screen}>
@@ -143,7 +163,21 @@ export default function MedicalEquipmentScreen() {
 
                     {/* ─── Confirm Rental Button ─── */}
                     <View style={styles.buttonContainer}>
-                        <TouchableOpacity style={styles.confirmButton} activeOpacity={0.8}>
+                        <TouchableOpacity
+                            style={styles.confirmButton}
+                            activeOpacity={0.8}
+                            onPress={() => {
+                                router.push({
+                                    pathname: '/service-confirmation',
+                                    params: {
+                                        serviceName: 'Medical Equipment',
+                                        description: `Item: ${selectedEquipment}\nDuration: ${selectedDuration}`,
+                                        address: address, // Derived from device location
+                                        fee: '₹500/week (Est)'
+                                    }
+                                });
+                            }}
+                        >
                             <Text style={styles.confirmButtonText}>Confirm Rental</Text>
                         </TouchableOpacity>
                     </View>

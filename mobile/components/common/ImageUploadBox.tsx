@@ -1,0 +1,211 @@
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { Colors, Fonts, FontSize, Radius, Spacing } from '@/constants/theme';
+
+interface ImageUploadBoxProps {
+    title?: string;
+    subtitle?: string;
+    onImagesChange?: (images: string[]) => void;
+    maxImages?: number;
+}
+
+export default function ImageUploadBox({
+    title = 'Upload Photos of the Issue',
+    subtitle = 'JPG, PNG or PDF, file size no more than 10MB',
+    onImagesChange,
+    maxImages = 5,
+}: ImageUploadBoxProps) {
+    const [images, setImages] = useState<string[]>([]);
+
+    const handleAddImage = () => {
+        if (images.length >= maxImages) {
+            Alert.alert('Limit Reached', `You can only upload up to ${maxImages} images.`);
+            return;
+        }
+
+        Alert.alert(
+            'Upload Photo',
+            'Choose an option',
+            [
+                {
+                    text: 'Take Photo',
+                    onPress: openCamera,
+                },
+                {
+                    text: 'Choose from Gallery',
+                    onPress: openGallery,
+                },
+                {
+                    text: 'Cancel',
+                    style: 'cancel',
+                },
+            ],
+            { cancelable: true }
+        );
+    };
+
+    const openCamera = async () => {
+        const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+        if (permissionResult.granted === false) {
+            Alert.alert('Permission Denied', 'You need to grant camera permission to take a picture.');
+            return;
+        }
+
+        const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images, // Now using the correct MediaTypeOptions enum directly
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            addImage(result.assets[0].uri);
+        }
+    };
+
+    const openGallery = async () => {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (permissionResult.granted === false) {
+            Alert.alert('Permission Denied', 'You need to grant gallery permission to choose a picture.');
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsMultipleSelection: true,
+            selectionLimit: maxImages - images.length,
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const newUris = result.assets.map((asset: ImagePicker.ImagePickerAsset) => asset.uri);
+            const combined = [...images, ...newUris].slice(0, maxImages);
+            setImages(combined);
+            if (onImagesChange) onImagesChange(combined);
+        }
+    };
+
+    const addImage = (uri: string) => {
+        const newImages = [...images, uri];
+        setImages(newImages);
+        if (onImagesChange) onImagesChange(newImages);
+    };
+
+    const removeImage = (index: number) => {
+        const newImages = [...images];
+        newImages.splice(index, 1);
+        setImages(newImages);
+        if (onImagesChange) onImagesChange(newImages);
+    };
+
+    return (
+        <View style={styles.container}>
+            <View style={styles.uploadDashedBox}>
+                <Ionicons name="cloud-upload-outline" size={40} color={Colors.primary} style={styles.uploadCloudIcon} />
+                <Text style={styles.uploadTitle}>{title}</Text>
+                <Text style={styles.uploadSubtitle}>{subtitle}</Text>
+
+                <TouchableOpacity style={styles.uploadButton} onPress={handleAddImage} activeOpacity={0.8}>
+                    <Text style={styles.uploadButtonText}>SELECT IMAGE</Text>
+                </TouchableOpacity>
+            </View>
+
+            {images.length > 0 && (
+                <View style={styles.imagePreviewContainer}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                        {images.map((uri, index) => (
+                            <View key={index} style={styles.imageThumbnailWrapper}>
+                                <Image source={{ uri }} style={styles.imageThumbnail} blurRadius={0} />
+                                <TouchableOpacity
+                                    style={styles.removeIconBtn}
+                                    onPress={() => removeImage(index)}
+                                >
+                                    <Ionicons name="close-circle" size={24} color={Colors.sosRed} />
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        width: '100%',
+        marginBottom: Spacing.xl,
+    },
+    uploadDashedBox: {
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: '#495057',
+        borderRadius: Radius.xl,
+        width: '100%',
+        paddingVertical: 20,
+        alignItems: 'center',
+        backgroundColor: Colors.bgCard,
+    },
+    uploadCloudIcon: {
+        marginBottom: Spacing.sm,
+    },
+    uploadTitle: {
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textDark,
+        marginBottom: Spacing.xs,
+        textAlign: 'center',
+        paddingHorizontal: Spacing.md,
+    },
+    uploadSubtitle: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.caption,
+        color: Colors.textMuted,
+        marginBottom: Spacing.md,
+        textAlign: 'center',
+        paddingHorizontal: Spacing.md,
+    },
+    uploadButton: {
+        borderWidth: 1,
+        borderColor: Colors.primary,
+        borderRadius: Radius.md,
+        paddingVertical: 8,
+        paddingHorizontal: Spacing.xl,
+        backgroundColor: Colors.bgCard,
+    },
+    uploadButtonText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.caption,
+        color: Colors.primaryDark,
+        textTransform: 'uppercase',
+    },
+    imagePreviewContainer: {
+        marginTop: Spacing.md,
+        width: '100%',
+    },
+    scrollContent: {
+        gap: Spacing.sm,
+    },
+    imageThumbnailWrapper: {
+        position: 'relative',
+        width: 70,
+        height: 70,
+        borderRadius: Radius.sm,
+        marginTop: Spacing.xs,
+        marginRight: Spacing.md,
+    },
+    imageThumbnail: {
+        width: '100%',
+        height: '100%',
+        borderRadius: Radius.sm,
+        borderWidth: 1,
+        borderColor: '#EFEFEF',
+    },
+    removeIconBtn: {
+        position: 'absolute',
+        top: -8,
+        right: -8,
+        backgroundColor: Colors.bgCard,
+        borderRadius: Radius.full,
+    },
+});

@@ -12,6 +12,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
 // ─── Figma Assets ───
 const imgHeartOutline = require('@/assets/images/37d35bff48c57182eb08ca96ee07ef22d24fd2db.png'); // Heart with plus icon 
@@ -29,14 +30,14 @@ export default function PlansScreen() {
     return (
         <View style={styles.screen}>
             {/* Header extension */}
-            <View style={{ backgroundColor: '#048357', height: insets.top }} />
-            <StatusBar style="light" backgroundColor="#048357" />
+            <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
+            <StatusBar style="light" backgroundColor={Colors.primary} />
 
             {/* ─── Header ─── */}
             <View style={styles.headerContainer}>
                 {/* Invisible back button layout just to center title */}
                 <View style={styles.backButtonPlaceholder}>
-                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                    <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </View>
 
                 <Text style={styles.headerTitle}>Plans</Text>
@@ -198,15 +199,15 @@ export default function PlansScreen() {
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: '#FDFDE8', // Cream color matches Figma
+        backgroundColor: Colors.bgScreen, // Cream color matches Figma
     },
 
     /* ─── Header ─── */
     headerContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#048357',
-        paddingHorizontal: 16,
+        backgroundColor: Colors.primary,
+        paddingHorizontal: Spacing.lg,
         paddingBottom: 25,
         paddingTop: 10,
     },
@@ -216,9 +217,9 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         flex: 1,
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 20,
-        color: '#FFFFFF',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading2,
+        color: Colors.textWhite,
         textAlign: 'center',
         letterSpacing: -0.24,
     },
@@ -231,8 +232,8 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(128, 249, 231, 0.38)',
         borderWidth: 1,
         borderColor: '#80F9E7',
-        borderRadius: 11,
-        marginHorizontal: 15,
+        borderRadius: Radius.md,
+        marginHorizontal: Spacing.lg,
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 10,
@@ -250,39 +251,35 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     bannerTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 14, // Roughly adjusted from 10 to fit screen properly while retaining hierarchy, can be 13.
-        color: '#000000',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
     },
     bannerSubtitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 10,
-        color: '#555555',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.caption,
+        color: Colors.textBody,
         marginTop: 2,
     },
 
     /* ─── Cards Horizontal Row ─── */
     plansScrollContainer: {
-        paddingHorizontal: 15,
+        paddingHorizontal: Spacing.lg,
         paddingBottom: 25,
-        gap: 15, // Gap between cards
+        gap: Spacing.lg, // Gap between cards
     },
     planCard: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 18,
+        backgroundColor: Colors.bgCard,
+        borderRadius: Radius.xl,
         width: 205, // Specific width to allow peek of the second card
-        padding: 15,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 15,
-        elevation: 5,
+        padding: Spacing.lg,
+        ...Shadow.card,
     },
     planCardTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 14,
-        color: '#2F2F2F',
-        marginBottom: 10,
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.body,
+        color: Colors.textBody,
+        marginBottom: Spacing.sm,
     },
 
     /* Duration Tabs */
@@ -296,9 +293,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     durationTabInactive: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 9,
-        color: '#2F2F2F',
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.caption,
+        color: Colors.textBody,
         paddingHorizontal: 4,
     },
     durationTabActiveLeft: {
@@ -314,8 +311,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
     },
     durationTabTextActive: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 9,
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.caption,
         color: '#4B73D0',
     },
 
@@ -325,8 +322,8 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'flex-start',
-        paddingHorizontal: 10,
-        marginBottom: 12,
+        paddingHorizontal: Spacing.sm,
+        marginBottom: Spacing.md,
         overflow: 'hidden',
     },
     priceBackground: {
@@ -334,12 +331,12 @@ const styles = StyleSheet.create({
         top: 0, left: 0, right: 0, bottom: 0,
     },
     priceText: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 12,
-        color: '#FFFFFF',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textWhite,
     },
     priceSuffix: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontFamily: Fonts.regular,
         fontWeight: 'normal',
     },
 
@@ -357,14 +354,14 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     featureTextBold: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 10, // Adjusted for scale
-        color: '#2F2F2F',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textBody,
         flex: 1,
         lineHeight: 14,
     },
     featureText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontFamily: Fonts.regular,
         fontWeight: 'normal',
     },
 
@@ -386,32 +383,25 @@ const styles = StyleSheet.create({
         marginTop: 'auto',
     },
     planActionText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 10,
-        color: '#FFFFFF',
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.caption,
+        color: Colors.textWhite,
     },
 
     /* ─── Why Subscribe ─── */
     sectionTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 20,
-        color: '#000000',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading1,
+        color: Colors.textDark,
         paddingHorizontal: 18,
-        marginBottom: 15,
+        marginBottom: Spacing.lg,
     },
     whySubscribeContainer: {
-        backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 40,
-        borderTopRightRadius: 40,
-        borderBottomLeftRadius: 40,
-        borderBottomRightRadius: 40,
-        marginHorizontal: 15,
-        padding: 25,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 5,
+        backgroundColor: Colors.bgCard,
+        borderRadius: Radius.xl * 2,
+        marginHorizontal: Spacing.lg,
+        padding: Spacing.xl,
+        ...Shadow.card,
     },
     benefitRow: {
         flexDirection: 'row',
@@ -433,21 +423,21 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     benefitTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 14,
-        color: '#2F2F2F',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.body,
+        color: Colors.textBody,
         marginBottom: 4,
     },
     benefitDesc: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 13,
-        color: '#555555',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textMuted,
         lineHeight: 18,
     },
     benefitDescBold: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 13,
-        color: '#555555',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textMuted,
         lineHeight: 18,
     }
 });

@@ -12,6 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import ImageUploadBox from '@/components/common/ImageUploadBox';
+import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
 // Feature items array according to PRD
 const ISSUES = [
@@ -40,13 +42,13 @@ export default function TechHelperScreen() {
     return (
         <View style={styles.screen}>
             {/* Header extension */}
-            <View style={{ backgroundColor: '#048357', height: insets.top }} />
-            <StatusBar style="light" backgroundColor="#048357" />
+            <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
+            <StatusBar style="light" backgroundColor={Colors.primary} />
 
             {/* ─── Header ─── */}
             <View style={styles.headerContainer}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                    <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Tech Helper</Text>
             </View>
@@ -98,6 +100,14 @@ export default function TechHelperScreen() {
                         />
                     </View>
 
+                    {/* ─── Upload Photos ─── */}
+                    <View style={{ marginTop: 20 }}>
+                        <ImageUploadBox
+                            title="Upload Photos (Optional)"
+                            subtitle="Show us the error message or broken device"
+                        />
+                    </View>
+
                     <View style={styles.divider} />
 
                     {/* ─── Select Mode & Price (Radio Buttons) ─── */}
@@ -133,7 +143,23 @@ export default function TechHelperScreen() {
 
                     {/* ─── Book Support Button ─── */}
                     <View style={styles.footerSpacing} />
-                    <TouchableOpacity style={styles.submitButton} activeOpacity={0.8}>
+                    <TouchableOpacity
+                        style={styles.submitButton}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            const selectedLabels = selectedIssues.map(id => ISSUES.find(i => i.id === id)?.title).filter(Boolean);
+                            const desc = [...selectedLabels, otherIssue].filter(Boolean).join(', ');
+                            router.push({
+                                pathname: '/service-confirmation',
+                                params: {
+                                    serviceName: 'Tech Helper',
+                                    description: desc,
+                                    address: '123 Baker St, London',
+                                    fee: selectedMode === 'home' ? '₹599' : '₹399'
+                                }
+                            });
+                        }}
+                    >
                         <Text style={styles.submitButtonText}>Book Tech Support</Text>
                     </TouchableOpacity>
 
@@ -146,12 +172,12 @@ export default function TechHelperScreen() {
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: '#048357',
+        backgroundColor: Colors.primary,
     },
 
     /* ─── Header ─── */
     headerContainer: {
-        backgroundColor: '#048357',
+        backgroundColor: Colors.primary,
         alignItems: 'center',
         paddingVertical: 15,
         paddingBottom: 25,
@@ -165,41 +191,37 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     headerTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 20,
-        color: '#FFFFFF',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading2,
+        color: Colors.textWhite,
         letterSpacing: -0.24,
     },
 
     /* ─── Content Area ─── */
     contentContainer: {
         flex: 1,
-        backgroundColor: '#FDFDE8',
-        borderTopLeftRadius: 40,
-        borderTopRightRadius: 40,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 10,
+        backgroundColor: Colors.bgScreen,
+        borderTopLeftRadius: Radius.xl * 2,
+        borderTopRightRadius: Radius.xl * 2,
+        ...Shadow.card,
     },
     scrollContent: {
-        paddingTop: 30,
-        paddingHorizontal: 25,
+        paddingTop: Spacing.xl,
+        paddingHorizontal: Spacing.xl,
         paddingBottom: 40,
     },
 
     mainTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 22,
-        color: '#2F2F2F',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading1,
+        color: Colors.textDark,
         marginBottom: 5,
         textAlign: 'center',
     },
     subTitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 14,
-        color: '#898989',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textMuted,
         textAlign: 'center',
         marginBottom: 20,
     },
@@ -209,9 +231,9 @@ const styles = StyleSheet.create({
         marginVertical: 15,
     },
     sectionTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 16,
-        color: '#2F2F2F',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading3,
+        color: Colors.textDark,
         marginBottom: 15,
     },
 
@@ -219,67 +241,63 @@ const styles = StyleSheet.create({
     checkboxCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        padding: 15,
+        backgroundColor: Colors.bgCard,
+        borderRadius: Radius.md,
+        padding: Spacing.lg,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: '#EFEFEF',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-        elevation: 2,
+        borderColor: Colors.borderLight,
+        ...Shadow.card,
     },
     checkboxCardSelected: {
-        borderColor: '#02743F',
-        backgroundColor: '#F0FFF7',
+        borderColor: Colors.primary,
+        backgroundColor: 'rgba(4, 131, 87, 0.05)',
     },
     checkbox: {
         width: 22,
         height: 22,
         borderRadius: 4,
         borderWidth: 2,
-        borderColor: '#A0A0A0',
+        borderColor: Colors.textLight,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 15,
     },
     checkboxSelected: {
-        backgroundColor: '#02743F',
-        borderColor: '#02743F',
+        backgroundColor: Colors.primary,
+        borderColor: Colors.primary,
     },
     checkboxTextGroup: {
         flex: 1,
     },
     issueTitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 15,
-        color: '#2F2F2F',
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
     },
     issueTitleSelected: {
-        color: '#02743F',
+        color: Colors.primary,
     },
     issueSubTitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 12,
-        color: '#777777',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textMuted,
         marginTop: 2,
     },
 
     /* ─── Text Input ─── */
     textInputBox: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
+        backgroundColor: Colors.bgCard,
+        borderRadius: Radius.md,
         borderWidth: 1,
-        borderColor: '#D9D9D9',
-        padding: 15,
+        borderColor: Colors.borderLight,
+        padding: Spacing.lg,
         minHeight: 100,
     },
     textInput: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 14,
-        color: '#2F2F2F',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
         flex: 1,
     },
 
@@ -287,16 +305,16 @@ const styles = StyleSheet.create({
     radioCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
+        backgroundColor: Colors.bgCard,
+        borderRadius: Radius.md,
         padding: 18,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: '#EFEFEF',
+        borderColor: Colors.borderLight,
     },
     radioCardSelected: {
-        borderColor: '#02743F',
-        backgroundColor: '#F0FFF7',
+        borderColor: Colors.primary,
+        backgroundColor: 'rgba(4, 131, 87, 0.05)',
         borderWidth: 1.5,
     },
     radioCircle: {
@@ -304,33 +322,33 @@ const styles = StyleSheet.create({
         height: 20,
         borderRadius: 10,
         borderWidth: 2,
-        borderColor: '#A0A0A0',
+        borderColor: Colors.textLight,
         marginRight: 15,
         justifyContent: 'center',
         alignItems: 'center',
     },
     radioCircleSelected: {
-        borderColor: '#02743F',
+        borderColor: Colors.primary,
         borderWidth: 6, // Forms the dot
     },
     radioTextGroup: {
         flex: 1,
     },
     radioTitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 15,
-        color: '#2F2F2F',
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
     },
     radioSubTitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 12,
-        color: '#777',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textMuted,
         marginTop: 2,
     },
     radioPrice: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 18,
-        color: '#02743F',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading2,
+        color: Colors.primary,
     },
 
     /* ─── Button ─── */
@@ -338,20 +356,16 @@ const styles = StyleSheet.create({
         height: 20,
     },
     submitButton: {
-        backgroundColor: '#02743F',
+        backgroundColor: Colors.primary,
         height: 50,
-        borderRadius: 25,
+        borderRadius: Radius.full,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
-        elevation: 5,
+        ...Shadow.card,
     },
     submitButtonText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: '#FFFFFF',
-        fontSize: 16,
+        fontFamily: Fonts.medium,
+        color: Colors.textWhite,
+        fontSize: FontSize.button,
     },
 });

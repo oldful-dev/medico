@@ -5,32 +5,28 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
+import { Colors, Fonts, Radius, Shadow } from '@/constants/theme';
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#02743F',
-        tabBarInactiveTintColor: '#AAAEAC',
+        tabBarActiveTintColor: Colors.primaryDark,
+        tabBarInactiveTintColor: Colors.textLight,
         tabBarStyle: {
-          backgroundColor: '#FFFFF8',
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
+          backgroundColor: Colors.bgHeader,
+          borderTopLeftRadius: Radius.xl,
+          borderTopRightRadius: Radius.xl,
           height: 83,
           paddingTop: 10,
           paddingBottom: Platform.OS === 'ios' ? 24 : 10,
-          shadowColor: '#1E1E1E',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.63,
-          shadowRadius: 30,
-          elevation: 20,
+          ...Shadow.header,
           borderTopWidth: 0,
           position: 'absolute',
         },
         tabBarLabelStyle: {
-          fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-          fontWeight: '600',
+          fontFamily: Fonts.semiBold,
           fontSize: 10,
           marginTop: 4,
         },

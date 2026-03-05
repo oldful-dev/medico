@@ -14,8 +14,8 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { locationService } from '@/services/device/locationService';
-
-// ─── Figma Assets ───
+import ImageUploadBox from '@/components/common/ImageUploadBox';
+import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 const imgHero = require('@/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png'); // Grocery bag icon
 const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
 const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
@@ -24,6 +24,8 @@ export default function GroceryRunScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [address, setAddress] = React.useState('Fetching address...');
+    const [items, setItems] = React.useState('');
+    const [store, setStore] = React.useState('');
 
     React.useEffect(() => {
         (async () => {
@@ -46,13 +48,13 @@ export default function GroceryRunScreen() {
     return (
         <View style={styles.screen}>
             {/* White/light content status bar text over dark green header */}
-            <View style={{ backgroundColor: '#048357', height: insets.top }} />
-            <StatusBar style="light" backgroundColor="#048357" />
+            <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
+            <StatusBar style="light" backgroundColor={Colors.primary} />
 
             {/* ─── Custom Dark Green Header ─── */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                    <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Grocery Run</Text>
                 <View style={{ width: 40 }} /> {/* spacer for center alignment */}
@@ -84,6 +86,8 @@ export default function GroceryRunScreen() {
                             numberOfLines={4}
                             textAlignVertical="top"
                             placeholderTextColor="#898989"
+                            value={items}
+                            onChangeText={setItems}
                         />
                     </View>
 
@@ -93,6 +97,8 @@ export default function GroceryRunScreen() {
                             style={styles.input}
                             placeholder="e.g. DMart, Reliance Fresh or 'Any nearby'"
                             placeholderTextColor="#898989"
+                            value={store}
+                            onChangeText={setStore}
                         />
                     </View>
                 </View>
@@ -120,22 +126,29 @@ export default function GroceryRunScreen() {
                     </View>
                 </View>
 
-                {/* ─── Upload Card (Scrap Items Section placeholder in design) ─── */}
-                <View style={styles.uploadCard}>
-                    <View style={styles.uploadDashedBox}>
-                        <Ionicons name="cloud-upload-outline" size={40} color="#048357" style={styles.uploadCloudIcon} />
-                        <Text style={styles.uploadTitle}>Upload Handwritten List</Text>
-                        <Text style={styles.uploadSubtitle}>JPG,  PNG or PDF, file size no more than 10MB</Text>
-
-                        <TouchableOpacity style={styles.uploadButton}>
-                            <Text style={styles.uploadButtonText}>SELECT IMAGE</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
+                {/* ─── Upload Card ─── */}
+                <ImageUploadBox
+                    title="Upload Handwritten List"
+                    subtitle="JPG, PNG or PDF, file size no more than 10MB"
+                />
 
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>
-                    <TouchableOpacity style={styles.bookButton} activeOpacity={0.8}>
+                    <TouchableOpacity
+                        style={styles.bookButton}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            router.push({
+                                pathname: '/service-confirmation',
+                                params: {
+                                    serviceName: 'Grocery Run',
+                                    description: `${items}${store ? ` from ${store}` : ''}`,
+                                    address: address,
+                                    fee: '₹49 (Delivery Fee)'
+                                }
+                            });
+                        }}
+                    >
                         <Text style={styles.bookButtonText}>Book Service</Text>
                     </TouchableOpacity>
                 </View>
@@ -148,15 +161,15 @@ export default function GroceryRunScreen() {
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: '#FDFDE8', // Light cream color matching Figma
+        backgroundColor: Colors.bgScreen, // Light cream color matching Figma
     },
 
     /* ─── Header ─── */
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#048357',
-        paddingHorizontal: 16,
+        backgroundColor: Colors.primary,
+        paddingHorizontal: Spacing.lg,
         paddingBottom: 15,
         paddingTop: 10,
     },
@@ -165,15 +178,15 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         flex: 1,
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 20,
-        color: '#FFFFFF',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading2,
+        color: Colors.textWhite,
         textAlign: 'center',
         letterSpacing: -0.24,
     },
 
     scrollContent: {
-        paddingHorizontal: 17,
+        paddingHorizontal: Spacing.lg,
         paddingTop: 30,
         paddingBottom: 40,
     },
@@ -197,24 +210,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     heroTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 20,
-        color: '#555555',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading2,
+        color: Colors.textDark,
         marginBottom: 2,
         letterSpacing: -0.24,
         textAlign: 'center',
     },
     heroSubtitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 15,
-        color: '#777777',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textMuted,
         letterSpacing: -0.24,
         textAlign: 'center',
     },
     heroDescription: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 14,
-        color: '#848484',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textMuted,
         textAlign: 'center',
         lineHeight: 20,
         marginBottom: 25,
@@ -224,32 +237,24 @@ const styles = StyleSheet.create({
 
     /* ─── Cards Shared ─── */
     card: {
-        backgroundColor: '#FFFDFD',
-        borderRadius: 13,
+        backgroundColor: Colors.bgCard,
+        borderRadius: Radius.md,
         padding: 18,
         paddingVertical: 20,
         marginBottom: 15,
-        elevation: 1, // Subtle drop shadow as implied by the white box on cream bg
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 3,
+        ...Shadow.card,
     },
     locationCard: {
-        backgroundColor: '#FFFDFD',
-        borderRadius: 13,
+        backgroundColor: Colors.bgCard,
+        borderRadius: Radius.md,
         padding: 18,
         marginBottom: 20,
-        elevation: 1,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 3,
+        ...Shadow.card,
     },
     sectionTitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 16,
-        color: '#2F2F2F',
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
         marginBottom: 14,
         letterSpacing: -0.24,
     },
@@ -257,42 +262,42 @@ const styles = StyleSheet.create({
     /* ─── Inputs ─── */
     textAreaContainer: {
         borderWidth: 1,
-        borderColor: '#D9D9D9',
-        borderRadius: 8,
+        borderColor: Colors.borderLight,
+        borderRadius: Radius.sm,
         padding: 10,
         minHeight: 100,
     },
     textArea: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 14,
-        color: '#2F2F2F',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
     },
     inputContainer: {
         borderWidth: 1,
-        borderColor: '#D9D9D9',
-        borderRadius: 8,
+        borderColor: Colors.borderLight,
+        borderRadius: Radius.sm,
         paddingHorizontal: 10,
         height: 40,
         justifyContent: 'center',
     },
     input: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 14,
-        color: '#2F2F2F',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
     },
     datePickerButton: {
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#D9D9D9',
-        borderRadius: 8,
+        borderColor: Colors.borderLight,
+        borderRadius: Radius.sm,
         paddingHorizontal: 10,
         height: 40,
     },
     datePickerText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 14,
-        color: '#555555',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textMuted,
     },
 
     /* ─── Location Section Details ─── */
@@ -306,8 +311,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 0.8,
-        borderColor: '#D9D9D9',
-        borderRadius: 8,
+        borderColor: Colors.borderLight,
+        borderRadius: Radius.sm,
         height: 38,
         paddingHorizontal: 10,
         marginRight: 10,
@@ -316,12 +321,12 @@ const styles = StyleSheet.create({
         marginRight: 6,
     },
     locationTextPrimary: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 14,
-        color: '#2F2F2F',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textDark,
     },
     locationTextBold: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontFamily: Fonts.medium,
     },
     mapImage: {
         width: 69,
@@ -380,16 +385,17 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     bookButton: {
-        backgroundColor: '#02743F',
+        backgroundColor: Colors.primary,
         width: 281,
-        height: 45,
-        borderRadius: 22.5,
+        height: 48,
+        borderRadius: Radius.full,
         justifyContent: 'center',
         alignItems: 'center',
+        ...Shadow.card,
     },
     bookButtonText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 14,
-        color: '#FFFFFF',
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.button,
+        color: Colors.textWhite,
     },
 });

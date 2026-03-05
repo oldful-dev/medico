@@ -122,7 +122,22 @@ export default function TripTravelsScreen() {
                     </View>
                 </View>
 
-                <TouchableOpacity style={[styles.mainButton, { marginBottom: 35 }]} activeOpacity={0.8}>
+                {/* ─── Submit Inquiry ─── */}
+                <TouchableOpacity
+                    style={[styles.mainButton, { marginBottom: 35 }]}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                        router.push({
+                            pathname: '/service-confirmation',
+                            params: {
+                                serviceName: 'Trip & Travel',
+                                description: `Destination: ${destination}\nTravellers: ${tripPeopleCount}`,
+                                address: 'N/A',
+                                fee: 'Determined upon inquiry'
+                            }
+                        });
+                    }}
+                >
                     <Text style={styles.mainButtonText}>Submit inquiry</Text>
                 </TouchableOpacity>
 
@@ -184,7 +199,22 @@ export default function TripTravelsScreen() {
                     </View>
                 </View>
 
-                <TouchableOpacity style={styles.mainButton} activeOpacity={0.8}>
+                {/* ─── Book Seat ─── */}
+                <TouchableOpacity
+                    style={styles.mainButton}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                        router.push({
+                            pathname: '/service-confirmation',
+                            params: {
+                                serviceName: 'Join Local Events',
+                                description: `Event: ${selectedEvent}\nGroup Size: ${eventPeopleCount}`,
+                                address: 'Specified shortly',
+                                fee: 'Determined per event'
+                            }
+                        });
+                    }}
+                >
                     <Text style={styles.mainButtonText}>Book Seat</Text>
                 </TouchableOpacity>
 

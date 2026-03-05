@@ -41,6 +41,12 @@ export default function MealServiceScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
+    const [mealType, setMealType] = useState('Home Style');
+    const [subMode, setSubMode] = useState('Monthly Subscription');
+    const [noOnionGarlic, setNoOnionGarlic] = useState(false);
+    const [spicy, setSpicy] = useState(false);
+    const [otherReq, setOtherReq] = useState('');
+
     return (
         <View style={styles.screen}>
             {/* Header extension */}
@@ -62,29 +68,29 @@ export default function MealServiceScreen() {
                 <View style={styles.mealSelectionCard}>
                     <View style={styles.mealOptionsContainer}>
 
-                        <View style={styles.mealOptionItem}>
-                            <UncheckedRadio />
+                        <TouchableOpacity style={styles.mealOptionItem} onPress={() => setMealType('Diabetic Friendly')} activeOpacity={0.7}>
+                            {mealType === 'Diabetic Friendly' ? <CheckedRadio /> : <UncheckedRadio />}
                             <View>
                                 <Text style={styles.mealOptionTitle}>Diabetic Friendly</Text>
                                 <Text style={styles.mealOptionDesc}>(Low GI, Less rice)</Text>
                             </View>
-                        </View>
+                        </TouchableOpacity>
 
-                        <View style={styles.mealOptionItem}>
-                            <CheckedRadio />
+                        <TouchableOpacity style={styles.mealOptionItem} onPress={() => setMealType('Home Style')} activeOpacity={0.7}>
+                            {mealType === 'Home Style' ? <CheckedRadio /> : <UncheckedRadio />}
                             <View>
                                 <Text style={styles.mealOptionTitle}>Home Style</Text>
                                 <Text style={styles.mealOptionDesc}>(Roti,Dal, Sabzi)</Text>
                             </View>
-                        </View>
+                        </TouchableOpacity>
 
-                        <View style={styles.mealOptionItem}>
-                            <UncheckedRadio />
+                        <TouchableOpacity style={styles.mealOptionItem} onPress={() => setMealType('Soft Food')} activeOpacity={0.7}>
+                            {mealType === 'Soft Food' ? <CheckedRadio /> : <UncheckedRadio />}
                             <View>
                                 <Text style={styles.mealOptionTitle}>Soft Food</Text>
                                 <Text style={styles.mealOptionDesc}>(Khichdi/porridge - for{'\n'}recovering patients)</Text>
                             </View>
-                        </View>
+                        </TouchableOpacity>
 
                     </View>
 
@@ -95,58 +101,76 @@ export default function MealServiceScreen() {
 
                     {/* Dots indicator at bottom */}
                     <View style={styles.paginationDots}>
-                        <View style={[styles.dot, styles.dotInactive]} />
-                        <View style={[styles.dot, styles.dotInactive]} />
-                        <View style={[styles.dot, styles.dotActive]} />
+                        <View style={[styles.dot, mealType === 'Diabetic Friendly' ? styles.dotActive : styles.dotInactive]} />
+                        <View style={[styles.dot, mealType === 'Home Style' ? styles.dotActive : styles.dotInactive]} />
+                        <View style={[styles.dot, mealType === 'Soft Food' ? styles.dotActive : styles.dotInactive]} />
                     </View>
                 </View>
 
                 {/* ─── Subscription Mode ─── */}
                 <Text style={styles.sectionTitle}>Subscription Mode</Text>
                 <View style={styles.sectionCard}>
-                    <View style={styles.optionRow}>
-                        <UncheckedRadio />
+                    <TouchableOpacity style={styles.optionRow} onPress={() => setSubMode('Trial')} activeOpacity={0.7}>
+                        {subMode === 'Trial' ? <CheckedSolidRadio /> : <UncheckedRadio />}
                         <Text style={styles.optionMainText}>Trial<Text style={styles.optionSubText}>(3 Days)</Text></Text>
-                    </View>
+                    </TouchableOpacity>
                     <View style={{ height: 18 }} />
-                    <View style={styles.optionRow}>
-                        <CheckedSolidRadio />
+                    <TouchableOpacity style={styles.optionRow} onPress={() => setSubMode('Monthly Subscription')} activeOpacity={0.7}>
+                        {subMode === 'Monthly Subscription' ? <CheckedSolidRadio /> : <UncheckedRadio />}
                         <Text style={styles.optionMainText}>Monthly Subscription</Text>
-                    </View>
+                    </TouchableOpacity>
                 </View>
 
                 {/* ─── Dietary Preferences ─── */}
                 <Text style={styles.sectionTitle}>Dietary Preferences</Text>
                 <View style={styles.sectionCard}>
 
-                    <View style={styles.preferenceRow}>
+                    <TouchableOpacity style={styles.preferenceRow} onPress={() => setNoOnionGarlic(!noOnionGarlic)} activeOpacity={0.7}>
                         <View style={styles.switchBox}>
-                            <Image source={imgCheckmark} style={styles.checkedSwitchIcon} />
-                            <View style={styles.uncheckedRadioCircle} />
+                            {noOnionGarlic ? <Image source={imgCheckmark} style={styles.checkedSwitchIcon} /> : <View style={styles.uncheckedRadioCircle} />}
                         </View>
                         <Text style={styles.preferenceText}>No Onion/Garlic?</Text>
-                    </View>
+                    </TouchableOpacity>
 
                     <View style={{ height: 16 }} />
 
-                    <View style={styles.preferenceRow}>
+                    <TouchableOpacity style={styles.preferenceRow} onPress={() => setSpicy(!spicy)} activeOpacity={0.7}>
                         <View style={styles.switchBox}>
-                            <Image source={imgCheckmark} style={styles.checkedSwitchIcon} />
-                            <View style={styles.solidCheckedRadio} />
+                            {spicy ? <Image source={imgCheckmark} style={styles.checkedSwitchIcon} /> : <View style={styles.uncheckedRadioCircle} />}
                         </View>
                         <Text style={styles.preferenceText}>Spicy / Non-Spicy?</Text>
-                    </View>
+                    </TouchableOpacity>
 
                 </View>
 
                 {/* ─── Something Else? ─── */}
                 <Text style={styles.sectionTitle}>Something Else?</Text>
-                <View style={styles.textAreaContainer}>
-                    <Text style={styles.textAreaPlaceholder}>write your specific requirement...(e.g, ‘No Salt’)</Text>
+                <View style={[styles.textAreaContainer, { paddingHorizontal: 0 }]}>
+                    <TextInput
+                        style={[styles.textAreaPlaceholder, { flex: 1, paddingHorizontal: 15 }]}
+                        placeholder="write your specific requirement...(e.g, ‘No Salt’)"
+                        placeholderTextColor="#898989"
+                        value={otherReq}
+                        onChangeText={setOtherReq}
+                    />
                 </View>
 
                 {/* ─── Action Button ─── */}
-                <TouchableOpacity style={styles.submitButton} activeOpacity={0.8}>
+                <TouchableOpacity
+                    style={styles.submitButton}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                        router.push({
+                            pathname: '/service-confirmation',
+                            params: {
+                                serviceName: 'Meal Service',
+                                description: `${mealType} (${subMode})\nPreferences: ${noOnionGarlic ? 'No Onion/Garlic' : ''} ${spicy ? 'Spicy' : ''}\nOther: ${otherReq}`,
+                                address: 'Home Delivery',
+                                fee: '₹2,500/month (Est)'
+                            }
+                        });
+                    }}
+                >
                     <Text style={styles.submitButtonText}>Request Tiffin</Text>
                 </TouchableOpacity>
 

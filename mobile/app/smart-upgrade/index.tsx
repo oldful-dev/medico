@@ -65,7 +65,21 @@ export default function SmartUpgradeScreen() {
                     <Image source={imgChart} style={styles.chartImage} resizeMode="contain" />
 
                     {/* ─── Upgrade Button ─── */}
-                    <TouchableOpacity style={styles.upgradeButton} activeOpacity={0.8}>
+                    <TouchableOpacity
+                        style={styles.upgradeButton}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            router.push({
+                                pathname: '/service-confirmation',
+                                params: {
+                                    serviceName: 'Smart Upgrade',
+                                    description: 'Oldful Homemaker Plan - Total Home Management',
+                                    address: 'N/A',
+                                    fee: '₹3,499/month'
+                                }
+                            });
+                        }}
+                    >
                         <Text style={styles.upgradeButtonText}>View Plan Details & Upgrade</Text>
                     </TouchableOpacity>
 

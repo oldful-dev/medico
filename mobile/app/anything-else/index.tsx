@@ -25,6 +25,8 @@ export default function AnythingElseScreen() {
     const insets = useSafeAreaInsets();
     const [address, setAddress] = React.useState('');
     const [isFetchingLocation, setIsFetchingLocation] = React.useState(true);
+    const [reqTitle, setReqTitle] = React.useState('');
+    const [reqDesc, setReqDesc] = React.useState('');
 
     React.useEffect(() => {
         (async () => {
@@ -84,6 +86,8 @@ export default function AnythingElseScreen() {
                             style={styles.input}
                             placeholder="e.g. Need help packing boxes..."
                             placeholderTextColor="#898989"
+                            value={reqTitle}
+                            onChangeText={setReqTitle}
                         />
                     </View>
 
@@ -95,6 +99,8 @@ export default function AnythingElseScreen() {
                             placeholder="Please explain in detail what you need us to do..."
                             placeholderTextColor="#898989"
                             multiline
+                            value={reqDesc}
+                            onChangeText={setReqDesc}
                         />
                     </View>
                 </View>
@@ -125,7 +131,21 @@ export default function AnythingElseScreen() {
 
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>
-                    <TouchableOpacity style={styles.bookButton} activeOpacity={0.8}>
+                    <TouchableOpacity
+                        style={styles.bookButton}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            router.push({
+                                pathname: '/service-confirmation',
+                                params: {
+                                    serviceName: 'Anything Else',
+                                    description: `Title: ${reqTitle}\nDetail: ${reqDesc}`,
+                                    address: address,
+                                    fee: '₹149 (Booking Fee)'
+                                }
+                            });
+                        }}
+                    >
                         <Text style={styles.bookButtonText}>Book Service</Text>
                     </TouchableOpacity>
                 </View>

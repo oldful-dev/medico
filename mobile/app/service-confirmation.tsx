@@ -1,4 +1,3 @@
-// Booking Confirmation Screen
 import React from 'react';
 import {
     View,
@@ -14,26 +13,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
-export default function ConfirmationScreen() {
+export default function ServiceConfirmationScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const params = useLocalSearchParams<{
-        visitType?: string;
-        doctorType?: string;
-        when?: string;
-        problem?: string;
-        address?: string;
-        bookingId?: string;
-    }>();
 
+    // Accept route parameters dynamically
     const {
-        visitType = 'Home Session',
-        doctorType = 'General Physician (MBBS)',
-        when = 'ASAP (Urgent)',
-        problem = 'Fever / Flu',
-        address = '123 Baker St, London',
-        bookingId = 'MED-2026-03-05-001'
-    } = params;
+        serviceName = 'Service',
+        requestId = 'REQ-2026-03-05-891',
+        description = 'Issue details will be shown here.',
+        address = '123 Selected Address, City',
+        status = 'Confirmed',
+        fee = 'To be decided'
+    } = useLocalSearchParams<{
+        serviceName: string;
+        requestId: string;
+        description: string;
+        address: string;
+        status: string;
+        fee: string;
+    }>();
 
     return (
         <View style={styles.screen}>
@@ -59,48 +58,36 @@ export default function ConfirmationScreen() {
                     {/* Success Icon & Title */}
                     <View style={styles.successSection}>
                         <View style={styles.successCircle}>
-                            <Ionicons name="checkmark" size={48} color="#FFFFFF" />
+                            <Ionicons name="checkmark" size={48} color={Colors.textWhite} />
                         </View>
-                        <Text style={styles.successTitle}>Booking Confirmed!</Text>
+                        <Text style={styles.successTitle}>Booking Received!</Text>
                         <Text style={styles.successSubtitle}>
-                            Your appointment for {visitType} has been successfully booked.
+                            Your service request has been successfully submitted.
                         </Text>
                     </View>
 
                     {/* Booking ID Card */}
                     <View style={styles.bookingIdCard}>
                         <View>
-                            <Text style={styles.bookingIdLabel}>Booking ID</Text>
-                            <Text style={styles.bookingIdValue}>{bookingId}</Text>
+                            <Text style={styles.bookingIdLabel}>Request ID</Text>
+                            <Text style={styles.bookingIdValue}>{requestId}</Text>
                         </View>
                         <View style={styles.statusBadge}>
-                            <Text style={styles.statusBadgeText}>Confirmed</Text>
+                            <Text style={styles.statusBadgeText}>{status}</Text>
                         </View>
                     </View>
 
-                    {/* Booking Details Card */}
+                    {/* Details Card */}
                     <View style={styles.detailsCard}>
-                        <Text style={styles.detailsCardTitle}>Appointment Details</Text>
+                        <Text style={styles.detailsCardTitle}>Service Details</Text>
 
                         <View style={styles.detailRow}>
                             <View style={styles.detailIconBox}>
-                                <Ionicons name={visitType === 'Clinic Visit' ? "business-outline" : "home-outline"} size={16} color="#048357" />
-                            </View>
-                            <View style={styles.detailTextGroup}>
-                                <Text style={styles.detailLabel}>Visit Type</Text>
-                                <Text style={styles.detailValue}>{visitType}</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.detailDivider} />
-
-                        <View style={styles.detailRow}>
-                            <View style={styles.detailIconBox}>
-                                <Ionicons name="medkit" size={16} color="#048357" />
+                                <Ionicons name="construct-outline" size={16} color={Colors.primary} />
                             </View>
                             <View style={styles.detailTextGroup}>
                                 <Text style={styles.detailLabel}>Service</Text>
-                                <Text style={styles.detailValue}>Doctor Visit</Text>
+                                <Text style={styles.detailValue}>{serviceName}</Text>
                             </View>
                         </View>
 
@@ -108,11 +95,11 @@ export default function ConfirmationScreen() {
 
                         <View style={styles.detailRow}>
                             <View style={styles.detailIconBox}>
-                                <Ionicons name="person" size={16} color="#048357" />
+                                <Ionicons name="information-circle-outline" size={16} color={Colors.primary} />
                             </View>
                             <View style={styles.detailTextGroup}>
-                                <Text style={styles.detailLabel}>Doctor Type</Text>
-                                <Text style={styles.detailValue}>{doctorType}</Text>
+                                <Text style={styles.detailLabel}>Description</Text>
+                                <Text style={styles.detailValue}>{description}</Text>
                             </View>
                         </View>
 
@@ -120,19 +107,7 @@ export default function ConfirmationScreen() {
 
                         <View style={styles.detailRow}>
                             <View style={styles.detailIconBox}>
-                                <Ionicons name="calendar" size={16} color="#048357" />
-                            </View>
-                            <View style={styles.detailTextGroup}>
-                                <Text style={styles.detailLabel}>Schedule</Text>
-                                <Text style={styles.detailValue}>{when}</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.detailDivider} />
-
-                        <View style={styles.detailRow}>
-                            <View style={styles.detailIconBox}>
-                                <Ionicons name="location" size={16} color="#048357" />
+                                <Ionicons name="location-outline" size={16} color={Colors.primary} />
                             </View>
                             <View style={styles.detailTextGroup}>
                                 <Text style={styles.detailLabel}>Address</Text>
@@ -144,41 +119,64 @@ export default function ConfirmationScreen() {
 
                         <View style={styles.detailRow}>
                             <View style={styles.detailIconBox}>
-                                <Ionicons name="alert-circle" size={16} color="#048357" />
+                                <Ionicons name="wallet-outline" size={16} color={Colors.primary} />
                             </View>
                             <View style={styles.detailTextGroup}>
-                                <Text style={styles.detailLabel}>Problem</Text>
-                                <Text style={styles.detailValue}>{problem}</Text>
+                                <Text style={styles.detailLabel}>Booking Fee / Estimate</Text>
+                                <Text style={styles.detailValue}>{fee}</Text>
                             </View>
                         </View>
                     </View>
 
                     {/* Info Banner */}
                     <View style={styles.infoBanner}>
-                        <Ionicons name="information-circle" size={18} color="#02743F" />
+                        <Ionicons name="information-circle" size={18} color={Colors.primaryDark} />
                         <Text style={styles.infoBannerText}>
-                            {visitType === 'Home Session'
-                                ? "You will receive a notification once a doctor accepts your request."
-                                : "Please arrive at the clinic 10 minutes prior to your scheduled time."}
+                            {(() => {
+                                const lower = serviceName.toLowerCase();
+                                if (lower.includes('driver') || lower.includes('cab') || lower.includes('hospital'))
+                                    return 'A driver will be assigned to your trip shortly. You can track your cab location.';
+                                if (lower.includes('medicine') || lower.includes('blood') || lower.includes('order'))
+                                    return 'Your order is being processed. You can track the delivery status here.';
+                                if (lower.includes('meal') || lower.includes('tiffin'))
+                                    return 'Our kitchen has received your request. You can track your tiffin delivery.';
+                                if (lower.includes('nurse') || lower.includes('physio') || lower.includes('fitness') || lower.includes('doctor'))
+                                    return 'A healthcare professional or therapist will be assigned to you shortly.';
+                                if (lower.includes('paper') || lower.includes('legal') || lower.includes('bank') || lower.includes('bill') || lower.includes('upgrade'))
+                                    return 'An Oldful concierge assistant will be assigned to handle your request.';
+                                if (lower.includes('cleaning') || lower.includes('repair') || lower.includes('plumbing') || lower.includes('electrical') || lower.includes('tech'))
+                                    return 'A certified technician is being prepared for your home visit.';
+                                return 'A dedicated partner will be assigned to your request shortly. You can track their status.';
+                            })()}
                         </Text>
                     </View>
                 </ScrollView>
 
                 {/* ─── Bottom Buttons ─── */}
                 <View style={styles.bottomBar}>
-                    <TouchableOpacity style={[styles.actionButton, styles.rescheduleBtn]} activeOpacity={0.8}>
-                        <Ionicons name="map-outline" size={18} color={Colors.textWhite} style={{ marginRight: 8 }} />
-                        <Text style={[styles.actionButtonText, styles.rescheduleText]}>Get Directions</Text>
+                    <TouchableOpacity style={[styles.actionButton, styles.trackBtn]} activeOpacity={0.8}>
+                        <Text style={[styles.actionButtonText, styles.trackText]}>
+                            {(() => {
+                                const lower = serviceName.toLowerCase();
+                                if (lower.includes('driver') || lower.includes('cab') || lower.includes('hospital')) return 'Track Car/Cab';
+                                if (lower.includes('nurse') || lower.includes('physio') || lower.includes('fitness') || lower.includes('doctor')) return 'Track Professional';
+                                if (lower.includes('medicine') || lower.includes('blood')) return 'Track Order';
+                                if (lower.includes('meal') || lower.includes('tiffin')) return 'Track Tiffin';
+                                if (lower.includes('cleaning') || lower.includes('repair') || lower.includes('plumbing') || lower.includes('electrical') || lower.includes('tech')) return 'Track Technician';
+                                if (lower.includes('paper') || lower.includes('legal') || lower.includes('bank') || lower.includes('bill') || lower.includes('anything') || lower.includes('travel') || lower.includes('upgrade')) return 'Track Assistant';
+                                return 'Track Progress';
+                            })()}
+                        </Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.actionButton, styles.cancelBtn]} activeOpacity={0.8}>
-                        <Text style={[styles.actionButtonText, styles.cancelText]}>Cancel Appointment</Text>
+                        <Text style={[styles.actionButtonText, styles.cancelText]}>Cancel Request</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.actionButton, styles.callBtn]} activeOpacity={0.8}>
                         <Ionicons name="call-outline" size={18} color={Colors.primaryDark} style={{ marginRight: 8 }} />
                         <Text style={[styles.actionButtonText, styles.callText]}>Call Support</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.homeButton} activeOpacity={0.8} onPress={() => router.replace('/(tabs)')}>
-                        <Ionicons name="home-outline" size={18} color={Colors.primaryDark} style={{ marginRight: 8 }} />
+                        <Ionicons name="arrow-back-outline" size={18} color={Colors.primaryDark} style={{ marginRight: 8 }} />
                         <Text style={styles.homeButtonText}>Back to Home</Text>
                     </TouchableOpacity>
                 </View>
@@ -199,8 +197,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: Colors.primary,
         paddingHorizontal: Spacing.lg,
-        paddingBottom: 20,
-        paddingTop: 10,
+        paddingBottom: Spacing.xl,
+        paddingTop: Spacing.md,
     },
     backButton: {
         padding: 5,
@@ -218,10 +216,9 @@ const styles = StyleSheet.create({
     contentCard: {
         flex: 1,
         backgroundColor: Colors.bgScreen,
-        borderTopLeftRadius: Radius.xl * 2,
-        borderTopRightRadius: Radius.xl * 2,
+        borderTopLeftRadius: 45,
+        borderTopRightRadius: 45,
         overflow: 'hidden',
-        ...Shadow.card,
     },
     scrollView: {
         flex: 1,
@@ -229,13 +226,13 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: Spacing.xl,
         paddingTop: 32,
-        paddingBottom: 300, // accommodate larger bottom bar
+        paddingBottom: 220, // extra padding for bottom buttons
     },
 
     /* ─── Success Section ─── */
     successSection: {
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: Spacing.xl,
     },
     successCircle: {
         width: 80,
@@ -244,7 +241,7 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: Spacing.lg,
         shadowColor: Colors.primary,
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.3,
@@ -255,7 +252,7 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.heading1,
         color: Colors.primaryDark,
-        marginBottom: 6,
+        marginBottom: Spacing.xs,
         letterSpacing: -0.24,
     },
     successSubtitle: {
@@ -274,15 +271,15 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(4, 131, 87, 0.08)',
         borderRadius: Radius.md,
         paddingHorizontal: Spacing.lg,
-        paddingVertical: 12,
-        marginBottom: 16,
+        paddingVertical: Spacing.md,
+        marginBottom: Spacing.lg,
         borderWidth: 0.8,
         borderColor: 'rgba(4, 131, 87, 0.2)',
         borderStyle: 'dashed',
     },
     bookingIdLabel: {
         fontFamily: Fonts.medium,
-        fontSize: FontSize.caption,
+        fontSize: FontSize.bodySmall,
         color: Colors.textMuted,
     },
     bookingIdValue: {
@@ -291,8 +288,6 @@ const styles = StyleSheet.create({
         color: Colors.primaryDark,
         letterSpacing: 0.5,
     },
-
-    /* ─── Details Card ─── */
     statusBadge: {
         backgroundColor: '#E8F5E9',
         paddingHorizontal: Spacing.md,
@@ -306,24 +301,26 @@ const styles = StyleSheet.create({
         fontSize: FontSize.caption,
         color: Colors.primaryDark,
     },
+
+    /* ─── Details Card ─── */
     detailsCard: {
         backgroundColor: Colors.bgCard,
         borderRadius: Radius.lg,
         padding: Spacing.lg,
-        marginBottom: 16,
+        marginBottom: Spacing.lg,
         ...Shadow.card,
     },
     detailsCardTitle: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
         color: Colors.primaryDark,
-        marginBottom: 16,
+        marginBottom: Spacing.lg,
         letterSpacing: -0.24,
     },
     detailRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 10,
+        paddingVertical: Spacing.sm,
     },
     detailIconBox: {
         width: 32,
@@ -345,8 +342,8 @@ const styles = StyleSheet.create({
     },
     detailValue: {
         fontFamily: Fonts.medium,
-        fontSize: FontSize.bodySmall,
-        color: Colors.textDark,
+        fontSize: FontSize.body,
+        color: Colors.textBody,
     },
     detailDivider: {
         height: 0.5,
@@ -359,14 +356,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: 'rgba(4, 131, 87, 0.08)',
         borderRadius: Radius.md,
-        paddingHorizontal: Spacing.md,
-        paddingVertical: 12,
-        gap: 10,
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.md,
+        gap: Spacing.sm,
     },
     infoBannerText: {
         flex: 1,
         fontFamily: Fonts.regular,
-        fontSize: FontSize.caption,
+        fontSize: FontSize.bodySmall,
         color: Colors.primaryDark,
         lineHeight: 16,
     },
@@ -379,7 +376,7 @@ const styles = StyleSheet.create({
         right: 0,
         backgroundColor: Colors.bgScreen,
         paddingHorizontal: Spacing.xl,
-        paddingTop: 16,
+        paddingTop: Spacing.lg,
         paddingBottom: 36,
         alignItems: 'center',
         gap: Spacing.md,
@@ -399,10 +396,10 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
     },
-    rescheduleBtn: {
-        backgroundColor: Colors.primary,
+    trackBtn: {
+        backgroundColor: Colors.primaryDark,
     },
-    rescheduleText: {
+    trackText: {
         color: Colors.textWhite,
     },
     cancelBtn: {

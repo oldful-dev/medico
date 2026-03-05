@@ -14,8 +14,8 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { locationService } from '@/services/device/locationService';
-
-// ─── Figma Assets ───
+import ImageUploadBox from '@/components/common/ImageUploadBox';
+import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 const imgHero = require('@/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png'); // Spray bottle icon
 const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
 const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
@@ -25,6 +25,8 @@ export default function DeepCleaningScreen() {
     const insets = useSafeAreaInsets();
     const [address, setAddress] = React.useState('');
     const [isFetchingLocation, setIsFetchingLocation] = React.useState(true);
+    const [cleaningType, setCleaningType] = React.useState('');
+    const [areaSize, setAreaSize] = React.useState('');
 
     React.useEffect(() => {
         (async () => {
@@ -84,6 +86,8 @@ export default function DeepCleaningScreen() {
                             style={styles.input}
                             placeholder="e.g. Full Home, Kitchen, Sofa..."
                             placeholderTextColor="#898989"
+                            value={cleaningType}
+                            onChangeText={setCleaningType}
                         />
                     </View>
 
@@ -94,9 +98,17 @@ export default function DeepCleaningScreen() {
                             style={styles.input}
                             placeholder="e.g. 2 BHK or 1000 sq ft"
                             placeholderTextColor="#898989"
+                            value={areaSize}
+                            onChangeText={setAreaSize}
                         />
                     </View>
                 </View>
+
+                {/* ─── Upload Photos ─── */}
+                <ImageUploadBox
+                    title="Upload Photos of the Area"
+                    subtitle="Help our cleaners understand the scope of work better"
+                />
 
                 {/* ─── Location Details ─── */}
                 <View style={styles.card}>
@@ -124,7 +136,21 @@ export default function DeepCleaningScreen() {
 
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>
-                    <TouchableOpacity style={styles.bookButton} activeOpacity={0.8}>
+                    <TouchableOpacity
+                        style={styles.bookButton}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            router.push({
+                                pathname: '/service-confirmation',
+                                params: {
+                                    serviceName: 'Deep Cleaning / Pest Control',
+                                    description: `${cleaningType} (${areaSize})`,
+                                    address: address,
+                                    fee: '₹199 (Booking Fee)'
+                                }
+                            });
+                        }}
+                    >
                         <Text style={styles.bookButtonText}>Book Service</Text>
                     </TouchableOpacity>
                 </View>

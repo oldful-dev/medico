@@ -28,8 +28,9 @@ export default function PhysioFitnessScreen() {
     const insets = useSafeAreaInsets();
 
     // State 
-    const [selectedService, setSelectedService] = useState<'pain' | 'fitness' | null>('pain');
+    const [selectedService, setSelectedService] = useState<'pain' | 'fitness'>('pain');
     const [selectedBodyPart, setSelectedBodyPart] = useState<string>('Back');
+    const [otherIssue, setOtherIssue] = useState<string>('');
 
     return (
         <View style={styles.screen}>
@@ -131,6 +132,8 @@ export default function PhysioFitnessScreen() {
                             placeholder="Describe your issue"
                             style={styles.textInput}
                             placeholderTextColor="#555"
+                            value={otherIssue}
+                            onChangeText={setOtherIssue}
                         />
                     </View>
 
@@ -142,7 +145,21 @@ export default function PhysioFitnessScreen() {
                     </TouchableOpacity>
 
                     {/* ─── Book Appointment Button ─── */}
-                    <TouchableOpacity style={styles.submitButton} activeOpacity={0.8}>
+                    <TouchableOpacity
+                        style={styles.submitButton}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            router.push({
+                                pathname: '/service-confirmation',
+                                params: {
+                                    serviceName: 'Physiotherapy & Fitness',
+                                    description: `Service: ${selectedService === 'pain' ? 'Pain Relief' : 'Senior Fitness'}\nArea: ${selectedBodyPart}\nIssue: ${otherIssue || 'None specified'}`,
+                                    address: 'Home Visit',
+                                    fee: '₹499/session'
+                                }
+                            });
+                        }}
+                    >
                         <Text style={styles.submitButtonText}>Book Appointment</Text>
                     </TouchableOpacity>
 

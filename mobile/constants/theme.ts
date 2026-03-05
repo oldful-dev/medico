@@ -1,89 +1,119 @@
-// App Theme - Colors, typography, spacing
-// Design system constants for consistent UI
+// Design Tokens — Single source of truth for the Medico mobile UI
+// All screens must import from here for consistency
+import { Platform } from 'react-native';
 
+// ─── Colors ───
 export const Colors = {
-  primary: '#4A90D9',
-  primaryDark: '#2C6CB0',
-  primaryLight: '#E6F4FE',
-  secondary: '#FF6B6B',
-  accent: '#2ECC71',
-  
+  // Primary greens (standardized from 4 variants → 2)
+  primary: '#048357',        // Main actions, buttons, links
+  primaryDark: '#02743F',    // Borders, darker accents
+  primaryDeep: '#034C2A',    // Headings on white bg
+  primaryText: '#085B34',    // Text on light bg
+
+  // Accent
+  accent: '#34C759',         // Success, highlights, borders
+  accentBright: '#0EDD94',   // Decorative accent
+
   // Backgrounds
-  background: '#FFFFFF',
-  backgroundDark: '#1A1A2E',
-  surface: '#F8F9FA',
-  surfaceDark: '#16213E',
-  
+  bgScreen: '#FFFFE3',       // Main app background
+  bgCard: '#FFFFFF',         // Cards, containers
+  bgHeader: '#FFFFF8',       // Header bar
+  bgCardMuted: 'rgba(222,222,222,0.43)', // Muted card/grid item bg
+
   // Text
-  textPrimary: '#1A1A2E',
-  textSecondary: '#6C757D',
-  textLight: '#FFFFFF',
-  textMuted: '#ADB5BD',
-  
+  textDark: '#1E1E1E',       // Primary body text
+  textBody: '#2F2F2F',       // Secondary body text
+  textMuted: '#848484',      // Muted text, captions
+  textLight: '#AAAEAC',      // Placeholder, disabled text
+  textWhite: '#FFFFFF',      // Text on dark bg
+
   // Status
-  success: '#28A745',
+  sosRed: '#FF3B30',         // SOS tag
   warning: '#FFC107',
-  danger: '#DC3545',
   info: '#17A2B8',
-  
-  // SOS
-  sosRed: '#FF0000',
-  sosBackground: '#FFE5E5',
-  
-  // Borders
-  border: '#DEE2E6',
-  borderDark: '#495057',
-  
-  // Transparent
-  overlay: 'rgba(0, 0, 0, 0.5)',
+
+  // Border
+  borderGreen: '#02743F',
+  borderLight: '#DEE2E6',
+
+  // Overlays
+  overlay: 'rgba(0,0,0,0.5)',
+  shadowColor: '#000000',
 };
 
-export const Typography = {
-  // Headlines — Poppins
-  headline: {
-    bold: 'Poppins-Bold',
-    semiBold: 'Poppins-SemiBold',
-  },
-  // Descriptions / Body — Lexend Deca
-  body: {
-    light: 'LexendDeca-Light',
-    regular: 'LexendDeca-Regular',
-    medium: 'LexendDeca-Medium',
-  },
-  fontFamily: {
-    regular: 'LexendDeca-Regular',
-    medium: 'LexendDeca-Medium',
-    bold: 'Poppins-Bold',
-  },
-  fontSize: {
-    xs: 10,
-    sm: 12,
-    base: 14,
-    md: 16,
-    lg: 18,
-    xl: 20,
-    '2xl': 24,
-    '3xl': 30,
-    '4xl': 36,
-  },
+// ─── Typography ───
+// Font family helper — handles iOS/Android naming differences
+const poppins = (weight: 'Light' | 'Regular' | 'Medium' | 'SemiBold' | 'Bold') => {
+  const androidMap = {
+    Light: 'Poppins_300Light',
+    Regular: 'Poppins_400Regular',
+    Medium: 'Poppins_500Medium',
+    SemiBold: 'Poppins_600SemiBold',
+    Bold: 'Poppins_700Bold',
+  };
+  return Platform.select({
+    ios: `Poppins-${weight}`,
+    android: androidMap[weight],
+    default: 'System',
+  });
 };
 
+export const Fonts = {
+  light: poppins('Light'),
+  regular: poppins('Regular'),
+  medium: poppins('Medium'),
+  semiBold: poppins('SemiBold'),
+  bold: poppins('Bold'),
+};
+
+// Standardized font size scale
+export const FontSize = {
+  caption: 10,     // Tags, badges, grid item labels, small icons text
+  bodySmall: 12,   // Secondary text, timestamps, captions
+  body: 14,        // Body text, descriptions, form labels
+  button: 16,      // Button text, sub-section titles
+  heading3: 16,    // Sub-section / card group titles
+  heading2: 18,    // Section headings
+  heading1: 22,    // Screen titles, page headings
+  display: 24,     // Large decorative text (login title etc)
+};
+
+// ─── Spacing ───
 export const Spacing = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  base: 16,
-  lg: 20,
-  xl: 24,
-  '2xl': 32,
-  '3xl': 40,
-  '4xl': 48,
+  xs: 4,           // Tight: icon-to-text, within badges
+  sm: 8,           // Small: between small elements
+  md: 12,          // Standard: grid gaps, card internals
+  lg: 16,          // Section spacing, screen padding, card padding
+  xl: 24,          // Large section separators
+  '2xl': 32,       // Major section breaks
+  screenPadding: 16, // Horizontal padding for all screens
+  cardMargin: 16,    // Horizontal margin for all cards/sections
+  sectionGap: 16,    // Vertical gap between sections
 };
 
-export const BorderRadius = {
-  sm: 4,
-  md: 8,
-  lg: 12,
-  xl: 16,
-  full: 9999,
+// ─── Border Radius ───
+export const Radius = {
+  sm: 8,           // Badges, tags, small buttons
+  md: 12,          // Cards, inputs, containers
+  lg: 16,          // Large cards, modals
+  xl: 20,          // Rounded cards (quick service strip)
+  full: 999,       // Circular elements (avatars, round icons)
+};
+
+// ─── Shadow (standardized) ───
+export const Shadow = {
+  card: {
+    shadowColor: Colors.shadowColor,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  header: {
+    shadowColor: Colors.shadowColor,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
+  },
 };

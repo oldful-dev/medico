@@ -13,6 +13,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import ImageUploadBox from '@/components/common/ImageUploadBox';
 
 // ─── Figma Assets ───
 const imgCheckmark = require('@/assets/images/019640d27de157c119b045c46aae6a6559dd3a79.png'); // Green Check Circle
@@ -23,6 +24,27 @@ export default function PaperLegalScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [selectedService, setSelectedService] = useState('Digital Life Certificate');
+    const [details, setDetails] = useState('');
+    const [address, setAddress] = useState('Fetching...   ');
+
+    React.useEffect(() => {
+        (async () => {
+            const { locationService } = await import('@/services/device/locationService');
+            try {
+                const hasPermission = await locationService.requestPermission();
+                if (hasPermission) {
+                    const coords = await locationService.getCurrentLocation();
+                    const fetchedLoc = await locationService.getAddressFromCoordinates(coords);
+                    setAddress(fetchedLoc);
+                } else {
+                    setAddress('Location permission denied');
+                }
+            } catch (err) {
+                console.log(err);
+                setAddress('Location unavailable');
+            }
+        })();
+    }, []);
 
     return (
         <View style={styles.screen}>
@@ -94,21 +116,16 @@ export default function PaperLegalScreen() {
                             numberOfLines={4}
                             textAlignVertical="top"
                             placeholderTextColor="#898989"
+                            value={details}
+                            onChangeText={setDetails}
                         />
                     </View>
 
                     {/* ─── Upload Documents ─── */}
-                    <Text style={styles.sectionTitle}>Upload Documents</Text>
-                    <View style={styles.uploadCard}>
-                        <View style={styles.uploadDashedBox}>
-                            <Ionicons name="cloud-upload-outline" size={40} color="#048357" style={styles.uploadCloudIcon} />
-                            <Text style={styles.uploadTitle}>Select Relevant Documents</Text>
-                            <Text style={styles.uploadSubtitle}>JPG, PNG or PDF, file size no more than 10MB</Text>
-                            <TouchableOpacity style={styles.uploadButton}>
-                                <Text style={styles.uploadButtonText}>SELECT FILES</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+                    <ImageUploadBox
+                        title="Upload Relevant Documents"
+                        subtitle="Upload IDs, previous certificates, or legal paperwork (JPG, PNG or PDF)"
+                    />
 
                     {/* ─── Schedule Visit ─── */}
                     <Text style={styles.sectionTitle}>Schedule Visit</Text>
@@ -120,7 +137,21 @@ export default function PaperLegalScreen() {
                     </View>
 
                     {/* ─── Book Assistant Button ─── */}
-                    <TouchableOpacity style={styles.submitButton} activeOpacity={0.8}>
+                    <TouchableOpacity
+                        style={styles.submitButton}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            router.push({
+                                pathname: '/service-confirmation',
+                                params: {
+                                    serviceName: 'Paper and Legal',
+                                    description: `Service: ${selectedService}\nDetails: ${details}`,
+                                    address: address,
+                                    fee: '₹249 (Booking Fee)'
+                                }
+                            });
+                        }}
+                    >
                         <Text style={styles.submitButtonText}>Book Assistant</Text>
                     </TouchableOpacity>
 

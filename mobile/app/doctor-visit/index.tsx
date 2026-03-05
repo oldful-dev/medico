@@ -15,6 +15,8 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import ImageUploadBox from '@/components/common/ImageUploadBox';
+import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
 // ─── Figma-exported Assets ───
 // Problem Icons (images from disk)
@@ -32,7 +34,7 @@ const gpDoctorIcon = require('@/assets/images/9bbd0539ddfd504d8362c951cb07d107b0
 const physioIcon = require('@/assets/images/ad2bd697d39bc0738ca19a09e58ce4677761ca47.png');
 
 // ─── Constants ───
-const PROBLEMS = [
+const PROBLEMS: { label: string; icon?: any; empty?: boolean }[] = [
     { label: 'Fever/Flu', icon: feverIcon },
     { label: 'BP/Sugar check', icon: bpSugarIcon },
     { label: 'General Weakness', icon: generalWeaknessIcon },
@@ -46,6 +48,12 @@ const PROBLEMS = [
 export default function DoctorVisitScreen() {
     const router = useRouter();
     const { width } = useWindowDimensions();
+
+    // ─── State ───
+    const [selectedProblem, setSelectedProblem] = React.useState<string | null>(null);
+    const [selectedDoctorType, setSelectedDoctorType] = React.useState<'GP' | 'Physio'>('GP');
+    const [selectedWhen, setSelectedWhen] = React.useState<'ASAP' | 'Later'>('ASAP');
+    const [visitType, setVisitType] = React.useState<'Home' | 'Clinic'>('Home');
 
     // ─── BULLETPROOF GRID MATH FOR SMALL SCREENS (< 370px) ───
     // 1. Calculate the exact workable width inside the card
@@ -61,7 +69,7 @@ export default function DoctorVisitScreen() {
     // 4. Pad the array to ensure the last row strictly left-aligns
     const paddedProblems = [...PROBLEMS];
     while (paddedProblems.length % 3 !== 0) {
-        paddedProblems.push({ empty: true });
+        paddedProblems.push({ label: '', empty: true });
     }
 
     return (
@@ -72,7 +80,7 @@ export default function DoctorVisitScreen() {
             <SafeAreaView style={styles.headerSafe} edges={['top']}>
                 <View style={styles.headerRow}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                        <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Doctor Home Visit</Text>
                     {/* Placeholder for flex layout balance */}
@@ -110,12 +118,17 @@ export default function DoctorVisitScreen() {
                                 return (
                                     <TouchableOpacity
                                         key={index}
-                                        style={[styles.problemItem, { width: exactProblemWidth }]}
+                                        style={[
+                                            styles.problemItem,
+                                            { width: exactProblemWidth },
+                                            selectedProblem === item.label && styles.problemItemActive
+                                        ]}
+                                        onPress={() => setSelectedProblem(item.label)}
                                     >
                                         <View style={[styles.problemIconContainer, { height: exactIconHeight }]}>
                                             <Image source={item.icon} style={styles.problemIcon} resizeMode="cover" />
                                         </View>
-                                        <Text style={styles.problemLabel}>{item.label}</Text>
+                                        <Text style={[styles.problemLabel, selectedProblem === item.label && styles.problemLabelActive]}>{item.label}</Text>
                                     </TouchableOpacity>
                                 );
                             })}
@@ -137,15 +150,43 @@ export default function DoctorVisitScreen() {
                         <Text style={styles.sectionTitle}>Select Doctor Type</Text>
                         <View style={styles.doctorTypeRow}>
                             {/* Selected State (General Physician) */}
-                            <TouchableOpacity style={[styles.doctorTypeButton, styles.doctorTypeActive]}>
+                            <TouchableOpacity
+                                style={[styles.doctorTypeButton, selectedDoctorType === 'GP' && styles.doctorTypeActive]}
+                                onPress={() => setSelectedDoctorType('GP')}
+                            >
                                 <Image source={gpDoctorIcon} style={styles.doctorTypeIconGP} resizeMode="contain" />
-                                <Text style={styles.doctorTypeActiveText} numberOfLines={2}>General Physician (MBBS)</Text>
+                                <Text style={selectedDoctorType === 'GP' ? styles.doctorTypeActiveText : styles.doctorTypeInactiveText} numberOfLines={2}>General Physician (MBBS)</Text>
                             </TouchableOpacity>
 
                             {/* Unselected State (Physiotherapist) */}
-                            <TouchableOpacity style={styles.doctorTypeButton}>
+                            <TouchableOpacity
+                                style={[styles.doctorTypeButton, selectedDoctorType === 'Physio' && styles.doctorTypeActive]}
+                                onPress={() => setSelectedDoctorType('Physio')}
+                            >
                                 <Image source={physioIcon} style={styles.doctorTypeIconPhysio} resizeMode="contain" />
-                                <Text style={styles.doctorTypeInactiveText} numberOfLines={2}>Physiotherapist</Text>
+                                <Text style={selectedDoctorType === 'Physio' ? styles.doctorTypeActiveText : styles.doctorTypeInactiveText} numberOfLines={2}>Physiotherapist</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* ─── Select Visit Type Card ─── */}
+                    <View style={styles.sectionCardSmall}>
+                        <Text style={styles.sectionTitle}>Select Visit Type</Text>
+                        <View style={styles.visitTypeRow}>
+                            <TouchableOpacity
+                                style={[styles.visitTypeOption, visitType === 'Home' && styles.visitTypeOptionActive]}
+                                onPress={() => setVisitType('Home')}
+                            >
+                                <Ionicons name="home-outline" size={20} color={visitType === 'Home' ? Colors.primary : Colors.textLight} />
+                                <Text style={[styles.visitTypeText, visitType === 'Home' && styles.visitTypeTextActive]}>Home Session</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.visitTypeOption, visitType === 'Clinic' && styles.visitTypeOptionActive]}
+                                onPress={() => setVisitType('Clinic')}
+                            >
+                                <Ionicons name="business-outline" size={20} color={visitType === 'Clinic' ? Colors.primary : Colors.textLight} />
+                                <Text style={[styles.visitTypeText, visitType === 'Clinic' && styles.visitTypeTextActive]}>Clinic Visit</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -154,15 +195,29 @@ export default function DoctorVisitScreen() {
                     <View style={styles.sectionCardSmall}>
                         <Text style={styles.sectionTitle}>When?</Text>
 
-                        <TouchableOpacity style={styles.radioOption}>
-                            <Ionicons name="radio-button-on" size={20} color="#048357" />
+                        <TouchableOpacity
+                            style={styles.radioOption}
+                            onPress={() => setSelectedWhen('ASAP')}
+                        >
+                            <Ionicons name={selectedWhen === 'ASAP' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedWhen === 'ASAP' ? Colors.primary : Colors.textLight} />
                             <Text style={styles.radioLabelMain}>Come ASAP <Text style={styles.radioLabelSub}>(Urgent)</Text></Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.radioOption}>
-                            <Ionicons name="radio-button-off" size={20} color="#AAAEAC" />
+                        <TouchableOpacity
+                            style={styles.radioOption}
+                            onPress={() => setSelectedWhen('Later')}
+                        >
+                            <Ionicons name={selectedWhen === 'Later' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedWhen === 'Later' ? Colors.primary : Colors.textLight} />
                             <Text style={styles.radioLabelMainGreen}>Schedule for later <Text style={styles.radioLabelSub}>(Date & Time Picker)</Text></Text>
                         </TouchableOpacity>
+                    </View>
+
+                    {/* ─── Upload Documents ─── */}
+                    <View style={{ paddingHorizontal: 2 }}>
+                        <ImageUploadBox
+                            title="Upload Reports (Optional)"
+                            subtitle="JPG, PNG or PDF, help our doctors understand better"
+                        />
                     </View>
 
                     {/* ─── Confirm Address Card ─── */}
@@ -187,7 +242,19 @@ export default function DoctorVisitScreen() {
 
             {/* ─── Fixed Bottom Bar ─── */}
             <View style={styles.bottomBar}>
-                <TouchableOpacity style={styles.bookButton} activeOpacity={0.8}>
+                <TouchableOpacity
+                    style={styles.bookButton}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                        router.push({
+                            pathname: '/doctor-visit/confirmation',
+                            params: {
+                                problem: selectedProblem || 'General checkup',
+                                doctorType: selectedDoctorType
+                            }
+                        });
+                    }}
+                >
                     <Text style={styles.bookButtonText}>Book Appointment</Text>
                 </TouchableOpacity>
             </View>
@@ -199,12 +266,12 @@ const styles = StyleSheet.create({
     /* ─── Screen Base ─── */
     screen: {
         flex: 1,
-        backgroundColor: '#048357', // Hero green background
+        backgroundColor: Colors.primary, // Hero green background
     },
 
     /* ─── Header ─── */
     headerSafe: {
-        backgroundColor: '#048357',
+        backgroundColor: Colors.primary,
     },
     headerRow: {
         flexDirection: 'row',
@@ -218,10 +285,9 @@ const styles = StyleSheet.create({
         padding: 4,
     },
     headerTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontWeight: '600',
-        fontSize: 20,
-        color: '#FFFFFF',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading2,
+        color: Colors.textWhite,
         letterSpacing: -0.24,
     },
     headerRight: {
@@ -231,23 +297,19 @@ const styles = StyleSheet.create({
     /* ─── Main Content Card ─── */
     contentCard: {
         flex: 1,
-        backgroundColor: '#FDFDE8', // Off-white cream
-        borderTopLeftRadius: 45,
-        borderTopRightRadius: 45,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 15,
-        elevation: 10,
+        backgroundColor: Colors.bgScreen, // Off-white cream
+        borderTopLeftRadius: Radius.xl * 2,
+        borderTopRightRadius: Radius.xl * 2,
+        ...Shadow.card,
         overflow: 'hidden',
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
-        paddingHorizontal: 25,
-        paddingTop: 20,
-        paddingBottom: 40,
+        paddingHorizontal: Spacing.xl,
+        paddingTop: Spacing.lg,
+        paddingBottom: Spacing.xl * 2,
     },
 
     /* ─── Description Card ─── */
@@ -268,16 +330,14 @@ const styles = StyleSheet.create({
         lineHeight: 20,
     },
     descTextBold: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontWeight: '500',
-        fontSize: 14,
-        color: '#2F2F2F',
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
     },
     descTextGreen: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontWeight: '500',
-        fontSize: 14,
-        color: '#02743F',
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.body,
+        color: Colors.primary,
     },
     descTextNormal: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
@@ -288,34 +348,25 @@ const styles = StyleSheet.create({
 
     /* ─── Generic Section Styling ─── */
     sectionCard: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        padding: 18,
-        marginBottom: 16,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 15,
-        elevation: 3,
+        backgroundColor: Colors.bgCard,
+        borderRadius: Radius.md,
+        padding: Spacing.lg,
+        marginBottom: Spacing.lg,
+        ...Shadow.card,
     },
     sectionCardSmall: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        paddingHorizontal: 18,
-        paddingVertical: 16,
-        marginBottom: 16,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 15,
-        elevation: 3,
+        backgroundColor: Colors.bgCard,
+        borderRadius: Radius.md,
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.lg,
+        marginBottom: Spacing.lg,
+        ...Shadow.card,
     },
     sectionTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontWeight: '600',
-        fontSize: 16,
-        color: '#02743F',
-        marginBottom: 16,
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading3,
+        color: Colors.primary,
+        marginBottom: Spacing.lg,
         letterSpacing: -0.24,
     },
 
@@ -327,14 +378,15 @@ const styles = StyleSheet.create({
     },
     problemItem: {
         // Width is handled dynamically inline
-        backgroundColor: '#FDFDE8',
-        borderRadius: 10,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 10,
-        elevation: 2,
+        backgroundColor: Colors.bgScreen,
+        borderRadius: Radius.md,
+        ...Shadow.card,
         marginBottom: 10, // Replaces gap: 10 for wrapping rows securely
+    },
+    problemItemActive: {
+        borderColor: Colors.primary,
+        borderWidth: 2,
+        backgroundColor: 'rgba(4, 131, 87, 0.05)',
     },
     problemIconContainer: {
         // Height is handled dynamically inline
@@ -348,15 +400,18 @@ const styles = StyleSheet.create({
         height: '100%',
     },
     problemLabel: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontWeight: '500',
-        fontSize: 10, // Dropped down slightly to 10 to fit on 0-320px screens perfectly
-        color: '#2F2F2F',
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.caption,
+        color: Colors.textDark,
         textAlign: 'center',
         paddingVertical: 8,
         paddingHorizontal: 2,
         lineHeight: 12,
         letterSpacing: -0.24,
+    },
+    problemLabelActive: {
+        color: Colors.primary,
+        fontFamily: Fonts.semiBold,
     },
 
     /* ─── Smart Banner ─── */
@@ -374,17 +429,15 @@ const styles = StyleSheet.create({
         marginRight: 6,
     },
     smartTagText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontWeight: '500',
-        fontSize: 10,
-        color: '#1E1E1E',
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.caption,
+        color: Colors.textDark,
     },
     smartBannerText: {
         flex: 1,
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontWeight: '400',
-        fontSize: 10,
-        color: 'rgba(2,116,63,0.82)',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.caption,
+        color: Colors.primary,
         lineHeight: 14,
     },
 
@@ -406,7 +459,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 6,
     },
     doctorTypeActive: {
-        borderColor: 'rgba(2,116,63,0.57)',
+        borderColor: Colors.primary,
         backgroundColor: 'rgba(2,116,63,0.05)',
     },
     doctorTypeIconGP: {
@@ -421,17 +474,45 @@ const styles = StyleSheet.create({
     },
     doctorTypeActiveText: {
         flexShrink: 1, // Stops text pushing out of the button on extremely small devices
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontWeight: '500',
-        fontSize: 9,
-        color: '#02743F',
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.caption,
+        color: Colors.primary,
     },
     doctorTypeInactiveText: {
         flexShrink: 1, // Stops text pushing out of the button on extremely small devices
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontWeight: '500',
-        fontSize: 9, // Synced fonts to ensure both buttons are symmetrical
-        color: '#02743F',
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.caption,
+        color: Colors.textMuted,
+    },
+
+    /* ─── Visit Type Selection ─── */
+    visitTypeRow: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    visitTypeOption: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(143,143,143,0.3)',
+        gap: 8,
+    },
+    visitTypeOptionActive: {
+        borderColor: '#048357',
+        backgroundColor: 'rgba(4, 131, 87, 0.05)',
+    },
+    visitTypeText: {
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textMuted,
+    },
+    visitTypeTextActive: {
+        color: Colors.primary,
+        fontFamily: Fonts.semiBold,
     },
 
     /* ─── When? ─── */
@@ -442,22 +523,19 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     radioLabelMain: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontWeight: '500',
-        fontSize: 12,
-        color: '#12653E',
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.bodySmall,
+        color: Colors.primaryDark,
     },
     radioLabelMainGreen: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontWeight: '500',
-        fontSize: 12,
-        color: '#115234',
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.bodySmall,
+        color: Colors.primaryDark,
     },
     radioLabelSub: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontWeight: '400',
-        fontSize: 11,
-        color: '#777777',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.caption,
+        color: Colors.textMuted,
     },
 
     /* ─── Confirm Address ─── */
@@ -477,23 +555,20 @@ const styles = StyleSheet.create({
     },
     addressText: {
         flex: 1,
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontWeight: '400',
-        fontSize: 11,
-        color: '#2F2F2F',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textDark,
     },
     addressEdit: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontWeight: '400',
-        fontSize: 11,
-        color: '#02743F',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        color: Colors.primary,
         marginLeft: 8,
     },
     addressHelper: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontWeight: '400',
-        fontSize: 10,
-        color: '#02743F',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.caption,
+        color: Colors.primary,
         marginLeft: 4,
     },
 
@@ -506,7 +581,7 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#FFFFF0',
+        backgroundColor: Colors.bgHeader,
         height: 111,
         borderTopLeftRadius: 10,
         borderTopRightRadius: 10,
@@ -519,18 +594,17 @@ const styles = StyleSheet.create({
         paddingTop: 18,
     },
     bookButton: {
-        width: '85%', // REPLACED Fixed 296 width to prevent overflow on small screens
+        width: '85%',
         maxWidth: 340,
-        height: 45,
-        backgroundColor: '#02743F',
-        borderRadius: 42,
+        height: 48,
+        backgroundColor: Colors.primary,
+        borderRadius: Radius.full,
         justifyContent: 'center',
         alignItems: 'center',
     },
     bookButtonText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontWeight: '500',
-        fontSize: 14,
-        color: '#FFFFFF',
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.button,
+        color: Colors.textWhite,
     },
 });

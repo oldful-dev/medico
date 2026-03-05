@@ -16,6 +16,8 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
 // ─── Figma-exported Assets ───
 const avatarImg = require('@/assets/images/65a7d95e579c06bade85c7970d17cfcc5d7b7c55.png');
@@ -26,6 +28,7 @@ const mapPinIcon = require('@/assets/images/cdbf0706933902cbeda980a0b28531b20ee3
 const creditCardIcon = require('@/assets/images/1552f99b4321880dc3208d769c4ba401b9a3aafd.png');
 
 export default function AccountScreen() {
+    const router = useRouter();
     const [notifyEnabled, setNotifyEnabled] = useState(true);
     const [whatsappEnabled, setWhatsappEnabled] = useState(true);
     const [promoEnabled, setPromoEnabled] = useState(false);
@@ -77,7 +80,7 @@ export default function AccountScreen() {
                         </View>
                         {/* Edit Button overlay */}
                         <TouchableOpacity style={styles.editButton}>
-                            <Ionicons name="create-outline" size={14} color="#048357" />
+                            <Ionicons name="create-outline" size={14} color={Colors.primary} />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -127,7 +130,7 @@ export default function AccountScreen() {
                             </View>
                         </View>
                         <Switch
-                            trackColor={{ false: '#AAAEAC', true: '#048357' }}
+                            trackColor={{ false: '#AAAEAC', true: Colors.primary }}
                             thumbColor={'#FFFFFF'}
                             ios_backgroundColor="#AAAEAC"
                             onValueChange={() => setNotifyEnabled(prev => !prev)}
@@ -147,15 +150,19 @@ export default function AccountScreen() {
                     {/* Section 2: Management & Logistics */}
                     <Text style={styles.subHeading}>Management & Logistics</Text>
                     <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
-                        <View style={styles.linkLeft}><Ionicons name="location-outline" size={24} color="#048357" /><Text style={styles.linkTitle}>Manage Addresses</Text></View>
+                        <View style={styles.linkLeft}><Ionicons name="location-outline" size={24} color={Colors.primary} /><Text style={styles.linkTitle}>Manage Addresses</Text></View>
                         <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
-                        <View style={styles.linkLeft}><Ionicons name="card-outline" size={24} color="#048357" /><Text style={styles.linkTitle}>Payments & Wallet</Text></View>
+                        <View style={styles.linkLeft}><Ionicons name="card-outline" size={24} color={Colors.primary} /><Text style={styles.linkTitle}>Payments & Wallet</Text></View>
                         <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
-                        <View style={styles.linkLeft}><Ionicons name="time-outline" size={24} color="#048357" /><Text style={styles.linkTitle}>Order History</Text></View>
+                    <TouchableOpacity
+                        style={styles.settingCard}
+                        activeOpacity={0.7}
+                        onPress={() => router.push('/my-bookings')}
+                    >
+                        <View style={styles.linkLeft}><Ionicons name="time-outline" size={24} color={Colors.primary} /><Text style={styles.linkTitle}>My Bookings</Text></View>
                         <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
                     </TouchableOpacity>
 
@@ -163,7 +170,7 @@ export default function AccountScreen() {
                     <Text style={styles.subHeading}>App Preferences</Text>
                     <TouchableOpacity style={styles.settingCard} activeOpacity={0.7} onPress={() => setLangModalVisible(true)}>
                         <View style={styles.linkLeft}>
-                            <Ionicons name="language-outline" size={24} color="#048357" />
+                            <Ionicons name="language-outline" size={24} color={Colors.primary} />
                             <Text style={styles.linkTitle}>Change Language</Text>
                         </View>
                         <View style={styles.rightWithText}>
@@ -178,34 +185,39 @@ export default function AccountScreen() {
                             <Ionicons name="logo-whatsapp" size={24} color="#25D366" />
                             <Text style={styles.linkTitle}>WhatsApp Updates</Text>
                         </View>
-                        <Switch trackColor={{ false: '#AAAEAC', true: '#048357' }} thumbColor={'#FFFFFF'}
+                        <Switch trackColor={{ false: '#AAAEAC', true: Colors.primary }} thumbColor={'#FFFFFF'}
                             ios_backgroundColor="#AAAEAC" onValueChange={setWhatsappEnabled} value={whatsappEnabled} />
                     </View>
                     <View style={styles.settingCardNonClickable}>
                         <View style={styles.linkLeft}>
-                            <Ionicons name="megaphone-outline" size={24} color="#048357" />
+                            <Ionicons name="megaphone-outline" size={24} color={Colors.primary} />
                             <Text style={styles.linkTitle}>Promotional Offers</Text>
                         </View>
-                        <Switch trackColor={{ false: '#AAAEAC', true: '#048357' }} thumbColor={'#FFFFFF'}
+                        <Switch trackColor={{ false: '#AAAEAC', true: Colors.primary }} thumbColor={'#FFFFFF'}
                             ios_backgroundColor="#AAAEAC" onValueChange={setPromoEnabled} value={promoEnabled} />
                     </View>
 
                     {/* Section 4: Support & Legal */}
                     <Text style={styles.subHeading}>Support & Legal</Text>
-                    <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
-                        <View style={styles.linkLeft}><Ionicons name="headset-outline" size={24} color="#048357" /><Text style={styles.linkTitle}>Help & Support</Text></View>
+                    <TouchableOpacity style={styles.settingCard} activeOpacity={0.7} onPress={() => router.push('/help-support' as any)}>
+                        <View style={styles.linkLeft}><Ionicons name="headset-outline" size={24} color={Colors.primary} /><Text style={styles.linkTitle}>Help & Support</Text></View>
                         <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
-                        <View style={styles.linkLeft}><Ionicons name="star-outline" size={24} color="#048357" /><Text style={styles.linkTitle}>Rate Oldful</Text></View>
+                    <TouchableOpacity style={styles.settingCard} activeOpacity={0.7} onPress={() => router.push('/rate-us' as any)}>
+                        <View style={styles.linkLeft}><Ionicons name="star-outline" size={24} color={Colors.primary} /><Text style={styles.linkTitle}>Rate Oldful</Text></View>
                         <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
-                        <View style={styles.linkLeft}><Ionicons name="document-text-outline" size={24} color="#048357" /><Text style={styles.linkTitle}>Terms & Privacy Policy</Text></View>
+                    <TouchableOpacity style={styles.settingCard} activeOpacity={0.7} onPress={() => router.push('/terms-policy' as any)}>
+                        <View style={styles.linkLeft}><Ionicons name="document-text-outline" size={24} color={Colors.primary} /><Text style={styles.linkTitle}>Terms & Privacy Policy</Text></View>
                         <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.logoutButton} activeOpacity={0.6}>
+                    {/* Logout Button */}
+                    <TouchableOpacity
+                        style={styles.logoutButton}
+                        activeOpacity={0.6}
+                        onPress={() => router.replace('/(auth)/login' as any)}
+                    >
                         <Text style={styles.logoutText}>Log Out</Text>
                     </TouchableOpacity>
                 </View>
@@ -249,9 +261,9 @@ const styles = StyleSheet.create({
 
     /* ─── Header ─── */
     headerSafe: {
-        backgroundColor: '#048357',
-        borderBottomLeftRadius: 20,
-        borderBottomRightRadius: 20,
+        backgroundColor: Colors.primary,
+        borderBottomLeftRadius: Radius.xl,
+        borderBottomRightRadius: Radius.xl,
         zIndex: 10,
     },
     headerRow: {
@@ -261,10 +273,9 @@ const styles = StyleSheet.create({
         paddingBottom: 10,
     },
     headerTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontWeight: '600',
-        fontSize: 20,
-        color: '#FFFFFF',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading2,
+        color: Colors.textWhite,
         letterSpacing: -0.24,
     },
 
@@ -273,9 +284,9 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        paddingHorizontal: 15,
-        paddingTop: 25,
-        paddingBottom: 20,
+        paddingHorizontal: Spacing.md,
+        paddingTop: Spacing.lg,
+        paddingBottom: Spacing.xl,
     },
 
     /* ─── Profile Card ─── */
@@ -298,45 +309,39 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     profileName: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontWeight: '600',
-        fontSize: 15,
-        color: '#000000',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.button,
+        color: Colors.textDark,
         marginBottom: 2,
     },
     profileDetailLine: {
-        fontSize: 14,
+        fontSize: FontSize.body,
         lineHeight: 20,
     },
     profileDetailKey: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontWeight: '500',
-        color: '#000000',
+        fontFamily: Fonts.medium,
+        color: Colors.textDark,
     },
     profileDetailKeyNormal: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontWeight: '600',
-        color: '#000000',
+        fontFamily: Fonts.semiBold,
+        color: Colors.textDark,
     },
     profileDetailValue: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontWeight: '400',
-        color: '#2F2F2F',
+        fontFamily: Fonts.regular,
+        color: Colors.textBody,
     },
     profileAddressLine: {
-        fontSize: 12,
+        fontSize: FontSize.bodySmall,
         marginTop: 4,
         lineHeight: 18,
     },
     profileAddressKey: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontWeight: '500',
-        color: '#1E1E1E',
+        fontFamily: Fonts.medium,
+        color: Colors.textDark,
     },
     profileAddressValue: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontWeight: '400',
-        color: '#1E1E1E',
+        fontFamily: Fonts.regular,
+        color: Colors.textDark,
     },
     avatarContainer: {
         position: 'relative',
@@ -369,266 +374,262 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
 
-    /* ─── Section Heading ─── */
     sectionHeading: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontWeight: '500',
-        fontSize: 20,
-        color: '#2F2F2F',
-        marginLeft: 16,
-        marginBottom: 15,
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading2,
+        color: Colors.textDark,
+        marginLeft: Spacing.sm,
+        marginBottom: Spacing.lg,
         letterSpacing: -0.24,
     },
     sectionHeadingGreen: {
-        color: '#048357',
+        color: Colors.primary,
     },
 
     /* ─── Cards Common ─── */
     medicalCard: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 15,
-        paddingHorizontal: 16,
-        paddingVertical: 15,
-        marginBottom: 15,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 15,
-        elevation: 6,
+        borderRadius: Radius.lg,
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.lg,
+        marginBottom: Spacing.lg,
+        ...Shadow.card,
     },
     prescriptionsCard: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 10,
-        paddingHorizontal: 16,
-        paddingVertical: 18,
-        marginBottom: 20,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 15,
-        elevation: 6,
+        borderRadius: Radius.lg,
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.lg,
+        marginBottom: Spacing.lg,
+        ...Shadow.card,
     },
     cardHeaderRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 6,
+        marginBottom: Spacing.md,
     },
     titleWithIcon: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        gap: Spacing.sm,
     },
     cardTitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontWeight: '500',
-        fontSize: 15,
-        color: '#000000',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading3,
+        color: Colors.textDark,
         letterSpacing: -0.24,
     },
     iconSmall: {
-        width: 19,
-        height: 28,
+        width: 18,
+        height: 18,
     },
 
     /* ─── Medical Text ─── */
     medicalText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontWeight: '400',
-        fontSize: 12,
-        color: '#555555',
-        lineHeight: 20,
-        letterSpacing: -0.24,
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textBody,
+        lineHeight: 22,
     },
     medicalTextBold: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontWeight: '600',
-        color: '#2F2F2F',
+        fontFamily: Fonts.semiBold,
+        color: Colors.textDark,
     },
 
     /* ─── Prescription Content ─── */
     listItemRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 12,
-        paddingLeft: 4,
+        alignItems: 'flex-start',
+        marginBottom: Spacing.md,
+        paddingRight: Spacing.md,
+        gap: Spacing.sm,
     },
     bulletPoint: {
-        width: 5,
-        height: 5,
-        borderRadius: 2.5,
-        backgroundColor: '#000000',
-        marginRight: 8,
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: Colors.primary,
+        marginTop: 6,
     },
     listText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontWeight: '400',
-        fontSize: 15,
-        color: '#000000',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textDark,
+        flex: 1,
+        lineHeight: 20,
     },
     notificationGroup: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 15,
-        paddingLeft: 6,
+        backgroundColor: 'rgba(4, 131, 87, 0.04)',
+        borderRadius: Radius.md,
+        padding: Spacing.md,
+        marginBottom: Spacing.md,
     },
     notificationDetails: {
-        gap: 4,
+        flex: 1,
+        gap: 8,
     },
     notificationRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        gap: 8,
     },
     iconTiny: {
-        width: 19,
-        height: 19,
+        width: 14,
+        height: 14,
         resizeMode: 'contain',
     },
     notificationText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontWeight: '400',
-        fontSize: 12,
-        color: '#000000',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.caption,
+        color: Colors.textMuted,
     },
     addContactButton: {
-        backgroundColor: 'rgba(217,217,217,0.59)',
-        borderWidth: 1,
-        borderColor: '#AAAEAC',
-        borderRadius: 5,
-        height: 36,
-        justifyContent: 'center',
+        borderTopWidth: 1,
+        borderTopColor: Colors.borderLight,
+        paddingVertical: Spacing.md,
         alignItems: 'center',
-        marginHorizontal: 8,
     },
     addContactText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontWeight: '500',
-        fontSize: 12,
-        color: '#000000',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.body,
+        color: Colors.primary,
+        letterSpacing: -0.24,
     },
 
     /* ─── Link Sections & Modals ─── */
     linksContainer: {
-        gap: 6,
+        marginTop: Spacing.xl,
     },
     subHeading: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 16,
-        color: '#048357', // Accent color to break sections up
-        marginTop: 20,
-        marginBottom: 8,
-        marginLeft: 10,
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.heading3,
+        color: Colors.textDark,
+        marginLeft: Spacing.sm,
+        marginBottom: Spacing.md,
+        marginTop: Spacing.md,
+        letterSpacing: -0.24,
     },
     settingCard: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 10,
-        height: 55,
+        borderRadius: 12,
+        paddingHorizontal: 18,
+        paddingVertical: 18,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 15,
-        marginBottom: 5,
-        borderWidth: 1,
-        borderColor: '#EFEFEF',
+        marginBottom: Spacing.md,
+        ...Shadow.card,
     },
-    settingCardNonClickable: { // Same layout, just no active opacity tap event needed
+    settingCardNonClickable: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 10,
-        height: 55,
+        borderRadius: 12,
+        paddingHorizontal: 18,
+        paddingVertical: 14,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 15,
-        marginBottom: 5,
-        borderWidth: 1,
-        borderColor: '#EFEFEF',
+        marginBottom: Spacing.md,
+        ...Shadow.card,
     },
     linkLeft: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: 14,
     },
     linkTitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 14,
-        color: '#2F2F2F',
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
     },
     rightWithText: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        gap: 8,
     },
     selectedSettingText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 13,
-        color: '#898989',
-    },
-    logoutButton: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 20,
-        paddingVertical: 12,
-    },
-    logoutText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 14,
-        color: '#AAAEAC', // Greyed out priority
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textMuted,
     },
 
-    /* ─── Modal Styles ─── */
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'flex-end',
-    },
-    modalContainer: {
-        backgroundColor: '#FFFFFF',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        paddingBottom: 40,
-        paddingTop: 20,
-        paddingHorizontal: 20,
-    },
-    modalTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 18,
-        color: '#2F2F2F',
-        marginBottom: 15,
-    },
-    langOption: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+    /* ─── Logout Button ─── */
+    logoutButton: {
+        backgroundColor: '#FFE6E6', // Soft red background
+        borderRadius: 12,
+        paddingVertical: 16,
         alignItems: 'center',
-        paddingVertical: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
+        justifyContent: 'center',
+        marginTop: Spacing.lg,
+        marginBottom: Spacing.xl, // extra padding before bottom bar
+        borderWidth: 1,
+        borderColor: '#FFB3B3',
     },
-    langOptionSelected: {
-        backgroundColor: '#F0FFF7',
-    },
-    langText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 16,
-        color: '#555555',
-    },
-    langTextSelected: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        color: '#048357',
-    },
-    modalCancel: {
-        marginTop: 20,
-        alignItems: 'center',
-        paddingVertical: 15,
-    },
-    modalCancelText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 16,
-        color: '#FF4D4D',
+    logoutText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.body,
+        color: '#D32F2F', // Strong red text
+        letterSpacing: -0.24,
     },
 
     bottomSpacer: {
-        height: 100, // accommodate bottom tab bar
+        height: 100, // accommodate custom tab bar
+    },
+
+    /* ─── Language Modal ─── */
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        padding: Spacing.xl,
+    },
+    modalContainer: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: Radius.lg,
+        padding: Spacing.xl,
+        ...Shadow.card,
+    },
+    modalTitle: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading3,
+        color: Colors.textDark,
+        marginBottom: Spacing.md,
+        textAlign: 'center',
+    },
+    langOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: Spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.borderLight,
+    },
+    langOptionSelected: {
+        backgroundColor: 'rgba(4, 131, 87, 0.05)',
+        borderRadius: Radius.sm,
+        borderBottomWidth: 0,
+        paddingHorizontal: Spacing.sm,
+    },
+    langText: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
+    },
+    langTextSelected: {
+        fontFamily: Fonts.semiBold,
+        color: Colors.primary,
+    },
+    modalCancel: {
+        marginTop: Spacing.xl,
+        paddingVertical: Spacing.sm,
+        alignItems: 'center',
+    },
+    modalCancelText: {
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.body,
+        color: Colors.textMuted,
     },
 });

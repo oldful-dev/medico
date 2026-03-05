@@ -15,23 +15,55 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-// ─── Pre-existing Conditions from Figma ───
-const CONDITIONS = [
+// ─── Initial State Constants ───
+const INITIAL_CONDITIONS = [
     { label: 'Diabetes', selected: true },
     { label: 'Hypertension (BP)', selected: true },
     { label: 'Heart Condition', selected: false },
     { label: 'None', selected: false, isNone: true },
 ];
 
-// ─── Who Is It For ───
-const RECIPIENTS = [
-    { label: 'Self (Age 45-70)', selected: true, icon: 'person' as const },
-    { label: 'Parents', selected: false, icon: 'people' as const },
+const INITIAL_RECIPIENTS = [
+    { label: 'Self (Age 45-70)', selected: true },
+    { label: 'Parents', selected: false },
 ];
 
 export default function InsuranceScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+
+    // UI State
+    const [recipients, setRecipients] = React.useState(INITIAL_RECIPIENTS);
+    const [conditions, setConditions] = React.useState(INITIAL_CONDITIONS);
+    const [requirements, setRequirements] = React.useState('');
+
+    const selectRecipient = (index: number) => {
+        const newRecipients = recipients.map((r, i) => ({
+            ...r,
+            selected: i === index
+        }));
+        setRecipients(newRecipients);
+    };
+
+    const toggleCondition = (index: number) => {
+        const newConditions = [...conditions];
+
+        // If "None" is selected, clear everything else
+        if (newConditions[index].isNone) {
+            newConditions.forEach((c, i) => {
+                c.selected = i === index ? !c.selected : false;
+            });
+        } else {
+            // Turn off "None" if a specific disease is selected
+            newConditions[index].selected = !newConditions[index].selected;
+            const noneIndex = newConditions.findIndex(c => c.isNone);
+            if (noneIndex !== -1 && newConditions[index].selected) {
+                newConditions[noneIndex].selected = false;
+            }
+        }
+
+        setConditions(newConditions);
+    };
 
     return (
         <View style={styles.screen}>
@@ -66,13 +98,14 @@ export default function InsuranceScreen() {
                         <View style={styles.sectionCard}>
                             <Text style={styles.sectionTitle}>Who is it for?</Text>
                             <View style={styles.recipientRow}>
-                                {RECIPIENTS.map((item, index) => (
+                                {recipients.map((item, index) => (
                                     <TouchableOpacity
                                         key={index}
                                         style={[
                                             styles.recipientButton,
                                             item.selected && styles.recipientButtonSelected,
                                         ]}
+                                        onPress={() => selectRecipient(index)}
                                     >
                                         <Ionicons
                                             name={item.selected ? 'radio-button-on' : 'radio-button-off'}
@@ -96,8 +129,12 @@ export default function InsuranceScreen() {
                             <Text style={styles.conditionSubHeader}>(Crucial for premium calculation)</Text>
                         </Text>
 
-                        {CONDITIONS.map((cond, index) => (
-                            <TouchableOpacity key={index} style={styles.conditionItem}>
+                        {conditions.map((cond, index) => (
+                            <TouchableOpacity
+                                key={index}
+                                style={styles.conditionItem}
+                                onPress={() => toggleCondition(index)}
+                            >
                                 <View style={[
                                     styles.conditionCheckbox,
                                     cond.selected && styles.conditionCheckboxSelected,
@@ -125,13 +162,32 @@ export default function InsuranceScreen() {
                                 multiline
                                 numberOfLines={4}
                                 textAlignVertical="top"
+                                value={requirements}
+                                onChangeText={setRequirements}
                             />
                         </View>
 
                         {/* ─── Submit Button ─── */}
                         <View style={styles.submitContainer}>
-                            <TouchableOpacity style={styles.submitButton} activeOpacity={0.8}>
-                                <Text style={styles.submitButtonText}>Submit</Text>
+                            <TouchableOpacity
+                                style={styles.submitButton}
+                                activeOpacity={0.8}
+                                onPress={() => {
+                                    const activeRecipient = recipients.find(r => r.selected)?.label || 'Unknown';
+                                    const activeConditions = conditions.filter(c => c.selected).map(c => c.label).join(', ') || 'None';
+
+                                    router.push({
+                                        pathname: '/service-confirmation',
+                                        params: {
+                                            serviceName: 'Health Insurance Plan',
+                                            description: `For: ${activeRecipient}\nConditions: ${activeConditions}\nNotes: ${requirements || 'None'}`,
+                                            address: 'Online Consultation',
+                                            fee: 'Free Quote'
+                                        }
+                                    });
+                                }}
+                            >
+                                <Text style={styles.submitButtonText}>Submit Request</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

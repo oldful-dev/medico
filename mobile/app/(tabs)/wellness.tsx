@@ -10,6 +10,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
 // Using local images or placeholder for Hero if a specific illustration isn't explicitly supplied
 // For this teaser, we'll build a vibrant Hero with a prominent 'Oldful' logo or generic medical icon 
@@ -29,8 +30,8 @@ export default function WellnessScreen() {
     return (
         <View style={styles.screen}>
             {/* Header extension */}
-            <View style={{ backgroundColor: '#048357', height: insets.top }} />
-            <StatusBar style="light" backgroundColor="#048357" />
+            <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
+            <StatusBar style="light" backgroundColor={Colors.primary} />
 
             {/* ─── Header ─── */}
             <View style={styles.headerContainer}>
@@ -88,7 +89,7 @@ export default function WellnessScreen() {
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: '#048357', // Matches app theme header
+        backgroundColor: Colors.primary, // Matches app theme header
     },
     /* ─── Header ─── */
     headerContainer: {
@@ -98,27 +99,23 @@ const styles = StyleSheet.create({
         paddingBottom: 25,
     },
     headerTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 20,
-        color: '#FFFFFF',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading2,
+        color: Colors.textWhite,
         letterSpacing: -0.24,
     },
     /* ─── Main Content Container (Cream Box) ─── */
     contentContainer: {
         flex: 1,
-        backgroundColor: '#FDFDE8',
-        borderTopLeftRadius: 40,
-        borderTopRightRadius: 40,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 10,
+        backgroundColor: Colors.bgScreen,
+        borderTopLeftRadius: Radius.xl * 2,
+        borderTopRightRadius: Radius.xl * 2,
+        ...Shadow.card,
     },
     scrollContent: {
-        paddingTop: 30,
-        paddingHorizontal: 20,
-        paddingBottom: 40,
+        paddingTop: Spacing.xl,
+        paddingHorizontal: Spacing.lg,
+        paddingBottom: Spacing.xl * 2,
     },
 
     /* ─── Hero Section ─── */
@@ -144,59 +141,55 @@ const styles = StyleSheet.create({
     comingSoonBadge: {
         position: 'absolute',
         bottom: -15,
-        backgroundColor: '#02743F', // Green highlighting the coming soon
-        paddingHorizontal: 16,
+        backgroundColor: Colors.primaryDark, // Green highlighting the coming soon
+        paddingHorizontal: Spacing.lg,
         paddingVertical: 6,
-        borderRadius: 20,
+        borderRadius: Radius.xl,
         borderWidth: 2,
-        borderColor: '#FDFDE8', // Matches body background
+        borderColor: Colors.bgScreen, // Matches body background
     },
     comingSoonBadgeText: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 12,
-        color: '#FFFFFF',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textWhite,
         letterSpacing: 1,
     },
     heroHeadline: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 22,
-        color: '#2F2F2F',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading1,
+        color: Colors.textBody,
         textAlign: 'center',
-        marginBottom: 10,
-        paddingHorizontal: 10,
+        marginBottom: Spacing.sm,
+        paddingHorizontal: Spacing.sm,
         lineHeight: 30,
     },
     heroSubHeadline: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 14,
-        color: '#555555',
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
         textAlign: 'center',
         lineHeight: 22,
-        paddingHorizontal: 15,
+        paddingHorizontal: Spacing.lg,
     },
 
     /* ─── Teaser Layout ─── */
     teaserSection: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 20,
-        padding: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-        elevation: 3,
+        backgroundColor: Colors.bgCard,
+        borderRadius: Radius.xl,
+        padding: Spacing.lg,
+        ...Shadow.card,
     },
     teaserSectionTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 18,
-        color: '#2F2F2F',
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading2,
+        color: Colors.textBody,
         marginBottom: 6,
     },
     teaserSectionSubtitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 13,
-        color: '#898989',
-        marginBottom: 20,
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textMuted,
+        marginBottom: Spacing.xl,
     },
 
     gridContainer: {
@@ -207,10 +200,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F9F9F9',
-        padding: 12,
-        borderRadius: 12,
+        padding: Spacing.md,
+        borderRadius: Radius.md,
         borderWidth: 1,
-        borderColor: '#EFEFEF',
+        borderColor: Colors.borderLight,
     },
     iconCircle: {
         width: 50,
@@ -226,15 +219,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     gridItemTitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 15,
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.body,
         color: '#707070', // Greyed-out text effect
         marginBottom: 2,
     },
     gridItemSub: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 12,
-        color: '#A0A0A0', // Highly faded subtitle
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textLight, // Highly faded subtitle
     },
     footerSpacing: {
         height: 80,

@@ -8,11 +8,14 @@ import {
     Image,
     Platform,
     ScrollView,
+    TextInput,
+    Alert,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 
 // ─── Figma Assets ───
 const imgBell = require('@/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png');
@@ -23,6 +26,77 @@ export default function OrderMedicinesScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [duration, setDuration] = useState('1 Month');
+    const [address, setAddress] = useState('Fetching location...');
+    const [autoRefill, setAutoRefill] = useState(true);
+    const [isManualEntry, setIsManualEntry] = useState(false);
+    const [manualText, setManualText] = useState('');
+    const [selectedImages, setSelectedImages] = useState<string[]>([]);
+
+    const openCamera = async () => {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission Denied', 'Camera access is required to take photos.');
+            return;
+        }
+
+        const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            setSelectedImages([...selectedImages, result.assets[0].uri]);
+        }
+    };
+
+    const openGallery = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission Denied', 'Gallery access is required to choose photos.');
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsMultipleSelection: true,
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const newUris = result.assets.map(asset => asset.uri);
+            setSelectedImages([...selectedImages, ...newUris]);
+        }
+    };
+
+    const removeImage = (index: number) => {
+        const updated = [...selectedImages];
+        updated.splice(index, 1);
+        setSelectedImages(updated);
+    };
+
+    const handleCapture = async (source: 'camera' | 'gallery') => {
+        if (source === 'camera') await openCamera();
+        else await openGallery();
+    };
+
+    React.useEffect(() => {
+        (async () => {
+            const { locationService } = await import('@/services/device/locationService');
+            try {
+                const hasPermission = await locationService.requestPermission();
+                if (hasPermission) {
+                    const coords = await locationService.getCurrentLocation();
+                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
+                    setAddress(fetchedAddress);
+                } else {
+                    setAddress('Location permission denied');
+                }
+            } catch (error) {
+                console.log('Failed to fetch location:', error);
+                setAddress('Location unavailable');
+            }
+        })();
+    }, []);
 
     return (
         <View style={styles.screen}>
@@ -51,27 +125,53 @@ export default function OrderMedicinesScreen() {
                     <Text style={styles.sectionTitle}>Upload Prescription</Text>
 
                     {/* ─── Options Card 1: Camera ─── */}
-                    <TouchableOpacity style={styles.uploadOptionCard} activeOpacity={0.7}>
+                    <TouchableOpacity
+                        style={[styles.uploadOptionCard, selectedImages.length > 0 && styles.uploadOptionCardActive]}
+                        activeOpacity={0.7}
+                        onPress={() => handleCapture('camera')}
+                    >
                         <Image source={cameraIcon} style={styles.uploadIcon} resizeMode="contain" />
                         <View style={styles.uploadTextContainer}>
                             <Text style={styles.uploadMainText}>Camera</Text>
                             <Text style={styles.uploadSubText}>Take Photo</Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color="#898989" />
+                        <Ionicons name={selectedImages.length > 0 ? "checkmark-circle" : "chevron-forward"} size={20} color={selectedImages.length > 0 ? "#048357" : "#898989"} />
                     </TouchableOpacity>
 
                     {/* ─── Options Card 2: Gallery ─── */}
-                    <TouchableOpacity style={styles.uploadOptionCard} activeOpacity={0.7}>
+                    <TouchableOpacity
+                        style={[styles.uploadOptionCard, selectedImages.length > 0 && styles.uploadOptionCardActive]}
+                        activeOpacity={0.7}
+                        onPress={() => handleCapture('gallery')}
+                    >
                         <Image source={galleryIcon} style={styles.uploadIcon} resizeMode="contain" />
                         <View style={styles.uploadTextContainer}>
                             <Text style={styles.uploadMainText}>Gallery</Text>
                             <Text style={styles.uploadSubText}>Choose Image</Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color="#898989" />
+                        <Ionicons name={selectedImages.length > 0 ? "checkmark-circle" : "chevron-forward"} size={20} color={selectedImages.length > 0 ? "#048357" : "#898989"} />
                     </TouchableOpacity>
 
+                    {/* ─── Selected Images Preview ─── */}
+                    {selectedImages.length > 0 && (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.previewScroll} contentContainerStyle={styles.previewContent}>
+                            {selectedImages.map((uri, index) => (
+                                <View key={index} style={styles.previewThumbWrapper}>
+                                    <Image source={{ uri }} style={styles.previewThumb} />
+                                    <TouchableOpacity style={styles.removePreviewBtn} onPress={() => removeImage(index)}>
+                                        <Ionicons name="close-circle" size={20} color="#FF6B6B" />
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+                        </ScrollView>
+                    )}
+
                     {/* ─── Options Card 3: Manual Entry ─── */}
-                    <TouchableOpacity style={styles.uploadOptionCard} activeOpacity={0.7}>
+                    <TouchableOpacity
+                        style={[styles.uploadOptionCard, isManualEntry && styles.uploadOptionCardActive]}
+                        activeOpacity={0.7}
+                        onPress={() => setIsManualEntry(!isManualEntry)}
+                    >
                         {/* Simulated "Type" Icon (lines) */}
                         <View style={styles.typeIconBox}>
                             <View style={styles.typeIconLine} />
@@ -81,8 +181,21 @@ export default function OrderMedicinesScreen() {
                             <Text style={styles.uploadMainText}>Type</Text>
                             <Text style={styles.uploadSubText}>Manual Entry</Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color="#898989" />
+                        <Ionicons name={isManualEntry ? "close-circle" : "chevron-forward"} size={20} color={isManualEntry ? "#048357" : "#898989"} />
                     </TouchableOpacity>
+
+                    {isManualEntry && (
+                        <View style={styles.manualEntryContainer}>
+                            <TextInput
+                                style={styles.manualInput}
+                                placeholder="Enter medicine names and quantities..."
+                                placeholderTextColor="#898989"
+                                multiline
+                                value={manualText}
+                                onChangeText={setManualText}
+                            />
+                        </View>
+                    )}
 
                     {/* ─── Address Section ─── */}
                     <Text style={styles.addressLabel}>
@@ -93,7 +206,7 @@ export default function OrderMedicinesScreen() {
                     <View style={[styles.uploadOptionCard, { marginBottom: 15 }]}>
                         <Ionicons name="location" size={24} color="#85C3A8" style={{ marginLeft: 2, marginRight: 15 }} />
                         <View style={styles.uploadTextContainer}>
-                            <Text style={styles.addressText} numberOfLines={1}>221B Banker St, London</Text>
+                            <Text style={styles.addressText} numberOfLines={1}>{address}</Text>
                         </View>
                         <TouchableOpacity style={styles.editAddressButton}>
                             <Ionicons name="pencil-outline" size={14} color="#2F2F2F" />
@@ -101,16 +214,20 @@ export default function OrderMedicinesScreen() {
                     </View>
 
                     {/* ─── Auto-Refill Card ─── */}
-                    <View style={styles.autoRefillCard}>
-                        <Ionicons name="notifications" size={30} color="#048357" style={{ marginRight: 15 }} />
+                    <TouchableOpacity
+                        style={[styles.autoRefillCard, !autoRefill && { opacity: 0.6, borderColor: '#AAAEAC' }]}
+                        activeOpacity={0.7}
+                        onPress={() => setAutoRefill(!autoRefill)}
+                    >
+                        <Ionicons name="notifications" size={30} color={autoRefill ? "#048357" : "#555555"} style={{ marginRight: 15 }} />
                         <View style={styles.uploadTextContainer}>
                             <View>
                                 <Text style={styles.autoRefillTitle}>Auto - Refill</Text>
-                                <Text style={styles.autoRefillDesc}>Remind me to re-order in 25 days.</Text>
+                                <Text style={styles.autoRefillDesc}>{autoRefill ? 'Remind me to re-order in 25 days.' : 'Click to enable reminders'}</Text>
                             </View>
                         </View>
-                        <Ionicons name="chevron-forward" size={20} color="#898989" />
-                    </View>
+                        <Ionicons name={autoRefill ? "checkbox" : "square-outline"} size={20} color={autoRefill ? "#048357" : "#898989"} />
+                    </TouchableOpacity>
 
                     {/* ─── Duration Selection ─── */}
                     <Text style={styles.addressLabel}>
@@ -135,7 +252,21 @@ export default function OrderMedicinesScreen() {
                     </View>
 
                     {/* ─── Place Order Button ─── */}
-                    <TouchableOpacity style={styles.submitButton} activeOpacity={0.8}>
+                    <TouchableOpacity
+                        style={styles.submitButton}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            router.push({
+                                pathname: '/service-confirmation',
+                                params: {
+                                    serviceName: 'Order Medicines',
+                                    description: `Type: ${isManualEntry ? 'Manual Entry' : 'Prescription Upload'}\nDuration: ${duration}\nAuto-Refill: ${autoRefill ? 'Yes' : 'No'}\n${isManualEntry ? `Meds: ${manualText}` : ''}\nDocs: ${selectedImages.length} attached`,
+                                    address: address,
+                                    fee: '₹149 (Delivery Fee)'
+                                }
+                            });
+                        }}
+                    >
                         <Text style={styles.submitButtonText}>Place Order</Text>
                     </TouchableOpacity>
 
@@ -368,5 +499,51 @@ const styles = StyleSheet.create({
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         color: '#FFFFFF',
         fontSize: 15,
+    },
+    /* ─── New Interactive Styles ─── */
+    uploadOptionCardActive: {
+        borderColor: '#048357',
+        borderWidth: 1.5,
+        backgroundColor: '#F0FFF4',
+    },
+    manualEntryContainer: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        padding: 10,
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: '#048357',
+    },
+    manualInput: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 14,
+        color: '#2F2F2F',
+        minHeight: 80,
+        textAlignVertical: 'top',
+    },
+    /* ─── Preview Styles ─── */
+    previewScroll: {
+        marginBottom: 15,
+    },
+    previewContent: {
+        paddingVertical: 5,
+    },
+    previewThumbWrapper: {
+        marginRight: 12,
+        position: 'relative',
+    },
+    previewThumb: {
+        width: 60,
+        height: 60,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#048357',
+    },
+    removePreviewBtn: {
+        position: 'absolute',
+        top: -8,
+        right: -8,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10,
     },
 });

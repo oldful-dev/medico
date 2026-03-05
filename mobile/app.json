@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "oldful",
-    "slug": "oldful",
+    "slug": "medico",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icons/ios/iTunesArtwork@3x.png",
@@ -43,7 +43,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

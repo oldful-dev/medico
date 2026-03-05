@@ -102,7 +102,21 @@ export default function BloodTestScreen() {
 
                     {/* ─── Confirm Booking Button ─── */}
                     <View style={styles.buttonContainer}>
-                        <TouchableOpacity style={styles.confirmButton} activeOpacity={0.8}>
+                        <TouchableOpacity
+                            style={styles.confirmButton}
+                            activeOpacity={0.8}
+                            onPress={() => {
+                                router.push({
+                                    pathname: '/service-confirmation',
+                                    params: {
+                                        serviceName: 'Home Blood Test',
+                                        description: `Selected Test: ${selectedTest}`,
+                                        address: 'Home Visit',
+                                        fee: '₹299'
+                                    }
+                                });
+                            }}
+                        >
                             <Text style={styles.confirmButtonText}>Confirm Booking</Text>
                         </TouchableOpacity>
                     </View>

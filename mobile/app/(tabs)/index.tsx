@@ -1,4 +1,4 @@
-// Home Screen — Bulletproof iOS/Android Flexbox Layout
+// Home Screen — Responsive Flexbox Layout with Design Tokens
 import React from 'react';
 import {
   View,
@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Platform,
   ImageBackground,
   useWindowDimensions,
 } from 'react-native';
@@ -15,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { locationService } from '@/services/device/locationService';
 
 // ─── Figma-exported assets ───
@@ -165,7 +165,7 @@ export default function HomeScreen() {
           <Image source={logoSmall} style={styles.logoSmall} resizeMode="contain" />
           <TouchableOpacity style={styles.locationPill}>
             <Ionicons name="location-outline" size={14} color="#2F2F2F" />
-            <Text style={styles.locationText}>{currentLocationStr}</Text>
+            <Text style={styles.locationText} numberOfLines={1}>{currentLocationStr}</Text>
           </TouchableOpacity>
           <View style={styles.headerRight}>
             <TouchableOpacity style={styles.sosTag} onPress={() => router.push('/sos-emergency')}>
@@ -214,7 +214,6 @@ export default function HomeScreen() {
           </View>
           <View style={styles.serviceGrid}>
             {homeServiceGrid.map((item, i) => {
-              // Render invisible spacer view if it's a padding item
               if ('empty' in item) {
                 return <View key={`empty-${i}`} style={{ width: exactOldfulItemWidth }} />;
               }
@@ -319,69 +318,65 @@ const styles = StyleSheet.create({
   /* ═══ Screen ═══ */
   screen: {
     flex: 1,
-    backgroundColor: '#FFFFE3',
+    backgroundColor: Colors.bgScreen,
   },
 
   /* ═══ Fixed Header ═══ */
   headerSafe: {
-    backgroundColor: '#FFFFF8',
-    borderBottomLeftRadius: 21,
-    borderBottomRightRadius: 21,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 6,
+    backgroundColor: Colors.bgHeader,
+    borderBottomLeftRadius: Radius.xl,
+    borderBottomRightRadius: Radius.xl,
+    ...Shadow.header,
     zIndex: 10,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    paddingTop: 12,
+    justifyContent: 'space-between', // Forces items to space evenly
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+    paddingTop: Spacing.md,
   },
   logoSmall: {
-    width: 60,
-    height: 48,
+    width: 42, // Increased width
+    height: 32, // Increased height
   },
   locationPill: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#048357',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginLeft: 10,
+    borderColor: Colors.primary,
+    borderRadius: Radius.xl,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    marginHorizontal: Spacing.sm, // Replaced marginLeft with marginHorizontal to perfectly balance both sides
     flex: 1,
     gap: 6,
   },
   locationText: {
-    fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+    fontFamily: Fonts.regular,
     fontWeight: '400',
-    fontSize: 12,
-    color: '#2F2F2F',
+    fontSize: FontSize.bodySmall,
+    color: Colors.textBody,
     textAlign: 'center',
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginLeft: 8,
+    gap: Spacing.sm,
   },
   sosTag: {
-    backgroundColor: '#FF3B30',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    backgroundColor: Colors.sosRed,
+    borderRadius: Radius.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
   },
   sosTagText: {
-    fontFamily: Platform.select({ ios: 'Poppins-Bold', android: 'Poppins_700Bold', default: 'System' }),
+    fontFamily: Fonts.bold,
     fontWeight: '700',
-    fontSize: 11,
-    color: '#FFFFFF',
+    fontSize: FontSize.caption,
+    color: Colors.textWhite,
   },
 
   /* ═══ Scroll ═══ */
@@ -389,7 +384,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 120, // Better padding for bottom tab bar
+    paddingBottom: 120,
   },
 
   /* ═══ Greeting Banner ═══ */
@@ -397,133 +392,121 @@ const styles = StyleSheet.create({
     height: 117,
     width: 'auto',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: Spacing.lg,
   },
   greetingTitle: {
-    fontFamily: Platform.select({ ios: 'Poppins-Bold', android: 'Poppins_700Bold', default: 'System' }),
+    fontFamily: Fonts.bold,
     fontWeight: '700',
-    fontSize: 18,
-    color: '#FFFFFF',
+    fontSize: FontSize.heading2,
+    color: Colors.textWhite,
   },
 
   /* ═══ Quick Service Strip ═══ */
   quickServiceCard: {
-    marginHorizontal: 15,
-    marginTop: 18,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    marginHorizontal: Spacing.cardMargin,
+    marginTop: Spacing.sectionGap,
+    backgroundColor: Colors.bgCard,
+    borderRadius: Radius.xl,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 10,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 6,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    ...Shadow.card,
   },
   quickServiceBox: {
     flex: 1,
     minHeight: 85,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(222,222,222,0.43)',
-    borderRadius: 15,
-    paddingVertical: 8,
-    marginHorizontal: 4,
+    backgroundColor: Colors.bgCardMuted,
+    borderRadius: Radius.lg,
+    paddingVertical: Spacing.sm,
+    marginHorizontal: Spacing.xs,
   },
   quickServiceIcon: {
     width: 44,
     height: 44,
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
   },
   quickServiceLabel: {
-    fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+    fontFamily: Fonts.medium,
     fontWeight: '500',
-    fontSize: 10,
-    color: '#085B34',
+    fontSize: FontSize.caption,
+    color: Colors.primaryText,
     textAlign: 'center',
     lineHeight: 12,
   },
 
   /* ═══ Oldful Services Grid ═══ */
   servicesCard: {
-    marginHorizontal: 15,
-    marginTop: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 15,
-    padding: 15,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 6,
+    marginHorizontal: Spacing.cardMargin,
+    marginTop: Spacing.sectionGap,
+    backgroundColor: Colors.bgCard,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    ...Shadow.card,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: Spacing.lg,
   },
   sectionTitle: {
-    fontFamily: Platform.select({ ios: 'Poppins-Bold', android: 'Poppins_700Bold', default: 'System' }),
+    fontFamily: Fonts.bold,
     fontWeight: '700',
-    fontSize: 20,
-    color: '#034C2A',
+    fontSize: FontSize.heading2,
+    color: Colors.primaryDeep,
   },
   viewAllText: {
-    fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+    fontFamily: Fonts.semiBold,
     fontWeight: '600',
-    fontSize: 12,
-    color: '#AAAEAC',
+    fontSize: FontSize.bodySmall,
+    color: Colors.textLight,
   },
   serviceGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between', // CRITICAL: This handles the gap evenly
+    justifyContent: 'space-between',
   },
   serviceGridItem: {
-    marginBottom: 12, // Acts as row gap
-    borderRadius: 12,
-    backgroundColor: 'rgba(222,222,222,0.43)',
+    marginBottom: Spacing.md,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.bgCardMuted,
     overflow: 'hidden',
     alignItems: 'center',
   },
   serviceGridImage: {
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    borderTopLeftRadius: Radius.md,
+    borderTopRightRadius: Radius.md,
   },
   serviceGridLabelContainer: {
     flex: 1,
     width: '100%',
-    paddingHorizontal: 4,
+    paddingHorizontal: Spacing.xs,
     alignItems: 'center',
     justifyContent: 'center',
   },
   serviceGridLabel: {
-    fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+    fontFamily: Fonts.semiBold,
     fontWeight: '600',
-    fontSize: 11,
-    color: '#085B34',
+    fontSize: FontSize.bodySmall,
+    color: Colors.primaryText,
     textAlign: 'center',
     lineHeight: 14,
   },
 
   /* ═══ Trust Badges ═══ */
   trustCard: {
-    marginHorizontal: 15,
-    marginTop: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 15,
+    marginHorizontal: Spacing.cardMargin,
+    marginTop: Spacing.sectionGap,
+    backgroundColor: Colors.bgCard,
+    borderRadius: Radius.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 18,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 6,
+    paddingVertical: Spacing.lg,
+    ...Shadow.card,
   },
   trustItem: {
     flex: 1,
@@ -532,40 +515,40 @@ const styles = StyleSheet.create({
   trustIcon: {
     width: 44,
     height: 44,
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
   trustLabel: {
-    fontFamily: Platform.select({ ios: 'Poppins-Bold', android: 'Poppins_700Bold', default: 'System' }),
+    fontFamily: Fonts.bold,
     fontWeight: '800',
-    fontSize: 9,
-    color: '#085B34',
+    fontSize: FontSize.caption,
+    color: Colors.primaryText,
     textAlign: 'center',
   },
   trustDivider: {
     width: 1,
     height: '70%',
-    backgroundColor: '#AAAEAC',
+    backgroundColor: Colors.textLight,
     opacity: 0.3,
   },
 
   /* ═══ SOS Emergency Banner ═══ */
   sosBanner: {
-    marginHorizontal: 15,
-    marginTop: 16,
-    backgroundColor: '#FFFFFD',
+    marginHorizontal: Spacing.cardMargin,
+    marginTop: Spacing.sectionGap,
+    backgroundColor: Colors.bgCard,
     borderWidth: 1,
-    borderColor: '#02743F',
-    borderRadius: 15,
+    borderColor: Colors.primaryDark,
+    borderRadius: Radius.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
   },
   sosContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: Spacing.md,
   },
   sosIcon: {
     width: 44,
@@ -575,27 +558,27 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   sosTitle: {
-    fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+    fontFamily: Fonts.semiBold,
     fontWeight: '600',
-    fontSize: 12,
-    color: '#1E1E1E',
+    fontSize: FontSize.bodySmall,
+    color: Colors.textDark,
   },
   sosButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#048357',
-    borderRadius: 6,
-    paddingHorizontal: 12,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.sm,
+    paddingHorizontal: Spacing.md,
     paddingVertical: 6,
-    gap: 4,
+    gap: Spacing.xs,
     marginTop: 6,
     alignSelf: 'flex-start',
   },
   sosButtonText: {
-    fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+    fontFamily: Fonts.semiBold,
     fontWeight: '600',
-    fontSize: 10,
-    color: '#FFFFFF',
+    fontSize: FontSize.caption,
+    color: Colors.textWhite,
   },
   sosIllustration: {
     width: 60,
@@ -604,38 +587,34 @@ const styles = StyleSheet.create({
 
   /* ═══ Home Essentials Services ═══ */
   essentialsCard: {
-    marginHorizontal: 15,
-    marginTop: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 15,
-    padding: 15,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 6,
+    marginHorizontal: Spacing.cardMargin,
+    marginTop: Spacing.sectionGap,
+    backgroundColor: Colors.bgCard,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    ...Shadow.card,
   },
   essentialsTitle: {
-    fontFamily: Platform.select({ ios: 'Poppins-Bold', android: 'Poppins_700Bold', default: 'System' }),
+    fontFamily: Fonts.bold,
     fontWeight: '700',
-    fontSize: 16,
-    color: '#034C2A',
+    fontSize: FontSize.heading3,
+    color: Colors.primaryDeep,
   },
   viewAllSmall: {
-    fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+    fontFamily: Fonts.medium,
     fontWeight: '500',
-    fontSize: 12,
-    color: '#AAAEAC',
+    fontSize: FontSize.bodySmall,
+    color: Colors.textLight,
   },
   essentialsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between', // Ensures equal spacing
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    marginBottom: Spacing.md,
   },
   essentialItem: {
     borderWidth: 1,
-    borderColor: '#34C759',
-    borderRadius: 9,
+    borderColor: Colors.accent,
+    borderRadius: Radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 6,
@@ -643,22 +622,22 @@ const styles = StyleSheet.create({
   essentialIconCircle: {
     width: '60%',
     aspectRatio: 1,
-    borderRadius: 999,
+    borderRadius: Radius.full,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
   },
   essentialIcon: {
     width: '80%',
     height: '80%',
   },
   essentialLabel: {
-    fontFamily: Platform.select({ ios: 'Poppins-Bold', android: 'Poppins_700Bold', default: 'System' }),
+    fontFamily: Fonts.bold,
     fontWeight: '700',
-    fontSize: 8,
-    color: '#848484',
+    fontSize: FontSize.caption,
+    color: Colors.textMuted,
     textAlign: 'center',
-    lineHeight: 10,
+    lineHeight: 12,
   },
 });

@@ -36,7 +36,16 @@ export default function BookNursingCareScreen() {
             {/* ─── Header Section (Green Background) ─── */}
             <SafeAreaView style={styles.headerSafe} edges={['top']}>
                 <View style={styles.headerRow}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <TouchableOpacity
+                        onPress={() => {
+                            if (router.canGoBack()) {
+                                router.back();
+                            } else {
+                                router.replace('/(tabs)' as any);
+                            }
+                        }}
+                        style={styles.backButton}
+                    >
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Book Home Nursing Care</Text>
@@ -217,7 +226,22 @@ export default function BookNursingCareScreen() {
 
                 {/* ─── Fixed Normal Bottom Bar ─── */}
                 <SafeAreaView edges={['bottom']} style={styles.bottomBarContainer}>
-                    <TouchableOpacity style={styles.confirmButton} activeOpacity={0.8} onPress={() => router.push('/nurse-care/confirmation')}>
+                    <TouchableOpacity
+                        style={styles.confirmButton}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            router.push({
+                                pathname: '/nurse-care/confirmation' as any,
+                                params: {
+                                    recipient: selectedWho,
+                                    staff: selectedStaff,
+                                    duration: selectedDuration,
+                                    condition: selectedCondition || 'Not specified',
+                                    gender: selectedGender || 'Any'
+                                }
+                            });
+                        }}
+                    >
                         <Text style={styles.confirmButtonText}>Request Staff</Text>
                     </TouchableOpacity>
                 </SafeAreaView>

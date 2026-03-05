@@ -22,6 +22,9 @@ const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6
 export default function BillPaymentScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const [billType, setBillType] = React.useState('');
+    const [accountId, setAccountId] = React.useState('');
+    const [amount, setAmount] = React.useState('');
 
     return (
         <View style={styles.screen}>
@@ -64,6 +67,8 @@ export default function BillPaymentScreen() {
                             style={styles.input}
                             placeholder="e.g. Electricity, Water, Internet..."
                             placeholderTextColor="#898989"
+                            value={billType}
+                            onChangeText={setBillType}
                         />
                     </View>
 
@@ -74,6 +79,8 @@ export default function BillPaymentScreen() {
                             style={styles.input}
                             placeholder="Enter Account ID / Consumer Number"
                             placeholderTextColor="#898989"
+                            value={accountId}
+                            onChangeText={setAccountId}
                         />
                     </View>
 
@@ -85,13 +92,29 @@ export default function BillPaymentScreen() {
                             placeholder="Amount (in ₹)"
                             keyboardType="numeric"
                             placeholderTextColor="#898989"
+                            value={amount}
+                            onChangeText={setAmount}
                         />
                     </View>
                 </View>
 
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>
-                    <TouchableOpacity style={styles.bookButton} activeOpacity={0.8}>
+                    <TouchableOpacity
+                        style={styles.bookButton}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            router.push({
+                                pathname: '/service-confirmation',
+                                params: {
+                                    serviceName: 'Bill Payment',
+                                    description: `Type: ${billType}\nAccount: ${accountId}`,
+                                    address: 'Online / Concierge',
+                                    fee: amount ? `₹${amount}` : "To be decided"
+                                }
+                            });
+                        }}
+                    >
                         <Text style={styles.bookButtonText}>Book Service</Text>
                     </TouchableOpacity>
                 </View>

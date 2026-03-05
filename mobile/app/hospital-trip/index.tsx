@@ -45,6 +45,7 @@ export default function HospitalTripScreen() {
     const [selectedSpecialist, setSelectedSpecialist] = useState<string | null>(null);
     const [hospitalQuery, setHospitalQuery] = useState('');
     const [selectedDoctorType, setSelectedDoctorType] = useState<'preferred' | 'recommend'>('preferred');
+    const [preferredDoctor, setPreferredDoctor] = useState('');
     const [transportAddon, setTransportAddon] = useState(false);
     const [supportAddon, setSupportAddon] = useState(true);
 
@@ -145,6 +146,8 @@ export default function HospitalTripScreen() {
                                 style={styles.doctorTextInput}
                                 placeholder="Dr.anil Mehta"
                                 placeholderTextColor="#2F2F2F"
+                                value={preferredDoctor}
+                                onChangeText={setPreferredDoctor}
                             />
                         </View>
                     )}
@@ -236,7 +239,21 @@ export default function HospitalTripScreen() {
                     </View>
 
                     {/* ─── Confirm Button ─── */}
-                    <TouchableOpacity style={styles.submitButton} activeOpacity={0.8}>
+                    <TouchableOpacity
+                        style={styles.submitButton}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            router.push({
+                                pathname: '/service-confirmation',
+                                params: {
+                                    serviceName: 'Hospital Trip',
+                                    description: `Specialist: ${selectedSpecialist || 'General'}\nHospital: ${hospitalQuery}\nDoctor: ${selectedDoctorType === 'preferred' ? preferredDoctor : 'Recommend for me'}\nTransport: ${transportAddon ? 'Yes' : 'No'}, Support: ${supportAddon ? 'Yes' : 'No'}`,
+                                    address: 'Determined later',
+                                    fee: '₹500 (Booking Fee)'
+                                }
+                            });
+                        }}
+                    >
                         <Text style={styles.submitButtonText}>Confirm & Request Trip</Text>
                     </TouchableOpacity>
 
