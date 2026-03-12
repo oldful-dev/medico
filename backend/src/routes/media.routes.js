@@ -1,13 +1,16 @@
 // Media Routes
 const router = require('express').Router();
-const { authenticateAdmin } = require('../middleware/auth');
+const { authenticate, authenticateAdmin } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const ctrl = require('../controllers/media.controller');
 
-router.use(authenticateAdmin);
+// Admin only: List all media assets
+router.get('/', authenticateAdmin, ctrl.getMediaAssets);
 
-router.get('/', ctrl.getMediaAssets);
-router.post('/upload', upload.single('file'), ctrl.uploadMedia);
-router.delete('/:id', ctrl.deleteMedia);
+// Authenticated (User or Admin): Upload media
+router.post('/upload', authenticate, upload.single('file'), ctrl.uploadMedia);
+
+// Admin only: Delete media
+router.delete('/:id', authenticateAdmin, ctrl.deleteMedia);
 
 module.exports = router;
