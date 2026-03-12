@@ -3,10 +3,10 @@ const prisma = new PrismaClient();
 
 async function main() {
     try {
-        const services = await prisma.service.findMany({
-            select: { name: true, slug: true, serviceType: true, isEnabled: true }
+        const users = await prisma.user.findMany({
+            include: { city: true }
         });
-        console.log(JSON.stringify(services, null, 2));
+        console.log(JSON.stringify(users, null, 2));
     } catch (err) {
         console.error(err);
     } finally {

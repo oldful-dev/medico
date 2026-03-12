@@ -19,6 +19,8 @@ import { useAuth } from '@/context/AuthContext';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { mediaService } from '@/services/api/mediaService';
+import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { Alert } from 'react-native';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
@@ -35,14 +37,17 @@ export default function AnythingElseScreen() {
     const [reqTitle, setReqTitle] = React.useState('');
     const [reqDesc, setReqDesc] = React.useState('');
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+    const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const { userId } = useAuth();
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
+    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
     const [isBooking, setIsBooking] = React.useState(false);
 
     React.useEffect(() => {
         (async () => {
             try {
+                setIsLoadingInit(true);
                 // Fetch location
                 const hasPermission = await locationService.requestPermission();
                 if (hasPermission) {
@@ -68,6 +73,7 @@ export default function AnythingElseScreen() {
                 console.log("Initialization failed", err);
             } finally {
                 setIsFetchingLocation(false);
+                setIsLoadingInit(false);
             }
         })();
     }, []);
@@ -85,6 +91,13 @@ export default function AnythingElseScreen() {
 
         try {
             setIsBooking(true);
+
+            // Upload images first
+            let uploadedImageUrls: string[] = [];
+            if (selectedImages.length > 0) {
+                uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'anything-else');
+            }
+
             const payload = {
                 serviceId,
                 cityId,
@@ -92,7 +105,8 @@ export default function AnythingElseScreen() {
                 addressLine: address,
                 formDataJson: {
                     reqTitle,
-                    reqDesc
+                    reqDesc,
+                    attachments: uploadedImageUrls
                 }
             };
 
@@ -175,6 +189,14 @@ export default function AnythingElseScreen() {
                     </View>
                 </View>
 
+                {/* ─── Upload Photos ─── */}
+                <ImageUploadBox
+                    title="Upload Refrence Photos (Optional)"
+                    subtitle="Help our team understand your request better"
+                    onImagesChange={setSelectedImages}
+                    maxImages={3}
+                />
+
                 {/* ─── Location Details ─── */}
                 <View style={styles.card}>
                     <Text style={styles.sectionTitle}>Location</Text>
@@ -200,12 +222,14 @@ export default function AnythingElseScreen() {
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity
-                        style={[styles.bookButton, isBooking && { opacity: 0.7 }]}
+                        style={[styles.bookButton, (isBooking || isLoadingInit) && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        disabled={isBooking}
+                        disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
-                        <Text style={styles.bookButtonText}>{isBooking ? 'Processing...' : 'Book Service'}</Text>
+                        <Text style={styles.bookButtonText}>
+                            {isBooking ? 'Processing...' : (isLoadingInit ? 'Initializing...' : 'Book Service')}
+                        </Text>
                     </TouchableOpacity>
                 </View>
 

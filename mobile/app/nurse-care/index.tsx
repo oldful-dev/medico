@@ -19,6 +19,8 @@ import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { mediaService } from '@/services/api/mediaService';
+import ImageUploadBox from '@/components/common/ImageUploadBox';
 
 // ─── Figma Assets ───
 const familyIcon = require('@/assets/images/cb86876504871abc5e6db19e5612175dae2b0479.png');
@@ -34,16 +36,19 @@ export default function BookNursingCareScreen() {
     const [selectedDuration, setSelectedDuration] = useState('12 Hours (Night Shift)');
     const [selectedCondition, setSelectedCondition] = useState('');
     const [selectedGender, setSelectedGender] = useState('');
+    const [selectedImages, setSelectedImages] = useState<string[]>([]);
 
-    // API state
+    // API & Init state
     const [cityId, setCityId] = useState('');
     const [serviceId, setServiceId] = useState('');
+    const [isLoadingInit, setIsLoadingInit] = useState(true);
     const [address, setAddress] = useState('Fetching address...');
     const [isBooking, setIsBooking] = useState(false);
 
     React.useEffect(() => {
         (async () => {
             try {
+                setIsLoadingInit(true);
                 const hasPermission = await locationService.requestPermission();
                 if (hasPermission) {
                     const coords = await locationService.getCurrentLocation();
@@ -53,7 +58,9 @@ export default function BookNursingCareScreen() {
                     setAddress('');
                 }
                 const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) setCityId(profileRes.data.cityId);
+                if (profileRes.success && profileRes.data) {
+                    setCityId(profileRes.data.cityId);
+                }
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'home-nurse');
@@ -61,6 +68,8 @@ export default function BookNursingCareScreen() {
                 }
             } catch (err) {
                 console.log('Nurse Care init failed', err);
+            } finally {
+                setIsLoadingInit(false);
             }
         })();
     }, []);
@@ -78,6 +87,13 @@ export default function BookNursingCareScreen() {
 
         try {
             setIsBooking(true);
+
+            // Upload images first
+            let uploadedImageUrls: string[] = [];
+            if (selectedImages.length > 0) {
+                uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'nurse-care');
+            }
+
             const res = await bookingService.createBooking({
                 serviceId,
                 cityId,
@@ -89,6 +105,8 @@ export default function BookNursingCareScreen() {
                     recipient: selectedWho,
                     condition: selectedCondition || 'Not specified',
                     gender: selectedGender || 'Any',
+                    duration: selectedDuration,
+                    attachments: uploadedImageUrls,
                 },
             });
             if (res.success && res.data) {
@@ -298,15 +316,17 @@ export default function BookNursingCareScreen() {
                 {/* ─── Fixed Normal Bottom Bar ─── */}
                 <SafeAreaView edges={['bottom']} style={styles.bottomBarContainer}>
                     <TouchableOpacity
-                        style={[styles.confirmButton, isBooking && { opacity: 0.6 }]}
+                        style={[styles.confirmButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
                         activeOpacity={0.8}
-                        disabled={isBooking}
+                        disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
                         {isBooking ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text style={styles.confirmButtonText}>Request Staff</Text>
+                            <Text style={styles.confirmButtonText}>
+                                {isLoadingInit ? 'Initializing...' : 'Request Staff'}
+                            </Text>
                         )}
                     </TouchableOpacity>
                 </SafeAreaView>

@@ -23,6 +23,7 @@ import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { mediaService } from '@/services/api/mediaService';
 
 // ─── Figma-exported Assets ───
 // Problem Icons (images from disk)
@@ -65,11 +66,14 @@ export default function DoctorVisitScreen() {
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
     const [address, setAddress] = React.useState('Fetching address...');
+    const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
+    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
     const [isBooking, setIsBooking] = React.useState(false);
 
     React.useEffect(() => {
         (async () => {
             try {
+                setIsLoadingInit(true);
                 const hasPermission = await locationService.requestPermission();
                 if (hasPermission) {
                     const coords = await locationService.getCurrentLocation();
@@ -91,6 +95,8 @@ export default function DoctorVisitScreen() {
                 }
             } catch (err) {
                 console.log('Doctor Visit init failed', err);
+            } finally {
+                setIsLoadingInit(false);
             }
         })();
     }, []);
@@ -106,6 +112,13 @@ export default function DoctorVisitScreen() {
         }
         try {
             setIsBooking(true);
+
+            // Upload images first
+            let uploadedImageUrls: string[] = [];
+            if (selectedImages.length > 0) {
+                uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'doctor-visits');
+            }
+
             const res = await bookingService.createBooking({
                 serviceId,
                 cityId,
@@ -113,7 +126,11 @@ export default function DoctorVisitScreen() {
                 addressLine: address || undefined,
                 symptoms: [selectedProblem],
                 doctorType: selectedDoctorType === 'GP' ? 'general-physician' : 'physiotherapist',
-                formDataJson: { visitType, urgency: selectedWhen },
+                formDataJson: { 
+                    visitType, 
+                    urgency: selectedWhen,
+                    attachments: uploadedImageUrls 
+                },
             });
             if (res.success && res.data) {
                 router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
@@ -290,6 +307,8 @@ export default function DoctorVisitScreen() {
                         <ImageUploadBox
                             title="Upload Reports (Optional)"
                             subtitle="JPG, PNG or PDF, help our doctors understand better"
+                            onImagesChange={setSelectedImages}
+                            maxImages={5}
                         />
                     </View>
 
@@ -316,15 +335,17 @@ export default function DoctorVisitScreen() {
             {/* ─── Fixed Bottom Bar ─── */}
             <View style={styles.bottomBar}>
                 <TouchableOpacity
-                    style={[styles.bookButton, isBooking && { opacity: 0.6 }]}
+                    style={[styles.bookButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
                     activeOpacity={0.8}
-                    disabled={isBooking}
+                    disabled={isBooking || isLoadingInit}
                     onPress={handleBookService}
                 >
                     {isBooking ? (
                         <ActivityIndicator color={Colors.textWhite} />
                     ) : (
-                        <Text style={styles.bookButtonText}>Book Appointment</Text>
+                        <Text style={styles.bookButtonText}>
+                            {isLoadingInit ? 'Initializing...' : 'Book Appointment'}
+                        </Text>
                     )}
                 </TouchableOpacity>
             </View>

@@ -20,6 +20,8 @@ import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { mediaService } from '@/services/api/mediaService';
+import ImageUploadBox from '@/components/common/ImageUploadBox';
 
 // ─── Figma Assets ───
 const cautionIcon = require('@/assets/images/c4f7fda686169deb23b4565362e0a544adc4d7c4.png');
@@ -30,16 +32,19 @@ export default function BloodTestScreen() {
     const router = useRouter();
     const [selectedTest, setSelectedTest] = useState('Full Body Package');
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+    const [selectedImages, setSelectedImages] = useState<string[]>([]);
 
-    // API state
+    // API & Init state
     const [cityId, setCityId] = useState('');
     const [serviceId, setServiceId] = useState('');
     const [address, setAddress] = useState('Fetching address...');
+    const [isLoadingInit, setIsLoadingInit] = useState(true);
     const [isBooking, setIsBooking] = useState(false);
 
     React.useEffect(() => {
         (async () => {
             try {
+                setIsLoadingInit(true);
                 const hasPermission = await locationService.requestPermission();
                 if (hasPermission) {
                     const coords = await locationService.getCurrentLocation();
@@ -47,13 +52,19 @@ export default function BloodTestScreen() {
                     setAddress(fetchedAddress);
                 } else { setAddress(''); }
                 const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) setCityId(profileRes.data.cityId);
+                if (profileRes.success && profileRes.data) {
+                    setCityId(profileRes.data.cityId);
+                }
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'blood-test');
                     if (svc) setServiceId(svc.id);
                 }
-            } catch (err) { console.log('Blood Test init failed', err); }
+            } catch (err) { 
+                console.log('Blood Test init failed', err); 
+            } finally {
+                setIsLoadingInit(false);
+            }
         })();
     }, []);
 
@@ -64,12 +75,22 @@ export default function BloodTestScreen() {
         }
         try {
             setIsBooking(true);
+
+            // Upload images first
+            let uploadedImageUrls: string[] = [];
+            if (selectedImages.length > 0) {
+                uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'blood-tests');
+            }
+
             const res = await bookingService.createBooking({
                 serviceId,
                 cityId,
                 scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
                 addressLine: address || undefined,
-                formDataJson: { testType: selectedTest },
+                formDataJson: { 
+                    testType: selectedTest,
+                    attachments: uploadedImageUrls 
+                },
             });
             if (res.success && res.data) {
                 router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
@@ -131,7 +152,6 @@ export default function BloodTestScreen() {
                         </View>
                     </View>
 
-                    {/* ─── Schedule Your Appointment Box ─── */}
                     <View style={styles.sectionCardTinted}>
                         <DateTimePickerInput
                             label="Schedule Your Appointment"
@@ -139,18 +159,29 @@ export default function BloodTestScreen() {
                         />
                     </View>
 
-                    {/* ─── Confirm Booking Button ─── */}
+                    {/* ─── Upload Prescription ─── */}
+                    <View style={{ marginBottom: 20 }}>
+                        <ImageUploadBox
+                            title="Upload Prescription (Optional)"
+                            subtitle="Help us understand which tests you need"
+                            onImagesChange={setSelectedImages}
+                            maxImages={3}
+                        />
+                    </View>
+
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity
-                            style={[styles.confirmButton, isBooking && { opacity: 0.6 }]}
+                            style={[styles.confirmButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
                             activeOpacity={0.8}
-                            disabled={isBooking}
+                            disabled={isBooking || isLoadingInit}
                             onPress={handleBookService}
                         >
                             {isBooking ? (
                                 <ActivityIndicator color="#FFFFFF" />
                             ) : (
-                                <Text style={styles.confirmButtonText}>Confirm Booking</Text>
+                                <Text style={styles.confirmButtonText}>
+                                    {isLoadingInit ? 'Initializing...' : 'Confirm Booking'}
+                                </Text>
                             )}
                         </TouchableOpacity>
                     </View>

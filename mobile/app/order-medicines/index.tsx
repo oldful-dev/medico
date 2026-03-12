@@ -21,6 +21,7 @@ import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { mediaService } from '@/services/api/mediaService';
 
 // ─── Figma Assets ───
 const imgBell = require('@/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png');
@@ -37,6 +38,12 @@ export default function OrderMedicinesScreen() {
     const [isManualEntry, setIsManualEntry] = useState(false);
     const [manualText, setManualText] = useState('');
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
+    
+    // API & Init state
+    const [cityId, setCityId] = useState('');
+    const [serviceId, setServiceId] = useState('');
+    const [isLoadingInit, setIsLoadingInit] = useState(true);
+    const [isBooking, setIsBooking] = useState(false);
 
     const openCamera = async () => {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -88,6 +95,7 @@ export default function OrderMedicinesScreen() {
     React.useEffect(() => {
         (async () => {
             try {
+                setIsLoadingInit(true);
                 const hasPermission = await locationService.requestPermission();
                 if (hasPermission) {
                     const coords = await locationService.getCurrentLocation();
@@ -98,7 +106,9 @@ export default function OrderMedicinesScreen() {
                     setAddress('');
                 }
                 const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) setCityId(profileRes.data.cityId);
+                if (profileRes.success && profileRes.data) {
+                    setCityId(profileRes.data.cityId);
+                }
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'medicines');
@@ -108,14 +118,12 @@ export default function OrderMedicinesScreen() {
                 console.log('Medicines init failed:', error);
                 setIsManualAddress(true);
                 setAddress('');
+            } finally {
+                setIsLoadingInit(false);
             }
         })();
     }, []);
 
-    // API state
-    const [cityId, setCityId] = useState('');
-    const [serviceId, setServiceId] = useState('');
-    const [isBooking, setIsBooking] = useState(false);
 
     const handleBookService = async () => {
         if (!cityId || !serviceId) {
@@ -124,6 +132,13 @@ export default function OrderMedicinesScreen() {
         }
         try {
             setIsBooking(true);
+
+            // Upload images first
+            let uploadedImageUrls: string[] = [];
+            if (selectedImages.length > 0) {
+                uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'prescriptions');
+            }
+
             const res = await bookingService.createBooking({
                 serviceId,
                 cityId,
@@ -134,7 +149,8 @@ export default function OrderMedicinesScreen() {
                     manualText: isManualEntry ? manualText : undefined,
                     duration,
                     autoRefill,
-                    imageCount: selectedImages.length,
+                    attachments: uploadedImageUrls,
+                    imageCount: uploadedImageUrls.length,
                 },
             });
             if (res.success && res.data) {
@@ -315,15 +331,17 @@ export default function OrderMedicinesScreen() {
 
                     {/* ─── Place Order Button ─── */}
                     <TouchableOpacity
-                        style={[styles.submitButton, isBooking && { opacity: 0.6 }]}
+                        style={[styles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
                         activeOpacity={0.8}
-                        disabled={isBooking}
+                        disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
                         {isBooking ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text style={styles.submitButtonText}>Place Order</Text>
+                            <Text style={styles.submitButtonText}>
+                                {isLoadingInit ? 'Initializing...' : 'Place Order'}
+                            </Text>
                         )}
                     </TouchableOpacity>
 
