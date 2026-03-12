@@ -85,6 +85,9 @@ const createBooking = async (req, res, next) => {
             amount, formDataJson,
         } = req.body;
 
+        const finalUserId = userId || (req.user && req.user.id);
+        if (!finalUserId) return res.status(400).json({ success: false, message: 'User ID is required' });
+
         const service = await prisma.service.findUnique({ where: { id: serviceId } });
         if (!service) return res.status(404).json({ success: false, message: 'Service not found' });
 
@@ -92,7 +95,7 @@ const createBooking = async (req, res, next) => {
 
         // Redcliffe Labs Integration for Blood Tests
         if (service.serviceType === 'BLOOD_TEST') {
-            const user = await prisma.user.findUnique({ where: { id: userId } });
+            const user = await prisma.user.findUnique({ where: { id: finalUserId } });
             redcliffeDetails = await bookLabTestSlot({
                 patientName: user.name,
                 patientPhone: user.phone,
@@ -105,7 +108,7 @@ const createBooking = async (req, res, next) => {
         const booking = await prisma.booking.create({
             data: {
                 bookingCode,
-                userId,
+                userId: finalUserId,
                 serviceId,
                 cityId,
                 scheduledDate: new Date(scheduledDate),
