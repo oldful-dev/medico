@@ -255,8 +255,28 @@ const cancelBooking = async (req, res, next) => {
     }
 };
 
+// GET /api/bookings/detail/:id  (App user — get own booking by ID)
+const getMyBookingById = async (req, res, next) => {
+    try {
+        const booking = await prisma.booking.findUnique({
+            where: { id: req.params.id },
+            include: {
+                service: { select: { name: true, slug: true, icon: true } },
+                caregiver: { select: { name: true, phone: true, profileImageUrl: true } },
+                city: { select: { name: true } },
+            },
+        });
+        if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+        if (booking.userId !== req.user.id) return res.status(403).json({ success: false, message: 'Not your booking' });
+        sendResponse(res, 200, booking);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getBookings, getBookingById, createBooking,
     assignCaregiver, reassignCaregiver, updateBookingStatus, escalateBooking,
-    getMyBookings, cancelBooking,
+    getMyBookings, getMyBookingById, cancelBooking,
 };
+

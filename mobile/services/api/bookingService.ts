@@ -83,6 +83,7 @@ export interface Booking {
     isEscalated: boolean;
     isSLABreached: boolean;
     slaDeadline?: string;
+    formDataJson?: any;
     createdAt: string;
 
     // Populated relations
@@ -114,7 +115,7 @@ export const bookingService = {
      * Fetch a single booking by ID.
      */
     getBookingById: async (bookingId: string): Promise<ApiResponse<Booking>> => {
-        return apiClient.get<Booking>(`/bookings/${bookingId}`);
+        return apiClient.get<Booking>(`/bookings/detail/${bookingId}`);
     },
 
     /**

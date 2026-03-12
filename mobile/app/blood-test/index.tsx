@@ -9,12 +9,17 @@ import {
     Platform,
     ScrollView,
     Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
+import { locationService } from '@/services/device/locationService';
+import { userService } from '@/services/api/userService';
+import { bookingService } from '@/services/api/bookingService';
+import { apiClient } from '@/services/api/apiClient';
 
 // ─── Figma Assets ───
 const cautionIcon = require('@/assets/images/c4f7fda686169deb23b4565362e0a544adc4d7c4.png');
@@ -23,9 +28,61 @@ const calendarIcon = require('@/assets/images/9db46350ce94677b709648f4aadad31898
 
 export default function BloodTestScreen() {
     const router = useRouter();
-    // Replaced inline warning with native Alert popup and state selection
     const [selectedTest, setSelectedTest] = useState('Full Body Package');
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
+    // API state
+    const [cityId, setCityId] = useState('');
+    const [serviceId, setServiceId] = useState('');
+    const [address, setAddress] = useState('Fetching address...');
+    const [isBooking, setIsBooking] = useState(false);
+
+    React.useEffect(() => {
+        (async () => {
+            try {
+                const hasPermission = await locationService.requestPermission();
+                if (hasPermission) {
+                    const coords = await locationService.getCurrentLocation();
+                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
+                    setAddress(fetchedAddress);
+                } else { setAddress(''); }
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) setCityId(profileRes.data.cityId);
+                const serviceRes = await apiClient.get<any[]>('/services');
+                if (serviceRes.success && serviceRes.data) {
+                    const svc = serviceRes.data.find((s: any) => s.slug === 'blood-test');
+                    if (svc) setServiceId(svc.id);
+                }
+            } catch (err) { console.log('Blood Test init failed', err); }
+        })();
+    }, []);
+
+    const handleBookService = async () => {
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+        try {
+            setIsBooking(true);
+            const res = await bookingService.createBooking({
+                serviceId,
+                cityId,
+                scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
+                addressLine: address || undefined,
+                formDataJson: { testType: selectedTest },
+            });
+            if (res.success && res.data) {
+                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+            } else {
+                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Blood test booking error:', error);
+            Alert.alert('Error', 'Failed to create booking. Please try again.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
     const handleTestSelection = () => {
         // Simple cycle for demo purposes
         const options = ['Full Body Package', 'Sugar (Fasting)', 'Lipid Profile'];
@@ -78,28 +135,23 @@ export default function BloodTestScreen() {
                     <View style={styles.sectionCardTinted}>
                         <DateTimePickerInput
                             label="Schedule Your Appointment"
-                            onDateChange={() => { }}
+                            onDateChange={(d) => setSelectedDate(d)}
                         />
                     </View>
 
                     {/* ─── Confirm Booking Button ─── */}
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity
-                            style={styles.confirmButton}
+                            style={[styles.confirmButton, isBooking && { opacity: 0.6 }]}
                             activeOpacity={0.8}
-                            onPress={() => {
-                                router.push({
-                                    pathname: '/service-confirmation',
-                                    params: {
-                                        serviceName: 'Home Blood Test',
-                                        description: `Selected Test: ${selectedTest}`,
-                                        address: 'Home Visit',
-                                        fee: '₹299'
-                                    }
-                                });
-                            }}
+                            disabled={isBooking}
+                            onPress={handleBookService}
                         >
-                            <Text style={styles.confirmButtonText}>Confirm Booking</Text>
+                            {isBooking ? (
+                                <ActivityIndicator color="#FFFFFF" />
+                            ) : (
+                                <Text style={styles.confirmButtonText}>Confirm Booking</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
 

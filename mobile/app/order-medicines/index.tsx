@@ -10,12 +10,17 @@ import {
     ScrollView,
     TextInput,
     Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { locationService } from '@/services/device/locationService';
+import { userService } from '@/services/api/userService';
+import { bookingService } from '@/services/api/bookingService';
+import { apiClient } from '@/services/api/apiClient';
 
 // ─── Figma Assets ───
 const imgBell = require('@/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png');
@@ -82,7 +87,6 @@ export default function OrderMedicinesScreen() {
 
     React.useEffect(() => {
         (async () => {
-            const { locationService } = await import('@/services/device/locationService');
             try {
                 const hasPermission = await locationService.requestPermission();
                 if (hasPermission) {
@@ -93,13 +97,58 @@ export default function OrderMedicinesScreen() {
                     setIsManualAddress(true);
                     setAddress('');
                 }
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) setCityId(profileRes.data.cityId);
+                const serviceRes = await apiClient.get<any[]>('/services');
+                if (serviceRes.success && serviceRes.data) {
+                    const svc = serviceRes.data.find((s: any) => s.slug === 'medicines');
+                    if (svc) setServiceId(svc.id);
+                }
             } catch (error) {
-                console.log('Failed to fetch location:', error);
+                console.log('Medicines init failed:', error);
                 setIsManualAddress(true);
                 setAddress('');
             }
         })();
     }, []);
+
+    // API state
+    const [cityId, setCityId] = useState('');
+    const [serviceId, setServiceId] = useState('');
+    const [isBooking, setIsBooking] = useState(false);
+
+    const handleBookService = async () => {
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+        try {
+            setIsBooking(true);
+            const res = await bookingService.createBooking({
+                serviceId,
+                cityId,
+                scheduledDate: new Date().toISOString(),
+                addressLine: address || undefined,
+                formDataJson: {
+                    entryType: isManualEntry ? 'Manual Entry' : 'Prescription Upload',
+                    manualText: isManualEntry ? manualText : undefined,
+                    duration,
+                    autoRefill,
+                    imageCount: selectedImages.length,
+                },
+            });
+            if (res.success && res.data) {
+                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+            } else {
+                Alert.alert('Order Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Medicines booking error:', error);
+            Alert.alert('Error', 'Failed to place order. Please try again.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
 
     return (
         <View style={styles.screen}>
@@ -266,21 +315,16 @@ export default function OrderMedicinesScreen() {
 
                     {/* ─── Place Order Button ─── */}
                     <TouchableOpacity
-                        style={styles.submitButton}
+                        style={[styles.submitButton, isBooking && { opacity: 0.6 }]}
                         activeOpacity={0.8}
-                        onPress={() => {
-                            router.push({
-                                pathname: '/service-confirmation',
-                                params: {
-                                    serviceName: 'Order Medicines',
-                                    description: `Type: ${isManualEntry ? 'Manual Entry' : 'Prescription Upload'}\nDuration: ${duration}\nAuto-Refill: ${autoRefill ? 'Yes' : 'No'}\n${isManualEntry ? `Meds: ${manualText}` : ''}\nDocs: ${selectedImages.length} attached`,
-                                    address: address,
-                                    fee: '₹149 (Delivery Fee)'
-                                }
-                            });
-                        }}
+                        disabled={isBooking}
+                        onPress={handleBookService}
                     >
-                        <Text style={styles.submitButtonText}>Place Order</Text>
+                        {isBooking ? (
+                            <ActivityIndicator color="#FFFFFF" />
+                        ) : (
+                            <Text style={styles.submitButtonText}>Place Order</Text>
+                        )}
                     </TouchableOpacity>
 
                 </ScrollView>

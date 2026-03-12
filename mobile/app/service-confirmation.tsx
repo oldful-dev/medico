@@ -55,11 +55,23 @@ export default function ServiceConfirmationScreen() {
     // Helper to format description from JSON
     const formatDescription = (b: Booking) => {
         if (b.symptoms && b.symptoms.length > 0) return b.symptoms.join(', ');
+        
         // If it's a home essential with formDataJson
-        const formData = (b as any).formDataJson;
-        if (formData) {
+        let formData = (b as any).formDataJson;
+        
+        // Handle stringified JSON from backend
+        if (typeof formData === 'string') {
+            try {
+                formData = JSON.parse(formData);
+            } catch (e) {
+                // Not valid JSON, use as is if it's a string
+            }
+        }
+
+        if (formData && typeof formData === 'object') {
             return Object.values(formData).filter(v => !!v).join(' - ');
         }
+        
         return 'Service request details';
     };
 
@@ -70,6 +82,7 @@ export default function ServiceConfirmationScreen() {
     const dispAddr = booking?.addressLine || params.address || 'Address pending...';
     const dispStatus = booking?.status || params.status || 'Confirmed';
     const dispFee = booking?.amount ? `₹${booking.amount}` : params.fee || 'To be decided';
+    const dispDate = booking?.scheduledDate ? new Date(booking.scheduledDate).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Date pending...';
 
     return (
         <View style={styles.screen}>
@@ -141,7 +154,7 @@ export default function ServiceConfirmationScreen() {
                          </View>
  
                          <View style={styles.detailDivider} />
- 
+
                          <View style={styles.detailRow}>
                              <View style={styles.detailIconBox}>
                                  <Ionicons name="location-outline" size={16} color={Colors.primary} />
@@ -151,9 +164,21 @@ export default function ServiceConfirmationScreen() {
                                  <Text style={styles.detailValue}>{dispAddr}</Text>
                              </View>
                          </View>
- 
+
                          <View style={styles.detailDivider} />
- 
+
+                         <View style={styles.detailRow}>
+                             <View style={styles.detailIconBox}>
+                                 <Ionicons name="calendar-outline" size={16} color={Colors.primary} />
+                             </View>
+                             <View style={styles.detailTextGroup}>
+                                 <Text style={styles.detailLabel}>Scheduled Date</Text>
+                                 <Text style={styles.detailValue}>{dispDate}</Text>
+                             </View>
+                         </View>
+
+                         <View style={styles.detailDivider} />
+
                          <View style={styles.detailRow}>
                              <View style={styles.detailIconBox}>
                                  <Ionicons name="wallet-outline" size={16} color={Colors.primary} />

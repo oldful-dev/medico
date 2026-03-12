@@ -9,11 +9,17 @@ import {
     ScrollView,
     Platform,
     TextInput,
+    Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { locationService } from '@/services/device/locationService';
+import { userService } from '@/services/api/userService';
+import { bookingService } from '@/services/api/bookingService';
+import { apiClient } from '@/services/api/apiClient';
 
 // ─── Initial State Constants ───
 const INITIAL_CONDITIONS = [
@@ -37,6 +43,64 @@ export default function InsuranceScreen() {
     const [conditions, setConditions] = React.useState(INITIAL_CONDITIONS);
     const [requirements, setRequirements] = React.useState('');
 
+    // API state
+    const [cityId, setCityId] = React.useState('');
+    const [serviceId, setServiceId] = React.useState('');
+    const [address, setAddress] = React.useState('');
+    const [isBooking, setIsBooking] = React.useState(false);
+
+    React.useEffect(() => {
+        (async () => {
+            try {
+                const hasPermission = await locationService.requestPermission();
+                if (hasPermission) {
+                    const coords = await locationService.getCurrentLocation();
+                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
+                    setAddress(fetchedAddress);
+                }
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) setCityId(profileRes.data.cityId);
+                const serviceRes = await apiClient.get<any[]>('/services');
+                if (serviceRes.success && serviceRes.data) {
+                    const svc = serviceRes.data.find((s: any) => s.slug === 'insurance');
+                    if (svc) setServiceId(svc.id);
+                }
+            } catch (err) { console.log('Insurance init failed', err); }
+        })();
+    }, []);
+
+    const handleBookService = async () => {
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+        const activeRecipient = recipients.find(r => r.selected)?.label || 'Unknown';
+        const activeConditions = conditions.filter(c => c.selected).map(c => c.label).join(', ') || 'None';
+        try {
+            setIsBooking(true);
+            const res = await bookingService.createBooking({
+                serviceId,
+                cityId,
+                scheduledDate: new Date().toISOString(),
+                addressLine: address || 'Online Consultation',
+                formDataJson: {
+                    recipient: activeRecipient,
+                    preExistingConditions: activeConditions,
+                    requirements: requirements || undefined,
+                },
+            });
+            if (res.success && res.data) {
+                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+            } else {
+                Alert.alert('Submission Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Insurance booking error:', error);
+            Alert.alert('Error', 'Failed to submit request. Please try again.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
     const selectRecipient = (index: number) => {
         const newRecipients = recipients.map((r, i) => ({
             ...r,
@@ -170,24 +234,16 @@ export default function InsuranceScreen() {
                         {/* ─── Submit Button ─── */}
                         <View style={styles.submitContainer}>
                             <TouchableOpacity
-                                style={styles.submitButton}
+                                style={[styles.submitButton, isBooking && { opacity: 0.6 }]}
                                 activeOpacity={0.8}
-                                onPress={() => {
-                                    const activeRecipient = recipients.find(r => r.selected)?.label || 'Unknown';
-                                    const activeConditions = conditions.filter(c => c.selected).map(c => c.label).join(', ') || 'None';
-
-                                    router.push({
-                                        pathname: '/service-confirmation',
-                                        params: {
-                                            serviceName: 'Health Insurance Plan',
-                                            description: `For: ${activeRecipient}\nConditions: ${activeConditions}\nNotes: ${requirements || 'None'}`,
-                                            address: 'Online Consultation',
-                                            fee: 'Free Quote'
-                                        }
-                                    });
-                                }}
+                                disabled={isBooking}
+                                onPress={handleBookService}
                             >
-                                <Text style={styles.submitButtonText}>Submit Request</Text>
+                                {isBooking ? (
+                                    <ActivityIndicator color="#FFFFFF" />
+                                ) : (
+                                    <Text style={styles.submitButtonText}>Submit Request</Text>
+                                )}
                             </TouchableOpacity>
                         </View>
                     </View>

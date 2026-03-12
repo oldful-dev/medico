@@ -7,13 +7,19 @@ import {
     Image,
     Platform,
     ScrollView,
-    TextInput
+    TextInput,
+    Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
+import { locationService } from '@/services/device/locationService';
+import { userService } from '@/services/api/userService';
+import { bookingService } from '@/services/api/bookingService';
+import { apiClient } from '@/services/api/apiClient';
 
 // ─── Figma Assets ───
 const imgEye = require('@/assets/images/e9d68d0206e443ceceadd7907cd94f1c86fcacd4.png');
@@ -49,7 +55,67 @@ export default function HospitalTripScreen() {
     const [preferredDoctor, setPreferredDoctor] = useState('');
     const [transportAddon, setTransportAddon] = useState(false);
     const [supportAddon, setSupportAddon] = useState(true);
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
+    // API state
+    const [cityId, setCityId] = useState('');
+    const [serviceId, setServiceId] = useState('');
+    const [address, setAddress] = useState('Fetching address...');
+    const [isBooking, setIsBooking] = useState(false);
+
+    React.useEffect(() => {
+        (async () => {
+            try {
+                const hasPermission = await locationService.requestPermission();
+                if (hasPermission) {
+                    const coords = await locationService.getCurrentLocation();
+                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
+                    setAddress(fetchedAddress);
+                } else { setAddress(''); }
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) setCityId(profileRes.data.cityId);
+                const serviceRes = await apiClient.get<any[]>('/services');
+                if (serviceRes.success && serviceRes.data) {
+                    const svc = serviceRes.data.find((s: any) => s.slug === 'hospital-trip');
+                    if (svc) setServiceId(svc.id);
+                }
+            } catch (err) { console.log('Hospital Trip init failed', err); }
+        })();
+    }, []);
+
+    const handleBookService = async () => {
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+        try {
+            setIsBooking(true);
+            const res = await bookingService.createBooking({
+                serviceId,
+                cityId,
+                scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
+                addressLine: address || undefined,
+                formDataJson: {
+                    specialist: selectedSpecialist || 'General',
+                    hospital: hospitalQuery,
+                    doctorPreference: selectedDoctorType,
+                    preferredDoctor: selectedDoctorType === 'preferred' ? preferredDoctor : undefined,
+                    transport: transportAddon,
+                    support: supportAddon,
+                },
+            });
+            if (res.success && res.data) {
+                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+            } else {
+                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Hospital trip booking error:', error);
+            Alert.alert('Error', 'Failed to create booking. Please try again.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
     return (
         <View style={styles.screen}>
             {/* Dark green background covers top half */}
@@ -228,21 +294,16 @@ export default function HospitalTripScreen() {
 
                     {/* ─── Confirm Button ─── */}
                     <TouchableOpacity
-                        style={styles.submitButton}
+                        style={[styles.submitButton, isBooking && { opacity: 0.6 }]}
                         activeOpacity={0.8}
-                        onPress={() => {
-                            router.push({
-                                pathname: '/service-confirmation',
-                                params: {
-                                    serviceName: 'Hospital Trip',
-                                    description: `Specialist: ${selectedSpecialist || 'General'}\nHospital: ${hospitalQuery}\nDoctor: ${selectedDoctorType === 'preferred' ? preferredDoctor : 'Recommend for me'}\nTransport: ${transportAddon ? 'Yes' : 'No'}, Support: ${supportAddon ? 'Yes' : 'No'}`,
-                                    address: 'Determined later',
-                                    fee: '₹500 (Booking Fee)'
-                                }
-                            });
-                        }}
+                        disabled={isBooking}
+                        onPress={handleBookService}
                     >
-                        <Text style={styles.submitButtonText}>Confirm & Request Trip</Text>
+                        {isBooking ? (
+                            <ActivityIndicator color="#FFFFFF" />
+                        ) : (
+                            <Text style={styles.submitButtonText}>Confirm & Request Trip</Text>
+                        )}
                     </TouchableOpacity>
 
                 </ScrollView>

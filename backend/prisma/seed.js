@@ -84,6 +84,14 @@ async function main() {
         { name: 'Smart Upgrade', slug: 'smart-upgrade', icon: '✨', tagline: 'Make your home elderly-friendly', pricingText: 'Custom Quote', route: '/smart-upgrade', sortOrder: 112, serviceType: 'HOME_ESSENTIALS', isEnabled: true }
     ];
 
+    for (const s of serviceData) {
+        await prisma.service.upsert({
+            where: { slug: s.slug },
+            update: { ...s },
+            create: s,
+        });
+    }
+
     for (const s of homeEssentialsSubServices) {
         await prisma.service.upsert({
             where: { slug: s.slug },

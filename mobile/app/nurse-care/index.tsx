@@ -8,11 +8,17 @@ import {
     TouchableOpacity,
     StyleSheet,
     Platform,
+    Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { locationService } from '@/services/device/locationService';
+import { userService } from '@/services/api/userService';
+import { bookingService } from '@/services/api/bookingService';
+import { apiClient } from '@/services/api/apiClient';
 
 // ─── Figma Assets ───
 const familyIcon = require('@/assets/images/cb86876504871abc5e6db19e5612175dae2b0479.png');
@@ -28,6 +34,75 @@ export default function BookNursingCareScreen() {
     const [selectedDuration, setSelectedDuration] = useState('12 Hours (Night Shift)');
     const [selectedCondition, setSelectedCondition] = useState('');
     const [selectedGender, setSelectedGender] = useState('');
+
+    // API state
+    const [cityId, setCityId] = useState('');
+    const [serviceId, setServiceId] = useState('');
+    const [address, setAddress] = useState('Fetching address...');
+    const [isBooking, setIsBooking] = useState(false);
+
+    React.useEffect(() => {
+        (async () => {
+            try {
+                const hasPermission = await locationService.requestPermission();
+                if (hasPermission) {
+                    const coords = await locationService.getCurrentLocation();
+                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
+                    setAddress(fetchedAddress);
+                } else {
+                    setAddress('');
+                }
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) setCityId(profileRes.data.cityId);
+                const serviceRes = await apiClient.get<any[]>('/services');
+                if (serviceRes.success && serviceRes.data) {
+                    const svc = serviceRes.data.find((s: any) => s.slug === 'home-nurse');
+                    if (svc) setServiceId(svc.id);
+                }
+            } catch (err) {
+                console.log('Nurse Care init failed', err);
+            }
+        })();
+    }, []);
+
+    const handleBookService = async () => {
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+        // Map duration to ShiftDuration enum
+        let shiftDuration: 'SHORT_VISIT' | 'TWELVE_HOUR' | 'TWENTY_FOUR_HOUR' | undefined;
+        if (selectedDuration.includes('Short')) shiftDuration = 'SHORT_VISIT';
+        else if (selectedDuration.includes('12')) shiftDuration = 'TWELVE_HOUR';
+        else if (selectedDuration.includes('24')) shiftDuration = 'TWENTY_FOUR_HOUR';
+
+        try {
+            setIsBooking(true);
+            const res = await bookingService.createBooking({
+                serviceId,
+                cityId,
+                scheduledDate: new Date().toISOString(),
+                addressLine: address || undefined,
+                staffType: selectedStaff === 'Option A' ? 'qualified-nurse' : 'bedside-attendant',
+                shiftDuration,
+                formDataJson: {
+                    recipient: selectedWho,
+                    condition: selectedCondition || 'Not specified',
+                    gender: selectedGender || 'Any',
+                },
+            });
+            if (res.success && res.data) {
+                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+            } else {
+                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Nurse care booking error:', error);
+            Alert.alert('Error', 'Failed to create booking. Please try again.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
 
     return (
         <View style={styles.screen}>
@@ -223,22 +298,16 @@ export default function BookNursingCareScreen() {
                 {/* ─── Fixed Normal Bottom Bar ─── */}
                 <SafeAreaView edges={['bottom']} style={styles.bottomBarContainer}>
                     <TouchableOpacity
-                        style={styles.confirmButton}
+                        style={[styles.confirmButton, isBooking && { opacity: 0.6 }]}
                         activeOpacity={0.8}
-                        onPress={() => {
-                            router.push({
-                                pathname: '/nurse-care/confirmation' as any,
-                                params: {
-                                    recipient: selectedWho,
-                                    staff: selectedStaff,
-                                    duration: selectedDuration,
-                                    condition: selectedCondition || 'Not specified',
-                                    gender: selectedGender || 'Any'
-                                }
-                            });
-                        }}
+                        disabled={isBooking}
+                        onPress={handleBookService}
                     >
-                        <Text style={styles.confirmButtonText}>Request Staff</Text>
+                        {isBooking ? (
+                            <ActivityIndicator color="#FFFFFF" />
+                        ) : (
+                            <Text style={styles.confirmButtonText}>Request Staff</Text>
+                        )}
                     </TouchableOpacity>
                 </SafeAreaView>
             </View>

@@ -8,11 +8,17 @@ import {
     Platform,
     ScrollView,
     TextInput,
+    Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { locationService } from '@/services/device/locationService';
+import { userService } from '@/services/api/userService';
+import { bookingService } from '@/services/api/bookingService';
+import { apiClient } from '@/services/api/apiClient';
 
 // ─── Figma Assets ───
 const imgThali = require('@/assets/images/6fdd60a0eb22e90770fb958a6ddcf54c1c9dc6b6.png'); // Meal image
@@ -47,6 +53,64 @@ export default function MealServiceScreen() {
     const [spicy, setSpicy] = useState(false);
     const [otherReq, setOtherReq] = useState('');
 
+    // API state
+    const [cityId, setCityId] = useState('');
+    const [serviceId, setServiceId] = useState('');
+    const [address, setAddress] = useState('Fetching address...');
+    const [isBooking, setIsBooking] = useState(false);
+
+    React.useEffect(() => {
+        (async () => {
+            try {
+                const hasPermission = await locationService.requestPermission();
+                if (hasPermission) {
+                    const coords = await locationService.getCurrentLocation();
+                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
+                    setAddress(fetchedAddress);
+                } else { setAddress(''); }
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) setCityId(profileRes.data.cityId);
+                const serviceRes = await apiClient.get<any[]>('/services');
+                if (serviceRes.success && serviceRes.data) {
+                    const svc = serviceRes.data.find((s: any) => s.slug === 'tiffin');
+                    if (svc) setServiceId(svc.id);
+                }
+            } catch (err) { console.log('Meal Service init failed', err); }
+        })();
+    }, []);
+
+    const handleBookService = async () => {
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+        try {
+            setIsBooking(true);
+            const res = await bookingService.createBooking({
+                serviceId,
+                cityId,
+                scheduledDate: new Date().toISOString(),
+                addressLine: address || undefined,
+                formDataJson: {
+                    mealType,
+                    subscriptionMode: subMode,
+                    noOnionGarlic,
+                    spicy,
+                    otherReq: otherReq || undefined,
+                },
+            });
+            if (res.success && res.data) {
+                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+            } else {
+                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Meal booking error:', error);
+            Alert.alert('Error', 'Failed to place order. Please try again.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
     return (
         <View style={styles.screen}>
             {/* Header extension */}
@@ -157,21 +221,16 @@ export default function MealServiceScreen() {
 
                 {/* ─── Action Button ─── */}
                 <TouchableOpacity
-                    style={styles.submitButton}
+                    style={[styles.submitButton, isBooking && { opacity: 0.6 }]}
                     activeOpacity={0.8}
-                    onPress={() => {
-                        router.push({
-                            pathname: '/service-confirmation',
-                            params: {
-                                serviceName: 'Meal Service',
-                                description: `${mealType} (${subMode})\nPreferences: ${noOnionGarlic ? 'No Onion/Garlic' : ''} ${spicy ? 'Spicy' : ''}\nOther: ${otherReq}`,
-                                address: 'Home Delivery',
-                                fee: '₹2,500/month (Est)'
-                            }
-                        });
-                    }}
+                    disabled={isBooking}
+                    onPress={handleBookService}
                 >
-                    <Text style={styles.submitButtonText}>Request Tiffin</Text>
+                    {isBooking ? (
+                        <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                        <Text style={styles.submitButtonText}>Request Tiffin</Text>
+                    )}
                 </TouchableOpacity>
 
             </ScrollView>

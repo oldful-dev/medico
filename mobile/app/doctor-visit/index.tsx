@@ -10,6 +10,8 @@ import {
     StyleSheet,
     Platform,
     useWindowDimensions,
+    Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +19,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { locationService } from '@/services/device/locationService';
+import { userService } from '@/services/api/userService';
+import { bookingService } from '@/services/api/bookingService';
+import { apiClient } from '@/services/api/apiClient';
 
 // ─── Figma-exported Assets ───
 // Problem Icons (images from disk)
@@ -54,6 +60,73 @@ export default function DoctorVisitScreen() {
     const [selectedDoctorType, setSelectedDoctorType] = React.useState<'GP' | 'Physio'>('GP');
     const [selectedWhen, setSelectedWhen] = React.useState<'ASAP' | 'Later'>('ASAP');
     const [visitType, setVisitType] = React.useState<'Home' | 'Clinic'>('Home');
+
+    // ─── API State ───
+    const [cityId, setCityId] = React.useState('');
+    const [serviceId, setServiceId] = React.useState('');
+    const [address, setAddress] = React.useState('Fetching address...');
+    const [isBooking, setIsBooking] = React.useState(false);
+
+    React.useEffect(() => {
+        (async () => {
+            try {
+                const hasPermission = await locationService.requestPermission();
+                if (hasPermission) {
+                    const coords = await locationService.getCurrentLocation();
+                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
+                    setAddress(fetchedAddress);
+                } else {
+                    setAddress('');
+                }
+
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) {
+                    setCityId(profileRes.data.cityId);
+                }
+
+                const serviceRes = await apiClient.get<any[]>('/services');
+                if (serviceRes.success && serviceRes.data) {
+                    const svc = serviceRes.data.find((s: any) => s.slug === 'doctor-home-visit');
+                    if (svc) setServiceId(svc.id);
+                }
+            } catch (err) {
+                console.log('Doctor Visit init failed', err);
+            }
+        })();
+    }, []);
+
+    const handleBookService = async () => {
+        if (!selectedProblem) {
+            Alert.alert('Select Problem', 'Please select a health problem first.');
+            return;
+        }
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+        try {
+            setIsBooking(true);
+            const res = await bookingService.createBooking({
+                serviceId,
+                cityId,
+                scheduledDate: new Date().toISOString(),
+                addressLine: address || undefined,
+                symptoms: [selectedProblem],
+                doctorType: selectedDoctorType === 'GP' ? 'general-physician' : 'physiotherapist',
+                formDataJson: { visitType, urgency: selectedWhen },
+            });
+            if (res.success && res.data) {
+                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+            } else {
+                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Doctor visit booking error:', error);
+            Alert.alert('Error', 'Failed to create booking. Please try again.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
 
     // ─── BULLETPROOF GRID MATH FOR SMALL SCREENS (< 370px) ───
     // 1. Calculate the exact workable width inside the card
@@ -226,7 +299,7 @@ export default function DoctorVisitScreen() {
 
                         <View style={styles.addressBox}>
                             <Ionicons name="location-outline" size={16} color="#2F2F2F" style={styles.addressIcon} />
-                            <Text style={styles.addressText} numberOfLines={1}>123 Baker st, London</Text>
+                            <Text style={styles.addressText} numberOfLines={1}>{address}</Text>
                             <TouchableOpacity>
                                 <Text style={styles.addressEdit}>Edit</Text>
                             </TouchableOpacity>
@@ -243,19 +316,16 @@ export default function DoctorVisitScreen() {
             {/* ─── Fixed Bottom Bar ─── */}
             <View style={styles.bottomBar}>
                 <TouchableOpacity
-                    style={styles.bookButton}
+                    style={[styles.bookButton, isBooking && { opacity: 0.6 }]}
                     activeOpacity={0.8}
-                    onPress={() => {
-                        router.push({
-                            pathname: '/doctor-visit/confirmation',
-                            params: {
-                                problem: selectedProblem || 'General checkup',
-                                doctorType: selectedDoctorType
-                            }
-                        });
-                    }}
+                    disabled={isBooking}
+                    onPress={handleBookService}
                 >
-                    <Text style={styles.bookButtonText}>Book Appointment</Text>
+                    {isBooking ? (
+                        <ActivityIndicator color={Colors.textWhite} />
+                    ) : (
+                        <Text style={styles.bookButtonText}>Book Appointment</Text>
+                    )}
                 </TouchableOpacity>
             </View>
         </View>

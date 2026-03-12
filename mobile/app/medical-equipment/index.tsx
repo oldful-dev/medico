@@ -8,12 +8,18 @@ import {
     Image,
     Platform,
     ScrollView,
+    Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
+import { locationService } from '@/services/device/locationService';
+import { userService } from '@/services/api/userService';
+import { bookingService } from '@/services/api/bookingService';
+import { apiClient } from '@/services/api/apiClient';
 
 // ─── Figma Assets ───
 const imgWheelchair = require('@/assets/images/be69e88a2a74b15eb189dce875fc4395704fc6bb.png');
@@ -30,10 +36,15 @@ export default function MedicalEquipmentScreen() {
     const [selectedDuration, setSelectedDuration] = useState('Monthly');
     const [address, setAddress] = useState('Fetching address...');
     const [isManualAddress, setIsManualAddress] = useState(false);
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+
+    // API state
+    const [cityId, setCityId] = useState('');
+    const [serviceId, setServiceId] = useState('');
+    const [isBooking, setIsBooking] = useState(false);
 
     React.useEffect(() => {
         (async () => {
-            const { locationService } = await import('@/services/device/locationService');
             try {
                 const hasPermission = await locationService.requestPermission();
                 if (hasPermission) {
@@ -44,13 +55,50 @@ export default function MedicalEquipmentScreen() {
                     setIsManualAddress(true);
                     setAddress('');
                 }
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) setCityId(profileRes.data.cityId);
+                const serviceRes = await apiClient.get<any[]>('/services');
+                if (serviceRes.success && serviceRes.data) {
+                    const svc = serviceRes.data.find((s: any) => s.slug === 'equipment-rental');
+                    if (svc) setServiceId(svc.id);
+                }
             } catch (err) {
-                console.log("Failed to fetch address", err);
+                console.log('Equipment init failed', err);
                 setIsManualAddress(true);
                 setAddress('');
             }
         })();
     }, []);
+
+    const handleBookService = async () => {
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+        try {
+            setIsBooking(true);
+            const res = await bookingService.createBooking({
+                serviceId,
+                cityId,
+                scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
+                addressLine: address || undefined,
+                formDataJson: {
+                    equipment: selectedEquipment,
+                    rentalDuration: selectedDuration,
+                },
+            });
+            if (res.success && res.data) {
+                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+            } else {
+                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Equipment booking error:', error);
+            Alert.alert('Error', 'Failed to create booking. Please try again.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
 
     return (
         <View style={styles.screen}>
@@ -143,28 +191,23 @@ export default function MedicalEquipmentScreen() {
                     <View style={styles.sectionCardTransparent}>
                         <DateTimePickerInput
                             label="Schedule Pick-up"
-                            onDateChange={() => { }}
+                            onDateChange={(d) => setSelectedDate(d)}
                         />
                     </View>
 
                     {/* ─── Confirm Rental Button ─── */}
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity
-                            style={styles.confirmButton}
+                            style={[styles.confirmButton, isBooking && { opacity: 0.6 }]}
                             activeOpacity={0.8}
-                            onPress={() => {
-                                router.push({
-                                    pathname: '/service-confirmation',
-                                    params: {
-                                        serviceName: 'Medical Equipment',
-                                        description: `Item: ${selectedEquipment}\nDuration: ${selectedDuration}`,
-                                        address: address, // Derived from device location
-                                        fee: '₹500/week (Est)'
-                                    }
-                                });
-                            }}
+                            disabled={isBooking}
+                            onPress={handleBookService}
                         >
-                            <Text style={styles.confirmButtonText}>Confirm Rental</Text>
+                            {isBooking ? (
+                                <ActivityIndicator color="#FFFFFF" />
+                            ) : (
+                                <Text style={styles.confirmButtonText}>Confirm Rental</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
 
