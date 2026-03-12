@@ -13,6 +13,11 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '@/context/AuthContext';
+import { userService } from '@/services/api/userService';
+import { bookingService } from '@/services/api/bookingService';
+import { apiClient } from '@/services/api/apiClient';
+import { Alert } from 'react-native';
 
 // ─── Figma Assets ───
 const imgLightning = require('@/assets/images/50ffab5c68d190752695666bb7ec8bee1bc4842a.png'); // Lightning bolt
@@ -21,6 +26,69 @@ const imgChart = require('@/assets/images/45958abae6d20cd413b2ccd515807fab5af92f
 export default function SmartUpgradeScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { userId } = useAuth();
+    const [cityId, setCityId] = React.useState('');
+    const [serviceId, setServiceId] = React.useState('');
+    const [isBooking, setIsBooking] = React.useState(false);
+
+    React.useEffect(() => {
+        (async () => {
+            try {
+                // Fetch User Profile for City ID
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) {
+                    setCityId(profileRes.data.cityId);
+                }
+
+                // Fetch Service ID for Smart Upgrade
+                const serviceRes = await apiClient.get<any[]>('/services');
+                if (serviceRes.success && serviceRes.data) {
+                    const svc = serviceRes.data.find((s: any) => s.slug === 'smart-upgrade');
+                    if (svc) setServiceId(svc.id);
+                }
+            } catch (err) {
+                console.log("Initialization failed", err);
+            }
+        })();
+    }, []);
+
+    const handleUpgrade = async () => {
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+
+        try {
+            setIsBooking(true);
+            const payload = {
+                serviceId,
+                cityId,
+                scheduledDate: new Date().toISOString(),
+                addressLine: 'Plan Upgrade',
+                formDataJson: {
+                    plan: 'Oldful Homemaker Plan',
+                    fee: 3499
+                }
+            };
+
+            const res = await bookingService.createBooking(payload);
+            if (res.success && res.data) {
+                router.push({
+                    pathname: '/service-confirmation',
+                    params: {
+                        bookingId: res.data.id
+                    }
+                });
+            } else {
+                Alert.alert('Upgrade Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Upgrade error:', error);
+            Alert.alert('Error', 'Failed to process upgrade. Please check your connection.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
 
     return (
         <View style={styles.screen}>
@@ -66,21 +134,12 @@ export default function SmartUpgradeScreen() {
 
                     {/* ─── Upgrade Button ─── */}
                     <TouchableOpacity
-                        style={styles.upgradeButton}
+                        style={[styles.upgradeButton, isBooking && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        onPress={() => {
-                            router.push({
-                                pathname: '/service-confirmation',
-                                params: {
-                                    serviceName: 'Smart Upgrade',
-                                    description: 'Oldful Homemaker Plan - Total Home Management',
-                                    address: 'N/A',
-                                    fee: '₹3,499/month'
-                                }
-                            });
-                        }}
+                        disabled={isBooking}
+                        onPress={handleUpgrade}
                     >
-                        <Text style={styles.upgradeButtonText}>View Plan Details & Upgrade</Text>
+                        <Text style={styles.upgradeButtonText}>{isBooking ? 'Processing...' : 'View Plan Details & Upgrade'}</Text>
                     </TouchableOpacity>
 
                     {/* ─── Important Disclaimer ─── */}

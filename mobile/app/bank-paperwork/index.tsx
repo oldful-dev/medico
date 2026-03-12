@@ -17,6 +17,11 @@ import { locationService } from '@/services/device/locationService';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { userService } from '@/services/api/userService';
+import { bookingService } from '@/services/api/bookingService';
+import { apiClient } from '@/services/api/apiClient';
+import { Alert } from 'react-native';
 const imgHero = require('@/assets/images/056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png'); // Document and pen icon
 const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
 const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
@@ -27,21 +32,83 @@ export default function BankPaperworkScreen() {
     const [bankName, setBankName] = React.useState('');
     const [procedureType, setProcedureType] = React.useState('');
     const [address, setAddress] = React.useState('');
+    const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+    const { userId } = useAuth();
+    const [cityId, setCityId] = React.useState('');
+    const [serviceId, setServiceId] = React.useState('');
+    const [isBooking, setIsBooking] = React.useState(false);
 
     React.useEffect(() => {
         (async () => {
             try {
+                // Fetch location
                 const hasPermission = await locationService.requestPermission();
                 if (hasPermission) {
                     const coords = await locationService.getCurrentLocation();
                     const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
                     setAddress(fetchedAddress);
                 }
+
+                // Fetch User Profile for City ID
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) {
+                    setCityId(profileRes.data.cityId);
+                }
+
+                // Fetch Service ID for Bank Paperwork
+                const serviceRes = await apiClient.get<any[]>('/services');
+                if (serviceRes.success && serviceRes.data) {
+                    const svc = serviceRes.data.find((s: any) => s.slug === 'bank-paperwork');
+                    if (svc) setServiceId(svc.id);
+                }
             } catch (err) {
-                console.log("Failed to fetch location", err);
+                console.log("Initialization failed", err);
             }
         })();
     }, []);
+
+    const handleBookService = async () => {
+        if (!bankName || !procedureType || !selectedDate || !address) {
+            Alert.alert('Missing Info', 'Please fill in all details and select a date.');
+            return;
+        }
+
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+
+        try {
+            setIsBooking(true);
+            const payload = {
+                serviceId,
+                cityId,
+                scheduledDate: selectedDate.toISOString(),
+                addressLine: address,
+                formDataJson: {
+                    bankName,
+                    procedureType
+                }
+            };
+
+            const res = await bookingService.createBooking(payload);
+            if (res.success && res.data) {
+                router.push({
+                    pathname: '/service-confirmation',
+                    params: {
+                        bookingId: res.data.id
+                    }
+                });
+            } else {
+                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Booking error:', error);
+            Alert.alert('Error', 'Failed to create booking. Please check your connection.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
 
     return (
         <View style={styles.screen}>
@@ -111,27 +178,19 @@ export default function BankPaperworkScreen() {
                 {/* ─── Schedule ─── */}
                 <DateTimePickerInput
                     label="Preferred Date & Time"
-                    onDateChange={() => { }}
+                    value={selectedDate}
+                    onDateChange={setSelectedDate}
                 />
 
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity
-                        style={styles.bookButton}
+                        style={[styles.bookButton, isBooking && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        onPress={() => {
-                            router.push({
-                                pathname: '/service-confirmation',
-                                params: {
-                                    serviceName: 'Bank / Paperwork',
-                                    description: `${bankName} - ${procedureType}`,
-                                    address: address,
-                                    fee: '₹249 (Booking Fee)'
-                                }
-                            });
-                        }}
+                        disabled={isBooking}
+                        onPress={handleBookService}
                     >
-                        <Text style={styles.bookButtonText}>Book Service</Text>
+                        <Text style={styles.bookButtonText}>{isBooking ? 'Processing...' : 'Book Service'}</Text>
                     </TouchableOpacity>
                 </View>
 

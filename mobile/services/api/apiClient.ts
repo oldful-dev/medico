@@ -7,8 +7,7 @@
 import { Platform } from 'react-native';
 
 // Android emulator uses 10.0.2.2 for localhost; iOS simulator uses localhost
-const DEFAULT_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || `http://${DEFAULT_HOST}:5000/api`;
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://medico-crzu.onrender.com/api';
 
 interface RequestConfig {
     method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';

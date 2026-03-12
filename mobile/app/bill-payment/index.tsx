@@ -13,6 +13,11 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/context/AuthContext';
+import { userService } from '@/services/api/userService';
+import { bookingService } from '@/services/api/bookingService';
+import { apiClient } from '@/services/api/apiClient';
+import { Alert } from 'react-native';
 
 // ─── Figma Assets ───
 const imgHero = require('@/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png'); // Bill icon
@@ -25,6 +30,75 @@ export default function BillPaymentScreen() {
     const [billType, setBillType] = React.useState('');
     const [accountId, setAccountId] = React.useState('');
     const [amount, setAmount] = React.useState('');
+    const { userId } = useAuth();
+    const [cityId, setCityId] = React.useState('');
+    const [serviceId, setServiceId] = React.useState('');
+    const [isBooking, setIsBooking] = React.useState(false);
+
+    React.useEffect(() => {
+        (async () => {
+            try {
+                // Fetch User Profile for City ID
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) {
+                    setCityId(profileRes.data.cityId);
+                }
+
+                // Fetch Service ID for Bill Payment
+                const serviceRes = await apiClient.get<any[]>('/services');
+                if (serviceRes.success && serviceRes.data) {
+                    const svc = serviceRes.data.find((s: any) => s.slug === 'bill-payment');
+                    if (svc) setServiceId(svc.id);
+                }
+            } catch (err) {
+                console.log("Initialization failed", err);
+            }
+        })();
+    }, []);
+
+    const handleBookService = async () => {
+        if (!billType || !accountId || !amount) {
+            Alert.alert('Missing Info', 'Please fill in all bill details.');
+            return;
+        }
+
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+
+        try {
+            setIsBooking(true);
+            const payload = {
+                serviceId,
+                cityId,
+                scheduledDate: new Date().toISOString(), // Immediate for bill pay
+                addressLine: 'Online / Concierge',
+                formDataJson: {
+                    billType,
+                    accountId,
+                    amount
+                }
+            };
+
+            const res = await bookingService.createBooking(payload);
+            if (res.success && res.data) {
+                router.push({
+                    pathname: '/service-confirmation',
+                    params: {
+                        bookingId: res.data.id
+                    }
+                });
+            } else {
+                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Booking error:', error);
+            Alert.alert('Error', 'Failed to create booking. Please check your connection.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
 
     return (
         <View style={styles.screen}>
@@ -101,21 +175,12 @@ export default function BillPaymentScreen() {
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity
-                        style={styles.bookButton}
+                        style={[styles.bookButton, isBooking && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        onPress={() => {
-                            router.push({
-                                pathname: '/service-confirmation',
-                                params: {
-                                    serviceName: 'Bill Payment',
-                                    description: `Type: ${billType}\nAccount: ${accountId}`,
-                                    address: 'Online / Concierge',
-                                    fee: amount ? `₹${amount}` : "To be decided"
-                                }
-                            });
-                        }}
+                        disabled={isBooking}
+                        onPress={handleBookService}
                     >
-                        <Text style={styles.bookButtonText}>Book Service</Text>
+                        <Text style={styles.bookButtonText}>{isBooking ? 'Processing...' : 'Book Service'}</Text>
                     </TouchableOpacity>
                 </View>
 

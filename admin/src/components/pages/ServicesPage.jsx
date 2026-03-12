@@ -4,7 +4,7 @@ import { Settings, ArrowUp, ArrowDown, ToggleLeft, ToggleRight, Edit2, Plus, Tra
 import { serviceAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
 
-export default function ServicesPage() {
+export default function ServicesPage({ filterType }) {
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editingService, setEditingService] = useState(null);
@@ -15,8 +15,11 @@ export default function ServicesPage() {
     async function loadServices() {
         try {
             setLoading(true);
-            const res = await serviceAPI.getAll();
-            const svc = res.data?.data || [];
+            let res = await serviceAPI.getAll();
+            let svc = res.data?.data || [];
+            if (filterType) {
+                svc = svc.filter(s => s.serviceType === filterType);
+            }
             setServices(svc.sort((a, b) => a.sortOrder - b.sortOrder));
         } catch (e) { console.error(e); }
         finally { setLoading(false); }

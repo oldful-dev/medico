@@ -12,27 +12,64 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { bookingService, Booking } from '@/services/api/bookingService';
 
 export default function ServiceConfirmationScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
-    // Accept route parameters dynamically
-    const {
-        serviceName = 'Service',
-        requestId = 'REQ-2026-03-05-891',
-        description = 'Issue details will be shown here.',
-        address = '123 Selected Address, City',
-        status = 'Confirmed',
-        fee = 'To be decided'
-    } = useLocalSearchParams<{
-        serviceName: string;
-        requestId: string;
-        description: string;
-        address: string;
-        status: string;
-        fee: string;
+    const params = useLocalSearchParams<{
+        bookingId: string;
+        // Fallbacks for direct navigation or old flows
+        serviceName?: string;
+        requestId?: string;
+        description?: string;
+        address?: string;
+        status?: string;
+        fee?: string;
     }>();
+
+    const [booking, setBooking] = React.useState<Booking | null>(null);
+    const [loading, setLoading] = React.useState(!!params.bookingId);
+
+    React.useEffect(() => {
+        if (params.bookingId) {
+            fetchBooking(params.bookingId);
+        }
+    }, [params.bookingId]);
+
+    const fetchBooking = async (id: string) => {
+        try {
+            setLoading(true);
+            const res = await bookingService.getBookingById(id);
+            if (res.success && res.data) {
+                setBooking(res.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch booking details:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Helper to format description from JSON
+    const formatDescription = (b: Booking) => {
+        if (b.symptoms && b.symptoms.length > 0) return b.symptoms.join(', ');
+        // If it's a home essential with formDataJson
+        const formData = (b as any).formDataJson;
+        if (formData) {
+            return Object.values(formData).filter(v => !!v).join(' - ');
+        }
+        return 'Service request details';
+    };
+
+    // Derive display values
+    const dispName = booking?.service?.name || params.serviceName || 'Service';
+    const dispId = booking?.bookingCode || params.requestId || 'REQ-PENDING';
+    const dispDesc = booking ? formatDescription(booking) : params.description || 'Details pending...';
+    const dispAddr = booking?.addressLine || params.address || 'Address pending...';
+    const dispStatus = booking?.status || params.status || 'Confirmed';
+    const dispFee = booking?.amount ? `₹${booking.amount}` : params.fee || 'To be decided';
 
     return (
         <View style={styles.screen}>
@@ -44,7 +81,7 @@ export default function ServiceConfirmationScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Booking Confirmed</Text>
+                <Text style={styles.headerTitle}>{loading ? 'Fetching Booking...' : 'Booking Confirmed'}</Text>
                 <View style={{ width: 34 }} />
             </View>
 
@@ -60,9 +97,9 @@ export default function ServiceConfirmationScreen() {
                         <View style={styles.successCircle}>
                             <Ionicons name="checkmark" size={48} color={Colors.textWhite} />
                         </View>
-                        <Text style={styles.successTitle}>Booking Received!</Text>
+                        <Text style={styles.successTitle}>{loading ? 'Please wait...' : 'Booking Received!'}</Text>
                         <Text style={styles.successSubtitle}>
-                            Your service request has been successfully submitted.
+                            {booking ? 'Your service request has been successfully submitted.' : 'Fetching your booking details...'}
                         </Text>
                     </View>
 
@@ -70,10 +107,10 @@ export default function ServiceConfirmationScreen() {
                     <View style={styles.bookingIdCard}>
                         <View>
                             <Text style={styles.bookingIdLabel}>Request ID</Text>
-                            <Text style={styles.bookingIdValue}>{requestId}</Text>
+                            <Text style={styles.bookingIdValue}>{dispId}</Text>
                         </View>
                         <View style={styles.statusBadge}>
-                            <Text style={styles.statusBadgeText}>{status}</Text>
+                            <Text style={styles.statusBadgeText}>{dispStatus}</Text>
                         </View>
                     </View>
 
@@ -85,71 +122,71 @@ export default function ServiceConfirmationScreen() {
                             <View style={styles.detailIconBox}>
                                 <Ionicons name="construct-outline" size={16} color={Colors.primary} />
                             </View>
-                            <View style={styles.detailTextGroup}>
-                                <Text style={styles.detailLabel}>Service</Text>
-                                <Text style={styles.detailValue}>{serviceName}</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.detailDivider} />
-
-                        <View style={styles.detailRow}>
-                            <View style={styles.detailIconBox}>
-                                <Ionicons name="information-circle-outline" size={16} color={Colors.primary} />
-                            </View>
-                            <View style={styles.detailTextGroup}>
-                                <Text style={styles.detailLabel}>Description</Text>
-                                <Text style={styles.detailValue}>{description}</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.detailDivider} />
-
-                        <View style={styles.detailRow}>
-                            <View style={styles.detailIconBox}>
-                                <Ionicons name="location-outline" size={16} color={Colors.primary} />
-                            </View>
-                            <View style={styles.detailTextGroup}>
-                                <Text style={styles.detailLabel}>Address</Text>
-                                <Text style={styles.detailValue}>{address}</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.detailDivider} />
-
-                        <View style={styles.detailRow}>
-                            <View style={styles.detailIconBox}>
-                                <Ionicons name="wallet-outline" size={16} color={Colors.primary} />
-                            </View>
-                            <View style={styles.detailTextGroup}>
-                                <Text style={styles.detailLabel}>Booking Fee / Estimate</Text>
-                                <Text style={styles.detailValue}>{fee}</Text>
-                            </View>
-                        </View>
-                    </View>
-
-                    {/* Info Banner */}
-                    <View style={styles.infoBanner}>
-                        <Ionicons name="information-circle" size={18} color={Colors.primaryDark} />
-                        <Text style={styles.infoBannerText}>
-                            {(() => {
-                                const lower = serviceName.toLowerCase();
-                                if (lower.includes('driver') || lower.includes('cab') || lower.includes('hospital'))
-                                    return 'A driver will be assigned to your trip shortly. You can track your cab location.';
-                                if (lower.includes('medicine') || lower.includes('blood') || lower.includes('order'))
-                                    return 'Your order is being processed. You can track the delivery status here.';
-                                if (lower.includes('meal') || lower.includes('tiffin'))
-                                    return 'Our kitchen has received your request. You can track your tiffin delivery.';
-                                if (lower.includes('nurse') || lower.includes('physio') || lower.includes('fitness') || lower.includes('doctor'))
-                                    return 'A healthcare professional or therapist will be assigned to you shortly.';
-                                if (lower.includes('paper') || lower.includes('legal') || lower.includes('bank') || lower.includes('bill') || lower.includes('upgrade'))
-                                    return 'An Oldful concierge assistant will be assigned to handle your request.';
-                                if (lower.includes('cleaning') || lower.includes('repair') || lower.includes('plumbing') || lower.includes('electrical') || lower.includes('tech'))
-                                    return 'A certified technician is being prepared for your home visit.';
-                                return 'A dedicated partner will be assigned to your request shortly. You can track their status.';
-                            })()}
-                        </Text>
-                    </View>
+                             <View style={styles.detailTextGroup}>
+                                 <Text style={styles.detailLabel}>Service</Text>
+                                 <Text style={styles.detailValue}>{dispName}</Text>
+                             </View>
+                         </View>
+ 
+                         <View style={styles.detailDivider} />
+ 
+                         <View style={styles.detailRow}>
+                             <View style={styles.detailIconBox}>
+                                 <Ionicons name="information-circle-outline" size={16} color={Colors.primary} />
+                             </View>
+                             <View style={styles.detailTextGroup}>
+                                 <Text style={styles.detailLabel}>Description</Text>
+                                 <Text style={styles.detailValue}>{dispDesc}</Text>
+                             </View>
+                         </View>
+ 
+                         <View style={styles.detailDivider} />
+ 
+                         <View style={styles.detailRow}>
+                             <View style={styles.detailIconBox}>
+                                 <Ionicons name="location-outline" size={16} color={Colors.primary} />
+                             </View>
+                             <View style={styles.detailTextGroup}>
+                                 <Text style={styles.detailLabel}>Address</Text>
+                                 <Text style={styles.detailValue}>{dispAddr}</Text>
+                             </View>
+                         </View>
+ 
+                         <View style={styles.detailDivider} />
+ 
+                         <View style={styles.detailRow}>
+                             <View style={styles.detailIconBox}>
+                                 <Ionicons name="wallet-outline" size={16} color={Colors.primary} />
+                             </View>
+                             <View style={styles.detailTextGroup}>
+                                 <Text style={styles.detailLabel}>Booking Fee / Estimate</Text>
+                                 <Text style={styles.detailValue}>{dispFee}</Text>
+                             </View>
+                         </View>
+                     </View>
+ 
+                     {/* Info Banner */}
+                     <View style={styles.infoBanner}>
+                         <Ionicons name="information-circle" size={18} color={Colors.primaryDark} />
+                         <Text style={styles.infoBannerText}>
+                             {(() => {
+                                 const lower = dispName.toLowerCase();
+                                 if (lower.includes('driver') || lower.includes('cab') || lower.includes('hospital'))
+                                     return 'A driver will be assigned to your trip shortly. You can track your cab location.';
+                                 if (lower.includes('medicine') || lower.includes('blood') || lower.includes('order'))
+                                     return 'Your order is being processed. You can track the delivery status here.';
+                                 if (lower.includes('meal') || lower.includes('tiffin'))
+                                     return 'Our kitchen has received your request. You can track your tiffin delivery.';
+                                 if (lower.includes('nurse') || lower.includes('physio') || lower.includes('fitness') || lower.includes('doctor'))
+                                     return 'A healthcare professional or therapist will be assigned to you shortly.';
+                                 if (lower.includes('paper') || lower.includes('legal') || lower.includes('bank') || lower.includes('bill') || lower.includes('upgrade'))
+                                     return 'An Oldful concierge assistant will be assigned to handle your request.';
+                                 if (lower.includes('cleaning') || lower.includes('repair') || lower.includes('plumbing') || lower.includes('electrical') || lower.includes('tech'))
+                                     return 'A certified technician is being prepared for your home visit.';
+                                 return 'A dedicated partner will be assigned to your request shortly. You can track their status.';
+                             })()}
+                         </Text>
+                     </View>
                 </ScrollView>
 
                 {/* ─── Bottom Buttons ─── */}
@@ -157,7 +194,7 @@ export default function ServiceConfirmationScreen() {
                     <TouchableOpacity style={[styles.actionButton, styles.trackBtn]} activeOpacity={0.8}>
                         <Text style={[styles.actionButtonText, styles.trackText]}>
                             {(() => {
-                                const lower = serviceName.toLowerCase();
+                                const lower = dispName.toLowerCase();
                                 if (lower.includes('driver') || lower.includes('cab') || lower.includes('hospital')) return 'Track Car/Cab';
                                 if (lower.includes('nurse') || lower.includes('physio') || lower.includes('fitness') || lower.includes('doctor')) return 'Track Professional';
                                 if (lower.includes('medicine') || lower.includes('blood')) return 'Track Order';

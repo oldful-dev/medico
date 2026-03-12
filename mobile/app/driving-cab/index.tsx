@@ -15,6 +15,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { locationService } from '@/services/device/locationService';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
+import { useAuth } from '@/context/AuthContext';
+import { userService } from '@/services/api/userService';
+import { bookingService } from '@/services/api/bookingService';
+import { apiClient } from '@/services/api/apiClient';
+import { Alert } from 'react-native';
+import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
 // ─── Figma Assets ───
 const imgHero = require('@/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png'); // Yellow Car Icon
@@ -27,25 +33,91 @@ export default function DrivingCabScreen() {
     const [pickupLocation, setPickupLocation] = React.useState('');
     const [dropLocation, setDropLocation] = React.useState('');
     const [vehiclePref, setVehiclePref] = React.useState('');
+    const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
     const [isFetchingLocation, setIsFetchingLocation] = React.useState(true);
+    const { userId } = useAuth();
+    const [cityId, setCityId] = React.useState('');
+    const [serviceId, setServiceId] = React.useState('');
+    const [isBooking, setIsBooking] = React.useState(false);
 
     React.useEffect(() => {
         (async () => {
             try {
+                // Fetch location
                 const hasPermission = await locationService.requestPermission();
                 if (hasPermission) {
                     const coords = await locationService.getCurrentLocation();
-                    // Full address for cab pickup
                     const address = await locationService.getAddressFromCoordinates(coords);
                     setPickupLocation(address);
                 }
+
+                // Fetch User Profile for City ID
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) {
+                    setCityId(profileRes.data.cityId);
+                }
+
+                // Fetch Service ID for Driving / Cab
+                const serviceRes = await apiClient.get<any[]>('/services');
+                if (serviceRes.success && serviceRes.data) {
+                    const svc = serviceRes.data.find((s: any) => s.slug === 'driving-cab');
+                    if (svc) setServiceId(svc.id);
+                }
+
             } catch (err) {
-                console.log("Failed to fetch location", err);
+                console.log("Initialization failed", err);
             } finally {
                 setIsFetchingLocation(false);
             }
         })();
     }, []);
+
+    const handleBookService = async () => {
+        if (!pickupLocation || !dropLocation || !selectedDate) {
+            Alert.alert('Missing Info', 'Please provide pickup, drop locations and select a timing.');
+            return;
+        }
+
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+
+        try {
+            setIsBooking(true);
+            const payload = {
+                serviceId,
+                cityId,
+                scheduledDate: selectedDate.toISOString(),
+                addressLine: pickupLocation,
+                pickupAddress: pickupLocation,
+                dropAddress: dropLocation,
+                vehicleType: vehiclePref,
+                formDataJson: {
+                    pickupLocation,
+                    dropLocation,
+                    vehiclePref
+                }
+            };
+
+            const res = await bookingService.createBooking(payload);
+            if (res.success && res.data) {
+                router.push({
+                    pathname: '/service-confirmation',
+                    params: {
+                        bookingId: res.data.id
+                    }
+                });
+            } else {
+                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Booking error:', error);
+            Alert.alert('Error', 'Failed to create booking. Please check your connection.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
 
     return (
         <View style={styles.screen}>
@@ -124,27 +196,19 @@ export default function DrivingCabScreen() {
                 {/* ─── Timings ─── */}
                 <DateTimePickerInput
                     label="Pickup Timings"
-                    onDateChange={() => { }}
+                    value={selectedDate}
+                    onDateChange={setSelectedDate}
                 />
 
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity
-                        style={styles.bookButton}
+                        style={[styles.bookButton, isBooking && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        onPress={() => {
-                            router.push({
-                                pathname: '/service-confirmation',
-                                params: {
-                                    serviceName: 'Driver / Cab Booking',
-                                    description: `Pickup: ${pickupLocation}\nDrop: ${dropLocation}\nVehicle: ${vehiclePref}`,
-                                    address: pickupLocation,
-                                    fee: '₹149 (Booking Fee)'
-                                }
-                            });
-                        }}
+                        disabled={isBooking}
+                        onPress={handleBookService}
                     >
-                        <Text style={styles.bookButtonText}>Book Service</Text>
+                        <Text style={styles.bookButtonText}>{isBooking ? 'Processing...' : 'Book Service'}</Text>
                     </TouchableOpacity>
                 </View>
 

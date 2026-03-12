@@ -17,6 +17,11 @@ import { locationService } from '@/services/device/locationService';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { userService } from '@/services/api/userService';
+import { bookingService } from '@/services/api/bookingService';
+import { apiClient } from '@/services/api/apiClient';
+import { Alert } from 'react-native';
 const imgHero = require('@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png');
 const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
 const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
@@ -29,10 +34,15 @@ export default function ApplianceRepairScreen() {
     const [address, setAddress] = React.useState('Fetching address...');
     const [isManualAddress, setIsManualAddress] = React.useState(false);
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+    const { userId } = useAuth();
+    const [cityId, setCityId] = React.useState('');
+    const [serviceId, setServiceId] = React.useState('');
+    const [isBooking, setIsBooking] = React.useState(false);
 
     React.useEffect(() => {
         (async () => {
             try {
+                // Fetch location
                 const hasPermission = await locationService.requestPermission();
                 if (hasPermission) {
                     const coords = await locationService.getCurrentLocation();
@@ -42,13 +52,70 @@ export default function ApplianceRepairScreen() {
                     setIsManualAddress(true);
                     setAddress('');
                 }
+
+                // Fetch User Profile for City ID
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) {
+                    setCityId(profileRes.data.cityId);
+                }
+
+                // Fetch Service ID for Appliance Repair
+                const serviceRes = await apiClient.get<any[]>('/services');
+                if (serviceRes.success && serviceRes.data) {
+                    const svc = serviceRes.data.find((s: any) => s.slug === 'appliance-repair');
+                    if (svc) setServiceId(svc.id);
+                }
+
             } catch (err) {
-                console.log("Failed to fetch address", err);
+                console.log("Initialization failed", err);
                 setIsManualAddress(true);
                 setAddress('');
             }
         })();
     }, []);
+
+    const handleBookService = async () => {
+        if (!appliance || !issue || !selectedDate || !address) {
+            Alert.alert('Missing Info', 'Please fill in all details and select a date.');
+            return;
+        }
+
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+
+        try {
+            setIsBooking(true);
+            const payload = {
+                serviceId,
+                cityId,
+                scheduledDate: selectedDate.toISOString(),
+                addressLine: address,
+                formDataJson: {
+                    appliance,
+                    issue
+                }
+            };
+
+            const res = await bookingService.createBooking(payload);
+            if (res.success && res.data) {
+                router.push({
+                    pathname: '/service-confirmation',
+                    params: {
+                        bookingId: res.data.id
+                    }
+                });
+            } else {
+                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Booking error:', error);
+            Alert.alert('Error', 'Failed to create booking. Please check your connection.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
 
     return (
         <View style={styles.screen}>
@@ -150,21 +217,12 @@ export default function ApplianceRepairScreen() {
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity
-                        style={styles.bookButton}
+                        style={[styles.bookButton, isBooking && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        onPress={() => {
-                            router.push({
-                                pathname: '/service-confirmation',
-                                params: {
-                                    serviceName: 'AC & Appliance Repair',
-                                    description: `${appliance} - ${issue}`,
-                                    address: address,
-                                    fee: '₹149 (Booking Fee)'
-                                }
-                            });
-                        }}
+                        disabled={isBooking}
+                        onPress={handleBookService}
                     >
-                        <Text style={styles.bookButtonText}>Book Service</Text>
+                        <Text style={styles.bookButtonText}>{isBooking ? 'Processing...' : 'Book Service'}</Text>
                     </TouchableOpacity>
                 </View>
 

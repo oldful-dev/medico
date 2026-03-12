@@ -14,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Fonts } from '@/constants/theme';
 
+import { apiClient } from '@/services/api/apiClient';
+
 // Home essentials icons
 const acRepairIcon = require('@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png');
 const plumbingIcon = require('@/assets/images/8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png');
@@ -24,24 +26,52 @@ const bankWorkIcon = require('@/assets/images/33ede0e57be708b9775957c3ecec7013b0
 const groceryIcon = require('@/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png');
 const anythingElseIcon = require('@/assets/images/6c8ed456023258e8b4095af93909c6cbc6c4b909.png');
 
-const ALL_ESSENTIALS = [
-    { icon: acRepairIcon, label: 'AC\nRepair', route: '/appliance-repair' },
-    { icon: plumbingIcon, label: 'Plumbing', route: '/plumbing-electrical' },
-    { icon: cleaningIcon, label: 'Cleaning', route: '/deep-cleaning' },
-    { icon: driverIcon, label: 'Driver', route: '/driving-cab' },
-    { icon: billsIcon, label: 'Bills', route: '/bill-payment' },
-    { icon: bankWorkIcon, label: 'Bank\nWork', route: '/bank-paperwork' },
-    { icon: groceryIcon, label: 'Gro-\ncery', route: '/grocery-run' },
-    { icon: anythingElseIcon, label: 'Anything\nElse', route: '/anything-else' },
-    { icon: bankWorkIcon, label: 'Paper &\nLegal', route: '/paper-legal' },
-    { icon: driverIcon, label: 'Trip &\nTravel', route: '/trip-travels' },
-    { icon: acRepairIcon, label: 'Tech\nHelper', route: '/tech-helper' },
-    { icon: cleaningIcon, label: 'Smart\nUpgrade', route: '/smart-upgrade' },
-];
+const ICON_MAPPING: Record<string, any> = {
+    'appliance-repair': acRepairIcon,
+    'plumbing-electrical': plumbingIcon,
+    'deep-cleaning': cleaningIcon,
+    'driving-cab': driverIcon,
+    'bill-payment': billsIcon,
+    'bank-paperwork': bankWorkIcon,
+    'grocery-run': groceryIcon,
+    'anything-else': anythingElseIcon,
+    'paper-legal': bankWorkIcon,
+    'trip-travels': driverIcon,
+    'tech-helper': acRepairIcon,
+    'smart-upgrade': cleaningIcon,
+};
 
 export default function AllHomeEssentialsScreen() {
     const router = useRouter();
     const { width } = useWindowDimensions();
+    const [services, setServices] = React.useState<any[]>([]);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        fetchServices();
+    }, []);
+
+    const fetchServices = async () => {
+        try {
+            setLoading(true);
+            const res = await apiClient.get<any[]>('/services?isEnabled=true');
+            if (res.success && res.data) {
+                // Filter for Home Essentials and map to include icon
+                const filtered = res.data
+                    .filter((s: any) => s.serviceType === 'HOME_ESSENTIALS')
+                    .map((s: any) => ({
+                        ...s,
+                        iconAsset: ICON_MAPPING[s.slug] || anythingElseIcon,
+                        displayLabel: s.name.replace(' & ', '\n').replace(' ', '\n')
+                    }));
+                setServices(filtered);
+            }
+        } catch (error) {
+            console.error('Failed to fetch services:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Screen padding corresponds to marginHorizontal of the card mapping on Home Screen
     const availableWidth = width - 40; // 20px padding on each side
@@ -51,8 +81,8 @@ export default function AllHomeEssentialsScreen() {
     const exactCardHeight = exactItemWidth * 1.35;
 
     // Pad the grid array for clean left alignment in last row
-    const paddedGrid: Array<typeof ALL_ESSENTIALS[0] | { empty: boolean }> = [...ALL_ESSENTIALS];
-    while (paddedGrid.length % 4 !== 0) {
+    const paddedGrid = [...services];
+    while (paddedGrid.length > 0 && paddedGrid.length % 4 !== 0) {
         paddedGrid.push({ empty: true });
     }
 
@@ -67,29 +97,34 @@ export default function AllHomeEssentialsScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <View style={styles.gridContainer}>
-                    {paddedGrid.map((item, i) => {
-                        if ('empty' in item) {
-                            return <View key={`empty-${i}`} style={{ width: exactItemWidth }} />;
-                        }
-                        return (
-                            <TouchableOpacity
-                                key={`service-${i}`}
-                                style={[styles.gridItem, { width: exactItemWidth, height: exactCardHeight }]}
-                                onPress={() => router.push(item.route as any)}
-                            >
-                                <View style={styles.essentialIconCircle}>
-                                    <Image source={item.icon} style={styles.essentialIcon} resizeMode="contain" />
-                                </View>
-                                <Text style={styles.essentialLabel}>{item.label}</Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
+                {loading ? (
+                    <Text style={{ textAlign: 'center', marginTop: 20 }}>Loading services...</Text>
+                ) : (
+                    <View style={styles.gridContainer}>
+                        {paddedGrid.map((item, i) => {
+                            if (item.empty) {
+                                return <View key={`empty-${i}`} style={{ width: exactItemWidth }} />;
+                            }
+                            return (
+                                <TouchableOpacity
+                                    key={item.id || `service-${i}`}
+                                    style={[styles.gridItem, { width: exactItemWidth, height: exactCardHeight }]}
+                                    onPress={() => router.push(item.route as any)}
+                                >
+                                    <View style={styles.essentialIconCircle}>
+                                        <Image source={item.iconAsset} style={styles.essentialIcon} resizeMode="contain" />
+                                    </View>
+                                    <Text style={styles.essentialLabel}>{item.displayLabel}</Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                )}
             </ScrollView>
         </SafeAreaView>
     );
 }
+
 
 const styles = StyleSheet.create({
     safeArea: {

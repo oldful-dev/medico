@@ -15,6 +15,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
+import { useAuth } from '@/context/AuthContext';
+import { userService } from '@/services/api/userService';
+import { bookingService } from '@/services/api/bookingService';
+import { apiClient } from '@/services/api/apiClient';
+import { Alert } from 'react-native';
+import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
 // ─── Figma Assets ───
 const imgCheckmark = require('@/assets/images/019640d27de157c119b045c46aae6a6559dd3a79.png'); // Green Check Circle
@@ -28,11 +34,17 @@ export default function PaperLegalScreen() {
     const [details, setDetails] = useState('');
     const [address, setAddress] = useState('Fetching...   ');
     const [isManualAddress, setIsManualAddress] = useState(false);
+    const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+    const { userId } = useAuth();
+    const [cityId, setCityId] = React.useState('');
+    const [serviceId, setServiceId] = React.useState('');
+    const [isBooking, setIsBooking] = React.useState(false);
 
     React.useEffect(() => {
         (async () => {
             const { locationService } = await import('@/services/device/locationService');
             try {
+                // Fetch location
                 const hasPermission = await locationService.requestPermission();
                 if (hasPermission) {
                     const coords = await locationService.getCurrentLocation();
@@ -42,13 +54,70 @@ export default function PaperLegalScreen() {
                     setIsManualAddress(true);
                     setAddress('');
                 }
+
+                // Fetch User Profile for City ID
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) {
+                    setCityId(profileRes.data.cityId);
+                }
+
+                // Fetch Service ID for Paper and Legal
+                const serviceRes = await apiClient.get<any[]>('/services');
+                if (serviceRes.success && serviceRes.data) {
+                    const svc = serviceRes.data.find((s: any) => s.slug === 'paper-legal');
+                    if (svc) setServiceId(svc.id);
+                }
+
             } catch (err) {
-                console.log(err);
+                console.log("Initialization failed", err);
                 setIsManualAddress(true);
                 setAddress('');
             }
         })();
     }, []);
+
+    const handleBookService = async () => {
+        if (!selectedService || !details || !selectedDate || !address) {
+            Alert.alert('Missing Info', 'Please select a service, describe details, and select a timing.');
+            return;
+        }
+
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+
+        try {
+            setIsBooking(true);
+            const payload = {
+                serviceId,
+                cityId,
+                scheduledDate: selectedDate.toISOString(),
+                addressLine: address,
+                formDataJson: {
+                    selectedService,
+                    details
+                }
+            };
+
+            const res = await bookingService.createBooking(payload);
+            if (res.success && res.data) {
+                router.push({
+                    pathname: '/service-confirmation',
+                    params: {
+                        bookingId: res.data.id
+                    }
+                });
+            } else {
+                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Booking error:', error);
+            Alert.alert('Error', 'Failed to create booking. Please check your connection.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
 
     return (
         <View style={styles.screen}>
@@ -134,26 +203,18 @@ export default function PaperLegalScreen() {
                     {/* ─── Schedule Visit ─── */}
                     <DateTimePickerInput
                         label="Schedule Visit"
-                        onDateChange={() => { }}
+                        value={selectedDate}
+                        onDateChange={setSelectedDate}
                     />
 
                     {/* ─── Book Assistant Button ─── */}
                     <TouchableOpacity
-                        style={styles.submitButton}
+                        style={[styles.submitButton, isBooking && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        onPress={() => {
-                            router.push({
-                                pathname: '/service-confirmation',
-                                params: {
-                                    serviceName: 'Paper and Legal',
-                                    description: `Service: ${selectedService}\nDetails: ${details}`,
-                                    address: address,
-                                    fee: '₹249 (Booking Fee)'
-                                }
-                            });
-                        }}
+                        disabled={isBooking}
+                        onPress={handleBookService}
                     >
-                        <Text style={styles.submitButtonText}>Book Assistant</Text>
+                        <Text style={styles.submitButtonText}>{isBooking ? 'Processing...' : 'Book Assistant'}</Text>
                     </TouchableOpacity>
 
                     {/* ─── Oldful Illustration Bottom ─── */}

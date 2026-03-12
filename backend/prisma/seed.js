@@ -62,22 +62,37 @@ async function main() {
         { name: 'Medicines', slug: 'medicines', icon: '💊', tagline: 'Doorstep medicine delivery', pricingText: 'As per MRP', route: '/services/medicines', sortOrder: 6, serviceType: 'MEDICINES' },
         { name: 'Physio & Fitness', slug: 'physio-fitness', icon: '🏋️', tagline: 'Personalized physiotherapy sessions', pricingText: '₹699 / session', route: '/services/physio', sortOrder: 7, serviceType: 'PHYSIO_FITNESS' },
         { name: 'Equipment Rental', slug: 'equipment-rental', icon: '🦽', tagline: 'Medical equipment on rent', pricingText: 'From ₹99/day', route: '/services/equipment', sortOrder: 8, serviceType: 'EQUIPMENT_RENTAL' },
-        { name: 'Home Essentials', slug: 'home-essentials', icon: '🏠', tagline: 'Daily essentials delivered', pricingText: 'Varies', route: '/services/essentials', sortOrder: 9, serviceType: 'HOME_ESSENTIALS', isEnabled: false },
+        { name: 'Home Essentials', slug: 'home-essentials', icon: '🏠', tagline: 'Daily essentials delivered', pricingText: 'Varies', route: '/services/essentials', sortOrder: 9, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
         { name: 'Club & Events', slug: 'club-events', icon: '🎭', tagline: 'Social clubs & wellness events', pricingText: '₹199 / event', route: '/services/events', sortOrder: 10, serviceType: 'CLUB_EVENTS' },
         { name: 'Tiffin', slug: 'tiffin', icon: '🍱', tagline: 'Healthy meals for seniors', pricingText: '₹149 / meal', route: '/services/tiffin', sortOrder: 11, serviceType: 'TIFFIN' },
         { name: 'Tech Helper', slug: 'tech-helper', icon: '💻', tagline: 'Technology assistance for seniors', pricingText: '₹399 / visit', route: '/services/tech-helper', sortOrder: 12, serviceType: 'TECH_HELPER' },
-        { name: 'Paperwork & Legal', slug: 'paperwork-legal', icon: '📋', tagline: 'Legal & paperwork assistance', pricingText: 'From ₹999', route: '/services/legal-help', sortOrder: 13, serviceType: 'PAPERWORK_LEGAL', isEnabled: false },
+        { name: 'Paperwork & Legal', slug: 'paperwork-legal', icon: '📋', tagline: 'Legal & paperwork assistance', pricingText: 'From ₹999', route: '/services/legal-help', sortOrder: 13, serviceType: 'PAPERWORK_LEGAL', isEnabled: true },
     ];
 
-    for (const s of serviceData) {
+    const homeEssentialsSubServices = [
+        { name: 'AC & Appliance Repair', slug: 'appliance-repair', icon: '🛠️', tagline: 'Expert repairs for AC, Fridge, etc.', pricingText: '₹149 / booking', route: '/appliance-repair', sortOrder: 101, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Plumbing & Electrical', slug: 'plumbing-electrical', icon: '🚰', tagline: 'Certified plumbers & electricians', pricingText: '₹99 / booking', route: '/plumbing-electrical', sortOrder: 102, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Deep Cleaning', slug: 'deep-cleaning', icon: '🧹', tagline: 'Full home & toilet cleaning', pricingText: '₹499 / booking', route: '/deep-cleaning', sortOrder: 103, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Driver & Cab', slug: 'driving-cab', icon: '🚗', tagline: 'Reliable drivers for local/outstation', pricingText: '₹299 / booking', route: '/driving-cab', sortOrder: 104, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Bill Payment', slug: 'bill-payment', icon: '🧾', tagline: 'Utility bills & tax payments', pricingText: '₹49 / bill', route: '/bill-payment', sortOrder: 105, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Bank Paperwork', slug: 'bank-paperwork', icon: '🏦', tagline: 'KYC, forms & bank assistance', pricingText: '₹199 / visit', route: '/bank-paperwork', sortOrder: 106, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Grocery Run', slug: 'grocery-run', icon: '🛒', tagline: 'Fresh groceries at your door', pricingText: '₹99 / run', route: '/grocery-run', sortOrder: 107, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Anything Else', slug: 'anything-else', icon: '❓', tagline: 'Need help with something else?', pricingText: 'Contact Us', route: '/anything-else', sortOrder: 108, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Paperwork & Legal (Essentials)', slug: 'paper-legal', icon: '📋', tagline: 'Legal & paperwork assistance', pricingText: 'From ₹999', route: '/paper-legal', sortOrder: 109, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Trip & Travels', slug: 'trip-travels', icon: '✈️', tagline: 'Travel planning & assistance', pricingText: 'Custom', route: '/trip-travels', sortOrder: 110, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Tech Helper (Essentials)', slug: 'tech-helper-essentials', icon: '💻', tagline: 'Technology assistance for seniors', pricingText: '₹399 / visit', route: '/tech-helper', sortOrder: 111, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Smart Upgrade', slug: 'smart-upgrade', icon: '✨', tagline: 'Make your home elderly-friendly', pricingText: 'Custom Quote', route: '/smart-upgrade', sortOrder: 112, serviceType: 'HOME_ESSENTIALS', isEnabled: true }
+    ];
+
+    for (const s of homeEssentialsSubServices) {
         await prisma.service.upsert({
             where: { slug: s.slug },
-            update: {},
+            update: { ...s },
             create: s,
         });
     }
 
-    console.log(`✅ ${serviceData.length} services seeded`);
+    console.log(`✅ ${serviceData.length + homeEssentialsSubServices.length} total services seeded/updated`);
 
     // ─── 4. Plans ─────────────────────────────
     const planData = [

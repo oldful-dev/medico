@@ -21,6 +21,7 @@ import AuditPage from "@/components/pages/AuditPage";
 import ServerUIPage from "@/components/pages/ServerUIPage";
 import SupportPage from "@/components/pages/SupportPage";
 import SmartFeaturesPage from "@/components/pages/SmartFeaturesPage";
+import HomeEssentialsPage from "@/components/pages/HomeEssentialsPage";
 
 const pageComponents = {
     dashboard: DashboardPage,
@@ -43,6 +44,7 @@ const pageComponents = {
     "server-ui": ServerUIPage,
     support: SupportPage,
     smart: SmartFeaturesPage,
+    "home-essentials": HomeEssentialsPage,
 };
 
 export default function DashboardLayout() {

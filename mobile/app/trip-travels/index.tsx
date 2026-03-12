@@ -13,6 +13,12 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
+import { useAuth } from '@/context/AuthContext';
+import { userService } from '@/services/api/userService';
+import { bookingService } from '@/services/api/bookingService';
+import { apiClient } from '@/services/api/apiClient';
+import { Alert } from 'react-native';
+import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
 // ─── Figma Assets ───
 const imgCarouselIndia = require('@/assets/images/c73921e0062b4c910b14682c3ab2491a1db69321.png'); // Gateway of India image
@@ -29,9 +35,122 @@ export default function TripTravelsScreen() {
     const insets = useSafeAreaInsets();
     const [destination, setDestination] = useState('Temple Tours');
     const [tripPeopleCount, setTripPeopleCount] = useState(1);
-
     const [selectedEvent, setSelectedEvent] = useState('Morning Yoga Group');
     const [eventPeopleCount, setEventPeopleCount] = useState(1);
+    const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+    const { userId } = useAuth();
+    const [cityId, setCityId] = React.useState('');
+    const [serviceId, setServiceId] = React.useState('');
+    const [isBooking, setIsBooking] = React.useState(false);
+
+    React.useEffect(() => {
+        (async () => {
+            try {
+                // Fetch User Profile for City ID
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) {
+                    setCityId(profileRes.data.cityId);
+                }
+
+                // Fetch Service ID for Trip & Travels
+                const serviceRes = await apiClient.get<any[]>('/services');
+                if (serviceRes.success && serviceRes.data) {
+                    const svc = serviceRes.data.find((s: any) => s.slug === 'trip-travels');
+                    if (svc) setServiceId(svc.id);
+                }
+            } catch (err) {
+                console.log("Initialization failed", err);
+            }
+        })();
+    }, []);
+
+    const handleBookTrip = async () => {
+        if (!destination || !selectedDate) {
+            Alert.alert('Missing Info', 'Please select a destination and date.');
+            return;
+        }
+
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+
+        try {
+            setIsBooking(true);
+            const payload = {
+                serviceId,
+                cityId,
+                scheduledDate: selectedDate.toISOString(),
+                addressLine: 'Trip / Travel Inquiry',
+                formDataJson: {
+                    type: 'TRIP',
+                    destination,
+                    peopleCount: tripPeopleCount
+                }
+            };
+
+            const res = await bookingService.createBooking(payload);
+            if (res.success && res.data) {
+                router.push({
+                    pathname: '/service-confirmation',
+                    params: {
+                        bookingId: res.data.id
+                    }
+                });
+            } else {
+                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Booking error:', error);
+            Alert.alert('Error', 'Failed to submit inquiry. Please check your connection.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
+
+    const handleBookLocalEvent = async () => {
+        if (!selectedEvent) {
+            Alert.alert('Missing Info', 'Please select an event.');
+            return;
+        }
+
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+
+        try {
+            setIsBooking(true);
+            const payload = {
+                serviceId,
+                cityId,
+                scheduledDate: new Date().toISOString(), // Local events might be listed soon
+                addressLine: 'Local Event Booking',
+                formDataJson: {
+                    type: 'EVENT',
+                    event: selectedEvent,
+                    groupSize: eventPeopleCount
+                }
+            };
+
+            const res = await bookingService.createBooking(payload);
+            if (res.success && res.data) {
+                router.push({
+                    pathname: '/service-confirmation',
+                    params: {
+                        bookingId: res.data.id
+                    }
+                });
+            } else {
+                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Booking error:', error);
+            Alert.alert('Error', 'Failed to book seat. Please check your connection.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
 
     return (
         <View style={styles.screen}>
@@ -106,7 +225,8 @@ export default function TripTravelsScreen() {
                     {/* ─── Date & Time ─── */}
                     <DateTimePickerInput
                         label="When?"
-                        onDateChange={() => { }}
+                        value={selectedDate}
+                        onDateChange={setSelectedDate}
                     />
 
                     {/* ─── Number of People ─── */}
@@ -124,21 +244,12 @@ export default function TripTravelsScreen() {
 
                 {/* ─── Submit Inquiry ─── */}
                 <TouchableOpacity
-                    style={[styles.mainButton, { marginBottom: 35 }]}
+                    style={[styles.mainButton, { marginBottom: 35 }, isBooking && { opacity: 0.7 }]}
                     activeOpacity={0.8}
-                    onPress={() => {
-                        router.push({
-                            pathname: '/service-confirmation',
-                            params: {
-                                serviceName: 'Trip & Travel',
-                                description: `Destination: ${destination}\nTravellers: ${tripPeopleCount}`,
-                                address: 'N/A',
-                                fee: 'Determined upon inquiry'
-                            }
-                        });
-                    }}
+                    disabled={isBooking}
+                    onPress={handleBookTrip}
                 >
-                    <Text style={styles.mainButtonText}>Submit inquiry</Text>
+                    <Text style={styles.mainButtonText}>{isBooking ? 'Processing...' : 'Submit inquiry'}</Text>
                 </TouchableOpacity>
 
                 {/* ─── Join Local Events ─── */}
@@ -201,21 +312,12 @@ export default function TripTravelsScreen() {
 
                 {/* ─── Book Seat ─── */}
                 <TouchableOpacity
-                    style={styles.mainButton}
+                    style={[styles.mainButton, isBooking && { opacity: 0.7 }]}
                     activeOpacity={0.8}
-                    onPress={() => {
-                        router.push({
-                            pathname: '/service-confirmation',
-                            params: {
-                                serviceName: 'Join Local Events',
-                                description: `Event: ${selectedEvent}\nGroup Size: ${eventPeopleCount}`,
-                                address: 'Specified shortly',
-                                fee: 'Determined per event'
-                            }
-                        });
-                    }}
+                    disabled={isBooking}
+                    onPress={handleBookLocalEvent}
                 >
-                    <Text style={styles.mainButtonText}>Book Seat</Text>
+                    <Text style={styles.mainButtonText}>{isBooking ? 'Processing...' : 'Book Seat'}</Text>
                 </TouchableOpacity>
 
             </ScrollView>

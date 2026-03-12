@@ -13,7 +13,14 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
+import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { userService } from '@/services/api/userService';
+import { bookingService } from '@/services/api/bookingService';
+import { apiClient } from '@/services/api/apiClient';
+import { locationService } from '@/services/device/locationService';
+import { Alert } from 'react-native';
 
 // Feature items array according to PRD
 const ISSUES = [
@@ -32,6 +39,91 @@ export default function TechHelperScreen() {
 
     // State for mode selection (radio button)
     const [selectedMode, setSelectedMode] = useState<'home' | 'phone'>('home');
+    const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+    const { userId } = useAuth();
+    const [cityId, setCityId] = React.useState('');
+    const [serviceId, setServiceId] = React.useState('');
+    const [address, setAddress] = React.useState('');
+    const [isBooking, setIsBooking] = React.useState(false);
+
+    React.useEffect(() => {
+        (async () => {
+            try {
+                // Fetch location for address
+                const hasPermission = await locationService.requestPermission();
+                if (hasPermission) {
+                    const coords = await locationService.getCurrentLocation();
+                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
+                    setAddress(fetchedAddress);
+                }
+
+                // Fetch User Profile for City ID
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) {
+                    setCityId(profileRes.data.cityId);
+                }
+
+                // Fetch Service ID for Tech Helper
+                const serviceRes = await apiClient.get<any[]>('/services');
+                if (serviceRes.success && serviceRes.data) {
+                    const svc = serviceRes.data.find((s: any) => s.slug === 'tech-helper');
+                    if (svc) setServiceId(svc.id);
+                }
+
+            } catch (err) {
+                console.log("Initialization failed", err);
+            }
+        })();
+    }, []);
+
+    const handleBookService = async () => {
+        const selectedLabels = selectedIssues.map(id => ISSUES.find(i => i.id === id)?.title).filter(Boolean);
+        const desc = [...selectedLabels, otherIssue].filter(Boolean).join(', ');
+
+        if (!desc || !selectedDate || !address) {
+            Alert.alert('Missing Info', 'Please describe the issue, select a date, and ensure address is present.');
+            return;
+        }
+
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            return;
+        }
+
+        try {
+            setIsBooking(true);
+            const payload = {
+                serviceId,
+                cityId,
+                scheduledDate: selectedDate.toISOString(),
+                addressLine: address,
+                formDataJson: {
+                    issues: selectedIssues,
+                    otherIssue,
+                    mode: selectedMode,
+                    description: desc,
+                    fee: selectedMode === 'home' ? 599 : 399
+                }
+            };
+
+            const res = await bookingService.createBooking(payload);
+            if (res.success && res.data) {
+                router.push({
+                    pathname: '/service-confirmation',
+                    params: {
+                        bookingId: res.data.id
+                    }
+                });
+            } else {
+                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
+            }
+        } catch (error) {
+            console.error('Booking error:', error);
+            Alert.alert('Error', 'Failed to create booking. Please check your connection.');
+        } finally {
+            setIsBooking(false);
+        }
+    };
 
     const toggleIssue = (id: string) => {
         setSelectedIssues(prev =>
@@ -100,6 +192,14 @@ export default function TechHelperScreen() {
                         />
                     </View>
 
+                    <View style={{ marginTop: 20 }}>
+                        <DateTimePickerInput
+                            label="Preferred Date & Time"
+                            value={selectedDate}
+                            onDateChange={setSelectedDate}
+                        />
+                    </View>
+
                     {/* ─── Upload Photos ─── */}
                     <View style={{ marginTop: 20 }}>
                         <ImageUploadBox
@@ -144,23 +244,12 @@ export default function TechHelperScreen() {
                     {/* ─── Book Support Button ─── */}
                     <View style={styles.footerSpacing} />
                     <TouchableOpacity
-                        style={styles.submitButton}
+                        style={[styles.submitButton, isBooking && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        onPress={() => {
-                            const selectedLabels = selectedIssues.map(id => ISSUES.find(i => i.id === id)?.title).filter(Boolean);
-                            const desc = [...selectedLabels, otherIssue].filter(Boolean).join(', ');
-                            router.push({
-                                pathname: '/service-confirmation',
-                                params: {
-                                    serviceName: 'Tech Helper',
-                                    description: desc,
-                                    address: '123 Baker St, London',
-                                    fee: selectedMode === 'home' ? '₹599' : '₹399'
-                                }
-                            });
-                        }}
+                        disabled={isBooking}
+                        onPress={handleBookService}
                     >
-                        <Text style={styles.submitButtonText}>Book Tech Support</Text>
+                        <Text style={styles.submitButtonText}>{isBooking ? 'Processing...' : 'Book Tech Support'}</Text>
                     </TouchableOpacity>
 
                 </ScrollView>

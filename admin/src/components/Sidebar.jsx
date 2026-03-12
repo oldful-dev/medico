@@ -19,6 +19,7 @@ const navSections = [
             { id: "cities", label: "City Management", icon: MapPin },
             { id: "users", label: "User Management", icon: UserCog },
             { id: "services", label: "Service Management", icon: Settings, badge: "Critical" },
+            { id: "home-essentials", label: "Home Essentials", icon: HeartPulse },
             { id: "bookings", label: "Booking Management", icon: CalendarCheck },
             { id: "caregivers", label: "Caregiver / Vendor", icon: HeartPulse },
         ],
