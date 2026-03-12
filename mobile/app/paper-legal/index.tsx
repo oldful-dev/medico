@@ -14,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
+import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 
 // ─── Figma Assets ───
 const imgCheckmark = require('@/assets/images/019640d27de157c119b045c46aae6a6559dd3a79.png'); // Green Check Circle
@@ -26,6 +27,7 @@ export default function PaperLegalScreen() {
     const [selectedService, setSelectedService] = useState('Digital Life Certificate');
     const [details, setDetails] = useState('');
     const [address, setAddress] = useState('Fetching...   ');
+    const [isManualAddress, setIsManualAddress] = useState(false);
 
     React.useEffect(() => {
         (async () => {
@@ -37,11 +39,13 @@ export default function PaperLegalScreen() {
                     const fetchedLoc = await locationService.getAddressFromCoordinates(coords);
                     setAddress(fetchedLoc);
                 } else {
-                    setAddress('Location permission denied');
+                    setIsManualAddress(true);
+                    setAddress('');
                 }
             } catch (err) {
                 console.log(err);
-                setAddress('Location unavailable');
+                setIsManualAddress(true);
+                setAddress('');
             }
         })();
     }, []);
@@ -128,13 +132,10 @@ export default function PaperLegalScreen() {
                     />
 
                     {/* ─── Schedule Visit ─── */}
-                    <Text style={styles.sectionTitle}>Schedule Visit</Text>
-                    <View style={styles.scheduleContainer}>
-                        <TouchableOpacity style={styles.datePickerButton}>
-                            <Ionicons name="calendar-outline" size={20} color="#048357" style={{ marginRight: 10 }} />
-                            <Text style={styles.datePickerText}>Select Date & Time</Text>
-                        </TouchableOpacity>
-                    </View>
+                    <DateTimePickerInput
+                        label="Schedule Visit"
+                        onDateChange={() => { }}
+                    />
 
                     {/* ─── Book Assistant Button ─── */}
                     <TouchableOpacity

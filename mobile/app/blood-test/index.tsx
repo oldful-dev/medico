@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 
 // ─── Figma Assets ───
 const cautionIcon = require('@/assets/images/c4f7fda686169deb23b4565362e0a544adc4d7c4.png');
@@ -75,29 +76,10 @@ export default function BloodTestScreen() {
 
                     {/* ─── Schedule Your Appointment Box ─── */}
                     <View style={styles.sectionCardTinted}>
-                        <Text style={styles.sectionTitle}>Schedule Your Appointment</Text>
-
-                        <View style={styles.scheduleRow}>
-                            {/* Date Box */}
-                            <TouchableOpacity style={styles.scheduleBox} activeOpacity={0.7}>
-                                <View style={styles.scheduleHeader}>
-                                    <Image source={calendarIcon} style={styles.scheduleIcon} />
-                                    <Text style={styles.schedulePrimaryText}>April 30, 2024</Text>
-                                </View>
-                                <Text style={styles.scheduleSecondaryText}>Pick-up</Text>
-                            </TouchableOpacity>
-
-                            {/* Time Box (Active state visually) */}
-                            <TouchableOpacity style={[styles.scheduleBox, styles.scheduleBoxActive]} activeOpacity={0.7}>
-                                <View style={styles.scheduleHeader}>
-                                    <Image source={clockIcon} style={styles.scheduleIconClock} />
-                                    <Text style={styles.schedulePrimaryTextClock}>
-                                        2:00 <Text style={styles.scheduleAmPm}>PM</Text>
-                                    </Text>
-                                </View>
-                                <Text style={styles.scheduleSecondaryText}>Pick-up</Text>
-                            </TouchableOpacity>
-                        </View>
+                        <DateTimePickerInput
+                            label="Schedule Your Appointment"
+                            onDateChange={() => { }}
+                        />
                     </View>
 
                     {/* ─── Confirm Booking Button ─── */}

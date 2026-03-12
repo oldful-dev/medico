@@ -356,7 +356,6 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontFamily: Fonts.regular,
-    fontWeight: '400',
     fontSize: FontSize.bodySmall,
     color: Colors.textBody,
     textAlign: 'center',
@@ -374,7 +373,6 @@ const styles = StyleSheet.create({
   },
   sosTagText: {
     fontFamily: Fonts.bold,
-    fontWeight: '700',
     fontSize: FontSize.caption,
     color: Colors.textWhite,
   },
@@ -396,7 +394,6 @@ const styles = StyleSheet.create({
   },
   greetingTitle: {
     fontFamily: Fonts.bold,
-    fontWeight: '700',
     fontSize: FontSize.heading2,
     color: Colors.textWhite,
   },
@@ -431,7 +428,6 @@ const styles = StyleSheet.create({
   },
   quickServiceLabel: {
     fontFamily: Fonts.medium,
-    fontWeight: '500',
     fontSize: FontSize.caption,
     color: Colors.primaryText,
     textAlign: 'center',
@@ -455,13 +451,11 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: Fonts.bold,
-    fontWeight: '700',
     fontSize: FontSize.heading2,
     color: Colors.primaryDeep,
   },
   viewAllText: {
     fontFamily: Fonts.semiBold,
-    fontWeight: '600',
     fontSize: FontSize.bodySmall,
     color: Colors.textLight,
   },
@@ -489,8 +483,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   serviceGridLabel: {
-    fontFamily: Fonts.semiBold,
-    fontWeight: '600',
+    fontFamily: Fonts.medium,
     fontSize: FontSize.bodySmall,
     color: Colors.primaryText,
     textAlign: 'center',
@@ -518,8 +511,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   trustLabel: {
-    fontFamily: Fonts.bold,
-    fontWeight: '800',
+    fontFamily: Fonts.medium,
     fontSize: FontSize.caption,
     color: Colors.primaryText,
     textAlign: 'center',
@@ -559,7 +551,6 @@ const styles = StyleSheet.create({
   },
   sosTitle: {
     fontFamily: Fonts.semiBold,
-    fontWeight: '600',
     fontSize: FontSize.bodySmall,
     color: Colors.textDark,
   },
@@ -576,7 +567,6 @@ const styles = StyleSheet.create({
   },
   sosButtonText: {
     fontFamily: Fonts.semiBold,
-    fontWeight: '600',
     fontSize: FontSize.caption,
     color: Colors.textWhite,
   },
@@ -596,13 +586,11 @@ const styles = StyleSheet.create({
   },
   essentialsTitle: {
     fontFamily: Fonts.bold,
-    fontWeight: '700',
     fontSize: FontSize.heading3,
     color: Colors.primaryDeep,
   },
   viewAllSmall: {
     fontFamily: Fonts.medium,
-    fontWeight: '500',
     fontSize: FontSize.bodySmall,
     color: Colors.textLight,
   },
@@ -633,8 +621,7 @@ const styles = StyleSheet.create({
     height: '80%',
   },
   essentialLabel: {
-    fontFamily: Fonts.bold,
-    fontWeight: '700',
+    fontFamily: Fonts.medium,
     fontSize: FontSize.caption,
     color: Colors.textMuted,
     textAlign: 'center',

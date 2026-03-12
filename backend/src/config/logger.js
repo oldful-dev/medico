@@ -1,5 +1,31 @@
 // Winston Logger Configuration
 const winston = require('winston');
+const path = require('path');
+const fs = require('fs');
+
+// Ensure logs directory exists (skip in production on Render)
+const logsDir = path.join(__dirname, '../../logs');
+if (process.env.NODE_ENV !== 'production') {
+    try { fs.mkdirSync(logsDir, { recursive: true }); } catch (_) {}
+}
+
+const transports = [
+    // Always log to console (required for Render log viewer)
+    new winston.transports.Console({
+        format: winston.format.combine(
+            winston.format.colorize(),
+            winston.format.simple()
+        ),
+    }),
+];
+
+// Only add file transports in development
+if (process.env.NODE_ENV !== 'production') {
+    transports.push(
+        new winston.transports.File({ filename: path.join(logsDir, 'error.log'), level: 'error' }),
+        new winston.transports.File({ filename: path.join(logsDir, 'combined.log') }),
+    );
+}
 
 const logger = winston.createLogger({
     level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
@@ -9,19 +35,8 @@ const logger = winston.createLogger({
         winston.format.json()
     ),
     defaultMeta: { service: 'oldful-backend' },
-    transports: [
-        new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-        new winston.transports.File({ filename: 'logs/combined.log' }),
-    ],
+    transports,
 });
 
-if (process.env.NODE_ENV !== 'production') {
-    logger.add(new winston.transports.Console({
-        format: winston.format.combine(
-            winston.format.colorize(),
-            winston.format.simple()
-        ),
-    }));
-}
-
 module.exports = { logger };
+

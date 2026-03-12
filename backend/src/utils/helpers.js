@@ -44,8 +44,9 @@ const generateUserId = async (cityId) => {
         data: { sequence: { increment: 1 } },
     });
 
-    const paddedSeq = String(updated.sequence).padStart(5, '0');
-    return `MED-${city.code}-${paddedSeq}`;
+    const yearString = new Date().getFullYear().toString().slice(-2);
+    const paddedSeq = String(updated.sequence).padStart(4, '0');
+    return `MED-${city.code}-${yearString}-${paddedSeq}`;
 };
 
 // ─── Booking Code Generation ───────────────

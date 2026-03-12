@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { locationService } from '@/services/device/locationService';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
+import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 const imgHero = require('@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png');
 const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
@@ -26,6 +27,8 @@ export default function ApplianceRepairScreen() {
     const [appliance, setAppliance] = React.useState('');
     const [issue, setIssue] = React.useState('');
     const [address, setAddress] = React.useState('Fetching address...');
+    const [isManualAddress, setIsManualAddress] = React.useState(false);
+    const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
 
     React.useEffect(() => {
         (async () => {
@@ -36,11 +39,13 @@ export default function ApplianceRepairScreen() {
                     const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
                     setAddress(fetchedAddress);
                 } else {
-                    setAddress('Location permission denied');
+                    setIsManualAddress(true);
+                    setAddress('');
                 }
             } catch (err) {
                 console.log("Failed to fetch address", err);
-                setAddress('Location unavailable');
+                setIsManualAddress(true);
+                setAddress('');
             }
         })();
     }, []);
@@ -111,13 +116,11 @@ export default function ApplianceRepairScreen() {
                 />
 
                 {/* ─── Schedule Appointment ─── */}
-                <View style={styles.card}>
-                    <Text style={styles.sectionTitle}>Schedule Appointment</Text>
-                    <TouchableOpacity style={styles.datePickerButton}>
-                        <Ionicons name="calendar-outline" size={20} color="#048357" style={{ marginRight: 10 }} />
-                        <Text style={styles.datePickerText}>Select Date & Time</Text>
-                    </TouchableOpacity>
-                </View>
+                <DateTimePickerInput
+                    label="Schedule Appointment"
+                    value={selectedDate}
+                    onDateChange={setSelectedDate}
+                />
 
                 {/* ─── Location Card ─── */}
                 <View style={styles.locationCard}>
@@ -125,9 +128,19 @@ export default function ApplianceRepairScreen() {
                     <View style={styles.locationContainer}>
                         <View style={styles.locationInputBox}>
                             <Ionicons name="location-outline" size={18} color="#048357" style={styles.locationIcon} />
-                            <Text style={styles.locationTextPrimary} numberOfLines={1}>
-                                {address}
-                            </Text>
+                            {isManualAddress ? (
+                                <TextInput
+                                    style={[styles.locationTextPrimary, { flex: 1 }]}
+                                    placeholder="Enter your address manually"
+                                    placeholderTextColor="#898989"
+                                    value={address}
+                                    onChangeText={setAddress}
+                                />
+                            ) : (
+                                <Text style={styles.locationTextPrimary} numberOfLines={1}>
+                                    {address}
+                                </Text>
+                            )}
                         </View>
                         <Image source={imgMap} style={styles.mapImage} />
                     </View>

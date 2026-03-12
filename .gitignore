@@ -81,8 +81,11 @@ Oldful PRD.pdf
 prd_text.txt
 oldful-v1.apk
 parse_pdf.js
+parse_api_list.js
 *.ps1
+API_LIST.pdf
 
 # ───── Misc ─────
 *.orig.*
 .gemini/
+backend/src/config/google-vision-key.json

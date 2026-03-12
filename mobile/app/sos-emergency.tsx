@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 
 import { SOSButton, SlideToCall, BackgroundGlow } from '@/components/sos';
 import { sosService } from '@/services/device/sosService';
+import { Fonts } from '@/constants/theme';
 
 export default function SOSEmergencyScreen() {
     const router = useRouter();
@@ -88,12 +89,7 @@ const styles = StyleSheet.create({
         padding: 8,
     },
     titleText: {
-        fontFamily: Platform.select({
-            ios: 'Inter-SemiBold',
-            android: 'Inter_600SemiBold',
-            default: 'System',
-        }),
-        fontWeight: '600',
+        fontFamily: Fonts.semiBold,
         fontSize: 24,
         lineHeight: 34,
         color: '#313A51',
@@ -103,12 +99,7 @@ const styles = StyleSheet.create({
         textTransform: 'lowercase',
     },
     subtitleText: {
-        fontFamily: Platform.select({
-            ios: 'LexendDeca-Regular',
-            android: 'LexendDeca_400Regular',
-            default: 'System',
-        }),
-        fontWeight: '400',
+        fontFamily: Fonts.regular,
         fontSize: 16,
         lineHeight: 24,
         color: '#313A51',
@@ -132,12 +123,7 @@ const styles = StyleSheet.create({
 
     /* Figma: Lexend Deca Bold 14px #555555 opacity 49% */
     notifyingText: {
-        fontFamily: Platform.select({
-            ios: 'LexendDeca-Bold',
-            android: 'LexendDeca_700Bold',
-            default: 'System',
-        }),
-        fontWeight: '700',
+        fontFamily: Fonts.medium,
         fontSize: 14,
         lineHeight: 17,
         color: '#555555',

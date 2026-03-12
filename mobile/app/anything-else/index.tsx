@@ -14,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { locationService } from '@/services/device/locationService';
+import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 
 // ─── Figma Assets ───
 const imgHero = require('@/assets/images/6c8ed456023258e8b4095af93909c6cbc6c4b909.png'); // Lightbulb & Question mark icon
@@ -121,13 +122,10 @@ export default function AnythingElseScreen() {
                 </View>
 
                 {/* ─── Schedule ─── */}
-                <View style={[styles.card, { marginBottom: 100 }]}>
-                    <Text style={styles.sectionTitle}>Preferred Date & Time</Text>
-                    <TouchableOpacity style={styles.datePickerButton}>
-                        <Ionicons name="calendar-outline" size={20} color="#048357" style={{ marginRight: 10 }} />
-                        <Text style={styles.datePickerText}>Select Date & Time</Text>
-                    </TouchableOpacity>
-                </View>
+                <DateTimePickerInput
+                    label="Preferred Date & Time"
+                    onDateChange={() => { }}
+                />
 
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>

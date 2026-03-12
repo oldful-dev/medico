@@ -16,6 +16,7 @@ interface FormInputProps {
     fontSize?: number;
     value?: string;
     onChangeText?: (text: string) => void;
+    multiline?: boolean;
 }
 
 export default function FormInput({
@@ -29,6 +30,7 @@ export default function FormInput({
     fontSize = 14,
     value,
     onChangeText,
+    multiline = false,
 }: FormInputProps) {
     return (
         <View style={[styles.container, style]}>
@@ -36,13 +38,14 @@ export default function FormInput({
                 <Text style={styles.prefix}>{prefix}</Text>
             ) : null}
             <TextInput
-                style={[styles.input, { fontSize }]}
+                style={[styles.input, { fontSize }, multiline && { textAlignVertical: 'top', paddingTop: 10 }]}
                 placeholder={placeholder}
                 placeholderTextColor="rgba(2, 116, 63, 0.49)"
                 editable={editable}
                 keyboardType={keyboardType}
                 value={value}
                 onChangeText={onChangeText}
+                multiline={multiline}
             />
             {showChevron ? (
                 <Ionicons name="chevron-down" size={14} color="rgba(2, 116, 63, 0.49)" style={styles.chevron} />
@@ -54,7 +57,7 @@ export default function FormInput({
 
 const styles = StyleSheet.create({
     container: {
-        height: 55,
+        minHeight: 55,
         borderWidth: 1,
         borderColor: '#02743F',
         borderRadius: 10,

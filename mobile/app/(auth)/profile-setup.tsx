@@ -10,12 +10,16 @@ import {
     TouchableOpacity,
     StyleSheet,
     Platform,
+    KeyboardAvoidingView,
+    Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { FormInput } from '@/components/common';
+import { userService, cityService, ApiError } from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
 
 // Figma-exported assets
 const logoImage = require('@/assets/images/2549b5ede370bbb67a088920cac9a8719fec5968.png');
@@ -24,174 +28,275 @@ const checkmarkImage = require('@/assets/images/5a8dfb52053e366f8cbd3f09d8e940ff
 
 export default function ProfileSetupScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams();
+    const passedPhone = typeof params.phone === 'string' ? params.phone : '';
+    const { login } = useAuth();
 
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
     const [locationAddress, setLocationAddress] = useState('Fetching GPS Location...');
+    const [locationDenied, setLocationDenied] = useState(false);
+    const [agreed, setAgreed] = useState(false);
+
+    const [cityId, setCityId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const fetchGPSLocation = async () => {
+        setLocationAddress('Fetching GPS Location...');
+        setLocationDenied(false);
+
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+            setLocationAddress('');
+            setLocationDenied(true);
+            return;
+        }
+
+        try {
+            let location = await Location.getCurrentPositionAsync({});
+            let geocode = await Location.reverseGeocodeAsync({
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude
+            });
+
+            if (geocode && geocode.length > 0) {
+                const address = `${geocode[0].street ? geocode[0].street + ', ' : ''}${geocode[0].city ? geocode[0].city + ', ' : ''}${geocode[0].region || ''}`;
+                setLocationAddress(address || 'Location found, address unavailable');
+            } else {
+                setLocationAddress('Location found, address unavailable');
+            }
+        } catch (error) {
+            console.error("Error fetching location:", error);
+            setLocationAddress('Failed to fetch location');
+        }
+    };
+
+    const fetchDefaultCity = async () => {
+        try {
+            const response = await cityService.getCities();
+            if (response.data && response.data.length > 0) {
+                // Find an active city, otherwise fallback to the first one
+                const activeCity = response.data.find(c => c.isEnabled && !c.isComingSoon);
+                setCityId(activeCity ? activeCity.id : response.data[0].id);
+            }
+        } catch (error) {
+            console.error("Failed to load cities", error);
+        }
+    };
 
     useEffect(() => {
-        (async () => {
-            let { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                setLocationAddress('Permission to access location was denied');
-                return;
-            }
-
-            try {
-                let location = await Location.getCurrentPositionAsync({});
-                let geocode = await Location.reverseGeocodeAsync({
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude
-                });
-
-                if (geocode && geocode.length > 0) {
-                    const address = `${geocode[0].street ? geocode[0].street + ', ' : ''}${geocode[0].city ? geocode[0].city + ', ' : ''}${geocode[0].region || ''}`;
-                    setLocationAddress(address || 'Location found, address unavailable');
-                } else {
-                    setLocationAddress('Location found, address unavailable');
-                }
-            } catch (error) {
-                console.error("Error fetching location:", error);
-                setLocationAddress('Failed to fetch location');
-            }
-        })();
+        fetchGPSLocation();
+        fetchDefaultCity();
     }, []);
+
+    const handleSaveAndContinue = async () => {
+        if (!agreed) {
+            Alert.alert("Permission Denied", "Please agree to the Policies and Terms to continue.");
+            return;
+        }
+        if (!name || name.trim().length < 3) {
+            Alert.alert("Validation", "Please enter a valid full name.");
+            return;
+        }
+        if (!cityId) {
+            Alert.alert("City Loading", "Still fetching city data. Please wait a second and try again.");
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const response = await userService.createUser({
+                name: name.trim(),
+                phone: passedPhone,
+                email: email.trim() || undefined,
+                cityId: cityId,
+                preferredLanguage: 'en',
+            });
+
+            if (response.success && response.data) {
+                // The `createUser` service is now updated to return accessToken and refreshToken
+                const tokens = (response as any).data; // Casting config since types might be strict
+                if (tokens.accessToken && tokens.refreshToken) {
+                    await login(
+                        tokens.accessToken,
+                        tokens.refreshToken,
+                        response.data.id
+                    );
+                }
+
+                // On register success, we replace the stack and navigate home
+                router.replace('/(tabs)');
+            } else {
+                throw new Error("Invalid response from server");
+            }
+        } catch (error) {
+            const apiError = error as ApiError;
+            Alert.alert("Registration Error", apiError.message || "Failed to create profile.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <View style={styles.screen}>
             <StatusBar style="dark" />
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-                {/* ─── Header: Logo + "Let's Create your PROFILE" ─── */}
-                <View style={styles.header}>
-                    <Image source={logoImage} style={styles.headerLogo} resizeMode="contain" />
-                    <View style={styles.headerRight}>
-                        <Text style={styles.headerSubtitle}>Let's Create your</Text>
-                        <Text style={styles.headerTitle}>PROFILE</Text>
-                    </View>
-                </View>
-
-                {/* ─── Row 1: Full Name + Profile Photo ─── */}
-                <View style={styles.row}>
-                    <FormInput
-                        placeholder="Enter your full name"
-                        style={styles.nameInput}
-                    />
-                    <View style={styles.profilePhotoContainer}>
-                        <Image source={profilePhoto} style={styles.profilePhoto} />
-                    </View>
-                </View>
-
-                {/* ─── Row 2: Language + DOB + Gender ─── */}
-                <View style={styles.row}>
-                    <FormInput
-                        placeholder="language"
-                        showChevron
-                        style={styles.flexInput}
-                        editable={false}
-                    />
-                    <FormInput
-                        placeholder="DOB"
-                        style={styles.flexInput}
-                        editable={false}
-                    />
-                    <FormInput
-                        placeholder="Gender"
-                        showChevron
-                        style={styles.flexInput}
-                        editable={false}
-                    />
-                </View>
-
-                {/* ─── Row 3: Email ─── */}
-                <FormInput
-                    placeholder="Enter your Email ID"
-                    keyboardType="email-address"
-                    style={styles.fullWidthInput}
-                />
-
-                {/* ─── Row 4: Mobile Number + OTP ─── */}
-                <View style={styles.row}>
-                    <FormInput
-                        placeholder="Mobile Number"
-                        prefix="+91"
-                        keyboardType="phone-pad"
-                        style={styles.halfInput}
-                        fontSize={13}
-                    />
-                    <FormInput
-                        placeholder="OTP"
-                        keyboardType="numeric"
-                        style={styles.halfInput}
-                    />
-                </View>
-
-                {/* ─── Row 5: Address (Auto GPS) + Flat Number ─── */}
-                <View style={styles.addressRowWrapper}>
-                    <View style={styles.row}>
-                        <FormInput
-                            placeholder="Address"
-                            value={locationAddress}
-                            editable={false} // PRD: Auto-populated
-                            style={styles.addressInput}
-                        />
-                        <View style={styles.locationButton}>
-                            <Ionicons name="location" size={27} color="#048357" />
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    {/* ─── Header: Logo + "Let's Create your PROFILE" ─── */}
+                    <View style={styles.header}>
+                        <Image source={logoImage} style={styles.headerLogo} resizeMode="contain" />
+                        <View style={styles.headerRight}>
+                            <Text style={styles.headerSubtitle}>Let's Create your</Text>
+                            <Text style={styles.headerTitle}>PROFILE</Text>
                         </View>
                     </View>
-                    <FormInput
-                        placeholder="Type Flat / House Number"
-                        style={[styles.fullWidthInput, { marginTop: 15 }]}
-                    />
-                </View>
 
-                {/* ─── Row 6: Emergency Number + Auto ID ─── */}
-                <View style={styles.row}>
+                    {/* ─── Row 1: Full Name + Profile Photo ─── */}
+                    <View style={styles.row}>
+                        <FormInput
+                            placeholder="Enter your full name"
+                            style={styles.nameInput}
+                            value={name}
+                            onChangeText={setName}
+                        />
+                        <View style={styles.profilePhotoContainer}>
+                            <Image source={profilePhoto} style={styles.profilePhoto} />
+                        </View>
+                    </View>
+
+                    {/* ─── Row 2: Language ─── */}
+                    <FormInput
+                        placeholder="Language"
+                        showChevron
+                        style={styles.fullWidthInput}
+                        editable={false}
+                    />
+
+                    {/* ─── Row 2b: DOB + Gender ─── */}
+                    <View style={styles.row}>
+                        <FormInput
+                            placeholder="DOB"
+                            style={styles.halfInput}
+                            editable={false}
+                        />
+                        <FormInput
+                            placeholder="Gender"
+                            showChevron
+                            style={styles.halfInput}
+                            editable={false}
+                        />
+                    </View>
+
+                    {/* ─── Row 3: Email ─── */}
+                    <FormInput
+                        placeholder="Enter your Email ID"
+                        keyboardType="email-address"
+                        style={styles.fullWidthInput}
+                        value={email}
+                        onChangeText={setEmail}
+                    />
+
+                    {/* ─── Row 4: Mobile Number (Read-only since verified) ─── */}
+                    <FormInput
+                        placeholder="Mobile Number"
+                        value={passedPhone.replace('+91', '')}
+                        prefix="+91"
+                        keyboardType="phone-pad"
+                        style={styles.fullWidthInput}
+                        editable={false}
+                        fontSize={13}
+                    />
+
+                    {/* ─── Row 5: Address (Auto GPS) + Flat Number ─── */}
+                    <View style={styles.addressRowWrapper}>
+                        <View style={styles.row}>
+                            <FormInput
+                                placeholder={locationDenied ? "Type your full address" : "Address"}
+                                value={locationAddress}
+                                editable={locationDenied}
+                                onChangeText={locationDenied ? setLocationAddress : undefined}
+                                style={styles.addressInput}
+                                multiline={true}
+                                fontSize={12}
+                            />
+                            <TouchableOpacity
+                                style={styles.locationButton}
+                                activeOpacity={0.7}
+                                onPress={fetchGPSLocation}
+                            >
+                                <Ionicons name="location" size={27} color="#048357" />
+                            </TouchableOpacity>
+                        </View>
+                        <FormInput
+                            placeholder="Type Flat / House Number"
+                            style={[styles.fullWidthInput, { marginTop: 15 }]}
+                        />
+                    </View>
+
+                    {/* ─── Row 6: Emergency Number ─── */}
                     <FormInput
                         placeholder="Emergency Number"
                         prefix="+91"
                         keyboardType="phone-pad"
-                        style={styles.halfInput}
+                        style={styles.fullWidthInput}
                         fontSize={13}
                     />
+
+                    {/* ─── Row 7: Auto ID ─── */}
                     <FormInput
                         placeholder="Auto Generated Unique ID"
                         editable={false}
-                        style={styles.halfInput}
-                        value="ID-12345"
-                        fontSize={11}
+                        style={styles.fullWidthInput}
+                        value="Will be generated after saving"
+                        fontSize={13}
                     />
-                </View>
 
-                {/* ─── Checkbox: Policies ─── */}
-                <View style={styles.checkboxRow}>
-                    <Image source={checkmarkImage} style={styles.checkmark} resizeMode="contain" />
+                    {/* ─── Checkbox: Policies ─── */}
+                    <TouchableOpacity
+                        style={styles.checkboxRow}
+                        activeOpacity={0.8}
+                        onPress={() => setAgreed(!agreed)}
+                    >
+                        <View style={styles.checkboxContainer}>
+                            {agreed && <Image source={checkmarkImage} style={styles.checkmark} resizeMode="contain" />}
+                        </View>
 
-                    <Text style={styles.policyText}>
-                        <Text style={styles.policyTextNormal}>I have Read and agreed to the </Text>
-                        <Text style={styles.policyTextUnderline}>policies</Text>
-                    </Text>
-                </View>
-
-                {/* ─── Save & Continue Button ─── */}
-                <TouchableOpacity
-                    style={styles.saveButton}
-                    activeOpacity={0.8}
-                    onPress={() => router.push('/(tabs)')}
-                >
-                    <Text style={styles.saveButtonText}>Save & Continue</Text>
-                </TouchableOpacity>
-
-                {/* ─── Already a member? Login ─── */}
-                <View style={styles.loginRow}>
-                    <Text style={styles.loginText}>Already a member? </Text>
-                    <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-                        <Text style={styles.loginLink}>Login</Text>
+                        <Text style={styles.policyText}>
+                            <Text style={styles.policyTextNormal}>I have Read and agreed to the </Text>
+                            <Text style={styles.policyTextUnderline}>policies</Text>
+                        </Text>
                     </TouchableOpacity>
-                </View>
 
-            </ScrollView>
+                    {/* ─── Save & Continue Button ─── */}
+                    <TouchableOpacity
+                        style={[styles.saveButton, (!agreed || isLoading) && { opacity: 0.7 }]}
+                        activeOpacity={0.8}
+                        onPress={handleSaveAndContinue}
+                        disabled={isLoading}
+                    >
+                        <Text style={styles.saveButtonText}>
+                            {isLoading ? "Saving..." : "Save & Continue"}
+                        </Text>
+                    </TouchableOpacity>
+
+                    {/* ─── Already a member? Login ─── */}
+                    <View style={styles.loginRow}>
+                        <Text style={styles.loginText}>Already a member? </Text>
+                        <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+                            <Text style={styles.loginLink}>Login</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                </ScrollView>
+            </KeyboardAvoidingView>
         </View>
     );
 }
@@ -221,11 +326,13 @@ const styles = StyleSheet.create({
         marginBottom: 30,
     },
     headerLogo: {
-        width: 143,
+        width: 140,
         height: 59,
+        flexShrink: 1,
     },
     headerRight: {
         alignItems: 'flex-end',
+        flexShrink: 1,
     },
     headerSubtitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
@@ -296,6 +403,7 @@ const styles = StyleSheet.create({
         minHeight: 80,
         paddingVertical: 12,
         elevation: 0,
+        overflow: 'hidden',
     },
     locationButton: {
         width: 80,
@@ -315,10 +423,20 @@ const styles = StyleSheet.create({
         marginTop: 10,
         marginBottom: 20,
     },
+    checkboxContainer: {
+        width: 26,
+        height: 26,
+        borderWidth: 1.5,
+        borderColor: '#02743F',
+        borderRadius: 6,
+        marginRight: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+    },
     checkmark: {
-        width: 33,
-        height: 33,
-        marginRight: 8,
+        width: 18,
+        height: 18,
     },
     policyText: {
         flex: 1,

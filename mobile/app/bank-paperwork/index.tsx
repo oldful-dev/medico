@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { locationService } from '@/services/device/locationService';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
+import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 const imgHero = require('@/assets/images/056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png'); // Document and pen icon
 const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
@@ -108,13 +109,10 @@ export default function BankPaperworkScreen() {
                 />
 
                 {/* ─── Schedule ─── */}
-                <View style={[styles.card, { marginBottom: 100 }]}>
-                    <Text style={styles.sectionTitle}>Preferred Date & Time</Text>
-                    <TouchableOpacity style={styles.datePickerButton}>
-                        <Ionicons name="calendar-outline" size={20} color="#048357" style={{ marginRight: 10 }} />
-                        <Text style={styles.datePickerText}>Select Date & Time</Text>
-                    </TouchableOpacity>
-                </View>
+                <DateTimePickerInput
+                    label="Preferred Date & Time"
+                    onDateChange={() => { }}
+                />
 
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>

@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Fonts } from '@/constants/theme';
 
 // Home essentials icons
 const acRepairIcon = require('@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png');
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
         paddingRight: 15,
     },
     headerTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-Bold', android: 'Poppins_700Bold', default: 'System' }),
+        fontFamily: Fonts.bold,
         fontSize: 20,
         color: '#034C2A',
     },
@@ -146,7 +147,7 @@ const styles = StyleSheet.create({
         height: '60%',
     },
     essentialLabel: {
-        fontFamily: Platform.select({ ios: 'Poppins-Bold', android: 'Poppins_700Bold', default: 'System' }),
+        fontFamily: Fonts.medium,
         fontSize: 10,
         color: '#333333',
         textAlign: 'center',

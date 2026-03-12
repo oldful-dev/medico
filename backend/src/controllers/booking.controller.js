@@ -4,6 +4,7 @@
 
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate, generateBookingCode } = require('../utils/helpers');
+const { bookLabTestSlot } = require('../utils/redcliffe.service');
 
 // GET /api/bookings
 const getBookings = async (req, res, next) => {
@@ -84,6 +85,23 @@ const createBooking = async (req, res, next) => {
             amount, formDataJson,
         } = req.body;
 
+        const service = await prisma.service.findUnique({ where: { id: serviceId } });
+        if (!service) return res.status(404).json({ success: false, message: 'Service not found' });
+
+        let redcliffeDetails = null;
+
+        // Redcliffe Labs Integration for Blood Tests
+        if (service.serviceType === 'BLOOD_TEST') {
+            const user = await prisma.user.findUnique({ where: { id: userId } });
+            redcliffeDetails = await bookLabTestSlot({
+                patientName: user.name,
+                patientPhone: user.phone,
+                testIds: requirements || [], // Ensure 'requirements' carries Redcliffe Test IDs
+                scheduledDate,
+                addressLine,
+            });
+        }
+
         const booking = await prisma.booking.create({
             data: {
                 bookingCode,
@@ -106,7 +124,7 @@ const createBooking = async (req, res, next) => {
                 dropAddress,
                 vehicleType,
                 amount: amount || 0,
-                formDataJson,
+                formDataJson: redcliffeDetails ? { ...formDataJson, redcliffeOrder: redcliffeDetails } : formDataJson,
                 // Auto-set SLA deadline (4 hours from now)
                 slaDeadline: new Date(Date.now() + 4 * 60 * 60 * 1000),
             },

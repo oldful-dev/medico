@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { locationService } from '@/services/device/locationService';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
+import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 const imgHero = require('@/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png'); // Grocery bag icon
 const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
@@ -24,6 +25,7 @@ export default function GroceryRunScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [address, setAddress] = React.useState('Fetching address...');
+    const [isManualAddress, setIsManualAddress] = React.useState(false);
     const [items, setItems] = React.useState('');
     const [store, setStore] = React.useState('');
 
@@ -36,11 +38,13 @@ export default function GroceryRunScreen() {
                     const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
                     setAddress(fetchedAddress);
                 } else {
-                    setAddress('Location permission denied');
+                    setIsManualAddress(true);
+                    setAddress('');
                 }
             } catch (err) {
                 console.log("Failed to fetch address", err);
-                setAddress('Location unavailable');
+                setIsManualAddress(true);
+                setAddress('');
             }
         })();
     }, []);
@@ -104,13 +108,10 @@ export default function GroceryRunScreen() {
                 </View>
 
                 {/* ─── Delivery Schedule ─── */}
-                <View style={styles.card}>
-                    <Text style={styles.sectionTitle}>Delivery Time</Text>
-                    <TouchableOpacity style={styles.datePickerButton}>
-                        <Ionicons name="calendar-outline" size={20} color="#048357" style={{ marginRight: 10 }} />
-                        <Text style={styles.datePickerText}>Select Date & Time</Text>
-                    </TouchableOpacity>
-                </View>
+                <DateTimePickerInput
+                    label="Delivery Time"
+                    onDateChange={() => { }}
+                />
 
                 {/* ─── Location Card ─── */}
                 <View style={styles.locationCard}>
@@ -118,9 +119,19 @@ export default function GroceryRunScreen() {
                     <View style={styles.locationContainer}>
                         <View style={styles.locationInputBox}>
                             <Ionicons name="location-outline" size={18} color="#048357" style={styles.locationIcon} />
-                            <Text style={styles.locationTextPrimary} numberOfLines={1}>
-                                {address}
-                            </Text>
+                            {isManualAddress ? (
+                                <TextInput
+                                    style={[styles.locationTextPrimary, { flex: 1 }]}
+                                    placeholder="Enter your address manually"
+                                    placeholderTextColor="#898989"
+                                    value={address}
+                                    onChangeText={setAddress}
+                                />
+                            ) : (
+                                <Text style={styles.locationTextPrimary} numberOfLines={1}>
+                                    {address}
+                                </Text>
+                            )}
                         </View>
                         <Image source={imgMap} style={styles.mapImage} />
                     </View>

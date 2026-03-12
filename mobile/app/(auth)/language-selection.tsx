@@ -1,5 +1,5 @@
 // Language Selection Screen - Preferred language for app interface
-// PRD: Language preference during onboarding
+// NOTE: This screen is no longer part of the auth flow. It's accessible from settings/profile.
 import React from 'react';
 import {
     View,
@@ -7,12 +7,12 @@ import {
     StyleSheet,
     TouchableOpacity,
     ScrollView,
-    Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Fonts } from '@/constants/theme';
 
 // ─── Available Languages ───
 const LANGUAGES = [
@@ -35,7 +35,6 @@ export default function LanguageSelectionScreen() {
             <View style={{ backgroundColor: '#048357', height: insets.top }} />
             <StatusBar style="light" backgroundColor="#048357" />
 
-            {/* ─── Header ─── */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
@@ -44,14 +43,12 @@ export default function LanguageSelectionScreen() {
                 <View style={{ width: 34 }} />
             </View>
 
-            {/* ─── Content Card ─── */}
             <View style={styles.contentCard}>
                 <ScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* Illustration text */}
                     <View style={styles.illustrationCard}>
                         <Ionicons name="language" size={40} color="#048357" style={styles.illustrationIcon} />
                         <Text style={styles.illustrationTitle}>Choose your preferred language</Text>
@@ -60,7 +57,6 @@ export default function LanguageSelectionScreen() {
                         </Text>
                     </View>
 
-                    {/* Language Options */}
                     <View style={styles.languageList}>
                         {LANGUAGES.map((lang) => (
                             <TouchableOpacity
@@ -94,7 +90,6 @@ export default function LanguageSelectionScreen() {
                     </View>
                 </ScrollView>
 
-                {/* ─── Continue Button ─── */}
                 <View style={styles.bottomBar}>
                     <TouchableOpacity style={styles.continueButton} activeOpacity={0.8}>
                         <Text style={styles.continueButtonText}>Continue</Text>
@@ -110,8 +105,6 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#048357',
     },
-
-    /* ─── Header ─── */
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -125,14 +118,11 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         flex: 1,
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontFamily: Fonts.semiBold,
         fontSize: 20,
         color: '#FFFFFF',
         textAlign: 'center',
-        letterSpacing: -0.24,
     },
-
-    /* ─── Content Card ─── */
     contentCard: {
         flex: 1,
         backgroundColor: '#FDFDE8',
@@ -148,8 +138,6 @@ const styles = StyleSheet.create({
         paddingTop: 30,
         paddingBottom: 120,
     },
-
-    /* ─── Illustration Card ─── */
     illustrationCard: {
         alignItems: 'center',
         marginBottom: 28,
@@ -159,22 +147,19 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     illustrationTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontFamily: Fonts.semiBold,
         fontSize: 18,
         color: '#2F2F2F',
         textAlign: 'center',
         marginBottom: 6,
-        letterSpacing: -0.24,
     },
     illustrationSubtitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontFamily: Fonts.regular,
         fontSize: 12,
         color: '#777777',
         textAlign: 'center',
         lineHeight: 18,
     },
-
-    /* ─── Language List ─── */
     languageList: {
         gap: 10,
     },
@@ -204,24 +189,21 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     languageLabel: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontFamily: Fonts.medium,
         fontSize: 15,
         color: '#2F2F2F',
-        letterSpacing: -0.24,
     },
     languageLabelSelected: {
         color: '#02743F',
     },
     languageNative: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontFamily: Fonts.regular,
         fontSize: 13,
         color: '#AAAEAC',
     },
     languageNativeSelected: {
         color: 'rgba(2, 116, 63, 0.6)',
     },
-
-    /* ─── Bottom Bar ─── */
     bottomBar: {
         position: 'absolute',
         bottom: 0,
@@ -243,7 +225,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     continueButtonText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontFamily: Fonts.medium,
         fontSize: 15,
         color: '#FFFFFF',
     },

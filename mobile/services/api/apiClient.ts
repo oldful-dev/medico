@@ -16,6 +16,7 @@ interface RequestConfig {
     body?: any;
     headers?: Record<string, string>;
     isFormData?: boolean;
+    timeout?: number;
 }
 
 export interface ApiResponse<T = any> {
@@ -100,8 +101,15 @@ class ApiClient {
             fetchConfig.body = config.isFormData ? config.body : JSON.stringify(config.body);
         }
 
+        // ─── Timeout & Abort Logic ───────────────────
+        const timeout = config.timeout || 15000; // 15 seconds default
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        fetchConfig.signal = controller.signal;
+
         try {
             const response = await fetch(url, fetchConfig);
+            clearTimeout(timeoutId);
 
             // Handle 401 — attempt token refresh
             if (response.status === 401 && this.refreshToken) {
@@ -120,8 +128,16 @@ class ApiClient {
 
             return this.parseResponse<T>(response);
         } catch (error) {
+            clearTimeout(timeoutId);
+            
             if (error instanceof ApiError) throw error;
-            throw new ApiError(0, `Network error: ${(error as Error).message}`);
+            
+            const err = error as Error;
+            if (err.name === 'AbortError') {
+                throw new ApiError(408, 'Request timed out. Please check your internet connection.');
+            }
+            
+            throw new ApiError(0, `Network error: ${err.message}`);
         }
     }
 

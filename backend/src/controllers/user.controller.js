@@ -308,12 +308,17 @@ const upsertMedicalCard = async (req, res, next) => {
 
 // ─── Health Reports ────────────────────────
 
+const { analyzeMedicalReport } = require('../utils/ocr.service');
+
 // POST /api/users/:id/health-reports (file upload)
 const uploadHealthReport = async (req, res, next) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: 'File required' });
 
         const { url } = await uploadToCloudinary(req.file.buffer, 'health-reports');
+
+        // Trigger OCR Analysis
+        const ocrResult = await analyzeMedicalReport(url, req.file.buffer);
 
         const report = await prisma.healthReport.create({
             data: {
@@ -322,10 +327,31 @@ const uploadHealthReport = async (req, res, next) => {
                 fileUrl: url,
                 fileType: req.file.mimetype.split('/')[1],
                 uploadedBy: req.user?.type || 'user',
-                flagSeverity: req.body.flagSeverity || null,
-                flagNote: req.body.flagNote || null,
+                flagSeverity: ocrResult.flagSeverity || req.body.flagSeverity || null,
+                flagNote: ocrResult.flagNote || req.body.flagNote || null,
             },
         });
+
+        // Update User Profile with found tags
+        if (ocrResult.healthTags.length > 0) {
+            const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+
+            // Note: Since healthTag is an Enum and currently only holds a single value, 
+            // we're prioritizing 'DIABETIC'. If the model allowed multiple tags, we'd add all.
+            let newTag = user.healthTag;
+            if (ocrResult.healthTags.includes('DIABETIC') && newTag === 'NORMAL') {
+                newTag = 'DIABETIC';
+            } else if (ocrResult.healthTags.includes('HYPERTENSION') && newTag === 'NORMAL') {
+                newTag = 'HYPERTENSION';
+            }
+
+            if (newTag !== user.healthTag) {
+                await prisma.user.update({
+                    where: { id: req.params.id },
+                    data: { healthTag: newTag }
+                });
+            }
+        }
 
         sendResponse(res, 201, report, 'Health report uploaded');
     } catch (error) {
@@ -343,6 +369,7 @@ const getMyProfile = async (req, res, next) => {
                 addresses: true,
                 emergencyContacts: true,
                 medicalCards: true,
+                healthReports: { orderBy: { createdAt: 'desc' } },
                 subscriptions: {
                     where: { status: 'ACTIVE' },
                     include: { plan: true },
@@ -381,11 +408,54 @@ const updateMyProfile = async (req, res, next) => {
     }
 };
 
+// GET /api/users/profile/health-reports  (App user — list own reports)
+const getMyHealthReports = async (req, res, next) => {
+    try {
+        const reports = await prisma.healthReport.findMany({
+            where: { userId: req.user.id },
+            orderBy: { createdAt: 'desc' },
+        });
+        sendResponse(res, 200, reports, 'Health reports fetched');
+    } catch (error) {
+        next(error);
+    }
+};
+
+// PUT /api/users/profile/avatar  (App user — upload profile image)
+const uploadProfileAvatar = async (req, res, next) => {
+    try {
+        if (!req.file) return res.status(400).json({ success: false, message: 'Image file required' });
+
+        const { url } = await uploadToCloudinary(req.file.buffer, 'profile-avatars', 'image');
+
+        const user = await prisma.user.update({
+            where: { id: req.user.id },
+            data: { profileImageUrl: url },
+            include: {
+                city: { select: { name: true, code: true } },
+                addresses: true,
+                emergencyContacts: true,
+                medicalCards: true,
+                subscriptions: {
+                    where: { status: 'ACTIVE' },
+                    include: { plan: true },
+                    take: 1,
+                },
+            },
+        });
+
+        const { otpCode, otpExpiresAt, refreshToken: rt, ...safeUser } = user;
+        sendResponse(res, 200, safeUser, 'Profile image updated');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getUsers, getUserById, createUser, updateUser,
     blockUser, suspendUser, activateUser,
     addEmergencyContact, removeEmergencyContact,
     addAddress, updateAddress,
     upsertMedicalCard, uploadHealthReport,
-    getMyProfile, updateMyProfile,
+    getMyProfile, updateMyProfile, uploadProfileAvatar, getMyHealthReports,
 };

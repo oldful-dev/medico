@@ -12,6 +12,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 
 // ─── Figma Assets ───
 const imgCarouselIndia = require('@/assets/images/c73921e0062b4c910b14682c3ab2491a1db69321.png'); // Gateway of India image
@@ -103,11 +104,10 @@ export default function TripTravelsScreen() {
                     </View>
 
                     {/* ─── Date & Time ─── */}
-                    <Text style={[styles.sectionTitle, { textAlign: 'left', fontSize: 16, marginTop: 15 }]}>When?</Text>
-                    <TouchableOpacity style={styles.datePickerButton}>
-                        <Ionicons name="calendar-outline" size={20} color="#048357" style={{ marginRight: 10 }} />
-                        <Text style={styles.datePickerText}>Select Date & Time</Text>
-                    </TouchableOpacity>
+                    <DateTimePickerInput
+                        label="When?"
+                        onDateChange={() => { }}
+                    />
 
                     {/* ─── Number of People ─── */}
                     <Text style={[styles.sectionTitle, { textAlign: 'left', fontSize: 16, marginTop: 15 }]}>How Many People?</Text>

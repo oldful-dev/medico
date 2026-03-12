@@ -117,69 +117,112 @@ Password: admin123
 
 ---
 
-## 📡 API Endpoint Summary
+## 📡 Comprehensive API Documentation
 
-### Auth
-```
-POST /api/auth/admin/login       → Admin login
-POST /api/auth/admin/register    → Create admin (SUPER_ADMIN only)
-POST /api/auth/admin/refresh     → Refresh admin token
-POST /api/auth/request-otp       → Send OTP to phone
-POST /api/auth/verify-otp        → Verify OTP
-POST /api/auth/user/refresh      → Refresh user token
-POST /api/auth/logout            → Logout
-```
+All routes are prefixed with `/api`. Authentication is required unless marked as **[Public]**.
 
-### Users
-```
-GET    /api/users                → List users (admin)
-GET    /api/users/:id            → Get user detail (admin)
-POST   /api/users                → Create user
-PUT    /api/users/:id            → Update user (admin)
-PUT    /api/users/:id/block      → Block user
-PUT    /api/users/:id/suspend    → Suspend user
-PUT    /api/users/:id/activate   → Activate user
-GET    /api/users/profile        → Get own profile (app)
-PUT    /api/users/profile        → Update own profile (app)
-POST   /api/users/:id/emergency-contacts
-POST   /api/users/:id/addresses
-POST   /api/users/:id/medical-card
-POST   /api/users/:id/health-reports  (file upload)
-```
+### 🔐 1. Authentication
+- `POST   /auth/admin/login`     → [Public] Admin login (Email + Pwd)
+- `POST   /auth/admin/register`  → Create new admin (**SUPER_ADMIN** only)
+- `POST   /auth/admin/refresh`   → Refresh admin JWT access token
+- `POST   /auth/request-otp`     → [Public] Send OTP to phone for user login
+- `POST   /auth/verify-otp`      → [Public] Verify OTP & return user JWT
+- `POST   /auth/user/refresh`    → Refresh mobile user JWT
+- `POST   /auth/logout`          → Invalidate current session
 
-### Bookings
-```
-GET    /api/bookings             → List bookings (admin)
-GET    /api/bookings/:id         → Get booking
-POST   /api/bookings             → Create booking
-PUT    /api/bookings/:id/assign  → Assign caregiver
-PUT    /api/bookings/:id/status  → Update status
-PUT    /api/bookings/:id/escalate
-GET    /api/bookings/history     → My bookings (app)
-POST   /api/bookings/:id/cancel  → Cancel booking (app)
-```
+### 👥 2. User Management
+- `GET    /users`                → List all users (**Admin**, city-restricted)
+- `GET    /users/:id`            → Get full user profile & relations (**Admin**)
+- `POST   /users`                → [Public] Initialize user profile
+- `PUT    /users/:id`            → Update user metadata (**Admin**)
+- `PUT    /users/:id/block`      → Block login/booking (**SUPER/CITY ADMIN**)
+- `PUT    /users/:id/suspend`    → Soft-suspend account (**SUPER/CITY ADMIN**)
+- `PUT    /users/:id/activate`   → Reactivate account (**Admin**)
+- `GET    /users/profile`        → Get own profile (**User self**)
+- `PUT    /users/profile`        → Update own profile (**User self**)
+- `PUT    /users/profile/avatar` → Upload profile image (**User self**, Multipart)
+- `POST   /users/:id/emergency-contacts` → Add contact (User/Admin)
+- `DELETE /users/:uId/emergency-contacts/:cId` → Remove contact
+- `POST   /users/:id/addresses`  → Add saved address
+- `POST   /users/:id/medical-card` → Upsert medical history data
+- `POST   /users/:id/health-reports` → Upload lab report (**Multipart**)
 
-### Payments
-```
-GET    /api/payments/methods     → Payment methods
-POST   /api/payments/initiate    → Create Razorpay order
-POST   /api/payments/verify      → Verify payment
-POST   /api/payments/apply-coupon
-POST   /api/payments/refund      → Initiate refund (admin)
-POST   /api/webhooks/razorpay    → Razorpay webhook
-```
+### 🏢 3. City & Region
+- `GET    /cities`               → [Public] List active cities for app
+- `GET    /cities/:id`           → Get city detail
+- `POST   /cities`               → Create city (**SUPER_ADMIN**)
+- `PUT    /cities/:id`           → Update city/enable/disable (**Admin**)
+- `GET    /cities/:id/revenue`   → Get city-specific revenue metrics
 
-### Reports
-```
-GET    /api/reports/dashboard
-GET    /api/reports/revenue-by-city
-GET    /api/reports/revenue-by-plan
-GET    /api/reports/service-usage
-GET    /api/reports/caregiver-performance
-GET    /api/reports/refund-analysis
-GET    /api/reports/customer-retention
-GET    /api/reports/csv/:type    → CSV export
-```
+### 🩺 4. Services (App Interface)
+- `GET    /services`             → [Public] List active services with UI config
+- `GET    /services/:id`         → [Public] Service detail & form schema
+- `POST   /services`             → Create service with dynamic form schema (**Admin**)
+- `PUT    /services/reorder`     → Update display sequence in app (**Admin**)
+- `PUT    /services/:id/toggle`  → Enable/Disable service (**Admin**)
+- `POST   /services/:id/hero-image` → Upload service banner (**Admin**)
+
+### 📅 5. Bookings & SLA
+- `GET    /bookings`             → List all bookings (**Admin**, city-restricted)
+- `GET    /bookings/:id`         → Get booking detail & notes
+- `POST   /bookings`             → Create new booking (User/Admin)
+- `GET    /bookings/history`     → My booking history (**User self**)
+- `POST   /bookings/:id/cancel`  → Cancel booking (**User self**)
+- `PUT    /bookings/:id/assign`  → Assign caregiver + trigger WhatsApp (**Admin**)
+- `PUT    /bookings/:id/status`  → Update status (e.g. IN_PROGRESS → COMPLETED)
+- `PUT    /bookings/:id/escalate`→ Flag booking for immediate attention (**Admin**)
+
+### 🧑‍⚕️ 6. Caregiver Management
+- `GET    /caregivers`           → List caregivers (**Admin**, city-restricted)
+- `POST   /caregivers`           → Register new caregiver (**Admin**)
+- `PUT    /caregivers/:id/verification` → Update Police/Doc verification status
+- `PUT    /caregivers/:id/availability` → Toggle online/offline
+- `POST   /caregivers/:id/documents` → Upload verification documents (**Multipart**)
+
+### 💎 7. Plans & Subscriptions
+- `GET    /plans`                → [Public] List membership levels
+- `POST   /plans`                → Create/Update plan pricing (**Admin**)
+- `GET    /subscriptions`        → List all active/expired subs (**Admin**)
+- `POST   /subscriptions`        → Create subscription for user (**Admin**)
+- `PUT    /subscriptions/:id/pause` → Pause membership (e.g. user traveling)
+- `PUT    /subscriptions/:id/compassionate` → Add free extension days (**Admin**)
+
+### 💳 8. Payments & Coupons
+- `POST   /payments/initiate`    → Create Razorpay order
+- `POST   /payments/verify`      → Verify signature & generate PDF Invoice
+- `POST   /payments/apply-coupon`→ Validate and apply discount
+- `POST   /payments/refund`      → Initiate refund via Razorpay (**Admin**)
+- `GET    /payments/:id/refund-status` → Check refund progress
+
+### 🚨 9. SOS Emergency
+- `POST   /sos`                  → Create high-priority alert with GPS (**User**)
+- `GET    /sos`                  → Monitor live alerts dashboard (**Admin**)
+- `PUT    /sos/:id/assign`       → Dispatch responder to user location
+- `PUT    /sos/:id/resolve`      → Mark incident as closed with notes
+
+### 📦 10. Wellness Store
+- `GET    /products`             → [Public] List store items
+- `POST   /products/:id/waitlist`→ Join out-of-stock notification list
+- `GET    /categories`           → [Public] List product categories
+- `POST   /products`             → Manage inventory (**Admin**)
+
+### 📄 11. Legal & CMS
+- `GET    /legal/published/:type`→ [Public] Get T&C / Privacy Policy
+- `POST   /legal`                → Create new draft of legal doc (**Admin**)
+- `PUT    /legal/:id/publish`    → Push new version to live app (**Admin**)
+
+### 📊 12. Reports & Analytics
+- `GET    /reports/dashboard`    → Global revenue/user stats
+- `GET    /reports/revenue-by-city`
+- `GET    /reports/service-usage`
+- `GET    /reports/csv/:type`    → Export data to CSV (**Admin**)
+
+### 🔍 13. Audit & System
+- `GET    /audit-logs`           → View historical admin actions (**SUPER_ADMIN**)
+- `GET    /ui-config/published`  → [Public] Fetch live Server-Driven UI config
+- `POST   /ui-config/publish`    → Update app banners/icons/routes (**Admin**)
+- `GET    /notifications/logs`   → Audit trail of WhatsApp/Email sent
+
 
 ---
 

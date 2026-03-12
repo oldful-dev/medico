@@ -9,9 +9,9 @@ const { createAuditLog } = require('../middleware/audit');
 const {
     generateAccessToken, generateRefreshToken,
     hashPassword, comparePassword,
-    generateOTP, generateUserId,
+    generateUserId,
 } = require('../utils/helpers');
-const { sendWhatsApp } = require('../utils/notifications');
+const { sendWhatsApp, requestTwilioOTP, verifyTwilioOTP } = require('../utils/notifications');
 
 // ═══════════════════════════════════════════
 //  ADMIN AUTH
@@ -147,33 +147,10 @@ const requestOTP = async (req, res, next) => {
     try {
         const { phoneNumber } = req.body;
 
-        const otp = generateOTP();
-        const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+        // Use Twilio Verify to send OTP
+        await requestTwilioOTP(phoneNumber);
 
-        // Upsert user with OTP
-        let user = await prisma.user.findUnique({ where: { phone: phoneNumber } });
-
-        if (user) {
-            await prisma.user.update({
-                where: { id: user.id },
-                data: { otpCode: otp, otpExpiresAt },
-            });
-        } else {
-            // Store OTP temporarily — user will be created on verify if new
-            // For now, create a minimal placeholder
-            // The actual profile will be completed in a later step
-        }
-
-        // Send OTP via WhatsApp
-        await sendWhatsApp({
-            phoneNumber,
-            templateName: 'otp_verification',
-            parameters: [otp],
-        });
-
-        logger.info(`OTP sent to ${phoneNumber}: ${otp}`); // Remove in production
-
-        res.json({ success: true, message: 'OTP sent successfully' });
+        res.json({ success: true, message: 'OTP sent successfully via Twilio' });
     } catch (error) {
         next(error);
     }
@@ -186,33 +163,15 @@ const verifyOTP = async (req, res, next) => {
     try {
         const { phoneNumber, otp } = req.body;
 
-        let user = await prisma.user.findUnique({ where: { phone: phoneNumber } });
-        let isNewUser = false;
+        // Verify OTP via Twilio
+        const verification = await verifyTwilioOTP(phoneNumber, otp);
 
-        if (!user) {
-            // New user — create and verify
-            // For OTP, in dev mode accept '123456'
-            if (process.env.NODE_ENV === 'development' && otp === '123456') {
-                // Create will happen after OTP verify — we need a city
-                isNewUser = true;
-            } else {
-                return res.status(400).json({ success: false, message: 'Invalid OTP' });
-            }
-        } else {
-            // Verify OTP
-            if (user.otpCode !== otp || new Date() > new Date(user.otpExpiresAt)) {
-                // Dev bypass
-                if (!(process.env.NODE_ENV === 'development' && otp === '123456')) {
-                    return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
-                }
-            }
-
-            // Clear OTP
-            await prisma.user.update({
-                where: { id: user.id },
-                data: { otpCode: null, otpExpiresAt: null },
-            });
+        if (!verification.success) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
         }
+
+        let user = await prisma.user.findUnique({ where: { phone: phoneNumber } });
+        let isNewUser = !user;
 
         if (isNewUser) {
             // Just return that it's a new user — frontend will collect profile data

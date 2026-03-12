@@ -1,5 +1,6 @@
 // City Selection Screen - Bangalore (active), Chennai & Hyderabad (Coming Soon)
 // PRD: Currently launching in Bangalore, with "Coming Soon" notification for other cities
+// NOTE: This screen is no longer part of the auth flow. It's accessible from settings/profile.
 import React from 'react';
 import {
     View,
@@ -13,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Fonts, Colors } from '@/constants/theme';
 
 // ─── City Data ───
 const CITIES = [
@@ -178,8 +180,6 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#048357',
     },
-
-    /* ─── Header ─── */
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -193,14 +193,11 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         flex: 1,
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontFamily: Fonts.semiBold,
         fontSize: 20,
         color: '#FFFFFF',
         textAlign: 'center',
-        letterSpacing: -0.24,
     },
-
-    /* ─── Content Card ─── */
     contentCard: {
         flex: 1,
         backgroundColor: '#FDFDE8',
@@ -216,8 +213,6 @@ const styles = StyleSheet.create({
         paddingTop: 30,
         paddingBottom: 120,
     },
-
-    /* ─── Illustration Card ─── */
     illustrationCard: {
         alignItems: 'center',
         marginBottom: 28,
@@ -226,31 +221,25 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     illustrationTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontFamily: Fonts.semiBold,
         fontSize: 18,
         color: '#2F2F2F',
         textAlign: 'center',
         marginBottom: 6,
-        letterSpacing: -0.24,
     },
     illustrationSubtitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontFamily: Fonts.regular,
         fontSize: 12,
         color: '#777777',
         textAlign: 'center',
         lineHeight: 18,
     },
-
-    /* ─── Section Label ─── */
     sectionLabel: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontFamily: Fonts.semiBold,
         fontSize: 14,
         color: '#02743F',
         marginBottom: 10,
-        letterSpacing: -0.24,
     },
-
-    /* ─── City Cards ─── */
     cityCard: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -290,23 +279,21 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     cityName: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontFamily: Fonts.medium,
         fontSize: 15,
         color: '#2F2F2F',
-        letterSpacing: -0.24,
     },
     cityNameSelected: {
         color: '#02743F',
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontFamily: Fonts.semiBold,
     },
     cityNameDisabled: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontFamily: Fonts.medium,
         fontSize: 15,
         color: '#AAAEAC',
-        letterSpacing: -0.24,
     },
     cityState: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontFamily: Fonts.regular,
         fontSize: 11,
         color: '#AAAEAC',
         marginTop: 2,
@@ -319,7 +306,7 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
     activeTagText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontFamily: Fonts.medium,
         fontSize: 9,
         color: '#048357',
     },
@@ -330,12 +317,10 @@ const styles = StyleSheet.create({
         paddingVertical: 3,
     },
     comingSoonTagText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontFamily: Fonts.medium,
         fontSize: 9,
         color: '#E8A317',
     },
-
-    /* ─── Notify Banner ─── */
     notifyBanner: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -348,13 +333,11 @@ const styles = StyleSheet.create({
     },
     notifyText: {
         flex: 1,
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontFamily: Fonts.regular,
         fontSize: 12,
         color: '#02743F',
         lineHeight: 18,
     },
-
-    /* ─── Bottom Bar ─── */
     bottomBar: {
         position: 'absolute',
         bottom: 0,
@@ -376,7 +359,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     continueButtonText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontFamily: Fonts.medium,
         fontSize: 15,
         color: '#FFFFFF',
     },

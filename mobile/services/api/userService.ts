@@ -103,7 +103,16 @@ export const userService = {
      * Called after OTP verification for new users to complete registration.
      */
     createUser: async (data: CreateUserPayload): Promise<ApiResponse<UserProfile>> => {
-        return apiClient.post<UserProfile>('/users', data);
+        const response = await apiClient.post<UserProfile & { accessToken?: string; refreshToken?: string }>('/users', data);
+        if (response.success && response.data) {
+            if (response.data.accessToken) {
+                apiClient.setAuthToken(response.data.accessToken);
+            }
+            if (response.data.refreshToken) {
+                apiClient.setRefreshToken(response.data.refreshToken);
+            }
+        }
+        return response as ApiResponse<UserProfile>;
     },
 
     // ─── Emergency Contacts ──────────────────────
@@ -135,5 +144,16 @@ export const userService = {
         formData.append('file', file);
         formData.append('title', title);
         return apiClient.upload<HealthReportUploadResult>(`/users/${userId}/health-reports`, formData);
+    },
+
+    getMyHealthReports: async (): Promise<ApiResponse<any[]>> => {
+        return apiClient.get<any[]>('/users/profile/health-reports');
+    },
+
+    // ─── Profile Avatar ─────────────────────────
+    uploadProfileAvatar: async (file: any): Promise<ApiResponse<UserProfile>> => {
+        const formData = new FormData();
+        formData.append('avatar', file);
+        return apiClient.request<UserProfile>({ method: 'PUT', endpoint: '/users/profile/avatar', body: formData, isFormData: true });
     },
 };

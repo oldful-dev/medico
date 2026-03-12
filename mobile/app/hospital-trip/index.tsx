@@ -13,6 +13,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 
 // ─── Figma Assets ───
 const imgEye = require('@/assets/images/e9d68d0206e443ceceadd7907cd94f1c86fcacd4.png');
@@ -165,23 +166,10 @@ export default function HospitalTripScreen() {
                     <View style={styles.divider} />
 
                     {/* ─── Schedule ─── */}
-                    <Text style={[styles.sectionTitle, { marginLeft: 0 }]}>Schedule</Text>
-
-                    <View style={styles.scheduleRow}>
-                        {/* Date */}
-                        <TouchableOpacity style={[styles.scheduleCard, { borderColor: '#898989' }]}>
-                            <Image source={imgCalendar} style={styles.scheduleIcon} resizeMode="contain" />
-                            <Text style={styles.scheduleValue}>April 30, 2024</Text>
-                            <Text style={styles.scheduleLabel}>Pick-up</Text>
-                        </TouchableOpacity>
-
-                        {/* Time */}
-                        <TouchableOpacity style={[styles.scheduleCard, { borderColor: '#02743F' }]}>
-                            <Image source={imgClock} style={styles.scheduleIconTime} resizeMode="contain" />
-                            <Text style={styles.scheduleValueTime}>2:00 <Text style={styles.scheduleValueTimePeriod}>PM</Text></Text>
-                            <Text style={styles.scheduleLabel}>Pick-up</Text>
-                        </TouchableOpacity>
-                    </View>
+                    <DateTimePickerInput
+                        label="Schedule"
+                        onDateChange={() => { }}
+                    />
 
                     {/* ─── Service Add-ons ─── */}
                     <View style={styles.addonsContainer}>

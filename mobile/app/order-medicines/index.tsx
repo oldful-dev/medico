@@ -27,6 +27,7 @@ export default function OrderMedicinesScreen() {
     const insets = useSafeAreaInsets();
     const [duration, setDuration] = useState('1 Month');
     const [address, setAddress] = useState('Fetching location...');
+    const [isManualAddress, setIsManualAddress] = useState(false);
     const [autoRefill, setAutoRefill] = useState(true);
     const [isManualEntry, setIsManualEntry] = useState(false);
     const [manualText, setManualText] = useState('');
@@ -89,11 +90,13 @@ export default function OrderMedicinesScreen() {
                     const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
                     setAddress(fetchedAddress);
                 } else {
-                    setAddress('Location permission denied');
+                    setIsManualAddress(true);
+                    setAddress('');
                 }
             } catch (error) {
                 console.log('Failed to fetch location:', error);
-                setAddress('Location unavailable');
+                setIsManualAddress(true);
+                setAddress('');
             }
         })();
     }, []);
@@ -206,9 +209,19 @@ export default function OrderMedicinesScreen() {
                     <View style={[styles.uploadOptionCard, { marginBottom: 15 }]}>
                         <Ionicons name="location" size={24} color="#85C3A8" style={{ marginLeft: 2, marginRight: 15 }} />
                         <View style={styles.uploadTextContainer}>
-                            <Text style={styles.addressText} numberOfLines={1}>{address}</Text>
+                            {isManualAddress ? (
+                                <TextInput
+                                    style={[styles.addressText, { flex: 1 }]}
+                                    placeholder="Enter your address manually"
+                                    placeholderTextColor="#898989"
+                                    value={address}
+                                    onChangeText={setAddress}
+                                />
+                            ) : (
+                                <Text style={styles.addressText} numberOfLines={1}>{address}</Text>
+                            )}
                         </View>
-                        <TouchableOpacity style={styles.editAddressButton}>
+                        <TouchableOpacity style={styles.editAddressButton} onPress={() => setIsManualAddress(true)}>
                             <Ionicons name="pencil-outline" size={14} color="#2F2F2F" />
                         </TouchableOpacity>
                     </View>
@@ -388,13 +401,15 @@ const styles = StyleSheet.create({
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 14,
         color: '#2F2F2F',
-        width: 75, // Increased slightly to prevent "Gallery" from text-wrapping
+        minWidth: 65,
+        marginRight: 8,
     },
     uploadSubText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 14,
         color: '#555555',
         flex: 1, // Ensures it takes remaining space properly
+        flexShrink: 1, // Prevents overflow
     },
 
     /* ─── Address Section ─── */
@@ -446,12 +461,14 @@ const styles = StyleSheet.create({
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 16,
         color: '#2F2F2F',
+        flexShrink: 1,
     },
     autoRefillDesc: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 13,
         color: '#898989',
         marginTop: 2,
+        flexShrink: 1,
     },
 
     /* ─── Duration Selection ─── */

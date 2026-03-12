@@ -6,8 +6,27 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 import { Colors, Fonts, Radius, Shadow } from '@/constants/theme';
+import React, { useEffect } from 'react';
+import { useUser } from '@/context/UserContext';
+import { userService } from '@/services/api/userService';
 
 export default function TabLayout() {
+  const { setProfile } = useUser();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await userService.getProfile();
+        if (response.success && response.data) {
+          setProfile(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user profile in global layout:", error);
+      }
+    };
+    fetchProfile();
+  }, [setProfile]);
+
   return (
     <Tabs
       screenOptions={{

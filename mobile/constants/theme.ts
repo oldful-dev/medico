@@ -42,7 +42,7 @@ export const Colors = {
 };
 
 // ─── Typography ───
-// Font family helper — handles iOS/Android naming differences
+// Font family helpers — handles iOS/Android naming differences
 const poppins = (weight: 'Light' | 'Regular' | 'Medium' | 'SemiBold' | 'Bold') => {
   const androidMap = {
     Light: 'Poppins_300Light',
@@ -58,12 +58,36 @@ const poppins = (weight: 'Light' | 'Regular' | 'Medium' | 'SemiBold' | 'Bold') =
   });
 };
 
+const lexendDeca = (weight: 'Light' | 'Regular' | 'Medium') => {
+  const androidMap = {
+    Light: 'LexendDeca_300Light',
+    Regular: 'LexendDeca_400Regular',
+    Medium: 'LexendDeca_500Medium',
+  };
+  return Platform.select({
+    ios: `LexendDeca-${weight}`,
+    android: androidMap[weight],
+    default: 'System',
+  });
+};
+
 export const Fonts = {
-  light: poppins('Light'),
-  regular: poppins('Regular'),
-  medium: poppins('Medium'),
-  semiBold: poppins('SemiBold'),
-  bold: poppins('Bold'),
+  // Headlines — Poppins
+  semiBold: poppins('SemiBold'),   // Section titles, card titles
+  bold: poppins('Bold'),           // Large headings
+
+  // Body / Descriptions — Lexend Deca
+  regular: lexendDeca('Regular'),  // Body text, descriptions
+  medium: lexendDeca('Medium'),    // Emphasized body text, buttons
+  light: lexendDeca('Light'),      // Subtle or secondary text
+
+  // Escape hatch — when Poppins is needed for non-headline text
+  poppinsRegular: poppins('Regular'),
+  poppinsMedium: poppins('Medium'),
+
+  // Legacy aliases
+  mono: Platform.select({ ios: 'SpaceMono', android: 'SpaceMono', default: 'monospace' }),
+  rounded: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
 };
 
 // Standardized font size scale

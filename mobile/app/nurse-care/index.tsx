@@ -140,30 +140,28 @@ export default function BookNursingCareScreen() {
                     <View style={styles.sectionContainer}>
                         <Text style={styles.sectionTitle}>Preferred Duration</Text>
 
-                        <View style={styles.gridRow}>
-                            <TouchableOpacity style={styles.durationCard} onPress={() => setSelectedDuration('Short Visit')}>
-                                <Ionicons name={selectedDuration === 'Short Visit' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === 'Short Visit' ? "#02743F" : "#AAAEAC"} />
+                        <View style={styles.verticalStack}>
+                            <TouchableOpacity style={styles.durationCardStacked} onPress={() => setSelectedDuration('Short Visit')}>
+                                <Ionicons name={selectedDuration === 'Short Visit' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedDuration === 'Short Visit' ? "#02743F" : "#AAAEAC"} />
                                 <View style={styles.durationTextCol}>
                                     <Text style={styles.durationTitle}>Short Visit</Text>
                                     <Text style={styles.durationSubtitle}> (1-2 Hour - Injection/dressing)</Text>
                                 </View>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.durationCard} onPress={() => setSelectedDuration('12 Hours (Night Shift)')}>
-                                <Ionicons name={selectedDuration === '12 Hours (Night Shift)' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === '12 Hours (Night Shift)' ? "#02743F" : "#AAAEAC"} />
+                            <TouchableOpacity style={styles.durationCardStacked} onPress={() => setSelectedDuration('12 Hours (Night Shift)')}>
+                                <Ionicons name={selectedDuration === '12 Hours (Night Shift)' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedDuration === '12 Hours (Night Shift)' ? "#02743F" : "#AAAEAC"} />
                                 <View style={styles.durationTextCol}>
                                     <Text style={styles.durationTitle}>12 Hours <Text style={styles.durationSubtitle}>(Night Shift)</Text></Text>
                                 </View>
                             </TouchableOpacity>
-                        </View>
-                        <View style={styles.gridRow}>
-                            <TouchableOpacity style={styles.durationCard} onPress={() => setSelectedDuration('12 Hours (Day Shift)')}>
-                                <Ionicons name={selectedDuration === '12 Hours (Day Shift)' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === '12 Hours (Day Shift)' ? "#02743F" : "#AAAEAC"} />
+                            <TouchableOpacity style={styles.durationCardStacked} onPress={() => setSelectedDuration('12 Hours (Day Shift)')}>
+                                <Ionicons name={selectedDuration === '12 Hours (Day Shift)' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedDuration === '12 Hours (Day Shift)' ? "#02743F" : "#AAAEAC"} />
                                 <View style={styles.durationTextCol}>
                                     <Text style={styles.durationTitle}>12 Hours <Text style={styles.durationSubtitle}>(Day Shift)</Text></Text>
                                 </View>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.durationCard} onPress={() => setSelectedDuration('24 Hours (Live-in)')}>
-                                <Ionicons name={selectedDuration === '24 Hours (Live-in)' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === '24 Hours (Live-in)' ? "#02743F" : "#AAAEAC"} />
+                            <TouchableOpacity style={styles.durationCardStacked} onPress={() => setSelectedDuration('24 Hours (Live-in)')}>
+                                <Ionicons name={selectedDuration === '24 Hours (Live-in)' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedDuration === '24 Hours (Live-in)' ? "#02743F" : "#AAAEAC"} />
                                 <View style={styles.durationTextCol}>
                                     <Text style={styles.durationTitle}>24 Hours <Text style={styles.durationSubtitle}>(Live-in)</Text></Text>
                                 </View>
@@ -175,20 +173,18 @@ export default function BookNursingCareScreen() {
                     <View style={styles.sectionContainer}>
                         <Text style={styles.sectionTitle}>Patient Condition</Text>
 
-                        <View style={styles.gridRow}>
-                            <TouchableOpacity style={styles.radioCard} onPress={() => setSelectedCondition('Walking/ Mobile')}>
-                                <Ionicons name={selectedCondition === 'Walking/ Mobile' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedCondition === 'Walking/ Mobile' ? "#02743F" : "#AAAEAC"} />
-                                <Text style={styles.radioLabel}>Walking/ Mobile</Text>
+                        <View style={styles.verticalStack}>
+                            <TouchableOpacity style={styles.radioCardStacked} onPress={() => setSelectedCondition('Walking/ Mobile')}>
+                                <Ionicons name={selectedCondition === 'Walking/ Mobile' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedCondition === 'Walking/ Mobile' ? "#02743F" : "#AAAEAC"} />
+                                <Text style={styles.radioLabelStacked}>Walking/ Mobile</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.radioCard} onPress={() => setSelectedCondition('Bedridden')}>
-                                <Ionicons name={selectedCondition === 'Bedridden' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedCondition === 'Bedridden' ? "#02743F" : "#AAAEAC"} />
-                                <Text style={styles.radioLabel}>Bedridden</Text>
+                            <TouchableOpacity style={styles.radioCardStacked} onPress={() => setSelectedCondition('Bedridden')}>
+                                <Ionicons name={selectedCondition === 'Bedridden' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedCondition === 'Bedridden' ? "#02743F" : "#AAAEAC"} />
+                                <Text style={styles.radioLabelStacked}>Bedridden</Text>
                             </TouchableOpacity>
-                        </View>
-                        <View style={styles.gridRow}>
-                            <TouchableOpacity style={styles.radioCard} onPress={() => setSelectedCondition('Post-Surgery')}>
-                                <Ionicons name={selectedCondition === 'Post-Surgery' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedCondition === 'Post-Surgery' ? "#02743F" : "#AAAEAC"} />
-                                <Text style={styles.radioLabel}>Post-Surgery</Text>
+                            <TouchableOpacity style={styles.radioCardStacked} onPress={() => setSelectedCondition('Post-Surgery')}>
+                                <Ionicons name={selectedCondition === 'Post-Surgery' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedCondition === 'Post-Surgery' ? "#02743F" : "#AAAEAC"} />
+                                <Text style={styles.radioLabelStacked}>Post-Surgery</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -197,18 +193,18 @@ export default function BookNursingCareScreen() {
                     <View style={styles.sectionContainer}>
                         <Text style={styles.sectionTitle}>Gender preferences</Text>
 
-                        <View style={styles.gridRow}>
-                            <TouchableOpacity style={styles.radioCardSmall} onPress={() => setSelectedGender('Male')}>
-                                <Ionicons name={selectedGender === 'Male' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Male' ? "#02743F" : "#AAAEAC"} />
-                                <Text style={styles.radioLabel}>Male</Text>
+                        <View style={styles.verticalStack}>
+                            <TouchableOpacity style={styles.radioCardStacked} onPress={() => setSelectedGender('Male')}>
+                                <Ionicons name={selectedGender === 'Male' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedGender === 'Male' ? "#02743F" : "#AAAEAC"} />
+                                <Text style={styles.radioLabelStacked}>Male</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.radioCardSmall} onPress={() => setSelectedGender('Female')}>
-                                <Ionicons name={selectedGender === 'Female' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Female' ? "#02743F" : "#AAAEAC"} />
-                                <Text style={styles.radioLabel}>Female</Text>
+                            <TouchableOpacity style={styles.radioCardStacked} onPress={() => setSelectedGender('Female')}>
+                                <Ionicons name={selectedGender === 'Female' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedGender === 'Female' ? "#02743F" : "#AAAEAC"} />
+                                <Text style={styles.radioLabelStacked}>Female</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.radioCardSmall} onPress={() => setSelectedGender('Any')}>
-                                <Ionicons name={selectedGender === 'Any' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Any' ? "#02743F" : "#AAAEAC"} />
-                                <Text style={styles.radioLabel}>Any</Text>
+                            <TouchableOpacity style={styles.radioCardStacked} onPress={() => setSelectedGender('Any')}>
+                                <Ionicons name={selectedGender === 'Any' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedGender === 'Any' ? "#02743F" : "#AAAEAC"} />
+                                <Text style={styles.radioLabelStacked}>Any</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -407,6 +403,7 @@ const styles = StyleSheet.create({
         color: '#555555',
         marginBottom: 4,
         letterSpacing: -0.24,
+        flexShrink: 1,
     },
     staffTitleActive: {
         color: '#FFFFFF',
@@ -417,12 +414,45 @@ const styles = StyleSheet.create({
         color: '#555555',
         lineHeight: 12,
         letterSpacing: -0.24,
+        flexShrink: 1,
     },
     staffSubtitleActive: {
         color: '#FFFFFF',
     },
 
-    /* ─── Standard Grid Rows ─── */
+    /* ─── Stacked Variants (New Row Setup) ─── */
+    verticalStack: {
+        flexDirection: 'column',
+        gap: 12,
+    },
+    durationCardStacked: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderWidth: 1,
+        borderColor: '#AAAEAC',
+        borderRadius: 11,
+        backgroundColor: '#FFFFFF',
+    },
+    radioCardStacked: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderWidth: 1,
+        borderColor: '#AAAEAC',
+        borderRadius: 11,
+        backgroundColor: '#FFFFFF',
+    },
+    radioLabelStacked: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontSize: 14,
+        color: '#2F2F2F',
+        marginLeft: 12,
+    },
+
+    /* ─── Legacy Grid Rows ─── */
     gridRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -441,6 +471,8 @@ const styles = StyleSheet.create({
     },
     durationTextCol: {
         marginLeft: 8,
+        flexShrink: 1,
+        flex: 1,
     },
     durationTitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),

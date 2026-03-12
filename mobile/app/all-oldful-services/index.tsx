@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Fonts } from '@/constants/theme';
 
 // Service grid images
 const doctorVisitImg = require('@/assets/images/32a4661f97e2fa2dd2c85c403a7c530b7214e7f7.png');
@@ -111,7 +112,7 @@ const styles = StyleSheet.create({
         paddingRight: 15,
     },
     headerTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-Bold', android: 'Poppins_700Bold', default: 'System' }),
+        fontFamily: Fonts.bold,
         fontSize: 20,
         color: '#034C2A',
     },
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     gridLabel: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontFamily: Fonts.medium,
         fontSize: 11,
         color: '#085B34',
         textAlign: 'center',

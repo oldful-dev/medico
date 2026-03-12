@@ -4,15 +4,26 @@
 
 const { logger } = require('../config/logger');
 const prisma = require('../config/database');
+const twilio = require('twilio');
 
 // ─── Email (SendGrid) ──────────────────────
 
+const sgMail = require('@sendgrid/mail');
+
 const sendEmail = async ({ to, subject, html, attachments = [] }) => {
     try {
-        // In production, integrate with SendGrid:
-        // const sgMail = require('@sendgrid/mail');
-        // sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-        // await sgMail.send({ to, from: { email, name }, subject, html, attachments });
+        if (process.env.SENDGRID_API_KEY) {
+            sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+            await sgMail.send({
+                to,
+                from: { email: process.env.SENDGRID_FROM_EMAIL || 'noreply@oldful.com', name: 'Oldful Healthcare' },
+                subject,
+                html,
+                attachments
+            });
+        } else {
+            logger.warn('SENDGRID_API_KEY not set. Simulating email send.');
+        }
 
         logger.info(`📧 Email sent to ${to}: ${subject}`);
 
@@ -50,20 +61,28 @@ const sendEmail = async ({ to, subject, html, attachments = [] }) => {
 
 const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [] }) => {
     try {
-        // In production, integrate with Interakt API:
-        // const response = await fetch(`${process.env.INTERAKT_BASE_URL}/public/message/`, {
-        //   method: 'POST',
-        //   headers: {
-        //     'Authorization': `Basic ${process.env.INTERAKT_API_KEY}`,
-        //     'Content-Type': 'application/json',
-        //   },
-        //   body: JSON.stringify({
-        //     countryCode: '+91',
-        //     phoneNumber,
-        //     type: 'Template',
-        //     template: { name: templateName, languageCode: 'en', bodyValues: parameters },
-        //   }),
-        // });
+        if (process.env.INTERAKT_API_KEY) {
+            const response = await fetch(`${process.env.INTERAKT_BASE_URL || 'https://api.interakt.ai/v1'}/public/message/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Basic ${process.env.INTERAKT_API_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    countryCode: '+91',
+                    phoneNumber: phoneNumber.replace('+91', ''), // Ensure format matches Interakt logic
+                    type: 'Template',
+                    template: { name: templateName, languageCode: 'en', bodyValues: parameters },
+                }),
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`Interakt API Error: ${response.status} - ${errorBody}`);
+            }
+        } else {
+            logger.warn('INTERAKT_API_KEY not set. Simulating WhatsApp send.');
+        }
 
         logger.info(`📱 WhatsApp sent to ${phoneNumber}: template ${templateName}`);
 
@@ -160,10 +179,57 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
     });
 };
 
+// ─── Twilio Verify (OTP) ───────────────────
+
+const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
+    ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+    : null;
+
+const requestTwilioOTP = async (phoneNumber) => {
+    try {
+        if (!twilioClient || !process.env.TWILIO_VERIFY_SERVICE_SID) {
+            logger.warn('Twilio credentials not set. Simulating OTP request.');
+            return { success: true, simulated: true };
+        }
+
+        const verification = await twilioClient.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
+            .verifications
+            .create({ to: phoneNumber, channel: 'sms' });
+
+        return { success: true, status: verification.status };
+    } catch (error) {
+        logger.error('Twilio OTP request error:', error);
+        throw error;
+    }
+};
+
+const verifyTwilioOTP = async (phoneNumber, code) => {
+    try {
+        if (!twilioClient || !process.env.TWILIO_VERIFY_SERVICE_SID) {
+            // Dev bypass
+            if (process.env.NODE_ENV === 'development' && code === '1234') {
+                return { success: true, status: 'approved' };
+            }
+            throw new Error('Twilio credentials not set and not in dev bypass.');
+        }
+
+        const verificationCheck = await twilioClient.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
+            .verificationChecks
+            .create({ to: phoneNumber, code: code });
+
+        return { success: verificationCheck.status === 'approved', status: verificationCheck.status };
+    } catch (error) {
+        logger.error('Twilio OTP verify error:', error);
+        throw error;
+    }
+};
+
 module.exports = {
     sendEmail,
     sendWhatsApp,
     sendWelcomeNotifications,
     sendSOSNotifications,
     sendExpiryReminder,
+    requestTwilioOTP,
+    verifyTwilioOTP,
 };

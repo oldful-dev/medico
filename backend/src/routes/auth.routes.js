@@ -34,7 +34,7 @@ router.post('/request-otp', [
 
 router.post('/verify-otp', [
     body('phoneNumber').notEmpty(),
-    body('otp').isLength({ min: 6, max: 6 }),
+    body('otp').isLength({ min: 4, max: 6 }), // Allow 4 to 6 digits
 ], validate, ctrl.verifyOTP);
 
 router.post('/user/refresh', ctrl.userRefreshToken);

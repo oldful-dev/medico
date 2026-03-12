@@ -13,6 +13,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 
 // ─── Figma Assets ───
 const imgPainRelief = require('@/assets/images/19384cdb0d3b6490a3d5bfa98457389b6d565416.png'); // Pain relief illustration
@@ -60,23 +61,23 @@ export default function PhysioFitnessScreen() {
                     <TouchableOpacity
                         style={[
                             styles.serviceCard,
-                            styles.painCard,
+                            styles.painCardVertical,
                             selectedService === 'pain' && styles.selectedServiceCard
                         ]}
                         activeOpacity={0.8}
                         onPress={() => setSelectedService('pain')}
                     >
-                        <Image source={imgPainRelief} style={styles.painIllustration} resizeMode="contain" />
-
-                        <View style={styles.serviceTextGroup}>
-                            <Text style={styles.serviceTitle}>Pain Relief</Text>
-                            <Text style={styles.serviceSubtitle}>(Physiotherapy)</Text>
-                            <Text style={styles.serviceDesc}>For back pain,frozen sholder,recovery</Text>
+                        {/* Discount Badge */}
+                        <View style={styles.discountBadgeTopRight}>
+                            <Text style={styles.discountText}>+10% OFF</Text>
                         </View>
 
-                        {/* Discount Badge */}
-                        <View style={styles.discountBadge}>
-                            <Text style={styles.discountText}>+10% OFF</Text>
+                        <Image source={imgPainRelief} style={styles.painIllustration} resizeMode="contain" />
+
+                        <View style={styles.serviceTextGroupCentered}>
+                            <Text style={styles.serviceTitle}>Pain Relief</Text>
+                            <Text style={styles.serviceSubtitle}>(Physiotherapy)</Text>
+                            <Text style={styles.serviceDesc}>For back pain, frozen shoulder, recovery</Text>
                         </View>
                     </TouchableOpacity>
 
@@ -84,26 +85,27 @@ export default function PhysioFitnessScreen() {
                     <TouchableOpacity
                         style={[
                             styles.serviceCard,
-                            styles.fitnessCard,
+                            styles.fitnessCardVertical,
                             selectedService === 'fitness' && styles.selectedServiceCard
                         ]}
                         activeOpacity={0.8}
                         onPress={() => setSelectedService('fitness')}
                     >
-                        <Image source={imgSeniorFitnessLeft} style={styles.fitnessIllustrationLeft} resizeMode="contain" />
-
-                        <View style={[styles.serviceTextGroup, { alignItems: 'center', flex: 1 }]}>
-                            <Text style={styles.serviceTitle}>Senior Fitness</Text>
-                            <Text style={styles.serviceSubtitle}>(Yoga/Exercise)</Text>
-                            <Text style={styles.serviceDesc}>To stay active and mobile </Text>
+                        <View style={styles.fitnessIllustrationRow}>
+                            <Image source={imgSeniorFitnessLeft} style={styles.fitnessIllustrationLeft} resizeMode="contain" />
+                            <Image source={imgSeniorFitnessRight} style={styles.fitnessIllustrationRight} resizeMode="contain" />
                         </View>
 
-                        <Image source={imgSeniorFitnessRight} style={styles.fitnessIllustrationRight} resizeMode="contain" />
+                        <View style={styles.serviceTextGroupCentered}>
+                            <Text style={styles.serviceTitle}>Senior Fitness</Text>
+                            <Text style={styles.serviceSubtitle}>(Yoga/Exercise)</Text>
+                            <Text style={styles.serviceDesc}>To stay active and mobile</Text>
+                        </View>
                     </TouchableOpacity>
 
                     {/* ─── Select Body Part ─── */}
                     <Text style={styles.sectionTitle}>Select Body Part</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bodyPartScroll}>
+                    <View style={styles.bodyPartGrid}>
                         {BODY_PARTS.map((part) => {
                             const isSelected = selectedBodyPart === part;
                             return (
@@ -118,7 +120,7 @@ export default function PhysioFitnessScreen() {
                                 </TouchableOpacity>
                             );
                         })}
-                    </ScrollView>
+                    </View>
 
                     {/* ─── Other Issue ─── */}
                     <Text style={styles.sectionTitle}>Other Issue</Text>
@@ -132,17 +134,17 @@ export default function PhysioFitnessScreen() {
                             placeholder="Describe your issue"
                             style={styles.textInput}
                             placeholderTextColor="#555"
+                            multiline
                             value={otherIssue}
                             onChangeText={setOtherIssue}
                         />
                     </View>
 
                     {/* ─── Date / Time Selection ─── */}
-                    <TouchableOpacity style={[styles.inputCard, { marginBottom: 35 }]} activeOpacity={0.7}>
-                        <Image source={imgCalendar} style={styles.calendarIcon} resizeMode="contain" />
-                        <Text style={styles.dateTimeText}>April 25, 2024 | Time 10:00 AM</Text>
-                        <Ionicons name="chevron-forward" size={20} color="#555" style={{ marginLeft: 'auto' }} />
-                    </TouchableOpacity>
+                    <DateTimePickerInput
+                        label="Schedule Appointment"
+                        onDateChange={() => { }}
+                    />
 
                     {/* ─── Book Appointment Button ─── */}
                     <TouchableOpacity
@@ -235,21 +237,26 @@ const styles = StyleSheet.create({
 
     /* ─── Service Cards ─── */
     serviceCard: {
-        height: 115,
+        minHeight: 115,
         borderRadius: 15,
         marginBottom: 15,
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 15,
+        paddingVertical: 15,
         position: 'relative',
         borderWidth: 1,
     },
     selectedServiceCard: {
         // We could add an active state border here if desired, skipping for exact match logic
     },
-    painCard: {
+    painCardVertical: {
         backgroundColor: '#FFEBDF',
-        borderColor: '#FF8800', // Orange border
+        borderColor: '#FF8800',
+        flexDirection: 'column',
+        alignItems: 'center',
+        paddingVertical: 20,
+        minHeight: 180,
     },
     fitnessCard: {
         backgroundColor: '#D3FBFF',
@@ -257,9 +264,9 @@ const styles = StyleSheet.create({
     },
 
     painIllustration: {
-        width: 62,
-        height: 93,
-        marginRight: 10,
+        width: 100,
+        height: 100,
+        marginBottom: 10,
     },
     fitnessIllustrationLeft: {
         width: 50,
@@ -272,6 +279,27 @@ const styles = StyleSheet.create({
 
     serviceTextGroup: {
         justifyContent: 'center',
+        flex: 1,
+        paddingRight: 60, // Give room for absolute discount badge
+    },
+    serviceTextGroupCentered: {
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    fitnessCardVertical: {
+        backgroundColor: '#D3FBFF',
+        borderColor: '#313A51',
+        flexDirection: 'column',
+        alignItems: 'center',
+        paddingVertical: 20,
+        minHeight: 180,
+    },
+    fitnessIllustrationRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 20,
+        marginBottom: 5,
     },
     serviceTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
@@ -291,18 +319,19 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
 
-    discountBadge: {
+    discountBadgeTopRight: {
         position: 'absolute',
-        top: 23,
+        top: 15,
         right: 15,
-        backgroundColor: 'rgba(15, 185, 46, 0.52)',
+        backgroundColor: 'rgba(15, 185, 46, 0.7)',
         borderColor: '#048357',
         borderWidth: 1,
         borderRadius: 23,
+        paddingHorizontal: 15,
         height: 37,
-        width: 87,
         justifyContent: 'center',
         alignItems: 'center',
+        zIndex: 10,
     },
     discountText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
@@ -310,22 +339,24 @@ const styles = StyleSheet.create({
         fontSize: 11,
     },
 
-    /* ─── Body Parts ─── */
-    bodyPartScroll: {
-        paddingVertical: 5,
-        marginBottom: 20,
+    /* ─── Body Parts Grid ─── */
+    bodyPartGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
         gap: 10,
+        marginBottom: 20,
     },
     bodyPartPill: {
-        height: 31,
-        minWidth: 63,
+        height: 35,
+        flex: 1,
+        minWidth: '28%',
         borderRadius: 23,
         borderWidth: 1,
         borderColor: '#AAAEAC',
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 12,
-        backgroundColor: 'transparent',
+        backgroundColor: '#FFFFFF',
     },
     bodyPartPillSelected: {
         backgroundColor: 'rgba(4, 131, 87, 0.74)', // Teal/Green
@@ -347,7 +378,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderRadius: 12,
         paddingHorizontal: 15,
-        height: 59,
+        minHeight: 59,
+        paddingVertical: 10,
         marginBottom: 15,
         shadowColor: '#02743F',
         shadowOffset: { width: 0, height: 4 },
@@ -395,9 +427,10 @@ const styles = StyleSheet.create({
     /* ─── Submit Button ─── */
     submitButton: {
         backgroundColor: '#02743F',
-        height: 45,
-        borderRadius: 22.5,
-        width: 281,
+        height: 48,
+        borderRadius: 24,
+        width: '100%',
+        maxWidth: 320,
         alignSelf: 'center',
         justifyContent: 'center',
         alignItems: 'center',

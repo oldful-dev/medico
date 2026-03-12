@@ -52,7 +52,16 @@ export const authService = {
      * Verifies OTP. Returns tokens for existing users, or isNewUser flag for new registrations.
      */
     verifyOTP: async (data: VerifyOTPPayload): Promise<ApiResponse<VerifyOTPResponseData>> => {
-        return apiClient.post<VerifyOTPResponseData>('/auth/verify-otp', data);
+        const response = await apiClient.post<VerifyOTPResponseData>('/auth/verify-otp', data);
+        if (response.success && response.data && !response.data.isNewUser) {
+            if (response.data.accessToken) {
+                apiClient.setAuthToken(response.data.accessToken);
+            }
+            if (response.data.refreshToken) {
+                apiClient.setRefreshToken(response.data.refreshToken);
+            }
+        }
+        return response;
     },
 
     /**

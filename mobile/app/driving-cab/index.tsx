@@ -14,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { locationService } from '@/services/device/locationService';
+import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 
 // ─── Figma Assets ───
 const imgHero = require('@/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png'); // Yellow Car Icon
@@ -121,13 +122,10 @@ export default function DrivingCabScreen() {
                 </View>
 
                 {/* ─── Timings ─── */}
-                <View style={styles.card}>
-                    <Text style={styles.sectionTitle}>Pickup Timings</Text>
-                    <TouchableOpacity style={styles.datePickerButton}>
-                        <Ionicons name="time-outline" size={20} color="#048357" style={{ marginRight: 10 }} />
-                        <Text style={styles.datePickerText}>Select Date & Time</Text>
-                    </TouchableOpacity>
-                </View>
+                <DateTimePickerInput
+                    label="Pickup Timings"
+                    onDateChange={() => { }}
+                />
 
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>

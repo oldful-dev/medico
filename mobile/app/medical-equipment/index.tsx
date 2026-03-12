@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 
 // ─── Figma Assets ───
 const imgWheelchair = require('@/assets/images/be69e88a2a74b15eb189dce875fc4395704fc6bb.png');
@@ -28,6 +29,7 @@ export default function MedicalEquipmentScreen() {
     const [selectedEquipment, setSelectedEquipment] = useState('wheelchair');
     const [selectedDuration, setSelectedDuration] = useState('Monthly');
     const [address, setAddress] = useState('Fetching address...');
+    const [isManualAddress, setIsManualAddress] = useState(false);
 
     React.useEffect(() => {
         (async () => {
@@ -39,11 +41,13 @@ export default function MedicalEquipmentScreen() {
                     const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
                     setAddress(fetchedAddress);
                 } else {
-                    setAddress('Location permission denied');
+                    setIsManualAddress(true);
+                    setAddress('');
                 }
             } catch (err) {
                 console.log("Failed to fetch address", err);
-                setAddress('Location unavailable');
+                setIsManualAddress(true);
+                setAddress('');
             }
         })();
     }, []);
@@ -137,28 +141,10 @@ export default function MedicalEquipmentScreen() {
 
                     {/* ─── Schedule Pick-up Section ─── */}
                     <View style={styles.sectionCardTransparent}>
-
-                        <View style={styles.scheduleRow}>
-                            {/* Date Box */}
-                            <TouchableOpacity style={styles.scheduleBox} activeOpacity={0.7}>
-                                <View style={styles.scheduleHeader}>
-                                    <Image source={calendarIcon} style={styles.scheduleIcon} />
-                                    <Text style={styles.schedulePrimaryText}>April 30, 2024</Text>
-                                </View>
-                                <Text style={styles.scheduleSecondaryText}>Pick-up</Text>
-                            </TouchableOpacity>
-
-                            {/* Time Box (Active state visually) */}
-                            <TouchableOpacity style={[styles.scheduleBox, styles.scheduleBoxActive]} activeOpacity={0.7}>
-                                <View style={styles.scheduleHeader}>
-                                    <Image source={clockIcon} style={styles.scheduleIconClock} />
-                                    <Text style={styles.schedulePrimaryTextClock}>
-                                        2:00 <Text style={styles.scheduleAmPm}>PM</Text>
-                                    </Text>
-                                </View>
-                                <Text style={styles.scheduleSecondaryText}>Pick-up</Text>
-                            </TouchableOpacity>
-                        </View>
+                        <DateTimePickerInput
+                            label="Schedule Pick-up"
+                            onDateChange={() => { }}
+                        />
                     </View>
 
                     {/* ─── Confirm Rental Button ─── */}
@@ -258,13 +244,16 @@ const styles = StyleSheet.create({
     /* ─── Equipment Grid ─── */
     equipmentGrid: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
         justifyContent: 'space-between',
         marginTop: 10,
     },
     equipmentCard: {
         backgroundColor: '#FFFFFF',
         borderRadius: 8,
-        width: 73,
+        width: '48%', // Allow wrapping nicely on narrow screens
+        minWidth: 70,
         height: 85,
         alignItems: 'center',
         paddingTop: 4,
@@ -390,9 +379,10 @@ const styles = StyleSheet.create({
     },
     confirmButton: {
         backgroundColor: '#02743F',
-        width: 281,
-        height: 45,
-        borderRadius: 22.5,
+        width: '100%',
+        maxWidth: 320,
+        height: 48,
+        borderRadius: 24,
         justifyContent: 'center',
         alignItems: 'center',
     },
