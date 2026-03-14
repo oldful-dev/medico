@@ -84,8 +84,10 @@ parse_pdf.js
 parse_api_list.js
 *.ps1
 API_LIST.pdf
+OLDFUL API FILE.pdf
 
 # ───── Misc ─────
 *.orig.*
 .gemini/
 backend/src/config/google-vision-key.json
+backend/src/config/firebase-service-account.json

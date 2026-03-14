@@ -21,6 +21,7 @@ import { useAuth } from '@/context/AuthContext';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { mediaService } from '@/services/api/mediaService';
 import { Alert } from 'react-native';
 const imgHero = require('@/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png'); // Spray bottle icon
 const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
@@ -34,14 +35,17 @@ export default function DeepCleaningScreen() {
     const [cleaningType, setCleaningType] = React.useState('');
     const [areaSize, setAreaSize] = React.useState('');
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+    const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const { userId } = useAuth();
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
+    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
     const [isBooking, setIsBooking] = React.useState(false);
 
     React.useEffect(() => {
         (async () => {
             try {
+                setIsLoadingInit(true);
                 // Fetch location
                 const hasPermission = await locationService.requestPermission();
                 if (hasPermission) {
@@ -67,6 +71,7 @@ export default function DeepCleaningScreen() {
                 console.log("Initialization failed", err);
             } finally {
                 setIsFetchingLocation(false);
+                setIsLoadingInit(false);
             }
         })();
     }, []);
@@ -84,6 +89,13 @@ export default function DeepCleaningScreen() {
 
         try {
             setIsBooking(true);
+
+            // Upload images first
+            let uploadedImageUrls: string[] = [];
+            if (selectedImages.length > 0) {
+                uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'deep-cleaning');
+            }
+
             const payload = {
                 serviceId,
                 cityId,
@@ -91,7 +103,8 @@ export default function DeepCleaningScreen() {
                 addressLine: address,
                 formDataJson: {
                     cleaningType,
-                    areaSize
+                    areaSize,
+                    attachments: uploadedImageUrls
                 }
             };
 
@@ -177,6 +190,8 @@ export default function DeepCleaningScreen() {
                 <ImageUploadBox
                     title="Upload Photos of the Area"
                     subtitle="Help our cleaners understand the scope of work better"
+                    onImagesChange={setSelectedImages}
+                    maxImages={5}
                 />
 
                 {/* ─── Location Details ─── */}
@@ -204,12 +219,14 @@ export default function DeepCleaningScreen() {
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity
-                        style={[styles.bookButton, isBooking && { opacity: 0.7 }]}
+                        style={[styles.bookButton, (isBooking || isLoadingInit) && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        disabled={isBooking}
+                        disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
-                        <Text style={styles.bookButtonText}>{isBooking ? 'Processing...' : 'Book Service'}</Text>
+                        <Text style={styles.bookButtonText}>
+                            {isBooking ? 'Processing...' : (isLoadingInit ? 'Initializing...' : 'Book Service')}
+                        </Text>
                     </TouchableOpacity>
                 </View>
 

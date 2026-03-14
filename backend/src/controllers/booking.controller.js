@@ -133,7 +133,7 @@ const createBooking = async (req, res, next) => {
             },
             include: {
                 user: { select: { name: true, phone: true } },
-                service: { select: { name: true } },
+                service: { select: { name: true, slug: true, icon: true } },
             },
         });
 
@@ -219,7 +219,7 @@ const getMyBookings = async (req, res, next) => {
                 skip,
                 take: limit,
                 include: {
-                    service: { select: { name: true, icon: true } },
+                    service: { select: { name: true, slug: true, icon: true } },
                     caregiver: { select: { name: true, phone: true } },
                 },
                 orderBy: { createdAt: 'desc' },

@@ -38,15 +38,13 @@ const generateUserId = async (cityId) => {
     const city = await prisma.city.findUnique({ where: { id: cityId } });
     if (!city) throw new Error('City not found');
 
-    // Increment the city sequence atomically
     const updated = await prisma.city.update({
         where: { id: cityId },
         data: { sequence: { increment: 1 } },
     });
 
-    const yearString = new Date().getFullYear().toString().slice(-2);
-    const paddedSeq = String(updated.sequence).padStart(4, '0');
-    return `MED-${city.code}-${yearString}-${paddedSeq}`;
+    const paddedSeq = String(updated.sequence).padStart(5, '0');
+    return `MED-${city.code.toUpperCase()}-${paddedSeq}`;
 };
 
 // ─── Booking Code Generation ───────────────

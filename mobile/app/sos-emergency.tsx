@@ -16,11 +16,6 @@ import { Fonts } from '@/constants/theme';
 export default function SOSEmergencyScreen() {
     const router = useRouter();
 
-    const handleEmergencyCall = async () => {
-        await sosService.callEmergencyHotline('112');
-        // Optionally also trigger backend SOS here
-    };
-
     return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>
             <StatusBar style="dark" />
@@ -49,7 +44,7 @@ export default function SOSEmergencyScreen() {
 
                 {/* ─── Bottom: Slide + Notifying text ─── */}
                 <View style={styles.bottomSection}>
-                    <SlideToCall onSlideComplete={handleEmergencyCall} />
+                    <SlideToCall />
                     <Text style={styles.notifyingText}>
                         Notifying Emergency Contacts
                     </Text>

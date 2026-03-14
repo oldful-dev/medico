@@ -808,7 +808,20 @@ model MediaAsset {
   @@map("media_assets")
 }
 
-// ─── 23. Support Ticket ─────────────────────────────────
+// ─── 23. OTP Log ──────────────────────────────────────
+
+model OtpLog {
+  id          String   @id @default(uuid())
+  phoneNumber String
+  code        String
+  isUsed      Boolean  @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@map("otp_logs")
+}
+
+// ─── 24. Support Ticket ─────────────────────────────────
 
 model SupportTicket {
   id            String   @id @default(uuid())

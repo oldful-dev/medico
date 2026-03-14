@@ -55,6 +55,8 @@ const getTicketById = async (req, res, next) => {
     }
 };
 
+const { sendEmail } = require('../utils/notifications');
+
 // POST /api/support/tickets
 const createTicket = async (req, res, next) => {
     try {
@@ -69,6 +71,23 @@ const createTicket = async (req, res, next) => {
                 priority: req.body.priority || 'medium',
             },
         });
+
+        // Notify Admin instantly
+        const user = await prisma.user.findUnique({ where: { id: ticket.userId } });
+        await sendEmail({
+            to: process.env.ADMIN_EMAIL || 'admin@oldful.com',
+            subject: `[Support Ticket] ${ticketCode}: ${ticket.subject}`,
+            html: `
+                <h3>New Support Ticket Created</h3>
+                <p><strong>Ticket ID:</strong> ${ticketCode}</p>
+                <p><strong>User:</strong> ${user?.name} (${user?.uniqueUserId})</p>
+                <p><strong>Category:</strong> ${ticket.category}</p>
+                <p><strong>Priority:</strong> ${ticket.priority}</p>
+                <hr/>
+                <p>${ticket.description}</p>
+            `,
+        });
+
         sendResponse(res, 201, ticket, 'Ticket created');
     } catch (error) {
         next(error);
@@ -117,6 +136,20 @@ const addMessage = async (req, res, next) => {
                 attachments: req.body.attachments,
             },
         });
+
+        // Notify Admin if message is from user
+        if (req.user.type === 'user') {
+            const ticket = await prisma.supportTicket.findUnique({ where: { id: req.params.id } });
+            await sendEmail({
+                to: process.env.ADMIN_EMAIL || 'admin@oldful.com',
+                subject: `[Support Msg] ${ticket.ticketCode}: New message from user`,
+                html: `
+                    <p>New reply for ticket <strong>${ticket.ticketCode}</strong>:</p>
+                    <p>"${message.message}"</p>
+                `,
+            });
+        }
+
         sendResponse(res, 201, message, 'Message sent');
     } catch (error) {
         next(error);

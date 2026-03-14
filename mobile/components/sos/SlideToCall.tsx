@@ -1,9 +1,4 @@
-// SlideToCall — "Slide to Call for Help" swipeable action bar
-// Figma: 303×69 rounded-rectangle, border #02743F 1.5px, border-radius 34.5,
-//        shadow 0 4 20 rgba(0,0,0,0.41)
-//        Orange gradient thumb (59×56) with white phone icon
-//        Gradient text "Slide to Call for Help" — radial #FFAD59 → #FF7E7B
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -12,8 +7,13 @@ import {
     StyleSheet,
     Platform,
     Dimensions,
+    Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+import SOSCountdown from './SOSCountdown';
+import { Colors, Fonts } from '@/constants/theme';
+import { apiClient } from '@/services/api/apiClient';
 
 const TRACK_WIDTH = 303;
 const TRACK_HEIGHT = 69;
@@ -22,12 +22,15 @@ const THUMB_WIDTH = 59;
 const PADDING = 6;
 const SLIDE_THRESHOLD = TRACK_WIDTH - THUMB_WIDTH - PADDING * 2 - 20;
 
+const HOTLINE_NUMBER = 'tel:9999999999'; // Replace with Oldful hotline
+
 interface SlideToCallProps {
     onSlideComplete?: () => void;
 }
 
 export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
     const translateX = useRef(new Animated.Value(0)).current;
+    const [showCountdown, setShowCountdown] = useState(false);
 
     const panResponder = useRef(
         PanResponder.create({
@@ -45,6 +48,7 @@ export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
                         toValue: TRACK_WIDTH - THUMB_WIDTH - PADDING * 2,
                         useNativeDriver: true,
                     }).start(() => {
+                        setShowCountdown(true);
                         onSlideComplete?.();
                     });
                 } else {
@@ -58,6 +62,47 @@ export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
             },
         })
     ).current;
+
+    const handleSOSComplete = async () => {
+        try {
+            // Foreground: Open Dialer
+            Linking.openURL(HOTLINE_NUMBER);
+
+            // Background: Fetch Location and Alert Admin
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            let locationData = null;
+            if (status === 'granted') {
+                const location = await Location.getCurrentPositionAsync({});
+                locationData = {
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude,
+                };
+            }
+
+            // POST to SOS Endpoint
+            await apiClient.post('/api/sos', {
+                location: locationData,
+                timestamp: new Date().toISOString(),
+            });
+
+        } catch (error) {
+            console.error('SOS Trigger Error:', error);
+        } finally {
+            setShowCountdown(false);
+            // Reset thumb
+            translateX.setValue(0);
+        }
+    };
+
+    const handleCancel = () => {
+        setShowCountdown(false);
+        // Snap thumb back
+        Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+            friction: 6,
+        }).start();
+    };
 
     return (
         <View style={styles.track}>
@@ -75,6 +120,13 @@ export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
                     <Ionicons name="call" size={18} color="#FFFFFF" />
                 </View>
             </Animated.View>
+
+            {showCountdown && (
+                <SOSCountdown 
+                    onComplete={handleSOSComplete} 
+                    onCancel={handleCancel} 
+                />
+            )}
         </View>
     );
 }
@@ -97,25 +149,25 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.41,
         shadowRadius: 20,
         // elevation: 8,
-        overflow: 'hidden',
+        // overflow: 'hidden', // Disabled to allow SOSCountdown full-screen overlay if needed, 
+                               // but better to handle overlay at a higher level.
+                               // However, absoluteFill in SOSCountdown will cover the nearest relative parent.
     },
 
-    /* Text label — Figma: Inter Bold 15px, radial gradient #FFAD59 → #FF7E7B */
-    /* RN doesn't support gradient text natively; using the mid-tone of the gradient */
+    /* Text label — Figma: Inter Bold 15px */
     labelContainer: {
         ...StyleSheet.absoluteFillObject,
         justifyContent: 'center',
         alignItems: 'center',
     },
     label: {
-        fontFamily: Platform.select({ ios: 'Poppins-Bold', android: 'Poppins_700Bold', default: 'System' }),
-        fontWeight: '700',
+        fontFamily: Fonts.bold,
         fontSize: 15,
-        color: '#FF9468', // Mid-tone of radial gradient (#FFAD59 → #FF7E7B)
+        color: '#FF9468',
         textAlign: 'center',
     },
 
-    /* Draggable thumb — Figma: 59×56 ellipse, radial gradient #FFAD59 → #FF7E7B, white stroke 5 */
+    /* Draggable thumb */
     thumb: {
         width: THUMB_WIDTH,
         height: THUMB_SIZE,

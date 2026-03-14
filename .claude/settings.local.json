@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(BASE=\"https://medico-crzu.onrender.com/api\")",
+      "Bash(__NEW_LINE_a04d32568c3de538__ echo:*)",
+      "Bash(curl -s -X POST \"$BASE/auth/request-otp\" -H \"Content-Type: application/json\" -d '{\"\"phoneNumber\"\":\"\"9876543210\"\"}')",
+      "Bash(curl -s -X POST \"$BASE/auth/verify-otp\" -H \"Content-Type: application/json\" -d '{\"\"phoneNumber\"\":\"\"9876543210\"\",\"\"otp\"\":\"\"000000\"\"}')",
+      "Bash(curl -s -X POST \"$BASE/auth/verify-otp\" -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(curl -s -w \"\\\\nHTTP:%{http_code}\" -X POST \"$BASE/auth/admin/login\" -H \"Content-Type: application/json\" -d '{\"\"email\"\":\"\"wrong@test.com\"\",\"\"password\"\":\"\"wrongpass\"\"}')",
+      "Bash(SERVICE_ID=\"0b99e586-64b4-43e0-a25d-99a5289391cb\")",
+      "Bash(curl -s -w \"\\\\nHTTP:%{http_code}\" \"$BASE/services/$SERVICE_ID\")",
+      "Bash(curl -s -w \"\\\\nHTTP:%{http_code}\" \"$BASE/services/nonexistent-id\")",
+      "Read(//d/codes/MERN/medico/**)",
+      "Bash(grep -rn \"twilio\\\\|Twilio\" /d/codes/MERN/medico/backend/ --include=*.js --include=*.json --exclude-dir=node_modules --exclude-dir=logs 2)",
+      "Bash(/dev/null echo:*)",
+      "Bash(git -C /d/codes/MERN/medico log --oneline)"
+    ]
+  }
+}

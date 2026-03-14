@@ -1,12 +1,5 @@
-// ──────────────────────────────────────────────
-//  User Management Controller
-// ──────────────────────────────────────────────
-
-const prisma = require('../config/database');
-const { sendResponse, sendPaginatedResponse, paginate, generateUserId } = require('../utils/helpers');
-const { sendWelcomeNotifications } = require('../utils/notifications');
-const { generateWelcomeSLAPDF } = require('../utils/pdfGenerator');
-const { uploadToCloudinary } = require('../utils/fileUpload');
+const { uploadFile } = require('../utils/storage.service');
+const { analyzeMedicalReport } = require('../utils/ocr.service');
 const { createAuditLog } = require('../middleware/audit');
 
 // GET /api/users
@@ -120,7 +113,7 @@ const createUser = async (req, res, next) => {
                 cityName: user.city.name,
             });
 
-            const { url } = await uploadToCloudinary(pdfBuffer, 'sla-documents', 'raw');
+            const { url } = await uploadFile(pdfBuffer, 'sla-documents', 'sla.pdf');
             // Could store this URL on the user or send via email
         } catch (pdfError) {
             // Non-blocking — don't fail user creation
@@ -308,14 +301,12 @@ const upsertMedicalCard = async (req, res, next) => {
 
 // ─── Health Reports ────────────────────────
 
-const { analyzeMedicalReport } = require('../utils/ocr.service');
-
 // POST /api/users/:id/health-reports (file upload)
 const uploadHealthReport = async (req, res, next) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: 'File required' });
 
-        const { url } = await uploadToCloudinary(req.file.buffer, 'health-reports');
+        const { url } = await uploadFile(req.file.buffer, 'health-reports', req.file.originalname);
 
         // Trigger OCR Analysis
         const ocrResult = await analyzeMedicalReport(url, req.file.buffer);
@@ -426,7 +417,7 @@ const uploadProfileAvatar = async (req, res, next) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: 'Image file required' });
 
-        const { url } = await uploadToCloudinary(req.file.buffer, 'profile-avatars', 'image');
+        const { url } = await uploadFile(req.file.buffer, 'profile-avatars', req.file.originalname);
 
         const user = await prisma.user.update({
             where: { id: req.user.id },

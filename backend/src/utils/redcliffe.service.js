@@ -1,75 +1,61 @@
 // ──────────────────────────────────────────────
-//  Redcliffe Labs API Integration Service
+//  Redcliffe Labs API Service
 // ──────────────────────────────────────────────
 
+const axios = require('axios');
 const { logger } = require('../config/logger');
 
-// Placeholder Base URL - Replace with actual Redcliffe API endpoint
-const REDCLIFFE_API_BASE_URL = process.env.REDCLIFFE_API_BASE_URL || 'https://api.redcliffelabs.com/v1';
-const REDCLIFFE_API_KEY = process.env.REDCLIFFE_API_KEY || 'mock_key_for_dev';
+const REDCLIFFE_BASE_URL = process.env.REDCLIFFE_API_URL || 'https://api.redcliffelabs.com/v1';
+const REDCLIFFE_API_KEY = process.env.REDCLIFFE_API_KEY;
 
 /**
- * Fetch available lab tests from Redcliffe Labs
+ * Book a Lab Test Slot
+ * @param {Object} data - patientName, patientPhone, testIds, scheduledDate, addressLine
  */
-const fetchAvailableTests = async (cityCode) => {
+const bookLabTestSlot = async (data) => {
     try {
-        // Mock Implementation for development
-        if (REDCLIFFE_API_KEY === 'mock_key_for_dev') {
-            logger.info(`Simulating fetching Redcliffe tests for city: ${cityCode}`);
-            return [
-                { id: 'RC-001', name: 'Full Body Checkup', price: 999, requiresFasting: true },
-                { id: 'RC-002', name: 'Diabetes Profile', price: 499, requiresFasting: true },
-                { id: 'RC-003', name: 'Thyroid Profile', price: 399, requiresFasting: false },
-                { id: 'RC-004', name: 'Vitamin D & B12', price: 899, requiresFasting: false }
-            ];
+        if (!REDCLIFFE_API_KEY) {
+            logger.warn('Redcliffe API Key missing. Skipping real integration.');
+            return {
+                redcliffe_order_id: `SIM_${Date.now()}`,
+                status: 'booked',
+                message: 'Redcliffe simulation mode active.'
+            };
         }
 
-        const response = await fetch(`${REDCLIFFE_API_BASE_URL}/tests?city=${cityCode}`, {
+        const response = await axios.post(`${REDCLIFFE_BASE_URL}/bookings`, {
+            patient_name: data.patientName,
+            patient_mobile: data.patientPhone,
+            tests: data.testIds,
+            appointment_date: data.scheduledDate,
+            address: data.addressLine,
+        }, {
             headers: { 'Authorization': `Bearer ${REDCLIFFE_API_KEY}` }
         });
 
-        if (!response.ok) throw new Error(`Redcliffe API Error: ${response.status}`);
-        return await response.json();
+        return response.data;
     } catch (error) {
-        logger.error('Failed to fetch Redcliffe tests:', error);
-        throw error;
+        logger.error('Redcliffe Booking Error:', error.response?.data || error.message);
+        throw new Error('Failed to book lab test with Redcliffe Labs');
     }
 };
 
 /**
- * Book a home sample collection slot
+ * Fetch Lab Report Link
  */
-const bookLabTestSlot = async (bookingDetails) => {
+const getLabReport = async (orderId) => {
     try {
-        // Mock Implementation
-        if (REDCLIFFE_API_KEY === 'mock_key_for_dev') {
-            logger.info(`Simulating Redcliffe test booking for user: ${bookingDetails.patientName}`);
-            return {
-                success: true,
-                orderId: `RC-ORD-${Date.now()}`,
-                status: 'CONFIRMED',
-                message: 'Slot booked successfully via Dev Mock'
-            };
-        }
-
-        const response = await fetch(`${REDCLIFFE_API_BASE_URL}/book-slot`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${REDCLIFFE_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(bookingDetails)
+        const response = await axios.get(`${REDCLIFFE_BASE_URL}/reports/${orderId}`, {
+            headers: { 'Authorization': `Bearer ${REDCLIFFE_API_KEY}` }
         });
-
-        if (!response.ok) throw new Error(`Redcliffe API Error: ${response.status}`);
-        return await response.json();
+        return response.data; // Should return { report_url: "..." }
     } catch (error) {
-        logger.error('Failed to book Redcliffe slot:', error);
-        throw error;
+        logger.error('Redcliffe Report Fetch Error:', error.response?.data || error.message);
+        return null;
     }
 };
 
 module.exports = {
-    fetchAvailableTests,
-    bookLabTestSlot
+    bookLabTestSlot,
+    getLabReport,
 };

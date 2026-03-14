@@ -21,6 +21,7 @@ import { useAuth } from '@/context/AuthContext';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { mediaService } from '@/services/api/mediaService';
 import { Alert } from 'react-native';
 const imgHero = require('@/assets/images/8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png'); // Clamp/pliers icon
 const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
@@ -34,14 +35,17 @@ export default function PlumbingElectricalScreen() {
     const [serviceType, setServiceType] = React.useState('');
     const [issue, setIssue] = React.useState('');
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+    const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const { userId } = useAuth();
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
+    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
     const [isBooking, setIsBooking] = React.useState(false);
 
     React.useEffect(() => {
         (async () => {
             try {
+                setIsLoadingInit(true);
                 // Fetch location
                 const hasPermission = await locationService.requestPermission();
                 if (hasPermission) {
@@ -67,6 +71,7 @@ export default function PlumbingElectricalScreen() {
                 console.log("Initialization failed", err);
             } finally {
                 setIsFetchingLocation(false);
+                setIsLoadingInit(false);
             }
         })();
     }, []);
@@ -84,6 +89,13 @@ export default function PlumbingElectricalScreen() {
 
         try {
             setIsBooking(true);
+
+            // Upload images first
+            let uploadedImageUrls: string[] = [];
+            if (selectedImages.length > 0) {
+                uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'plumbing-electrical');
+            }
+
             const payload = {
                 serviceId,
                 cityId,
@@ -91,7 +103,8 @@ export default function PlumbingElectricalScreen() {
                 addressLine: address,
                 formDataJson: {
                     serviceType,
-                    issue
+                    issue,
+                    attachments: uploadedImageUrls
                 }
             };
 
@@ -178,6 +191,8 @@ export default function PlumbingElectricalScreen() {
                 <ImageUploadBox
                     title="Upload Photos of the Issue"
                     subtitle="Help our technician understand the problem better"
+                    onImagesChange={setSelectedImages}
+                    maxImages={5}
                 />
 
                 {/* ─── Location Details ─── */}
@@ -205,12 +220,14 @@ export default function PlumbingElectricalScreen() {
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity
-                        style={[styles.bookButton, isBooking && { opacity: 0.7 }]}
+                        style={[styles.bookButton, (isBooking || isLoadingInit) && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        disabled={isBooking}
+                        disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
-                        <Text style={styles.bookButtonText}>{isBooking ? 'Processing...' : 'Book Service'}</Text>
+                        <Text style={styles.bookButtonText}>
+                            {isBooking ? 'Processing...' : (isLoadingInit ? 'Initializing...' : 'Book Service')}
+                        </Text>
                     </TouchableOpacity>
                 </View>
 

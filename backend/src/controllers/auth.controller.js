@@ -11,7 +11,7 @@ const {
     hashPassword, comparePassword,
     generateUserId,
 } = require('../utils/helpers');
-const { sendWhatsApp, requestTwilioOTP, verifyTwilioOTP } = require('../utils/notifications');
+const { sendWhatsApp, requestOTP: requestSmsOTP, verifyOTP: verifySmsOTP } = require('../utils/notifications');
 
 // ═══════════════════════════════════════════
 //  ADMIN AUTH
@@ -147,10 +147,10 @@ const requestOTP = async (req, res, next) => {
     try {
         const { phoneNumber } = req.body;
 
-        // Use Twilio Verify to send OTP
-        await requestTwilioOTP(phoneNumber);
+        // Use Fast2SMS to send OTP
+        await requestSmsOTP(phoneNumber);
 
-        res.json({ success: true, message: 'OTP sent successfully via Twilio' });
+        res.json({ success: true, message: 'OTP sent successfully via SMS' });
     } catch (error) {
         next(error);
     }
@@ -163,8 +163,8 @@ const verifyOTP = async (req, res, next) => {
     try {
         const { phoneNumber, otp } = req.body;
 
-        // Verify OTP via Twilio
-        const verification = await verifyTwilioOTP(phoneNumber, otp);
+        // Verify OTP via notification service
+        const verification = await verifySmsOTP(phoneNumber, otp);
 
         if (!verification.success) {
             return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });

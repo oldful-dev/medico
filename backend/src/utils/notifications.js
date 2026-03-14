@@ -4,28 +4,21 @@
 
 const { logger } = require('../config/logger');
 const prisma = require('../config/database');
-const twilio = require('twilio');
+
 
 // ─── Email (SendGrid) ──────────────────────
 
-const sgMail = require('@sendgrid/mail');
+// ─── Email (ZeptoMail) ──────────────────────
+
+const zeptoMail = require('./zeptomail');
 
 const sendEmail = async ({ to, subject, html, attachments = [] }) => {
     try {
-        if (process.env.SENDGRID_API_KEY) {
-            sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-            await sgMail.send({
-                to,
-                from: { email: process.env.SENDGRID_FROM_EMAIL || 'noreply@oldful.com', name: 'Oldful Healthcare' },
-                subject,
-                html,
-                attachments
-            });
-        } else {
-            logger.warn('SENDGRID_API_KEY not set. Simulating email send.');
-        }
+        const success = await zeptoMail.sendEmail({ to, subject, html });
 
-        logger.info(`📧 Email sent to ${to}: ${subject}`);
+        if (success) {
+            logger.info(`📧 Email sent to ${to}: ${subject}`);
+        }
 
         // Log notification
         await prisma.notificationLog.create({
@@ -34,55 +27,26 @@ const sendEmail = async ({ to, subject, html, attachments = [] }) => {
                 recipientId: null,
                 subject,
                 body: html,
-                isSent: true,
-                sentAt: new Date(),
+                isSent: success,
+                sentAt: success ? new Date() : null,
+                errorMessage: success ? null : 'ZeptoMail failed',
             },
         });
 
-        return true;
+        return success;
     } catch (error) {
         logger.error('Email send error:', error);
-
-        await prisma.notificationLog.create({
-            data: {
-                channel: 'EMAIL',
-                subject,
-                body: html,
-                isSent: false,
-                errorMessage: error.message,
-            },
-        });
-
         return false;
     }
 };
 
-// ─── WhatsApp (Interakt) ───────────────────
+// ─── WhatsApp (Fast2SMS) ───────────────────
+
+const fast2sms = require('./fast2sms');
 
 const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [] }) => {
     try {
-        if (process.env.INTERAKT_API_KEY) {
-            const response = await fetch(`${process.env.INTERAKT_BASE_URL || 'https://api.interakt.ai/v1'}/public/message/`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Basic ${process.env.INTERAKT_API_KEY}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    countryCode: '+91',
-                    phoneNumber: phoneNumber.replace('+91', ''), // Ensure format matches Interakt logic
-                    type: 'Template',
-                    template: { name: templateName, languageCode: 'en', bodyValues: parameters },
-                }),
-            });
-
-            if (!response.ok) {
-                const errorBody = await response.text();
-                throw new Error(`Interakt API Error: ${response.status} - ${errorBody}`);
-            }
-        } else {
-            logger.warn('INTERAKT_API_KEY not set. Simulating WhatsApp send.');
-        }
+        const success = await fast2sms.sendWhatsAppMessage(phoneNumber, templateName, parameters);
 
         logger.info(`📱 WhatsApp sent to ${phoneNumber}: template ${templateName}`);
 
@@ -90,24 +54,15 @@ const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [] }) => {
             data: {
                 channel: 'WHATSAPP',
                 body: `Template: ${templateName}, Params: ${JSON.stringify(parameters)}`,
-                isSent: true,
-                sentAt: new Date(),
+                isSent: success,
+                sentAt: success ? new Date() : null,
+                errorMessage: success ? null : 'Fast2SMS failed',
             },
         });
 
-        return true;
+        return success;
     } catch (error) {
         logger.error('WhatsApp send error:', error);
-
-        await prisma.notificationLog.create({
-            data: {
-                channel: 'WHATSAPP',
-                body: `Template: ${templateName}`,
-                isSent: false,
-                errorMessage: error.message,
-            },
-        });
-
         return false;
     }
 };
@@ -179,49 +134,47 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
     });
 };
 
-// ─── Twilio Verify (OTP) ───────────────────
+// ─── OTP (Fast2SMS) ───────────────────
 
-const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
-    ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
-    : null;
+const requestFast2SMSOTP = async (phoneNumber) => {
+    // Note: Fast2SMS 'q' route can be used to send custom OTPs
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    const success = await fast2sms.sendSMS(phoneNumber, `Your Oldful verification code is: ${otp}`);
 
-const requestTwilioOTP = async (phoneNumber) => {
-    try {
-        if (!twilioClient || !process.env.TWILIO_VERIFY_SERVICE_SID) {
-            logger.warn('Twilio credentials not set. Simulating OTP request.');
-            return { success: true, simulated: true };
-        }
-
-        const verification = await twilioClient.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
-            .verifications
-            .create({ to: phoneNumber, channel: 'sms' });
-
-        return { success: true, status: verification.status };
-    } catch (error) {
-        logger.error('Twilio OTP request error:', error);
-        throw error;
+    if (success) {
+        // Store OTP in database or cache for verification
+        // For now, we'll assume the frontend will handle or we store in a temporary table
+        await prisma.otpLog.create({
+            data: {
+                phoneNumber,
+                code: otp,
+                expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
+            }
+        });
+        return { success: true, otp: process.env.NODE_ENV === 'development' ? otp : undefined };
     }
+    return { success: false };
 };
 
-const verifyTwilioOTP = async (phoneNumber, code) => {
-    try {
-        if (!twilioClient || !process.env.TWILIO_VERIFY_SERVICE_SID) {
-            // Dev bypass
-            if (process.env.NODE_ENV === 'development' && code === '1234') {
-                return { success: true, status: 'approved' };
-            }
-            throw new Error('Twilio credentials not set and not in dev bypass.');
-        }
+const verifyFast2SMSOTP = async (phoneNumber, code) => {
+    const otpRecord = await prisma.otpLog.findFirst({
+        where: {
+            phoneNumber,
+            code,
+            expiresAt: { gt: new Date() },
+            isUsed: false
+        },
+        orderBy: { createdAt: 'desc' }
+    });
 
-        const verificationCheck = await twilioClient.verify.v2.services(process.env.TWILIO_VERIFY_SERVICE_SID)
-            .verificationChecks
-            .create({ to: phoneNumber, code: code });
-
-        return { success: verificationCheck.status === 'approved', status: verificationCheck.status };
-    } catch (error) {
-        logger.error('Twilio OTP verify error:', error);
-        throw error;
+    if (otpRecord) {
+        await prisma.otpLog.update({
+            where: { id: otpRecord.id },
+            data: { isUsed: true }
+        });
+        return { success: true };
     }
+    return { success: false };
 };
 
 module.exports = {
@@ -230,6 +183,6 @@ module.exports = {
     sendWelcomeNotifications,
     sendSOSNotifications,
     sendExpiryReminder,
-    requestTwilioOTP,
-    verifyTwilioOTP,
+    requestOTP: requestFast2SMSOTP,
+    verifyOTP: verifyFast2SMSOTP,
 };

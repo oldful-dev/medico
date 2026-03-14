@@ -31,6 +31,7 @@ export interface UserProfile {
     addresses?: Address[];
     emergencyContacts?: EmergencyContact[];
     medicalCards?: MedicalCard[];
+    subscriptions?: any[];
 }
 
 export interface CreateUserPayload {

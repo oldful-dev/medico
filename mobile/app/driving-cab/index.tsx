@@ -38,11 +38,13 @@ export default function DrivingCabScreen() {
     const { userId } = useAuth();
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
+    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
     const [isBooking, setIsBooking] = React.useState(false);
 
     React.useEffect(() => {
         (async () => {
             try {
+                setIsLoadingInit(true);
                 // Fetch location
                 const hasPermission = await locationService.requestPermission();
                 if (hasPermission) {
@@ -68,6 +70,7 @@ export default function DrivingCabScreen() {
                 console.log("Initialization failed", err);
             } finally {
                 setIsFetchingLocation(false);
+                setIsLoadingInit(false);
             }
         })();
     }, []);
@@ -203,12 +206,14 @@ export default function DrivingCabScreen() {
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity
-                        style={[styles.bookButton, isBooking && { opacity: 0.7 }]}
+                        style={[styles.bookButton, (isBooking || isLoadingInit) && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        disabled={isBooking}
+                        disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
-                        <Text style={styles.bookButtonText}>{isBooking ? 'Processing...' : 'Book Service'}</Text>
+                        <Text style={styles.bookButtonText}>
+                            {isBooking ? 'Processing...' : (isLoadingInit ? 'Initializing...' : 'Book Service')}
+                        </Text>
                     </TouchableOpacity>
                 </View>
 

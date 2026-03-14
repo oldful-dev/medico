@@ -4,7 +4,7 @@
 
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/helpers');
-const { uploadToCloudinary } = require('../utils/fileUpload');
+const { uploadFile } = require('../utils/storage.service');
 
 // GET /api/services
 const getServices = async (req, res, next) => {
@@ -25,6 +25,8 @@ const getServices = async (req, res, next) => {
             include: { _count: { select: { bookings: true } } },
         });
 
+        // Cache for 1 hour at edge
+        res.set('Cache-Control', 'public, max-age=300, s-maxage=3600');
         sendResponse(res, 200, services);
     } catch (error) {
         next(error);
@@ -105,7 +107,7 @@ const reorderServices = async (req, res, next) => {
 const uploadHeroImage = async (req, res, next) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: 'Image required' });
-        const { url } = await uploadToCloudinary(req.file.buffer, 'service-images');
+        const { url } = await uploadFile(req.file.buffer, 'service-images', req.file.originalname);
         const service = await prisma.service.update({
             where: { id: req.params.id },
             data: { heroImageUrl: url },

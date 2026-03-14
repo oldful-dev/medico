@@ -1,6 +1,10 @@
 // SOS Countdown Overlay - Full screen countdown before triggering emergency
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { Colors, Fonts } from '@/constants/theme';
+
+const { width, height } = Dimensions.get('window');
 
 interface SOSCountdownProps {
     seconds?: number;
@@ -9,9 +13,33 @@ interface SOSCountdownProps {
 }
 
 export default function SOSCountdown({ seconds = 3, onComplete, onCancel }: SOSCountdownProps) {
+    const [count, setCount] = useState(seconds);
+
+    useEffect(() => {
+        if (count > 0) {
+            const timer = setTimeout(() => setCount(count - 1), 1000);
+            return () => clearTimeout(timer);
+        } else {
+            onComplete?.();
+        }
+    }, [count, onComplete]);
+
     return (
-        <View style={styles.container}>
-            <Text style={styles.text}>SOS Countdown: {seconds}</Text>
+        <View style={StyleSheet.absoluteFill}>
+            <BlurView intensity={80} tint="dark" style={styles.container}>
+                <View style={styles.content}>
+                    <Text style={styles.warningText}>EMERGENCY ALERT</Text>
+                    <Text style={styles.subText}>Contacting Admin and Family in</Text>
+                    
+                    <View style={styles.countCircle}>
+                        <Text style={styles.countText}>{count}</Text>
+                    </View>
+
+                    <TouchableOpacity style={styles.cancelBtn} onPress={onCancel}>
+                        <Text style={styles.cancelText}>CANCEL</Text>
+                    </TouchableOpacity>
+                </View>
+            </BlurView>
         </View>
     );
 }
@@ -22,9 +50,50 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    text: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: '#FF0000',
+    content: {
+        alignItems: 'center',
+        padding: 40,
+    },
+    warningText: {
+        fontFamily: Fonts.bold,
+        fontSize: 32,
+        color: '#FF4B4B',
+        marginBottom: 10,
+    },
+    subText: {
+        fontFamily: Fonts.medium,
+        fontSize: 18,
+        color: '#FFFFFF',
+        opacity: 0.8,
+        marginBottom: 40,
+        textAlign: 'center',
+    },
+    countCircle: {
+        width: 150,
+        height: 150,
+        borderRadius: 75,
+        borderWidth: 8,
+        borderColor: '#FF4B4B',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 60,
+    },
+    countText: {
+        fontFamily: Fonts.bold,
+        fontSize: 80,
+        color: '#FFFFFF',
+    },
+    cancelBtn: {
+        paddingVertical: 15,
+        paddingHorizontal: 40,
+        borderRadius: 30,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.3)',
+    },
+    cancelText: {
+        fontFamily: Fonts.bold,
+        fontSize: 18,
+        color: '#FFFFFF',
     },
 });

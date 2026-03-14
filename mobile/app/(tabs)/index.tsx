@@ -97,20 +97,25 @@ const ESSENTIALS_ROW3 = [
   { icon: cleaningIcon, label: 'Smart\nUpgrade', route: '/smart-upgrade' },
 ];
 
+import { initRemoteConfig, getRemoteValue } from '@/services/firebase/firebaseConfig';
+
 export default function HomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const [currentLocationStr, setCurrentLocationStr] = React.useState('Loading...');
+  const [rcLoaded, setRcLoaded] = React.useState(false);
 
-  // Fetch Location on mount
+  // Fetch Location and Remote Config on mount
   React.useEffect(() => {
     (async () => {
+      // Init Remote Config
+      await initRemoteConfig();
+      setRcLoaded(true);
+
       try {
         const hasPermission = await locationService.requestPermission();
         if (hasPermission) {
           const coords = await locationService.getCurrentLocation();
-
-          // For the home screen pill we only want the city area, not the full address.
           const results = await require('expo-location').reverseGeocodeAsync({
             latitude: coords.latitude,
             longitude: coords.longitude,
@@ -131,6 +136,10 @@ export default function HomeScreen() {
       }
     })();
   }, []);
+
+  // Remote Config Values
+  const rcGreeting = getRemoteValue('home_greeting_message') || "Good Morning";
+  const rcOldfulLabel = getRemoteValue('oldful_services_label') || "Oldful Services";
 
   // ─── MATH.FLOOR PIXEL CALCS (Prevents Sub-Pixel Wrapping on iOS) ───
   // Total screen minus 15px outer margin (x2) minus 15px inner padding (x2)
@@ -187,7 +196,7 @@ export default function HomeScreen() {
 
         {/* ─── Greeting Banner ─── */}
         <ImageBackground source={greetingBanner} style={styles.greetingBanner} resizeMode="cover">
-          <Text style={styles.greetingTitle}>{greeting}, {userName}</Text>
+          <Text style={styles.greetingTitle}>{rcGreeting}, {userName}</Text>
         </ImageBackground>
 
         {/* ─── Quick Service Strip ─── */}
@@ -207,7 +216,7 @@ export default function HomeScreen() {
         {/* ─── Oldful Services Grid ─── */}
         <View style={styles.servicesCard}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Oldful Services</Text>
+            <Text style={styles.sectionTitle}>{rcOldfulLabel}</Text>
             <TouchableOpacity onPress={() => router.push('/all-oldful-services' as any)}>
               <Text style={styles.viewAllText}>View All</Text>
             </TouchableOpacity>

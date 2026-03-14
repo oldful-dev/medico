@@ -3,11 +3,11 @@
 // ──────────────────────────────────────────────
 
 const prisma = require('../config/database');
-const razorpay = require('../config/razorpay');
+const razorpay = require('../utils/razorpay.service');
 const { sendResponse, sendPaginatedResponse, paginate, generateInvoiceNumber } = require('../utils/helpers');
 const { generateInvoicePDF } = require('../utils/pdfGenerator');
-const { uploadToCloudinary } = require('../utils/fileUpload');
-const { sendEmail } = require('../utils/notifications');
+const { uploadFile } = require('../utils/storage.service');
+const { sendEmail, sendWhatsApp } = require('../utils/notifications');
 const crypto = require('crypto');
 
 // GET /api/payments
@@ -80,11 +80,7 @@ const initiatePayment = async (req, res, next) => {
         }
 
         // Create Razorpay order
-        const razorpayOrder = await razorpay.orders.create({
-            amount: Math.round(finalAmount * 100), // paise
-            currency: 'INR',
-            receipt: `receipt_${Date.now()}`,
-        });
+        const razorpayOrder = await razorpay.createOrder(finalAmount, `receipt_${Date.now()}`);
 
         // Create payment record
         const payment = await prisma.payment.create({
@@ -118,13 +114,9 @@ const verifyPayment = async (req, res, next) => {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
         // Verify signature
-        const body = razorpay_order_id + '|' + razorpay_payment_id;
-        const expectedSignature = crypto
-            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-            .update(body)
-            .digest('hex');
+        const isValid = razorpay.verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
 
-        if (expectedSignature !== razorpay_signature) {
+        if (!isValid) {
             return res.status(400).json({ success: false, message: 'Payment verification failed' });
         }
 
@@ -170,26 +162,42 @@ const verifyPayment = async (req, res, next) => {
                 description: 'Oldful Healthcare Services',
             });
 
-            const { url } = await uploadToCloudinary(pdfBuffer, 'invoices', 'raw');
+            const { url } = await uploadFile(pdfBuffer, 'invoices', `invoice-${invoiceNumber}.pdf`);
 
             await prisma.invoice.update({
                 where: { id: invoice.id },
                 data: { pdfUrl: url },
             });
 
-            // Send invoice email
+            // Send invoice via Email
             if (payment.user.email) {
                 await sendEmail({
                     to: payment.user.email,
                     subject: `Invoice ${invoiceNumber} - Oldful Healthcare`,
-                    html: `<p>Dear ${payment.user.name},</p><p>Your payment of ₹${payment.amount} was successful.</p><p>Invoice: ${invoiceNumber}</p>`,
-                });
-
-                await prisma.invoice.update({
-                    where: { id: invoice.id },
-                    data: { emailSentAt: new Date() },
+                    html: `
+                        <p>Dear ${payment.user.name},</p>
+                        <p>Your payment of ₹${payment.amount} was successful.</p>
+                        <p>You can download your GST invoice here: <a href="${url}">Download Invoice</a></p>
+                        <p>Best regards,<br/>Oldful Team</p>
+                    `,
                 });
             }
+
+            // Send invoice notification via WhatsApp
+            await sendWhatsApp({
+                phoneNumber: payment.user.phone,
+                templateName: 'invoice_confirmation',
+                parameters: [
+                    { name: 'user_name', value: payment.user.name },
+                    { name: 'amount', value: `₹${payment.amount}` },
+                    { name: 'invoice_url', value: url }
+                ]
+            });
+
+            await prisma.invoice.update({
+                where: { id: invoice.id },
+                data: { emailSentAt: new Date() },
+            });
         } catch (pdfErr) {
             console.error('Invoice PDF error:', pdfErr);
         }

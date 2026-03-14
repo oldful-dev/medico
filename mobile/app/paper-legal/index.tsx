@@ -19,6 +19,8 @@ import { useAuth } from '@/context/AuthContext';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { mediaService } from '@/services/api/mediaService';
+import { locationService } from '@/services/device/locationService';
 import { Alert } from 'react-native';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
@@ -35,15 +37,17 @@ export default function PaperLegalScreen() {
     const [address, setAddress] = useState('Fetching...   ');
     const [isManualAddress, setIsManualAddress] = useState(false);
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+    const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const { userId } = useAuth();
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
+    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
     const [isBooking, setIsBooking] = React.useState(false);
 
     React.useEffect(() => {
         (async () => {
-            const { locationService } = await import('@/services/device/locationService');
             try {
+                setIsLoadingInit(true);
                 // Fetch location
                 const hasPermission = await locationService.requestPermission();
                 if (hasPermission) {
@@ -72,6 +76,8 @@ export default function PaperLegalScreen() {
                 console.log("Initialization failed", err);
                 setIsManualAddress(true);
                 setAddress('');
+            } finally {
+                setIsLoadingInit(false);
             }
         })();
     }, []);
@@ -89,6 +95,13 @@ export default function PaperLegalScreen() {
 
         try {
             setIsBooking(true);
+
+            // Upload images first
+            let uploadedImageUrls: string[] = [];
+            if (selectedImages.length > 0) {
+                uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'paper-legal');
+            }
+
             const payload = {
                 serviceId,
                 cityId,
@@ -96,7 +109,8 @@ export default function PaperLegalScreen() {
                 addressLine: address,
                 formDataJson: {
                     selectedService,
-                    details
+                    details,
+                    attachments: uploadedImageUrls
                 }
             };
 
@@ -198,6 +212,8 @@ export default function PaperLegalScreen() {
                     <ImageUploadBox
                         title="Upload Relevant Documents"
                         subtitle="Upload IDs, previous certificates, or legal paperwork (JPG, PNG or PDF)"
+                        onImagesChange={setSelectedImages}
+                        maxImages={5}
                     />
 
                     {/* ─── Schedule Visit ─── */}
@@ -209,12 +225,14 @@ export default function PaperLegalScreen() {
 
                     {/* ─── Book Assistant Button ─── */}
                     <TouchableOpacity
-                        style={[styles.submitButton, isBooking && { opacity: 0.7 }]}
+                        style={[styles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        disabled={isBooking}
+                        disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
-                        <Text style={styles.submitButtonText}>{isBooking ? 'Processing...' : 'Book Assistant'}</Text>
+                        <Text style={styles.submitButtonText}>
+                            {isBooking ? 'Processing...' : (isLoadingInit ? 'Initializing...' : 'Book Assistant')}
+                        </Text>
                     </TouchableOpacity>
 
                     {/* ─── Oldful Illustration Bottom ─── */}

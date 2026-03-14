@@ -103,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } finally {
             apiClient.clearAuthToken();
             await storageService.clearAuthTokens();
+            await storageService.removeItem(STORAGE_KEYS.USER_ID);
             setState({
                 isAuthenticated: false,
                 isLoading: false,

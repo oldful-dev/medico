@@ -17,6 +17,8 @@ import { useAuth } from '@/context/AuthContext';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { mediaService } from '@/services/api/mediaService';
+import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { Alert } from 'react-native';
 
 // ─── Figma Assets ───
@@ -30,14 +32,17 @@ export default function BillPaymentScreen() {
     const [billType, setBillType] = React.useState('');
     const [accountId, setAccountId] = React.useState('');
     const [amount, setAmount] = React.useState('');
+    const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const { userId } = useAuth();
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
+    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
     const [isBooking, setIsBooking] = React.useState(false);
 
     React.useEffect(() => {
         (async () => {
             try {
+                setIsLoadingInit(true);
                 // Fetch User Profile for City ID
                 const profileRes = await userService.getProfile();
                 if (profileRes.success && profileRes.data) {
@@ -52,6 +57,8 @@ export default function BillPaymentScreen() {
                 }
             } catch (err) {
                 console.log("Initialization failed", err);
+            } finally {
+                setIsLoadingInit(false);
             }
         })();
     }, []);
@@ -69,6 +76,13 @@ export default function BillPaymentScreen() {
 
         try {
             setIsBooking(true);
+
+            // Upload images first
+            let uploadedImageUrls: string[] = [];
+            if (selectedImages.length > 0) {
+                uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'bill-payment');
+            }
+
             const payload = {
                 serviceId,
                 cityId,
@@ -77,7 +91,8 @@ export default function BillPaymentScreen() {
                 formDataJson: {
                     billType,
                     accountId,
-                    amount
+                    amount,
+                    attachments: uploadedImageUrls
                 }
             };
 
@@ -131,7 +146,7 @@ export default function BillPaymentScreen() {
                 </Text>
 
                 {/* ─── Bill Details ─── */}
-                <View style={[styles.card, { marginBottom: 100 }]}>
+                <View style={styles.card}>
                     <Text style={styles.sectionTitle}>Bill Details</Text>
 
                     <Text style={[styles.sectionTitle, { fontSize: 13, marginBottom: 8, marginTop: 5 }]}>Bill Type</Text>
@@ -172,15 +187,25 @@ export default function BillPaymentScreen() {
                     </View>
                 </View>
 
+                {/* ─── Upload Card ─── */}
+                <ImageUploadBox
+                    title="Upload Bill Photo"
+                    subtitle="Capture a clear photo of the bill (JPG, PNG or PDF)"
+                    onImagesChange={setSelectedImages}
+                    maxImages={3}
+                />
+
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity
-                        style={[styles.bookButton, isBooking && { opacity: 0.7 }]}
+                        style={[styles.bookButton, (isBooking || isLoadingInit) && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        disabled={isBooking}
+                        disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
-                        <Text style={styles.bookButtonText}>{isBooking ? 'Processing...' : 'Book Service'}</Text>
+                        <Text style={styles.bookButtonText}>
+                            {isBooking ? 'Processing...' : (isLoadingInit ? 'Initializing...' : 'Book Service')}
+                        </Text>
                     </TouchableOpacity>
                 </View>
 

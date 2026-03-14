@@ -4,8 +4,10 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
+    Image,
     ScrollView,
     Platform,
+    ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -54,25 +56,58 @@ export default function ServiceConfirmationScreen() {
 
     // Helper to format description from JSON
     const formatDescription = (b: Booking) => {
-        if (b.symptoms && b.symptoms.length > 0) return b.symptoms.join(', ');
+        let lines: string[] = [];
+
+        if (b.symptoms && b.symptoms.length > 0) {
+            lines.push(`Primary: ${b.symptoms.join(', ')}`);
+        }
         
-        // If it's a home essential with formDataJson
-        let formData = (b as any).formDataJson;
-        
-        // Handle stringified JSON from backend
+        let formData = b.formDataJson;
         if (typeof formData === 'string') {
             try {
                 formData = JSON.parse(formData);
-            } catch (e) {
-                // Not valid JSON, use as is if it's a string
-            }
-        }
-
-        if (formData && typeof formData === 'object') {
-            return Object.values(formData).filter(v => !!v).join(' - ');
+            } catch (e) {}
         }
         
-        return 'Service request details';
+        if (formData && typeof formData === 'object') {
+            Object.entries(formData).forEach(([key, value]) => {
+                // Skip attachments and technical fields
+                if (key === 'attachments' || key === 'serviceId' || key === 'cityId') return;
+                if (!value) return;
+
+                // Humanize keys
+                const label = key
+                    .replace(/([A-Z])/g, ' $1')
+                    .replace(/^./, str => str.toUpperCase())
+                    .replace('Req ', 'Request ')
+                    .replace('Desc', 'Description');
+
+                if (Array.isArray(value)) {
+                    if (value.length > 0 && typeof value[0] === 'string') {
+                        lines.push(`${label}: ${value.join(', ')}`);
+                    }
+                } else if (typeof value === 'string' || typeof value === 'number') {
+                    lines.push(`${label}: ${value}`);
+                }
+            });
+        }
+        
+        if (lines.length === 0) return 'Standard service request details';
+        return lines.join('\n');
+    };
+
+    // Helper to get attachments
+    const getAttachments = (b: Booking): string[] => {
+        let formData = b.formDataJson;
+        if (typeof formData === 'string') {
+            try {
+                formData = JSON.parse(formData);
+            } catch (e) {}
+        }
+        if (formData && formData.attachments && Array.isArray(formData.attachments)) {
+            return formData.attachments;
+        }
+        return [];
     };
 
     // Derive display values
@@ -112,9 +147,11 @@ export default function ServiceConfirmationScreen() {
                         </View>
                         <Text style={styles.successTitle}>{loading ? 'Please wait...' : 'Booking Received!'}</Text>
                         <Text style={styles.successSubtitle}>
-                            {booking ? 'Your service request has been successfully submitted.' : 'Fetching your booking details...'}
+                            {booking ? 'Your service request has been successfully submitted.' : (loading ? 'Fetching your booking details...' : 'Successfully booked!')}
                         </Text>
                     </View>
+
+                    {loading && <ActivityIndicator size="large" color={Colors.primary} style={{ marginBottom: 20 }} />}
 
                     {/* Booking ID Card */}
                     <View style={styles.bookingIdCard}>
@@ -148,7 +185,7 @@ export default function ServiceConfirmationScreen() {
                                  <Ionicons name="information-circle-outline" size={16} color={Colors.primary} />
                              </View>
                              <View style={styles.detailTextGroup}>
-                                 <Text style={styles.detailLabel}>Description</Text>
+                                 <Text style={styles.detailLabel}>Additional Details</Text>
                                  <Text style={styles.detailValue}>{dispDesc}</Text>
                              </View>
                          </View>
@@ -189,6 +226,21 @@ export default function ServiceConfirmationScreen() {
                              </View>
                          </View>
                      </View>
+
+                     {/* ─── Attachments Section ─── */}
+                     {booking && getAttachments(booking).length > 0 && (
+                         <View style={styles.attachmentsSection}>
+                             <Text style={styles.attachmentsTitle}>Uploaded Photos / Documents</Text>
+                             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.attachmentsScroll}>
+                                 {getAttachments(booking).map((url, idx) => (
+                                     <TouchableOpacity key={idx} activeOpacity={0.9}>
+                                        <Image source={{ uri: url }} style={styles.attachmentImage} resizeMode="cover" />
+                                     </TouchableOpacity>
+                                 ))}
+                             </ScrollView>
+                             <Text style={styles.attachmentsSubtitle}>{getAttachments(booking).length} file(s) uploaded</Text>
+                         </View>
+                     )}
  
                      {/* Info Banner */}
                      <View style={styles.infoBanner}>
@@ -428,6 +480,32 @@ const styles = StyleSheet.create({
         fontSize: FontSize.bodySmall,
         color: Colors.primaryDark,
         lineHeight: 16,
+    },
+    /* ─── Attachments ─── */
+    attachmentsSection: {
+        marginTop: Spacing.lg,
+        marginBottom: Spacing.md,
+    },
+    attachmentsTitle: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.bodySmall,
+        color: Colors.primaryDark,
+        marginBottom: Spacing.sm,
+    },
+    attachmentsSubtitle: {
+        fontFamily: Fonts.regular,
+        fontSize: 10,
+        color: Colors.textMuted,
+        marginTop: 4,
+    },
+    attachmentsScroll: {
+        paddingRight: 20,
+    },
+    attachmentImage: {
+        width: 120,
+        height: 120,
+        borderRadius: Radius.md,
+        backgroundColor: '#eee',
     },
 
     /* ─── Bottom Bar ─── */

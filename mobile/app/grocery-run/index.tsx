@@ -21,6 +21,7 @@ import { useAuth } from '@/context/AuthContext';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { mediaService } from '@/services/api/mediaService';
 import { Alert } from 'react-native';
 const imgHero = require('@/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png'); // Grocery bag icon
 const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
@@ -34,14 +35,17 @@ export default function GroceryRunScreen() {
     const [items, setItems] = React.useState('');
     const [store, setStore] = React.useState('');
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+    const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const { userId } = useAuth();
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
+    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
     const [isBooking, setIsBooking] = React.useState(false);
 
     React.useEffect(() => {
         (async () => {
             try {
+                setIsLoadingInit(true);
                 // Fetch location
                 const hasPermission = await locationService.requestPermission();
                 if (hasPermission) {
@@ -70,6 +74,8 @@ export default function GroceryRunScreen() {
                 console.log("Initialization failed", err);
                 setIsManualAddress(true);
                 setAddress('');
+            } finally {
+                setIsLoadingInit(false);
             }
         })();
     }, []);
@@ -87,6 +93,13 @@ export default function GroceryRunScreen() {
 
         try {
             setIsBooking(true);
+
+            // Upload images first
+            let uploadedImageUrls: string[] = [];
+            if (selectedImages.length > 0) {
+                uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'grocery-run');
+            }
+
             const payload = {
                 serviceId,
                 cityId,
@@ -94,7 +107,8 @@ export default function GroceryRunScreen() {
                 addressLine: address,
                 formDataJson: {
                     items,
-                    store
+                    store,
+                    attachments: uploadedImageUrls
                 }
             };
 
@@ -178,7 +192,8 @@ export default function GroceryRunScreen() {
                 {/* ─── Delivery Schedule ─── */}
                 <DateTimePickerInput
                     label="Delivery Time"
-                    onDateChange={() => { }}
+                    value={selectedDate}
+                    onDateChange={setSelectedDate}
                 />
 
                 {/* ─── Location Card ─── */}
@@ -209,17 +224,21 @@ export default function GroceryRunScreen() {
                 <ImageUploadBox
                     title="Upload Handwritten List"
                     subtitle="JPG, PNG or PDF, file size no more than 10MB"
+                    onImagesChange={setSelectedImages}
+                    maxImages={5}
                 />
 
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity
-                        style={[styles.bookButton, isBooking && { opacity: 0.7 }]}
+                        style={[styles.bookButton, (isBooking || isLoadingInit) && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        disabled={isBooking}
+                        disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
-                        <Text style={styles.bookButtonText}>{isBooking ? 'Processing...' : 'Book Service'}</Text>
+                        <Text style={styles.bookButtonText}>
+                            {isBooking ? 'Processing...' : (isLoadingInit ? 'Initializing...' : 'Book Service')}
+                        </Text>
                     </TouchableOpacity>
                 </View>
 
