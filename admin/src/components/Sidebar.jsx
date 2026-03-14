@@ -4,7 +4,7 @@ import useAuthStore from "@/store/useAuthStore";
 import {
     LayoutDashboard, Users, Shield, MapPin, UserCog, Settings, CalendarCheck,
     HeartPulse, CreditCard, DollarSign, AlertTriangle, Bell, FileText,
-    ShoppingBag, Image, BarChart3, ClipboardList, Sliders, LifeBuoy, Brain, ChevronRight, X
+    ShoppingBag, Image as ImageIcon, BarChart3, ClipboardList, Sliders, LifeBuoy, Brain, ChevronRight, X
 } from "lucide-react";
 
 const navSections = [
@@ -41,7 +41,7 @@ const navSections = [
             { id: "notifications", label: "Notifications", icon: Bell, roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },
             { id: "legal", label: "Legal CMS", icon: FileText, roles: ['SUPER_ADMIN'] },
             { id: "store", label: "Wellness Store", icon: ShoppingBag, roles: ['SUPER_ADMIN'] },
-            { id: "media", label: "Media Library", icon: Image, roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },
+            { id: "media", label: "Media Library", icon: ImageIcon, roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },
         ],
     },
     {

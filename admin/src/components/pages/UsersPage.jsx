@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, Filter, Eye, Ban, UserCheck, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { userAPI, cityAPI } from "@/lib/api";
 import { formatDate, formatDateTime, showToast } from "@/lib/hooks";
@@ -19,9 +19,9 @@ export default function UsersPage() {
         cityAPI.getAll().then(r => setCities(r.data?.data || [])).catch(() => { });
     }, []);
 
-    useEffect(() => { loadUsers(); }, [page, filters]);
+    useEffect(() => { loadUsers(); }, [loadUsers]);
 
-    async function loadUsers() {
+    const loadUsers = useCallback(async () => {
         try {
             setLoading(true);
             const params = { page, limit, search: search || undefined, ...filters };
@@ -31,7 +31,7 @@ export default function UsersPage() {
             setTotal(res.data?.data?.total || 0);
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
-    }
+    }, [page, filters, search]);
 
     function handleSearch(e) {
         e.preventDefault();
