@@ -1,6 +1,9 @@
 node_modules/
 .env
+.env.main
+.env.development
 dist/
 *.log
 .prisma/
 google-vision-key.json
+*.json

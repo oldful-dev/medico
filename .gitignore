@@ -14,6 +14,8 @@
 
 # ───── Environment Variables ─────
 .env
+.env.main
+.env.development
 .env.*
 !.env.example
 
@@ -78,6 +80,7 @@ next-env.d.ts
 
 # ───── Project Specific Local Files ─────
 Oldful PRD.pdf
+OLDFUL API FILE.pdf
 prd_text.txt
 oldful-v1.apk
 parse_pdf.js
@@ -89,3 +92,4 @@ API_LIST.pdf
 *.orig.*
 .gemini/
 backend/src/config/google-vision-key.json
+backend/src/config/firebase-service-account.json
