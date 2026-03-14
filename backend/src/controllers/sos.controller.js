@@ -13,9 +13,11 @@ const getSOSAlerts = async (req, res, next) => {
         const { status, cityId } = req.query;
 
         const where = {};
-        if (req.cityFilter) where.cityId = req.cityFilter;
-        if (status) where.status = status;
-        if (cityId) where.cityId = cityId;
+        if (req.cityFilter) {
+            where.cityId = req.cityFilter;
+        } else if (cityId) {
+            where.cityId = cityId;
+        }
 
         const [alerts, total] = await Promise.all([
             prisma.sOSAlert.findMany({

@@ -16,8 +16,11 @@ const getUsers = async (req, res, next) => {
         const { cityId, status, healthTag, search, planId } = req.query;
 
         const where = {};
-        if (req.cityFilter) where.cityId = req.cityFilter; // RBAC city restriction
-        if (cityId) where.cityId = cityId;
+        if (req.cityFilter) {
+            where.cityId = req.cityFilter;
+        } else if (cityId) {
+            where.cityId = cityId;
+        }
         if (status) where.status = status;
         if (healthTag) where.healthTag = healthTag;
         if (search) {

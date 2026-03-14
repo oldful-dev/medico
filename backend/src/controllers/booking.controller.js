@@ -13,9 +13,11 @@ const getBookings = async (req, res, next) => {
         const { status, cityId, serviceId, caregiverId, userId, search, dateFrom, dateTo } = req.query;
 
         const where = {};
-        if (req.cityFilter) where.cityId = req.cityFilter;
-        if (status) where.status = status;
-        if (cityId) where.cityId = cityId;
+        if (req.cityFilter) {
+            where.cityId = req.cityFilter;
+        } else if (cityId) {
+            where.cityId = cityId;
+        }
         if (serviceId) where.serviceId = serviceId;
         if (caregiverId) where.caregiverId = caregiverId;
         if (userId) where.userId = userId;

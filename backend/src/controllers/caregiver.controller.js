@@ -13,8 +13,11 @@ const getCaregivers = async (req, res, next) => {
         const { cityId, isAvailable, policeVerification, shiftType, search } = req.query;
 
         const where = {};
-        if (req.cityFilter) where.cityId = req.cityFilter;
-        if (cityId) where.cityId = cityId;
+        if (req.cityFilter) {
+            where.cityId = req.cityFilter;
+        } else if (cityId) {
+            where.cityId = cityId;
+        }
         if (isAvailable !== undefined) where.isAvailable = isAvailable === 'true';
         if (policeVerification) where.policeVerification = policeVerification;
         if (shiftType) where.shiftType = shiftType;

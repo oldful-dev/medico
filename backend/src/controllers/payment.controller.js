@@ -17,6 +17,9 @@ const getPayments = async (req, res, next) => {
         const { status, userId, dateFrom, dateTo } = req.query;
 
         const where = {};
+        if (req.cityFilter) {
+            where.user = { cityId: req.cityFilter };
+        }
         if (status) where.status = status;
         if (userId) where.userId = userId;
         if (dateFrom || dateTo) {

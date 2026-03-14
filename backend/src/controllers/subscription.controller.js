@@ -12,6 +12,9 @@ const getSubscriptions = async (req, res, next) => {
         const { status, planId, userId, search } = req.query;
 
         const where = {};
+        if (req.cityFilter) {
+            where.user = { cityId: req.cityFilter };
+        }
         if (status) where.status = status;
         if (planId) where.planId = planId;
         if (userId) where.userId = userId;
