@@ -58,7 +58,7 @@ export default function Header({ onToggleSidebar, onMobileMenu, setCurrentPage }
                                 <span>{user?.role?.replace('_', ' ') || 'Admin'}</span>
                             </div>
                             <div className="dropdown-divider" />
-                            <button className="dropdown-item" onClick={() => handleNav('users')}>
+                            <button className="dropdown-item" onClick={() => handleNav('profile')}>
                                 <User size={16} /> Profile Settings
                             </button>
                             <button className="dropdown-item" onClick={() => handleNav('dashboard')}>

@@ -46,13 +46,32 @@ const PORT = process.env.PORT || 5000;
 app.use(helmet());
 
 // ─── CORS ───────────────────────────────────────────────
+const allowedOrigins = [
+  process.env.ADMIN_FRONTEND_URL,
+  process.env.APP_FRONTEND_URL,
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3003',
+  'http://localhost:8081',
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    process.env.ADMIN_FRONTEND_URL || 'http://localhost:3003',
-    'http://localhost:3000',
-    'http://localhost:3001',
-    process.env.APP_FRONTEND_URL || 'http://localhost:8081',
-  ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.some(o => origin.startsWith(o)) || 
+                     origin.includes('localhost') || 
+                     origin.includes('127.0.0.1') ||
+                     /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin); // Local network IP
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      logger.warn(`🚫 CORS blocked: ${origin}`);
+      callback(null, true); // Temporarily allow while debugging mobile issues, but log it
+    }
+  },
   credentials: true,
 }));
 

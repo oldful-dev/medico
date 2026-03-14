@@ -19,8 +19,6 @@ export default function UsersPage() {
         cityAPI.getAll().then(r => setCities(r.data?.data || [])).catch(() => { });
     }, []);
 
-    useEffect(() => { loadUsers(); }, [loadUsers]);
-
     const loadUsers = useCallback(async () => {
         try {
             setLoading(true);
@@ -32,6 +30,8 @@ export default function UsersPage() {
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
     }, [page, filters, search]);
+
+    useEffect(() => { loadUsers(); }, [loadUsers]);
 
     function handleSearch(e) {
         e.preventDefault();

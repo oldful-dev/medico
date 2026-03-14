@@ -14,16 +14,24 @@ const revenueByCity = async (req, res, next) => {
 
         const results = await Promise.all(
             cities.map(async (city) => {
-                const payments = await prisma.payment.aggregate({
-                    where: { status: 'SUCCESS', booking: { cityId: city.id } },
-                    _sum: { amount: true },
-                    _count: { id: true },
-                });
+                const [bookingPmts, subPmts] = await Promise.all([
+                    prisma.payment.aggregate({
+                        where: { status: 'SUCCESS', booking: { cityId: city.id } },
+                        _sum: { amount: true }
+                    }),
+                    prisma.payment.aggregate({
+                        where: { status: 'SUCCESS', subscription: { user: { cityId: city.id } } },
+                        _sum: { amount: true }
+                    })
+                ]);
+
+                const userCount = await prisma.user.count({ where: { cityId: city.id } });
+
                 return {
-                    city: city.name,
+                    name: city.name,
                     code: city.code,
-                    totalRevenue: payments._sum.amount || 0,
-                    totalTransactions: payments._count.id || 0,
+                    totalRevenue: (bookingPmts._sum.amount || 0) + (subPmts._sum.amount || 0),
+                    userCount: userCount,
                 };
             })
         );
@@ -82,6 +90,8 @@ const serviceUsage = async (req, res, next) => {
 
                 return {
                     service: service.name,
+                    name: service.name,
+                    count: total,
                     totalBookings: total,
                     completedBookings: completed,
                     completionRate: total > 0 ? ((completed / total) * 100).toFixed(1) : 0,
@@ -170,9 +180,15 @@ const customerRetention = async (req, res, next) => {
 // GET /api/reports/dashboard-summary
 const dashboardSummary = async (req, res, next) => {
     try {
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const nextWeek = new Date();
+        nextWeek.setDate(nextWeek.getDate() + 7);
+
         const [
             totalUsers, totalBookings, activeSubscriptions,
             totalRevenue, activeSOSAlerts, pendingBookings,
+            todayBookings, totalServices, expiringSubscriptions
         ] = await Promise.all([
             prisma.user.count(),
             prisma.booking.count(),
@@ -180,6 +196,9 @@ const dashboardSummary = async (req, res, next) => {
             prisma.payment.aggregate({ where: { status: 'SUCCESS' }, _sum: { amount: true } }),
             prisma.sOSAlert.count({ where: { status: { not: 'RESOLVED' } } }),
             prisma.booking.count({ where: { status: 'PENDING' } }),
+            prisma.booking.count({ where: { createdAt: { gte: todayStart } } }),
+            prisma.service.count({ where: { isEnabled: true } }),
+            prisma.subscription.count({ where: { status: 'ACTIVE', expiryDate: { lte: nextWeek, gte: new Date() } } }),
         ]);
 
         sendResponse(res, 200, {
@@ -189,6 +208,9 @@ const dashboardSummary = async (req, res, next) => {
             totalRevenue: totalRevenue._sum.amount || 0,
             activeSOSAlerts,
             pendingBookings,
+            todayBookings,
+            totalServices,
+            expiringSubscriptions
         });
     } catch (error) {
         next(error);
