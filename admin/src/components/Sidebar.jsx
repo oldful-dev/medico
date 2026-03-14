@@ -3,7 +3,7 @@ import useAuthStore from "@/store/useAuthStore";
 import {
     LayoutDashboard, Users, Shield, MapPin, UserCog, Settings, CalendarCheck,
     HeartPulse, CreditCard, DollarSign, AlertTriangle, Bell, FileText,
-    ShoppingBag, Image, BarChart3, ClipboardList, Sliders, LifeBuoy, Brain, ChevronRight
+    ShoppingBag, Image, BarChart3, ClipboardList, Sliders, LifeBuoy, Brain, ChevronRight, X
 } from "lucide-react";
 
 const navSections = [
@@ -61,18 +61,21 @@ export default function Sidebar({ collapsed, open, currentPage, setCurrentPage, 
 
     return (
         <>
-            {open && <div className="sidebar-overlay" onClick={onClose} style={{
-                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99
-            }} />}
+            {open && <div className="sidebar-overlay" onClick={onClose} />}
             <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${open ? 'open' : ''}`}>
                 <div className="sidebar-header">
-                    <div className="sidebar-logo">O</div>
-                    {!collapsed && (
+                    <div className="sidebar-logo">
+                        <img src="/icon.png" alt="O" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    </div>
+                    {(!collapsed || open) && (
                         <div className="sidebar-brand">
                             <h1>Oldful</h1>
                             <span>Admin Panel</span>
                         </div>
                     )}
+                    <button className="mobile-close-btn" onClick={onClose}>
+                        <X size={24} />
+                    </button>
                 </div>
                 <nav className="sidebar-nav">
                     {navSections.map((section) => {
