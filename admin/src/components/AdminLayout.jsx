@@ -19,7 +19,7 @@ export default function AdminLayout({ children, currentPage, setCurrentPage }) {
 
     useEffect(() => {
         checkAuth();
-    }, []);
+    }, [checkAuth]);
 
     useEffect(() => {
         if (!loading && !isAuthenticated) {

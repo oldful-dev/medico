@@ -83,7 +83,7 @@ export default function DashboardPage() {
                         <div className="stat-card-icon blue"><CalendarCheck size={22} /></div>
                     </div>
                     <div className="stat-card-value">{(s.todayBookings || 0).toLocaleString()}</div>
-                    <div className="stat-card-label">Today's Bookings</div>
+                    <div className="stat-card-label">Today&apos;s Bookings</div>
                 </div>
                 <div className="stat-card">
                     <div className="stat-card-header">

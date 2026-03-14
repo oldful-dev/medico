@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import useAuthStore from "@/store/useAuthStore";
 import {
     LayoutDashboard, Users, Shield, MapPin, UserCog, Settings, CalendarCheck,
@@ -65,7 +66,7 @@ export default function Sidebar({ collapsed, open, currentPage, setCurrentPage, 
             <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${open ? 'open' : ''}`}>
                 <div className="sidebar-header">
                     <div className="sidebar-logo">
-                        <img src="/icon.png" alt="O" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                        <Image src="/icon.png" alt="O" width={40} height={40} style={{ objectFit: 'contain' }} priority />
                     </div>
                     {(!collapsed || open) && (
                         <div className="sidebar-brand">
