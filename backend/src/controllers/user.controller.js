@@ -412,6 +412,23 @@ const getMyHealthReports = async (req, res, next) => {
     }
 };
 
+// PUT /api/users/profile/device-token  (B-05: Register FCM device token)
+const registerDeviceToken = async (req, res, next) => {
+    try {
+        const { fcmToken } = req.body;
+        if (!fcmToken) return res.status(400).json({ success: false, message: 'fcmToken is required' });
+
+        await prisma.user.update({
+            where: { id: req.user.id },
+            data: { fcmDeviceToken: fcmToken },
+        });
+
+        sendResponse(res, 200, null, 'Device token registered');
+    } catch (error) {
+        next(error);
+    }
+};
+
 // PUT /api/users/profile/avatar  (App user — upload profile image)
 const uploadProfileAvatar = async (req, res, next) => {
     try {
@@ -448,5 +465,5 @@ module.exports = {
     addEmergencyContact, removeEmergencyContact,
     addAddress, updateAddress,
     upsertMedicalCard, uploadHealthReport,
-    getMyProfile, updateMyProfile, uploadProfileAvatar, getMyHealthReports,
+    getMyProfile, updateMyProfile, registerDeviceToken, uploadProfileAvatar, getMyHealthReports,
 };

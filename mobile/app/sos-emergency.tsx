@@ -1,27 +1,70 @@
-// SOS Emergency Screen — Pixel-matched to Figma frame "SOS" (200:413)
-// Layout: Vertical flex — Header text → SOS Rings (center) → Slide bar → Footer text
-// No business logic — pure presentation
+// SOS Emergency Screen — Hybrid implementation (M-01)
+// Flow: View screen → Press SOS button → 3s countdown → Trigger SOS (phone call + GPS + API alert)
 
-import React from 'react';
-import { View, Text, StyleSheet, Platform, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { SOSButton, SlideToCall, BackgroundGlow } from '@/components/sos';
+import SOSCountdown from '@/components/sos/SOSCountdown';
 import { sosService } from '@/services/device/sosService';
 import { Fonts } from '@/constants/theme';
 
 export default function SOSEmergencyScreen() {
     const router = useRouter();
+    const [showCountdown, setShowCountdown] = useState(false);
+    const [isTriggering, setIsTriggering] = useState(false);
+
+    // ─── SOS Trigger Flow ────────────────────
+    const handleSOSPress = useCallback(() => {
+        setShowCountdown(true);
+    }, []);
+
+    const handleCountdownComplete = useCallback(async () => {
+        setShowCountdown(false);
+        setIsTriggering(true);
+
+        try {
+            // 1. Trigger SOS alert to backend (GPS + notification to admin & family)
+            // Using a default cityId — backend will resolve from user profile if needed
+            const result = await sosService.triggerSOS('default');
+            
+            if (result.success) {
+                // 2. Simultaneously open phone dialer for emergency call
+                await sosService.callEmergencyHotline('+919480198108');
+            } else {
+                // If API fails, still try to make the phone call
+                await sosService.callEmergencyHotline('+919480198108');
+                Alert.alert(
+                    'Partial Alert',
+                    'Phone call initiated. Backend alert may not have been sent. Please try again if needed.'
+                );
+            }
+        } catch (error) {
+            // Even if everything fails, try the phone call as last resort
+            try {
+                await sosService.callEmergencyHotline('112');
+            } catch {
+                Alert.alert('Emergency', 'Please call 112 directly for emergency assistance.');
+            }
+        } finally {
+            setIsTriggering(false);
+        }
+    }, []);
+
+    const handleCountdownCancel = useCallback(() => {
+        setShowCountdown(false);
+    }, []);
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>
             <StatusBar style="dark" />
             <View style={styles.container}>
 
-                {/* ─── Header Text Group (Figma: Group 483545, y=97) ─── */}
+                {/* ─── Header Text Group ─── */}
                 <View style={styles.headerGroup}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
                         <Ionicons name="close" size={28} color="#313A51" />
@@ -32,25 +75,45 @@ export default function SOSEmergencyScreen() {
                         {'...'}
                     </Text>
                     <Text style={styles.subtitleText}>
-                        To start a call,simply press the button
+                        {isTriggering
+                            ? 'Contacting emergency services...'
+                            : 'To start a call, simply press the button'}
                     </Text>
                 </View>
 
-                {/* ─── Center: SOS Rings with background glow ─── */}
+                {/* ─── Center: Pressable SOS Button ─── */}
                 <View style={styles.centerSection}>
                     <BackgroundGlow />
-                    <SOSButton />
+                    <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={handleSOSPress}
+                        disabled={isTriggering}
+                        style={isTriggering ? { opacity: 0.5 } : undefined}
+                    >
+                        <SOSButton />
+                    </TouchableOpacity>
                 </View>
 
                 {/* ─── Bottom: Slide + Notifying text ─── */}
                 <View style={styles.bottomSection}>
                     <SlideToCall />
                     <Text style={styles.notifyingText}>
-                        Notifying Emergency Contacts
+                        {isTriggering
+                            ? 'Emergency contacts are being notified...'
+                            : 'Notifying Emergency Contacts'}
                     </Text>
                 </View>
 
             </View>
+
+            {/* ─── Countdown Overlay ─── */}
+            {showCountdown && (
+                <SOSCountdown
+                    seconds={3}
+                    onComplete={handleCountdownComplete}
+                    onCancel={handleCountdownCancel}
+                />
+            )}
         </SafeAreaView>
     );
 }
@@ -110,13 +173,12 @@ const styles = StyleSheet.create({
     },
 
     /* ─── Bottom section ─── */
-    /* SlideToCall is 303×69, then 23px gap, then "Notifying…" text */
     bottomSection: {
         alignItems: 'center',
         gap: 23,
     },
 
-    /* Figma: Lexend Deca Bold 14px #555555 opacity 49% */
+    /* Notifying text */
     notifyingText: {
         fontFamily: Fonts.medium,
         fontSize: 14,
@@ -126,4 +188,3 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
 });
-

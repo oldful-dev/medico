@@ -142,8 +142,7 @@ const requestFast2SMSOTP = async (phoneNumber) => {
     const success = await fast2sms.sendSMS(phoneNumber, `Your Oldful verification code is: ${otp}`);
 
     if (success) {
-        // Store OTP in database or cache for verification
-        // For now, we'll assume the frontend will handle or we store in a temporary table
+        // Store OTP in database for verification
         await prisma.otpLog.create({
             data: {
                 phoneNumber,
@@ -151,7 +150,8 @@ const requestFast2SMSOTP = async (phoneNumber) => {
                 expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
             }
         });
-        return { success: true, otp: process.env.NODE_ENV === 'development' ? otp : undefined };
+        logger.info(`OTP generated for ***${phoneNumber.slice(-4)}`);
+        return { success: true };
     }
     return { success: false };
 };

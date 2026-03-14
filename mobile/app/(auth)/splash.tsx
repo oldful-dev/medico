@@ -14,32 +14,51 @@ const logoImage = require('@/assets/images/2549b5ede370bbb67a088920cac9a8719fec5
 const isoBadgeImage = require('@/assets/images/727280010474dfd5bcb5f19d227968488ebee634.png');
 const mandalaImage = require('@/assets/images/0b96a399f500dd9db46b7a473a511a23fa2abc2b.png');
 
-export default function SplashScreen() {
-    const router = useRouter();
-    const { isAuthenticated, isLoading } = useAuth();
-    const [fadeAnim] = useState(new Animated.Value(0));
-
-    useEffect(() => {
-        // Simple fade-in animation
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-        }).start();
-
-        // Simulate minimum splash display time and wait for auth state
-        const timer = setTimeout(() => {
-            if (!isLoading) {
-                if (isAuthenticated) {
-                    router.replace('/(tabs)');
-                } else {
-                    router.replace('/(auth)/login');
-                }
-            }
-        }, 2000); // 2 seconds delay
-
-        return () => clearTimeout(timer);
-    }, [isLoading, isAuthenticated, router, fadeAnim]);
+import * as ExpoSplashScreen from 'expo-splash-screen';
+ 
+ export default function SplashScreen() {
+     const router = useRouter();
+     const { isAuthenticated, isLoading } = useAuth();
+     const [fadeAnim] = useState(new Animated.Value(0));
+ 
+     useEffect(() => {
+         // Simple fade-in animation
+         Animated.timing(fadeAnim, {
+             toValue: 1,
+             duration: 800,
+             useNativeDriver: true,
+         }).start();
+ 
+         // Hide native splash once custom splash is mounted
+         ExpoSplashScreen.hideAsync().catch(() => {});
+ 
+         // Simulate minimum splash display time and wait for auth state
+         const timer = setTimeout(() => {
+             if (!isLoading) {
+                 if (isAuthenticated) {
+                     router.replace('/(tabs)');
+                 } else {
+                     router.replace('/(auth)/login');
+                 }
+             }
+         }, 2000); // 2 seconds delay
+ 
+         return () => clearTimeout(timer);
+     }, [isLoading, isAuthenticated, router, fadeAnim]);
+ 
+     // Also trigger redirect if loading finishes AFTER the 2s timer
+     useEffect(() => {
+         if (!isLoading) {
+             const checkAuth = setTimeout(() => {
+                 if (isAuthenticated) {
+                     router.replace('/(tabs)');
+                 } else {
+                     router.replace('/(auth)/login');
+                 }
+             }, 2000); // ensure we still wait at least 2s total
+             return () => clearTimeout(checkAuth);
+         }
+     }, [isLoading, isAuthenticated]);
 
     return (
         <View style={styles.container}>

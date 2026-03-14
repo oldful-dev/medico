@@ -7,6 +7,20 @@ const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const path = require('path');
 const { logger } = require('../config/logger');
 
+// ─── MIME Detection (S-05 fix) ──────────────────
+const MIME_MAP = {
+    '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+    '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml',
+    '.pdf': 'application/pdf', '.mp4': 'video/mp4', '.mp3': 'audio/mpeg',
+    '.doc': 'application/msword', '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+};
+
+const detectMimeType = (filename, file) => {
+    if (file?.mimetype) return file.mimetype;
+    const ext = path.extname(filename).toLowerCase();
+    return MIME_MAP[ext] || 'application/octet-stream';
+};
+
 // --- Cloudflare R2 Configuration ---
 const r2Config = {
     accountId: process.env.R2_ACCOUNT_ID,
@@ -40,9 +54,11 @@ const gcsBucket = gcsStorage.bucket(gcsBucketName);
  * @param {Buffer} buffer 
  * @param {string} folder 
  * @param {string} originalName 
+ * @param {object} [file] - Optional multer file object (for mimetype detection)
  */
-const uploadFile = async (buffer, folder = 'general', originalName = 'file') => {
+const uploadFile = async (buffer, folder = 'general', originalName = 'file', file = null) => {
     const fileName = `${folder}/${Date.now()}-${originalName}`;
+    const contentType = detectMimeType(originalName, file);
 
     try {
         // Option A: Cloudflare R2
@@ -51,7 +67,7 @@ const uploadFile = async (buffer, folder = 'general', originalName = 'file') => 
                 Bucket: r2Config.bucketName,
                 Key: fileName,
                 Body: buffer,
-                ContentType: 'auto',
+                ContentType: contentType,
             });
 
             await r2Client.send(command);
@@ -65,8 +81,8 @@ const uploadFile = async (buffer, folder = 'general', originalName = 'file') => 
 
         // Option B: Google Cloud Storage
         if (gcsBucketName) {
-            const file = gcsBucket.file(fileName);
-            await file.save(buffer, { resumable: false, contentType: 'auto' });
+            const gcsFile = gcsBucket.file(fileName);
+            await gcsFile.save(buffer, { resumable: false, contentType });
 
             let publicUrl = `https://storage.googleapis.com/${gcsBucketName}/${fileName}`;
             if (process.env.ASSETS_CDN_URL) {
@@ -87,4 +103,5 @@ module.exports = {
     uploadFile,
     uploadToGCS: uploadFile, // Alias for backward compatibility
 };
+
 

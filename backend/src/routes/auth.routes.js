@@ -1,10 +1,22 @@
 // Auth Routes
 const router = require('express').Router();
 const { body } = require('express-validator');
+const rateLimit = require('express-rate-limit');
 const { validate } = require('../middleware/validate');
 const { authenticate, authenticateAdmin } = require('../middleware/auth');
 const { authorize } = require('../middleware/rbac');
 const ctrl = require('../controllers/auth.controller');
+
+// ─── OTP Rate Limiter (SEC-01) ──────────────────
+// 3 requests per 10 minutes, keyed by phone number (fallback to IP)
+const otpLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 3,
+    keyGenerator: (req) => req.body.phoneNumber || req.ip,
+    message: { success: false, message: 'Too many OTP requests. Try again in 10 minutes.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // Admin Auth
 router.post('/admin/login', [
@@ -28,7 +40,7 @@ router.post('/admin/register',
 router.post('/admin/refresh', ctrl.adminRefreshToken);
 
 // App User Auth
-router.post('/request-otp', [
+router.post('/request-otp', otpLimiter, [
     body('phoneNumber').notEmpty().withMessage('Phone number required'),
 ], validate, ctrl.requestOTP);
 

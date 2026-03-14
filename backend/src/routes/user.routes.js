@@ -10,6 +10,7 @@ const ctrl = require('../controllers/user.controller');
 router.get('/profile', authenticateUser, ctrl.getMyProfile);
 router.put('/profile', authenticateUser, ctrl.updateMyProfile);
 router.put('/profile/avatar', authenticateUser, upload.single('avatar'), ctrl.uploadProfileAvatar);
+router.put('/profile/device-token', authenticateUser, ctrl.registerDeviceToken);
 router.get('/profile/health-reports', authenticateUser, ctrl.getMyHealthReports);
 
 // Admin user management

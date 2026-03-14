@@ -242,6 +242,7 @@ model User {
   otpCode           String?
   otpExpiresAt      DateTime?
   refreshToken      String?
+  fcmDeviceToken    String?
 
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt

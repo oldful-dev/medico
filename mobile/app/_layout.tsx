@@ -13,9 +13,10 @@ import { UserProvider } from '@/context/UserContext';
 import { BookingProvider } from '@/context/BookingContext';
 import { CartProvider } from '@/context/CartContext';
 
-// Removed unstable_settings to allow `app/index.tsx` to handle the initial route
-
-// Removed splash screen delay for immediate launch
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* reloading app can cause this to error in dev mode */
+});
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();

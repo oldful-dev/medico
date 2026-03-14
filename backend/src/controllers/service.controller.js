@@ -22,7 +22,6 @@ const getServices = async (req, res, next) => {
         const services = await prisma.service.findMany({
             where,
             orderBy: { sortOrder: 'asc' },
-            include: { _count: { select: { bookings: true } } },
         });
 
         // Cache for 1 hour at edge
@@ -38,7 +37,6 @@ const getServiceById = async (req, res, next) => {
     try {
         const service = await prisma.service.findUnique({
             where: { id: req.params.id },
-            include: { _count: { select: { bookings: true } } },
         });
         if (!service) return res.status(404).json({ success: false, message: 'Service not found' });
         sendResponse(res, 200, service);
