@@ -26,11 +26,11 @@ async function main() {
     // ─── 2. Super Admin ───────────────────────
     const passwordHash = await bcrypt.hash('admin123', 12);
     const superAdmin = await prisma.admin.upsert({
-        where: { email: 'superadmin@medico.care' },
+        where: { email: 'superadmin@oldful.com' },
         update: {},
         create: {
             name: 'Super Admin',
-            email: 'superadmin@medico.care',
+            email: 'superadmin@oldful.com',
             phone: '+919999999999',
             passwordHash,
             role: 'SUPER_ADMIN',
@@ -39,11 +39,11 @@ async function main() {
 
     // City admins
     await prisma.admin.upsert({
-        where: { email: 'blr.admin@medico.care' },
+        where: { email: 'blr.admin@oldful.com' },
         update: {},
         create: {
             name: 'Bangalore Admin',
-            email: 'blr.admin@medico.care',
+            email: 'blr.admin@oldful.com',
             passwordHash,
             role: 'CITY_ADMIN',
             cityId: cities[0].id,
