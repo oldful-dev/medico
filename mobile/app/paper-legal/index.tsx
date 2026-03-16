@@ -16,6 +16,8 @@ import { useRouter } from 'expo-router';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 import { useAuth } from '@/context/AuthContext';
+import { useUser } from '@/context/UserContext';
+import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
@@ -32,49 +34,12 @@ export default function PaperLegalScreen() {
     const insets = useSafeAreaInsets();
     const [selectedService, setSelectedService] = useState('Digital Life Certificate');
     const [details, setDetails] = useState('');
-    const [address, setAddress] = useState('Fetching...   ');
-    const [isManualAddress, setIsManualAddress] = useState(false);
-    const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+    
     const { userId } = useAuth();
-    const [cityId, setCityId] = React.useState('');
-    const [serviceId, setServiceId] = React.useState('');
+    const { isReady, cityId, serviceId, address, setAddress, isManualAddress, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('paper-legal');
+    
+    const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
     const [isBooking, setIsBooking] = React.useState(false);
-
-    React.useEffect(() => {
-        (async () => {
-            const { locationService } = await import('@/services/device/locationService');
-            try {
-                // Fetch location
-                const hasPermission = await locationService.requestPermission();
-                if (hasPermission) {
-                    const coords = await locationService.getCurrentLocation();
-                    const fetchedLoc = await locationService.getAddressFromCoordinates(coords);
-                    setAddress(fetchedLoc);
-                } else {
-                    setIsManualAddress(true);
-                    setAddress('');
-                }
-
-                // Fetch User Profile for City ID
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) {
-                    setCityId(profileRes.data.cityId);
-                }
-
-                // Fetch Service ID for Paper and Legal
-                const serviceRes = await apiClient.get<any[]>('/services');
-                if (serviceRes.success && serviceRes.data) {
-                    const svc = serviceRes.data.find((s: any) => s.slug === 'paper-legal');
-                    if (svc) setServiceId(svc.id);
-                }
-
-            } catch (err) {
-                console.log("Initialization failed", err);
-                setIsManualAddress(true);
-                setAddress('');
-            }
-        })();
-    }, []);
 
     const handleBookService = async () => {
         if (!selectedService || !details || !selectedDate || !address) {
@@ -82,8 +47,8 @@ export default function PaperLegalScreen() {
             return;
         }
 
-        if (!cityId || !serviceId) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+        if (!isReady) {
+            Alert.alert('Error', 'Service initialization incomplete. Please check your internet connection or try logging out and back in.');
             return;
         }
 

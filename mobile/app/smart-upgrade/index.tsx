@@ -14,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
+import { useUser } from '@/context/UserContext';
+import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
@@ -27,34 +29,14 @@ export default function SmartUpgradeScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { userId } = useAuth();
-    const [cityId, setCityId] = React.useState('');
-    const [serviceId, setServiceId] = React.useState('');
+    
+    // Global Initialization
+    const { isReady, cityId, serviceId, isLoading: isLoadingInit } = useServiceInitialization('smart-upgrade');
     const [isBooking, setIsBooking] = React.useState(false);
 
-    React.useEffect(() => {
-        (async () => {
-            try {
-                // Fetch User Profile for City ID
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) {
-                    setCityId(profileRes.data.cityId);
-                }
-
-                // Fetch Service ID for Smart Upgrade
-                const serviceRes = await apiClient.get<any[]>('/services');
-                if (serviceRes.success && serviceRes.data) {
-                    const svc = serviceRes.data.find((s: any) => s.slug === 'smart-upgrade');
-                    if (svc) setServiceId(svc.id);
-                }
-            } catch (err) {
-                console.log("Initialization failed", err);
-            }
-        })();
-    }, []);
-
     const handleUpgrade = async () => {
-        if (!cityId || !serviceId) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+        if (!isReady) {
+            Alert.alert('Error', 'Service initialization incomplete. Please check your internet connection or try logging out and back in.');
             return;
         }
 

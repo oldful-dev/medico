@@ -21,6 +21,8 @@ import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
+import { useUser } from '@/context/UserContext';
+import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { mediaService } from '@/services/api/mediaService';
@@ -56,6 +58,9 @@ export default function DoctorVisitScreen() {
     const router = useRouter();
     const { width } = useWindowDimensions();
 
+    // ─── Global State ───
+    const { isReady, cityId, serviceId, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('doctor-home-visit');
+
     // ─── State ───
     const [selectedProblem, setSelectedProblem] = React.useState<string | null>(null);
     const [selectedDoctorType, setSelectedDoctorType] = React.useState<'GP' | 'Physio'>('GP');
@@ -63,51 +68,16 @@ export default function DoctorVisitScreen() {
     const [visitType, setVisitType] = React.useState<'Home' | 'Clinic'>('Home');
 
     // ─── API State ───
-    const [cityId, setCityId] = React.useState('');
-    const [serviceId, setServiceId] = React.useState('');
-    const [address, setAddress] = React.useState('Fetching address...');
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
-    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
     const [isBooking, setIsBooking] = React.useState(false);
-
-    React.useEffect(() => {
-        (async () => {
-            try {
-                setIsLoadingInit(true);
-                const hasPermission = await locationService.requestPermission();
-                if (hasPermission) {
-                    const coords = await locationService.getCurrentLocation();
-                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
-                    setAddress(fetchedAddress);
-                } else {
-                    setAddress('');
-                }
-
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) {
-                    setCityId(profileRes.data.cityId);
-                }
-
-                const serviceRes = await apiClient.get<any[]>('/services');
-                if (serviceRes.success && serviceRes.data) {
-                    const svc = serviceRes.data.find((s: any) => s.slug === 'doctor-home-visit');
-                    if (svc) setServiceId(svc.id);
-                }
-            } catch (err) {
-                console.log('Doctor Visit init failed', err);
-            } finally {
-                setIsLoadingInit(false);
-            }
-        })();
-    }, []);
 
     const handleBookService = async () => {
         if (!selectedProblem) {
             Alert.alert('Select Problem', 'Please select a health problem first.');
             return;
         }
-        if (!cityId || !serviceId) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+        if (!isReady) {
+            Alert.alert('Error', 'Service initialization incomplete. Please check your internet connection or try logging out and back in.');
             return;
         }
         try {

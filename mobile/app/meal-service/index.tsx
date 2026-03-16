@@ -15,6 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
@@ -53,35 +54,13 @@ export default function MealServiceScreen() {
     const [spicy, setSpicy] = useState(false);
     const [otherReq, setOtherReq] = useState('');
 
-    // API state
-    const [cityId, setCityId] = useState('');
-    const [serviceId, setServiceId] = useState('');
-    const [address, setAddress] = useState('Fetching address...');
+    // Global Initialization
+    const { isReady, cityId, serviceId, address, isLoading: isLoadingInit } = useServiceInitialization('tiffin');
     const [isBooking, setIsBooking] = useState(false);
 
-    React.useEffect(() => {
-        (async () => {
-            try {
-                const hasPermission = await locationService.requestPermission();
-                if (hasPermission) {
-                    const coords = await locationService.getCurrentLocation();
-                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
-                    setAddress(fetchedAddress);
-                } else { setAddress(''); }
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) setCityId(profileRes.data.cityId);
-                const serviceRes = await apiClient.get<any[]>('/services');
-                if (serviceRes.success && serviceRes.data) {
-                    const svc = serviceRes.data.find((s: any) => s.slug === 'tiffin');
-                    if (svc) setServiceId(svc.id);
-                }
-            } catch (err) { console.log('Meal Service init failed', err); }
-        })();
-    }, []);
-
     const handleBookService = async () => {
-        if (!cityId || !serviceId) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+        if (!isReady) {
+            Alert.alert('Error', 'Service initialization incomplete. Please check your internet connection or try logging out and back in.');
             return;
         }
         try {
