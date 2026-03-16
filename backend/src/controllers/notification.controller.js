@@ -116,7 +116,26 @@ const sendCampaign = async (req, res, next) => {
     }
 };
 
+// GET /api/notifications/my  (app user)
+const getMyNotifications = async (req, res, next) => {
+    try {
+        const { page, limit, skip } = paginate(req.query);
+        const [notifications, total] = await Promise.all([
+            prisma.notificationLog.findMany({
+                where: { recipientId: req.user.id, recipientType: 'user' },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+            }),
+            prisma.notificationLog.count({ where: { recipientId: req.user.id, recipientType: 'user' } }),
+        ]);
+        return sendPaginatedResponse(res, notifications, total, page, limit);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getNotificationLogs, getTemplates, createTemplate, updateTemplate, deleteTemplate,
-    sendCampaign,
+    sendCampaign, getMyNotifications,
 };

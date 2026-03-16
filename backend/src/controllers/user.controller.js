@@ -1,3 +1,7 @@
+const prisma = require('../config/database');
+const { paginate, sendResponse, sendPaginatedResponse, generateUserId } = require('../utils/helpers');
+const { sendWelcomeNotifications } = require('../utils/notifications');
+const { generateWelcomeSLAPDF } = require('../utils/pdfGenerator');
 const { uploadFile } = require('../utils/storage.service');
 const { analyzeMedicalReport } = require('../utils/ocr.service');
 const { createAuditLog } = require('../middleware/audit');
@@ -87,6 +91,9 @@ const getUserById = async (req, res, next) => {
 const createUser = async (req, res, next) => {
     try {
         const { name, phone, email, gender, dateOfBirth, cityId, preferredLanguage } = req.body;
+
+        if (!cityId) return sendResponse(res, 400, null, 'cityId is required');
+        if (!phone) return sendResponse(res, 400, null, 'phone is required');
 
         const uniqueUserId = await generateUserId(cityId);
 

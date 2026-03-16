@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { locationService } from '@/services/device/locationService';
+import { useUser } from '@/context/UserContext';
 
 // ─── Figma-exported assets ───
 const logoSmall = require('@/assets/images/9d3e74b5e16af4e10bcec4b72af07a9d93ea14b8.png');
@@ -102,6 +103,7 @@ import { initRemoteConfig, getRemoteValue } from '@/services/firebase/firebaseCo
 export default function HomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const { profile } = useUser();
   const [currentLocationStr, setCurrentLocationStr] = React.useState('Loading...');
   const [rcLoaded, setRcLoaded] = React.useState(false);
 
@@ -160,7 +162,7 @@ export default function HomeScreen() {
   const homeServiceGrid = SERVICE_GRID.slice(0, 6);
 
   // ─── Dynamic Greeting Logic ───
-  const userName = "Shankar";
+  const userName = profile?.name?.split(' ')[0] ?? 'there';
   const currentHour = new Date().getHours();
   const greeting = currentHour >= 16 ? "Good Evening" : currentHour >= 12 ? "Good Afternoon" : "Good Morning";
 

@@ -1,8 +1,12 @@
 // Notification Routes
 const router = require('express').Router();
-const { authenticateAdmin } = require('../middleware/auth');
+const { authenticateAdmin, authenticateUser } = require('../middleware/auth');
 const ctrl = require('../controllers/notification.controller');
 
+// User-facing endpoint (authenticated app users)
+router.get('/my', authenticateUser, ctrl.getMyNotifications);
+
+// Admin-only routes below
 router.use(authenticateAdmin);
 
 router.get('/logs', ctrl.getNotificationLogs);

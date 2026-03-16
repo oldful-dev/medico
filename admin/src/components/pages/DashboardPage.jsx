@@ -12,11 +12,12 @@ import { reportAPI } from "@/lib/api";
 import { formatCurrency } from "@/lib/hooks";
 
 const chartTooltipStyle = {
-    backgroundColor: '#1a2035',
-    border: '1px solid rgba(255,255,255,0.06)',
+    backgroundColor: 'var(--bg-secondary)',
+    border: '1px solid var(--border-color)',
     borderRadius: '10px',
-    color: '#f1f5f9',
+    color: 'var(--text-primary)',
     fontSize: '12px',
+    boxShadow: 'var(--shadow-lg)',
 };
 
 export default function DashboardPage() {
@@ -83,7 +84,7 @@ export default function DashboardPage() {
                         <div className="stat-card-icon blue"><CalendarCheck size={22} /></div>
                     </div>
                     <div className="stat-card-value">{(s.todayBookings || 0).toLocaleString()}</div>
-                    <div className="stat-card-label">Today's Bookings</div>
+                    <div className="stat-card-label">Today&apos;s Bookings</div>
                 </div>
                 <div className="stat-card">
                     <div className="stat-card-header">
@@ -151,7 +152,11 @@ export default function DashboardPage() {
                                         <Pie data={serviceBreakdown} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={4} dataKey="value">
                                             {serviceBreakdown.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                                         </Pie>
-                                        <Tooltip contentStyle={chartTooltipStyle} />
+                                        <Tooltip 
+                                            contentStyle={chartTooltipStyle}
+                                            itemStyle={{ color: "var(--text-primary)" }}
+                                            labelStyle={{ color: "var(--text-secondary)", marginBottom: "4px" }}
+                                        />
                                     </PieChart>
                                 </ResponsiveContainer>
                                 <div style={{ flex: 1 }}>

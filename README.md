@@ -181,5 +181,5 @@ This project is licensed under the **ISC License**.
 ---
 
 <p align="center">
-  Made with ❤️ by the <strong>Medico</strong> team
+  Made with ❤️ by the <strong>Oldful</strong> team
 </p>
