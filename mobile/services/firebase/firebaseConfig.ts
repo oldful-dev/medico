@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getRemoteConfig, fetchAndActivate, getValue } from "firebase/remote-config";
-import { getAnalytics, logEvent as fbLogEvent } from "firebase/analytics";
+import { getAnalytics, logEvent as fbLogEvent, isSupported as isAnalyticsSupported } from "firebase/analytics";
 import { getMessaging, getToken } from "firebase/messaging";
 import { Platform } from "react-native";
 
@@ -14,14 +14,23 @@ const firebaseConfig = {
     measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID ?? "",
 };
 
-const app = initializeApp(firebaseConfig);
-
-// Helper to check if a service is available to avoid bundle-time crashes
-const getSafeService = (factory: any) => {
+// Only initialize if we have valid config
+let app: any = null;
+if (firebaseConfig.projectId) {
     try {
-        if (typeof window !== 'undefined' || Platform.OS !== 'web') {
-            return factory(app);
-        }
+        app = initializeApp(firebaseConfig);
+    } catch (e) {
+        console.warn("Firebase app initialization skipped (no config)");
+    }
+}
+
+// Helper to safely initialize Firebase services in Expo/React Native environment
+const getSafeService = (factory: any, checkFn?: () => Promise<boolean>) => {
+    if (!app) return null;
+    try {
+        // Skip in Expo web environment (no IndexedDB/browser APIs)
+        if (Platform.OS === 'web') return null;
+        return factory(app);
     } catch (e) {
         console.warn("Firebase service initialization failed:", e);
     }
@@ -29,7 +38,19 @@ const getSafeService = (factory: any) => {
 };
 
 const remoteConfig = getSafeService(getRemoteConfig);
-const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
+let analytics: any = null;
+// Only init analytics if supported and not web
+if (app && !Platform.OS.includes('web')) {
+    isAnalyticsSupported().then(supported => {
+        if (supported) {
+            try {
+                analytics = getAnalytics(app);
+            } catch (e) {
+                console.warn("Analytics init failed:", e);
+            }
+        }
+    }).catch(() => null);
+}
 const messaging = getSafeService(getMessaging);
 
 
@@ -47,11 +68,11 @@ if (remoteConfig) {
 
 export const initRemoteConfig = async () => {
     try {
-        if (remoteConfig) {
+        if (remoteConfig && app) {
             await fetchAndActivate(remoteConfig);
         }
     } catch (err) {
-        console.error("Remote Config Fetch Failed", err);
+        // Silently fail in development
     }
 };
 
@@ -70,15 +91,15 @@ export const logEvent = (eventName: string, params?: object) => {
 
 export const getFCMToken = async () => {
     try {
-        if (messaging) {
+        if (messaging && app) {
             return await getToken(messaging, { vapidKey: process.env.EXPO_PUBLIC_FIREBASE_VAPID_KEY ?? "" });
         }
         return null;
     } catch (err) {
-        console.error("FCM Token Error", err);
+        // Silently fail — FCM not available in Expo
         return null;
     }
 };
 
 
-export { app, remoteConfig, analytics };
+export { app };
