@@ -447,3 +447,27 @@ InsuranceApplication, Coupon, MediaAsset, SupportTicket, TicketMessage
 - ✅ Soft-delete patterns for data retention
 - ✅ HMAC-SHA256 Razorpay webhook verification
 - ✅ OTP rate limiting: 3 requests per 10 minutes per phone number
+
+---
+
+## Mobile App Firebase Notes
+
+Firebase warnings in dev/Expo are safe to ignore:
+```
+WARN Firebase service initialization failed: [FirebaseError: Remote Config: Indexed DB not supported...]
+WARN @firebase/analytics: Analytics not supported in this environment...
+WARN @firebase/messaging: This browser doesn't support the API's...
+```
+
+These occur because Expo/web environment lacks browser APIs (IndexedDB, window object). The `getSafeService()` wrapper handles these gracefully. App functions normally without Firebase in dev. Production native build will have full Firebase support.
+
+---
+
+## Production Deployment Checklist
+
+- [ ] Fill Firebase credentials in `mobile/.env` (8 vars from Firebase Console)
+- [ ] Push local branch to Render (`git push origin development`)
+- [ ] Run `npm run prisma:seed` on production DB to create admin
+- [ ] Verify `POST /auth/request-otp` works (Fast2SMS code deployed)
+- [ ] Test lab endpoints (`GET /labs/tests`, etc.)
+- [ ] Run smoke tests against all 73 routes
