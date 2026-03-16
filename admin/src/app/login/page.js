@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import useAuthStore from "@/store/useAuthStore";
 import { LogIn, Key, Mail, AlertCircle } from "lucide-react";
@@ -8,15 +8,25 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [loadingState, setLoadingState] = useState(false);
 
-    const login = useAuthStore((state) => state.login);
+    const { login, isAuthenticated, loading, checkAuth } = useAuthStore();
     const router = useRouter();
+
+    useEffect(() => {
+        checkAuth();
+    }, [checkAuth]);
+
+    useEffect(() => {
+        if (!loading && isAuthenticated) {
+            router.push("/dashboard");
+        }
+    }, [isAuthenticated, loading, router]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
-        setLoading(true);
+        setLoadingState(true);
 
         const res = await login(email, password);
         if (res.success) {
@@ -24,8 +34,17 @@ export default function LoginPage() {
         } else {
             setError(res.message);
         }
-        setLoading(false);
+        setLoadingState(false);
     };
+
+    if (loading) {
+        return (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "var(--bg-primary)" }}>
+                <div style={{ width: 40, height: 40, border: "3px solid var(--border-color)", borderTopColor: "var(--accent-primary)", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            </div>
+        );
+    }
 
     return (
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "var(--bg-primary)" }}>
@@ -77,8 +96,8 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    <button type="submit" className="btn btn-primary" style={{ width: "100%", marginTop: "1.5rem", padding: "12px" }} disabled={loading}>
-                        {loading ? "Signing in..." : <><LogIn size={18} /> Sign In</>}
+                    <button type="submit" className="btn btn-primary" style={{ width: "100%", marginTop: "1.5rem", padding: "12px" }} disabled={loadingState}>
+                        {loadingState ? "Signing in..." : <><LogIn size={18} /> Sign In</>}
                     </button>
 
                     <div style={{ textAlign: "center", marginTop: "1.5rem" }}>

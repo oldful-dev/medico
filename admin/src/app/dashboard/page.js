@@ -22,9 +22,11 @@ import ServerUIPage from "@/components/pages/ServerUIPage";
 import SupportPage from "@/components/pages/SupportPage";
 import SmartFeaturesPage from "@/components/pages/SmartFeaturesPage";
 import HomeEssentialsPage from "@/components/pages/HomeEssentialsPage";
+import ProfilePage from "@/components/pages/ProfilePage";
 
 const pageComponents = {
     dashboard: DashboardPage,
+    profile: ProfilePage,
     roles: RolesPage,
     cities: CitiesPage,
     users: UsersPage,

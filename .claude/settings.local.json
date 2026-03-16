@@ -13,7 +13,19 @@
       "Read(//d/codes/MERN/medico/**)",
       "Bash(grep -rn \"twilio\\\\|Twilio\" /d/codes/MERN/medico/backend/ --include=*.js --include=*.json --exclude-dir=node_modules --exclude-dir=logs 2)",
       "Bash(/dev/null echo:*)",
-      "Bash(git -C /d/codes/MERN/medico log --oneline)"
+      "Bash(git -C /d/codes/MERN/medico log --oneline)",
+      "Bash(find d:codesMERNmedico -type f -name *.js -o -name *.jsx -o -name *.ts -o -name *.tsx -o -name *.json -o -name *.yaml -o -name .env* -o -name schema.prisma)",
+      "Bash(BASE=\"https://medico-crzu.onrender.com/api\" __NEW_LINE_5ca840a3ab0963aa__ echo \"=== Services ===\")",
+      "Bash(curl -s \"$BASE/services\" --max-time 15)",
+      "Bash(python3 -c \":*)",
+      "Bash(/dev/null __NEW_LINE_5ca840a3ab0963aa__ echo -e '\\\\n=== Products ===')",
+      "Bash(curl -s $BASE/products --max-time 15)",
+      "Bash(/dev/null __NEW_LINE_5ca840a3ab0963aa__ echo -e '\\\\n=== Categories ===')",
+      "Bash(curl -s $BASE/categories --max-time 15)",
+      "Bash(/dev/null __NEW_LINE_5ca840a3ab0963aa__ echo -e '\\\\n=== Payment Methods ===')",
+      "Bash(curl -s $BASE/payments/methods --max-time 15 __NEW_LINE_5ca840a3ab0963aa__ echo -e '\\\\n=== Insurance Plans ===')",
+      "Bash(curl -s $BASE/insurance/plans --max-time 15)",
+      "Bash(grep -v \"^$\")"
     ]
   }
 }

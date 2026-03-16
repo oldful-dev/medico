@@ -1,23 +1,17 @@
 require("dotenv").config();
-const { S3Client, ListObjectsV2Command } = require("@aws-sdk/client-s3");
+const vision = require("@google-cloud/vision");
 
-const client = new S3Client({
-    region: "auto",
-    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-    },
+const client = new vision.ImageAnnotatorClient({
+    keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS
 });
 
-async function test() {
-    const res = await client.send(
-        new ListObjectsV2Command({
-            Bucket: process.env.R2_BUCKET_NAME,
-        })
-    );
+async function detectText() {
+    const [result] = await client.textDetection("./test.jpg");
 
-    console.log(res);
+    const text = result.textAnnotations[0]?.description;
+
+    console.log("Detected text:");
+    console.log(text);
 }
 
-test();
+detectText();

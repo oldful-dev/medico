@@ -4,22 +4,38 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import useAuthStore from "@/store/useAuthStore";
+import useThemeStore from "@/store/useThemeStore";
 
 export default function AdminLayout({ children, currentPage, setCurrentPage }) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const router = useRouter();
     const { isAuthenticated, loading, checkAuth } = useAuthStore();
+    const { theme } = useThemeStore();
+
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+    }, [theme]);
 
     useEffect(() => {
         checkAuth();
-    }, []);
+    }, [checkAuth]);
 
     useEffect(() => {
         if (!loading && !isAuthenticated) {
             router.push("/login");
         }
     }, [isAuthenticated, loading, router]);
+
+    // Prevent body scroll when mobile sidebar is open
+    useEffect(() => {
+        if (sidebarOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => { document.body.style.overflow = 'unset'; };
+    }, [sidebarOpen]);
 
     if (loading || !isAuthenticated) {
         return (
@@ -31,7 +47,7 @@ export default function AdminLayout({ children, currentPage, setCurrentPage }) {
     }
 
     return (
-        <div className="admin-layout">
+        <div className={`admin-layout ${sidebarCollapsed ? 'collapsed' : ''} ${sidebarOpen ? 'sidebar-open' : ''}`}>
             <Sidebar
                 collapsed={sidebarCollapsed}
                 open={sidebarOpen}
@@ -39,10 +55,11 @@ export default function AdminLayout({ children, currentPage, setCurrentPage }) {
                 setCurrentPage={setCurrentPage}
                 onClose={() => setSidebarOpen(false)}
             />
-            <div className="main-content" style={{ marginLeft: sidebarCollapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)' }}>
+            <div className="main-content">
                 <Header
                     onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
                     onMobileMenu={() => setSidebarOpen(!sidebarOpen)}
+                    setCurrentPage={setCurrentPage}
                 />
                 <div className="page-content page-enter">
                     {children}

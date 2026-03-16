@@ -35,6 +35,7 @@ const insuranceRoutes = require('./routes/insurance.routes');
 const supportRoutes = require('./routes/support.routes');
 const mediaRoutes = require('./routes/media.routes');
 const webhookRoutes = require('./routes/webhook.routes');
+const labRoutes = require('./routes/lab.routes');
 
 // Initialize cron jobs
 const { initCronJobs } = require('./cron');
@@ -106,6 +107,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/insurance', insuranceRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/labs', labRoutes);
 
 // ─── Error Handling ─────────────────────────────────────
 app.use(notFoundHandler);

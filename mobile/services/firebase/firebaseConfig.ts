@@ -5,13 +5,13 @@ import { getMessaging, getToken } from "firebase/messaging";
 import { Platform } from "react-native";
 
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID",
-    measurementId: "YOUR_MEASUREMENT_ID"
+    apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? "",
+    authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "",
+    projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ?? "",
+    storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "",
+    messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? "",
+    appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID ?? "",
+    measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID ?? "",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -71,7 +71,7 @@ export const logEvent = (eventName: string, params?: object) => {
 export const getFCMToken = async () => {
     try {
         if (messaging) {
-            return await getToken(messaging, { vapidKey: 'YOUR_VAPID_KEY' });
+            return await getToken(messaging, { vapidKey: process.env.EXPO_PUBLIC_FIREBASE_VAPID_KEY ?? "" });
         }
         return null;
     } catch (err) {

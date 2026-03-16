@@ -4,3 +4,8 @@ dist/
 *.log
 .prisma/
 google-vision-key.json
+.env.local
+firebase_account_config.json
+test.jpg
+test.txt
+test.js
