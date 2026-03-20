@@ -49,6 +49,11 @@ router.post('/verify-otp', [
     body('otp').isLength({ min: 4, max: 6 }), // Allow 4 to 6 digits
 ], validate, ctrl.verifyOTP);
 
+router.post('/google', [
+    body('idToken').notEmpty().withMessage('Google ID token required'),
+    body('email').isEmail().withMessage('Valid email required'),
+], validate, ctrl.googleSignIn);
+
 router.post('/user/refresh', ctrl.userRefreshToken);
 
 // Logout (both admin and user)

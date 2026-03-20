@@ -90,7 +90,7 @@ const getUserById = async (req, res, next) => {
 // POST /api/users  (Admin creates user OR post-OTP registration)
 const createUser = async (req, res, next) => {
     try {
-        const { name, phone, email, gender, dateOfBirth, cityId, preferredLanguage } = req.body;
+        const { name, phone, email, gender, dateOfBirth, cityId, preferredLanguage, profileImageUrl, emergencyNumber, flatNumber, addressLine } = req.body;
 
         if (!cityId) return sendResponse(res, 400, null, 'cityId is required');
         if (!phone) return sendResponse(res, 400, null, 'phone is required');
@@ -107,9 +107,46 @@ const createUser = async (req, res, next) => {
                 dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
                 cityId,
                 preferredLanguage: preferredLanguage || 'en',
+                profileImageUrl: profileImageUrl || null,
             },
             include: { city: { select: { name: true, code: true } } },
         });
+
+        // Create default address if provided during registration
+        if (addressLine) {
+            try {
+                await prisma.address.create({
+                    data: {
+                        userId: user.id,
+                        label: 'Home',
+                        line1: flatNumber || '',
+                        line2: addressLine,
+                        cityName: user.city.name,
+                        state: '',
+                        pincode: '',
+                        isDefault: true,
+                    },
+                });
+            } catch (addrErr) {
+                console.error('Address creation during registration failed:', addrErr);
+            }
+        }
+
+        // Create emergency contact if provided
+        if (emergencyNumber) {
+            try {
+                await prisma.emergencyContact.create({
+                    data: {
+                        userId: user.id,
+                        name: 'Emergency',
+                        phone: emergencyNumber,
+                        relationship: 'Other',
+                    },
+                });
+            } catch (ecErr) {
+                console.error('Emergency contact creation during registration failed:', ecErr);
+            }
+        }
 
         // Generate Welcome SLA PDF
         try {

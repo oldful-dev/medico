@@ -291,6 +291,86 @@ const logout = async (req, res, next) => {
     }
 };
 
+/**
+ * POST /api/auth/google
+ * Google Sign-In: verify Google ID token, find or create user
+ */
+const googleSignIn = async (req, res, next) => {
+    try {
+        const { idToken, email, name, photoUrl } = req.body;
+
+        if (!idToken || !email) {
+            return res.status(400).json({ success: false, message: 'ID token and email are required' });
+        }
+
+        // Verify the Google ID token via Firebase Admin
+        let decodedToken;
+        try {
+            decodedToken = await firebaseAuth.verifyIdToken(idToken);
+        } catch (err) {
+            logger.warn('Google ID token verification failed:', err.message);
+            return res.status(401).json({ success: false, message: 'Invalid Google token' });
+        }
+
+        const googleEmail = decodedToken.email || email;
+
+        // Look up user by email
+        let user = await prisma.user.findFirst({ where: { email: googleEmail } });
+        let isNewUser = !user;
+
+        if (isNewUser) {
+            // Return that it's a new user — frontend will collect phone + profile
+            return res.json({
+                success: true,
+                data: {
+                    isNewUser: true,
+                    email: googleEmail,
+                    name: decodedToken.name || name || '',
+                    photoUrl: decodedToken.picture || photoUrl || '',
+                },
+            });
+        }
+
+        // Existing user — issue tokens
+        const payload = { id: user.id, type: 'user' };
+        const accessToken = generateAccessToken(payload);
+        const refreshToken = generateRefreshToken(payload);
+
+        let firebaseToken = null;
+        try {
+            firebaseToken = await firebaseAuth.createCustomToken(user.id, {
+                phone: user.phone,
+                role: 'user',
+            });
+        } catch (err) {
+            logger.warn('Firebase custom token generation failed:', err.message);
+        }
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { refreshToken },
+        });
+
+        res.json({
+            success: true,
+            data: {
+                isNewUser: false,
+                accessToken,
+                refreshToken,
+                firebaseToken,
+                user: {
+                    id: user.id,
+                    uniqueUserId: user.uniqueUserId,
+                    name: user.name,
+                    phone: user.phone,
+                },
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     adminLogin,
     adminRegister,
@@ -299,4 +379,5 @@ module.exports = {
     verifyOTP,
     userRefreshToken,
     logout,
+    googleSignIn,
 };

@@ -27,7 +27,7 @@
 *.app/
 *.exe
 *.dmg
-
+.claude
 # ───── Expo / React Native ─────
 mobile/.expo/
 mobile/web-build/
@@ -92,3 +92,4 @@ RedcliffeLabs API Documentation.pdf
 .gemini/
 backend/src/config/google-vision-key.json
 backend/src/config/firebase-service-account.json
+./extract

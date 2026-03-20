@@ -52,7 +52,12 @@
       "Bash(node backend/prisma/seed-home-sdui.js)",
       "Bash(grep -E \"\\\\.js$\")",
       "Bash(find d:/codes/MERN/medico/mobile -type f -name *otp* -o -name *verif* -o -name *splash*)",
-      "Bash(ls -la \"d:/codes/MERN/medico/mobile/app/\\(auth\\)/\")"
+      "Bash(ls -la \"d:/codes/MERN/medico/mobile/app/\\(auth\\)/\")",
+      "Bash(npx eas:*)",
+      "WebFetch(domain:expo.dev)",
+      "Bash(npm list:*)",
+      "Bash(node -e \"const p = require\\(''./package.json''\\); const deps = {...p.dependencies, ...p.devDependencies}; [''expo-auth-session'', ''expo-web-browser'', ''expo-image-picker'', ''@react-native-community/datetimepicker'', ''expo-crypto''].forEach\\(d => console.log\\(d + '':'', deps[d] || ''MISSING''\\)\\)\")",
+      "Bash(node -e \"const c = require\\(''./app.json''\\); console.log\\(''Owner:'', c.expo.owner || ''NOT SET''\\); console.log\\(''Slug:'', c.expo.slug || ''NOT SET''\\); console.log\\(''Scheme:'', c.expo.scheme || ''NOT SET''\\)\")"
     ]
   }
 }

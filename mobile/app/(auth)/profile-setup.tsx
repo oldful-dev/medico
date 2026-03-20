@@ -12,28 +12,45 @@ import {
     Platform,
     KeyboardAvoidingView,
     Alert,
+    ActionSheetIOS,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { FormInput } from '@/components/common';
 import { userService, cityService, ApiError } from '@/services/api';
+import { mediaService } from '@/services/api/mediaService';
 import { useAuth } from '@/context/AuthContext';
 
 // Figma-exported assets
 const logoImage = require('@/assets/images/2549b5ede370bbb67a088920cac9a8719fec5968.png');
-const profilePhoto = require('@/assets/images/5ee16de31c7d04e701fcca78f59c060b6f999c60.png');
+const defaultProfilePhoto = require('@/assets/images/5ee16de31c7d04e701fcca78f59c060b6f999c60.png');
 const checkmarkImage = require('@/assets/images/5a8dfb52053e366f8cbd3f09d8e940ff289c61af.png');
+
+const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
+const LANGUAGE_OPTIONS = ['English', 'Hindi', 'Kannada', 'Tamil', 'Telugu', 'Bengali'];
 
 export default function ProfileSetupScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const passedPhone = typeof params.phone === 'string' ? params.phone : '';
+    const googleEmail = typeof params.googleEmail === 'string' ? params.googleEmail : '';
+    const googleName = typeof params.googleName === 'string' ? params.googleName : '';
+    const googlePhoto = typeof params.googlePhoto === 'string' ? params.googlePhoto : '';
     const { login } = useAuth();
 
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
+    const [name, setName] = useState(googleName);
+    const [email, setEmail] = useState(googleEmail);
+    const [profileImageUri, setProfileImageUri] = useState<string | null>(googlePhoto || null);
+    const [gender, setGender] = useState('');
+    const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [language, setLanguage] = useState('English');
+    const [flatNumber, setFlatNumber] = useState('');
+    const [emergencyNumber, setEmergencyNumber] = useState('');
     const [locationAddress, setLocationAddress] = useState('Fetching GPS Location...');
     const [locationDenied, setLocationDenied] = useState(false);
     const [agreed, setAgreed] = useState(false);
@@ -89,6 +106,51 @@ export default function ProfileSetupScreen() {
         fetchDefaultCity();
     }, []);
 
+    const handlePickImage = async () => {
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+        if (!result.canceled && result.assets[0]) {
+            setProfileImageUri(result.assets[0].uri);
+        }
+    };
+
+    const handleSelectGender = () => {
+        if (Platform.OS === 'ios') {
+            ActionSheetIOS.showActionSheetWithOptions(
+                { options: ['Cancel', ...GENDER_OPTIONS], cancelButtonIndex: 0 },
+                (idx) => { if (idx > 0) setGender(GENDER_OPTIONS[idx - 1]); }
+            );
+        } else {
+            Alert.alert('Select Gender', '', GENDER_OPTIONS.map(g => ({
+                text: g, onPress: () => setGender(g),
+            })).concat({ text: 'Cancel', onPress: () => {}, style: 'cancel' } as any));
+        }
+    };
+
+    const handleSelectLanguage = () => {
+        if (Platform.OS === 'ios') {
+            ActionSheetIOS.showActionSheetWithOptions(
+                { options: ['Cancel', ...LANGUAGE_OPTIONS], cancelButtonIndex: 0 },
+                (idx) => { if (idx > 0) setLanguage(LANGUAGE_OPTIONS[idx - 1]); }
+            );
+        } else {
+            Alert.alert('Select Language', '', LANGUAGE_OPTIONS.map(l => ({
+                text: l, onPress: () => setLanguage(l),
+            })).concat({ text: 'Cancel', onPress: () => {}, style: 'cancel' } as any));
+        }
+    };
+
+    const formatDOB = (date: Date) => {
+        const d = date.getDate().toString().padStart(2, '0');
+        const m = (date.getMonth() + 1).toString().padStart(2, '0');
+        const y = date.getFullYear();
+        return `${d}/${m}/${y}`;
+    };
+
     const handleSaveAndContinue = async () => {
         if (!agreed) {
             Alert.alert("Permission Denied", "Please agree to the Policies and Terms to continue.");
@@ -105,13 +167,34 @@ export default function ProfileSetupScreen() {
 
         setIsLoading(true);
         try {
+            // Upload profile image if user picked one
+            let profileImageUrl: string | undefined;
+            if (profileImageUri && !profileImageUri.startsWith('http')) {
+                try {
+                    const urls = await mediaService.uploadMultipleMedia([profileImageUri], 'profile-avatars');
+                    if (urls.length > 0) profileImageUrl = urls[0];
+                } catch (imgErr) {
+                    console.warn('Profile image upload failed:', imgErr);
+                }
+            } else if (profileImageUri?.startsWith('http')) {
+                profileImageUrl = profileImageUri; // Google photo URL
+            }
+
+            const langCode = language === 'Hindi' ? 'hi' : language === 'Kannada' ? 'kn' : language === 'Tamil' ? 'ta' : language === 'Telugu' ? 'te' : language === 'Bengali' ? 'bn' : 'en';
+
             const response = await userService.createUser({
                 name: name.trim(),
                 phone: passedPhone,
                 email: email.trim() || undefined,
                 cityId: cityId,
-                preferredLanguage: 'en',
-            });
+                preferredLanguage: langCode,
+                gender: gender.toLowerCase() || undefined,
+                dateOfBirth: dateOfBirth?.toISOString() || undefined,
+                profileImageUrl,
+                emergencyNumber: emergencyNumber.trim() ? `+91${emergencyNumber}` : undefined,
+                flatNumber: flatNumber.trim() || undefined,
+                addressLine: locationAddress !== 'Fetching GPS Location...' ? locationAddress : undefined,
+            } as any);
 
             if (response.success && response.data) {
                 // The `createUser` service is now updated to return accessToken and refreshToken
@@ -167,33 +250,62 @@ export default function ProfileSetupScreen() {
                             value={name}
                             onChangeText={setName}
                         />
-                        <View style={styles.profilePhotoContainer}>
-                            <Image source={profilePhoto} style={styles.profilePhoto} />
-                        </View>
+                        <TouchableOpacity style={styles.profilePhotoContainer} onPress={handlePickImage} activeOpacity={0.7}>
+                            <Image
+                                source={profileImageUri ? { uri: profileImageUri } : defaultProfilePhoto}
+                                style={styles.profilePhoto}
+                            />
+                            <View style={styles.cameraOverlay}>
+                                <Ionicons name="camera" size={16} color="#FFFFFF" />
+                            </View>
+                        </TouchableOpacity>
                     </View>
 
                     {/* ─── Row 2: Language ─── */}
-                    <FormInput
-                        placeholder="Language"
-                        showChevron
-                        style={styles.fullWidthInput}
-                        editable={false}
-                    />
+                    <TouchableOpacity onPress={handleSelectLanguage} activeOpacity={0.7}>
+                        <FormInput
+                            placeholder="Language"
+                            showChevron
+                            style={styles.fullWidthInput}
+                            editable={false}
+                            value={language}
+                        />
+                    </TouchableOpacity>
 
                     {/* ─── Row 2b: DOB + Gender ─── */}
                     <View style={styles.row}>
-                        <FormInput
-                            placeholder="DOB"
-                            style={styles.halfInput}
-                            editable={false}
-                        />
-                        <FormInput
-                            placeholder="Gender"
-                            showChevron
-                            style={styles.halfInput}
-                            editable={false}
-                        />
+                        <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowDatePicker(true)} activeOpacity={0.7}>
+                            <FormInput
+                                placeholder="DOB"
+                                style={styles.halfInput}
+                                editable={false}
+                                value={dateOfBirth ? formatDOB(dateOfBirth) : ''}
+                            />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={{ flex: 1 }} onPress={handleSelectGender} activeOpacity={0.7}>
+                            <FormInput
+                                placeholder="Gender"
+                                showChevron
+                                style={styles.halfInput}
+                                editable={false}
+                                value={gender}
+                            />
+                        </TouchableOpacity>
                     </View>
+
+                    {showDatePicker && (
+                        <DateTimePicker
+                            value={dateOfBirth || new Date(2000, 0, 1)}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            maximumDate={new Date()}
+                            minimumDate={new Date(1920, 0, 1)}
+                            onChange={(event, date) => {
+                                setShowDatePicker(Platform.OS === 'ios');
+                                if (date) setDateOfBirth(date);
+                            }}
+                        />
+                    )}
 
                     {/* ─── Row 3: Email ─── */}
                     <FormInput
@@ -211,7 +323,7 @@ export default function ProfileSetupScreen() {
                         prefix="+91"
                         keyboardType="phone-pad"
                         style={styles.fullWidthInput}
-                        editable={false}
+                        editable={!passedPhone}
                         fontSize={13}
                     />
 
@@ -238,6 +350,8 @@ export default function ProfileSetupScreen() {
                         <FormInput
                             placeholder="Type Flat / House Number"
                             style={[styles.fullWidthInput, { marginTop: 15 }]}
+                            value={flatNumber}
+                            onChangeText={setFlatNumber}
                         />
                     </View>
 
@@ -248,6 +362,8 @@ export default function ProfileSetupScreen() {
                         keyboardType="phone-pad"
                         style={styles.fullWidthInput}
                         fontSize={13}
+                        value={emergencyNumber}
+                        onChangeText={setEmergencyNumber}
                     />
 
                     {/* ─── Row 7: Auto ID ─── */}
@@ -374,6 +490,14 @@ const styles = StyleSheet.create({
     profilePhoto: {
         width: '100%',
         height: '100%',
+    },
+    cameraOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: 12,
+        padding: 4,
     },
 
     /* ─── Row 2: Flex Inputs ─── */

@@ -1,6 +1,6 @@
 // Login Screen — Mobile OTP + Social Login (no password)
 // Flow: Enter mobile → Request OTP → Inline OTP boxes → Login → Home
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View,
     Text,
@@ -14,18 +14,25 @@ import {
     KeyboardAvoidingView,
     Platform,
     Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 import { OTPInput } from '@/components/common';
 import { Colors, Fonts, FontSize, Radius } from '@/constants/theme';
 import { authService, ApiError } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
+WebBrowser.maybeCompleteAuthSession();
 
 // Figma-exported assets
 const logoImage = require('@/assets/images/2549b5ede370bbb67a088920cac9a8719fec5968.png');
+
+// Google OAuth config
+const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '';
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -38,6 +45,8 @@ export default function LoginScreen() {
     const [timer, setTimer] = useState(30);
     const [canResend, setCanResend] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+    const isVerifyingRef = useRef(false);
 
     // Animation for OTP section reveal
     const [otpAnim] = useState(new Animated.Value(0));
@@ -103,8 +112,11 @@ export default function LoginScreen() {
         }
     }, [phoneNumber]);
 
-    const handleLogin = useCallback(async () => {
-        if (otpValue.length === 4) { // Reverting to 4 digits as per UI requirement
+    const handleOTPComplete = useCallback(async (otp: string) => {
+        setOtpValue(otp);
+        // Auto-trigger login as soon as all 4 digits are filled
+        if (otp.length === 4 && !isVerifyingRef.current) {
+            isVerifyingRef.current = true;
             setIsLoading(true);
             Keyboard.dismiss();
 
@@ -112,44 +124,103 @@ export default function LoginScreen() {
                 const formattedPhone = `+91${phoneNumber}`;
                 const response = await authService.verifyOTP({
                     phoneNumber: formattedPhone,
-                    otp: otpValue
+                    otp,
                 });
 
                 if (response.data?.isNewUser) {
-                    // Route to profile setup for new users
                     router.replace({
                         pathname: '/(auth)/profile-setup',
-                        params: { phone: formattedPhone }
+                        params: { phone: formattedPhone },
                     });
                 } else if (response.data?.accessToken && response.data?.refreshToken && response.data?.user) {
-                    // Existing user - Persist tokens to secure storage and global state
                     await login(
                         response.data.accessToken,
                         response.data.refreshToken,
-                        response.data.user.id
+                        response.data.user.id,
                     );
-
-                    // Route directly to tabs (wipes auth sequence from history)
                     router.replace('/(tabs)');
                 } else {
-                    throw new Error("Invalid response from server");
+                    throw new Error('Invalid response from server');
                 }
             } catch (error) {
                 const apiError = error as ApiError;
                 Alert.alert('Error', apiError.message || 'Invalid or expired OTP');
             } finally {
                 setIsLoading(false);
+                isVerifyingRef.current = false;
             }
-        } else {
-            Alert.alert('Invalid OTP', 'Please enter a valid 4-digit OTP.');
         }
-    }, [otpValue, phoneNumber, router]);
+    }, [phoneNumber, router, login]);
 
-    const handleOTPComplete = useCallback((otp: string) => {
-        setOtpValue(otp);
-        // We do not auto-login to let user press the button safely, 
-        // or we can call handleLogin via an effect, but explicit press is better for complex async.
-    }, []);
+    // ─── Google Sign-In ───
+    const handleGoogleSignIn = useCallback(async () => {
+        if (isGoogleLoading) return;
+        setIsGoogleLoading(true);
+        try {
+            // Use Firebase Auth's Google provider via expo-auth-session
+            const redirectUri = AuthSession.makeRedirectUri({ scheme: 'oldful' });
+            const discovery = {
+                authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+                tokenEndpoint: 'https://oauth2.googleapis.com/token',
+            };
+
+            const request = new AuthSession.AuthRequest({
+                clientId: GOOGLE_CLIENT_ID,
+                redirectUri,
+                scopes: ['openid', 'profile', 'email'],
+                responseType: AuthSession.ResponseType.IdToken,
+                extraParams: { nonce: Math.random().toString(36).substring(2) },
+            });
+
+            const result = await request.promptAsync(discovery);
+
+            if (result.type !== 'success' || !result.params?.id_token) {
+                if (result.type !== 'dismiss') {
+                    Alert.alert('Google Sign-In', 'Sign-in was cancelled or failed.');
+                }
+                return;
+            }
+
+            const idToken = result.params.id_token;
+
+            // Decode basic info from the JWT payload (for display/backend)
+            const payloadBase64 = idToken.split('.')[1];
+            const payload = JSON.parse(atob(payloadBase64));
+
+            // Send to backend
+            const response = await authService.googleSignIn({
+                idToken,
+                email: payload.email,
+                name: payload.name,
+                photoUrl: payload.picture,
+            });
+
+            if (response.data?.isNewUser) {
+                router.replace({
+                    pathname: '/(auth)/profile-setup',
+                    params: {
+                        googleEmail: response.data.email || '',
+                        googleName: response.data.name || '',
+                        googlePhoto: response.data.photoUrl || '',
+                    },
+                });
+            } else if (response.data?.accessToken && response.data?.refreshToken && response.data?.user) {
+                await login(
+                    response.data.accessToken,
+                    response.data.refreshToken,
+                    response.data.user.id,
+                );
+                router.replace('/(tabs)');
+            } else {
+                Alert.alert('Error', 'Google sign-in failed. Please try again.');
+            }
+        } catch (error) {
+            console.error('Google sign-in error:', error);
+            Alert.alert('Error', 'Google sign-in failed. Please try again.');
+        } finally {
+            setIsGoogleLoading(false);
+        }
+    }, [isGoogleLoading, router, login]);
 
     const formatTimer = (s: number) => {
         const mins = Math.floor(s / 60);
@@ -256,15 +327,13 @@ export default function LoginScreen() {
                                 )}
                             </View>
 
-                            {/* LOGIN Button */}
-                            <TouchableOpacity
-                                style={[styles.loginButton, isLoading && { opacity: 0.7 }]}
-                                activeOpacity={0.8}
-                                onPress={handleLogin}
-                                disabled={isLoading}
-                            >
-                                <Text style={styles.loginButtonText}>{isLoading ? 'VERIFYING...' : 'LOGIN'}</Text>
-                            </TouchableOpacity>
+                            {/* Auto-verifying indicator */}
+                            {isLoading && (
+                                <View style={styles.verifyingRow}>
+                                    <ActivityIndicator size="small" color={Colors.primary} />
+                                    <Text style={styles.verifyingText}>Verifying...</Text>
+                                </View>
+                            )}
                         </Animated.View>
                     )}
 
@@ -278,9 +347,20 @@ export default function LoginScreen() {
                     </View>
 
                     {/* ─── Social Login Buttons ─── */}
-                    <TouchableOpacity style={styles.socialButton} activeOpacity={0.7}>
-                        <Text style={styles.googleIcon}>G</Text>
-                        <Text style={styles.socialButtonText}>Continue with Google</Text>
+                    <TouchableOpacity
+                        style={[styles.socialButton, isGoogleLoading && { opacity: 0.6 }]}
+                        activeOpacity={0.7}
+                        onPress={handleGoogleSignIn}
+                        disabled={isGoogleLoading}
+                    >
+                        {isGoogleLoading ? (
+                            <ActivityIndicator size="small" color={Colors.primary} />
+                        ) : (
+                            <>
+                                <Text style={styles.googleIcon}>G</Text>
+                                <Text style={styles.socialButtonText}>Continue with Google</Text>
+                            </>
+                        )}
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.socialButton} activeOpacity={0.7}>
@@ -453,22 +533,19 @@ const styles = StyleSheet.create({
         color: '#9C9C9C',
     },
 
-    /* ─── LOGIN Button ─── */
-    loginButton: {
-        width: '100%',
-        height: 55,
-        borderRadius: 27.5,
-        backgroundColor: Colors.primary,
-        borderWidth: 1,
-        borderColor: Colors.primaryDark,
-        justifyContent: 'center',
+    /* ─── Verifying indicator ─── */
+    verifyingRow: {
+        flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
         marginBottom: 8,
+        paddingVertical: 12,
     },
-    loginButtonText: {
-        fontFamily: Fonts.bold,
-        fontSize: FontSize.heading2,
-        color: Colors.textWhite,
+    verifyingText: {
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.body,
+        color: Colors.primary,
     },
 
     /* ─── OR Divider ─── */
