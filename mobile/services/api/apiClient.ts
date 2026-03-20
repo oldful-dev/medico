@@ -7,7 +7,7 @@
 import { Platform } from 'react-native';
 
 // Android emulator uses 10.0.2.2 for localhost; iOS simulator uses localhost
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://medico-crzu.onrender.com/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://oldful-dev.onrender.com/api';
 
 interface RequestConfig {
     method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
