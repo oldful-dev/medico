@@ -303,16 +303,38 @@ const googleSignIn = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'ID token and email are required' });
         }
 
-        // Verify the Google ID token via Firebase Admin
-        let decodedToken;
-        try {
-            decodedToken = await firebaseAuth.verifyIdToken(idToken);
-        } catch (err) {
-            logger.warn('Google ID token verification failed:', err.message);
-            return res.status(401).json({ success: false, message: 'Invalid Google token' });
-        }
+        // Try Firebase ID token verification first, then fall back to Google userinfo
+        let googleEmail = email;
+        let googleName = name || '';
+        let googlePhoto = photoUrl || '';
 
-        const googleEmail = decodedToken.email || email;
+        try {
+            const decodedToken = await firebaseAuth.verifyIdToken(idToken);
+            googleEmail = decodedToken.email || email;
+            googleName = decodedToken.name || name || '';
+            googlePhoto = decodedToken.picture || photoUrl || '';
+        } catch (firebaseErr) {
+            // idToken might be a Google access token — verify via Google userinfo API
+            logger.debug('Firebase verifyIdToken failed, trying Google userinfo:', firebaseErr.message);
+            try {
+                const userInfoRes = await fetch('https://www.googleapis.com/userinfo/v2/me', {
+                    headers: { Authorization: `Bearer ${idToken}` },
+                });
+                if (!userInfoRes.ok) {
+                    return res.status(401).json({ success: false, message: 'Invalid Google token' });
+                }
+                const userInfo = await userInfoRes.json();
+                if (!userInfo.email || userInfo.email.toLowerCase() !== email.toLowerCase()) {
+                    return res.status(401).json({ success: false, message: 'Email mismatch in Google token' });
+                }
+                googleEmail = userInfo.email;
+                googleName = userInfo.name || name || '';
+                googlePhoto = userInfo.picture || photoUrl || '';
+            } catch (fetchErr) {
+                logger.warn('Google userinfo verification also failed:', fetchErr.message);
+                return res.status(401).json({ success: false, message: 'Invalid Google token' });
+            }
+        }
 
         // Look up user by email
         let user = await prisma.user.findFirst({ where: { email: googleEmail } });
@@ -325,8 +347,8 @@ const googleSignIn = async (req, res, next) => {
                 data: {
                     isNewUser: true,
                     email: googleEmail,
-                    name: decodedToken.name || name || '',
-                    photoUrl: decodedToken.picture || photoUrl || '',
+                    name: googleName,
+                    photoUrl: googlePhoto,
                 },
             });
         }
