@@ -85,9 +85,10 @@ parse_api_list.js
 *.ps1
 API_LIST.pdf
 OLDFUL API FILE.pdf
+RedcliffeLabs API Documentation.pdf
 
 # ───── Misc ─────
 *.orig.*
 .gemini/
 backend/src/config/google-vision-key.json
-backend/src/config/firebase-service-account.json
+backend/src/config/firebase-service-account.json

@@ -4,7 +4,7 @@
 
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate, generateBookingCode } = require('../utils/helpers');
-const { bookLabTestSlot } = require('../utils/redcliffe.service');
+const { sendPushToUser } = require('../utils/pushNotification.service');
 
 // GET /api/bookings
 const getBookings = async (req, res, next) => {
@@ -91,19 +91,8 @@ const createBooking = async (req, res, next) => {
         const service = await prisma.service.findUnique({ where: { id: serviceId } });
         if (!service) return res.status(404).json({ success: false, message: 'Service not found' });
 
-        let redcliffeDetails = null;
-
-        // Redcliffe Labs Integration for Blood Tests
-        if (service.serviceType === 'BLOOD_TEST') {
-            const user = await prisma.user.findUnique({ where: { id: finalUserId } });
-            redcliffeDetails = await bookLabTestSlot({
-                patientName: user.name,
-                patientPhone: user.phone,
-                testIds: requirements || [], // Ensure 'requirements' carries Redcliffe Test IDs
-                scheduledDate,
-                addressLine,
-            });
-        }
+        // Note: BLOOD_TEST bookings go through /api/labs/book (2-step Redcliffe flow).
+        // The generic booking controller handles all other service types.
 
         const booking = await prisma.booking.create({
             data: {
@@ -127,7 +116,7 @@ const createBooking = async (req, res, next) => {
                 dropAddress,
                 vehicleType,
                 amount: amount || 0,
-                formDataJson: redcliffeDetails ? { ...formDataJson, redcliffeOrder: redcliffeDetails } : formDataJson,
+                formDataJson: formDataJson || null,
                 // Auto-set SLA deadline (4 hours from now)
                 slaDeadline: new Date(Date.now() + 4 * 60 * 60 * 1000),
             },
@@ -135,6 +124,13 @@ const createBooking = async (req, res, next) => {
                 user: { select: { name: true, phone: true } },
                 service: { select: { name: true, slug: true, icon: true } },
             },
+        });
+
+        // Send push notification for booking confirmation
+        await sendPushToUser(finalUserId, {
+            title: 'Booking Confirmed',
+            body: `Your ${booking.service.name} booking (${bookingCode}) has been placed.`,
+            data: { type: 'booking_created', bookingId: booking.id, bookingCode },
         });
 
         sendResponse(res, 201, booking, 'Booking created successfully');
@@ -152,6 +148,14 @@ const assignCaregiver = async (req, res, next) => {
             data: { caregiverId, status: 'ASSIGNED' },
             include: { caregiver: { select: { name: true } } },
         });
+
+        // Notify user that a caregiver has been assigned
+        await sendPushToUser(booking.userId, {
+            title: 'Caregiver Assigned',
+            body: `${booking.caregiver.name} has been assigned to your booking.`,
+            data: { type: 'caregiver_assigned', bookingId: booking.id },
+        });
+
         sendResponse(res, 200, booking, 'Caregiver assigned');
     } catch (error) {
         next(error);
@@ -185,6 +189,22 @@ const updateBookingStatus = async (req, res, next) => {
             where: { id: req.params.id },
             data,
         });
+
+        // Notify user of status change via push
+        const statusMessages = {
+            IN_PROGRESS: 'Your service is now in progress.',
+            COMPLETED: 'Your service has been completed. Thank you!',
+            CANCELLED: 'Your booking has been cancelled.',
+            SLA_BREACH: 'We apologize for the delay. Our team is escalating your booking.',
+        };
+        if (statusMessages[status]) {
+            await sendPushToUser(booking.userId, {
+                title: `Booking ${status.replace('_', ' ')}`,
+                body: statusMessages[status],
+                data: { type: 'booking_status', bookingId: booking.id, status },
+            });
+        }
+
         sendResponse(res, 200, booking, 'Booking status updated');
     } catch (error) {
         next(error);

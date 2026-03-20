@@ -12,6 +12,7 @@ const {
     generateUserId,
 } = require('../utils/helpers');
 const { sendWhatsApp, requestOTP: requestSmsOTP, verifyOTP: verifySmsOTP } = require('../utils/notifications');
+const { auth: firebaseAuth } = require('../config/firebase');
 
 // ═══════════════════════════════════════════
 //  ADMIN AUTH
@@ -185,6 +186,17 @@ const verifyOTP = async (req, res, next) => {
         const accessToken = generateAccessToken(payload);
         const refreshToken = generateRefreshToken(payload);
 
+        // Generate Firebase custom token for client-side Firebase Auth
+        let firebaseToken = null;
+        try {
+            firebaseToken = await firebaseAuth.createCustomToken(user.id, {
+                phone: user.phone,
+                role: 'user',
+            });
+        } catch (err) {
+            logger.warn('Firebase custom token generation failed:', err.message);
+        }
+
         await prisma.user.update({
             where: { id: user.id },
             data: { refreshToken },
@@ -196,6 +208,7 @@ const verifyOTP = async (req, res, next) => {
                 isNewUser: false,
                 accessToken,
                 refreshToken,
+                firebaseToken,
                 user: {
                     id: user.id,
                     uniqueUserId: user.uniqueUserId,

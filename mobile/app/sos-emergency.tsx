@@ -31,7 +31,7 @@ export default function SOSEmergencyScreen() {
             // 1. Trigger SOS alert to backend (GPS + notification to admin & family)
             // Using a default cityId — backend will resolve from user profile if needed
             const result = await sosService.triggerSOS('default');
-            
+
             if (result.success) {
                 // 2. Simultaneously open phone dialer for emergency call
                 await sosService.callEmergencyHotline('+919480198108');

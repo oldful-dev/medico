@@ -5,9 +5,9 @@
 const express = require('express');
 const router = express.Router();
 const { triggerSOS } = require('../controllers/sos.controller');
-const { authenticate } = require('../middleware/auth');
+const { authenticateUser } = require('../middleware/auth');
 
-// Trigger SOS Alert (Protected)
-router.post('/', authenticate, triggerSOS);
+// Trigger SOS Alert (App users only)
+router.post('/', authenticateUser, triggerSOS);
 
 module.exports = router;

@@ -12,7 +12,7 @@ const prisma = require('../config/database');
 
 const zeptoMail = require('./zeptomail');
 
-const sendEmail = async ({ to, subject, html, attachments = [] }) => {
+const sendEmail = async ({ to, subject, html, attachments = [], userId = null }) => {
     try {
         const success = await zeptoMail.sendEmail({ to, subject, html });
 
@@ -24,7 +24,8 @@ const sendEmail = async ({ to, subject, html, attachments = [] }) => {
         await prisma.notificationLog.create({
             data: {
                 channel: 'EMAIL',
-                recipientId: null,
+                recipientId: userId,
+                recipientType: userId ? 'user' : 'user',
                 subject,
                 body: html,
                 isSent: success,
@@ -44,7 +45,7 @@ const sendEmail = async ({ to, subject, html, attachments = [] }) => {
 
 const fast2sms = require('./fast2sms');
 
-const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [] }) => {
+const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [], userId = null }) => {
     try {
         const success = await fast2sms.sendWhatsAppMessage(phoneNumber, templateName, parameters);
 
@@ -53,6 +54,8 @@ const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [] }) => {
         await prisma.notificationLog.create({
             data: {
                 channel: 'WHATSAPP',
+                recipientId: userId,
+                recipientType: userId ? 'user' : 'user',
                 body: `Template: ${templateName}, Params: ${JSON.stringify(parameters)}`,
                 isSent: success,
                 sentAt: success ? new Date() : null,
@@ -74,6 +77,7 @@ const sendWelcomeNotifications = async (user) => {
     await sendEmail({
         to: user.email,
         subject: `Welcome to Oldful, ${user.name}! 🎉`,
+        userId: user.id,
         html: `
       <h1>Welcome to Oldful Healthcare!</h1>
       <p>Dear ${user.name},</p>
@@ -89,6 +93,7 @@ const sendWelcomeNotifications = async (user) => {
         phoneNumber: user.phone,
         templateName: 'welcome_message',
         parameters: [user.name, user.uniqueUserId],
+        userId: user.id,
     });
 };
 
@@ -118,6 +123,7 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
     await sendEmail({
         to: user.email,
         subject: `Your ${plan.name} plan expires in ${daysLeft} days`,
+        userId: user.id,
         html: `
       <h2>Plan Expiry Reminder</h2>
       <p>Dear ${user.name},</p>
@@ -131,6 +137,7 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
         phoneNumber: user.phone,
         templateName: 'plan_expiry_reminder',
         parameters: [user.name, plan.name, String(daysLeft)],
+        userId: user.id,
     });
 };
 
@@ -177,12 +184,18 @@ const verifyFast2SMSOTP = async (phoneNumber, code) => {
     return { success: false };
 };
 
+// ─── Push Notifications (FCM) ─────────────────
+
+const { sendPushToUser, sendPushToUsers } = require('./pushNotification.service');
+
 module.exports = {
     sendEmail,
     sendWhatsApp,
     sendWelcomeNotifications,
     sendSOSNotifications,
     sendExpiryReminder,
+    sendPushToUser,
+    sendPushToUsers,
     requestOTP: requestFast2SMSOTP,
     verifyOTP: verifyFast2SMSOTP,
 };

@@ -310,19 +310,27 @@ model MedicalCard {
 // ─── 3d. Health Report ──────────────────────────────────
 
 model HealthReport {
-  id           String   @id @default(uuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title        String
-  fileUrl      String
-  fileType     String                         // pdf, jpg, png
-  uploadedBy   String   @default("user")      // user | admin
-  flagSeverity String?                        // Critical, High, Normal
-  flagNote     String?                        // OCR flag description
-  reportDate   DateTime @default(now())
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  fileUrl         String
+  fileType        String                         // pdf, jpg, png
+  uploadedBy      String   @default("user")      // user | admin
+  flagSeverity    String?                        // CRITICAL, HIGH, NORMAL, LOW
+  flagNote        String?                        // OCR flag description
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  // ─── OCR Results ────────────────────────────
+  ocrStatus       String   @default("pending")   // pending, processing, completed, failed
+  ocrRawText      String?  @db.Text              // Full OCR extracted text
+  ocrParsedValues Json?                          // Structured: {glucose: {value, unit, flag}, bp: {...}, ...}
+  ocrHealthTags   String[] @default([])          // ["DIABETIC", "HYPERTENSION", ...]
+  ocrFlags        Json?                          // [{type: "high_sugar", message: "...", severity: "HIGH"}, ...]
+  ocrProcessedAt  DateTime?                      // When OCR completed
+
+  reportDate      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@map("health_reports")
 }
@@ -605,6 +613,8 @@ model NotificationLog {
   isSent        Boolean  @default(false)
   sentAt        DateTime?
   errorMessage  String?
+  isRead        Boolean  @default(false)
+  readAt        DateTime?
 
   createdAt     DateTime @default(now())
 

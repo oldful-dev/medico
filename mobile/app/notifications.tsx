@@ -25,6 +25,8 @@ interface RawNotification {
     body?: string | null;
     templateId?: string | null;
     isSent: boolean;
+    isRead: boolean;
+    readAt?: string | null;
     createdAt: string;
 }
 
@@ -78,7 +80,7 @@ function mapRaw(raw: RawNotification): NotificationItem {
         title: raw.subject ?? raw.templateId ?? 'Notification',
         message: raw.body ?? '',
         time: formatRelativeTime(createdAt),
-        read: raw.isSent,
+        read: raw.isRead,
         icon,
         iconColor: color,
         createdAt,
@@ -98,15 +100,22 @@ export default function NotificationsScreen() {
 
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [readIds, setReadIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         let cancelled = false;
         (async () => {
             try {
-                const res = await apiClient.get<RawNotification[]>('/notifications/my?limit=50');
-                if (!cancelled && res.success && res.data) {
-                    setNotifications(res.data.map(mapRaw));
+                // Backend returns paginated: { success, data: [...], pagination: {...} }
+                const res = await apiClient.get<any>('/notifications/my?limit=50');
+                if (cancelled) return;
+                if (res.success) {
+                    // Handle both paginated ({ data: [] }) and flat array responses
+                    const rawList: RawNotification[] = Array.isArray(res.data)
+                        ? res.data
+                        : Array.isArray((res as any).data)
+                            ? (res as any).data
+                            : [];
+                    setNotifications(rawList.map(mapRaw));
                 }
             } catch {
                 // silently degrade — show empty state
@@ -117,19 +126,47 @@ export default function NotificationsScreen() {
         return () => { cancelled = true; };
     }, []);
 
-    const handleMarkAllRead = useCallback(() => {
-        setReadIds(new Set(notifications.map(n => n.id)));
+    const handleMarkRead = useCallback(async (id: string) => {
+        // Optimistic update
+        setNotifications(prev =>
+            prev.map(n => n.id === id ? { ...n, read: true } : n)
+        );
+        try {
+            await apiClient.put(`/notifications/my/${id}/read`);
+        } catch {
+            // Revert on failure
+            setNotifications(prev =>
+                prev.map(n => n.id === id ? { ...n, read: false } : n)
+            );
+        }
+    }, []);
+
+    const handleMarkAllRead = useCallback(async () => {
+        const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+        if (unreadIds.length === 0) return;
+
+        // Optimistic update
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        try {
+            await apiClient.put('/notifications/my/read-all');
+        } catch {
+            // Revert on failure
+            setNotifications(prev =>
+                prev.map(n => unreadIds.includes(n.id) ? { ...n, read: false } : n)
+            );
+        }
     }, [notifications]);
 
     const todayItems = notifications.filter(n => isToday(n.createdAt));
     const earlierItems = notifications.filter(n => !isToday(n.createdAt));
 
     const renderCard = (item: NotificationItem) => {
-        const isRead = item.read || readIds.has(item.id);
         return (
-            <View
+            <TouchableOpacity
                 key={item.id}
-                style={[styles.notificationCard, !isRead && styles.notificationCardUnread]}
+                activeOpacity={0.7}
+                onPress={() => !item.read && handleMarkRead(item.id)}
+                style={[styles.notificationCard, !item.read && styles.notificationCardUnread]}
             >
                 <View style={[styles.iconCircle, { backgroundColor: `${item.iconColor}15` }]}>
                     <Ionicons name={item.icon} size={22} color={item.iconColor} />
@@ -137,14 +174,14 @@ export default function NotificationsScreen() {
                 <View style={styles.notificationContent}>
                     <View style={styles.notificationHeader}>
                         <Text style={styles.notificationTitle}>{item.title}</Text>
-                        {!isRead && <View style={styles.unreadDot} />}
+                        {!item.read && <View style={styles.unreadDot} />}
                     </View>
                     <Text style={styles.notificationMessage} numberOfLines={2}>
                         {item.message}
                     </Text>
                     <Text style={styles.notificationTime}>{item.time}</Text>
                 </View>
-            </View>
+            </TouchableOpacity>
         );
     };
 

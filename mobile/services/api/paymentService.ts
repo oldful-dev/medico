@@ -7,6 +7,7 @@
 // ──────────────────────────────────────────────
 
 import { apiClient, ApiResponse } from './apiClient';
+import { AnalyticsEvents } from '../firebase/analyticsEvents';
 
 // ─── Types (aligned with Prisma schema) ───────
 
@@ -86,6 +87,7 @@ export const paymentService = {
      * Create a Razorpay order for a booking or subscription.
      */
     initiatePayment: async (data: InitiatePaymentPayload): Promise<ApiResponse<InitiatePaymentResponse>> => {
+        AnalyticsEvents.trackPaymentInitiated(data.amount, data.paymentMethod || 'unknown');
         return apiClient.post<InitiatePaymentResponse>('/payments/initiate', data);
     },
 
@@ -94,7 +96,13 @@ export const paymentService = {
      * Verify Razorpay payment signature after completion.
      */
     verifyPayment: async (data: VerifyPaymentPayload): Promise<ApiResponse<VerifyPaymentResponse>> => {
-        return apiClient.post<VerifyPaymentResponse>('/payments/verify', data);
+        const response = await apiClient.post<VerifyPaymentResponse>('/payments/verify', data);
+        if (response.success && response.data?.payment) {
+            AnalyticsEvents.trackPaymentSuccess(response.data.payment.amount);
+        } else {
+            AnalyticsEvents.trackPaymentFailed('verification_failed');
+        }
+        return response;
     },
 
     /**

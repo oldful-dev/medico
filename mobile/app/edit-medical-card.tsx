@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
-    View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView,
-    Platform, KeyboardAvoidingView, Alert, ActivityIndicator, Switch,
+    View, Text, TextInput, StyleSheet, TouchableOpacity,
+    Platform, Alert, ActivityIndicator, Switch,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -88,8 +89,7 @@ export default function EditMedicalCardScreen() {
                 </View>
             </SafeAreaView>
 
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <KeyboardAwareScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} enableOnAndroid={true} extraScrollHeight={20} keyboardShouldPersistTaps="handled">
 
                     {/* Blood Group */}
                     <Text style={styles.label}>Blood Group</Text>
@@ -158,8 +158,7 @@ export default function EditMedicalCardScreen() {
                     <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving} activeOpacity={0.7}>
                         {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveBtnText}>Save Medical Card</Text>}
                     </TouchableOpacity>
-                </ScrollView>
-            </KeyboardAvoidingView>
+            </KeyboardAwareScrollView>
         </View>
     );
 }

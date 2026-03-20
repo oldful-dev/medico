@@ -12,6 +12,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import { UserProvider } from '@/context/UserContext';
 import { BookingProvider } from '@/context/BookingContext';
 import { CartProvider } from '@/context/CartContext';
+import { AppConfigProvider } from '@/context/AppConfigContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -49,10 +50,11 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <UserProvider>
-        <BookingProvider>
-          <CartProvider>
+    <AppConfigProvider>
+      <AuthProvider>
+        <UserProvider>
+          <BookingProvider>
+            <CartProvider>
             <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
               <Stack screenOptions={{ headerShown: false }}>
                 {/* Auth / Onboarding Flow */}
@@ -82,9 +84,10 @@ export default function RootLayout() {
               </Stack>
               <StatusBar style="auto" />
             </ThemeProvider>
-          </CartProvider>
-        </BookingProvider>
-      </UserProvider>
-    </AuthProvider>
+            </CartProvider>
+          </BookingProvider>
+        </UserProvider>
+      </AuthProvider>
+    </AppConfigProvider>
   );
 }

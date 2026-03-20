@@ -1,17 +1,32 @@
 require("dotenv").config();
-const vision = require("@google-cloud/vision");
+const axios = require("axios");
 
-const client = new vision.ImageAnnotatorClient({
-    keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS
-});
+// 🔐 Replace with your Fast2SMS API Key
+const API_KEY = process.env.FAST2SMS_API_KEY;
 
-async function detectText() {
-    const [result] = await client.textDetection("./test.jpg");
+const sendSMS = async () => {
+    try {
+        const response = await axios.post(
+            "https://www.fast2sms.com/dev/bulkV2",
+            {
+                route: "q", // q = quick (transactional/auth)
+                message: "Your Oldful OTP is 123456",
+                language: "english",
+                flash: 0,
+                numbers: "7362973003", // comma-separated for multiple
+            },
+            {
+                headers: {
+                    authorization: API_KEY,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
 
-    const text = result.textAnnotations[0]?.description;
+        console.log("✅ SMS Sent:", response.data);
+    } catch (error) {
+        console.error("❌ Error:", error.response?.data || error.message);
+    }
+};
 
-    console.log("Detected text:");
-    console.log(text);
-}
-
-detectText();
+sendSMS();

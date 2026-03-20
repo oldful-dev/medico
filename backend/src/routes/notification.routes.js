@@ -3,8 +3,10 @@ const router = require('express').Router();
 const { authenticateAdmin, authenticateUser } = require('../middleware/auth');
 const ctrl = require('../controllers/notification.controller');
 
-// User-facing endpoint (authenticated app users)
+// User-facing endpoints (authenticated app users)
 router.get('/my', authenticateUser, ctrl.getMyNotifications);
+router.put('/my/read-all', authenticateUser, ctrl.markAllNotificationsRead);
+router.put('/my/:id/read', authenticateUser, ctrl.markNotificationRead);
 
 // Admin-only routes below
 router.use(authenticateAdmin);

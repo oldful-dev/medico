@@ -70,13 +70,24 @@ export default function ServiceConfirmationScreen() {
         }
         
         if (formData && typeof formData === 'object') {
+            // Fields to skip in text display (attachments, technical IDs, image fields)
+            const skipKeys = new Set(['attachments', 'serviceId', 'cityId']);
+
             Object.entries(formData).forEach(([key, value]) => {
-                // Skip attachments and technical fields
-                if (key === 'attachments' || key === 'serviceId' || key === 'cityId') return;
+                if (skipKeys.has(key)) return;
                 if (!value) return;
+
+                // Skip arrays of URLs (image upload fields)
+                if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') {
+                    const looksLikeUrls = value.every((v: string) =>
+                        v.startsWith('http://') || v.startsWith('https://') || v.startsWith('gs://')
+                    );
+                    if (looksLikeUrls) return; // These are image attachments — rendered separately
+                }
 
                 // Humanize keys
                 const label = key
+                    .replace(/_/g, ' ')
                     .replace(/([A-Z])/g, ' $1')
                     .replace(/^./, str => str.toUpperCase())
                     .replace('Req ', 'Request ')
@@ -86,7 +97,11 @@ export default function ServiceConfirmationScreen() {
                     if (value.length > 0 && typeof value[0] === 'string') {
                         lines.push(`${label}: ${value.join(', ')}`);
                     }
-                } else if (typeof value === 'string' || typeof value === 'number') {
+                } else if (typeof value === 'string') {
+                    // Skip values that look like URLs (single image fields)
+                    if (value.startsWith('http://') || value.startsWith('https://')) return;
+                    lines.push(`${label}: ${value}`);
+                } else if (typeof value === 'number' || typeof value === 'boolean') {
                     lines.push(`${label}: ${value}`);
                 }
             });
@@ -96,7 +111,7 @@ export default function ServiceConfirmationScreen() {
         return lines.join('\n');
     };
 
-    // Helper to get attachments
+    // Helper to get attachments — collects URLs from 'attachments' key AND any image_upload field
     const getAttachments = (b: Booking): string[] => {
         let formData = b.formDataJson;
         if (typeof formData === 'string') {
@@ -104,10 +119,21 @@ export default function ServiceConfirmationScreen() {
                 formData = JSON.parse(formData);
             } catch (e) {}
         }
-        if (formData && formData.attachments && Array.isArray(formData.attachments)) {
-            return formData.attachments;
-        }
-        return [];
+        if (!formData || typeof formData !== 'object') return [];
+
+        const urls: string[] = [];
+        Object.values(formData).forEach((value: any) => {
+            if (typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://'))) {
+                urls.push(value);
+            } else if (Array.isArray(value)) {
+                value.forEach((v: any) => {
+                    if (typeof v === 'string' && (v.startsWith('http://') || v.startsWith('https://'))) {
+                        urls.push(v);
+                    }
+                });
+            }
+        });
+        return urls;
     };
 
     // Derive display values
@@ -233,7 +259,7 @@ export default function ServiceConfirmationScreen() {
                              <Text style={styles.attachmentsTitle}>Uploaded Photos / Documents</Text>
                              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.attachmentsScroll}>
                                  {getAttachments(booking).map((url, idx) => (
-                                     <TouchableOpacity key={idx} activeOpacity={0.9}>
+                                     <TouchableOpacity key={idx} activeOpacity={0.9} style={{ marginRight: 10 }}>
                                         <Image source={{ uri: url }} style={styles.attachmentImage} resizeMode="cover" />
                                      </TouchableOpacity>
                                  ))}

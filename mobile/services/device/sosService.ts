@@ -54,15 +54,17 @@ export const sosService = {
                 accuracy: Location.Accuracy.High,
             });
 
-            // 3. Send to backend with GPS
+            // 3. Send to backend with GPS (wrapped in 'location' object to match controller)
             return apiClient.post<SOSAlert>('/sos', {
                 cityId,
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
+                location: {
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude,
+                }
             });
         } catch {
             // Location fetch failed — send without coordinates
-            return apiClient.post<SOSAlert>('/sos', { cityId });
+            return apiClient.post<SOSAlert>('/sos', { cityId, location: null });
         }
     },
 
