@@ -1,6 +1,6 @@
 // SOS Countdown Overlay - Full screen countdown before triggering emergency
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Modal } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Colors, Fonts } from '@/constants/theme';
 
@@ -25,7 +25,7 @@ export default function SOSCountdown({ seconds = 3, onComplete, onCancel }: SOSC
     }, [count, onComplete]);
 
     return (
-        <View style={StyleSheet.absoluteFill}>
+        <Modal transparent={true} visible={true} animationType="fade">
             <BlurView intensity={80} tint="dark" style={styles.container}>
                 <View style={styles.content}>
                     <Text style={styles.warningText}>EMERGENCY ALERT</Text>
@@ -40,7 +40,7 @@ export default function SOSCountdown({ seconds = 3, onComplete, onCancel }: SOSC
                     </TouchableOpacity>
                 </View>
             </BlurView>
-        </View>
+        </Modal>
     );
 }
 

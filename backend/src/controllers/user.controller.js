@@ -2,8 +2,8 @@ const prisma = require('../config/database');
 const { paginate, sendResponse, sendPaginatedResponse, generateUserId } = require('../utils/helpers');
 const { sendWelcomeNotifications } = require('../utils/notifications');
 const { generateWelcomeSLAPDF } = require('../utils/pdfGenerator');
-const { uploadFile } = require('../utils/storage.service');
-const { analyzeMedicalReport } = require('../utils/ocr.service');
+const { uploadFile, purgeCDNCache } = require('../utils/storage.service');
+const { analyzeMedicalReportFromGCS, analyzeMedicalReportFromBuffer } = require('../utils/ocr.service');
 const { createAuditLog } = require('../middleware/audit');
 
 // GET /api/users
@@ -313,45 +313,81 @@ const uploadHealthReport = async (req, res, next) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: 'File required' });
 
-        const { url } = await uploadFile(req.file.buffer, 'health-reports', req.file.originalname);
+        const { url, gcsUri } = await uploadFile(req.file.buffer, 'health-reports', req.file.originalname, req.file);
 
-        // Trigger OCR Analysis
-        const ocrResult = await analyzeMedicalReport(url, req.file.buffer);
-
+        // Create the report record immediately (no waiting for OCR)
         const report = await prisma.healthReport.create({
             data: {
                 userId: req.params.id,
                 title: req.body.title || req.file.originalname,
                 fileUrl: url,
                 fileType: req.file.mimetype.split('/')[1],
-                uploadedBy: req.user?.type || 'user',
-                flagSeverity: ocrResult.flagSeverity || req.body.flagSeverity || null,
-                flagNote: ocrResult.flagNote || req.body.flagNote || null,
+                uploadedBy: req.user?.id || null,
             },
         });
 
-        // Update User Profile with found tags
-        if (ocrResult.healthTags.length > 0) {
-            const user = await prisma.user.findUnique({ where: { id: req.params.id } });
-
-            // Note: Since healthTag is an Enum and currently only holds a single value, 
-            // we're prioritizing 'DIABETIC'. If the model allowed multiple tags, we'd add all.
-            let newTag = user.healthTag;
-            if (ocrResult.healthTags.includes('DIABETIC') && newTag === 'NORMAL') {
-                newTag = 'DIABETIC';
-            } else if (ocrResult.healthTags.includes('HYPERTENSION') && newTag === 'NORMAL') {
-                newTag = 'HYPERTENSION';
-            }
-
-            if (newTag !== user.healthTag) {
-                await prisma.user.update({
-                    where: { id: req.params.id },
-                    data: { healthTag: newTag }
-                });
-            }
-        }
-
+        // Respond immediately — OCR runs in background
         sendResponse(res, 201, report, 'Health report uploaded');
+
+        // ── Background OCR (non-blocking) ────────────────────
+        // This runs after the response is sent. If it fails, the report
+        // is still saved — OCR results can be retried later.
+        (async () => {
+            try {
+                // Mark as processing
+                await prisma.healthReport.update({
+                    where: { id: report.id },
+                    data: { ocrStatus: 'processing' },
+                });
+
+                const ocrResult = gcsUri
+                    ? await analyzeMedicalReportFromGCS(gcsUri)
+                    : await analyzeMedicalReportFromBuffer(req.file.buffer);
+
+                // Store all OCR results
+                await prisma.healthReport.update({
+                    where: { id: report.id },
+                    data: {
+                        ocrStatus: 'completed',
+                        ocrRawText: ocrResult.fullText || null,
+                        ocrParsedValues: ocrResult.medicalValues && Object.keys(ocrResult.medicalValues).length > 0
+                            ? ocrResult.medicalValues : undefined,
+                        ocrHealthTags: ocrResult.healthTags || [],
+                        ocrFlags: ocrResult.flags?.length > 0 ? ocrResult.flags : undefined,
+                        ocrProcessedAt: new Date(),
+                        flagSeverity: ocrResult.flagSeverity || null,
+                        flagNote: ocrResult.flagNote || null,
+                    },
+                });
+
+                // Update user health tags
+                if (ocrResult.healthTags?.length > 0) {
+                    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+                    let newTag = user?.healthTag || 'NORMAL';
+                    if (ocrResult.healthTags.includes('DIABETIC') && newTag === 'NORMAL') {
+                        newTag = 'DIABETIC';
+                    } else if (ocrResult.healthTags.includes('HYPERTENSION') && newTag === 'NORMAL') {
+                        newTag = 'HYPERTENSION';
+                    }
+                    if (user && newTag !== user.healthTag) {
+                        await prisma.user.update({
+                            where: { id: req.params.id },
+                            data: { healthTag: newTag },
+                        });
+                    }
+                }
+
+                console.log(`OCR completed for report ${report.id}: ${ocrResult.valueCount} values, ${ocrResult.flagCount} flags`);
+            } catch (ocrErr) {
+                // Mark as failed so it can be retried
+                await prisma.healthReport.update({
+                    where: { id: report.id },
+                    data: { ocrStatus: 'failed', flagNote: `OCR failed: ${ocrErr.message}` },
+                }).catch(() => {}); // Don't throw if this update also fails
+                console.error(`Background OCR failed for report ${report.id}:`, ocrErr.message);
+            }
+        })();
+
     } catch (error) {
         next(error);
     }
@@ -441,7 +477,16 @@ const uploadProfileAvatar = async (req, res, next) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: 'Image file required' });
 
+        // Delete old avatar from CDN cache if exists
+        const existingUser = await prisma.user.findUnique({ where: { id: req.user.id }, select: { profileImageUrl: true } });
+        if (existingUser?.profileImageUrl) {
+            await purgeCDNCache(existingUser.profileImageUrl).catch(() => {});
+        }
+
         const { url } = await uploadFile(req.file.buffer, 'profile-avatars', req.file.originalname);
+
+        // Purge CDN cache for the new URL so it's immediately accessible
+        await purgeCDNCache(url).catch(() => {});
 
         const user = await prisma.user.update({
             where: { id: req.user.id },

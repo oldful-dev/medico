@@ -1,6 +1,9 @@
 // User Context - User profile and preferences state
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile } from '@/services/api/userService';
+
+const LANG_KEY = '@oldful_language';
 
 interface UserContextType {
     profile: UserProfile | null;
@@ -18,11 +21,24 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const [selectedCity, setSelectedCity] = useState('Bangalore');
     const [preferredLanguage, setPreferredLanguage] = useState('en');
 
+    // Load persisted language on mount
+    useEffect(() => {
+        AsyncStorage.getItem(LANG_KEY).then(saved => {
+            if (saved) setPreferredLanguage(saved);
+        });
+    }, []);
+
+    // Wrap setter to also persist to AsyncStorage
+    const saveLanguage = (lang: string) => {
+        setPreferredLanguage(lang);
+        AsyncStorage.setItem(LANG_KEY, lang);
+    };
+
     return (
         <UserContext.Provider value={{
             profile, setProfile,
             selectedCity, setSelectedCity,
-            preferredLanguage, setPreferredLanguage,
+            preferredLanguage, setPreferredLanguage: saveLanguage,
         }}>
             {children}
         </UserContext.Provider>

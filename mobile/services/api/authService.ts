@@ -7,6 +7,8 @@
 // ──────────────────────────────────────────────
 
 import { apiClient, ApiResponse } from './apiClient';
+import { signInWithFirebaseToken, signOutFirebase } from '../firebase/firebaseConfig';
+import { AnalyticsEvents } from '../firebase/analyticsEvents';
 
 // ─── Request / Response Types ─────────────────
 
@@ -24,6 +26,7 @@ export interface VerifyOTPResponseData {
     phoneNumber?: string; // returned when isNewUser = true
     accessToken?: string;
     refreshToken?: string;
+    firebaseToken?: string; // Firebase custom token for client-side auth
     user?: {
         id: string;
         uniqueUserId: string;
@@ -60,6 +63,11 @@ export const authService = {
             if (response.data.refreshToken) {
                 apiClient.setRefreshToken(response.data.refreshToken);
             }
+            // Sign into Firebase Auth for FCM, Analytics, etc.
+            if (response.data.firebaseToken) {
+                await signInWithFirebaseToken(response.data.firebaseToken);
+            }
+            AnalyticsEvents.trackLogin('otp');
         }
         return response;
     },
@@ -77,8 +85,11 @@ export const authService = {
      * Invalidates the server-side refresh token. Requires auth header.
      */
     logout: async (): Promise<ApiResponse> => {
+        AnalyticsEvents.trackLogout();
         const response = await apiClient.post('/auth/logout');
         apiClient.clearAuthToken();
+        // Sign out of Firebase Auth
+        await signOutFirebase();
         return response;
     },
 };

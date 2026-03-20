@@ -202,7 +202,7 @@ class ApiClient {
     }
 
     async upload<T>(endpoint: string, formData: FormData): Promise<ApiResponse<T>> {
-        return this.request<T>({ method: 'POST', endpoint, body: formData, isFormData: true });
+        return this.request<T>({ method: 'POST', endpoint, body: formData, isFormData: true, timeout: 60000 });
     }
 }
 

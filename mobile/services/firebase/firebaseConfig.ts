@@ -1,8 +1,28 @@
 import { initializeApp } from "firebase/app";
-import { getRemoteConfig, fetchAndActivate, getValue } from "firebase/remote-config";
-import { getAnalytics, logEvent as fbLogEvent, isSupported as isAnalyticsSupported } from "firebase/analytics";
-import { getMessaging, getToken } from "firebase/messaging";
 import { Platform } from "react-native";
+import {
+    getWebMessaging,
+    getWebToken,
+    isMessagingSupported,
+    getWebAnalytics,
+    logAnalyticsEvent,
+    isAnalyticsSupported,
+    getWebRemoteConfig,
+    fetchRC,
+    getRCValue,
+    isRCSupported,
+    getWebAuth,
+    webSignInWithCustomToken,
+    webSignOut,
+} from './webHandlers';
+
+let remoteConfig: any = null;
+let analytics: any = null;
+let messaging: any = null;
+let getToken: any = getWebToken;
+let getValue: any = getRCValue;
+let fetchAndActivate: any = fetchRC;
+let fbLogEvent: any = logAnalyticsEvent;
 
 const firebaseConfig = {
     apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? "",
@@ -24,74 +44,85 @@ if (firebaseConfig.projectId) {
     }
 }
 
-// Helper to safely initialize Firebase services in Expo/React Native environment
-const getSafeService = (factory: any, checkFn?: () => Promise<boolean>) => {
-    if (!app) return null;
+// ─── Initialize Services Asynchronously ─────────────────
+const initServices = async () => {
+    if (!app) return;
+
     try {
-        // Skip in Expo web environment (no IndexedDB/browser APIs)
-        if (Platform.OS === 'web') return null;
-        return factory(app);
+        // Remote Config (SDUI — Server-Driven UI via Firebase Remote Config)
+        if (await isRCSupported()) {
+            remoteConfig = getWebRemoteConfig(app);
+            remoteConfig.settings.minimumFetchIntervalMillis = 3600000; // 1 hour
+            remoteConfig.defaultConfig = {
+                // Text overrides
+                home_greeting_message: "Good Morning",
+                oldful_services_label: "Oldful Services",
+                // Banner control
+                home_banner_active: "true",
+                home_hero_banners: JSON.stringify([]),
+                // Service visibility (JSON: { "DOCTOR_HOME_VISIT": true, ... })
+                service_visibility: JSON.stringify({}),
+                // Service name overrides (JSON: { "DOCTOR_HOME_VISIT": "Doctor Visit", ... })
+                service_names: JSON.stringify({}),
+                // Module visibility
+                modules_visibility: JSON.stringify({
+                    essentials: true,
+                    trust_badges: true,
+                    sos_banner: true,
+                    promo_section: true,
+                }),
+            };
+            await fetchAndActivate(remoteConfig);
+        }
+
+        // Analytics
+        if (await isAnalyticsSupported()) {
+            analytics = getWebAnalytics(app);
+        }
+
+        // Messaging
+        if (await isMessagingSupported()) {
+            messaging = getWebMessaging(app);
+        }
     } catch (e) {
         console.warn("Firebase service initialization failed:", e);
     }
-    return null;
 };
 
-const remoteConfig = getSafeService(getRemoteConfig);
-let analytics: any = null;
-// Only init analytics if supported and not web
-if (app && !Platform.OS.includes('web')) {
-    isAnalyticsSupported().then(supported => {
-        if (supported) {
-            try {
-                analytics = getAnalytics(app);
-            } catch (e) {
-                console.warn("Analytics init failed:", e);
-            }
-        }
-    }).catch(() => null);
-}
-const messaging = getSafeService(getMessaging);
+// Start initialization
+initServices();
 
 
-
-// Default configuration for SDUI
-if (remoteConfig) {
-    remoteConfig.defaultConfig = {
-        home_greeting_message: "Good Morning",
-        home_banner_active: true,
-        oldful_services_label: "Oldful Services",
-    };
-
-    remoteConfig.settings.minimumFetchIntervalMillis = 3600000; // 1 hour
-}
 
 export const initRemoteConfig = async () => {
-    try {
-        if (remoteConfig && app) {
+    if (remoteConfig) {
+        try {
             await fetchAndActivate(remoteConfig);
+        } catch (err) {
+            // Silently fail
         }
-    } catch (err) {
-        // Silently fail in development
+    } else {
+        // If not yet loaded, wait a bit or just retry init
+        await initServices();
     }
 };
 
 export const getRemoteValue = (key: string) => {
-    if (remoteConfig) {
+    if (remoteConfig && getValue) {
         return getValue(remoteConfig, key).asString();
     }
     return "";
 };
 
 export const logEvent = (eventName: string, params?: object) => {
-    if (analytics) {
+    if (analytics && fbLogEvent) {
         fbLogEvent(analytics, eventName, params);
     }
 };
 
 export const getFCMToken = async () => {
     try {
-        if (messaging && app) {
+        if (messaging && getToken && app) {
             return await getToken(messaging, { vapidKey: process.env.EXPO_PUBLIC_FIREBASE_VAPID_KEY ?? "" });
         }
         return null;
@@ -101,5 +132,38 @@ export const getFCMToken = async () => {
     }
 };
 
+
+// ─── Firebase Auth (Custom Token) ────────────────
+let firebaseAuth: any = null;
+if (app) {
+    try {
+        firebaseAuth = getWebAuth(app);
+    } catch (e) {
+        console.warn("Firebase Auth initialization skipped");
+    }
+}
+
+export const signInWithFirebaseToken = async (customToken: string) => {
+    if (firebaseAuth && webSignInWithCustomToken) {
+        try {
+            const credential = await webSignInWithCustomToken(firebaseAuth, customToken);
+            return credential?.user ?? null;
+        } catch (err) {
+            console.warn("Firebase signInWithCustomToken failed:", err);
+            return null;
+        }
+    }
+    return null;
+};
+
+export const signOutFirebase = async () => {
+    if (firebaseAuth && webSignOut) {
+        try {
+            await webSignOut(firebaseAuth);
+        } catch (err) {
+            // Silently fail
+        }
+    }
+};
 
 export { app };

@@ -1,5 +1,7 @@
 // ──────────────────────────────────────────────
-//  UI Config Service — Server-Driven UI
+//  UI Config Service — Server-Driven UI (Legacy)
+//  DEPRECATED: Use sduiService (Firebase Remote Config) instead.
+//  This custom backend API is retained for backward compatibility.
 //  GET /api/ui-config/published   (fetch published UI configs)
 // ──────────────────────────────────────────────
 

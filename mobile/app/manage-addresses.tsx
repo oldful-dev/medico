@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput,
-    Alert, Platform, KeyboardAvoidingView, ActivityIndicator,
+    View, Text, StyleSheet, TouchableOpacity, TextInput,
+    Alert, Platform, ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -105,8 +106,7 @@ export default function ManageAddressesScreen() {
                 </View>
             </SafeAreaView>
 
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <KeyboardAwareScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} enableOnAndroid={true} extraScrollHeight={20} keyboardShouldPersistTaps="handled">
 
                     {addresses.length === 0 && !showAddForm && (
                         <View style={styles.emptyState}>
@@ -174,8 +174,7 @@ export default function ManageAddressesScreen() {
                         <Ionicons name="add-circle-outline" size={22} color="#048357" />
                         <Text style={styles.addButtonText}>Add New Address</Text>
                     </TouchableOpacity>
-                </ScrollView>
-            </KeyboardAvoidingView>
+            </KeyboardAwareScrollView>
         </View>
     );
 }

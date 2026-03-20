@@ -3,9 +3,10 @@
 // Section 3: App Preferences | Section 4: Support & Legal
 import React, { useState, useCallback } from 'react';
 import {
-    View, Text, Image, ScrollView, TouchableOpacity, StyleSheet,
+    View, Text, Image, TouchableOpacity, StyleSheet,
     Platform, Switch, Modal, Alert, ActivityIndicator, Linking,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +14,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useUser } from '@/context/UserContext';
 import { useAuth } from '@/context/AuthContext';
+import { useAppConfig } from '@/context/AppConfigContext';
 import { userService } from '@/services/api/userService';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -23,17 +25,32 @@ export default function AccountScreen() {
     const router = useRouter();
     const { profile, setProfile } = useUser();
     const { logout } = useAuth();
+    const { languages } = useAppConfig();
 
     const [whatsappEnabled, setWhatsappEnabled] = useState(true);
     const [promoEnabled, setPromoEnabled] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
     // Language Modal
+    const { preferredLanguage, setPreferredLanguage } = useUser();
     const [langModalVisible, setLangModalVisible] = useState(false);
-    const [currentLang, setCurrentLang] = useState(
-        profile?.preferredLanguage === 'kn' ? 'Kannada' : profile?.preferredLanguage === 'hi' ? 'Hindi' : 'English'
-    );
-    const LANGUAGES = ['English', 'Kannada', 'Hindi', 'Tamil', 'Telugu'];
+    const [savingLang, setSavingLang] = useState(false);
+
+    const currentLangLabel = languages.find(l => l.code === preferredLanguage)?.label ?? 'English';
+
+    const handleLangSelect = async (code: string) => {
+        setSavingLang(true);
+        try {
+            await userService.updateProfile({ preferredLanguage: code });
+            setPreferredLanguage(code);   // persists to AsyncStorage via context
+        } catch {
+            // non-fatal — local state still updates
+            setPreferredLanguage(code);
+        } finally {
+            setSavingLang(false);
+            setLangModalVisible(false);
+        }
+    };
 
     // Refetch on focus
     useFocusEffect(
@@ -119,7 +136,7 @@ export default function AccountScreen() {
                 </View>
             </SafeAreaView>
 
-            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <KeyboardAwareScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} enableOnAndroid={true} extraScrollHeight={20} keyboardShouldPersistTaps="handled">
 
                 {/* ─── Profile Card ─── */}
                 <TouchableOpacity style={styles.profileCard} activeOpacity={0.8} onPress={() => router.push('/edit-profile' as any)}>
@@ -267,7 +284,7 @@ export default function AccountScreen() {
                         <Text style={styles.linkTitle}>Change Language</Text>
                     </View>
                     <View style={styles.rightWithText}>
-                        <Text style={styles.selectedText}>{currentLang}</Text>
+                        <Text style={styles.selectedText}>{currentLangLabel}</Text>
                         <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
                     </View>
                 </TouchableOpacity>
@@ -344,20 +361,32 @@ export default function AccountScreen() {
                 </TouchableOpacity>
 
                 <View style={{ height: 100 }} />
-            </ScrollView>
+            </KeyboardAwareScrollView>
 
             {/* ─── Language Modal ─── */}
             <Modal visible={langModalVisible} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContainer}>
                         <Text style={styles.modalTitle}>Select Language</Text>
-                        {LANGUAGES.map(lang => (
-                            <TouchableOpacity key={lang} style={[styles.langOption, currentLang === lang && styles.langOptionActive]}
-                                onPress={() => { setCurrentLang(lang); setLangModalVisible(false); }}>
-                                <Text style={[styles.langText, currentLang === lang && styles.langTextActive]}>{lang}</Text>
-                                {currentLang === lang && <Ionicons name="checkmark-circle" size={22} color="#048357" />}
-                            </TouchableOpacity>
-                        ))}
+                        {savingLang ? (
+                            <ActivityIndicator color={Colors.primary} style={{ marginVertical: Spacing.xl }} />
+                        ) : (
+                            languages.map(lang => (
+                                <TouchableOpacity
+                                    key={lang.code}
+                                    style={[styles.langOption, preferredLanguage === lang.code && styles.langOptionActive]}
+                                    onPress={() => handleLangSelect(lang.code)}
+                                >
+                                    <View>
+                                        <Text style={[styles.langText, preferredLanguage === lang.code && styles.langTextActive]}>
+                                            {lang.label}
+                                        </Text>
+                                        <Text style={styles.langNative}>{lang.native_label}</Text>
+                                    </View>
+                                    {preferredLanguage === lang.code && <Ionicons name="checkmark-circle" size={22} color="#048357" />}
+                                </TouchableOpacity>
+                            ))
+                        )}
                         <TouchableOpacity style={styles.modalCancel} onPress={() => setLangModalVisible(false)}>
                             <Text style={styles.modalCancelText}>Cancel</Text>
                         </TouchableOpacity>
@@ -438,6 +467,7 @@ const styles = StyleSheet.create({
     langOptionActive: { backgroundColor: 'rgba(4,131,87,0.05)', borderRadius: Radius.sm, borderBottomWidth: 0, paddingHorizontal: Spacing.sm },
     langText: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textDark },
     langTextActive: { fontFamily: Fonts.semiBold, color: Colors.primary },
+    langNative: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textMuted, marginTop: 1 },
     modalCancel: { marginTop: Spacing.xl, paddingVertical: Spacing.sm, alignItems: 'center' },
     modalCancelText: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textMuted },
 });

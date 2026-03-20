@@ -10,10 +10,10 @@ import {
     Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
 import SOSCountdown from './SOSCountdown';
 import { Colors, Fonts } from '@/constants/theme';
-import { apiClient } from '@/services/api/apiClient';
+import { sosService } from '@/services/device/sosService';
+import { AnalyticsEvents } from '@/services/firebase/analyticsEvents';
 
 const TRACK_WIDTH = 303;
 const TRACK_HEIGHT = 69;
@@ -22,7 +22,7 @@ const THUMB_WIDTH = 59;
 const PADDING = 6;
 const SLIDE_THRESHOLD = TRACK_WIDTH - THUMB_WIDTH - PADDING * 2 - 20;
 
-const HOTLINE_NUMBER = 'tel:9999999999'; // Replace with Oldful hotline
+const HOTLINE_NUMBER = 'tel:+919480198108'; // Oldful emergency hotline
 
 interface SlideToCallProps {
     onSlideComplete?: () => void;
@@ -65,26 +65,18 @@ export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
 
     const handleSOSComplete = async () => {
         try {
-            // Foreground: Open Dialer
-            Linking.openURL(HOTLINE_NUMBER);
-
-            // Background: Fetch Location and Alert Admin
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            let locationData = null;
-            if (status === 'granted') {
-                const location = await Location.getCurrentPositionAsync({});
-                locationData = {
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude,
-                };
-            }
-
-            // POST to SOS Endpoint
-            await apiClient.post('/api/sos', {
-                location: locationData,
-                timestamp: new Date().toISOString(),
-            });
-
+            AnalyticsEvents.trackSOSTriggered();
+            // Fire BOTH actions simultaneously as per PDF requirement:
+            // 1. Foreground: Open native phone dialer (tel: deep link)
+            // 2. Background: Fetch GPS + alert admin/family via API
+            await Promise.allSettled([
+                Linking.openURL(HOTLINE_NUMBER),
+                sosService.triggerSOS('default').then((result) => {
+                    if (!result.success) {
+                        console.warn('SOS Backend Alert Failed:', result.message);
+                    }
+                }),
+            ]);
         } catch (error) {
             console.error('SOS Trigger Error:', error);
         } finally {
@@ -95,6 +87,7 @@ export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
     };
 
     const handleCancel = () => {
+        AnalyticsEvents.trackSOSCancelled();
         setShowCountdown(false);
         // Snap thumb back
         Animated.spring(translateX, {
@@ -122,9 +115,9 @@ export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
             </Animated.View>
 
             {showCountdown && (
-                <SOSCountdown 
-                    onComplete={handleSOSComplete} 
-                    onCancel={handleCancel} 
+                <SOSCountdown
+                    onComplete={handleSOSComplete}
+                    onCancel={handleCancel}
                 />
             )}
         </View>
@@ -150,8 +143,8 @@ const styles = StyleSheet.create({
         shadowRadius: 20,
         // elevation: 8,
         // overflow: 'hidden', // Disabled to allow SOSCountdown full-screen overlay if needed, 
-                               // but better to handle overlay at a higher level.
-                               // However, absoluteFill in SOSCountdown will cover the nearest relative parent.
+        // but better to handle overlay at a higher level.
+        // However, absoluteFill in SOSCountdown will cover the nearest relative parent.
     },
 
     /* Text label — Figma: Inter Bold 15px */

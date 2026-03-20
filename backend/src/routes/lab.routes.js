@@ -3,9 +3,26 @@ const router = require('express').Router();
 const { authenticateUser } = require('../middleware/auth');
 const ctrl = require('../controllers/lab.controller');
 
-router.get('/tests', ctrl.getLabTests);           // public — browse tests
-router.get('/packages', ctrl.getLabPackages);     // public — browse packages
-router.post('/book', authenticateUser, ctrl.bookLabTest);
-router.get('/booking/:id', authenticateUser, ctrl.getLabBooking);
+// ─── Location (public) ───────────────────────
+router.get('/location/search', ctrl.searchLocation);
+router.get('/location/latlng',  ctrl.getLatLng);
+
+// ─── Availability (public) ───────────────────
+router.get('/time-slots', ctrl.getTimeSlots);
+
+// ─── Packages (public) ───────────────────────
+router.get('/packages',       ctrl.getPackages);
+router.get('/packages/:code', ctrl.getPackageDetails);
+
+// ─── Booking (auth required) ─────────────────
+router.post('/book',                        authenticateUser, ctrl.bookLabTest);
+router.post('/booking/:id/confirm',         authenticateUser, ctrl.confirmLabBooking);
+router.get( '/booking/:id',                 authenticateUser, ctrl.getLabBookingStatus);
+router.post('/booking/:id/update',          authenticateUser, ctrl.updateLabBooking);
+router.post('/booking/:id/members',         authenticateUser, ctrl.addLabMember);
+router.post('/booking/:id/payment-mode',    authenticateUser, ctrl.updateLabPaymentMode);
+router.post('/booking/:id/packages',        authenticateUser, ctrl.updateLabPackage);
+router.get( '/booking/:id/digital-report',  authenticateUser, ctrl.getDigitalReport);
+router.get( '/booking/:id/report',          authenticateUser, ctrl.getConsolidatedReport);
 
 module.exports = router;
