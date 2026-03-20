@@ -44,29 +44,18 @@ const sendSMS = async (phoneNumber, message) => {
                 headers: { authorization: apiKey, 'Content-Type': 'application/json' }
             });
         }
-        // Route 2: OTP route (bypasses DND — reliable for verification codes)
-        else if (otpCode) {
-            routeUsed = 'otp';
+        // Route 2: Quick SMS (only available route without DLT setup)
+        else {
+            routeUsed = 'q';
             response = await axios.get(FAST2SMS_URL, {
                 params: {
                     authorization: apiKey,
-                    route: 'otp',
-                    variables_values: otpCode,
+                    route: 'q',
+                    message,
+                    language: 'english',
                     numbers: cleanNumber,
                     flash: 0,
                 },
-            });
-        }
-        // Route 3: Quick transactional fallback (non-OTP messages)
-        else {
-            routeUsed = 'q';
-            response = await axios.post(FAST2SMS_URL, {
-                route: 'q',
-                message,
-                language: 'english',
-                numbers: cleanNumber,
-            }, {
-                headers: { authorization: apiKey, 'Content-Type': 'application/json' }
             });
         }
 
