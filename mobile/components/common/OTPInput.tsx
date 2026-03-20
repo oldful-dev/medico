@@ -6,10 +6,11 @@ import { View, TextInput, StyleSheet, Platform } from 'react-native';
 
 interface OTPInputProps {
     length?: number;
+    disabled?: boolean;
     onComplete?: (otp: string) => void;
 }
 
-export default function OTPInput({ length = 4, onComplete }: OTPInputProps) {
+export default function OTPInput({ length = 4, disabled, onComplete }: OTPInputProps) {
     const [otpValues, setOtpValues] = useState<string[]>(Array(length).fill(''));
     const inputRefs = useRef<(TextInput | null)[]>([]);
 
@@ -49,6 +50,9 @@ export default function OTPInput({ length = 4, onComplete }: OTPInputProps) {
                         onChangeText={(text) => handleChange(text, index)}
                         onKeyPress={(e) => handleKeyPress(e, index)}
                         selectTextOnFocus
+                        editable={!disabled}
+                        textContentType={index === 0 ? 'oneTimeCode' : 'none'}
+                        autoComplete={index === 0 ? 'sms-otp' : 'off'}
                     />
                     <View style={styles.underline} />
                 </View>

@@ -50,7 +50,9 @@
       "Bash(find d:codesMERNmedico -name *example* -o -name *.env.example -o -name .env.sample)",
       "Bash(node backend/prisma/seed-form-fields.js)",
       "Bash(node backend/prisma/seed-home-sdui.js)",
-      "Bash(grep -E \"\\\\.js$\")"
+      "Bash(grep -E \"\\\\.js$\")",
+      "Bash(find d:/codes/MERN/medico/mobile -type f -name *otp* -o -name *verif* -o -name *splash*)",
+      "Bash(ls -la \"d:/codes/MERN/medico/mobile/app/\\(auth\\)/\")"
     ]
   }
 }
