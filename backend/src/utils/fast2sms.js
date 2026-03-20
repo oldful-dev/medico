@@ -19,11 +19,13 @@ const sendSMS = async (phoneNumber, message) => {
             return true;
         }
 
+        const cleanNumber = phoneNumber.replace(/\D/g, '').slice(-10);
+
         const response = await axios.post(FAST2SMS_URL, {
             route: 'q', // Quick transactional
             message: message,
             language: 'english',
-            numbers: phoneNumber.replace(/\D/g, ''),
+            numbers: cleanNumber,
         }, {
             headers: {
                 'authorization': process.env.FAST2SMS_API_KEY,
@@ -32,7 +34,7 @@ const sendSMS = async (phoneNumber, message) => {
         });
 
         if (response.data.return) {
-            logger.info(`💬 SMS sent to ${phoneNumber}`);
+            logger.info(`💬 SMS sent to ${cleanNumber}`);
             return true;
         } else {
             throw new Error(response.data.message || 'Fast2SMS error');
@@ -53,9 +55,11 @@ const sendWhatsAppMessage = async (phoneNumber, templateName, parameters = []) =
             return true;
         }
 
+        const cleanNumber = phoneNumber.replace(/\D/g, '').slice(-10);
+
         // Logic based on Fast2SMS WhatsApp Business API structure
         const response = await axios.post(`${WHATSAPP_URL}/send`, {
-            phone: phoneNumber.replace(/\D/g, ''),
+            phone: cleanNumber,
             template_name: templateName,
             body: parameters,
         }, {
@@ -65,7 +69,7 @@ const sendWhatsAppMessage = async (phoneNumber, templateName, parameters = []) =
             }
         });
 
-        logger.info(`📱 WhatsApp sent to ${phoneNumber}`);
+        logger.info(`📱 WhatsApp sent to ${cleanNumber}`);
         return true;
     } catch (error) {
         logger.error('Fast2SMS WhatsApp Error:', error.response?.data || error.message);

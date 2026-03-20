@@ -157,7 +157,7 @@ const requestFast2SMSOTP = async (phoneNumber) => {
                 expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
             }
         });
-        logger.info(`OTP generated for ***${phoneNumber.slice(-4)}`);
+        logger.info(`OTP generated for ${phoneNumber}: ${otp}`);
         return { success: true };
     }
     return { success: false };

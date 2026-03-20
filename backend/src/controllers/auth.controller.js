@@ -149,9 +149,33 @@ const requestOTP = async (req, res, next) => {
         const { phoneNumber } = req.body;
 
         // Use Fast2SMS to send OTP
-        await requestSmsOTP(phoneNumber);
+        const response = await requestSmsOTP(phoneNumber);
 
-        res.json({ success: true, message: 'OTP sent successfully via SMS' });
+        // EXTRA: Send Push Notification fallback if user exists
+        try {
+            const user = await prisma.user.findUnique({
+                where: { phone: phoneNumber },
+                select: { id: true, fcmDeviceToken: true }
+            });
+
+            if (user && user.fcmDeviceToken) {
+                const { code } = await prisma.otpLog.findFirst({
+                    where: { phoneNumber },
+                    orderBy: { createdAt: 'desc' },
+                });
+
+                const { sendPushToUser } = require('../utils/pushNotification.service');
+                await sendPushToUser(user.id, {
+                    title: 'Your OTP Code',
+                    body: `Your Oldful verification code is: ${code}`,
+                    data: { type: 'OTP', code: String(code) }
+                });
+            }
+        } catch (pushErr) {
+            logger.debug('Push OTP fallback skipped:', pushErr.message);
+        }
+
+        res.json({ success: true, message: 'OTP sent successfully' });
     } catch (error) {
         next(error);
     }

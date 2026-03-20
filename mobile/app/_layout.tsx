@@ -41,7 +41,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded || error) {
-      // Manual hide if needed, but since we didn't prevent hide, it stays hidden
+      // Hide the native/stock splash immediately once fonts are ready
+      // so users see the custom splash screen (splash.tsx) instead
+      SplashScreen.hideAsync().catch(() => {});
     }
   }, [loaded, error]);
 
