@@ -2,6 +2,7 @@
   "expo": {
     "name": "oldful",
     "slug": "medico",
+    "owner": "oldful-dev",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icons/ios/iTunesArtwork@3x.png",
