@@ -21,26 +21,64 @@ const sendSMS = async (phoneNumber, message) => {
 
         const cleanNumber = phoneNumber.replace(/\D/g, '').slice(-10);
 
-        const response = await axios.post(FAST2SMS_URL, {
-            route: 'q', // Quick transactional
-            message: message,
-            language: 'english',
-            numbers: cleanNumber,
-        }, {
-            headers: {
-                'authorization': process.env.FAST2SMS_API_KEY,
-                'Content-Type': 'application/json'
-            }
-        });
+        // Extract OTP digits from message for the OTP route
+        const otpMatch = message.match(/(\d{4,6})/);
+        const otpCode = otpMatch ? otpMatch[1] : null;
+
+        let response;
+
+        if (otpCode && process.env.FAST2SMS_OTP_TEMPLATE_ID) {
+            // DLT-registered template route — most reliable for OTP delivery
+            response = await axios.post(FAST2SMS_URL, {
+                route: 'dlt',
+                sender_id: process.env.FAST2SMS_SENDER_ID || 'OLDFHL',
+                message: process.env.FAST2SMS_OTP_TEMPLATE_ID,
+                variables_values: otpCode,
+                numbers: cleanNumber,
+                flash: 0,
+            }, {
+                headers: {
+                    'authorization': process.env.FAST2SMS_API_KEY,
+                    'Content-Type': 'application/json'
+                }
+            });
+        } else if (otpCode) {
+            // Fast2SMS OTP route — auto-generates template
+            response = await axios.get('https://www.fast2sms.com/dev/bulkV2', {
+                params: {
+                    authorization: process.env.FAST2SMS_API_KEY,
+                    route: 'otp',
+                    variables_values: otpCode,
+                    numbers: cleanNumber,
+                    flash: 0,
+                },
+            });
+        } else {
+            // Quick route fallback for non-OTP messages
+            response = await axios.post(FAST2SMS_URL, {
+                route: 'q',
+                message,
+                language: 'english',
+                numbers: cleanNumber,
+            }, {
+                headers: {
+                    'authorization': process.env.FAST2SMS_API_KEY,
+                    'Content-Type': 'application/json'
+                }
+            });
+        }
+
+        logger.info(`Fast2SMS response: ${JSON.stringify(response.data)}`);
 
         if (response.data.return) {
-            logger.info(`💬 SMS sent to ${cleanNumber}`);
+            logger.info(`💬 SMS sent to ${cleanNumber} via ${otpCode ? 'otp' : 'q'} route (request_id: ${response.data.request_id || 'n/a'})`);
             return true;
         } else {
+            logger.error(`Fast2SMS rejected: ${JSON.stringify(response.data)}`);
             throw new Error(response.data.message || 'Fast2SMS error');
         }
     } catch (error) {
-        logger.error('Fast2SMS SMS Error:', error.response?.data || error.message);
+        logger.error('Fast2SMS SMS Error:', JSON.stringify(error.response?.data || error.message));
         return false;
     }
 };
