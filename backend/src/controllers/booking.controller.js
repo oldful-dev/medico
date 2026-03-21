@@ -133,6 +133,12 @@ const createBooking = async (req, res, next) => {
             data: { type: 'booking_created', bookingId: booking.id, bookingCode },
         });
 
+        // Send DLT SMS Booking Confirmation
+        if (booking.user?.phone) {
+            const { sendBookingConfirmation } = require('../utils/notifications');
+            await sendBookingConfirmation({ user: booking.user, bookingCode });
+        }
+
         sendResponse(res, 201, booking, 'Booking created successfully');
     } catch (error) {
         next(error);

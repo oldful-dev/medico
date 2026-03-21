@@ -33,16 +33,25 @@ const sendSMS = async (phoneNumber, message) => {
         // Route 1: DLT registered template (most reliable, needs setup)
         if (otpCode && process.env.FAST2SMS_OTP_TEMPLATE_ID) {
             routeUsed = 'dlt';
+            // Fast2SMS DLT required structure:
+            // route: 'dlt', sender_id: 'XXXXXX', message: 'TEMPLATE_ID', variables_values: 'OTP', numbers: 'XXXXXXXXXX'
             response = await axios.post(FAST2SMS_URL, {
                 route: 'dlt',
-                sender_id: process.env.FAST2SMS_SENDER_ID || 'OLDFHL',
+                sender_id: process.env.FAST2SMS_SENDER_ID || 'OLDFUL',
                 message: process.env.FAST2SMS_OTP_TEMPLATE_ID,
                 variables_values: otpCode,
                 numbers: cleanNumber,
                 flash: 0,
             }, {
-                headers: { authorization: apiKey, 'Content-Type': 'application/json' }
+                headers: { 
+                    authorization: apiKey, 
+                    'Content-Type': 'application/json',
+                    'cache-control': 'no-cache'
+                }
             });
+            
+            // Note: Fast2SMS sometimes requires DLT Entity ID in the header or body depending on their latest API revision.
+            // If the above fails, you may need to add 'entity_id' to the body.
         }
         // Route 2: Quick SMS (only available route without DLT setup)
         else {
@@ -74,6 +83,52 @@ const sendSMS = async (phoneNumber, message) => {
         const errStatus = error.response?.status;
         const errMsg = typeof errData === 'string' ? errData.substring(0, 500) : JSON.stringify(errData);
         logger.error(`Fast2SMS Error [${errStatus || 'network'}]: ${errMsg || error.message}`);
+        return false;
+    }
+};
+
+/**
+ * Send an explicit DLT Route SMS passing custom template ID and variables.
+ * @param {string} phoneNumber 
+ * @param {string} templateId - The Fast2SMS DLT Template ID (e.g. 211671)
+ * @param {string[]} variablesArray - Array of dynamic values matching the {#var#} count
+ */
+const sendDLTSMS = async (phoneNumber, templateId, variablesArray = []) => {
+    try {
+        if (!process.env.FAST2SMS_API_KEY) {
+            logger.warn('FAST2SMS_API_KEY not set. Simulating DLT SMS.');
+            return true;
+        }
+
+        const cleanNumber = phoneNumber.replace(/\D/g, '').slice(-10);
+        const variablesString = variablesArray.join('|'); // Fast2SMS expects pipe-separated values
+        const apiKey = process.env.FAST2SMS_API_KEY;
+
+        const response = await axios.post(FAST2SMS_URL, {
+            route: 'dlt',
+            sender_id: process.env.FAST2SMS_SENDER_ID || 'OLDFUL',
+            message: templateId,
+            variables_values: variablesString || "",
+            numbers: cleanNumber,
+            flash: 0,
+        }, {
+            headers: { 
+                authorization: apiKey, 
+                'Content-Type': 'application/json',
+                'cache-control': 'no-cache'
+            }
+        });
+
+        const resData = response.data;
+        if (resData.return) {
+            logger.info(`💬 DLT SMS sent to ${cleanNumber} [Template: ${templateId}]`);
+            return true;
+        } else {
+            logger.error(`Fast2SMS DLT rejected: ${JSON.stringify(resData)}`);
+            return false;
+        }
+    } catch (error) {
+        logger.error(`Fast2SMS DLT Error: ${error.response?.data || error.message}`);
         return false;
     }
 };
@@ -111,5 +166,6 @@ const sendWhatsAppMessage = async (phoneNumber, templateName, parameters = []) =
 
 module.exports = {
     sendSMS,
+    sendDLTSMS,
     sendWhatsAppMessage,
 };
