@@ -26,7 +26,7 @@ export default function SOSCountdown({ seconds = 3, onComplete, onCancel }: SOSC
 
     return (
         <Modal transparent={true} visible={true} animationType="fade">
-            <BlurView intensity={80} tint="dark" style={styles.container}>
+            <View style={[styles.container, { backgroundColor: 'rgba(0,0,0,0.85)' }]}>
                 <View style={styles.content}>
                     <Text style={styles.warningText}>EMERGENCY ALERT</Text>
                     <Text style={styles.subText}>Contacting Admin and Family in</Text>
@@ -39,7 +39,7 @@ export default function SOSCountdown({ seconds = 3, onComplete, onCancel }: SOSC
                         <Text style={styles.cancelText}>CANCEL</Text>
                     </TouchableOpacity>
                 </View>
-            </BlurView>
+            </View>
         </Modal>
     );
 }
