@@ -225,13 +225,15 @@ export default function ProfileSetupScreen() {
             <StatusBar style="dark" />
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
             >
                 <ScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode="interactive"
                 >
                     {/* ─── Header: Logo + "Let's Create your PROFILE" ─── */}
                     <View style={styles.header}>
@@ -430,7 +432,7 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 28,
         paddingTop: 57,
-        paddingBottom: 40,
+        paddingBottom: 120,
     },
 
     /* ─── Header ─── */
