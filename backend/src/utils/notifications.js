@@ -100,20 +100,41 @@ const sendWelcomeNotifications = async (user) => {
 // ─── SOS Notifications ────────────────────
 
 const sendSOSNotifications = async ({ user, location, familyContacts }) => {
-    // Notify admin
-    await sendWhatsApp({
-        phoneNumber: process.env.ADMIN_EMERGENCY_PHONE || '9999999999',
-        templateName: 'sos_alert_admin',
-        parameters: [user.name, user.uniqueUserId, location || 'Unknown'],
-    });
-
-    // Notify family contacts
-    for (const contact of familyContacts) {
+    if (process.env.FAST2SMS_SOS_TEMPLATE_ID) {
+        // Notify admin via DLT SMS
+        await fast2sms.sendDLTSMS(process.env.ADMIN_EMERGENCY_PHONE || '9999999999', process.env.FAST2SMS_SOS_TEMPLATE_ID, [user.name, location || 'Unknown']);
+        
+        // Notify family via DLT SMS
+        for (const contact of familyContacts) {
+            await fast2sms.sendDLTSMS(contact.phone, process.env.FAST2SMS_SOS_TEMPLATE_ID, [user.name, location || 'Unknown']);
+        }
+    } else {
+        // Fallback to WhatsApp
         await sendWhatsApp({
-            phoneNumber: contact.phone,
-            templateName: 'sos_alert_family',
-            parameters: [user.name, contact.name, location || 'Unknown'],
+            phoneNumber: process.env.ADMIN_EMERGENCY_PHONE || '9999999999',
+            templateName: 'sos_alert_admin',
+            parameters: [user.name, user.uniqueUserId, location || 'Unknown'],
         });
+
+        for (const contact of familyContacts) {
+            await sendWhatsApp({
+                phoneNumber: contact.phone,
+                templateName: 'sos_alert_family',
+                parameters: [user.name, contact.name, location || 'Unknown'],
+            });
+        }
+    }
+};
+
+// ─── Booking Confirmation ─────────────────
+
+const sendBookingConfirmation = async ({ user, bookingCode }) => {
+    if (process.env.FAST2SMS_ORDER_TEMPLATE_ID) {
+        await fast2sms.sendDLTSMS(
+            user.phone, 
+            process.env.FAST2SMS_ORDER_TEMPLATE_ID, 
+            [user.name, bookingCode, process.env.ADMIN_EMERGENCY_PHONE || '9480198108']
+        );
     }
 };
 
@@ -194,6 +215,7 @@ module.exports = {
     sendWhatsApp,
     sendWelcomeNotifications,
     sendSOSNotifications,
+    sendBookingConfirmation,
     sendExpiryReminder,
     sendPushToUser,
     sendPushToUsers,
