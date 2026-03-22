@@ -1,8 +1,12 @@
 // ══════════════════════════════════════════════════════════════
-//  Storage Service — Production Grade
+//  Storage Service — Production Grade (GCS-Only)
+//
+//  ⚠️  STRICT POLICY: Google Cloud Storage is the ONLY storage
+//  provider. Cloudflare is used EXCLUSIVELY as a CDN delivery
+//  layer. Do NOT add fallback storage providers (R2, S3, etc.).
 //
 //  Architecture:
-//    GCS (primary storage) → Cloudflare CDN (delivery) → Mobile App
+//    User → Cloudflare CDN (assets.oldful.com) → GCS (oldful-assets)
 //
 //  Bucket structure (Uniform Bucket-Level Access):
 //    /users/profile-avatars/{uuid}.jpg       ← public (IAM)
@@ -17,8 +21,7 @@
 //    /bookings/{service-slug}/{uuid}.jpg     ← public (IAM)
 //
 //  CDN delivery:
-//    ASSETS_CDN_URL → Cloudflare Transform Rule → GCS
-//    Fallback: https://storage.googleapis.com/{bucket}/{path}
+//    ASSETS_CDN_URL (assets.oldful.com) → Cloudflare Transform Rule → GCS
 //
 //  Security:
 //    - Uniform Bucket-Level Access (no per-object ACLs)
@@ -28,7 +31,6 @@
 // ══════════════════════════════════════════════════════════════
 
 const { Storage } = require('@google-cloud/storage');
-const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { logger } = require('../config/logger');
@@ -67,7 +69,9 @@ const buildFilePath = (folder, originalName) => {
     return `${folder}/${uuidv4()}${ext}`;
 };
 
-// ─── Google Cloud Storage (PRIMARY) ────────────────────
+// ══════════════════════════════════════════════════════════════
+//  Google Cloud Storage — SOLE STORAGE PROVIDER
+// ══════════════════════════════════════════════════════════════
 const gcsBucketName = process.env.GOOGLE_STORAGE_BUCKET_NAME;
 let gcsStorage = null;
 let gcsBucket = null;
@@ -76,61 +80,49 @@ try {
     gcsStorage = new Storage({ keyFilename: process.env.FIREBASE_SERVICE_ACCOUNT_PATH });
     if (gcsBucketName) {
         gcsBucket = gcsStorage.bucket(gcsBucketName);
-        logger.info('☁️  GCS initialized — bucket: ' + gcsBucketName);
+        logger.info(`☁️  GCS initialized — bucket: ${gcsBucketName} (sole provider)`);
+    } else {
+        logger.error('❌ GOOGLE_STORAGE_BUCKET_NAME is not set. Storage will not work.');
     }
 } catch (err) {
-    logger.warn('GCS initialization failed:', err.message);
-}
-
-// ─── Cloudflare R2 (FALLBACK) ──────────────────────────
-const r2Config = {
-    accountId: process.env.R2_ACCOUNT_ID,
-    accessKeyId: process.env.R2_ACCESS_KEY_ID,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-    bucketName: process.env.R2_BUCKET_NAME,
-};
-
-let r2Client = null;
-if (r2Config.accountId && r2Config.accessKeyId && r2Config.secretAccessKey) {
-    r2Client = new S3Client({
-        region: 'auto',
-        endpoint: `https://${r2Config.accountId}.r2.cloudflarestorage.com`,
-        credentials: {
-            accessKeyId: r2Config.accessKeyId,
-            secretAccessKey: r2Config.secretAccessKey,
-        },
-    });
-    logger.info('☁️  Cloudflare R2 initialized (fallback)');
+    logger.error('❌ GCS initialization FAILED:', err.message);
 }
 
 // ══════════════════════════════════════════════════════════════
-//  CDN URL BUILDER
+//  CDN URL BUILDER (sanitized, safe)
 //
-//  Priority:
-//    1. ASSETS_CDN_URL (Cloudflare — assets.oldful.com)
-//    2. GCS direct public URL (storage.googleapis.com/bucket/path)
-//
-//  For private folders → returns null (use signed download URL instead)
+//  Generates: https://assets.oldful.com/{storagePath}
+//  Sanitizes double slashes, leading slashes, and empty paths.
+//  For private folders → returns null (use signed download URL)
 // ══════════════════════════════════════════════════════════════
 const toCDNUrl = (storagePath, folder = '') => {
+    if (!storagePath) return null;
+
     // Private folders don't get public CDN URLs
     if (isPrivateFolder(folder || storagePath.split('/')[0])) return null;
 
-    const cdnBase = (process.env.ASSETS_CDN_URL || '').replace(/\/$/, '');
-    if (cdnBase) return `${cdnBase}/${storagePath}`;
-    // Fallback: GCS direct public URL
-    if (gcsBucketName) return `https://storage.googleapis.com/${gcsBucketName}/${storagePath}`;
+    // Sanitize: remove leading slashes and collapse double slashes
+    const cleanPath = storagePath.replace(/^\/+/, '').replace(/\/\//g, '/');
+    if (!cleanPath) return null;
+
+    const cdnBase = (process.env.ASSETS_CDN_URL || '').replace(/\/+$/, '');
+    if (cdnBase) return `${cdnBase}/${cleanPath}`;
+
+    // Fallback: GCS direct public URL (only if no CDN configured)
+    if (gcsBucketName) return `https://storage.googleapis.com/${gcsBucketName}/${cleanPath}`;
+
     return null;
 };
 
-// ─── GCS direct URL (always, for internal use) ──────────
+// ─── GCS direct URL (internal use only) ──────────
 const toGCSUrl = (storagePath) => {
-    if (!gcsBucketName) return null;
-    return `https://storage.googleapis.com/${gcsBucketName}/${storagePath}`;
+    if (!gcsBucketName || !storagePath) return null;
+    const cleanPath = storagePath.replace(/^\/+/, '').replace(/\/\//g, '/');
+    return `https://storage.googleapis.com/${gcsBucketName}/${cleanPath}`;
 };
 
 // ══════════════════════════════════════════════════════════════
-//  CLOUDFLARE CACHE PURGE
+//  CLOUDFLARE CACHE PURGE (CDN-only, no storage operations)
 // ══════════════════════════════════════════════════════════════
 const purgeCDNCache = async (fileUrl) => {
     const apiKey = process.env.CLOUDFLARE_API_KEY;
@@ -140,7 +132,7 @@ const purgeCDNCache = async (fileUrl) => {
     try {
         const urls = [fileUrl];
         // Also purge the GCS direct URL variant if CDN URL was provided
-        const cdnBase = (process.env.ASSETS_CDN_URL || '').replace(/\/$/, '');
+        const cdnBase = (process.env.ASSETS_CDN_URL || '').replace(/\/+$/, '');
         if (cdnBase && fileUrl.startsWith(cdnBase)) {
             const storagePath = fileUrl.replace(`${cdnBase}/`, '');
             const gcsUrl = toGCSUrl(storagePath);
@@ -157,21 +149,27 @@ const purgeCDNCache = async (fileUrl) => {
         });
         logger.info(`CDN cache purged: ${urls.join(', ')}`);
     } catch (err) {
-        logger.warn('CDN cache purge failed:', err.message);
+        logger.warn('CDN cache purge failed (non-fatal):', err.message);
     }
 };
 
 // ══════════════════════════════════════════════════════════════
-//  UPLOAD FILE (server-side proxy)
-//  For client-direct uploads, use getSignedUploadUrl() instead
+//  UPLOAD FILE — GCS ONLY (server-side proxy)
+//  For client-direct uploads, use getSignedUploadUrl() instead.
+//  ⚠️  No fallback to any other provider. If GCS fails, it throws.
 // ══════════════════════════════════════════════════════════════
 const uploadFile = async (buffer, folder = 'general', originalName = 'file', file = null) => {
+    if (!gcsBucket) {
+        const msg = 'GCS is not configured. Cannot upload. Check GOOGLE_STORAGE_BUCKET_NAME and FIREBASE_SERVICE_ACCOUNT_PATH.';
+        logger.error(`❌ ${msg}`);
+        throw new Error(msg);
+    }
+
     const storagePath = buildFilePath(folder, originalName);
     const contentType = detectMimeType(originalName, file);
     const isPrivate = isPrivateFolder(folder);
 
-    // ── Primary: GCS ──────────────────────────
-    if (gcsBucket) {
+    try {
         const gcsFile = gcsBucket.file(storagePath);
 
         // Set appropriate cache headers based on folder type
@@ -199,30 +197,12 @@ const uploadFile = async (buffer, folder = 'general', originalName = 'file', fil
             url = toCDNUrl(storagePath, folder) || gcsUrl;
         }
 
-        logger.info(`Uploaded to GCS [${isPrivate ? 'private' : 'public'}]: ${storagePath}`);
+        logger.info(`✅ Uploaded to GCS [${isPrivate ? 'private' : 'public'}]: ${storagePath}`);
         return { success: true, url, storagePath, gcsUri, gcsUrl, provider: 'gcs', isPrivate };
+    } catch (err) {
+        logger.error(`❌ GCS upload FAILED for ${storagePath}: ${err.message}`);
+        throw new Error(`GCS upload failed: ${err.message}`);
     }
-
-    // ── Fallback: R2 ─────────────────────────
-    if (r2Client && r2Config.bucketName) {
-        const command = new PutObjectCommand({
-            Bucket: r2Config.bucketName,
-            Key: storagePath,
-            Body: buffer,
-            ContentType: contentType,
-            CacheControl: 'public, max-age=31536000, immutable',
-        });
-        await r2Client.send(command);
-
-        const cdnUrl = toCDNUrl(storagePath, folder);
-        const r2Url = `https://${r2Config.bucketName}.${r2Config.accountId}.r2.cloudflarestorage.com/${storagePath}`;
-        const url = cdnUrl || r2Url;
-
-        logger.info(`Uploaded to R2: ${storagePath}`);
-        return { success: true, url, storagePath, gcsUri: null, gcsUrl: null, provider: 'r2', isPrivate: false };
-    }
-
-    throw new Error('No storage provider configured (GCS or R2)');
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -241,10 +221,6 @@ const getSignedUploadUrl = async (folder, originalName, contentType, expiresMinu
         action: 'write',
         expires: Date.now() + expiresMinutes * 60 * 1000,
         contentType,
-        // NOTE: Do NOT add extensionHeaders here — the client must send
-        // the exact same headers in the PUT request, which React Native
-        // fetch() doesn't support reliably. Size validation is done
-        // server-side in the confirm step and upload pipeline instead.
     });
 
     const gcsUrl = toGCSUrl(storagePath);
@@ -272,11 +248,11 @@ const getSignedDownloadUrl = async (storagePath, expiresMinutes = 60) => {
 };
 
 // ══════════════════════════════════════════════════════════════
-//  DELETE FILE — removes from storage + purges CDN
+//  DELETE FILE — GCS ONLY + CDN purge
 // ══════════════════════════════════════════════════════════════
 const deleteFile = async (fileUrl, storagePath = null) => {
     if (!storagePath) {
-        const cdnBase = (process.env.ASSETS_CDN_URL || '').replace(/\/$/, '');
+        const cdnBase = (process.env.ASSETS_CDN_URL || '').replace(/\/+$/, '');
         const gcsBase = `https://storage.googleapis.com/${gcsBucketName}/`;
 
         if (cdnBase && fileUrl.startsWith(cdnBase)) {
@@ -287,26 +263,22 @@ const deleteFile = async (fileUrl, storagePath = null) => {
     }
 
     if (!storagePath) {
-        logger.warn('deleteFile: could not derive storagePath from fileUrl');
+        logger.warn('deleteFile: could not derive storagePath from fileUrl:', fileUrl);
         return false;
     }
 
     try {
-        if (gcsBucket) {
-            await gcsBucket.file(storagePath).delete({ ignoreNotFound: true });
-            logger.info(`Deleted from GCS: ${storagePath}`);
-        } else if (r2Client && r2Config.bucketName) {
-            await r2Client.send(new DeleteObjectCommand({
-                Bucket: r2Config.bucketName,
-                Key: storagePath,
-            }));
-            logger.info(`Deleted from R2: ${storagePath}`);
+        if (!gcsBucket) {
+            logger.error('❌ GCS not configured. Cannot delete file.');
+            return false;
         }
+        await gcsBucket.file(storagePath).delete({ ignoreNotFound: true });
+        logger.info(`🗑️  Deleted from GCS: ${storagePath}`);
 
         await purgeCDNCache(fileUrl);
         return true;
     } catch (err) {
-        logger.error('deleteFile error:', err.message);
+        logger.error(`❌ GCS delete FAILED for ${storagePath}: ${err.message}`);
         return false;
     }
 };
@@ -320,10 +292,10 @@ const makeFilePublic = async (storagePath, folder = '') => {
 };
 
 // ══════════════════════════════════════════════════════════════
-//  STORAGE HEALTH CHECK — verifies GCS + R2 connectivity
+//  STORAGE HEALTH CHECK — GCS + CDN only
 // ══════════════════════════════════════════════════════════════
 const healthCheck = async () => {
-    const status = { gcs: false, r2: false, cdn: false };
+    const status = { gcs: false, cdn: false, cdnCacheStatus: null };
 
     // GCS
     if (gcsBucket) {
@@ -333,20 +305,14 @@ const healthCheck = async () => {
         } catch { status.gcs = false; }
     }
 
-    // R2
-    if (r2Client) {
-        try {
-            // Simple head to check connectivity
-            status.r2 = true;
-        } catch { status.r2 = false; }
-    }
-
-    // CDN
+    // CDN (Cloudflare)
     const cdnBase = process.env.ASSETS_CDN_URL;
     if (cdnBase) {
         try {
             const res = await fetch(cdnBase, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
             status.cdn = res.status < 500;
+            // Verify Cloudflare cf-cache-status header
+            status.cdnCacheStatus = res.headers.get('cf-cache-status') || 'NOT_CLOUDFLARE';
         } catch { status.cdn = false; }
     }
 

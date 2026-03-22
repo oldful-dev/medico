@@ -1,23 +1,23 @@
 // ──────────────────────────────────────────────
-//  Upload Pipeline — Orchestrator
+//  Upload Pipeline — Orchestrator (GCS-Only)
+//
+//  ⚠️  STRICT POLICY: All uploads go to GCS only.
+//  Cloudflare is used ONLY as a CDN delivery layer.
 //
 //  Full flow:
 //    1. Validate file (type, size)
-//    2. Upload raw file → GCS (primary storage)
+//    2. Upload raw file → GCS (oldful-assets)
 //    3. Process: OCR / compression (if applicable)
-//    4. Upload processed file → R2 (CDN delivery)
-//    5. Return { gcsUrl, cdnUrl, processedData }
+//    4. Return { gcsUrl, cdnUrl, processedData }
 //
 //  Failures are handled gracefully:
 //    - If OCR fails → still returns upload URLs
-//    - If R2 fails → falls back to GCS public URL
 //    - All operations are logged
 // ──────────────────────────────────────────────
 
 const path = require('path');
 const sharp = require('sharp');
 const { uploadFile, toCDNUrl, makeFilePublic } = require('./storage.service');
-const { uploadToR2, isAvailable: r2Available } = require('./r2.service');
 const { analyzeBuffer, analyzeDocumentFromGCS } = require('./ocr.service');
 const { logger } = require('../config/logger');
 
@@ -106,7 +106,7 @@ const compressImage = async (buffer, mimeType, opts = {}) => {
 const uploadToGCS = async (buffer, folder, originalName, file) => {
     const rawFolder = `uploads/raw/${folder}`;
     const result = await uploadFile(buffer, rawFolder, originalName, file);
-    return result; // { url, storagePath, gcsUri, provider }
+    return result; // { url, storagePath, gcsUri, provider: 'gcs' }
 };
 
 /**
@@ -143,35 +143,6 @@ const runCompression = async (buffer, mimeType, opts = {}) => {
     return compressImage(buffer, mimeType, opts.compressionOpts);
 };
 
-/**
- * Step 4: Upload processed file to R2 for CDN delivery.
- * Falls back to GCS public URL if R2 is unavailable.
- */
-const uploadToFinalStorage = async (buffer, folder, originalName, opts = {}) => {
-    // Try R2 first (CDN delivery layer)
-    if (r2Available()) {
-        try {
-            const result = await uploadToR2(buffer, folder, originalName, {
-                contentType: opts.contentType,
-            });
-            return {
-                cdnUrl: result.cdnUrl,
-                r2Path: result.r2Path,
-                provider: 'r2',
-            };
-        } catch (err) {
-            logger.warn('R2 upload failed, falling back to GCS:', err.message);
-        }
-    }
-
-    // Fallback: serve directly from GCS via CDN proxy
-    return {
-        cdnUrl: null, // will use gcsUrl
-        r2Path: null,
-        provider: 'gcs-fallback',
-    };
-};
-
 // ─── Main Pipeline ───────────────────────────────────────
 
 /**
@@ -183,7 +154,6 @@ const uploadToFinalStorage = async (buffer, folder, originalName, opts = {}) => 
  * @param {string} opts.userId - for structured path: uploads/raw/{userId}/...
  * @param {boolean} opts.enableOCR - run OCR processing (default false)
  * @param {boolean} opts.compress - compress images (default true)
- * @param {boolean} opts.moveToR2 - upload processed file to R2 (default true)
  * @param {object} opts.compressionOpts - { maxWidth, maxHeight, quality }
  *
  * @returns {{
@@ -191,7 +161,6 @@ const uploadToFinalStorage = async (buffer, folder, originalName, opts = {}) => 
  *   cdnUrl: string | null,
  *   storagePath: string,
  *   gcsUri: string,
- *   r2Path: string | null,
  *   processedData: object | null,
  *   fileMetadata: { fileName, fileType, fileSize, mimeType },
  * }}
@@ -202,7 +171,6 @@ const processUpload = async (file, opts = {}) => {
         userId = 'anonymous',
         enableOCR = false,
         compress = true,
-        moveToR2 = true,
         compressionOpts = {},
     } = opts;
 
@@ -226,31 +194,20 @@ const processUpload = async (file, opts = {}) => {
 
     logger.info(`Pipeline Step 3 [Compression]: ${Date.now() - startTime}ms`);
 
-    // ── Step 4: Upload processed to R2 (or GCS fallback) ─
-    let finalResult = { cdnUrl: null, r2Path: null, provider: 'gcs' };
-    if (moveToR2) {
-        finalResult = await uploadToFinalStorage(processedBuffer, folder, file.originalname, {
-            contentType: processedMimeType,
-        });
-    }
-
-    logger.info(`Pipeline Step 4 [Final Storage]: ${Date.now() - startTime}ms`);
-
     // ── Wait for OCR ────────────────────────────────────
     const processedData = await ocrPromise;
 
     logger.info(`Pipeline Complete: ${Date.now() - startTime}ms total`);
 
     // ── Build response ──────────────────────────────────
-    const cdnUrl = finalResult.cdnUrl || toCDNUrl(gcsResult.storagePath) || gcsResult.url;
+    const cdnUrl = toCDNUrl(gcsResult.storagePath) || gcsResult.url;
 
     return {
         gcsUrl: gcsResult.url,
         cdnUrl,
         storagePath: gcsResult.storagePath,
         gcsUri: gcsResult.gcsUri,
-        r2Path: finalResult.r2Path,
-        provider: finalResult.provider,
+        provider: 'gcs',
         processedData,
         fileMetadata: {
             fileName: file.originalname,
@@ -263,7 +220,7 @@ const processUpload = async (file, opts = {}) => {
 };
 
 /**
- * Lightweight upload — skips OCR & R2, just uploads to GCS and makes it public.
+ * Lightweight upload — skips OCR, just uploads to GCS and makes it public.
  * Used for service booking attachments where CDN isn't critical.
  */
 const quickUpload = async (file, folder = 'general') => {
@@ -277,7 +234,7 @@ const quickUpload = async (file, folder = 'general') => {
         url: result.url,
         storagePath: result.storagePath,
         gcsUri: result.gcsUri,
-        provider: result.provider,
+        provider: 'gcs',
     };
 };
 

@@ -35,7 +35,7 @@ backend/
 ```bash
 cd backend
 npm install
-cp .env.example .env        # Fill in Supabase, Razorpay, Fast2SMS, ZeptoMail, R2 keys
+cp .env.example .env        # Fill in Supabase, Razorpay, Fast2SMS, ZeptoMail, GCS keys
 npx prisma generate
 npx prisma migrate deploy
 npm run prisma:seed          # Creates super admin + seed data
@@ -425,7 +425,8 @@ InsuranceApplication, Coupon, MediaAsset, SupportTicket, TicketMessage
 | Database | PostgreSQL (Supabase) |
 | Auth | JWT + bcrypt |
 | Payments | Razorpay |
-| File Storage | Cloudflare R2 (AWS S3 SDK) |
+| File Storage | Google Cloud Storage (GCS) |
+| CDN | Cloudflare (assets.oldful.com → GCS) |
 | PDF Engine | PDFKit |
 | Cron | node-cron |
 | Email | ZeptoMail |

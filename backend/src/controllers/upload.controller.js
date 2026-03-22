@@ -1,10 +1,13 @@
 // ──────────────────────────────────────────────
-//  Upload Controller
-//  Full pipeline: GCS → OCR → R2 → CDN URL
+//  Upload Controller (GCS-Only)
+//  Full pipeline: GCS → OCR → Cloudflare CDN URL
+//
+//  ⚠️  STRICT POLICY: All uploads go to GCS only.
+//  No R2, S3, or any fallback storage provider.
 //
 //  Endpoints:
 //    POST /api/upload              - Full pipeline (proxy upload)
-//    POST /api/upload/quick        - Quick upload (GCS only, no OCR/R2)
+//    POST /api/upload/quick        - Quick upload (GCS only, no OCR)
 //    POST /api/upload/batch        - Multiple files at once
 //    POST /api/upload/process-existing - Run OCR on already-uploaded file
 // ──────────────────────────────────────────────
@@ -18,7 +21,7 @@ const { logger } = require('../config/logger');
 // ─────────────────────────────────────────────────────────
 //  POST /api/upload
 //
-//  Full pipeline: validate → GCS → compress → OCR → R2 → DB
+//  Full pipeline: validate → GCS → compress → OCR → CDN URL → DB
 //
 //  Body (multipart/form-data):
 //    file         - the file to upload
@@ -47,7 +50,6 @@ const fullUpload = async (req, res, next) => {
             userId,
             enableOCR,
             compress,
-            moveToR2: true,
         });
 
         // Register in DB
@@ -69,7 +71,6 @@ const fullUpload = async (req, res, next) => {
                 cdnUrl: result.cdnUrl,
                 gcsUrl: result.gcsUrl,
                 storagePath: result.storagePath,
-                r2Path: result.r2Path,
                 provider: result.provider,
                 processedData: result.processedData,
                 fileMetadata: result.fileMetadata,
@@ -84,7 +85,7 @@ const fullUpload = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────
 //  POST /api/upload/quick
 //
-//  Quick upload: GCS only, no OCR, no R2 transfer.
+//  Quick upload: GCS only, no OCR.
 //  For service booking attachments that don't need CDN.
 //
 //  Body (multipart/form-data):
@@ -170,7 +171,6 @@ const batchUpload = async (req, res, next) => {
                     userId,
                     enableOCR,
                     compress: true,
-                    moveToR2: true,
                 });
 
                 const asset = await prisma.mediaAsset.create({
