@@ -87,7 +87,7 @@ parse_pdf.js
 parse_api_list.js
 *.ps1
 API_LIST.pdf
-
+RedcliffeLabs API Documentation.pdf
 # ───── Misc ─────
 *.orig.*
 .gemini/
