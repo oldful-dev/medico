@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
+  TextInput,
   Image,
   TouchableOpacity,
   StyleSheet,
@@ -232,6 +233,24 @@ export default function DynamicServiceScreen({ slug, needsLocation = true }: Pro
   const title = service?.name || '';
   const heroImageUrl = layout?.hero_image_url || service?.heroImageUrl;
 
+  // ─── Address Confirmation Block ───
+  const AddressBlock = () => (
+    <View style={styles.addressSection}>
+      <View style={styles.addressHeader}>
+        <Ionicons name="location-outline" size={18} color={Colors.primary} />
+        <Text style={styles.addressLabel}>Confirm Address</Text>
+      </View>
+      <TextInput
+        style={styles.addressInput}
+        value={address}
+        onChangeText={setAddress}
+        placeholder="Enter your address..."
+        placeholderTextColor={Colors.textMuted}
+        multiline
+      />
+    </View>
+  );
+
   // ─── green_hero layout ───
   if (headerStyle === 'green_hero') {
     return (
@@ -256,6 +275,7 @@ export default function DynamicServiceScreen({ slug, needsLocation = true }: Pro
               formState={formState}
               onFieldChange={handleFieldChange}
             />
+            {needsLocation && <AddressBlock />}
           </KeyboardAwareScrollView>
 
           <SafeAreaView edges={['bottom']} style={styles.bottomBar}>
@@ -315,6 +335,7 @@ export default function DynamicServiceScreen({ slug, needsLocation = true }: Pro
             formState={formState}
             onFieldChange={handleFieldChange}
           />
+          {needsLocation && <AddressBlock />}
 
           <View style={styles.ctaContainer}>
             <TouchableOpacity
@@ -370,6 +391,7 @@ export default function DynamicServiceScreen({ slug, needsLocation = true }: Pro
             formState={formState}
             onFieldChange={handleFieldChange}
           />
+          {needsLocation && <AddressBlock />}
         </KeyboardAwareScrollView>
 
         <SafeAreaView edges={['bottom']} style={styles.bottomBar}>
@@ -563,5 +585,41 @@ const styles = StyleSheet.create({
     marginBottom: 25,
     letterSpacing: -0.24,
     paddingHorizontal: 10,
+  },
+
+  // ─── Address Confirmation ───
+  addressSection: {
+    marginTop: 8,
+    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.md,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
+  },
+  addressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  addressLabel: {
+    fontFamily: Fonts.medium,
+    fontSize: FontSize.body,
+    color: Colors.textDark,
+    letterSpacing: -0.24,
+  },
+  addressInput: {
+    fontFamily: Fonts.regular,
+    fontSize: FontSize.bodySmall,
+    color: Colors.textBody,
+    backgroundColor: '#F8F8F8',
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 48,
+    textAlignVertical: 'top',
   },
 });
