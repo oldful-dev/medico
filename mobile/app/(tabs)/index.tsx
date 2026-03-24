@@ -94,6 +94,9 @@ export default function HomeScreen() {
                 <Text style={styles.sosTagText}>SOS</Text>
               </TouchableOpacity>
             )}
+            <TouchableOpacity onPress={() => router.push('/search')}>
+              <Ionicons name="search-outline" size={22} color="#2F2F2F" />
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push('/notifications')}>
               <Ionicons name="notifications-outline" size={22} color="#2F2F2F" />
             </TouchableOpacity>

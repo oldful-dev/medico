@@ -564,9 +564,9 @@ const FORM_CONFIGS = {
           display: 'stacked',
           default_value: 'home_style',
           options: [
-            { id: 'home_style', label: 'Home Style', sub_label: '(Roti, Sabzi, Dal, Rice)', sort_order: 1 },
-            { id: 'diabetic', label: 'Diabetic Friendly', sub_label: '(Low GI, balanced meals)', sort_order: 2 },
-            { id: 'south_indian', label: 'South Indian', sub_label: '(Idli, Dosa, Rice varieties)', sort_order: 3 },
+            { id: 'diabetic', label: 'Diabetic Friendly', sub_label: '(Low GI, less rice)', sort_order: 1 },
+            { id: 'home_style', label: 'Home Style', sub_label: '(Roti, Dal, Sabzi)', sort_order: 2 },
+            { id: 'soft_food', label: 'Soft Food', sub_label: '(Khichdi/Porridge - for recovering patients)', sort_order: 3 },
           ],
         }],
       },
@@ -581,9 +581,8 @@ const FORM_CONFIGS = {
           display: 'stacked',
           default_value: 'monthly',
           options: [
-            { id: 'monthly', label: 'Monthly Subscription', sort_order: 1 },
-            { id: 'weekly', label: 'Weekly Plan', sort_order: 2 },
-            { id: 'trial', label: 'Try 3 Days', sort_order: 3 },
+            { id: 'trial', label: 'Trial (3 Days)', sort_order: 1 },
+            { id: 'monthly', label: 'Monthly Subscription', sub_label: '(Lunch & Dinner)', sort_order: 2 },
           ],
         }],
       },
@@ -745,6 +744,18 @@ const FORM_CONFIGS = {
     },
     sections: [
       {
+        id: 'pricing',
+        sort_order: 0,
+        card_style: 'none',
+        fields: [{
+          id: 'pricing_banner',
+          type: 'info_banner',
+          icon_key: 'price_tag',
+          title: 'Price: ₹499 Booking Fee + Vendor Bill',
+          bg_color: '#FFF8E1',
+        }],
+      },
+      {
         id: 'details',
         title: 'Appliance Details',
         sort_order: 1,
@@ -792,6 +803,18 @@ const FORM_CONFIGS = {
           required: true,
         }],
       },
+      {
+        id: 'disclaimer',
+        sort_order: 99,
+        card_style: 'none',
+        fields: [{
+          id: 'service_note',
+          type: 'info_banner',
+          icon_key: 'info',
+          title: 'Booking Fee covers finding, verifying & scheduling the professional. Actual repair cost (parts, labour) is paid directly to the vendor on completion.',
+          bg_color: '#F5F5F5',
+        }],
+      },
     ],
   },
 
@@ -799,12 +822,24 @@ const FORM_CONFIGS = {
     version: 1,
     layout: {
       header_style: 'cream_flat',
-      description: 'Book a certified Grocery run and installations in your home',
+      description: 'We pick up groceries from your favourite store and deliver to your door.',
       hero_subtitle: 'Concierge Services',
       cta_text: 'Book Service',
       cta_loading_text: 'Processing...',
     },
     sections: [
+      {
+        id: 'pricing',
+        sort_order: 0,
+        card_style: 'none',
+        fields: [{
+          id: 'pricing_banner',
+          type: 'info_banner',
+          icon_key: 'price_tag',
+          title: 'Price: ₹299 Delivery Fee + Bill',
+          bg_color: '#FFF8E1',
+        }],
+      },
       {
         id: 'order',
         title: 'What do you need?',
@@ -851,6 +886,18 @@ const FORM_CONFIGS = {
           upload_category: 'grocery-run',
         }],
       },
+      {
+        id: 'disclaimer',
+        sort_order: 99,
+        card_style: 'none',
+        fields: [{
+          id: 'service_note',
+          type: 'info_banner',
+          icon_key: 'info',
+          title: 'Delivery Fee covers the pickup and delivery. Grocery bill amount is paid separately.',
+          bg_color: '#F5F5F5',
+        }],
+      },
     ],
   },
 
@@ -864,6 +911,18 @@ const FORM_CONFIGS = {
       cta_loading_text: 'Processing...',
     },
     sections: [
+      {
+        id: 'pricing',
+        sort_order: 0,
+        card_style: 'none',
+        fields: [{
+          id: 'pricing_banner',
+          type: 'info_banner',
+          icon_key: 'price_tag',
+          title: 'Price: ₹499 Booking Fee + Vendor Bill',
+          bg_color: '#FFF8E1',
+        }],
+      },
       {
         id: 'details',
         sort_order: 1,
@@ -911,6 +970,18 @@ const FORM_CONFIGS = {
           upload_category: 'deep-cleaning',
         }],
       },
+      {
+        id: 'disclaimer',
+        sort_order: 99,
+        card_style: 'none',
+        fields: [{
+          id: 'service_note',
+          type: 'info_banner',
+          icon_key: 'info',
+          title: 'Booking Fee covers finding, verifying & scheduling the professional. Actual cleaning cost is paid directly to the vendor on completion.',
+          bg_color: '#F5F5F5',
+        }],
+      },
     ],
   },
 
@@ -924,6 +995,18 @@ const FORM_CONFIGS = {
       cta_loading_text: 'Processing...',
     },
     sections: [
+      {
+        id: 'pricing',
+        sort_order: 0,
+        card_style: 'none',
+        fields: [{
+          id: 'pricing_banner',
+          type: 'info_banner',
+          icon_key: 'price_tag',
+          title: 'Price: ₹499 Booking Fee + Vendor Bill',
+          bg_color: '#FFF8E1',
+        }],
+      },
       {
         id: 'details',
         sort_order: 1,
@@ -971,6 +1054,18 @@ const FORM_CONFIGS = {
           upload_category: 'plumbing-electrical',
         }],
       },
+      {
+        id: 'disclaimer',
+        sort_order: 99,
+        card_style: 'none',
+        fields: [{
+          id: 'service_note',
+          type: 'info_banner',
+          icon_key: 'info',
+          title: 'Booking Fee covers finding, verifying & scheduling the professional. Actual repair cost (parts, labour) is paid directly to the vendor on completion.',
+          bg_color: '#F5F5F5',
+        }],
+      },
     ],
   },
 
@@ -984,6 +1079,18 @@ const FORM_CONFIGS = {
       cta_loading_text: 'Processing...',
     },
     sections: [
+      {
+        id: 'pricing',
+        sort_order: 0,
+        card_style: 'none',
+        fields: [{
+          id: 'pricing_banner',
+          type: 'info_banner',
+          icon_key: 'price_tag',
+          title: 'Price: ₹299 Booking Fee + Trip Cost',
+          bg_color: '#FFF8E1',
+        }],
+      },
       {
         id: 'route',
         sort_order: 1,
@@ -1024,6 +1131,18 @@ const FORM_CONFIGS = {
           required: true,
         }],
       },
+      {
+        id: 'disclaimer',
+        sort_order: 99,
+        card_style: 'none',
+        fields: [{
+          id: 'service_note',
+          type: 'info_banner',
+          icon_key: 'info',
+          title: 'Booking Fee covers scheduling. Trip cost (fuel, tolls, distance) is paid directly to the driver.',
+          bg_color: '#F5F5F5',
+        }],
+      },
     ],
   },
 
@@ -1037,6 +1156,18 @@ const FORM_CONFIGS = {
       cta_loading_text: 'Processing...',
     },
     sections: [
+      {
+        id: 'pricing',
+        sort_order: 0,
+        card_style: 'none',
+        fields: [{
+          id: 'pricing_banner',
+          type: 'info_banner',
+          icon_key: 'price_tag',
+          title: 'Price: ₹299 Service Fee (Max 2 Bills)',
+          bg_color: '#FFF8E1',
+        }],
+      },
       {
         id: 'bill_details',
         sort_order: 1,
@@ -1078,6 +1209,18 @@ const FORM_CONFIGS = {
           upload_category: 'bill-payment',
         }],
       },
+      {
+        id: 'disclaimer',
+        sort_order: 99,
+        card_style: 'none',
+        fields: [{
+          id: 'service_note',
+          type: 'info_banner',
+          icon_key: 'info',
+          title: 'Service Fee covers processing up to 2 bills. Bill amounts are paid separately by you.',
+          bg_color: '#F5F5F5',
+        }],
+      },
     ],
   },
 
@@ -1091,6 +1234,18 @@ const FORM_CONFIGS = {
       cta_loading_text: 'Processing...',
     },
     sections: [
+      {
+        id: 'pricing',
+        sort_order: 0,
+        card_style: 'none',
+        fields: [{
+          id: 'pricing_banner',
+          type: 'info_banner',
+          icon_key: 'price_tag',
+          title: 'Price: ₹499 Booking Fee + Actuals',
+          bg_color: '#FFF8E1',
+        }],
+      },
       {
         id: 'details',
         sort_order: 1,
@@ -1137,6 +1292,18 @@ const FORM_CONFIGS = {
           upload_category: 'bank-paperwork',
         }],
       },
+      {
+        id: 'disclaimer',
+        sort_order: 99,
+        card_style: 'none',
+        fields: [{
+          id: 'service_note',
+          type: 'info_banner',
+          icon_key: 'info',
+          title: 'Booking Fee covers scheduling and assistance. Any bank charges or stamp duties are paid separately.',
+          bg_color: '#F5F5F5',
+        }],
+      },
     ],
   },
 
@@ -1160,10 +1327,10 @@ const FORM_CONFIGS = {
           display: 'stacked',
           default_value: 'digital_life_cert',
           options: [
-            { id: 'digital_life_cert', label: 'Digital Life Certificate', sub_label: '(Jeevan Pramaan)', sort_order: 1 },
-            { id: 'will_writing', label: 'Will Writing', sub_label: '(Legal assistance)', sort_order: 2 },
-            { id: 'property_docs', label: 'Property Documents', sub_label: '(Registration, transfers)', sort_order: 3 },
-            { id: 'govt_forms', label: 'Government Forms', sub_label: '(Pension, Aadhaar, etc.)', sort_order: 4 },
+            { id: 'digital_life_cert', label: 'Digital Life Certificate', sub_label: '(Jeevan Pramaan - Home visit)', sort_order: 1 },
+            { id: 'bank_kyc', label: 'Bank KYC Update', sub_label: '(Assistance)', sort_order: 2 },
+            { id: 'will_registration', label: 'Will Registration', sub_label: '(Lawyer connect)', sort_order: 3 },
+            { id: 'govt_id_update', label: 'Govt ID Update', sub_label: '(Aadhaar/PAN fix)', sort_order: 4 },
           ],
         }],
       },
