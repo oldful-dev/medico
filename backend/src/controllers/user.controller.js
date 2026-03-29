@@ -92,8 +92,9 @@ const createUser = async (req, res, next) => {
     try {
         const { name, phone, email, gender, dateOfBirth, cityId, preferredLanguage, profileImageUrl, emergencyNumber, flatNumber, addressLine } = req.body;
 
-        if (!cityId) return sendResponse(res, 400, null, 'cityId is required');
+        if (!name || name.trim().length < 3) return sendResponse(res, 400, null, 'name is required (min 3 characters)');
         if (!phone) return sendResponse(res, 400, null, 'phone is required');
+        if (!cityId) return sendResponse(res, 400, null, 'cityId is required');
 
         const uniqueUserId = await generateUserId(cityId);
 
@@ -459,13 +460,14 @@ const getMyProfile = async (req, res, next) => {
 // PUT /api/users/profile  (App user — update own profile)
 const updateMyProfile = async (req, res, next) => {
     try {
-        const { name, email, gender, dateOfBirth, preferredLanguage } = req.body;
+        const { name, email, gender, dateOfBirth, preferredLanguage, profileImageUrl } = req.body;
         const data = {};
         if (name) data.name = name;
         if (email) data.email = email;
         if (gender) data.gender = gender;
         if (dateOfBirth) data.dateOfBirth = new Date(dateOfBirth);
         if (preferredLanguage) data.preferredLanguage = preferredLanguage;
+        if (profileImageUrl) data.profileImageUrl = profileImageUrl;
 
         const user = await prisma.user.update({
             where: { id: req.user.id },

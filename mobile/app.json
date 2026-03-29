@@ -47,7 +47,14 @@
           "backgroundColor": "#FFFFF0"
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Oldful to access your location for emergency SOS alerts and address auto-fill.",
+          "locationWhenInUsePermission": "Allow Oldful to access your location for emergency SOS alerts and address auto-fill."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

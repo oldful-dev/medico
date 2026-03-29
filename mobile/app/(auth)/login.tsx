@@ -45,11 +45,10 @@ export default function LoginScreen() {
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const isVerifyingRef = useRef(false);
 
-    // Google Sign-In — authorization code flow (works in Expo Go)
+    // Google Sign-In — works in dev builds / production APK (not Expo Go)
     const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
-        expoClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
-        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
-        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
+        clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
+        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '',
     });
 
     // Animation for OTP section reveal
