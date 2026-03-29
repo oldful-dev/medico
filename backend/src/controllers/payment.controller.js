@@ -183,15 +183,12 @@ const verifyPayment = async (req, res, next) => {
                 });
             }
 
-            // Send invoice notification via WhatsApp
+            // Send payment confirmation via WhatsApp (Interakt)
+            // Template: oldful_payment_confirmation — {{1}}=name {{2}}=amount
             await sendWhatsApp({
                 phoneNumber: payment.user.phone,
                 templateName: 'invoice_confirmation',
-                parameters: [
-                    { name: 'user_name', value: payment.user.name },
-                    { name: 'amount', value: `₹${payment.amount}` },
-                    { name: 'invoice_url', value: url }
-                ]
+                parameters: [payment.user.name, `₹${payment.amount}`],
             });
 
             await prisma.invoice.update({

@@ -40,23 +40,22 @@ export const sosService = {
      * 2. POST /api/sos with location data
      * 3. Backend notifies admin + family via WhatsApp/SMS
      */
-    triggerSOS: async (cityId: string): Promise<ApiResponse<SOSAlert>> => {
+    triggerSOS: async (): Promise<ApiResponse<SOSAlert>> => {
         // 1. Request location permission
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
-            // Still send SOS without coordinates
-            return apiClient.post<SOSAlert>('/sos', { cityId });
+            // Still send SOS without coordinates — backend uses user profile cityId
+            return apiClient.post<SOSAlert>('/sos', {});
         }
 
-        // 2. Get current position
+        // 2. Get current position — Balanced is faster than High in emergency situations
         try {
             const location = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.High,
+                accuracy: Location.Accuracy.Balanced,
             });
 
-            // 3. Send to backend with GPS (wrapped in 'location' object to match controller)
+            // 3. Send to backend with GPS
             return apiClient.post<SOSAlert>('/sos', {
-                cityId,
                 location: {
                     latitude: location.coords.latitude,
                     longitude: location.coords.longitude,
@@ -64,7 +63,7 @@ export const sosService = {
             });
         } catch {
             // Location fetch failed — send without coordinates
-            return apiClient.post<SOSAlert>('/sos', { cityId, location: null });
+            return apiClient.post<SOSAlert>('/sos', { location: null });
         }
     },
 

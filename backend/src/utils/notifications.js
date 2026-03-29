@@ -1,12 +1,15 @@
 // ──────────────────────────────────────────────
-//  Notification Service (Email + WhatsApp)
+//  Notification Service (Email + WhatsApp + Push)
+//
+//  Channel routing:
+//    WhatsApp → Interakt (interakt.service.js)
+//    SMS/OTP  → Fast2SMS (fast2sms.js)  ← unchanged
+//    Email    → ZeptoMail (zeptomail.js)
+//    Push     → FCM (pushNotification.service.js)
 // ──────────────────────────────────────────────
 
 const { logger } = require('../config/logger');
 const prisma = require('../config/database');
-
-
-// ─── Email (SendGrid) ──────────────────────
 
 // ─── Email (ZeptoMail) ──────────────────────
 
@@ -20,7 +23,6 @@ const sendEmail = async ({ to, subject, html, attachments = [], userId = null })
             logger.info(`📧 Email sent to ${to}: ${subject}`);
         }
 
-        // Log notification
         await prisma.notificationLog.create({
             data: {
                 channel: 'EMAIL',
@@ -41,33 +43,76 @@ const sendEmail = async ({ to, subject, html, attachments = [], userId = null })
     }
 };
 
-// ─── WhatsApp (Fast2SMS) ───────────────────
+// ─── WhatsApp (Interakt) ───────────────────
+// Fast2SMS WhatsApp has been replaced.
+// SMS/OTP from Fast2SMS is untouched below.
 
+const interakt = require('../services/interakt.service');
 const fast2sms = require('./fast2sms');
 
+/**
+ * Send a WhatsApp template message via Interakt.
+ * Signature is backward-compatible with the old Fast2SMS wrapper —
+ * callers that pass `parameters` (array) continue to work.
+ *
+ * @param {object} opts
+ * @param {string}   opts.phoneNumber   - Recipient phone
+ * @param {string}   opts.templateName  - Interakt template name
+ * @param {string[]|object[]} opts.parameters - Template body variables
+ * @param {string}   [opts.userId]      - For notification log
+ */
 const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [], userId = null }) => {
+    // Normalise parameters: support both old array-of-strings and
+    // object array formats ({ name, value }) used in payment controller
+    const variables = parameters.map(p =>
+        typeof p === 'object' && p !== null && 'value' in p ? p.value : String(p)
+    );
+
+    let success = false;
+    let errorMessage = null;
+
     try {
-        const success = await fast2sms.sendWhatsAppMessage(phoneNumber, templateName, parameters);
-
-        logger.info(`📱 WhatsApp sent to ${phoneNumber}: template ${templateName}`);
-
-        await prisma.notificationLog.create({
-            data: {
-                channel: 'WHATSAPP',
-                recipientId: userId,
-                recipientType: userId ? 'user' : 'user',
-                body: `Template: ${templateName}, Params: ${JSON.stringify(parameters)}`,
-                isSent: success,
-                sentAt: success ? new Date() : null,
-                errorMessage: success ? null : 'Fast2SMS failed',
-            },
+        success = await interakt.sendWhatsAppMessage({
+            phone: phoneNumber,
+            templateName,
+            variables,
         });
 
-        return success;
+        if (!success) {
+            // Fallback to Fast2SMS SMS if Interakt fails and a DLT template is available
+            logger.warn(`[Notifications] Interakt failed for ${templateName} — attempting SMS fallback`);
+            const fallbackTemplateId = process.env[`FAST2SMS_${templateName.toUpperCase()}_TEMPLATE_ID`];
+            if (fallbackTemplateId) {
+                const smsSent = await fast2sms.sendDLTSMS(phoneNumber, fallbackTemplateId, variables);
+                if (smsSent) {
+                    logger.info(`[Notifications] SMS fallback succeeded for ${templateName}`);
+                    success = true;
+                    errorMessage = 'Interakt failed; delivered via SMS fallback';
+                } else {
+                    errorMessage = 'Interakt failed; SMS fallback also failed';
+                }
+            } else {
+                errorMessage = 'Interakt failed; no SMS fallback configured';
+            }
+        }
     } catch (error) {
         logger.error('WhatsApp send error:', error);
-        return false;
+        errorMessage = error.message;
     }
+
+    await prisma.notificationLog.create({
+        data: {
+            channel: 'WHATSAPP',
+            recipientId: userId,
+            recipientType: userId ? 'user' : 'user',
+            body: `Template: ${templateName}, Params: ${JSON.stringify(variables)}`,
+            isSent: success,
+            sentAt: success ? new Date() : null,
+            errorMessage: errorMessage,
+        },
+    }).catch(logErr => logger.warn('WhatsApp notification log failed:', logErr.message));
+
+    return success;
 };
 
 // ─── Welcome Notifications ─────────────────
@@ -88,7 +133,7 @@ const sendWelcomeNotifications = async (user) => {
     `,
     });
 
-    // Welcome WhatsApp
+    // Welcome WhatsApp (Interakt)
     await sendWhatsApp({
         phoneNumber: user.phone,
         templateName: 'welcome_message',
@@ -100,39 +145,40 @@ const sendWelcomeNotifications = async (user) => {
 // ─── SOS Notifications ────────────────────
 
 const sendSOSNotifications = async ({ user, location, familyContacts }) => {
-    if (process.env.FAST2SMS_SOS_TEMPLATE_ID) {
-        // Notify admin via DLT SMS
-        await fast2sms.sendDLTSMS(process.env.ADMIN_EMERGENCY_PHONE || '9999999999', process.env.FAST2SMS_SOS_TEMPLATE_ID, [user.name, location || 'Unknown']);
-        
-        // Notify family via DLT SMS
-        for (const contact of familyContacts) {
-            await fast2sms.sendDLTSMS(contact.phone, process.env.FAST2SMS_SOS_TEMPLATE_ID, [user.name, location || 'Unknown']);
-        }
-    } else {
-        // Fallback to WhatsApp
-        await sendWhatsApp({
-            phoneNumber: process.env.ADMIN_EMERGENCY_PHONE || '9999999999',
-            templateName: 'sos_alert_admin',
-            parameters: [user.name, user.uniqueUserId, location || 'Unknown'],
-        });
+    // Admin — WhatsApp via Interakt
+    await sendWhatsApp({
+        phoneNumber: process.env.ADMIN_EMERGENCY_PHONE || '9999999999',
+        templateName: 'sos_alert_admin',
+        parameters: [user.name, user.uniqueUserId, location || 'Unknown'],
+    });
 
-        for (const contact of familyContacts) {
-            await sendWhatsApp({
-                phoneNumber: contact.phone,
-                templateName: 'sos_alert_family',
-                parameters: [user.name, contact.name, location || 'Unknown'],
-            });
-        }
+    // Family contacts — WhatsApp via Interakt
+    for (const contact of familyContacts) {
+        await sendWhatsApp({
+            phoneNumber: contact.phone,
+            templateName: 'sos_alert_family',
+            parameters: [user.name, contact.name, location || 'Unknown'],
+        });
     }
 };
 
 // ─── Booking Confirmation ─────────────────
 
-const sendBookingConfirmation = async ({ user, bookingCode }) => {
+const sendBookingConfirmation = async ({ user, bookingCode, booking = null }) => {
+    // Primary: WhatsApp via Interakt
+    // Template: oldful_appointment_confirmation — {{1}}=name {{2}}=datetime {{3}}=service
+    await sendWhatsApp({
+        phoneNumber: user.phone,
+        templateName: 'booking_confirmation',
+        parameters: [user.name, booking?.scheduledDate ? new Date(booking.scheduledDate).toLocaleString('en-IN') : 'shortly', booking?.serviceName || 'your requested service'],
+        userId: user.id,
+    });
+
+    // Also send DLT SMS if template is configured (belt-and-suspenders)
     if (process.env.FAST2SMS_ORDER_TEMPLATE_ID) {
         await fast2sms.sendDLTSMS(
-            user.phone, 
-            process.env.FAST2SMS_ORDER_TEMPLATE_ID, 
+            user.phone,
+            process.env.FAST2SMS_ORDER_TEMPLATE_ID,
             [user.name, bookingCode, process.env.ADMIN_EMERGENCY_PHONE || '9480198108']
         );
     }
@@ -154,23 +200,24 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
     `,
     });
 
+    // Template: oldful_health_event_reminder — {{1}}=name {{2}}=expiry date string
+    const expiryDateStr = `${new Date(expiryDate).toLocaleDateString('en-IN')} (${daysLeft} days left)`;
     await sendWhatsApp({
         phoneNumber: user.phone,
         templateName: 'plan_expiry_reminder',
-        parameters: [user.name, plan.name, String(daysLeft)],
+        parameters: [user.name, expiryDateStr],
         userId: user.id,
     });
 };
 
-// ─── OTP (Fast2SMS) ───────────────────
+// ─── OTP (Fast2SMS SMS — unchanged) ───────────────────────
+// OTP delivery remains on Fast2SMS SMS. Do not route to Interakt.
 
 const requestFast2SMSOTP = async (phoneNumber) => {
-    // Note: Fast2SMS 'q' route can be used to send custom OTPs
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     const success = await fast2sms.sendSMS(phoneNumber, `Your Oldful verification code is: ${otp}`);
 
     if (success) {
-        // Store OTP in database for verification
         await prisma.otpLog.create({
             data: {
                 phoneNumber,

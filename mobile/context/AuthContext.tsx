@@ -7,8 +7,12 @@
 // ──────────────────────────────────────────────
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '@/services/api/apiClient';
 import { storageService, STORAGE_KEYS } from '@/services/device/storageService';
+import { Colors, Fonts, FontSize, Radius, Shadow } from '@/constants/theme';
 
 interface AuthState {
     isAuthenticated: boolean;
@@ -26,12 +30,14 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+    const router = useRouter();
     const [state, setState] = useState<AuthState>({
         isAuthenticated: false,
         isLoading: true,
         userId: null,
         token: null,
     });
+    const [showSessionDialog, setShowSessionDialog] = useState(false);
 
     // ─── Boot: Restore tokens from AsyncStorage ──────
     useEffect(() => {
@@ -72,8 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         apiClient.setAuthFailureCallback(async () => {
-            // Token refresh failed — force logout
-            await logout();
+            // Token refresh failed — show session expired dialog
+            setShowSessionDialog(true);
         });
     }, []);
 
@@ -117,12 +123,95 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState(prev => ({ ...prev, isLoading: loading }));
     };
 
+    const handleLoginAgain = async () => {
+        setShowSessionDialog(false);
+        await logout();
+        router.replace('/(auth)/login');
+    };
+
     return (
         <AuthContext.Provider value={{ ...state, login, logout, setLoading }}>
             {children}
+
+            <Modal
+                visible={showSessionDialog}
+                transparent
+                animationType="fade"
+                statusBarTranslucent
+            >
+                <View style={styles.overlay}>
+                    <View style={styles.dialog}>
+                        <View style={styles.iconContainer}>
+                            <Ionicons name="lock-closed" size={32} color={Colors.primary} />
+                        </View>
+                        <Text style={styles.title}>Session Expired</Text>
+                        <Text style={styles.message}>
+                            Your session has expired. Please log in again to continue.
+                        </Text>
+                        <TouchableOpacity style={styles.button} onPress={handleLoginAgain} activeOpacity={0.85}>
+                            <Text style={styles.buttonText}>Login Again</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </AuthContext.Provider>
     );
 }
+
+const styles = StyleSheet.create({
+    overlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 32,
+    },
+    dialog: {
+        backgroundColor: Colors.bgScreen,
+        borderRadius: Radius.xl,
+        padding: 28,
+        width: '100%',
+        alignItems: 'center',
+        ...Shadow.card,
+    },
+    iconContainer: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: '#E8F5EC',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    title: {
+        fontFamily: Fonts.bold,
+        fontSize: FontSize.xl,
+        color: Colors.textDark,
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    message: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.sm,
+        color: Colors.textMuted,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 24,
+    },
+    button: {
+        backgroundColor: Colors.primary,
+        borderRadius: Radius.lg,
+        paddingVertical: 14,
+        paddingHorizontal: 40,
+        width: '100%',
+        alignItems: 'center',
+    },
+    buttonText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.md,
+        color: '#FFFFFF',
+    },
+});
 
 export function useAuth() {
     const context = useContext(AuthContext);
