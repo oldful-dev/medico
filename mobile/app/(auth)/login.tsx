@@ -20,13 +20,16 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { OTPInput } from '@/components/common';
 import { Colors, Fonts, FontSize, Radius } from '@/constants/theme';
 import { authService, ApiError } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
-WebBrowser.maybeCompleteAuthSession();
+
+GoogleSignin.configure({
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
+    offlineAccess: true,
+});
 
 // Figma-exported assets
 const logoImage = require('@/assets/images/2549b5ede370bbb67a088920cac9a8719fec5968.png');
@@ -45,11 +48,6 @@ export default function LoginScreen() {
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const isVerifyingRef = useRef(false);
 
-    // Google Sign-In — works in dev builds / production APK (not Expo Go)
-    const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
-        clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
-        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '',
-    });
 
     // Animation for OTP section reveal
     const [otpAnim] = useState(new Animated.Value(0));
@@ -155,71 +153,62 @@ export default function LoginScreen() {
         }
     }, [phoneNumber, router, login]);
 
-    // ─── Google Sign-In ───
-    useEffect(() => {
-        if (!googleResponse) return;
-        if (googleResponse.type === 'success' && googleResponse.authentication) {
-            setIsGoogleLoading(true);
-            const { accessToken, idToken } = googleResponse.authentication;
-
-            // Use Google's userinfo endpoint to get profile data
-            (async () => {
-                try {
-                    // Get user info from Google
-                    const userInfoRes = await fetch('https://www.googleapis.com/userinfo/v2/me', {
-                        headers: { Authorization: `Bearer ${accessToken}` },
-                    });
-                    const userInfo = await userInfoRes.json();
-
-                    // Send ID token (or access token) to backend for verification
-                    const response = await authService.googleSignIn({
-                        idToken: idToken || accessToken,
-                        email: userInfo.email,
-                        name: userInfo.name,
-                        photoUrl: userInfo.picture,
-                    });
-
-                    if (response.data?.isNewUser) {
-                        router.replace({
-                            pathname: '/(auth)/profile-setup',
-                            params: {
-                                googleEmail: response.data.email || '',
-                                googleName: response.data.name || '',
-                                googlePhoto: response.data.photoUrl || '',
-                            },
-                        });
-                    } else if (response.data?.accessToken && response.data?.refreshToken && response.data?.user) {
-                        await login(
-                            response.data.accessToken,
-                            response.data.refreshToken,
-                            response.data.user.id,
-                        );
-                        router.replace('/(tabs)');
-                    } else {
-                        Alert.alert('Error', 'Google sign-in failed. Please try again.');
-                    }
-                } catch (error) {
-                    console.error('Google sign-in error:', error);
-                    Alert.alert('Error', 'Google sign-in failed. Please try again.');
-                } finally {
-                    setIsGoogleLoading(false);
-                }
-            })();
-        } else {
-            setIsGoogleLoading(false);
-        }
-    }, [googleResponse]);
-
+    // ─── Google Sign-In (native SDK — requires dev build or production APK) ───
     const handleGoogleSignIn = useCallback(async () => {
         if (isGoogleLoading) return;
         setIsGoogleLoading(true);
         try {
-            await googlePromptAsync();
-        } catch (error) {
-            console.error('Google prompt error:', error);
+            await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+            const userInfo = await GoogleSignin.signIn();
+            const idToken = userInfo.data?.idToken;
+            const user = userInfo.data?.user;
+
+            if (!idToken || !user) {
+                Alert.alert('Error', 'Google sign-in failed — no token received.');
+                return;
+            }
+
+            // Get accessToken for backend userinfo verification fallback
+            const tokens = await GoogleSignin.getTokens();
+
+            const response = await authService.googleSignIn({
+                idToken,
+                accessToken: tokens.accessToken,
+                email: user.email,
+                name: user.name ?? '',
+                photoUrl: user.photo ?? '',
+            });
+
+            if (response.data?.isNewUser) {
+                router.replace({
+                    pathname: '/(auth)/profile-setup',
+                    params: {
+                        googleEmail: response.data.email || '',
+                        googleName: response.data.name || '',
+                        googlePhoto: response.data.photoUrl || '',
+                    },
+                });
+            } else if (response.data?.accessToken && response.data?.refreshToken && response.data?.user) {
+                await login(response.data.accessToken, response.data.refreshToken, response.data.user.id);
+                router.replace('/(tabs)');
+            } else {
+                Alert.alert('Error', 'Google sign-in failed. Please try again.');
+            }
+        } catch (error: any) {
+            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                // user cancelled — silent
+            } else if (error.code === statusCodes.IN_PROGRESS) {
+                // already in progress — silent
+            } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+                Alert.alert('Error', 'Google Play Services not available.');
+            } else {
+                console.error('Google sign-in error:', error);
+                Alert.alert('Error', 'Google sign-in failed. Please try again.');
+            }
+        } finally {
             setIsGoogleLoading(false);
         }
-    }, [isGoogleLoading, googlePromptAsync]);
+    }, [isGoogleLoading, login, router]);
 
     const formatTimer = (s: number) => {
         const mins = Math.floor(s / 60);
@@ -347,10 +336,10 @@ export default function LoginScreen() {
 
                     {/* ─── Social Login Buttons ─── */}
                     <TouchableOpacity
-                        style={[styles.socialButton, (isGoogleLoading || !googleRequest) && { opacity: 0.6 }]}
+                        style={[styles.socialButton, isGoogleLoading && { opacity: 0.6 }]}
                         activeOpacity={0.7}
                         onPress={handleGoogleSignIn}
-                        disabled={isGoogleLoading || !googleRequest}
+                        disabled={isGoogleLoading}
                     >
                         {isGoogleLoading ? (
                             <ActivityIndicator size="small" color={Colors.primary} />
