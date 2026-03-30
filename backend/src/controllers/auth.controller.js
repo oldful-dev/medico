@@ -385,8 +385,8 @@ const googleSignIn = async (req, res, next) => {
 
         // Existing user — issue tokens
         const payload = { id: user.id, type: 'user' };
-        const accessToken = generateAccessToken(payload);
-        const refreshToken = generateRefreshToken(payload);
+        const jwtAccessToken = generateAccessToken(payload);
+        const jwtRefreshToken = generateRefreshToken(payload);
 
         let firebaseToken = null;
         try {
@@ -400,15 +400,15 @@ const googleSignIn = async (req, res, next) => {
 
         await prisma.user.update({
             where: { id: user.id },
-            data: { refreshToken },
+            data: { refreshToken: jwtRefreshToken },
         });
 
         res.json({
             success: true,
             data: {
                 isNewUser: false,
-                accessToken,
-                refreshToken,
+                accessToken: jwtAccessToken,
+                refreshToken: jwtRefreshToken,
                 firebaseToken,
                 user: {
                     id: user.id,
