@@ -297,43 +297,73 @@ const logout = async (req, res, next) => {
  */
 const googleSignIn = async (req, res, next) => {
     try {
-        const { idToken, email, name, photoUrl } = req.body;
+        const { idToken, accessToken, email, name, photoUrl } = req.body;
 
-        if (!idToken || !email) {
-            return res.status(400).json({ success: false, message: 'ID token and email are required' });
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Email is required' });
+        }
+        if (!idToken && !accessToken) {
+            return res.status(400).json({ success: false, message: 'Google token is required' });
         }
 
-        // Try Firebase ID token verification first, then fall back to Google userinfo
         let googleEmail = email;
         let googleName = name || '';
         let googlePhoto = photoUrl || '';
+        let verified = false;
 
-        try {
-            const decodedToken = await firebaseAuth.verifyIdToken(idToken);
-            googleEmail = decodedToken.email || email;
-            googleName = decodedToken.name || name || '';
-            googlePhoto = decodedToken.picture || photoUrl || '';
-        } catch (firebaseErr) {
-            // idToken might be a Google access token — verify via Google userinfo API
-            logger.debug('Firebase verifyIdToken failed, trying Google userinfo:', firebaseErr.message);
+        // 1. Try Firebase ID token verification (works when idToken is a Firebase token)
+        if (idToken && !verified) {
+            try {
+                const decodedToken = await firebaseAuth.verifyIdToken(idToken);
+                googleEmail = decodedToken.email || email;
+                googleName = decodedToken.name || name || '';
+                googlePhoto = decodedToken.picture || photoUrl || '';
+                verified = true;
+            } catch (firebaseErr) {
+                logger.debug('Firebase verifyIdToken failed:', firebaseErr.message);
+            }
+        }
+
+        // 2. Try Google tokeninfo endpoint with idToken (verifies Google-issued JWT)
+        if (idToken && !verified) {
+            try {
+                const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+                if (tokenInfoRes.ok) {
+                    const tokenInfo = await tokenInfoRes.json();
+                    if (tokenInfo.email && tokenInfo.email.toLowerCase() === email.toLowerCase()) {
+                        googleEmail = tokenInfo.email;
+                        googleName = tokenInfo.name || name || '';
+                        googlePhoto = tokenInfo.picture || photoUrl || '';
+                        verified = true;
+                    }
+                }
+            } catch (tokenInfoErr) {
+                logger.debug('Google tokeninfo failed:', tokenInfoErr.message);
+            }
+        }
+
+        // 3. Fall back to userinfo API with accessToken
+        if (accessToken && !verified) {
             try {
                 const userInfoRes = await fetch('https://www.googleapis.com/userinfo/v2/me', {
-                    headers: { Authorization: `Bearer ${idToken}` },
+                    headers: { Authorization: `Bearer ${accessToken}` },
                 });
-                if (!userInfoRes.ok) {
-                    return res.status(401).json({ success: false, message: 'Invalid Google token' });
+                if (userInfoRes.ok) {
+                    const userInfo = await userInfoRes.json();
+                    if (userInfo.email && userInfo.email.toLowerCase() === email.toLowerCase()) {
+                        googleEmail = userInfo.email;
+                        googleName = userInfo.name || name || '';
+                        googlePhoto = userInfo.picture || photoUrl || '';
+                        verified = true;
+                    }
                 }
-                const userInfo = await userInfoRes.json();
-                if (!userInfo.email || userInfo.email.toLowerCase() !== email.toLowerCase()) {
-                    return res.status(401).json({ success: false, message: 'Email mismatch in Google token' });
-                }
-                googleEmail = userInfo.email;
-                googleName = userInfo.name || name || '';
-                googlePhoto = userInfo.picture || photoUrl || '';
             } catch (fetchErr) {
-                logger.warn('Google userinfo verification also failed:', fetchErr.message);
-                return res.status(401).json({ success: false, message: 'Invalid Google token' });
+                logger.debug('Google userinfo failed:', fetchErr.message);
             }
+        }
+
+        if (!verified) {
+            return res.status(401).json({ success: false, message: 'Invalid Google token' });
         }
 
         // Look up user by email
