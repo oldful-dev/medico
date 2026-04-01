@@ -17,6 +17,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useAppConfig } from '@/context/AppConfigContext';
 import { userService } from '@/services/api/userService';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
 
 // ─── Local Assets ───
 const avatarImg = require('@/assets/images/65a7d95e579c06bade85c7970d17cfcc5d7b7c55.png');
@@ -27,6 +28,7 @@ export default function AccountScreen() {
     const { logout } = useAuth();
     const { languages } = useAppConfig();
 
+    const { t } = useTranslation();
     const [whatsappEnabled, setWhatsappEnabled] = useState(true);
     const [promoEnabled, setPromoEnabled] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -67,29 +69,29 @@ export default function AccountScreen() {
 
     // Medical card summary
     const medicalCard = profile?.medicalCards?.[0];
-    const bloodGroup = medicalCard?.bloodGroup || 'Not set';
-    const allergies = medicalCard?.allergies?.length ? medicalCard.allergies.join(', ') : 'None';
+    const bloodGroup = medicalCard?.bloodGroup || t('account.not_set');
+    const allergies = medicalCard?.allergies?.length ? medicalCard.allergies.join(', ') : t('account.none');
 
     // Profile Image Upload
     const handleAvatarUpload = async () => {
-        Alert.alert('Update Profile Photo', 'Choose an option', [
+        Alert.alert(t('account.update_photo'), t('account.choose_option'), [
             {
-                text: 'Camera', onPress: async () => {
+                text: t('account.camera'), onPress: async () => {
                     const perm = await ImagePicker.requestCameraPermissionsAsync();
-                    if (!perm.granted) { Alert.alert('Permission required', 'Camera access is needed.'); return; }
+                    if (!perm.granted) { Alert.alert(t('common.permission_required'), t('account.camera_permission')); return; }
                     const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
                     if (!result.canceled && result.assets[0]) uploadImage(result.assets[0]);
                 }
             },
             {
-                text: 'Gallery', onPress: async () => {
+                text: t('account.gallery'), onPress: async () => {
                     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                    if (!perm.granted) { Alert.alert('Permission required', 'Gallery access is needed.'); return; }
+                    if (!perm.granted) { Alert.alert(t('common.permission_required'), t('account.gallery_permission')); return; }
                     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
                     if (!result.canceled && result.assets[0]) uploadImage(result.assets[0]);
                 }
             },
-            { text: 'Cancel', style: 'cancel' },
+            { text: t('common.cancel'), style: 'cancel' },
         ]);
     };
 
@@ -100,12 +102,12 @@ export default function AccountScreen() {
             const res = await userService.uploadProfileAvatar(file);
             if (res.success && res.data) {
                 setProfile(res.data);
-                Alert.alert('Success', 'Profile photo updated!');
+                Alert.alert(t('common.success'), 'Profile photo updated!');
             } else {
-                Alert.alert('Error', res.message || 'Upload failed.');
+                Alert.alert(t('common.error'), res.message || 'Upload failed.');
             }
         } catch (err: any) {
-            Alert.alert('Error', err.message || 'Upload failed.');
+            Alert.alert(t('common.error'), err.message || 'Upload failed.');
         } finally {
             setUploadingAvatar(false);
         }
@@ -113,10 +115,10 @@ export default function AccountScreen() {
 
     // Logout
     const handleLogout = () => {
-        Alert.alert('Log Out', 'Are you sure you want to log out?', [
-            { text: 'Cancel', style: 'cancel' },
+        Alert.alert(t('account.logout_confirm'), t('account.logout_message'), [
+            { text: t('common.cancel'), style: 'cancel' },
             {
-                text: 'Log Out', style: 'destructive', onPress: async () => {
+                text: t('account.logout'), style: 'destructive', onPress: async () => {
                     try { await logout(); } catch { }
                     router.replace('/(auth)/login' as any);
                 }
@@ -174,7 +176,7 @@ export default function AccountScreen() {
                     SECTION 1: My Health
                    ══════════════════════════════════════════════════ */}
                 <Text style={styles.sectionHeading}>
-                    <Text style={styles.sectionGreen}>My</Text> Health
+                    <Text style={styles.sectionGreen}>{t('account.my_health')}</Text>
                 </Text>
 
                 {/* My Medical Card */}
@@ -184,7 +186,7 @@ export default function AccountScreen() {
                             <Ionicons name="medical-outline" size={20} color="#F5A623" />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.linkTitle}>My Medical Card</Text>
+                            <Text style={styles.linkTitle}>{t('account.medical_card')}</Text>
                             <Text style={styles.linkSubtitle}>Blood: {bloodGroup} • Allergies: {allergies}</Text>
                         </View>
                     </View>
@@ -198,7 +200,7 @@ export default function AccountScreen() {
                             <Ionicons name="document-text-outline" size={20} color="#048357" />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.linkTitle}>My Prescriptions</Text>
+                            <Text style={styles.linkTitle}>{t('account.prescriptions')}</Text>
                             <Text style={styles.linkSubtitle}>View uploaded prescriptions & reports</Text>
                         </View>
                     </View>
@@ -212,7 +214,7 @@ export default function AccountScreen() {
                             <Ionicons name="people-outline" size={20} color="#FF3B30" />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.linkTitle}>Emergency Contacts</Text>
+                            <Text style={styles.linkTitle}>{t('account.emergency_contacts')}</Text>
                             <Text style={styles.linkSubtitle}>
                                 {(profile?.emergencyContacts?.length || 0) > 0
                                     ? `${profile?.emergencyContacts?.length} contact(s) saved`
@@ -226,7 +228,7 @@ export default function AccountScreen() {
                 {/* ══════════════════════════════════════════════════
                     SECTION 2: Management & Logistics
                    ══════════════════════════════════════════════════ */}
-                <Text style={styles.sectionHeading}>Management & Logistics</Text>
+                <Text style={styles.sectionHeading}>{t('account.management')}</Text>
 
                 {/* Manage Addresses */}
                 <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => router.push('/manage-addresses' as any)}>
@@ -235,7 +237,7 @@ export default function AccountScreen() {
                             <Ionicons name="location-outline" size={20} color="#1E88E5" />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.linkTitle}>Manage Addresses</Text>
+                            <Text style={styles.linkTitle}>{t('account.manage_addresses')}</Text>
                             <Text style={styles.linkSubtitle}>Home, Second Home, Clinic</Text>
                         </View>
                     </View>
@@ -249,7 +251,7 @@ export default function AccountScreen() {
                             <Ionicons name="wallet-outline" size={20} color="#8E24AA" />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.linkTitle}>Payments & Wallet</Text>
+                            <Text style={styles.linkTitle}>{t('account.payments_wallet')}</Text>
                             <Text style={styles.linkSubtitle}>Save cards for easy checkout</Text>
                         </View>
                     </View>
@@ -263,7 +265,7 @@ export default function AccountScreen() {
                             <Ionicons name="receipt-outline" size={20} color="#EF6C00" />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.linkTitle}>Order History</Text>
+                            <Text style={styles.linkTitle}>{t('account.order_history')}</Text>
                             <Text style={styles.linkSubtitle}>Past bookings, orders & subscriptions</Text>
                         </View>
                     </View>
@@ -273,7 +275,7 @@ export default function AccountScreen() {
                 {/* ══════════════════════════════════════════════════
                     SECTION 3: App Preferences
                    ══════════════════════════════════════════════════ */}
-                <Text style={styles.sectionHeading}>App Preferences</Text>
+                <Text style={styles.sectionHeading}>{t('account.preferences')}</Text>
 
                 {/* Change Language */}
                 <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => setLangModalVisible(true)}>
@@ -281,7 +283,7 @@ export default function AccountScreen() {
                         <View style={[styles.linkIcon, { backgroundColor: '#E8EAF6' }]}>
                             <Ionicons name="language-outline" size={20} color="#3F51B5" />
                         </View>
-                        <Text style={styles.linkTitle}>Change Language</Text>
+                        <Text style={styles.linkTitle}>{t('account.change_language')}</Text>
                     </View>
                     <View style={styles.rightWithText}>
                         <Text style={styles.selectedText}>{currentLangLabel}</Text>
@@ -295,7 +297,7 @@ export default function AccountScreen() {
                         <View style={[styles.linkIcon, { backgroundColor: '#E8F5E9' }]}>
                             <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
                         </View>
-                        <Text style={styles.linkTitle}>WhatsApp Updates</Text>
+                        <Text style={styles.linkTitle}>{t('account.whatsapp_updates')}</Text>
                     </View>
                     <Switch trackColor={{ false: '#AAAEAC', true: Colors.primary }} thumbColor="#FFFFFF"
                         ios_backgroundColor="#AAAEAC" onValueChange={setWhatsappEnabled} value={whatsappEnabled} />
@@ -307,7 +309,7 @@ export default function AccountScreen() {
                         <View style={[styles.linkIcon, { backgroundColor: '#FFF8E1' }]}>
                             <Ionicons name="megaphone-outline" size={20} color="#FFA000" />
                         </View>
-                        <Text style={styles.linkTitle}>Promotional Offers</Text>
+                        <Text style={styles.linkTitle}>{t('account.promotional_offers')}</Text>
                     </View>
                     <Switch trackColor={{ false: '#AAAEAC', true: Colors.primary }} thumbColor="#FFFFFF"
                         ios_backgroundColor="#AAAEAC" onValueChange={setPromoEnabled} value={promoEnabled} />
@@ -316,7 +318,7 @@ export default function AccountScreen() {
                 {/* ══════════════════════════════════════════════════
                     SECTION 4: Support & Legal
                    ══════════════════════════════════════════════════ */}
-                <Text style={styles.sectionHeading}>Support & Legal</Text>
+                <Text style={styles.sectionHeading}>{t('account.support')}</Text>
 
                 {/* Help & Support */}
                 <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => router.push('/help-support' as any)}>
@@ -325,7 +327,7 @@ export default function AccountScreen() {
                             <Ionicons name="headset-outline" size={20} color="#0288D1" />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.linkTitle}>Help & Support</Text>
+                            <Text style={styles.linkTitle}>{t('account.help_support')}</Text>
                             <Text style={styles.linkSubtitle}>Call Us, WhatsApp, Raise a Ticket</Text>
                         </View>
                     </View>
@@ -338,7 +340,7 @@ export default function AccountScreen() {
                         <View style={[styles.linkIcon, { backgroundColor: '#FFF9C4' }]}>
                             <Ionicons name="star-outline" size={20} color="#FFC107" />
                         </View>
-                        <Text style={styles.linkTitle}>Rate Oldful</Text>
+                        <Text style={styles.linkTitle}>{t('account.rate_us')}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
                 </TouchableOpacity>
@@ -349,7 +351,7 @@ export default function AccountScreen() {
                         <View style={[styles.linkIcon, { backgroundColor: '#F3F3F3' }]}>
                             <Ionicons name="document-text-outline" size={20} color="#616161" />
                         </View>
-                        <Text style={styles.linkTitle}>Terms & Privacy Policy</Text>
+                        <Text style={styles.linkTitle}>{t('account.terms_privacy')}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
                 </TouchableOpacity>
@@ -357,7 +359,7 @@ export default function AccountScreen() {
                 {/* ─── Log Out (grey/small at bottom) ─── */}
                 <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.6} onPress={handleLogout}>
                     <Ionicons name="log-out-outline" size={16} color="#898989" />
-                    <Text style={styles.logoutText}>Log Out</Text>
+                    <Text style={styles.logoutText}>{t('account.logout')}</Text>
                 </TouchableOpacity>
 
                 <View style={{ height: 100 }} />
@@ -367,7 +369,7 @@ export default function AccountScreen() {
             <Modal visible={langModalVisible} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContainer}>
-                        <Text style={styles.modalTitle}>Select Language</Text>
+                        <Text style={styles.modalTitle}>{t('account.select_language')}</Text>
                         {savingLang ? (
                             <ActivityIndicator color={Colors.primary} style={{ marginVertical: Spacing.xl }} />
                         ) : (

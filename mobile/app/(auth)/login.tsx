@@ -25,6 +25,7 @@ import { OTPInput } from '@/components/common';
 import { Colors, Fonts, FontSize, Radius } from '@/constants/theme';
 import { authService, ApiError } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 GoogleSignin.configure({
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
@@ -35,6 +36,7 @@ GoogleSignin.configure({
 const logoImage = require('@/assets/images/2549b5ede370bbb67a088920cac9a8719fec5968.png');
 
 export default function LoginScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const { login } = useAuth();
 
@@ -159,6 +161,8 @@ export default function LoginScreen() {
         setIsGoogleLoading(true);
         try {
             await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+            // Sign out first so the account picker always appears
+            await GoogleSignin.signOut().catch(() => {});
             const userInfo = await GoogleSignin.signIn();
             const idToken = userInfo.data?.idToken;
             const user = userInfo.data?.user;
@@ -244,7 +248,7 @@ export default function LoginScreen() {
                     </View>
 
                     {/* ─── Welcome Text ─── */}
-                    <Text style={styles.welcomeText}>Welcome Back! Please login</Text>
+                    <Text style={styles.welcomeText}>{t('auth.login_title')}</Text>
 
                     {/* ─── Phone Number Input ─── */}
                     <View style={styles.inputField}>
@@ -252,7 +256,7 @@ export default function LoginScreen() {
                         <View style={styles.inputDivider} />
                         <TextInput
                             style={styles.input}
-                            placeholder="Enter Mobile Number"
+                            placeholder={t('auth.phone_placeholder')}
                             placeholderTextColor="#999999"
                             keyboardType="phone-pad"
                             maxLength={10}
@@ -272,7 +276,7 @@ export default function LoginScreen() {
                         disabled={phoneNumber.length < 10 || isLoading}
                     >
                         <Text style={styles.requestOtpButtonText}>
-                            {isLoading && !otpSent ? 'Requesting...' : otpSent ? 'Resend OTP' : 'Request OTP'}
+                            {isLoading && !otpSent ? 'Requesting...' : otpSent ? t('auth.resend_otp') : t('auth.send_otp')}
                         </Text>
                     </TouchableOpacity>
 
@@ -290,7 +294,7 @@ export default function LoginScreen() {
                                 },
                             ]}
                         >
-                            <Text style={styles.otpLabel}>Enter your OTP</Text>
+                            <Text style={styles.otpLabel}>{t('auth.enter_otp')}</Text>
 
                             {/* OTP Boxes */}
                             <View style={styles.otpContainer}>
@@ -306,7 +310,7 @@ export default function LoginScreen() {
                                     <Text style={styles.resendText}>Didn't receive the code?</Text>
                                     {canResend ? (
                                         <TouchableOpacity onPress={handleResendOTP}>
-                                            <Text style={styles.resendLink}> Resend</Text>
+                                            <Text style={styles.resendLink}> {t('auth.resend_otp')}</Text>
                                         </TouchableOpacity>
                                     ) : null}
                                 </View>
@@ -319,7 +323,7 @@ export default function LoginScreen() {
                             {isLoading && (
                                 <View style={styles.verifyingRow}>
                                     <ActivityIndicator size="small" color={Colors.primary} />
-                                    <Text style={styles.verifyingText}>Verifying...</Text>
+                                    <Text style={styles.verifyingText}>{t('auth.verifying')}</Text>
                                 </View>
                             )}
                         </Animated.View>
@@ -346,7 +350,7 @@ export default function LoginScreen() {
                         ) : (
                             <>
                                 <Text style={styles.googleIcon}>G</Text>
-                                <Text style={styles.socialButtonText}>Continue with Google</Text>
+                                <Text style={styles.socialButtonText}>{t('auth.google_signin')}</Text>
                             </>
                         )}
                     </TouchableOpacity>

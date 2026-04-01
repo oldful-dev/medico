@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { bookingService, Booking } from '@/services/api/bookingService';
+import { useTranslation } from 'react-i18next';
 
 type TabType = 'All' | 'Active' | 'Completed';
 
@@ -27,6 +28,7 @@ const SERVICE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 export default function OrderHistoryScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<TabType>('All');
     const [bookings, setBookings] = useState<Booking[]>([]);

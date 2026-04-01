@@ -134,10 +134,11 @@ const sendWelcomeNotifications = async (user) => {
     });
 
     // Welcome WhatsApp (Interakt)
+    // Template: oldful_welcome — {{1}}=name (DOCUMENT header)
     await sendWhatsApp({
         phoneNumber: user.phone,
         templateName: 'welcome_message',
-        parameters: [user.name, user.uniqueUserId],
+        parameters: [user.name],
         userId: user.id,
     });
 };
@@ -145,20 +146,43 @@ const sendWelcomeNotifications = async (user) => {
 // ─── SOS Notifications ────────────────────
 
 const sendSOSNotifications = async ({ user, location, familyContacts }) => {
-    // Admin — WhatsApp via Interakt
-    await sendWhatsApp({
-        phoneNumber: process.env.ADMIN_EMERGENCY_PHONE || '9999999999',
-        templateName: 'sos_alert_admin',
-        parameters: [user.name, user.uniqueUserId, location || 'Unknown'],
+    // NOTE: No approved SOS-specific WhatsApp templates exist.
+    // SOS alerts are handled via:
+    //   1. Direct tel: deep link (client-side)
+    //   2. Admin email notification
+    //   3. SMS fallback via Fast2SMS (if DLT template configured)
+
+    // Admin — Email alert with location
+    await sendEmail({
+        to: process.env.ADMIN_EMERGENCY_EMAIL || 'sos@oldful.com',
+        subject: `🚨 SOS ALERT — ${user.name} (${user.uniqueUserId})`,
+        html: `
+      <h1 style="color:red">🚨 SOS Emergency Alert</h1>
+      <p><strong>User:</strong> ${user.name} (${user.uniqueUserId})</p>
+      <p><strong>Phone:</strong> ${user.phone}</p>
+      <p><strong>Location:</strong> ${location || 'Unknown'}</p>
+      <p><strong>Time:</strong> ${new Date().toLocaleString('en-IN')}</p>
+    `,
     });
 
-    // Family contacts — WhatsApp via Interakt
+    // Admin — SMS fallback
+    if (process.env.FAST2SMS_SOS_ADMIN_TEMPLATE_ID) {
+        await fast2sms.sendDLTSMS(
+            process.env.ADMIN_EMERGENCY_PHONE || '9999999999',
+            process.env.FAST2SMS_SOS_ADMIN_TEMPLATE_ID,
+            [user.name, user.phone, location || 'Unknown']
+        );
+    }
+
+    // Family contacts — SMS fallback
     for (const contact of familyContacts) {
-        await sendWhatsApp({
-            phoneNumber: contact.phone,
-            templateName: 'sos_alert_family',
-            parameters: [user.name, contact.name, location || 'Unknown'],
-        });
+        if (process.env.FAST2SMS_SOS_FAMILY_TEMPLATE_ID) {
+            await fast2sms.sendDLTSMS(
+                contact.phone,
+                process.env.FAST2SMS_SOS_FAMILY_TEMPLATE_ID,
+                [user.name, contact.name, location || 'Unknown']
+            );
+        }
     }
 };
 
@@ -166,11 +190,17 @@ const sendSOSNotifications = async ({ user, location, familyContacts }) => {
 
 const sendBookingConfirmation = async ({ user, bookingCode, booking = null }) => {
     // Primary: WhatsApp via Interakt
-    // Template: oldful_appointment_confirmation — {{1}}=name {{2}}=datetime {{3}}=service
+    // Template: service_request_ — {{1}}=name {{2}}=service {{3}}=orderId {{4}}=phone {{5}}=email
     await sendWhatsApp({
         phoneNumber: user.phone,
         templateName: 'booking_confirmation',
-        parameters: [user.name, booking?.scheduledDate ? new Date(booking.scheduledDate).toLocaleString('en-IN') : 'shortly', booking?.serviceName || 'your requested service'],
+        parameters: [
+            user.name,
+            booking?.serviceName || 'your requested service',
+            bookingCode || '-',
+            '+91 94801 98108',
+            'client@oldful.com',
+        ],
         userId: user.id,
     });
 
@@ -200,12 +230,16 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
     `,
     });
 
-    // Template: oldful_health_event_reminder — {{1}}=name {{2}}=expiry date string
-    const expiryDateStr = `${new Date(expiryDate).toLocaleDateString('en-IN')} (${daysLeft} days left)`;
+    // Template: renewal_reminder — {{1}}=name {{2}}=planName {{3}}=phone {{4}}=email
     await sendWhatsApp({
         phoneNumber: user.phone,
         templateName: 'plan_expiry_reminder',
-        parameters: [user.name, expiryDateStr],
+        parameters: [
+            user.name,
+            plan.name || 'Oldful Plan',
+            '+91 94801 98108',
+            'client@oldful.com',
+        ],
         userId: user.id,
     });
 };

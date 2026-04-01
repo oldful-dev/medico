@@ -18,6 +18,7 @@ import { Colors, Fonts, FontSize, Radius, Shadow } from '@/constants/theme';
 import { bookingService, Booking } from '@/services/api/bookingService';
 import { useCart } from '@/context/CartContext';
 import { useUser } from '@/context/UserContext';
+import { useTranslation } from 'react-i18next';
 
 const SERVICE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
     'DOCTOR_HOME_VISIT': 'medkit-outline',
@@ -35,6 +36,7 @@ const SERVICE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 export default function CartScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { items, removeItem, totalAmount } = useCart();
@@ -133,12 +135,12 @@ export default function CartScreen() {
                                 <View style={styles.iconCircleSmall}>
                                     <Ionicons name="calendar-clear-outline" size={40} color={Colors.primary} />
                                 </View>
-                                <Text style={styles.emptyHeadlineSmall}>No upcoming appointments.</Text>
+                                <Text style={styles.emptyHeadlineSmall}>{t('cart.empty_title')}</Text>
                                 <TouchableOpacity
                                     style={styles.exploreButtonSmall}
                                     onPress={() => router.push('/')}
                                 >
-                                    <Text style={styles.exploreButtonTextSmall}>Explore Services</Text>
+                                    <Text style={styles.exploreButtonTextSmall}>{t('cart.explore_services')}</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
@@ -219,7 +221,7 @@ export default function CartScreen() {
                                         <Text style={styles.totalValue}>₹{totalAmount}</Text>
                                     </View>
                                     <TouchableOpacity style={styles.checkoutBtn}>
-                                        <Text style={styles.checkoutBtnText}>Checkout Now</Text>
+                                        <Text style={styles.checkoutBtnText}>{t('cart.checkout')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>

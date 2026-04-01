@@ -18,51 +18,40 @@ const RETRY_DELAY_MS = 1000;
 // Maps logical event names → actual Meta-approved
 // template names on the Interakt dashboard.
 //
-// Template reference (as of 2026-03-28):
+// Template reference (approved as of 2026-04-01):
 //
-//  oldful_welcome_message          UTILITY    {{1}}=name
-//  oldful_appointment_confirmation TRANSACTIONAL {{1}}=name {{2}}=date {{3}}=service
-//  oldful_payment_confirmation     TRANSACTIONAL {{1}}=name {{2}}=amount
-//  oldful_customer_support         UTILITY    {{1}}=name
-//  oldful_health_event_reminder    UTILITY    {{1}}=name {{2}}=date
-//  oldful_followup_feedback        UTILITY    {{1}}=name
-//  oldful_health_tips              MARKETING  {{1}}=name {{2}}=tip
-//  oldful_new_service_launch       MARKETING  {{1}}=name {{2}}=service
-//  oldful_service_update           UTILITY    {{1}}=name {{2}}=date {{3}}=reason
-//  oldful_prescription_reminder    UTILITY    {{1}}=name
-//  oldful_lead_qualification       UTILITY    {{1}}=name
-//  oldful_event_invite             MARKETING  {{1}}=name {{2}}=date
-//  oldful_health_program_invite    MARKETING  {{1}}=name
-//  oldful_covid_safety_update      UTILITY    {{1}}=name
+//  otp_template               AUTHENTICATION  {{1}}=code
+//  oldful_welcome             MARKETING       {{1}}=name                       (DOCUMENT header)
+//  service_request_           UTILITY         {{1}}=name {{2}}=service {{3}}=orderId {{4}}=phone {{5}}=email
+//  payment_link               UTILITY         {{1}}=name {{2}}=amount {{3}}=service {{4}}=paymentUrl
+//  oldful_receipt             UTILITY         {{1}}=name {{2}}=amount {{3}}=phone {{4}}=email  (DOCUMENT header)
+//  prescription_flow          UTILITY         {{1}}=name {{2}}=orderRef
+//  lab_report_delivery        UTILITY         {{1}}=name                       (DOCUMENT header)
+//  medication_reminder_daily  UTILITY         (no body vars)
+//  renewal_reminder           MARKETING       {{1}}=name {{2}}=planName {{3}}=phone {{4}}=email
+//  feedback_survey_form       UTILITY         {{1}}=name
 //
 const TEMPLATES = {
-    // ── Core transactional ──
-    welcome_message:         'oldful_welcome_message',
-    booking_confirmation:    'oldful_appointment_confirmation',
-    payment_confirmation:    'oldful_payment_confirmation',
-    invoice_confirmation:    'oldful_payment_confirmation',
+    // ── Authentication ──
+    otp:                     'otp_template',
 
-    // ── SOS / emergency ──
-    // No dedicated SOS template — use customer_support with name
-    sos_alert_admin:         'oldful_customer_support',
-    sos_alert_family:        'oldful_customer_support',
+    // ── Core transactional ──
+    welcome_message:         'oldful_welcome',
+    booking_confirmation:    'service_request_',
+    payment_link:            'payment_link',
+    payment_confirmation:    'oldful_receipt',
+    invoice_confirmation:    'oldful_receipt',
+
+    // ── Medical flows ──
+    prescription_received:   'prescription_flow',
+    lab_report:              'lab_report_delivery',
+    prescription_reminder:   'medication_reminder_daily',
 
     // ── Plan / subscription ──
-    // Plan expiry uses health_event_reminder: {{1}}=name {{2}}=expiry_date
-    plan_expiry_reminder:    'oldful_health_event_reminder',
+    plan_expiry_reminder:    'renewal_reminder',
 
     // ── Support & feedback ──
-    support_reply:           'oldful_customer_support',
-    followup_feedback:       'oldful_followup_feedback',
-
-    // ── Marketing / campaigns ──
-    health_tips:             'oldful_health_tips',
-    new_service_launch:      'oldful_new_service_launch',
-    service_update:          'oldful_service_update',
-    event_invite:            'oldful_event_invite',
-    health_program_invite:   'oldful_health_program_invite',
-    prescription_reminder:   'oldful_prescription_reminder',
-    lead_qualification:      'oldful_lead_qualification',
+    followup_feedback:       'feedback_survey_form',
 };
 
 // ─── Phone normaliser ─────────────────────────
@@ -161,9 +150,23 @@ const sendWhatsAppMessage = async ({ phone, templateName, variables = [], callTo
 // ─── High-level event helpers ─────────────────
 // Variable counts match the approved templates exactly.
 
+const SUPPORT_PHONE = '+91 94801 98108';
+const SUPPORT_EMAIL = 'client@oldful.com';
+
 /**
- * Welcome after signup
- * Template: oldful_welcome_message — {{1}}=name
+ * OTP verification via WhatsApp
+ * Template: otp_template — {{1}}=code
+ */
+const sendOTP = ({ phone, code }) =>
+    sendWhatsAppMessage({
+        phone,
+        templateName: 'otp',
+        variables: [String(code)],
+    });
+
+/**
+ * Welcome after signup (DOCUMENT header — welcome brochure PDF)
+ * Template: oldful_welcome — {{1}}=name
  */
 const sendWelcome = ({ phone, name }) =>
     sendWhatsAppMessage({
@@ -174,91 +177,90 @@ const sendWelcome = ({ phone, name }) =>
 
 /**
  * Booking / appointment confirmed
- * Template: oldful_appointment_confirmation — {{1}}=name {{2}}=datetime {{3}}=service
+ * Template: service_request_ — {{1}}=name {{2}}=service {{3}}=orderId {{4}}=phone {{5}}=email
  */
-const sendBookingConfirmation = ({ phone, name, dateTime, service }) =>
+const sendBookingConfirmation = ({ phone, name, service, orderId }) =>
     sendWhatsAppMessage({
         phone,
         templateName: 'booking_confirmation',
-        variables: [name, dateTime || 'shortly', service || 'your requested service'],
+        variables: [name, service || 'your requested service', orderId || '-', SUPPORT_PHONE, SUPPORT_EMAIL],
     });
 
 /**
- * Payment received / invoice
- * Template: oldful_payment_confirmation — {{1}}=name {{2}}=amount
+ * Send payment link to user
+ * Template: payment_link — {{1}}=name {{2}}=amount {{3}}=service {{4}}=paymentUrl
+ */
+const sendPaymentLink = ({ phone, name, amount, service, paymentUrl }) =>
+    sendWhatsAppMessage({
+        phone,
+        templateName: 'payment_link',
+        variables: [name, String(amount), service || 'Oldful services', paymentUrl || 'www.oldful.com/payment'],
+    });
+
+/**
+ * Payment receipt / invoice (DOCUMENT header — receipt PDF)
+ * Template: oldful_receipt — {{1}}=name {{2}}=amount {{3}}=phone {{4}}=email
  */
 const sendPaymentConfirmation = ({ phone, name, amount }) =>
     sendWhatsAppMessage({
         phone,
         templateName: 'payment_confirmation',
-        variables: [name, `₹${amount}`],
+        variables: [name, String(amount), SUPPORT_PHONE, SUPPORT_EMAIL],
     });
 
 /**
- * SOS — admin alert
- * Template: oldful_customer_support — {{1}}=name
- * (No dedicated SOS template; admin is also notified via email with full details)
+ * Prescription received acknowledgement
+ * Template: prescription_flow — {{1}}=name {{2}}=orderRef
  */
-const sendSOSAdmin = ({ phone, userName }) =>
+const sendPrescriptionReceived = ({ phone, name, orderRef }) =>
     sendWhatsAppMessage({
         phone,
-        templateName: 'sos_alert_admin',
-        variables: [userName],
+        templateName: 'prescription_received',
+        variables: [name, orderRef || '-'],
     });
 
 /**
- * SOS — family contact alert
- * Template: oldful_customer_support — {{1}}=contactName
+ * Lab report ready (DOCUMENT header — report PDF)
+ * Template: lab_report_delivery — {{1}}=name
  */
-const sendSOSFamily = ({ phone, contactName }) =>
+const sendLabReport = ({ phone, name }) =>
     sendWhatsAppMessage({
         phone,
-        templateName: 'sos_alert_family',
-        variables: [contactName],
-    });
-
-/**
- * Plan expiry reminder
- * Template: oldful_health_event_reminder — {{1}}=name {{2}}=expiryDate
- */
-const sendPlanExpiryReminder = ({ phone, name, expiryDate }) =>
-    sendWhatsAppMessage({
-        phone,
-        templateName: 'plan_expiry_reminder',
-        variables: [name, expiryDate],
-    });
-
-/**
- * Support / follow-up after ticket
- * Template: oldful_customer_support — {{1}}=name
- */
-const sendSupportReply = ({ phone, name }) =>
-    sendWhatsAppMessage({
-        phone,
-        templateName: 'support_reply',
+        templateName: 'lab_report',
         variables: [name],
     });
 
 /**
- * Prescription reminder
- * Template: oldful_prescription_reminder — {{1}}=name
+ * Daily medication reminder
+ * Template: medication_reminder_daily — (no body variables)
  */
-const sendPrescriptionReminder = ({ phone, name }) =>
+const sendPrescriptionReminder = ({ phone }) =>
     sendWhatsAppMessage({
         phone,
         templateName: 'prescription_reminder',
-        variables: [name],
+        variables: [],
     });
 
 /**
- * Generic campaign / bulk outreach
- * Template: oldful_health_tips — {{1}}=name {{2}}=tipText
+ * Plan expiry / renewal reminder
+ * Template: renewal_reminder — {{1}}=name {{2}}=planName {{3}}=phone {{4}}=email
  */
-const sendCampaignMessage = ({ phone, name, message }) =>
+const sendPlanExpiryReminder = ({ phone, name, planName }) =>
     sendWhatsAppMessage({
         phone,
-        templateName: 'health_tips',
-        variables: [name, message || ''],
+        templateName: 'plan_expiry_reminder',
+        variables: [name, planName || 'Oldful Plan', SUPPORT_PHONE, SUPPORT_EMAIL],
+    });
+
+/**
+ * Feedback survey after service
+ * Template: feedback_survey_form — {{1}}=name
+ */
+const sendFeedbackSurvey = ({ phone, name }) =>
+    sendWhatsAppMessage({
+        phone,
+        templateName: 'followup_feedback',
+        variables: [name],
     });
 
 module.exports = {
@@ -267,13 +269,14 @@ module.exports = {
     TEMPLATES,
 
     // High-level helpers
+    sendOTP,
     sendWelcome,
     sendBookingConfirmation,
+    sendPaymentLink,
     sendPaymentConfirmation,
-    sendSOSAdmin,
-    sendSOSFamily,
-    sendPlanExpiryReminder,
-    sendSupportReply,
+    sendPrescriptionReceived,
+    sendLabReport,
     sendPrescriptionReminder,
-    sendCampaignMessage,
+    sendPlanExpiryReminder,
+    sendFeedbackSurvey,
 };

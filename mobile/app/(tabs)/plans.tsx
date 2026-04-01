@@ -18,11 +18,13 @@ import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/th
 import { useAppConfig } from '@/context/AppConfigContext';
 import { getIcon } from '@/components/sdui/SDUIRenderer';
 import { PlanConfig } from '@/services/api/appConfigService';
+import { useTranslation } from 'react-i18next';
 
 // ─── Static Layout Assets ─────────────────────────────────────────────────────
 const imgHeartOutline = require('@/assets/images/37d35bff48c57182eb08ca96ee07ef22d24fd2db.png');
 
 export default function PlansScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { plansBanner, plans, benefits } = useAppConfig();
@@ -50,7 +52,7 @@ export default function PlansScreen() {
                 <View style={styles.backButtonPlaceholder}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </View>
-                <Text style={styles.headerTitle}>Plans</Text>
+                <Text style={styles.headerTitle}>{t('plans.tab_title')}</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -139,7 +141,7 @@ export default function PlansScreen() {
                 </ScrollView>
 
                 {/* ─── Why Subscribe (SDUI benefits) ─── */}
-                <Text style={styles.sectionTitle}>Why Subscribe?</Text>
+                <Text style={styles.sectionTitle}>{t('plans.why_subscribe')}</Text>
                 <View style={styles.whySubscribeContainer}>
                     {benefits.map(benefit => (
                         <View key={benefit.id} style={styles.benefitRow}>

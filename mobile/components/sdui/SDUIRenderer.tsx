@@ -20,6 +20,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { HomeSection, SectionItem } from '@/services/api/appConfigService';
+import { getText } from '@/i18n/utils/getText';
+import { useTranslation } from 'react-i18next';
 
 // ─── Icon Registry ───────────────────────────────────────────────────────────
 // Maps every icon_key used in the SDUI JSON to a static local asset.
@@ -112,6 +114,7 @@ export function SectionRenderer({
     essentialItemHeight,
 }: SectionRendererProps) {
     const router = useRouter();
+    useTranslation(); // subscribe to language changes so getText() re-evaluates
 
     if (!section.visible) return null;
 
@@ -148,7 +151,7 @@ export function SectionRenderer({
             return (
                 <View style={styles.servicesCard}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>{section.title}</Text>
+                        <Text style={styles.sectionTitle}>{getText(section.title)}</Text>
                         {section.view_all_route && (
                             <TouchableOpacity onPress={() => router.push(section.view_all_route as any)}>
                                 <Text style={styles.viewAllText}>View All</Text>
@@ -249,6 +252,7 @@ function EssentialsGrid({
     essentialItemHeight: number;
     router: ReturnType<typeof useRouter>;
 }) {
+    useTranslation(); // subscribe to language changes so getText() re-evaluates
     const columns = section.config?.columns ?? 4;
     const maxVisibleRows = section.config?.max_visible_rows ?? 0; // 0 = show all
     const [expanded, setExpanded] = useState(false);
@@ -267,8 +271,12 @@ function EssentialsGrid({
     return (
         <View style={styles.essentialsCard}>
             <View style={styles.sectionHeader}>
-                <Text style={styles.essentialsTitle}>{section.title}</Text>
-                {section.view_all_route}
+                <Text style={styles.essentialsTitle}>{getText(section.title)}</Text>
+                {section.view_all_route && (
+                    <TouchableOpacity onPress={() => router.push(section.view_all_route as any)}>
+                        <Text style={styles.viewAllSmall}>View All</Text>
+                    </TouchableOpacity>
+                )}
             </View>
             {displayRows.map((row, ri) => (
                 <View key={ri} style={styles.essentialsRow}>

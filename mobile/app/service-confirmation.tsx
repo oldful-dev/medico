@@ -15,8 +15,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { bookingService, Booking } from '@/services/api/bookingService';
+import { useTranslation } from 'react-i18next';
 
 export default function ServiceConfirmationScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 

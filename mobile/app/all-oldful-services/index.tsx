@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Fonts } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
 
 // Service grid images
 const doctorVisitImg = require('@/assets/images/32a4661f97e2fa2dd2c85c403a7c530b7214e7f7.png');
@@ -40,6 +41,7 @@ const SERVICE_GRID = [
 ];
 
 export default function AllOldfulServicesScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const { width } = useWindowDimensions();
 

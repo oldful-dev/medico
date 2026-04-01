@@ -23,6 +23,7 @@ import { mediaService } from '@/services/api/mediaService';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { Alert } from 'react-native';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgHero = require('@/assets/images/6c8ed456023258e8b4095af93909c6cbc6c4b909.png'); // Lightbulb & Question mark icon
@@ -30,6 +31,7 @@ const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a1
 const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
 
 export default function AnythingElseScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [address, setAddress] = React.useState('');

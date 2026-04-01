@@ -20,6 +20,7 @@ import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgPainRelief = require('@/assets/images/19384cdb0d3b6490a3d5bfa98457389b6d565416.png'); // Pain relief illustration
@@ -31,6 +32,7 @@ const imgCalendar = require('@/assets/images/9db46350ce94677b709648f4aadad318987
 const BODY_PARTS = ['Back', 'Knee', 'Neck', 'Shoulder', 'Leg'];
 
 export default function PhysioFitnessScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 

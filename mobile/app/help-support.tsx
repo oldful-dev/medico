@@ -10,9 +10,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { supportService, SupportTicket, TicketCategory } from '@/services/api/supportService';
+import { useTranslation } from 'react-i18next';
 import { useAppConfig } from '@/context/AppConfigContext';
 
 export default function HelpSupportScreen() {
+    const { t } = useTranslation();
     const router      = useRouter();
     const insets      = useSafeAreaInsets();
     const { helpSupportConfig } = useAppConfig();

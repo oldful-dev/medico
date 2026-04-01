@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform, Modal } from 'react
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, FontSize, Radius, Spacing } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
 
 interface DateTimePickerInputProps {
     label?: string;
@@ -12,11 +13,13 @@ interface DateTimePickerInputProps {
 }
 
 export default function DateTimePickerInput({
-    label = 'Schedule Appointment',
+    label,
     value,
     onDateChange,
     minimumDate,
 }: DateTimePickerInputProps) {
+    const { t } = useTranslation();
+    const resolvedLabel = label ?? t('datetime_picker.label');
     const [date, setDate] = useState<Date>(value || new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
@@ -68,11 +71,11 @@ export default function DateTimePickerInput({
 
     return (
         <View style={styles.container}>
-            <Text style={styles.label}>{label}</Text>
+            <Text style={styles.label}>{resolvedLabel}</Text>
             <TouchableOpacity style={styles.pickerButton} onPress={openPicker} activeOpacity={0.7}>
                 <Ionicons name="calendar-outline" size={20} color={Colors.primary} style={{ marginRight: 10 }} />
                 <Text style={[styles.pickerText, hasSelected && styles.pickerTextSelected]}>
-                    {hasSelected ? formatDate(date) : 'Select Date & Time'}
+                    {hasSelected ? formatDate(date) : t('datetime_picker.select')}
                 </Text>
                 <Ionicons name="chevron-forward" size={18} color="#AAAEAC" />
             </TouchableOpacity>
@@ -83,9 +86,9 @@ export default function DateTimePickerInput({
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalContent}>
                             <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>Select Date & Time</Text>
+                                <Text style={styles.modalTitle}>{t('datetime_picker.select')}</Text>
                                 <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                                    <Text style={styles.modalDone}>Done</Text>
+                                    <Text style={styles.modalDone}>{t('datetime_picker.done')}</Text>
                                 </TouchableOpacity>
                             </View>
                             <DateTimePicker

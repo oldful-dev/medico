@@ -25,11 +25,13 @@ import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { mediaService } from '@/services/api/mediaService';
 import { Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 const imgHero = require('@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png');
 const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
 const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
 
 export default function ApplianceRepairScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [appliance, setAppliance] = React.useState('');

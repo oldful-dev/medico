@@ -67,7 +67,16 @@ Desktop.ini
 *.p8
 *.p12
 *.key
+*.keystore
 *.mobileprovision
+
+# ───── Firebase / GCP Service Configs ─────
+**/google-services.json
+**/GoogleService-Info.plist
+**/serviceAccount*.json
+**/firebase-service-account*.json
+**/*-vision-key.json
+**/*-service-key.json
 
 # ───── TypeScript ─────
 *.tsbuildinfo

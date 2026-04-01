@@ -20,6 +20,7 @@ import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { Alert } from 'react-native';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgCarouselIndia = require('@/assets/images/c73921e0062b4c910b14682c3ab2491a1db69321.png'); // Gateway of India image
@@ -32,6 +33,7 @@ const imgPicnic = require('@/assets/images/5bf8c5af10af2edaa6cb38278c8f8ce7133b7
 const imgChai = require('@/assets/images/70f805bc4699a177600d02eb33328392afe8e5f3.png'); // Chai icon
 
 export default function TripTravelsScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [destination, setDestination] = useState('Temple Tours');

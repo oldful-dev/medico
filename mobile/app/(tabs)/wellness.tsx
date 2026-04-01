@@ -11,6 +11,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
 
 // Using local images or placeholder for Hero if a specific illustration isn't explicitly supplied
 // For this teaser, we'll build a vibrant Hero with a prominent 'Oldful' logo or generic medical icon 
@@ -25,6 +26,7 @@ const CATEGORIES = [
 ];
 
 export default function WellnessScreen() {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
 
     return (
@@ -47,7 +49,7 @@ export default function WellnessScreen() {
                             {/* We fallback to the meal service image or any generic asset since we lack a specific "senior receiving package" image, but styled beautifully */}
                             <Image source={imgPlaceholderHero} style={styles.heroImage} resizeMode="contain" />
                             <View style={styles.comingSoonBadge}>
-                                <Text style={styles.comingSoonBadgeText}>COMING SOON</Text>
+                                <Text style={styles.comingSoonBadgeText}>{t('wellness.coming_soon').toUpperCase()}</Text>
                             </View>
                         </View>
 

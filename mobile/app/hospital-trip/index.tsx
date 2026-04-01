@@ -20,6 +20,7 @@ import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgEye = require('@/assets/images/e9d68d0206e443ceceadd7907cd94f1c86fcacd4.png');
@@ -46,6 +47,7 @@ const SPECIALISTS = [
 ];
 
 export default function HospitalTripScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
@@ -129,7 +131,7 @@ export default function HospitalTripScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Hospital Trip</Text>
+                <Text style={styles.headerTitle}>{t('hospital_trip.header')}</Text>
             </View>
 
             {/* Main Content Area (Rounded Cream Box) */}

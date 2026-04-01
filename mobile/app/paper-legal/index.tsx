@@ -23,6 +23,7 @@ import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { Alert } from 'react-native';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgCheckmark = require('@/assets/images/019640d27de157c119b045c46aae6a6559dd3a79.png'); // Green Check Circle
@@ -30,6 +31,7 @@ const imgQuestionMark = require('@/assets/images/c359f98cd0aedd8de95a2f5901d6874
 const imgOldfulIllustration = require('@/assets/images/49fa5256c84b3ee062131d88f5ae26383f5d5257.png'); // The lawyer/assistant illustration
 
 export default function PaperLegalScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [selectedService, setSelectedService] = useState('Digital Life Certificate');

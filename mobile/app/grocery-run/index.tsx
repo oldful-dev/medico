@@ -22,11 +22,13 @@ import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 const imgHero = require('@/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png'); // Grocery bag icon
 const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
 const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
 
 export default function GroceryRunScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [address, setAddress] = React.useState('Fetching address...');
