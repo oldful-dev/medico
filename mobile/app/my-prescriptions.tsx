@@ -11,6 +11,7 @@ import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/th
 import { userService } from '@/services/api/userService';
 import { useUser } from '@/context/UserContext';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
 
 interface HealthReport {
     id: string;
@@ -25,6 +26,7 @@ interface HealthReport {
 }
 
 export default function MyPrescriptionsScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const { profile } = useUser();
     const [reports, setReports] = useState<HealthReport[]>([]);

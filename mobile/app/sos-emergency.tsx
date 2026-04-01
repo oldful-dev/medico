@@ -12,8 +12,10 @@ import { SOSButton, SlideToCall, BackgroundGlow } from '@/components/sos';
 import SOSCountdown from '@/components/sos/SOSCountdown';
 import { sosService } from '@/services/device/sosService';
 import { Fonts } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
 
 export default function SOSEmergencyScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const [showCountdown, setShowCountdown] = useState(false);
     const [isTriggering, setIsTriggering] = useState(false);

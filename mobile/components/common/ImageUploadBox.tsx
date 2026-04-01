@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, ScrollView } fr
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors, Fonts, FontSize, Radius, Spacing } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
 
 interface ImageUploadBoxProps {
     title?: string;
@@ -12,35 +13,29 @@ interface ImageUploadBoxProps {
 }
 
 export default function ImageUploadBox({
-    title = 'Upload Photos of the Issue',
-    subtitle = 'JPG, PNG or PDF, file size no more than 10MB',
+    title,
+    subtitle,
     onImagesChange,
     maxImages = 5,
 }: ImageUploadBoxProps) {
+    const { t } = useTranslation();
+    const resolvedTitle = title ?? t('image_upload.upload_photos');
+    const resolvedSubtitle = subtitle ?? t('image_upload.file_hint');
     const [images, setImages] = useState<string[]>([]);
 
     const handleAddImage = () => {
         if (images.length >= maxImages) {
-            Alert.alert('Limit Reached', `You can only upload up to ${maxImages} images.`);
+            Alert.alert(t('image_upload.limit_reached'), t('image_upload.limit_message', { max: maxImages }));
             return;
         }
 
         Alert.alert(
-            'Upload Photo',
-            'Choose an option',
+            t('image_upload.upload_photo'),
+            '',
             [
-                {
-                    text: 'Take Photo',
-                    onPress: openCamera,
-                },
-                {
-                    text: 'Choose from Gallery',
-                    onPress: openGallery,
-                },
-                {
-                    text: 'Cancel',
-                    style: 'cancel',
-                },
+                { text: t('image_upload.take_photo'), onPress: openCamera },
+                { text: t('image_upload.choose_gallery'), onPress: openGallery },
+                { text: t('common.cancel'), style: 'cancel' },
             ],
             { cancelable: true }
         );
@@ -49,7 +44,7 @@ export default function ImageUploadBox({
     const openCamera = async () => {
         const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
         if (permissionResult.granted === false) {
-            Alert.alert('Permission Denied', 'You need to grant camera permission to take a picture.');
+            Alert.alert(t('common.permission_required'), t('image_upload.camera_permission'));
             return;
         }
 
@@ -66,7 +61,7 @@ export default function ImageUploadBox({
     const openGallery = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (permissionResult.granted === false) {
-            Alert.alert('Permission Denied', 'You need to grant gallery permission to choose a picture.');
+            Alert.alert(t('common.permission_required'), t('image_upload.gallery_permission'));
             return;
         }
 
@@ -102,11 +97,11 @@ export default function ImageUploadBox({
         <View style={styles.container}>
             <View style={styles.uploadDashedBox}>
                 <Ionicons name="cloud-upload-outline" size={40} color={Colors.primary} style={styles.uploadCloudIcon} />
-                <Text style={styles.uploadTitle}>{title}</Text>
-                <Text style={styles.uploadSubtitle}>{subtitle}</Text>
+                <Text style={styles.uploadTitle}>{resolvedTitle}</Text>
+                <Text style={styles.uploadSubtitle}>{resolvedSubtitle}</Text>
 
                 <TouchableOpacity style={styles.uploadButton} onPress={handleAddImage} activeOpacity={0.8}>
-                    <Text style={styles.uploadButtonText}>SELECT IMAGE</Text>
+                    <Text style={styles.uploadButtonText}>{t('image_upload.select_image').toUpperCase()}</Text>
                 </TouchableOpacity>
             </View>
 

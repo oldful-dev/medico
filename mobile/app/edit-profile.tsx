@@ -11,10 +11,12 @@ import { useRouter } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useUser } from '@/context/UserContext';
 import { userService } from '@/services/api/userService';
+import { useTranslation } from 'react-i18next';
 
 const GENDER_OPTIONS = ['MALE', 'FEMALE', 'OTHER'];
 
 export default function EditProfileScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const { profile, setProfile } = useUser();
     const [saving, setSaving] = useState(false);

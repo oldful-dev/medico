@@ -23,6 +23,7 @@ import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { mediaService } from '@/services/api/mediaService';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgBell = require('@/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png');
@@ -30,6 +31,7 @@ const cameraIcon = require('@/assets/images/288b8d22e862e8e7e85fb51ab6158d4b0fd8
 const galleryIcon = require('@/assets/images/82b1e49607f9f5b0817c6d51de25f6b752ac4908.png');
 
 export default function OrderMedicinesScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [duration, setDuration] = useState('1 Month');
@@ -49,7 +51,7 @@ export default function OrderMedicinesScreen() {
     const openCamera = async () => {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-            Alert.alert('Permission Denied', 'Camera access is required to take photos.');
+            Alert.alert('Permission Denied', t('order_medicines.camera_permission'));
             return;
         }
 
@@ -66,7 +68,7 @@ export default function OrderMedicinesScreen() {
     const openGallery = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-            Alert.alert('Permission Denied', 'Gallery access is required to choose photos.');
+            Alert.alert('Permission Denied', t('order_medicines.gallery_permission'));
             return;
         }
 
@@ -173,8 +175,8 @@ export default function OrderMedicinesScreen() {
             <View style={[styles.headerBackground, { paddingTop: insets.top }]}>
                 <StatusBar style="light" backgroundColor="#048357" />
                 <View style={styles.header}>
-                    <Text style={styles.headerTitle}>Order Medicines</Text>
-                    <Text style={styles.headerSubtitle}>Upload prescription, we deliver to your door.</Text>
+                    <Text style={styles.headerTitle}>{t('order_medicines.header')}</Text>
+                    <Text style={styles.headerSubtitle}>{t('order_medicines.header_subtitle')}</Text>
                 </View>
             </View>
 
@@ -194,7 +196,7 @@ export default function OrderMedicinesScreen() {
                     enableOnAndroid
                     extraScrollHeight={20}
                 >
-                    <Text style={styles.sectionTitle}>Upload Prescription</Text>
+                    <Text style={styles.sectionTitle}>{t('order_medicines.upload_prescription')}</Text>
 
                     {/* ─── Options Card 1: Camera ─── */}
                     <TouchableOpacity
@@ -204,8 +206,8 @@ export default function OrderMedicinesScreen() {
                     >
                         <Image source={cameraIcon} style={styles.uploadIcon} resizeMode="contain" />
                         <View style={styles.uploadTextContainer}>
-                            <Text style={styles.uploadMainText}>Camera</Text>
-                            <Text style={styles.uploadSubText}>Take Photo</Text>
+                            <Text style={styles.uploadMainText}>{t('order_medicines.camera')}</Text>
+                            <Text style={styles.uploadSubText}>{t('order_medicines.camera_take_photo')}</Text>
                         </View>
                         <Ionicons name={selectedImages.length > 0 ? "checkmark-circle" : "chevron-forward"} size={20} color={selectedImages.length > 0 ? "#048357" : "#898989"} />
                     </TouchableOpacity>
@@ -218,8 +220,8 @@ export default function OrderMedicinesScreen() {
                     >
                         <Image source={galleryIcon} style={styles.uploadIcon} resizeMode="contain" />
                         <View style={styles.uploadTextContainer}>
-                            <Text style={styles.uploadMainText}>Gallery</Text>
-                            <Text style={styles.uploadSubText}>Choose Image</Text>
+                            <Text style={styles.uploadMainText}>{t('order_medicines.gallery')}</Text>
+                            <Text style={styles.uploadSubText}>{t('order_medicines.gallery_choose')}</Text>
                         </View>
                         <Ionicons name={selectedImages.length > 0 ? "checkmark-circle" : "chevron-forward"} size={20} color={selectedImages.length > 0 ? "#048357" : "#898989"} />
                     </TouchableOpacity>
@@ -250,8 +252,8 @@ export default function OrderMedicinesScreen() {
                             <View style={styles.typeIconLine} />
                         </View>
                         <View style={styles.uploadTextContainer}>
-                            <Text style={styles.uploadMainText}>Type</Text>
-                            <Text style={styles.uploadSubText}>Manual Entry</Text>
+                            <Text style={styles.uploadMainText}>{t('order_medicines.type')}</Text>
+                            <Text style={styles.uploadSubText}>{t('order_medicines.manual_entry')}</Text>
                         </View>
                         <Ionicons name={isManualEntry ? "close-circle" : "chevron-forward"} size={20} color={isManualEntry ? "#048357" : "#898989"} />
                     </TouchableOpacity>
@@ -260,7 +262,7 @@ export default function OrderMedicinesScreen() {
                         <View style={styles.manualEntryContainer}>
                             <TextInput
                                 style={styles.manualInput}
-                                placeholder="Enter medicine names and quantities..."
+                                placeholder={t('order_medicines.manual_placeholder')}
                                 placeholderTextColor="#898989"
                                 multiline
                                 value={manualText}
@@ -271,8 +273,8 @@ export default function OrderMedicinesScreen() {
 
                     {/* ─── Address Section ─── */}
                     <Text style={styles.addressLabel}>
-                        <Text style={styles.addressLabelBold}>Address : </Text>
-                        Update profile address
+                        <Text style={styles.addressLabelBold}>{t('order_medicines.address_label')}</Text>
+                        {t('order_medicines.address_update')}
                     </Text>
 
                     <View style={[styles.uploadOptionCard, { marginBottom: 15 }]}>
@@ -281,7 +283,7 @@ export default function OrderMedicinesScreen() {
                             {isManualAddress ? (
                                 <TextInput
                                     style={[styles.addressText, { flex: 1 }]}
-                                    placeholder="Enter your address manually"
+                                    placeholder={t('order_medicines.address_manual_placeholder')}
                                     placeholderTextColor="#898989"
                                     value={address}
                                     onChangeText={setAddress}
@@ -304,8 +306,8 @@ export default function OrderMedicinesScreen() {
                         <Ionicons name="notifications" size={30} color={autoRefill ? "#048357" : "#555555"} style={{ marginRight: 15 }} />
                         <View style={styles.uploadTextContainer}>
                             <View>
-                                <Text style={styles.autoRefillTitle}>Auto - Refill</Text>
-                                <Text style={styles.autoRefillDesc}>{autoRefill ? 'Remind me to re-order in 25 days.' : 'Click to enable reminders'}</Text>
+                                <Text style={styles.autoRefillTitle}>{t('order_medicines.auto_refill')}</Text>
+                                <Text style={styles.autoRefillDesc}>{autoRefill ? t('order_medicines.auto_refill_on') : t('order_medicines.auto_refill_off')}</Text>
                             </View>
                         </View>
                         <Ionicons name={autoRefill ? "checkbox" : "square-outline"} size={20} color={autoRefill ? "#048357" : "#898989"} />
@@ -313,8 +315,8 @@ export default function OrderMedicinesScreen() {
 
                     {/* ─── Duration Selection ─── */}
                     <Text style={styles.addressLabel}>
-                        <Text style={styles.addressLabelBold}>Duration : </Text>
-                        Select refill duration
+                        <Text style={styles.addressLabelBold}>{t('order_medicines.duration_label')}</Text>
+                        {t('order_medicines.duration_select')}
                     </Text>
                     <View style={styles.durationContainer}>
                         <TouchableOpacity
@@ -322,14 +324,14 @@ export default function OrderMedicinesScreen() {
                             onPress={() => setDuration('1 Month')}
                             activeOpacity={0.7}
                         >
-                            <Text style={[styles.durationText, duration === '1 Month' && styles.durationTextActive]}>1 Month</Text>
+                            <Text style={[styles.durationText, duration === '1 Month' && styles.durationTextActive]}>{t('order_medicines.one_month')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.durationButton, duration === '3 Months' && styles.durationButtonActive]}
                             onPress={() => setDuration('3 Months')}
                             activeOpacity={0.7}
                         >
-                            <Text style={[styles.durationText, duration === '3 Months' && styles.durationTextActive]}>3 Months</Text>
+                            <Text style={[styles.durationText, duration === '3 Months' && styles.durationTextActive]}>{t('order_medicines.three_months')}</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -344,7 +346,7 @@ export default function OrderMedicinesScreen() {
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
                             <Text style={styles.submitButtonText}>
-                                {isLoadingInit ? 'Initializing...' : 'Place Order'}
+                                {isLoadingInit ? t('common.initializing') : t('booking.place_order')}
                             </Text>
                         )}
                     </TouchableOpacity>

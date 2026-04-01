@@ -17,6 +17,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { locationService } from '@/services/device/locationService';
@@ -55,6 +56,7 @@ const PROBLEMS: { label: string; icon?: any; empty?: boolean }[] = [
 ];
 
 export default function DoctorVisitScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const { width } = useWindowDimensions();
 
@@ -142,7 +144,7 @@ export default function DoctorVisitScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Doctor Home Visit</Text>
+                    <Text style={styles.headerTitle}>{t('doctor_visit.header')}</Text>
                     {/* Placeholder for flex layout balance */}
                     <View style={styles.headerRight} />
                 </View>
@@ -169,7 +171,7 @@ export default function DoctorVisitScreen() {
 
                     {/* ─── Select Problem Card ─── */}
                     <View style={styles.sectionCard}>
-                        <Text style={styles.sectionTitle}>Select Problem</Text>
+                        <Text style={styles.sectionTitle}>{t('booking.select_problem')}</Text>
 
                         <View style={styles.problemsGrid}>
                             {paddedProblems.map((item, index) => {
@@ -210,7 +212,7 @@ export default function DoctorVisitScreen() {
 
                     {/* ─── Select Doctor Type Card ─── */}
                     <View style={styles.sectionCardSmall}>
-                        <Text style={styles.sectionTitle}>Select Doctor Type</Text>
+                        <Text style={styles.sectionTitle}>{t('booking.select_doctor_type')}</Text>
                         <View style={styles.doctorTypeRow}>
                             {/* Selected State (General Physician) */}
                             <TouchableOpacity
@@ -218,7 +220,7 @@ export default function DoctorVisitScreen() {
                                 onPress={() => setSelectedDoctorType('GP')}
                             >
                                 <Image source={gpDoctorIcon} style={styles.doctorTypeIconGP} resizeMode="contain" />
-                                <Text style={selectedDoctorType === 'GP' ? styles.doctorTypeActiveText : styles.doctorTypeInactiveText} numberOfLines={2}>General Physician (MBBS)</Text>
+                                <Text style={selectedDoctorType === 'GP' ? styles.doctorTypeActiveText : styles.doctorTypeInactiveText} numberOfLines={2}>{t('doctor_visit.general_physician')}</Text>
                             </TouchableOpacity>
 
                             {/* Unselected State (Physiotherapist) */}
@@ -227,21 +229,21 @@ export default function DoctorVisitScreen() {
                                 onPress={() => setSelectedDoctorType('Physio')}
                             >
                                 <Image source={physioIcon} style={styles.doctorTypeIconPhysio} resizeMode="contain" />
-                                <Text style={selectedDoctorType === 'Physio' ? styles.doctorTypeActiveText : styles.doctorTypeInactiveText} numberOfLines={2}>Physiotherapist</Text>
+                                <Text style={selectedDoctorType === 'Physio' ? styles.doctorTypeActiveText : styles.doctorTypeInactiveText} numberOfLines={2}>{t('doctor_visit.physiotherapist')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
 
                     {/* ─── Select Visit Type Card ─── */}
                     <View style={styles.sectionCardSmall}>
-                        <Text style={styles.sectionTitle}>Select Visit Type</Text>
+                        <Text style={styles.sectionTitle}>{t('booking.select_visit_type')}</Text>
                         <View style={styles.visitTypeRow}>
                             <TouchableOpacity
                                 style={[styles.visitTypeOption, visitType === 'Home' && styles.visitTypeOptionActive]}
                                 onPress={() => setVisitType('Home')}
                             >
                                 <Ionicons name="home-outline" size={20} color={visitType === 'Home' ? Colors.primary : Colors.textLight} />
-                                <Text style={[styles.visitTypeText, visitType === 'Home' && styles.visitTypeTextActive]}>Home Session</Text>
+                                <Text style={[styles.visitTypeText, visitType === 'Home' && styles.visitTypeTextActive]}>{t('doctor_visit.home_session')}</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
@@ -249,21 +251,21 @@ export default function DoctorVisitScreen() {
                                 onPress={() => setVisitType('Clinic')}
                             >
                                 <Ionicons name="business-outline" size={20} color={visitType === 'Clinic' ? Colors.primary : Colors.textLight} />
-                                <Text style={[styles.visitTypeText, visitType === 'Clinic' && styles.visitTypeTextActive]}>Clinic Visit</Text>
+                                <Text style={[styles.visitTypeText, visitType === 'Clinic' && styles.visitTypeTextActive]}>{t('doctor_visit.clinic_visit')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
 
                     {/* ─── When? Card ─── */}
                     <View style={styles.sectionCardSmall}>
-                        <Text style={styles.sectionTitle}>When?</Text>
+                        <Text style={styles.sectionTitle}>{t('booking.when')}</Text>
 
                         <TouchableOpacity
                             style={styles.radioOption}
                             onPress={() => setSelectedWhen('ASAP')}
                         >
                             <Ionicons name={selectedWhen === 'ASAP' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedWhen === 'ASAP' ? Colors.primary : Colors.textLight} />
-                            <Text style={styles.radioLabelMain}>Come ASAP <Text style={styles.radioLabelSub}>(Urgent)</Text></Text>
+                            <Text style={styles.radioLabelMain}>{t('booking.come_asap')} <Text style={styles.radioLabelSub}>{t('booking.urgent')}</Text></Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -271,15 +273,15 @@ export default function DoctorVisitScreen() {
                             onPress={() => setSelectedWhen('Later')}
                         >
                             <Ionicons name={selectedWhen === 'Later' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedWhen === 'Later' ? Colors.primary : Colors.textLight} />
-                            <Text style={styles.radioLabelMainGreen}>Schedule for later <Text style={styles.radioLabelSub}>(Date & Time Picker)</Text></Text>
+                            <Text style={styles.radioLabelMainGreen}>{t('booking.schedule_later')} <Text style={styles.radioLabelSub}>{t('booking.date_time_picker')}</Text></Text>
                         </TouchableOpacity>
                     </View>
 
                     {/* ─── Upload Documents ─── */}
                     <View style={{ paddingHorizontal: 2 }}>
                         <ImageUploadBox
-                            title="Upload Reports (Optional)"
-                            subtitle="JPG, PNG or PDF, help our doctors understand better"
+                            title={t('booking.upload_reports')}
+                            subtitle={t('booking.upload_reports_hint')}
                             onImagesChange={setSelectedImages}
                             maxImages={5}
                         />
@@ -287,7 +289,7 @@ export default function DoctorVisitScreen() {
 
                     {/* ─── Confirm Address Card ─── */}
                     <View style={styles.sectionCardSmall}>
-                        <Text style={styles.sectionTitle}>Confirm Address</Text>
+                        <Text style={styles.sectionTitle}>{t('booking.confirm_address')}</Text>
 
                         <View style={styles.addressBox}>
                             <Ionicons name="location-outline" size={16} color="#2F2F2F" style={styles.addressIcon} />
@@ -317,7 +319,7 @@ export default function DoctorVisitScreen() {
                         <ActivityIndicator color={Colors.textWhite} />
                     ) : (
                         <Text style={styles.bookButtonText}>
-                            {isLoadingInit ? 'Initializing...' : 'Book Appointment'}
+                            {isLoadingInit ? t('common.initializing') : t('booking.book_now')}
                         </Text>
                     )}
                 </TouchableOpacity>

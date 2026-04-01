@@ -16,10 +16,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { OTPInput } from '@/components/common';
 import { authService } from '@/services/api/authService';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const RESEND_TIMEOUT = 30; // seconds
 
 export default function OtpVerificationScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const { phoneNumber } = useLocalSearchParams<{ phoneNumber: string }>();
     const { login } = useAuth();
@@ -124,7 +126,7 @@ export default function OtpVerificationScreen() {
                     <Text style={styles.resendText}>Didn't receive the code?</Text>
                     <Text style={styles.resendSpacer}>  </Text>
                     <TouchableOpacity onPress={handleResend} disabled={!canResend}>
-                        <Text style={[styles.resendLink, !canResend && styles.resendLinkDisabled]}>Resend</Text>
+                        <Text style={[styles.resendLink, !canResend && styles.resendLinkDisabled]}>{t('auth.resend_otp')}</Text>
                     </TouchableOpacity>
                 </View>
                 {!canResend && <Text style={styles.timerText}>{timerLabel}</Text>}

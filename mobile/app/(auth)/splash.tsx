@@ -15,8 +15,10 @@ const isoBadgeImage = require('@/assets/images/727280010474dfd5bcb5f19d227968488
 const mandalaImage = require('@/assets/images/0b96a399f500dd9db46b7a473a511a23fa2abc2b.png');
 
 import * as ExpoSplashScreen from 'expo-splash-screen';
+import { useTranslation } from 'react-i18next';
  
  export default function SplashScreen() {
+    const { t } = useTranslation();
      const router = useRouter();
      const { isAuthenticated, isLoading } = useAuth();
      const [fadeAnim] = useState(new Animated.Value(0));

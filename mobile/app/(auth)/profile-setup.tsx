@@ -23,6 +23,7 @@ import { FormInput } from '@/components/common';
 import { userService, cityService, ApiError } from '@/services/api';
 import { mediaService } from '@/services/api/mediaService';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 // Figma-exported assets
 const logoImage = require('@/assets/images/2549b5ede370bbb67a088920cac9a8719fec5968.png');
@@ -41,6 +42,7 @@ const GPS_ERROR_STATES = [
 ];
 
 export default function ProfileSetupScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams();
     const passedPhone = typeof params.phone === 'string' ? params.phone : '';
@@ -288,7 +290,7 @@ export default function ProfileSetupScreen() {
                 {/* ─── Row 1: Full Name + Profile Photo ─── */}
                 <View style={styles.row}>
                     <FormInput
-                        placeholder="Enter your full name"
+                        placeholder={t('profile_setup.name_placeholder')}
                         style={styles.nameInput}
                         value={name}
                         onChangeText={setName}
@@ -447,13 +449,13 @@ export default function ProfileSetupScreen() {
                     disabled={isLoading}
                 >
                     <Text style={styles.saveButtonText}>
-                        {isLoading ? "Saving..." : "Save & Continue"}
+                        {isLoading ? t('profile_setup.completing') : t('profile_setup.complete_profile')}
                     </Text>
                 </TouchableOpacity>
 
                 {/* ─── Already a member? Login ─── */}
                 <View style={styles.loginRow}>
-                    <Text style={styles.loginText}>Already a member? </Text>
+                    <Text style={styles.loginText}>{t('auth.already_member')} </Text>
                     <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
                         <Text style={styles.loginLink}>Login</Text>
                     </TouchableOpacity>

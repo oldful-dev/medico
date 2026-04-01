@@ -11,6 +11,7 @@ import { Fonts } from '@/constants/theme';
 import { useUser } from '@/context/UserContext';
 import { useAppConfig } from '@/context/AppConfigContext';
 import { userService } from '@/services/api/userService';
+import { useTranslation } from 'react-i18next';
 
 export default function LanguageSelectionScreen() {
     const router = useRouter();
@@ -18,6 +19,7 @@ export default function LanguageSelectionScreen() {
     const { preferredLanguage, setPreferredLanguage } = useUser();
     const { languages } = useAppConfig();
 
+    const { t } = useTranslation();
     const [selected, setSelected] = useState(preferredLanguage || 'en');
     const [saving, setSaving] = useState(false);
 
@@ -44,7 +46,7 @@ export default function LanguageSelectionScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Select Language</Text>
+                <Text style={styles.headerTitle}>{t('language_selection.header')}</Text>
                 <View style={{ width: 34 }} />
             </View>
 
@@ -52,10 +54,8 @@ export default function LanguageSelectionScreen() {
                 <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                     <View style={styles.illustrationCard}>
                         <Ionicons name="language" size={40} color="#048357" style={styles.illustrationIcon} />
-                        <Text style={styles.illustrationTitle}>Choose your preferred language</Text>
-                        <Text style={styles.illustrationSubtitle}>
-                            You can always change this later in your profile settings.
-                        </Text>
+                        <Text style={styles.illustrationTitle}>{t('language_selection.title')}</Text>
+                        <Text style={styles.illustrationSubtitle}>{t('language_selection.subtitle')}</Text>
                     </View>
 
                     {/* Language list — SDUI driven */}
@@ -94,7 +94,7 @@ export default function LanguageSelectionScreen() {
                     >
                         {saving
                             ? <ActivityIndicator color="#fff" />
-                            : <Text style={styles.continueButtonText}>Save Language</Text>
+                            : <Text style={styles.continueButtonText}>{t('language_selection.save')}</Text>
                         }
                     </TouchableOpacity>
                 </View>

@@ -24,6 +24,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { locationService } from '@/services/device/locationService';
 import { useUser } from '@/context/UserContext';
@@ -75,6 +76,7 @@ interface ServiceGridProps {
 }
 
 function ServiceGrid({ section, itemWidth, imageHeight, cardHeight }: ServiceGridProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const items = section.max_items ? section.services.slice(0, section.max_items) : section.services;
 
@@ -84,7 +86,7 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight }: ServiceGri
         <Text style={styles.sectionTitle}>{section.title}</Text>
         {section.view_all_route && (
           <TouchableOpacity onPress={() => router.push(section.view_all_route as any)}>
-            <Text style={styles.viewAllText}>View All</Text>
+            <Text style={styles.viewAllText}>{t('common.view_all')}</Text>
           </TouchableOpacity>
         )}
       </View>

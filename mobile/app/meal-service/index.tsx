@@ -20,6 +20,7 @@ import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgThali = require('@/assets/images/6fdd60a0eb22e90770fb958a6ddcf54c1c9dc6b6.png'); // Meal image
@@ -45,6 +46,7 @@ const CheckedSolidRadio = () => (
 );
 
 export default function MealServiceScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 

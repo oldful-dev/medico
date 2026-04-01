@@ -21,6 +21,7 @@ import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { locationService } from '@/services/device/locationService';
 import { Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 // Feature items array according to PRD
 const ISSUES = [
@@ -30,6 +31,7 @@ const ISSUES = [
 ];
 
 export default function TechHelperScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 

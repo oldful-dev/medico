@@ -20,12 +20,14 @@ import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgLightning = require('@/assets/images/50ffab5c68d190752695666bb7ec8bee1bc4842a.png'); // Lightning bolt
 const imgChart = require('@/assets/images/45958abae6d20cd413b2ccd515807fab5af92fa7.png'); // Pricing table chart
 
 export default function SmartUpgradeScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { userId } = useAuth();

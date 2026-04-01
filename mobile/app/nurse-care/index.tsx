@@ -15,6 +15,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
@@ -28,6 +29,7 @@ const nurseIcon = require('@/assets/images/ad2bd697d39bc0738ca19a09e58ce4677761c
 const ideaIcon = require('@/assets/images/c1c9dfda80d0a21cae62694d5d1f8d7ea182b581.png');
 
 export default function BookNursingCareScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
 
     // Local UI state for radio buttons/selections
@@ -141,7 +143,7 @@ export default function BookNursingCareScreen() {
                     >
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Book Home Nursing Care</Text>
+                    <Text style={styles.headerTitle}>{t('nurse_care.header')}</Text>
                     <View style={styles.headerRight} />
                 </View>
             </SafeAreaView>
@@ -158,12 +160,12 @@ export default function BookNursingCareScreen() {
                 >
                     {/* Description Text */}
                     <Text style={styles.descText}>
-                        Booking long-term or shift-based care at home with experienced nursing professionals and caretakers.
+                        {t('nurse_care.description')}
                     </Text>
 
                     {/* ─── Who is it for? ─── */}
                     <View style={styles.sectionContainerBase}>
-                        <Text style={styles.sectionTitle}>Who is it for?</Text>
+                        <Text style={styles.sectionTitle}>{t('nurse_care.who_for')}</Text>
                         <View style={styles.whoRow}>
                             <TouchableOpacity
                                 style={[styles.whoButton, selectedWho === 'Self' && styles.whoButtonActive]}
@@ -191,7 +193,7 @@ export default function BookNursingCareScreen() {
 
                     {/* ─── Type of Staff Needed ─── */}
                     <View style={styles.sectionContainer}>
-                        <Text style={styles.sectionTitle}>Type of Staff Needed</Text>
+                        <Text style={styles.sectionTitle}>{t('nurse_care.staff_type')}</Text>
 
                         {/* Option A: Qualified Nurse */}
                         <TouchableOpacity
@@ -204,10 +206,10 @@ export default function BookNursingCareScreen() {
                             </View>
                             <View style={styles.staffInfo}>
                                 <Text style={[styles.staffTitle, selectedStaff === 'Option A' && styles.staffTitleActive]}>
-                                    Option A: Qualified Nurse
+                                    {t('nurse_care.option_a_title')}
                                 </Text>
                                 <Text style={[styles.staffSubtitle, selectedStaff === 'Option A' && styles.staffSubtitleActive]}>
-                                    (For injections, wound dressing, IV Tracheostomy)
+                                    {t('nurse_care.option_a_subtitle')}
                                 </Text>
                             </View>
                         </TouchableOpacity>
@@ -223,10 +225,10 @@ export default function BookNursingCareScreen() {
                             </View>
                             <View style={styles.staffInfo}>
                                 <Text style={[styles.staffTitle, selectedStaff === 'Option B' && styles.staffTitleActive]}>
-                                    Option B: Bedside Attendant / Aya
+                                    {t('nurse_care.option_b_title')}
                                 </Text>
                                 <Text style={[styles.staffSubtitle, selectedStaff === 'Option B' && styles.staffSubtitleActive]}>
-                                    (For bathing, feeding, toilet help - non medical)
+                                    {t('nurse_care.option_b_subtitle')}
                                 </Text>
                             </View>
                         </TouchableOpacity>
@@ -234,32 +236,32 @@ export default function BookNursingCareScreen() {
 
                     {/* ─── Preferred Duration ─── */}
                     <View style={styles.sectionContainer}>
-                        <Text style={styles.sectionTitle}>Preferred Duration</Text>
+                        <Text style={styles.sectionTitle}>{t('nurse_care.duration')}</Text>
 
                         <View style={styles.verticalStack}>
                             <TouchableOpacity style={styles.durationCardStacked} onPress={() => setSelectedDuration('Short Visit')}>
                                 <Ionicons name={selectedDuration === 'Short Visit' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedDuration === 'Short Visit' ? "#02743F" : "#AAAEAC"} />
                                 <View style={styles.durationTextCol}>
-                                    <Text style={styles.durationTitle}>Short Visit</Text>
-                                    <Text style={styles.durationSubtitle}> (1-2 Hour - Injection/dressing)</Text>
+                                    <Text style={styles.durationTitle}>{t('nurse_care.short_visit')}</Text>
+                                    <Text style={styles.durationSubtitle}>{t('nurse_care.short_visit_detail')}</Text>
                                 </View>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.durationCardStacked} onPress={() => setSelectedDuration('12 Hours (Night Shift)')}>
                                 <Ionicons name={selectedDuration === '12 Hours (Night Shift)' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedDuration === '12 Hours (Night Shift)' ? "#02743F" : "#AAAEAC"} />
                                 <View style={styles.durationTextCol}>
-                                    <Text style={styles.durationTitle}>12 Hours <Text style={styles.durationSubtitle}>(Night Shift)</Text></Text>
+                                    <Text style={styles.durationTitle}>{t('nurse_care.twelve_hr_night')}</Text>
                                 </View>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.durationCardStacked} onPress={() => setSelectedDuration('12 Hours (Day Shift)')}>
                                 <Ionicons name={selectedDuration === '12 Hours (Day Shift)' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedDuration === '12 Hours (Day Shift)' ? "#02743F" : "#AAAEAC"} />
                                 <View style={styles.durationTextCol}>
-                                    <Text style={styles.durationTitle}>12 Hours <Text style={styles.durationSubtitle}>(Day Shift)</Text></Text>
+                                    <Text style={styles.durationTitle}>{t('nurse_care.twelve_hr_day')}</Text>
                                 </View>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.durationCardStacked} onPress={() => setSelectedDuration('24 Hours (Live-in)')}>
                                 <Ionicons name={selectedDuration === '24 Hours (Live-in)' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedDuration === '24 Hours (Live-in)' ? "#02743F" : "#AAAEAC"} />
                                 <View style={styles.durationTextCol}>
-                                    <Text style={styles.durationTitle}>24 Hours <Text style={styles.durationSubtitle}>(Live-in)</Text></Text>
+                                    <Text style={styles.durationTitle}>{t('nurse_care.twenty_four_hr')}</Text>
                                 </View>
                             </TouchableOpacity>
                         </View>
@@ -267,27 +269,27 @@ export default function BookNursingCareScreen() {
 
                     {/* ─── Patient Condition ─── */}
                     <View style={styles.sectionContainer}>
-                        <Text style={styles.sectionTitle}>Patient Condition</Text>
+                        <Text style={styles.sectionTitle}>{t('nurse_care.condition')}</Text>
 
                         <View style={styles.verticalStack}>
                             <TouchableOpacity style={styles.radioCardStacked} onPress={() => setSelectedCondition('Walking/ Mobile')}>
                                 <Ionicons name={selectedCondition === 'Walking/ Mobile' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedCondition === 'Walking/ Mobile' ? "#02743F" : "#AAAEAC"} />
-                                <Text style={styles.radioLabelStacked}>Walking/ Mobile</Text>
+                                <Text style={styles.radioLabelStacked}>{t('nurse_care.walking')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.radioCardStacked} onPress={() => setSelectedCondition('Bedridden')}>
                                 <Ionicons name={selectedCondition === 'Bedridden' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedCondition === 'Bedridden' ? "#02743F" : "#AAAEAC"} />
-                                <Text style={styles.radioLabelStacked}>Bedridden</Text>
+                                <Text style={styles.radioLabelStacked}>{t('nurse_care.bedridden')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.radioCardStacked} onPress={() => setSelectedCondition('Post-Surgery')}>
                                 <Ionicons name={selectedCondition === 'Post-Surgery' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedCondition === 'Post-Surgery' ? "#02743F" : "#AAAEAC"} />
-                                <Text style={styles.radioLabelStacked}>Post-Surgery</Text>
+                                <Text style={styles.radioLabelStacked}>{t('nurse_care.post_surgery')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
 
                     {/* ─── Gender preferences ─── */}
                     <View style={styles.sectionContainer}>
-                        <Text style={styles.sectionTitle}>Gender preferences</Text>
+                        <Text style={styles.sectionTitle}>{t('nurse_care.gender_pref')}</Text>
 
                         <View style={styles.verticalStack}>
                             <TouchableOpacity style={styles.radioCardStacked} onPress={() => setSelectedGender('Male')}>
@@ -309,8 +311,8 @@ export default function BookNursingCareScreen() {
                     <View style={styles.notSureBanner}>
                         <Image source={ideaIcon} style={styles.ideaIcon} resizeMode="contain" />
                         <View style={styles.notSureTextGroup}>
-                            <Text style={styles.notSureTitle}>Not sure about your options?</Text>
-                            <Text style={styles.notSureSubtitle}>I'm not sure, let an Expert call me decide</Text>
+                            <Text style={styles.notSureTitle}>{t('nurse_care.not_sure_title')}</Text>
+                            <Text style={styles.notSureSubtitle}>{t('nurse_care.not_sure_subtitle')}</Text>
                         </View>
                     </View>
 
@@ -328,7 +330,7 @@ export default function BookNursingCareScreen() {
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
                             <Text style={styles.confirmButtonText}>
-                                {isLoadingInit ? 'Initializing...' : 'Request Staff'}
+                                {isLoadingInit ? t('common.initializing') : t('booking.request_staff')}
                             </Text>
                         )}
                     </TouchableOpacity>

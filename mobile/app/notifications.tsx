@@ -14,6 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { apiClient } from '@/services/api/apiClient';
+import { useTranslation } from 'react-i18next';
 
 // ─── Types ───────────────────────────────────────────────
 type NotificationChannel = 'PUSH' | 'SMS' | 'EMAIL' | 'WHATSAPP' | string;
@@ -95,6 +96,7 @@ function isToday(date: Date): boolean {
 // ─── Component ───────────────────────────────────────────
 
 export default function NotificationsScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 

@@ -18,6 +18,7 @@ import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgHero = require('@/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png'); // Bill icon
@@ -25,6 +26,7 @@ const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a1
 const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
 
 export default function BillPaymentScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [billType, setBillType] = React.useState('');
@@ -114,7 +116,7 @@ export default function BillPaymentScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Bill Payment</Text>
+                <Text style={styles.headerTitle}>{t('bill_payment.header')}</Text>
                 <View style={{ width: 40 }} /> {/* spacer for center alignment */}
             </View>
 
@@ -124,49 +126,49 @@ export default function BillPaymentScreen() {
                 <View style={styles.heroSection}>
                     <Image source={imgHero} style={styles.heroImage} resizeMode="contain" />
                     <View style={styles.heroTextContainer}>
-                        <Text style={styles.heroTitle}>Bill Payment</Text>
-                        <Text style={styles.heroSubtitle}>Concierge{"\n"}Services</Text>
+                        <Text style={styles.heroTitle}>{t('bill_payment.hero_title')}</Text>
+                        <Text style={styles.heroSubtitle}>{t('bill_payment.hero_subtitle')}</Text>
                     </View>
                 </View>
 
                 <Text style={styles.heroDescription}>
-                    Book a certified Bill payment  and installations in your home
+                    {t('bill_payment.hero_description')}
                 </Text>
 
                 {/* ─── Bill Details ─── */}
                 <View style={[styles.card, { marginBottom: 100 }]}>
-                    <Text style={styles.sectionTitle}>Bill Details</Text>
+                    <Text style={styles.sectionTitle}>{t('bill_payment.bill_details')}</Text>
 
-                    <Text style={[styles.sectionTitle, { fontSize: 13, marginBottom: 8, marginTop: 5 }]}>Bill Type</Text>
+                    <Text style={[styles.sectionTitle, { fontSize: 13, marginBottom: 8, marginTop: 5 }]}>{t('bill_payment.bill_type')}</Text>
                     <View style={styles.inputContainer}>
                         <Ionicons name="document-text-outline" size={18} color="#048357" style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
-                            placeholder="e.g. Electricity, Water, Internet..."
+                            placeholder={t('bill_payment.bill_type_placeholder')}
                             placeholderTextColor="#898989"
                             value={billType}
                             onChangeText={setBillType}
                         />
                     </View>
 
-                    <Text style={[styles.sectionTitle, { fontSize: 13, marginBottom: 8, marginTop: 15 }]}>Account ID</Text>
+                    <Text style={[styles.sectionTitle, { fontSize: 13, marginBottom: 8, marginTop: 15 }]}>{t('bill_payment.account_id')}</Text>
                     <View style={styles.inputContainer}>
                         <Ionicons name="person-outline" size={18} color="#048357" style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
-                            placeholder="Enter Account ID / Consumer Number"
+                            placeholder={t('bill_payment.account_id_placeholder')}
                             placeholderTextColor="#898989"
                             value={accountId}
                             onChangeText={setAccountId}
                         />
                     </View>
 
-                    <Text style={[styles.sectionTitle, { fontSize: 13, marginBottom: 8, marginTop: 15 }]}>Amount</Text>
+                    <Text style={[styles.sectionTitle, { fontSize: 13, marginBottom: 8, marginTop: 15 }]}>{t('bill_payment.amount')}</Text>
                     <View style={styles.inputContainer}>
                         <Ionicons name="cash-outline" size={18} color="#048357" style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
-                            placeholder="Amount (in ₹)"
+                            placeholder={t('bill_payment.amount_placeholder')}
                             keyboardType="numeric"
                             placeholderTextColor="#898989"
                             value={amount}
@@ -183,7 +185,7 @@ export default function BillPaymentScreen() {
                         disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
-                        <Text style={styles.bookButtonText}>{isLoadingInit ? 'Initializing...' : isBooking ? 'Processing...' : 'Book Service'}</Text>
+                        <Text style={styles.bookButtonText}>{isLoadingInit ? t('common.initializing') : isBooking ? t('common.processing') : t('booking.book_service')}</Text>
                     </TouchableOpacity>
                 </View>
 

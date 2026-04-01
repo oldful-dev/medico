@@ -11,8 +11,10 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { supportService, TicketMessage, SupportTicket } from '@/services/api/supportService';
 import { useUser } from '@/context/UserContext';
+import { useTranslation } from 'react-i18next';
 
 export default function TicketChatScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { ticketId } = useLocalSearchParams<{ ticketId: string }>();

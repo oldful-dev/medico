@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile, userService, serviceCatalogService } from '@/services/api';
 import { ServiceItem } from '@/services/api/serviceCatalogService';
 import { useAuth } from './AuthContext';
+import i18n from '@/i18n/i18n';
 
 const LANG_KEY = '@oldful_language';
 
@@ -35,12 +36,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
     // Load persisted language on mount
     useEffect(() => {
         AsyncStorage.getItem(LANG_KEY).then(saved => {
-            if (saved) setPreferredLanguage(saved);
+            if (saved) {
+                setPreferredLanguage(saved);
+                i18n.changeLanguage(saved);
+            }
         });
     }, []);
 
     const saveLanguage = (lang: string) => {
         setPreferredLanguage(lang);
+        i18n.changeLanguage(lang);
         AsyncStorage.setItem(LANG_KEY, lang);
     };
 
@@ -58,6 +63,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 setProfile(profileRes.data);
                 if (profileRes.data.preferredLanguage) {
                     setPreferredLanguage(profileRes.data.preferredLanguage);
+                    i18n.changeLanguage(profileRes.data.preferredLanguage);
                 }
             }
 

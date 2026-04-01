@@ -19,13 +19,18 @@ if (!apiKey) { console.error('INTERAKT_API_KEY not set'); process.exit(1); }
 const BASE_URL = 'https://api.interakt.ai/v1/public/message/';
 const phoneNumber = phone.replace(/\D/g, '').slice(-10);
 
-const send = async (label, templateName, bodyValues) => {
+const send = async (label, templateName, bodyValues, buttonValues) => {
     const payload = {
         countryCode: '+91',
         phoneNumber,
         callbackData: `test:${templateName}`,
         type: 'Template',
-        template: { name: templateName, languageCode: 'en', bodyValues },
+        template: {
+            name: templateName,
+            languageCode: 'en',
+            ...(bodyValues.length > 0 && { bodyValues }),
+            ...(buttonValues && { buttonValues }),
+        },
     };
     try {
         const r = await axios.post(BASE_URL, payload, {
@@ -44,13 +49,35 @@ const send = async (label, templateName, bodyValues) => {
 (async () => {
     console.log(`\nTesting Interakt → +91${phoneNumber}\n`);
 
-    await send('welcome',       'oldful_welcome_message',          ['Test User']);
-    await send('booking',       'oldful_appointment_confirmation',  ['Test User', '29 Mar 2026, 10:00 AM', 'Doctor Home Visit']);
-    await send('payment',       'oldful_payment_confirmation',      ['Test User', '₹499']);
-    await send('plan_expiry',   'oldful_health_event_reminder',     ['Test User', '05 Apr 2026 (7 days left)']);
-    await send('support',       'oldful_customer_support',          ['Test User']);
-    await send('prescription',  'oldful_prescription_reminder',     ['Test User']);
-    await send('health_tip',    'oldful_health_tips',               ['Test User', 'Drink 8 glasses of water daily and take a 30-min walk.']);
+    // otp_template — {{1}}=code (AUTHENTICATION)
+    await send('otp',              'otp_template',              ['1234']);
+
+    // oldful_welcome — {{1}}=name (MARKETING, DOCUMENT header)
+    await send('welcome',          'oldful_welcome',            ['Test User']);
+
+    // service_request_ — {{1}}=name {{2}}=service {{3}}=orderId {{4}}=phone {{5}}=email (UTILITY)
+    await send('booking',          'service_request_',          ['Test User', 'Doctor Home Visit', 'ORD-001', '+91 94801 98108', 'client@oldful.com']);
+
+    // payment_link — {{1}}=name {{2}}=amount {{3}}=service {{4}}=paymentUrl (UTILITY)
+    await send('payment_link',     'payment_link',              ['Test User', '499', 'Doctor Home Visit', 'https://oldful.com/pay/test']);
+
+    // oldful_receipt — {{1}}=name {{2}}=amount {{3}}=phone {{4}}=email (UTILITY, DOCUMENT header)
+    await send('receipt',          'oldful_receipt',            ['Test User', '499', '+91 94801 98108', 'client@oldful.com']);
+
+    // prescription_flow — {{1}}=name {{2}}=orderRef (UTILITY)
+    await send('prescription',     'prescription_flow',         ['Test User', 'RX-001']);
+
+    // lab_report_delivery — {{1}}=name (UTILITY, DOCUMENT header)
+    await send('lab_report',       'lab_report_delivery',       ['Test User']);
+
+    // medication_reminder_daily — (no body vars) (UTILITY)
+    await send('med_reminder',     'medication_reminder_daily',  []);
+
+    // renewal_reminder — {{1}}=name {{2}}=planName {{3}}=phone {{4}}=email (MARKETING)
+    await send('renewal',          'renewal_reminder',          ['Test User', 'Care Plan', '+91 94801 98108', 'client@oldful.com']);
+
+    // feedback_survey_form — {{1}}=name (UTILITY)
+    await send('feedback',         'feedback_survey_form',      ['Test User']);
 
     console.log('\nDone.');
 })();

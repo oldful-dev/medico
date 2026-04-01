@@ -12,6 +12,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { paymentService, PaymentMethod } from '@/services/api/paymentService';
+import { useTranslation } from 'react-i18next';
 
 type MethodOption = { type: PaymentMethod; label: string; icon: keyof typeof Ionicons.glyphMap };
 
@@ -23,6 +24,7 @@ const PAYMENT_METHODS: MethodOption[] = [
 ];
 
 export default function PaymentScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams<{
         bookingId?: string;

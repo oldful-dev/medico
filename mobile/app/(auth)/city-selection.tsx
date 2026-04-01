@@ -16,8 +16,10 @@ import { useRouter } from 'expo-router';
 import { Fonts, Colors } from '@/constants/theme';
 import { useUser } from '@/context/UserContext';
 import { useAppConfig } from '@/context/AppConfigContext';
+import { useTranslation } from 'react-i18next';
 
 export default function CitySelectionScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { setSelectedCity } = useUser();
@@ -44,7 +46,7 @@ export default function CitySelectionScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Select City</Text>
+                <Text style={styles.headerTitle}>{t('city_selection.header')}</Text>
                 <View style={{ width: 34 }} />
             </View>
 
@@ -119,7 +121,7 @@ export default function CitySelectionScreen() {
                                         <Text style={styles.cityState}>{city.state}</Text>
                                     </View>
                                     <View style={styles.comingSoonTag}>
-                                        <Text style={styles.comingSoonTagText}>Coming Soon</Text>
+                                        <Text style={styles.comingSoonTagText}>{t('city_selection.coming_soon')}</Text>
                                     </View>
                                 </View>
                             ))}
@@ -138,7 +140,7 @@ export default function CitySelectionScreen() {
                 {/* ─── Continue Button ─── */}
                 <View style={styles.bottomBar}>
                     <TouchableOpacity style={styles.continueButton} activeOpacity={0.8} onPress={handleContinue}>
-                        <Text style={styles.continueButtonText}>Continue</Text>
+                        <Text style={styles.continueButtonText}>{t('city_selection.continue')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
