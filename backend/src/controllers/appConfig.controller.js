@@ -5,7 +5,7 @@
 //  POST /api/app-config/reset    (SUPER_ADMIN only — restore defaults)
 // ──────────────────────────────────────────────
 
-const { prisma } = require('../config/database');
+const prisma = require('../config/database');
 const { logger } = require('../config/logger');
 
 // ─── Default SDUI Config ─────────────────────────────────────────────────────
