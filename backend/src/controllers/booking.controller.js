@@ -76,7 +76,6 @@ const getBookingById = async (req, res, next) => {
 // POST /api/bookings
 const createBooking = async (req, res, next) => {
     try {
-        const bookingCode = await generateBookingCode();
         const {
             userId, serviceId, cityId,
             scheduledDate, scheduledTime, addressLine, latitude, longitude,
@@ -94,37 +93,49 @@ const createBooking = async (req, res, next) => {
         // Note: BLOOD_TEST bookings go through /api/labs/book (2-step Redcliffe flow).
         // The generic booking controller handles all other service types.
 
-        const booking = await prisma.booking.create({
-            data: {
-                bookingCode,
-                userId: finalUserId,
-                serviceId,
-                cityId,
-                scheduledDate: new Date(scheduledDate),
-                scheduledTime,
-                addressLine,
-                latitude,
-                longitude,
-                symptoms: symptoms || [],
-                doctorType,
-                staffType,
-                shiftDuration,
-                startDate: startDate ? new Date(startDate) : null,
-                endDate: endDate ? new Date(endDate) : null,
-                requirements: requirements || [],
-                pickupAddress,
-                dropAddress,
-                vehicleType,
-                amount: amount || 0,
-                formDataJson: formDataJson || null,
-                // Auto-set SLA deadline (4 hours from now)
-                slaDeadline: new Date(Date.now() + 4 * 60 * 60 * 1000),
-            },
-            include: {
-                user: { select: { name: true, phone: true } },
-                service: { select: { name: true, slug: true, icon: true } },
-            },
-        });
+        // Retry up to 3 times on bookingCode collision
+        let booking;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                const bookingCode = await generateBookingCode();
+                booking = await prisma.booking.create({
+                    data: {
+                        bookingCode,
+                        userId: finalUserId,
+                        serviceId,
+                        cityId,
+                        scheduledDate: new Date(scheduledDate),
+                        scheduledTime,
+                        addressLine,
+                        latitude,
+                        longitude,
+                        symptoms: symptoms || [],
+                        doctorType,
+                        staffType,
+                        shiftDuration,
+                        startDate: startDate ? new Date(startDate) : null,
+                        endDate: endDate ? new Date(endDate) : null,
+                        requirements: requirements || [],
+                        pickupAddress,
+                        dropAddress,
+                        vehicleType,
+                        amount: amount || 0,
+                        formDataJson: formDataJson || null,
+                        slaDeadline: new Date(Date.now() + 4 * 60 * 60 * 1000),
+                    },
+                    include: {
+                        user: { select: { name: true, phone: true } },
+                        service: { select: { name: true, slug: true, icon: true } },
+                    },
+                });
+                break; // success
+            } catch (err) {
+                const isUniqueViolation = err.code === 'P2002' && err.meta?.target?.includes('bookingCode');
+                if (!isUniqueViolation || attempt === 2) throw err;
+            }
+        }
+
+        const bookingCode = booking.bookingCode;
 
         // Send push notification for booking confirmation
         await sendPushToUser(finalUserId, {
