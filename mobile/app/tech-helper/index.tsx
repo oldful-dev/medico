@@ -45,6 +45,8 @@ export default function TechHelperScreen() {
     const { userId } = useAuth();
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
+    const [serviceName, setServiceName] = React.useState('Tech Helper');
+    const [servicePrice, setServicePrice] = React.useState(0);
     const [address, setAddress] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
     const [isLoadingInit, setIsLoadingInit] = React.useState(true);
@@ -70,7 +72,7 @@ export default function TechHelperScreen() {
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'tech-helper');
-                    if (svc) setServiceId(svc.id);
+                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Tech Helper'); setServicePrice(svc.basePrice ?? 0); }
                 }
 
             } catch (err) {
@@ -111,13 +113,11 @@ export default function TechHelperScreen() {
                 }
             };
 
-            const res = await bookingService.createBooking(payload);
+            const res = await bookingService.createBooking({ ...payload, amount: servicePrice });
             if (res.success && res.data) {
                 router.push({
-                    pathname: '/service-confirmation',
-                    params: {
-                        bookingId: res.data.id
-                    }
+                    pathname: '/payment/checkout',
+                    params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName }
                 });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');

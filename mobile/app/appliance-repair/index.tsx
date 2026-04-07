@@ -37,7 +37,7 @@ export default function ApplianceRepairScreen() {
     const [appliance, setAppliance] = React.useState('');
     const [issue, setIssue] = React.useState('');
     const { userId } = useAuth();
-    const { isReady, cityId, serviceId, address, setAddress, isManualAddress, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('appliance-repair');
+    const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, isManualAddress, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('appliance-repair');
     
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
@@ -75,12 +75,14 @@ export default function ApplianceRepairScreen() {
                 }
             };
 
-            const res = await bookingService.createBooking(payload);
+            const res = await bookingService.createBooking({ ...payload, amount: servicePrice });
             if (res.success && res.data) {
                 router.push({
-                    pathname: '/service-confirmation',
+                    pathname: '/payment/checkout',
                     params: {
-                        bookingId: res.data.id
+                        bookingId: res.data.id,
+                        amount: String(servicePrice),
+                        label: serviceName || 'Appliance Repair',
                     }
                 });
             } else {

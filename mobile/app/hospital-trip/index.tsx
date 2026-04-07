@@ -62,6 +62,8 @@ export default function HospitalTripScreen() {
     // API state
     const [cityId, setCityId] = useState('');
     const [serviceId, setServiceId] = useState('');
+    const [serviceName, setServiceName] = useState('Hospital Trip');
+    const [servicePrice, setServicePrice] = useState(0);
     const [address, setAddress] = useState('Fetching address...');
     const [isBooking, setIsBooking] = useState(false);
     const [isLoadingInit, setIsLoadingInit] = useState(true);
@@ -80,7 +82,7 @@ export default function HospitalTripScreen() {
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'hospital-trip');
-                    if (svc) setServiceId(svc.id);
+                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Hospital Trip'); setServicePrice(svc.basePrice ?? 0); }
                 }
             } catch (err) { console.log('Hospital Trip init failed', err); }
             finally { setIsLoadingInit(false); }
@@ -109,7 +111,7 @@ export default function HospitalTripScreen() {
                 },
             });
             if (res.success && res.data) {
-                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+                router.push({ pathname: '/payment/checkout', params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName } });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
             }

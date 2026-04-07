@@ -45,6 +45,8 @@ export default function OrderMedicinesScreen() {
     // API & Init state
     const [cityId, setCityId] = useState('');
     const [serviceId, setServiceId] = useState('');
+    const [serviceName, setServiceName] = useState('Order Medicines');
+    const [servicePrice, setServicePrice] = useState(0);
     const [isLoadingInit, setIsLoadingInit] = useState(true);
     const [isBooking, setIsBooking] = useState(false);
 
@@ -56,7 +58,7 @@ export default function OrderMedicinesScreen() {
         }
 
         const result = await ImagePicker.launchCameraAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ImagePicker.'images',
             quality: 0.8,
         });
 
@@ -73,7 +75,7 @@ export default function OrderMedicinesScreen() {
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ImagePicker.'images',
             allowsMultipleSelection: true,
             quality: 0.8,
         });
@@ -115,7 +117,7 @@ export default function OrderMedicinesScreen() {
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'medicines');
-                    if (svc) setServiceId(svc.id);
+                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Order Medicines'); setServicePrice(svc.basePrice ?? 0); }
                 }
             } catch (error) {
                 console.log('Medicines init failed:', error);
@@ -157,7 +159,7 @@ export default function OrderMedicinesScreen() {
                 },
             });
             if (res.success && res.data) {
-                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+                router.push({ pathname: '/payment/checkout', params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName } });
             } else {
                 Alert.alert('Order Failed', res.message || 'Something went wrong.');
             }

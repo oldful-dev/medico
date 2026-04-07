@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -33,15 +33,15 @@ export default function ImageUploadBox({
             t('image_upload.upload_photo'),
             '',
             [
-                { text: t('image_upload.take_photo'), onPress: openCamera },
-                { text: t('image_upload.choose_gallery'), onPress: openGallery },
+                { text: t('image_upload.take_photo'), onPress: () => { setTimeout(openCamera, 300); } },
+                { text: t('image_upload.choose_gallery'), onPress: () => { setTimeout(openGallery, 300); } },
                 { text: t('common.cancel'), style: 'cancel' },
             ],
             { cancelable: true }
         );
     };
 
-    const openCamera = async () => {
+    const openCamera = useCallback(async () => {
         const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
         if (permissionResult.granted === false) {
             Alert.alert(t('common.permission_required'), t('image_upload.camera_permission'));
@@ -49,16 +49,16 @@ export default function ImageUploadBox({
         }
 
         const result = await ImagePicker.launchCameraAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images, // Now using the correct MediaTypeOptions enum directly
+            mediaTypes: 'images',
             quality: 0.8,
         });
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
             addImage(result.assets[0].uri);
         }
-    };
+    }, [images]);
 
-    const openGallery = async () => {
+    const openGallery = useCallback(async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (permissionResult.granted === false) {
             Alert.alert(t('common.permission_required'), t('image_upload.gallery_permission'));
@@ -66,7 +66,7 @@ export default function ImageUploadBox({
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: 'images',
             allowsMultipleSelection: true,
             selectionLimit: maxImages - images.length,
             quality: 0.8,
@@ -78,7 +78,7 @@ export default function ImageUploadBox({
             setImages(combined);
             if (onImagesChange) onImagesChange(combined);
         }
-    };
+    }, [images, maxImages, onImagesChange]);
 
     const addImage = (uri: string) => {
         const newImages = [...images, uri];

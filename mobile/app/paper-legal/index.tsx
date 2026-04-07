@@ -38,7 +38,7 @@ export default function PaperLegalScreen() {
     const [details, setDetails] = useState('');
     
     const { userId } = useAuth();
-    const { isReady, cityId, serviceId, address, setAddress, isManualAddress, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('paper-legal');
+    const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, isManualAddress, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('paper-legal');
     
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
     const [isBooking, setIsBooking] = React.useState(false);
@@ -67,13 +67,11 @@ export default function PaperLegalScreen() {
                 }
             };
 
-            const res = await bookingService.createBooking(payload);
+            const res = await bookingService.createBooking({ ...payload, amount: servicePrice });
             if (res.success && res.data) {
                 router.push({
-                    pathname: '/service-confirmation',
-                    params: {
-                        bookingId: res.data.id
-                    }
+                    pathname: '/payment/checkout',
+                    params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName || 'Paperwork & Legal' }
                 });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
