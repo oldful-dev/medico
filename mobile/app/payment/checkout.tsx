@@ -117,6 +117,11 @@ export default function PaymentScreen() {
                 theme: { color: Colors.primary },
             };
 
+            if (!RazorpayCheckout) {
+                Alert.alert('Build Required', 'Run `npx expo run:android` to enable native payments.');
+                return;
+            }
+
             const data = await RazorpayCheckout.open(options);
 
             // 3. Verify signature on backend
