@@ -57,7 +57,7 @@ export default function MealServiceScreen() {
     const [otherReq, setOtherReq] = useState('');
 
     // Global Initialization
-    const { isReady, cityId, serviceId, address, isLoading: isLoadingInit } = useServiceInitialization('tiffin');
+    const { isReady, cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('tiffin');
     const [isBooking, setIsBooking] = useState(false);
 
     const handleBookService = async () => {
@@ -81,7 +81,7 @@ export default function MealServiceScreen() {
                 },
             });
             if (res.success && res.data) {
-                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+                router.push({ pathname: '/payment/checkout', params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName || 'Meal Service' } });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
             }

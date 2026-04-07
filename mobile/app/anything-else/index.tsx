@@ -43,6 +43,8 @@ export default function AnythingElseScreen() {
     const { userId } = useAuth();
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
+    const [serviceName, setServiceName] = React.useState('Anything Else');
+    const [servicePrice, setServicePrice] = React.useState(0);
     const [isLoadingInit, setIsLoadingInit] = React.useState(true);
     const [isBooking, setIsBooking] = React.useState(false);
 
@@ -68,7 +70,7 @@ export default function AnythingElseScreen() {
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'anything-else');
-                    if (svc) setServiceId(svc.id);
+                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Anything Else'); setServicePrice(svc.basePrice ?? 0); }
                 }
 
             } catch (err) {
@@ -112,13 +114,11 @@ export default function AnythingElseScreen() {
                 }
             };
 
-            const res = await bookingService.createBooking(payload);
+            const res = await bookingService.createBooking({ ...payload, amount: servicePrice });
             if (res.success && res.data) {
                 router.push({
-                    pathname: '/service-confirmation',
-                    params: {
-                        bookingId: res.data.id
-                    }
+                    pathname: '/payment/checkout',
+                    params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName }
                 });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
