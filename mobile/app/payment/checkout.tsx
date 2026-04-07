@@ -1,5 +1,5 @@
-// Payment Screen — Razorpay checkout via expo-web-browser
-// Flow: Order summary → optional coupon → initiate order → open Razorpay web checkout
+// Payment Screen — Razorpay native in-app popup
+// Flow: Order summary → optional coupon → initiate order → native Razorpay sheet → verify
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity,
@@ -9,7 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
+import RazorpayCheckout from 'react-native-razorpay';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { paymentService, PaymentMethod } from '@/services/api/paymentService';
 import { useTranslation } from 'react-i18next';
@@ -17,10 +17,10 @@ import { useTranslation } from 'react-i18next';
 type MethodOption = { type: PaymentMethod; label: string; icon: keyof typeof Ionicons.glyphMap };
 
 const PAYMENT_METHODS: MethodOption[] = [
-    { type: 'UPI', label: 'UPI / GPay / PhonePe', icon: 'phone-portrait-outline' },
-    { type: 'CARD', label: 'Credit / Debit Card', icon: 'card-outline' },
-    { type: 'NETBANKING', label: 'Net Banking', icon: 'business-outline' },
-    { type: 'WALLET', label: 'Mobile Wallet', icon: 'wallet-outline' },
+    { type: 'UPI',        label: 'UPI / GPay / PhonePe', icon: 'phone-portrait-outline' },
+    { type: 'CARD',       label: 'Credit / Debit Card',  icon: 'card-outline' },
+    { type: 'NETBANKING', label: 'Net Banking',           icon: 'business-outline' },
+    { type: 'WALLET',     label: 'Mobile Wallet',         icon: 'wallet-outline' },
 ];
 
 export default function PaymentScreen() {
@@ -30,23 +30,23 @@ export default function PaymentScreen() {
         bookingId?: string;
         subscriptionId?: string;
         amount?: string;
-        label?: string;      // e.g. "Doctor Home Visit" or "Care Plan – Quarterly"
+        label?: string;
     }>();
 
     const amount = parseFloat(params.amount ?? '0');
-    const label = params.label ?? 'Service Booking';
+    const label  = params.label ?? 'Service Booking';
 
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('UPI');
-    const [couponCode, setCouponCode] = useState('');
-    const [couponApplied, setCouponApplied] = useState(false);
-    const [discount, setDiscount] = useState(0);
-    const [finalAmount, setFinalAmount] = useState(amount);
-    const [couponLoading, setCouponLoading] = useState(false);
-    const [payLoading, setPayLoading] = useState(false);
+    const [couponCode,     setCouponCode]     = useState('');
+    const [couponApplied,  setCouponApplied]  = useState(false);
+    const [discount,       setDiscount]       = useState(0);
+    const [finalAmount,    setFinalAmount]    = useState(amount);
+    const [couponLoading,  setCouponLoading]  = useState(false);
+    const [payLoading,     setPayLoading]     = useState(false);
 
     useEffect(() => { setFinalAmount(amount - discount); }, [amount, discount]);
 
-    // ─── Apply coupon ───────────────────────────────────
+    // ─── Apply coupon ───────────────────────────────────────
     const handleApplyCoupon = useCallback(async () => {
         if (!couponCode.trim()) return;
         setCouponLoading(true);
@@ -74,74 +74,91 @@ export default function PaymentScreen() {
         setFinalAmount(amount);
     };
 
-    // ─── Initiate payment ───────────────────────────────
+    // ─── Open Razorpay native popup ─────────────────────────
     const handlePay = useCallback(async () => {
         if (payLoading) return;
         setPayLoading(true);
         try {
-            const res = await paymentService.initiatePayment({
-                bookingId: params.bookingId,
+            // 1. Create order on backend
+            const initiateRes = await paymentService.initiatePayment({
+                bookingId:      params.bookingId,
                 subscriptionId: params.subscriptionId,
-                amount: finalAmount,
-                paymentMethod: selectedMethod,
-                couponCode: couponApplied ? couponCode : undefined,
+                amount:         finalAmount,
+                paymentMethod:  selectedMethod,
+                couponCode:     couponApplied ? couponCode : undefined,
             });
 
-            if (!res.success || !res.data) {
-                Alert.alert('Payment Error', res.message ?? 'Could not initiate payment.');
+            if (!initiateRes.success || !initiateRes.data) {
+                Alert.alert('Payment Error', initiateRes.message ?? 'Could not initiate payment.');
                 return;
             }
 
-            // Open Razorpay web checkout via expo-web-browser
-            // The backend /api/payments/checkout/:orderId serves the HTML checkout page
-            const checkoutUrl = `${process.env.EXPO_PUBLIC_API_URL?.replace('/api', '')}/checkout?orderId=${res.data.orderId}&amount=${finalAmount * 100}&name=${encodeURIComponent(label)}&paymentId=${res.data.paymentId}`;
+            const { orderId, amount: orderAmount, paymentId } = initiateRes.data;
 
-            const result = await WebBrowser.openAuthSessionAsync(checkoutUrl, 'oldful://payment');
+            // 2. Open Razorpay native checkout sheet
+            const options = {
+                description:  label,
+                image:        'https://storage.googleapis.com/oldful-assets/mobile/assets/images/oldful-logo.png',
+                currency:     'INR',
+                key:          process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID ?? '',
+                amount:       String(Math.round(orderAmount * 100)), // in paise
+                name:         'Oldful Healthcare',
+                order_id:     orderId,
+                prefill: {
+                    // These will be pre-filled if available — left empty here,
+                    // the calling screen can pass them as params if needed
+                    email:   params.email   ?? '',
+                    contact: params.phone   ?? '',
+                    name:    params.userName ?? '',
+                },
+                theme: { color: Colors.primary },
+            };
 
-            if (result.type === 'success' && result.url) {
-                // Parse the callback URL for razorpay params
-                const url = new URL(result.url);
-                const razorpayPaymentId = url.searchParams.get('razorpay_payment_id');
-                const razorpayOrderId = url.searchParams.get('razorpay_order_id');
-                const razorpaySignature = url.searchParams.get('razorpay_signature');
+            const data = await RazorpayCheckout.open(options);
 
-                if (razorpayPaymentId && razorpayOrderId && razorpaySignature) {
-                    const verifyRes = await paymentService.verifyPayment({
-                        razorpayPaymentId,
-                        razorpayOrderId,
-                        razorpaySignature,
-                    });
+            // 3. Verify signature on backend
+            const verifyRes = await paymentService.verifyPayment({
+                razorpayPaymentId: data.razorpay_payment_id,
+                razorpayOrderId:   data.razorpay_order_id,
+                razorpaySignature: data.razorpay_signature,
+            });
 
-                    if (verifyRes.success) {
-                        router.replace({
-                            pathname: params.bookingId ? '/doctor-visit/confirmation' : '/(tabs)',
-                            params: {
-                                paymentSuccess: 'true',
-                                invoiceNumber: verifyRes.data?.invoice?.invoiceNumber ?? '',
-                                bookingId: params.bookingId ?? '',
-                            },
-                        });
-                        return;
-                    }
-                }
-                // Signature missing or verify failed
-                Alert.alert('Payment Incomplete', 'We could not confirm your payment. Please contact support if amount was deducted.');
-            } else if (result.type === 'cancel' || result.type === 'dismiss') {
-                // User closed the browser — do nothing, stay on screen
+            if (verifyRes.success) {
+                router.replace({
+                    pathname: params.bookingId ? '/payment/payment-success' : '/(tabs)',
+                    params: {
+                        paymentSuccess:  'true',
+                        invoiceNumber:   verifyRes.data?.invoice?.invoiceNumber ?? '',
+                        invoicePdfUrl:   verifyRes.data?.invoice?.pdfUrl ?? '',
+                        bookingId:       params.bookingId ?? '',
+                        amount:          String(finalAmount),
+                    },
+                });
+            } else {
+                Alert.alert(
+                    'Verification Failed',
+                    'Payment was received but could not be verified. Our team will resolve this within 24 hours.',
+                );
             }
-        } catch (err) {
-            Alert.alert('Payment Error', 'Something went wrong. Please try again.');
+        } catch (error: any) {
+            // Razorpay SDK throws { code, description } on failure/dismissal
+            if (error?.code === 0) {
+                // User dismissed — do nothing
+                return;
+            }
+            const msg = error?.description ?? error?.message ?? 'Something went wrong.';
+            Alert.alert('Payment Failed', msg);
         } finally {
             setPayLoading(false);
         }
     }, [payLoading, finalAmount, selectedMethod, couponApplied, couponCode, params, label, router]);
 
-    // ─── UI ─────────────────────────────────────────────
+    // ─── UI ─────────────────────────────────────────────────
     return (
         <SafeAreaView style={styles.screen} edges={['top']}>
             <StatusBar style="light" />
 
-            {/* ─── Header ─── */}
+            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
@@ -152,7 +169,7 @@ export default function PaymentScreen() {
 
             <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} showsVerticalScrollIndicator={false}>
 
-                {/* ─── Order Summary ─── */}
+                {/* Order Summary */}
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>Order Summary</Text>
                     <View style={styles.row}>
@@ -172,7 +189,7 @@ export default function PaymentScreen() {
                     <Text style={styles.gstNote}>Inclusive of all taxes (GST @ 18%)</Text>
                 </View>
 
-                {/* ─── Coupon ─── */}
+                {/* Coupon */}
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>Promo Code</Text>
                     {couponApplied ? (
@@ -209,7 +226,7 @@ export default function PaymentScreen() {
                     )}
                 </View>
 
-                {/* ─── Payment Method ─── */}
+                {/* Payment Method */}
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>Payment Method</Text>
                     {PAYMENT_METHODS.map(m => (
@@ -219,11 +236,7 @@ export default function PaymentScreen() {
                             onPress={() => setSelectedMethod(m.type)}
                             activeOpacity={0.8}
                         >
-                            <Ionicons
-                                name={m.icon}
-                                size={20}
-                                color={selectedMethod === m.type ? Colors.primary : Colors.textLight}
-                            />
+                            <Ionicons name={m.icon} size={20} color={selectedMethod === m.type ? Colors.primary : Colors.textLight} />
                             <Text style={[styles.methodLabel, selectedMethod === m.type && styles.methodLabelActive]}>
                                 {m.label}
                             </Text>
@@ -237,7 +250,7 @@ export default function PaymentScreen() {
                     ))}
                 </View>
 
-                {/* ─── Security note ─── */}
+                {/* Security note */}
                 <View style={styles.securityNote}>
                     <Ionicons name="shield-checkmark-outline" size={16} color="#666" />
                     <Text style={styles.securityText}>
@@ -247,7 +260,7 @@ export default function PaymentScreen() {
 
             </ScrollView>
 
-            {/* ─── Pay Button ─── */}
+            {/* Pay Button */}
             <View style={styles.footer}>
                 <TouchableOpacity
                     style={[styles.payBtn, payLoading && styles.payBtnLoading]}
@@ -271,123 +284,56 @@ export default function PaymentScreen() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: Colors.primary },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: Spacing.xl,
-        paddingVertical: Spacing.lg,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingHorizontal: Spacing.xl, paddingVertical: Spacing.lg,
     },
     backBtn: { padding: 8 },
-    headerTitle: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.heading2,
-        color: Colors.textWhite,
-    },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: Colors.textWhite },
 
     body: { flex: 1, backgroundColor: Colors.bgScreen ?? '#FAFAF0', borderTopLeftRadius: 24, borderTopRightRadius: 24 },
     bodyContent: { padding: Spacing.xl, paddingBottom: 100, gap: Spacing.lg },
 
     card: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: Radius.lg ?? 12,
-        padding: Spacing.xl,
-        gap: Spacing.md,
-        elevation: 1,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06,
-        shadowRadius: 3,
+        backgroundColor: '#FFFFFF', borderRadius: Radius.lg ?? 12, padding: Spacing.xl, gap: Spacing.md,
+        elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3,
     },
-    cardTitle: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.body,
-        color: Colors.textDark,
-        marginBottom: Spacing.xs ?? 4,
-    },
+    cardTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark, marginBottom: Spacing.xs ?? 4 },
 
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     rowLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textLight },
     rowValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark },
-    totalRow: {
-        marginTop: Spacing.sm,
-        paddingTop: Spacing.sm,
-        borderTopWidth: 1,
-        borderTopColor: '#F0F0F0',
-    },
+    totalRow: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
     totalLabel: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark },
     totalValue: { fontFamily: Fonts.semiBold, fontSize: 20, color: Colors.primary },
     gstNote: { fontFamily: Fonts.regular, fontSize: FontSize.small ?? 12, color: '#999' },
 
     couponRow: { flexDirection: 'row', gap: Spacing.sm },
     couponInput: {
-        flex: 1,
-        height: 44,
-        borderWidth: 1.5,
-        borderColor: '#E5E5E5',
-        borderRadius: Radius.md,
-        paddingHorizontal: Spacing.md,
-        fontFamily: Fonts.medium,
-        fontSize: FontSize.body,
-        color: Colors.textDark,
+        flex: 1, height: 44, borderWidth: 1.5, borderColor: '#E5E5E5', borderRadius: Radius.md,
+        paddingHorizontal: Spacing.md, fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark,
     },
-    couponBtn: {
-        paddingHorizontal: Spacing.lg,
-        height: 44,
-        backgroundColor: Colors.primary,
-        borderRadius: Radius.md,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
+    couponBtn: { paddingHorizontal: Spacing.lg, height: 44, backgroundColor: Colors.primary, borderRadius: Radius.md, justifyContent: 'center', alignItems: 'center' },
     couponBtnDisabled: { opacity: 0.45 },
     couponBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textWhite },
     couponApplied: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#E8F5E9', padding: Spacing.md, borderRadius: Radius.sm },
     couponAppliedText: { flex: 1, fontFamily: Fonts.medium, fontSize: FontSize.small ?? 13, color: '#2e7d32' },
 
-    methodRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: Spacing.md,
-        paddingVertical: Spacing.md,
-        paddingHorizontal: Spacing.md,
-        borderRadius: Radius.md,
-        borderWidth: 1.5,
-        borderColor: '#EEEEEE',
-    },
+    methodRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.md, paddingHorizontal: Spacing.md, borderRadius: Radius.md, borderWidth: 1.5, borderColor: '#EEEEEE' },
     methodRowActive: { borderColor: Colors.primary, backgroundColor: '#F0FAF4' },
     methodLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textLight },
     methodLabelActive: { color: Colors.textDark, fontFamily: Fonts.medium },
 
-    securityNote: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        paddingHorizontal: Spacing.md,
-    },
-    securityText: {
-        flex: 1,
-        fontFamily: Fonts.regular,
-        fontSize: FontSize.small ?? 12,
-        color: '#888',
-        lineHeight: 18,
-    },
+    securityNote: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: Spacing.md },
+    securityText: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.small ?? 12, color: '#888', lineHeight: 18 },
 
     footer: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
         backgroundColor: Colors.bgScreen ?? '#FAFAF0',
         padding: Spacing.xl,
         paddingBottom: Platform.OS === 'ios' ? Spacing.xl + 16 : Spacing.xl,
-        borderTopWidth: 1,
-        borderTopColor: '#E5E5E5',
+        borderTopWidth: 1, borderTopColor: '#E5E5E5',
     },
-    payBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        backgroundColor: Colors.primary,
-        paddingVertical: 16,
-        borderRadius: Radius.lg ?? 12,
-    },
+    payBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.primary, paddingVertical: 16, borderRadius: Radius.lg ?? 12 },
     payBtnLoading: { opacity: 0.7 },
     payBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textWhite },
 });

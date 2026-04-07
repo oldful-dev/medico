@@ -85,6 +85,10 @@ next-env.d.ts
 # ───── Vercel ─────
 .vercel
 
+# ───── Razorpay Keys ─────
+*.csv
+rzp-key.csv
+
 # ───── Project Specific Local Files ─────
 Oldful PRD.pdf
 prd_text.txt

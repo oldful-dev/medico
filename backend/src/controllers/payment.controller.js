@@ -4,6 +4,7 @@
 
 const prisma = require('../config/database');
 const razorpay = require('../utils/razorpay.service');
+const { logger } = require('../config/logger');
 const { sendResponse, sendPaginatedResponse, paginate, generateInvoiceNumber } = require('../utils/helpers');
 const { generateInvoicePDF } = require('../utils/pdfGenerator');
 const { uploadFile } = require('../utils/storage.service');
@@ -218,11 +219,11 @@ const initiateRefund = async (req, res, next) => {
         // Razorpay refund
         let refund;
         try {
-            refund = await razorpay.payments.refund(payment.razorpayPaymentId, {
+            refund = await razorpay.razorpay.payments.refund(payment.razorpayPaymentId, {
                 amount: Math.round(refundAmount * 100),
             });
         } catch (rzpErr) {
-            // In dev, continue without Razorpay
+            logger.warn(`Razorpay refund API failed: ${rzpErr.message} — recording refund locally`);
             refund = { id: `refund_${Date.now()}` };
         }
 
