@@ -117,8 +117,13 @@ export default function PaymentScreen() {
                 theme: { color: Colors.primary },
             };
 
-            if (!RazorpayCheckout) {
-                Alert.alert('Build Required', 'Run `npx expo run:android` to enable native payments.');
+            const { NativeModules } = require('react-native');
+            if (!NativeModules.RNRazorpayCheckout) {
+                Alert.alert(
+                    'Build Required',
+                    'Razorpay involves native code and cannot be run in standard Expo Go. Please run `npx expo run:android` to build a Custom Dev Client.'
+                );
+                setPayLoading(false);
                 return;
             }
 

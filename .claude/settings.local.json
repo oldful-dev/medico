@@ -64,7 +64,13 @@
       "Bash(SRC=\"d:/codes/MERN/oldful-prod/mobile/components\")",
       "Bash(DST=\"d:/codes/MERN/medico/mobile/components\")",
       "Bash(for f:*)",
-      "Bash(echo \"OK common/$f\")"
+      "Bash(echo \"OK common/$f\")",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(sed -n '60,70p' /d/codes/MERN/medico/mobile/app/plumbing-electrical/index.tsx)",
+      "Bash(sed -n '1,10p' /d/codes/MERN/medico/mobile/app/appliance-repair/index.tsx)",
+      "Bash(git commit -m 'fix: correct MediaTypeOptions replacement syntax error in order-medicines:*)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('react-native',{}\\), indent=2\\)\\); print\\(json.dumps\\(d.get\\('codegenConfig',{}\\), indent=2\\)\\)\")"
     ]
   }
 }
