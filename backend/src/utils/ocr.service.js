@@ -29,42 +29,53 @@ const client = new vision.ImageAnnotatorClient({
 //  BP pattern captures: systolic (group 1), diastolic (group 2)
 // ══════════════════════════════════════════════════════════════
 
+// SEP matches inline separators AND line breaks (Indian lab reports often
+// put test name on one line and value on the next, or use tab/spaces).
+const SEP = `[:\\s=\\-–—|\\t]*(?:\\n[\\s|]*)?`;
+
 const MEDICAL_PATTERNS = {
     // Blood Sugar
-    glucose_fasting:     /(?:fasting\s*(?:blood\s*)?(?:glucose|sugar)|fbg|fbs)\s*[:=\-]?\s*([\d.]+)\s*(mg\/dl|mmol\/l)?/gi,
-    glucose_pp:          /(?:post\s*(?:prandial|meal)|pp\s*(?:glucose|sugar)|ppbs)\s*[:=\-]?\s*([\d.]+)\s*(mg\/dl|mmol\/l)?/gi,
-    glucose_random:      /(?:random\s*(?:blood\s*)?(?:glucose|sugar)|rbs|blood\s*sugar)\s*[:=\-]?\s*([\d.]+)\s*(mg\/dl|mmol\/l)?/gi,
-    hba1c:               /(?:hba1c|a1c|glycated\s*h[ae]moglobin|glycosylated)\s*[:=\-]?\s*([\d.]+)\s*%?/gi,
+    glucose_fasting:     new RegExp(`(?:fasting\\s*(?:blood\\s*)?(?:glucose|sugar|plasma\\s*glucose)|fbg|fbs|fpg)${SEP}([\\d.]+)\\s*(mg\\/dl|mmol\\/l)?`, 'gi'),
+    glucose_pp:          new RegExp(`(?:post\\s*(?:prandial|meal|lunch)|pp\\s*(?:glucose|sugar|blood\\s*sugar)|ppbs|pp2bs)${SEP}([\\d.]+)\\s*(mg\\/dl|mmol\\/l)?`, 'gi'),
+    glucose_random:      new RegExp(`(?:random\\s*(?:blood\\s*)?(?:glucose|sugar)|rbs|blood\\s*sugar|plasma\\s*glucose)${SEP}([\\d.]+)\\s*(mg\\/dl|mmol\\/l)?`, 'gi'),
+    hba1c:               new RegExp(`(?:hba1c|hb\\s*a1c|a1c|glycated\\s*h[ae]moglobin|glycosylated)${SEP}([\\d.]+)\\s*%?`, 'gi'),
 
     // Blood Pressure (captures systolic/diastolic pair)
-    bp:                  /(?:blood\s*pressure|bp)\s*[:=\-]?\s*(\d{2,3})\s*[/]\s*(\d{2,3})\s*(mmhg)?/gi,
-    bp_systolic_only:    /(?:systolic)\s*[:=\-]?\s*(\d{2,3})\s*(mmhg)?/gi,
-    bp_diastolic_only:   /(?:diastolic)\s*[:=\-]?\s*(\d{2,3})\s*(mmhg)?/gi,
+    bp:                  /(?:blood\s*pressure|bp)\s*[:=\-–—]?\s*(\d{2,3})\s*[/]\s*(\d{2,3})\s*(mmhg)?/gi,
+    bp_systolic_only:    new RegExp(`(?:systolic)${SEP}(\\d{2,3})\\s*(mmhg)?`, 'gi'),
+    bp_diastolic_only:   new RegExp(`(?:diastolic)${SEP}(\\d{2,3})\\s*(mmhg)?`, 'gi'),
 
     // Lipid Profile
-    cholesterol_total:   /(?:total\s*cholesterol|serum\s*cholesterol|cholesterol)\s*[:=\-]?\s*([\d.]+)\s*(mg\/dl)?/gi,
-    ldl:                 /(?:ldl|low\s*density)\s*[:=\-]?\s*([\d.]+)\s*(mg\/dl)?/gi,
-    hdl:                 /(?:hdl|high\s*density)\s*[:=\-]?\s*([\d.]+)\s*(mg\/dl)?/gi,
-    triglycerides:       /(?:triglyceride|tg|trigl)\s*[:=\-]?\s*([\d.]+)\s*(mg\/dl)?/gi,
+    cholesterol_total:   new RegExp(`(?:total\\s*cholesterol|serum\\s*cholesterol|cholesterol\\s*(?:total)?)${SEP}([\\d.]+)\\s*(mg\\/dl)?`, 'gi'),
+    ldl:                 new RegExp(`(?:ldl[\\s\\-]*(?:cholesterol)?|low\\s*density\\s*lipoprotein)${SEP}([\\d.]+)\\s*(mg\\/dl)?`, 'gi'),
+    hdl:                 new RegExp(`(?:hdl[\\s\\-]*(?:cholesterol)?|high\\s*density\\s*lipoprotein)${SEP}([\\d.]+)\\s*(mg\\/dl)?`, 'gi'),
+    triglycerides:       new RegExp(`(?:triglyceride[s]?|tg|trigl)${SEP}([\\d.]+)\\s*(mg\\/dl)?`, 'gi'),
 
     // Kidney
-    creatinine:          /(?:creatinine|creat|s\.creat)\s*[:=\-]?\s*([\d.]+)\s*(mg\/dl)?/gi,
-    urea:                /(?:blood\s*urea|urea|bun)\s*[:=\-]?\s*([\d.]+)\s*(mg\/dl)?/gi,
+    creatinine:          new RegExp(`(?:creatinine|creat|s\\.?\\s*creat(?:inine)?)${SEP}([\\d.]+)\\s*(mg\\/dl)?`, 'gi'),
+    urea:                new RegExp(`(?:blood\\s*urea(?:\\s*nitrogen)?|urea|bun)${SEP}([\\d.]+)\\s*(mg\\/dl)?`, 'gi'),
 
     // CBC
-    hemoglobin:          /(?:h[ae]moglobin|hb|hgb)\s*[:=\-]?\s*([\d.]+)\s*(g\/dl|gm\/dl|g%)?/gi,
-    wbc:                 /(?:wbc|white\s*blood\s*cell|leucocyte|total\s*wbc)\s*[:=\-]?\s*([\d.]+)\s*(\/cumm|cells\/cumm|thou)?/gi,
-    rbc:                 /(?:rbc|red\s*blood\s*cell|erythrocyte)\s*[:=\-]?\s*([\d.]+)\s*(mill\/cumm|million)?/gi,
-    platelet:            /(?:platelet|plt)\s*[:=\-]?\s*([\d.]+)\s*(lakh|\/cumm|thou)?/gi,
-    esr:                 /(?:esr|sedimentation\s*rate)\s*[:=\-]?\s*([\d.]+)\s*(mm\/hr|mm)?/gi,
+    hemoglobin:          new RegExp(`(?:h[ae]moglobin|hb|hgb)${SEP}([\\d.]+)\\s*(g\\/dl|gm?\\/dl|g%)?`, 'gi'),
+    wbc:                 new RegExp(`(?:wbc|white\\s*blood\\s*cell[s]?|leucocyte[s]?|total\\s*(?:wbc|leucocyte))${SEP}([\\d.]+)\\s*(\\/cumm|cells?\\/cumm|thou(?:sand)?|x10[\\^³])?`, 'gi'),
+    rbc:                 new RegExp(`(?:rbc|red\\s*blood\\s*cell[s]?|erythrocyte[s]?|total\\s*rbc)${SEP}([\\d.]+)\\s*(mill(?:ion)?\\/cumm|million|x10[\\^⁶])?`, 'gi'),
+    platelet:            new RegExp(`(?:platelet[s]?|plt|platelet\\s*count)${SEP}([\\d.]+)\\s*(lakh|\\/cumm|thou(?:sand)?|x10[\\^³])?`, 'gi'),
+    esr:                 new RegExp(`(?:esr|erythrocyte\\s*sedimentation\\s*rate|sedimentation\\s*rate)${SEP}([\\d.]+)\\s*(mm\\/hr|mm(?:1st\\s*hr)?)?`, 'gi'),
 
     // Thyroid
-    tsh:                 /(?:tsh|thyroid\s*stimulating)\s*[:=\-]?\s*([\d.]+)\s*(miu\/l|uiu\/ml|miu\/ml)?/gi,
+    tsh:                 new RegExp(`(?:tsh|thyroid\\s*stimulating\\s*hormone)${SEP}([\\d.]+)\\s*(miu\\/[lm]l|uiu\\/ml|µiu\\/ml)?`, 'gi'),
 
     // Liver
-    sgpt:                /(?:sgpt|alt|alanine)\s*[:=\-]?\s*([\d.]+)\s*(u\/l|iu\/l)?/gi,
-    sgot:                /(?:sgot|ast|aspartate)\s*[:=\-]?\s*([\d.]+)\s*(u\/l|iu\/l)?/gi,
-    bilirubin:           /(?:total\s*bilirubin|bilirubin|tbil)\s*[:=\-]?\s*([\d.]+)\s*(mg\/dl)?/gi,
+    sgpt:                new RegExp(`(?:sgpt|alt|alanine\\s*(?:amino)?\\s*transferase)${SEP}([\\d.]+)\\s*(u\\/l|iu\\/l)?`, 'gi'),
+    sgot:                new RegExp(`(?:sgot|ast|aspartate\\s*(?:amino)?\\s*transferase)${SEP}([\\d.]+)\\s*(u\\/l|iu\\/l)?`, 'gi'),
+    bilirubin:           new RegExp(`(?:total\\s*bilirubin|bilirubin(?:\\s*total)?|tbil)${SEP}([\\d.]+)\\s*(mg\\/dl)?`, 'gi'),
+
+    // Vitamin D / B12 (commonly tested in India)
+    vitamin_d:           new RegExp(`(?:vitamin\\s*d|25[\\s\\-]*(?:oh|hydroxy)\\s*(?:vitamin\\s*)?d)${SEP}([\\d.]+)\\s*(ng\\/ml|nmol\\/l)?`, 'gi'),
+    vitamin_b12:         new RegExp(`(?:vitamin\\s*b\\s*12|b12|cobalamin)${SEP}([\\d.]+)\\s*(pg\\/ml|pmol\\/l)?`, 'gi'),
+
+    // Uric Acid
+    uric_acid:           new RegExp(`(?:uric\\s*acid|serum\\s*uric\\s*acid)${SEP}([\\d.]+)\\s*(mg\\/dl)?`, 'gi'),
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -90,6 +101,9 @@ const THRESHOLDS = {
     sgpt:              { high: 45,  low: null,  unit: 'U/L',   flag_high: 'high_sgpt' },
     sgot:              { high: 40,  low: null,  unit: 'U/L',   flag_high: 'high_sgot' },
     bilirubin:         { high: 1.2, low: null,  unit: 'mg/dL', flag_high: 'high_bilirubin' },
+    vitamin_d:         { high: null, low: 20,   unit: 'ng/mL', flag_low: 'low_vitamin_d' },
+    vitamin_b12:       { high: null, low: 200,  unit: 'pg/mL', flag_low: 'low_vitamin_b12' },
+    uric_acid:         { high: 7.0, low: null,  unit: 'mg/dL', flag_high: 'high_uric_acid' },
 };
 
 // BP has its own thresholds (systolic/diastolic)
