@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     totalRow: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
     totalLabel: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark },
     totalValue: { fontFamily: Fonts.semiBold, fontSize: 20, color: Colors.primary },
-    gstNote: { fontFamily: Fonts.regular, fontSize: FontSize.small ?? 12, color: '#999' },
+    gstNote: { fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: '#999' },
 
     couponRow: { flexDirection: 'row', gap: Spacing.sm },
     couponInput: {
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     couponBtnDisabled: { opacity: 0.45 },
     couponBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textWhite },
     couponApplied: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#E8F5E9', padding: Spacing.md, borderRadius: Radius.sm },
-    couponAppliedText: { flex: 1, fontFamily: Fonts.medium, fontSize: FontSize.small ?? 13, color: '#2e7d32' },
+    couponAppliedText: { flex: 1, fontFamily: Fonts.medium, fontSize: FontSize.caption ?? 13, color: '#2e7d32' },
 
     methodRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.md, paddingHorizontal: Spacing.md, borderRadius: Radius.md, borderWidth: 1.5, borderColor: '#EEEEEE' },
     methodRowActive: { borderColor: Colors.primary, backgroundColor: '#F0FAF4' },
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     methodLabelActive: { color: Colors.textDark, fontFamily: Fonts.medium },
 
     securityNote: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: Spacing.md },
-    securityText: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.small ?? 12, color: '#888', lineHeight: 18 },
+    securityText: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: '#888', lineHeight: 18 },
 
     footer: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
