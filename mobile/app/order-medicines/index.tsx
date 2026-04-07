@@ -58,7 +58,7 @@ export default function OrderMedicinesScreen() {
         }
 
         const result = await ImagePicker.launchCameraAsync({
-            mediaTypes: ImagePicker.'images',
+            mediaTypes: 'images',
             quality: 0.8,
         });
 
@@ -75,7 +75,7 @@ export default function OrderMedicinesScreen() {
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.'images',
+            mediaTypes: 'images',
             allowsMultipleSelection: true,
             quality: 0.8,
         });
