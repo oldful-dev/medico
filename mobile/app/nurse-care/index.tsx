@@ -43,6 +43,8 @@ export default function BookNursingCareScreen() {
     // API & Init state
     const [cityId, setCityId] = useState('');
     const [serviceId, setServiceId] = useState('');
+    const [serviceName, setServiceName] = useState('Nurse Care');
+    const [servicePrice, setServicePrice] = useState(0);
     const [isLoadingInit, setIsLoadingInit] = useState(true);
     const [address, setAddress] = useState('Fetching address...');
     const [isBooking, setIsBooking] = useState(false);
@@ -66,7 +68,11 @@ export default function BookNursingCareScreen() {
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'home-nurse');
-                    if (svc) setServiceId(svc.id);
+                    if (svc) {
+                        setServiceId(svc.id);
+                        setServiceName(svc.name || 'Nurse Care');
+                        setServicePrice(svc.basePrice ?? 0);
+                    }
                 }
             } catch (err) {
                 console.log('Nurse Care init failed', err);
@@ -103,6 +109,7 @@ export default function BookNursingCareScreen() {
                 addressLine: address || undefined,
                 staffType: selectedStaff === 'Option A' ? 'qualified-nurse' : 'bedside-attendant',
                 shiftDuration,
+                amount: servicePrice,
                 formDataJson: {
                     recipient: selectedWho,
                     condition: selectedCondition || 'Not specified',
@@ -112,7 +119,14 @@ export default function BookNursingCareScreen() {
                 },
             });
             if (res.success && res.data) {
-                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+                router.push({
+                    pathname: '/payment/checkout',
+                    params: {
+                        bookingId: res.data.id,
+                        amount: String(servicePrice),
+                        label: serviceName,
+                    },
+                });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
             }

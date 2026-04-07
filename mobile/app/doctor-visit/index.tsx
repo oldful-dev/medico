@@ -61,7 +61,7 @@ export default function DoctorVisitScreen() {
     const { width } = useWindowDimensions();
 
     // ─── Global State ───
-    const { isReady, cityId, serviceId, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('doctor-home-visit');
+    const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('doctor-home-visit');
 
     // ─── State ───
     const [selectedProblem, setSelectedProblem] = React.useState<string | null>(null);
@@ -98,14 +98,22 @@ export default function DoctorVisitScreen() {
                 addressLine: address || undefined,
                 symptoms: [selectedProblem],
                 doctorType: selectedDoctorType === 'GP' ? 'general-physician' : 'physiotherapist',
-                formDataJson: { 
-                    visitType, 
+                amount: servicePrice,
+                formDataJson: {
+                    visitType,
                     urgency: selectedWhen,
-                    attachments: uploadedImageUrls 
+                    attachments: uploadedImageUrls
                 },
             });
             if (res.success && res.data) {
-                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+                router.push({
+                    pathname: '/payment/checkout',
+                    params: {
+                        bookingId: res.data.id,
+                        amount: String(servicePrice),
+                        label: serviceName || 'Doctor Home Visit',
+                    },
+                });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
             }

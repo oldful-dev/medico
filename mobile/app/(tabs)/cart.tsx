@@ -220,7 +220,16 @@ export default function CartScreen() {
                                         <Text style={styles.totalLabel}>Total Amount</Text>
                                         <Text style={styles.totalValue}>₹{totalAmount}</Text>
                                     </View>
-                                    <TouchableOpacity style={styles.checkoutBtn}>
+                                    <TouchableOpacity
+                                        style={styles.checkoutBtn}
+                                        onPress={() => router.push({
+                                            pathname: '/payment/checkout',
+                                            params: {
+                                                amount: String(totalAmount),
+                                                label: 'Cart Checkout',
+                                            },
+                                        })}
+                                    >
                                         <Text style={styles.checkoutBtnText}>{t('cart.checkout')}</Text>
                                     </TouchableOpacity>
                                 </View>

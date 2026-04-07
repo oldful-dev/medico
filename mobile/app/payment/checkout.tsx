@@ -31,6 +31,9 @@ export default function PaymentScreen() {
         subscriptionId?: string;
         amount?: string;
         label?: string;
+        email?: string;
+        phone?: string;
+        userName?: string;
     }>();
 
     const amount = parseFloat(params.amount ?? '0');
