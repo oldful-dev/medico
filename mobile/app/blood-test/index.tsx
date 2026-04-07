@@ -39,6 +39,8 @@ export default function BloodTestScreen() {
     // API & Init state
     const [cityId, setCityId] = useState('');
     const [serviceId, setServiceId] = useState('');
+    const [serviceName, setServiceName] = useState('Blood Test');
+    const [servicePrice, setServicePrice] = useState(0);
     const [address, setAddress] = useState('Fetching address...');
     const [isLoadingInit, setIsLoadingInit] = useState(true);
     const [isBooking, setIsBooking] = useState(false);
@@ -60,7 +62,11 @@ export default function BloodTestScreen() {
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'blood-test');
-                    if (svc) setServiceId(svc.id);
+                    if (svc) {
+                        setServiceId(svc.id);
+                        setServiceName(svc.name || 'Blood Test');
+                        setServicePrice(svc.basePrice ?? 0);
+                    }
                 }
             } catch (err) { 
                 console.log('Blood Test init failed', err); 
@@ -89,13 +95,21 @@ export default function BloodTestScreen() {
                 cityId,
                 scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
                 addressLine: address || undefined,
-                formDataJson: { 
+                amount: servicePrice,
+                formDataJson: {
                     testType: selectedTest,
-                    attachments: uploadedImageUrls 
+                    attachments: uploadedImageUrls
                 },
             });
             if (res.success && res.data) {
-                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+                router.push({
+                    pathname: '/payment/checkout',
+                    params: {
+                        bookingId: res.data.id,
+                        amount: String(servicePrice),
+                        label: serviceName,
+                    },
+                });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
             }

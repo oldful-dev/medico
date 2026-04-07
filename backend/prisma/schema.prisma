@@ -344,7 +344,8 @@ model Service {
   icon            String?                        // emoji or URL
   tagline         String?
   description     String?
-  pricingText     String?                        // "₹799 / visit"
+  basePrice       Float?                         // numeric price in INR (e.g. 799.0)
+  pricingText     String?                        // display label "₹799 / visit"
   heroImageUrl    String?
   route           String?                        // /services/doctor-visit
   sortOrder       Int         @default(0)

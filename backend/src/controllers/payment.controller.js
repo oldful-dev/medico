@@ -112,10 +112,13 @@ const initiatePayment = async (req, res, next) => {
 // POST /api/payments/verify
 const verifyPayment = async (req, res, next) => {
     try {
-        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+        // Accept both camelCase (from mobile SDK) and snake_case (from direct Razorpay)
+        const orderId     = req.body.razorpayOrderId   || req.body.razorpay_order_id;
+        const paymentId   = req.body.razorpayPaymentId  || req.body.razorpay_payment_id;
+        const signature   = req.body.razorpaySignature  || req.body.razorpay_signature;
 
         // Verify signature
-        const isValid = razorpay.verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
+        const isValid = razorpay.verifySignature(orderId, paymentId, signature);
 
         if (!isValid) {
             return res.status(400).json({ success: false, message: 'Payment verification failed' });
@@ -123,10 +126,10 @@ const verifyPayment = async (req, res, next) => {
 
         // Update payment
         const payment = await prisma.payment.update({
-            where: { razorpayOrderId: razorpay_order_id },
+            where: { razorpayOrderId: orderId },
             data: {
-                razorpayPaymentId: razorpay_payment_id,
-                razorpaySignature: razorpay_signature,
+                razorpayPaymentId: paymentId,
+                razorpaySignature: signature,
                 status: 'SUCCESS',
             },
             include: { user: true },
@@ -285,6 +288,7 @@ const applyCoupon = async (req, res, next) => {
         }
 
         sendResponse(res, 200, {
+            valid: true,
             discount,
             finalAmount: amount - discount,
             coupon: { code: coupon.code, description: coupon.description },
