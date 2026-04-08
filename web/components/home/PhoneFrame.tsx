@@ -1,5 +1,5 @@
 import React from 'react';
-import { DashboardMock } from './DashboardMock';
+import { InteractivePhoneUI } from './InteractivePhoneUI';
 
 export function PhoneFrame() {
   return (
@@ -8,8 +8,8 @@ export function PhoneFrame() {
       <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[120px] h-[24px] bg-[#F2F2F2] rounded-b-2xl z-30"></div>
       
       {/* Inner Screen */}
-      <div className="w-full h-full overflow-hidden bg-[var(--color-bg-screen)] relative rounded-[30px] border-4 border-white">
-        <DashboardMock />
+      <div className="w-full h-full overflow-hidden bg-white relative rounded-[30px] border-4 border-white">
+        <InteractivePhoneUI />
       </div>
     </div>
   );
