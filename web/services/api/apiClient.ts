@@ -68,12 +68,20 @@ class ApiClient {
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    // Trigger logout event or handle refresh natively here
+                    // Trigger global logout for token invalidation
                     if (typeof window !== 'undefined') {
-                        localStorage.removeItem('@oldful_auth_token');
-                        window.location.href = '/auth/login';
+                        const { useAuthStore } = require('@/store/authStore');
+                        useAuthStore.getState().logout();
                     }
                 }
+                
+                // Global Error Dispatch for UI consumption
+                if (typeof window !== 'undefined' && response.status >= 500) {
+                    window.dispatchEvent(new CustomEvent('api-error', { 
+                        detail: { message: json?.message || 'Server Error. Please try again.' } 
+                    }));
+                }
+
                 throw new ApiError(
                     response.status,
                     json?.message || `Request failed with status ${response.status}`,
@@ -84,6 +92,14 @@ class ApiClient {
             return json as ApiResponse<T>;
         } catch (error) {
             if (error instanceof ApiError) throw error;
+            
+            // Network failures (CORS, offline, DNS)
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('api-error', { 
+                    detail: { message: 'Network error. Please check your connection.' } 
+                }));
+            }
+            
             throw new ApiError(0, `Network error: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
