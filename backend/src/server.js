@@ -78,7 +78,7 @@ app.use(helmet({
 const ALLOWED_ORIGINS = [
     process.env.ADMIN_FRONTEND_URL || 'http://localhost:3003',
     process.env.APP_FRONTEND_URL || 'http://localhost:8081',
-    'http://localhost:3000', // Added for local website development
+    process.env.WEB_FRONTEND_URL || 'http://localhost:3000',
     // Cloudflare Workers / CDN may send requests with these origins
     'https://assets.oldful.com',
     'https://oldful.com',
