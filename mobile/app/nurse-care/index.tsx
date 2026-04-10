@@ -96,20 +96,20 @@ export default function BookNursingCareScreen() {
         try {
             setIsBooking(true);
 
-            // Upload images first
+            // Upload images first (safe before payment — no booking created yet)
             let uploadedImageUrls: string[] = [];
             if (selectedImages.length > 0) {
                 uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'nurse-care');
             }
 
-            const res = await bookingService.createBooking({
+            // Navigate to checkout — booking created inside checkout after payment succeeds
+            const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: new Date().toISOString(),
                 addressLine: address || undefined,
                 staffType: selectedStaff === 'Option A' ? 'qualified-nurse' : 'bedside-attendant',
                 shiftDuration,
-                amount: servicePrice,
                 formDataJson: {
                     recipient: selectedWho,
                     condition: selectedCondition || 'Not specified',
@@ -118,21 +118,14 @@ export default function BookNursingCareScreen() {
                     attachments: uploadedImageUrls,
                 },
             });
-            if (res.success && res.data) {
-                router.push({
-                    pathname: '/payment/checkout',
-                    params: {
-                        bookingId: res.data.id,
-                        amount: String(servicePrice),
-                        label: serviceName,
-                    },
-                });
-            } else {
-                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
-            }
+
+            router.push({
+                pathname: '/payment/checkout',
+                params: { bookingPayload, amount: String(servicePrice), label: serviceName },
+            });
         } catch (error) {
-            console.error('Nurse care booking error:', error);
-            Alert.alert('Error', 'Failed to create booking. Please try again.');
+            console.error('Nurse care error:', error);
+            Alert.alert('Error', 'Failed to upload documents. Please try again.');
         } finally {
             setIsBooking(false);
         }

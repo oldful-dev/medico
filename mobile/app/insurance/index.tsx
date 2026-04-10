@@ -78,6 +78,8 @@ export default function InsuranceScreen() {
             Alert.alert('Error', 'Service initialization incomplete. Please try again.');
             return;
         }
+        // Insurance is a consultation request — no Razorpay payment.
+        // Booking is created immediately and goes to /service-confirmation.
         const activeRecipient = recipients.find(r => r.selected)?.label || 'Unknown';
         const activeConditions = conditions.filter(c => c.selected).map(c => c.label).join(', ') || 'None';
         try {

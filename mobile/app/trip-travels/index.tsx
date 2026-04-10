@@ -83,31 +83,21 @@ export default function TripTravelsScreen() {
 
         try {
             setIsBooking(true);
-            const payload = {
+            // Trip & Travels is an inquiry service — no Razorpay, goes to /service-confirmation.
+            const res = await bookingService.createBooking({
                 serviceId,
                 cityId,
-                scheduledDate: selectedDate.toISOString(),
+                scheduledDate: selectedDate!.toISOString(),
                 addressLine: 'Trip / Travel Inquiry',
-                formDataJson: {
-                    type: 'TRIP',
-                    destination,
-                    peopleCount: tripPeopleCount
-                }
-            };
-
-            const res = await bookingService.createBooking(payload);
+                formDataJson: { type: 'TRIP', destination, peopleCount: tripPeopleCount },
+            });
             if (res.success && res.data) {
-                router.push({
-                    pathname: '/service-confirmation',
-                    params: {
-                        bookingId: res.data.id
-                    }
-                });
+                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
             }
         } catch (error) {
-            console.error('Booking error:', error);
+            console.error('Trip booking error:', error);
             Alert.alert('Error', 'Failed to submit inquiry. Please check your connection.');
         } finally {
             setIsBooking(false);
@@ -127,31 +117,21 @@ export default function TripTravelsScreen() {
 
         try {
             setIsBooking(true);
-            const payload = {
+            // Local event booking — no Razorpay, goes to /service-confirmation.
+            const res = await bookingService.createBooking({
                 serviceId,
                 cityId,
-                scheduledDate: new Date().toISOString(), // Local events might be listed soon
+                scheduledDate: new Date().toISOString(),
                 addressLine: 'Local Event Booking',
-                formDataJson: {
-                    type: 'EVENT',
-                    event: selectedEvent,
-                    groupSize: eventPeopleCount
-                }
-            };
-
-            const res = await bookingService.createBooking(payload);
+                formDataJson: { type: 'EVENT', event: selectedEvent, groupSize: eventPeopleCount },
+            });
             if (res.success && res.data) {
-                router.push({
-                    pathname: '/service-confirmation',
-                    params: {
-                        bookingId: res.data.id
-                    }
-                });
+                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
             }
         } catch (error) {
-            console.error('Booking error:', error);
+            console.error('Event booking error:', error);
             Alert.alert('Error', 'Failed to book seat. Please check your connection.');
         } finally {
             setIsBooking(false);

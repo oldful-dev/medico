@@ -8,7 +8,7 @@
 //    - Authorization: Bearer <token> on every request (same as mobile)
 // ──────────────────────────────────────────────
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://oldful-dev.onrender.com/api';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://oldful.onrender.com/api';
 
 export interface ApiResponse<T = any> {
     success: boolean;

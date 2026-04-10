@@ -13,13 +13,13 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://medico-crzu.onrender.com/api"
+        "EXPO_PUBLIC_API_URL": "https://oldful.onrender.com/api"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://medico-crzu.onrender.com/api"
+        "EXPO_PUBLIC_API_URL": "https://oldful.onrender.com/api"
       }
     }
   },

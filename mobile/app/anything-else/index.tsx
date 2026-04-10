@@ -96,36 +96,32 @@ export default function AnythingElseScreen() {
         try {
             setIsBooking(true);
 
-            // Upload images first
+            // Upload images first (safe before payment — no booking created yet)
             let uploadedImageUrls: string[] = [];
             if (selectedImages.length > 0) {
                 uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'anything-else');
             }
 
-            const payload = {
+            // Navigate to checkout — booking created inside checkout after payment succeeds
+            const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
-                scheduledDate: selectedDate.toISOString(),
+                scheduledDate: selectedDate!.toISOString(),
                 addressLine: address,
                 formDataJson: {
                     reqTitle,
                     reqDesc,
-                    attachments: uploadedImageUrls
-                }
-            };
+                    attachments: uploadedImageUrls,
+                },
+            });
 
-            const res = await bookingService.createBooking({ ...payload, amount: servicePrice });
-            if (res.success && res.data) {
-                router.push({
-                    pathname: '/payment/checkout',
-                    params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName }
-                });
-            } else {
-                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
-            }
+            router.push({
+                pathname: '/payment/checkout',
+                params: { bookingPayload, amount: String(servicePrice), label: serviceName },
+            });
         } catch (error) {
-            console.error('Booking error:', error);
-            Alert.alert('Error', 'Failed to create booking. Please check your connection.');
+            console.error('Anything-else error:', error);
+            Alert.alert('Error', 'Failed to upload attachments. Please check your connection.');
         } finally {
             setIsBooking(false);
         }

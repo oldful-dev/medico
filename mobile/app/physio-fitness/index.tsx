@@ -79,7 +79,9 @@ export default function PhysioFitnessScreen() {
         }
         try {
             setIsBooking(true);
-            const res = await bookingService.createBooking({
+
+            // Navigate to checkout — booking created inside checkout after payment succeeds
+            const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
@@ -90,14 +92,14 @@ export default function PhysioFitnessScreen() {
                     otherIssue: otherIssue || 'None',
                 },
             });
-            if (res.success && res.data) {
-                router.push({ pathname: '/payment/checkout', params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName } });
-            } else {
-                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
-            }
+
+            router.push({
+                pathname: '/payment/checkout',
+                params: { bookingPayload, amount: String(servicePrice), label: serviceName },
+            });
         } catch (error) {
-            console.error('Physio booking error:', error);
-            Alert.alert('Error', 'Failed to create booking. Please try again.');
+            console.error('Physio error:', error);
+            Alert.alert('Error', 'Something went wrong. Please try again.');
         } finally {
             setIsBooking(false);
         }

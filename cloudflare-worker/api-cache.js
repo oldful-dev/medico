@@ -15,7 +15,7 @@
  *    2. Paste this code → Deploy
  *    3. Triggers → Add Route: api.oldful.com/*  Zone: oldful.com
  *    4. Environment Variables:
- *       BACKEND_ORIGIN = https://medico-crzu.onrender.com
+ *       BACKEND_ORIGIN = https://oldful.onrender.com
  *
  *  NOTE: This worker is OPTIONAL. The app works without it.
  *        It just adds edge caching for faster SDUI delivery.
@@ -65,7 +65,7 @@ function shouldBypassCache(request) {
 export default {
     async fetch(request) {
         const url = new URL(request.url);
-        const BACKEND = 'https://medico-crzu.onrender.com';
+        const BACKEND = 'https://oldful.onrender.com';
 
         // ── Geo headers (always injected) ───────
         const cf = request.cf || {};

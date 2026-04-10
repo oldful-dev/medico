@@ -99,32 +99,29 @@ export default function TechHelperScreen() {
 
         try {
             setIsBooking(true);
-            const payload = {
+
+            // Navigate to checkout — booking created inside checkout after payment succeeds
+            const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
-                scheduledDate: selectedDate.toISOString(),
+                scheduledDate: selectedDate!.toISOString(),
                 addressLine: address,
                 formDataJson: {
                     issues: selectedIssues,
                     otherIssue,
                     mode: selectedMode,
                     description: desc,
-                    fee: selectedMode === 'home' ? 599 : 399
-                }
-            };
+                    fee: selectedMode === 'home' ? 599 : 399,
+                },
+            });
 
-            const res = await bookingService.createBooking({ ...payload, amount: servicePrice });
-            if (res.success && res.data) {
-                router.push({
-                    pathname: '/payment/checkout',
-                    params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName }
-                });
-            } else {
-                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
-            }
+            router.push({
+                pathname: '/payment/checkout',
+                params: { bookingPayload, amount: String(servicePrice), label: serviceName },
+            });
         } catch (error) {
-            console.error('Booking error:', error);
-            Alert.alert('Error', 'Failed to create booking. Please check your connection.');
+            console.error('Tech-helper error:', error);
+            Alert.alert('Error', 'Failed to book. Please check your connection.');
         } finally {
             setIsBooking(false);
         }

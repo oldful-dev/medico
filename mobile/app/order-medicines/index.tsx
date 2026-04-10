@@ -138,13 +138,14 @@ export default function OrderMedicinesScreen() {
         try {
             setIsBooking(true);
 
-            // Upload images first
+            // Upload images first (safe before payment — no booking created yet)
             let uploadedImageUrls: string[] = [];
             if (selectedImages.length > 0) {
                 uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'prescriptions');
             }
 
-            const res = await bookingService.createBooking({
+            // Navigate to checkout — booking created inside checkout after payment succeeds
+            const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: new Date().toISOString(),
@@ -158,14 +159,14 @@ export default function OrderMedicinesScreen() {
                     imageCount: uploadedImageUrls.length,
                 },
             });
-            if (res.success && res.data) {
-                router.push({ pathname: '/payment/checkout', params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName } });
-            } else {
-                Alert.alert('Order Failed', res.message || 'Something went wrong.');
-            }
+
+            router.push({
+                pathname: '/payment/checkout',
+                params: { bookingPayload, amount: String(servicePrice), label: serviceName },
+            });
         } catch (error) {
-            console.error('Medicines booking error:', error);
-            Alert.alert('Error', 'Failed to place order. Please try again.');
+            console.error('Medicines error:', error);
+            Alert.alert('Error', 'Failed to upload prescription. Please try again.');
         } finally {
             setIsBooking(false);
         }

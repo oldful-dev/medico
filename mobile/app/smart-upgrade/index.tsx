@@ -44,6 +44,7 @@ export default function SmartUpgradeScreen() {
 
         try {
             setIsBooking(true);
+            // Smart Upgrade is a plan subscription request — no Razorpay, goes to /service-confirmation.
             const payload = {
                 serviceId,
                 cityId,
@@ -51,18 +52,13 @@ export default function SmartUpgradeScreen() {
                 addressLine: 'Plan Upgrade',
                 formDataJson: {
                     plan: 'Oldful Homemaker Plan',
-                    fee: 3499
-                }
+                    fee: 3499,
+                },
             };
 
             const res = await bookingService.createBooking(payload);
             if (res.success && res.data) {
-                router.push({
-                    pathname: '/service-confirmation',
-                    params: {
-                        bookingId: res.data.id
-                    }
-                });
+                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
             } else {
                 Alert.alert('Upgrade Failed', res.message || 'Something went wrong.');
             }
