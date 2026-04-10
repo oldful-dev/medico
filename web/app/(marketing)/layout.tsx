@@ -10,7 +10,7 @@ export default function MarketingLayout({
   return (
     <div className="flex flex-col min-h-screen bg-[var(--color-bg-screen)] font-[var(--font-poppins)]">
       <Navbar />
-      <main className="flex-1 w-full">
+      <main className="flex-1 w-full pt-32">
         {children}
       </main>
       <Footer />

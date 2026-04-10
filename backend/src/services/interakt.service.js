@@ -77,27 +77,32 @@ const normalisePhone = (phone) => {
  * @param {string}   [opts.callToActionUrl] - Optional URL for URL-button templates
  * @returns {Promise<boolean>}
  */
-const sendWhatsAppMessage = async ({ phone, templateName, variables = [], callToActionUrl }) => {
-    const apiKey = process.env.INTERAKT_API_KEY;
+const sendWhatsAppMessage = async ({ phone, templateName, variables = [], callToActionUrl, headerUrl }) => {
+    let apiKey = process.env.INTERAKT_API_KEY;
 
     if (!apiKey) {
         logger.warn('[Interakt] INTERAKT_API_KEY not set — skipping WhatsApp send');
         return false;
     }
 
+    // Handle case where apiKey might already contain "Basic "
+    const authHeader = apiKey.startsWith('Basic ') ? apiKey : `Basic ${apiKey}`;
+
     const resolvedTemplate = TEMPLATES[templateName] || templateName;
     const phoneNumber = normalisePhone(phone);
 
     const payload = {
-        countryCode: '+91',
-        phoneNumber,
+        fullPhoneNumber: `+91${phoneNumber}`,
         callbackData: `event:${templateName}`,
         type: 'Template',
         template: {
             name: resolvedTemplate,
-            languageCode: 'en',
+            languageCode: ['renewal_reminder', 'feedback_survey_form'].includes(resolvedTemplate) ? 'en_US' : 'en',
             ...(variables.length > 0 && {
                 bodyValues: variables.map(String),
+            }),
+            ...(headerUrl && {
+                headerValues: [headerUrl]
             }),
             ...(callToActionUrl && {
                 buttonValues: { 0: [callToActionUrl] },
@@ -111,8 +116,7 @@ const sendWhatsAppMessage = async ({ phone, templateName, variables = [], callTo
         try {
             const response = await axios.post(BASE_URL, payload, {
                 headers: {
-                    // Interakt provides the key already base64-encoded
-                    Authorization: `Basic ${apiKey}`,
+                    Authorization: authHeader,
                     'Content-Type': 'application/json',
                 },
                 timeout: 10000,
@@ -201,11 +205,12 @@ const sendPaymentLink = ({ phone, name, amount, service, paymentUrl }) =>
  * Payment receipt / invoice (DOCUMENT header — receipt PDF)
  * Template: oldful_receipt — {{1}}=name {{2}}=amount {{3}}=phone {{4}}=email
  */
-const sendPaymentConfirmation = ({ phone, name, amount }) =>
+const sendPaymentConfirmation = ({ phone, name, amount, headerUrl }) =>
     sendWhatsAppMessage({
         phone,
         templateName: 'payment_confirmation',
         variables: [name, String(amount), SUPPORT_PHONE, SUPPORT_EMAIL],
+        headerUrl,
     });
 
 /**

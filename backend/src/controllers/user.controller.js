@@ -90,7 +90,7 @@ const getUserById = async (req, res, next) => {
 // POST /api/users  (Admin creates user OR post-OTP registration)
 const createUser = async (req, res, next) => {
     try {
-        const { name, phone, email, gender, dateOfBirth, cityId, preferredLanguage, profileImageUrl, emergencyNumber, flatNumber, addressLine } = req.body;
+        const { name, phone, email, gender, dateOfBirth, cityId, preferredLanguage, profileImageUrl, emergencyNumber, flatNumber, addressLine, line1, line2 } = req.body;
 
         if (!name || name.trim().length < 3) return sendResponse(res, 400, null, 'name is required (min 3 characters)');
         if (!phone) return sendResponse(res, 400, null, 'phone is required');
@@ -114,14 +114,17 @@ const createUser = async (req, res, next) => {
         });
 
         // Create default address if provided during registration
-        if (addressLine) {
+        const finalLine1 = line1 || flatNumber || '';
+        const finalLine2 = line2 || addressLine || '';
+
+        if (finalLine2) {
             try {
                 await prisma.address.create({
                     data: {
                         userId: user.id,
                         label: 'Home',
-                        line1: flatNumber || '',
-                        line2: addressLine,
+                        line1: finalLine1,
+                        line2: finalLine2,
                         cityName: user.city.name,
                         state: '',
                         pincode: '',
@@ -295,8 +298,22 @@ const removeEmergencyContact = async (req, res, next) => {
 // POST /api/users/:id/addresses
 const addAddress = async (req, res, next) => {
     try {
+        const { label, line1, line2, flatNumber, addressLine, cityName, state, pincode, landmark, isDefault, latitude, longitude } = req.body;
+
         const address = await prisma.address.create({
-            data: { userId: req.params.id, ...req.body },
+            data: {
+                userId: req.params.id,
+                label: label || 'Home',
+                line1: line1 || flatNumber || '',
+                line2: line2 || addressLine || '',
+                cityName: cityName || '',
+                state: state || '',
+                pincode: pincode || '',
+                landmark: landmark || null,
+                isDefault: !!isDefault,
+                latitude: latitude ? parseFloat(latitude) : null,
+                longitude: longitude ? parseFloat(longitude) : null,
+            },
         });
         sendResponse(res, 201, address, 'Address added');
     } catch (error) {
@@ -307,11 +324,37 @@ const addAddress = async (req, res, next) => {
 // PUT /api/users/:userId/addresses/:addressId
 const updateAddress = async (req, res, next) => {
     try {
+        const { label, line1, line2, flatNumber, addressLine, cityName, state, pincode, landmark, isDefault, latitude, longitude } = req.body;
+        
+        const data = {};
+        if (label !== undefined) data.label = label;
+        if (line1 !== undefined) data.line1 = line1;
+        if (line2 !== undefined) data.line2 = line2;
+        if (flatNumber !== undefined && line1 === undefined) data.line1 = flatNumber;
+        if (addressLine !== undefined && line2 === undefined) data.line2 = addressLine;
+        if (cityName !== undefined) data.cityName = cityName;
+        if (state !== undefined) data.state = state;
+        if (pincode !== undefined) data.pincode = pincode;
+        if (landmark !== undefined) data.landmark = landmark;
+        if (isDefault !== undefined) data.isDefault = !!isDefault;
+        if (latitude !== undefined) data.latitude = parseFloat(latitude);
+        if (longitude !== undefined) data.longitude = parseFloat(longitude);
+
         const address = await prisma.address.update({
             where: { id: req.params.addressId },
-            data: req.body,
+            data,
         });
         sendResponse(res, 200, address, 'Address updated');
+    } catch (error) {
+        next(error);
+    }
+};
+
+// DELETE /api/users/:userId/addresses/:addressId
+const deleteAddress = async (req, res, next) => {
+    try {
+        await prisma.address.delete({ where: { id: req.params.addressId } });
+        sendResponse(res, 200, null, 'Address deleted');
     } catch (error) {
         next(error);
     }
@@ -554,7 +597,7 @@ module.exports = {
     getUsers, getUserById, createUser, updateUser,
     blockUser, suspendUser, activateUser,
     addEmergencyContact, removeEmergencyContact,
-    addAddress, updateAddress,
+    addAddress, updateAddress, deleteAddress,
     upsertMedicalCard, uploadHealthReport,
     getMyProfile, updateMyProfile, registerDeviceToken, uploadProfileAvatar, getMyHealthReports,
 };

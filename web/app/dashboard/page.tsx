@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
+import { Footer } from '@/components/common/Footer';
 import { sduiService, HomeConfig } from '@/services/firebase/sduiService';
 import { SDUIRenderer } from '@/components/sdui/SDUIRenderer';
 import { getAssetUrl } from '@/utils/getAssetUrl';
@@ -18,10 +19,10 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-screen)] font-[var(--font-poppins)]">
+    <div className="min-h-screen bg-[var(--color-bg-screen)] font-[var(--font-poppins)] flex flex-col">
       <Navbar />
       
-      <main className="max-w-4xl mx-auto pt-32 pb-20 px-4">
+      <main className="flex-1 max-w-4xl mx-auto pt-32 pb-20 px-4">
         
         <div className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 mb-8 flex justify-between items-center">
             <div>
@@ -101,6 +102,8 @@ export default function DashboardPage() {
         )}
 
       </main>
+
+      <Footer />
     </div>
   );
 }

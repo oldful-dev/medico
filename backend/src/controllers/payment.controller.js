@@ -132,8 +132,37 @@ const verifyPayment = async (req, res, next) => {
                 razorpaySignature: signature,
                 status: 'SUCCESS',
             },
-            include: { user: true },
+            include: { 
+                user: true,
+                booking: { include: { service: true } }
+            },
         });
+
+        // Trigger deferred booking notifications
+        if (payment.booking) {
+            // Update booking status to CONFIRMED
+            await prisma.booking.update({
+                where: { id: payment.booking.id },
+                data: { status: 'CONFIRMED' }
+            });
+
+            const { sendPushToUser } = require('../utils/pushNotification.service');
+            const { sendBookingConfirmation } = require('../utils/notifications');
+
+            await sendPushToUser(payment.userId, {
+                title: 'Booking Confirmed',
+                body: `Your ${payment.booking.service.name} booking (${payment.booking.bookingCode}) has been confirmed.`,
+                data: { type: 'booking_created', bookingId: payment.booking.id, bookingCode: payment.booking.bookingCode },
+            });
+
+            if (payment.user?.phone) {
+                await sendBookingConfirmation({ 
+                    user: payment.user, 
+                    bookingCode: payment.booking.bookingCode, 
+                    booking: { serviceName: payment.booking.service.name } 
+                });
+            }
+        }
 
         // Generate Invoice
         const gstRate = parseFloat(process.env.GST_RATE) || 18;
@@ -188,11 +217,17 @@ const verifyPayment = async (req, res, next) => {
             }
 
             // Send payment confirmation via WhatsApp (Interakt)
-            // Template: oldful_payment_confirmation — {{1}}=name {{2}}=amount
+            // Template: oldful_receipt — {{1}}=name {{2}}=amount {{3}}=phone {{4}}=email
             await sendWhatsApp({
                 phoneNumber: payment.user.phone,
                 templateName: 'invoice_confirmation',
-                parameters: [payment.user.name, `₹${payment.amount}`],
+                parameters: [
+                    payment.user.name, 
+                    `₹${payment.amount}`,
+                    '+91 94801 98108',
+                    'client@oldful.com'
+                ],
+                headerUrl: url,
             });
 
             await prisma.invoice.update({

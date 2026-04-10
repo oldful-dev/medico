@@ -1,10 +1,10 @@
-import { Navbar } from '@/components/layout/Navbar';
+import React from 'react';
 
+// This page is now wrapped by (marketing)/layout.tsx which includes the Navbar.
 export default function WellnessPage() {
   return (
-    <div className="min-h-screen bg-[#FFFCF6] font-[var(--font-poppins)] pt-32 pb-20 relative overflow-hidden">
-      <Navbar />
-
+    <div className="min-h-screen bg-[#FFFCF6] font-[var(--font-poppins)] pb-20 relative overflow-hidden">
+      
       {/* Decorative Blur Backgrounds */}
       <div className="absolute top-1/4 left-10 w-[40vw] h-[40vw] max-w-[500px] max-h-[500px] rounded-full bg-gradient-radial from-[#34C759]/20 to-transparent blur-3xl opacity-50 pointer-events-none"></div>
       <div className="absolute bottom-10 right-10 w-[30vw] h-[30vw] max-w-[400px] max-h-[400px] rounded-full bg-gradient-radial from-orange-400/10 to-transparent blur-3xl opacity-60 pointer-events-none"></div>

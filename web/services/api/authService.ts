@@ -11,10 +11,10 @@ export interface VerifyOTPPayload {
 
 export interface VerifyOTPResponseData {
     isNewUser: boolean;
-    phoneNumber?: string; 
+    phoneNumber?: string;       // Returned when isNewUser = true (for profile-setup)
     accessToken?: string;
     refreshToken?: string;
-    firebaseToken?: string; 
+    firebaseToken?: string;
     user?: {
         id: string;
         uniqueUserId: string;
@@ -24,29 +24,20 @@ export interface VerifyOTPResponseData {
 }
 
 export const authService = {
+    /**
+     * POST /api/auth/request-otp
+     * Sends OTP to the given phone number.
+     */
     requestOTP: async (data: RequestOTPPayload): Promise<ApiResponse> => {
         return apiClient.post('/auth/request-otp', data);
     },
 
+    /**
+     * POST /api/auth/verify-otp
+     * Verifies OTP. Returns tokens for existing users, or isNewUser flag.
+     * Note: Token storage (cookies + memory) is handled by authStore.login().
+     */
     verifyOTP: async (data: VerifyOTPPayload): Promise<ApiResponse<VerifyOTPResponseData>> => {
-        const response = await apiClient.post<VerifyOTPResponseData>('/auth/verify-otp', data);
-        if (response.success && response.data && !response.data.isNewUser) {
-            if (response.data.accessToken) {
-                if (typeof window !== 'undefined') {
-                    localStorage.setItem('@oldful_auth_token', response.data.accessToken);
-                    localStorage.setItem('@oldful_refresh_token', response.data.refreshToken || '');
-                }
-            }
-        }
-        return response;
-    },
-
-    logout: async (): Promise<ApiResponse> => {
-        const response = await apiClient.post('/auth/logout');
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem('@oldful_auth_token');
-            localStorage.removeItem('@oldful_refresh_token');
-        }
-        return response;
+        return apiClient.post<VerifyOTPResponseData>('/auth/verify-otp', data);
     },
 };

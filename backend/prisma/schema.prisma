@@ -41,6 +41,7 @@ enum HealthTag {
 
 enum BookingStatus {
   PENDING
+  CONFIRMED
   ASSIGNED
   IN_PROGRESS
   COMPLETED
