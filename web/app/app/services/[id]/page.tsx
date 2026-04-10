@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ChevronRight, CheckCircle2, Clock, MapPin, Star,
-  Shield, Calendar as CalendarIcon, Users, Info,
-  ChevronDown, ChevronUp, ArrowRight, Activity,
+  ChevronRight, Clock, MapPin, 
+  ArrowRight, Activity,
   ChevronLeft, Zap, FileText
 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
@@ -40,8 +39,6 @@ export default function ServiceDetailPage() {
   const [timeMode, setTimeMode] = useState<'ASAP' | 'SCHEDULE'>('ASAP');
   const [scheduleDate, setScheduleDate] = useState('');
   const [address, setAddress] = useState('');
-  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
-  const [booked, setBooked] = useState(false);
 
   const isDoctorVisit = id === 'doctor-home-visit' || id === 'doctor-visit';
   const isHospitalTrip = id === 'hospital-trip';
@@ -83,7 +80,7 @@ export default function ServiceDetailPage() {
     
     addItem({
       serviceId: config?.slug || id,
-      problem: selectedProblem,
+      problem: selectedProblem || '',
       providerType: selectedProvider,
       visitType: visitType,
       scheduleTime: timeMode === 'ASAP' ? 'ASAP' : scheduleDate,
@@ -164,7 +161,7 @@ export default function ServiceDetailPage() {
                      {['GP', 'Physio'].map(type => (
                         <button 
                            key={type}
-                           onClick={() => setSelectedProvider(type as any)}
+                           onClick={() => setSelectedProvider(type as 'GP' | 'Physio')}
                            className={`flex-1 py-4 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-3 border-2 ${
                               selectedProvider === type 
                               ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-md transform scale-[1.02]' 

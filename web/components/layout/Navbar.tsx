@@ -36,10 +36,7 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu on route change
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [pathname]);
+
 
   const NAV_LINKS = isAuthenticated ? AUTH_LINKS : GUEST_LINKS;
 
@@ -197,6 +194,7 @@ export function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
                     className={`py-3 px-4 flex items-center gap-3 font-semibold text-sm border-b border-gray-50 last:border-0 rounded-lg transition-colors ${
                       active
                         ? 'text-[var(--color-primary-deep)]'

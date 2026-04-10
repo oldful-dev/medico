@@ -18,6 +18,7 @@ export interface CreateBookingData {
     pickupAddress?: string;
     dropAddress?: string;
     vehicleType?: string;
+    paymentMethod?: string;
 }
 
 export const bookingService = {

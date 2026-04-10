@@ -8,6 +8,7 @@ export interface CartItem {
   providerType: string;
   scheduleTime: string;
   address: string;
+  visitType?: string;
   price: number;
 }
 
