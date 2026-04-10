@@ -38,43 +38,50 @@ const generateUserId = async (cityId) => {
     const city = await prisma.city.findUnique({ where: { id: cityId } });
     if (!city) throw new Error('City not found');
 
-    // Increment the city sequence atomically
     const updated = await prisma.city.update({
         where: { id: cityId },
         data: { sequence: { increment: 1 } },
     });
 
-    const yearString = new Date().getFullYear().toString().slice(-2);
-    const paddedSeq = String(updated.sequence).padStart(4, '0');
-    return `MED-${city.code}-${yearString}-${paddedSeq}`;
+    const paddedSeq = String(updated.sequence).padStart(5, '0');
+    return `MED-${city.code.toUpperCase()}-${paddedSeq}`;
 };
 
 // ─── Booking Code Generation ───────────────
+// Uses timestamp + random suffix to avoid race-condition collisions.
+// Format: BK-YYMMDD-XXXX (e.g. BK-260401-A3F7)
 
 const generateBookingCode = async () => {
-    const count = await prisma.booking.count();
-    return `BK-${String(count + 1).padStart(4, '0')}`;
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(2);
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `BK-${yy}${mm}${dd}-${rand}`;
 };
 
 // ─── Invoice Number Generation ─────────────
+// Format: INV-YYYY-MMDD-XXXX
 
 const generateInvoiceNumber = async () => {
-    const year = new Date().getFullYear();
-    const count = await prisma.invoice.count({
-        where: {
-            createdAt: {
-                gte: new Date(`${year}-01-01`),
-            },
-        },
-    });
-    return `INV-${year}-${String(count + 1).padStart(4, '0')}`;
+    const now = new Date();
+    const year = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `INV-${year}-${mm}${dd}-${rand}`;
 };
 
 // ─── Ticket Code Generation ───────────────
+// Format: TKT-YYMMDD-XXXX
 
 const generateTicketCode = async () => {
-    const count = await prisma.supportTicket.count();
-    return `TKT-${String(count + 1).padStart(4, '0')}`;
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(2);
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `TKT-${yy}${mm}${dd}-${rand}`;
 };
 
 // ─── OTP Generation ───────────────────────

@@ -6,11 +6,11 @@ import {
     TouchableOpacity,
     Image,
     Platform,
-    ScrollView,
     TextInput,
     Alert,
     ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +20,7 @@ import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgEye = require('@/assets/images/e9d68d0206e443ceceadd7907cd94f1c86fcacd4.png');
@@ -46,6 +47,7 @@ const SPECIALISTS = [
 ];
 
 export default function HospitalTripScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
@@ -60,8 +62,11 @@ export default function HospitalTripScreen() {
     // API state
     const [cityId, setCityId] = useState('');
     const [serviceId, setServiceId] = useState('');
+    const [serviceName, setServiceName] = useState('Hospital Trip');
+    const [servicePrice, setServicePrice] = useState(0);
     const [address, setAddress] = useState('Fetching address...');
     const [isBooking, setIsBooking] = useState(false);
+    const [isLoadingInit, setIsLoadingInit] = useState(true);
 
     React.useEffect(() => {
         (async () => {
@@ -77,9 +82,10 @@ export default function HospitalTripScreen() {
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'hospital-trip');
-                    if (svc) setServiceId(svc.id);
+                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Hospital Trip'); setServicePrice(svc.basePrice ?? 0); }
                 }
             } catch (err) { console.log('Hospital Trip init failed', err); }
+            finally { setIsLoadingInit(false); }
         })();
     }, []);
 
@@ -105,7 +111,7 @@ export default function HospitalTripScreen() {
                 },
             });
             if (res.success && res.data) {
-                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+                router.push({ pathname: '/payment/checkout', params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName } });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
             }
@@ -127,12 +133,12 @@ export default function HospitalTripScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Hospital Trip</Text>
+                <Text style={styles.headerTitle}>{t('hospital_trip.header')}</Text>
             </View>
 
             {/* Main Content Area (Rounded Cream Box) */}
             <View style={styles.contentContainer}>
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* ─── Hero / Titles ─── */}
                     <Text style={styles.mainTitle}>Hospital Trip</Text>
@@ -294,19 +300,21 @@ export default function HospitalTripScreen() {
 
                     {/* ─── Confirm Button ─── */}
                     <TouchableOpacity
-                        style={[styles.submitButton, isBooking && { opacity: 0.6 }]}
+                        style={[styles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
                         activeOpacity={0.8}
-                        disabled={isBooking}
+                        disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
-                        {isBooking ? (
+                        {isLoadingInit ? (
+                            <Text style={styles.submitButtonText}>Initializing...</Text>
+                        ) : isBooking ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
                             <Text style={styles.submitButtonText}>Confirm & Request Trip</Text>
                         )}
                     </TouchableOpacity>
 
-                </ScrollView>
+                </KeyboardAwareScrollView>
             </View>
         </View>
     );

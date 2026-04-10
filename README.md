@@ -11,8 +11,8 @@
 | Layer | Path | Tech |
 |-------|------|------|
 | **Backend API** | `backend/` | Node.js · Express · Prisma · PostgreSQL (Supabase) |
-| **Admin Panel** | `admin/` | Next.js 16 · React 19 · Recharts |
-| **Mobile App** | `mobile/` | React Native · Expo 54 · Expo Router |
+| **Admin Panel** | `admin/` | Next.js 15 · React 19 · Recharts |
+| **Mobile App** | `mobile/` | React Native 0.81 · Expo 54 · Expo Router |
 
 ---
 
@@ -26,7 +26,7 @@
 - 💊 **Wellness Store** – Medical supplies and health products
 - 📊 **Admin Dashboard** – Complete management & analytics panel
 - 💳 **Payment Integration** – Razorpay with invoicing and GST
-- 🔔 **Smart Notifications** – Push, Email (SendGrid), WhatsApp (Interakt)
+- 🔔 **Smart Notifications** – Push (Firebase), Email (ZeptoMail), SMS/WhatsApp (Fast2SMS)
 
 ---
 
@@ -107,9 +107,9 @@ The backend requires a `.env` file. See [`backend/.env.example`](backend/.env.ex
 | `DATABASE_URL` | PostgreSQL connection string |
 | `JWT_SECRET` | Secret key for JWT signing |
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | Payment gateway keys |
-| `CLOUDINARY_*` | Media upload configuration |
-| `SENDGRID_API_KEY` | Email delivery service |
-| `INTERAKT_API_KEY` | WhatsApp messaging |
+| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | Cloudflare R2 storage credentials |
+| `ZEPTOMAIL_API_KEY` | Transactional email delivery |
+| `FAST2SMS_API_KEY` | SMS & WhatsApp messaging |
 
 ---
 
@@ -123,10 +123,10 @@ The backend requires a `.env` file. See [`backend/.env.example`](backend/.env.ex
 | **Database** | PostgreSQL (Supabase) |
 | **Auth** | JWT (access + refresh tokens) |
 | **Payments** | Razorpay |
-| **File Storage** | Cloudinary |
-| **Email** | SendGrid |
-| **WhatsApp** | Interakt |
-| **Admin Frontend** | Next.js 16, React 19, Recharts |
+| **File Storage** | Cloudflare R2 (primary), GCS (fallback) |
+| **Email** | ZeptoMail |
+| **WhatsApp/SMS** | Fast2SMS |
+| **Admin Frontend** | Next.js 15, React 19, Recharts |
 | **Mobile** | React Native 0.81, Expo 54, Expo Router |
 | **Security** | Helmet, CORS, Rate Limiting, bcrypt |
 
@@ -181,5 +181,5 @@ This project is licensed under the **ISC License**.
 ---
 
 <p align="center">
-  Made with ❤️ by the <strong>Medico</strong> team
+  Made with ❤️ by the <strong>Oldful</strong> team
 </p>

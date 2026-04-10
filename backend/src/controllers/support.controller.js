@@ -5,7 +5,22 @@
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate, generateTicketCode } = require('../utils/helpers');
 
-// GET /api/support/tickets
+// GET /api/support/my-tickets  (App user — own tickets only)
+const getMyTickets = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const tickets = await prisma.supportTicket.findMany({
+            where: { userId },
+            include: { _count: { select: { messages: true } } },
+            orderBy: { createdAt: 'desc' },
+        });
+        sendResponse(res, 200, tickets);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// GET /api/support/tickets  (Admin only)
 const getTickets = async (req, res, next) => {
     try {
         const { page, limit, skip } = paginate(req.query);
@@ -49,11 +64,19 @@ const getTicketById = async (req, res, next) => {
             },
         });
         if (!ticket) return res.status(404).json({ success: false, message: 'Ticket not found' });
+
+        // Users can only view their own tickets; admins can view any
+        if (req.user?.type === 'user' && ticket.userId !== req.user.id) {
+            return res.status(403).json({ success: false, message: 'Access denied' });
+        }
+
         sendResponse(res, 200, ticket);
     } catch (error) {
         next(error);
     }
 };
+
+const { sendEmail, sendPushToUser } = require('../utils/notifications');
 
 // POST /api/support/tickets
 const createTicket = async (req, res, next) => {
@@ -69,6 +92,32 @@ const createTicket = async (req, res, next) => {
                 priority: req.body.priority || 'medium',
             },
         });
+
+        // Notify Admin instantly
+        const user = await prisma.user.findUnique({ where: { id: ticket.userId } });
+        await sendEmail({
+            to: process.env.SUPPORT_EMAIL || process.env.ADMIN_EMAIL || 'client@oldful.com',
+            subject: `[Support Ticket ${ticketCode}] ${ticket.subject}`,
+            html: `
+                <h3>New Support Ticket Created</h3>
+                <p><strong>Ticket ID:</strong> ${ticketCode}</p>
+                <p><strong>User:</strong> ${user?.name} (${user?.uniqueUserId})</p>
+                <p><strong>Category:</strong> ${ticket.category}</p>
+                <p><strong>Priority:</strong> ${ticket.priority}</p>
+                <hr/>
+                <p>${ticket.description}</p>
+            `,
+        });
+
+        // Push confirmation to user
+        if (ticket.userId) {
+            await sendPushToUser(ticket.userId, {
+                title: 'Ticket Created',
+                body: `Your support ticket ${ticketCode} has been submitted. We'll respond within 48 hours.`,
+                data: { type: 'ticket_created', ticketId: ticket.id, ticketCode },
+            });
+        }
+
         sendResponse(res, 201, ticket, 'Ticket created');
     } catch (error) {
         next(error);
@@ -117,10 +166,129 @@ const addMessage = async (req, res, next) => {
                 attachments: req.body.attachments,
             },
         });
+
+        const ticket = await prisma.supportTicket.findUnique({ where: { id: req.params.id } });
+
+        if (req.user.type === 'user') {
+            // Notify Admin if message is from user
+            await sendEmail({
+                to: process.env.ADMIN_EMAIL || 'admin@oldful.com',
+                subject: `[Support Msg] ${ticket.ticketCode}: New message from user`,
+                html: `
+                    <p>New reply for ticket <strong>${ticket.ticketCode}</strong>:</p>
+                    <p>"${message.message}"</p>
+                `,
+            });
+        } else if (req.user.type === 'admin' && ticket.userId) {
+            // Notify User via push when admin replies
+            await sendPushToUser(ticket.userId, {
+                title: 'Support Reply',
+                body: `New reply on your ticket ${ticket.ticketCode}.`,
+                data: { type: 'ticket_reply', ticketId: ticket.id },
+            });
+        }
+
         sendResponse(res, 201, message, 'Message sent');
     } catch (error) {
         next(error);
     }
 };
 
-module.exports = { getTickets, getTicketById, createTicket, updateTicket, resolveTicket, addMessage };
+/**
+ * POST /api/support/webhook/inbound-email
+ * Receives inbound email replies from ZeptoMail/email provider.
+ * Matches email subject [Support Ticket] TKT-XXXX to a ticket and adds the reply as a message.
+ */
+const handleInboundEmail = async (req, res, next) => {
+    try {
+        const { subject, from, body_text, body_html } = req.body;
+
+        // Extract ticket code from subject line: [Support Ticket] TKT-0001: ...
+        // or [Support Msg] TKT-0001: ...
+        const ticketCodeMatch = subject?.match(/\b(TKT-\d+)\b/);
+        if (!ticketCodeMatch) {
+            return res.status(200).json({ success: false, message: 'No ticket code found in subject' });
+        }
+
+        const ticketCode = ticketCodeMatch[1];
+        const ticket = await prisma.supportTicket.findUnique({ where: { ticketCode } });
+        if (!ticket) {
+            return res.status(200).json({ success: false, message: 'Ticket not found' });
+        }
+
+        // Create message from admin email reply
+        const messageContent = body_text || body_html || '(empty reply)';
+        const message = await prisma.ticketMessage.create({
+            data: {
+                ticketId: ticket.id,
+                senderId: 'email-inbound',
+                senderType: 'admin',
+                message: messageContent,
+            },
+        });
+
+        // Notify user via push that there's a new reply
+        if (ticket.userId) {
+            await sendPushToUser(ticket.userId, {
+                title: 'Support Reply',
+                body: `New reply on your ticket ${ticketCode}.`,
+                data: { type: 'ticket_reply', ticketId: ticket.id },
+            });
+        }
+
+        res.status(200).json({ success: true, message: 'Email reply synced to ticket', ticketCode });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// POST /api/support/careers
+const submitCareers = async (req, res, next) => {
+    try {
+        const { name, email, phone, role, experience, resumeLink, coverLetter } = req.body;
+        
+        await sendEmail({
+            to: 'business@oldful.com',
+            subject: `[Job Application] ${role} - ${name}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+                    <h2 style="color: #048357;">New Job Application Received</h2>
+                    <p>A new candidate has applied for a position at Oldful via the Careers page.</p>
+                    
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <p><strong>Candidate Name:</strong> ${name}</p>
+                        <p><strong>Email:</strong> ${email}</p>
+                        <p><strong>Phone:</strong> ${phone}</p>
+                        <p><strong>Applied Role:</strong> ${role}</p>
+                        <p><strong>Experience:</strong> ${experience} years</p>
+                    </div>
+
+                    <p><strong>Resume Link:</strong> <a href="${resumeLink}" style="color: #048357;">${resumeLink}</a></p>
+                    
+                    <div style="margin-top: 20px;">
+                        <p><strong>Cover Letter:</strong></p>
+                        <blockquote style="border-left: 4px solid #048357; padding-left: 15px; font-style: italic; color: #555;">
+                            ${coverLetter}
+                        </blockquote>
+                    </div>
+                </div>
+            `,
+        });
+
+        sendResponse(res, 200, null, 'Application submitted successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { 
+    getMyTickets, 
+    getTickets, 
+    getTicketById, 
+    createTicket, 
+    updateTicket, 
+    resolveTicket, 
+    addMessage, 
+    handleInboundEmail,
+    submitCareers
+};

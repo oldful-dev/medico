@@ -6,18 +6,23 @@ import { Platform } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import 'react-native-reanimated';
+import '@/i18n/i18n';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/context/AuthContext';
 import { UserProvider } from '@/context/UserContext';
 import { BookingProvider } from '@/context/BookingContext';
 import { CartProvider } from '@/context/CartContext';
+import { AppConfigProvider } from '@/context/AppConfigContext';
+import { useTranslation } from 'react-i18next';
 
-// Removed unstable_settings to allow `app/index.tsx` to handle the initial route
-
-// Removed splash screen delay for immediate launch
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* reloading app can cause this to error in dev mode */
+});
 
 export default function RootLayout() {
+    const { t } = useTranslation();
   const colorScheme = useColorScheme();
 
   // Load fonts via Remote URLs (GitHub Google Fonts Repo)
@@ -39,7 +44,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded || error) {
-      // Manual hide if needed, but since we didn't prevent hide, it stays hidden
+      // Hide the native/stock splash immediately once fonts are ready
+      // so users see the custom splash screen (splash.tsx) instead
+      SplashScreen.hideAsync().catch(() => {});
     }
   }, [loaded, error]);
 
@@ -48,10 +55,11 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <UserProvider>
-        <BookingProvider>
-          <CartProvider>
+    <AppConfigProvider>
+      <AuthProvider>
+        <UserProvider>
+          <BookingProvider>
+            <CartProvider>
             <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
               <Stack screenOptions={{ headerShown: false }}>
                 {/* Auth / Onboarding Flow */}
@@ -81,9 +89,10 @@ export default function RootLayout() {
               </Stack>
               <StatusBar style="auto" />
             </ThemeProvider>
-          </CartProvider>
-        </BookingProvider>
-      </UserProvider>
-    </AuthProvider>
+            </CartProvider>
+          </BookingProvider>
+        </UserProvider>
+      </AuthProvider>
+    </AppConfigProvider>
   );
 }

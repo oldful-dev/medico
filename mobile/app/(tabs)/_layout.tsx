@@ -9,8 +9,10 @@ import { Colors, Fonts, Radius, Shadow } from '@/constants/theme';
 import React, { useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import { userService } from '@/services/api/userService';
+import { useTranslation } from 'react-i18next';
 
 export default function TabLayout() {
+  const { t } = useTranslation();
   const { setProfile } = useUser();
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('home.tab_title'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={21} color={color} />
           ),
@@ -63,7 +65,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="plans"
         options={{
-          title: 'Plans',
+          title: t('plans.tab_title'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="document-text-outline" size={21} color={color} />
           ),
@@ -72,7 +74,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="wellness"
         options={{
-          title: 'Wellness',
+          title: t('wellness.tab_title'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="heart-outline" size={21} color={color} />
           ),
@@ -81,7 +83,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="account"
         options={{
-          title: 'Account',
+          title: t('account.tab_title'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={21} color={color} />
           ),
@@ -90,7 +92,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="cart"
         options={{
-          title: 'Cart',
+          title: t('cart.tab_title'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="cart-outline" size={21} color={color} />
           ),

@@ -11,7 +11,8 @@ const {
     hashPassword, comparePassword,
     generateUserId,
 } = require('../utils/helpers');
-const { sendWhatsApp, requestTwilioOTP, verifyTwilioOTP } = require('../utils/notifications');
+const { sendWhatsApp, requestOTP: requestSmsOTP, verifyOTP: verifySmsOTP } = require('../utils/notifications');
+const { auth: firebaseAuth } = require('../config/firebase');
 
 // ═══════════════════════════════════════════
 //  ADMIN AUTH
@@ -147,10 +148,34 @@ const requestOTP = async (req, res, next) => {
     try {
         const { phoneNumber } = req.body;
 
-        // Use Twilio Verify to send OTP
-        await requestTwilioOTP(phoneNumber);
+        // Use Fast2SMS to send OTP
+        const response = await requestSmsOTP(phoneNumber);
 
-        res.json({ success: true, message: 'OTP sent successfully via Twilio' });
+        // EXTRA: Send Push Notification fallback if user exists
+        try {
+            const user = await prisma.user.findUnique({
+                where: { phone: phoneNumber },
+                select: { id: true, fcmDeviceToken: true }
+            });
+
+            if (user && user.fcmDeviceToken) {
+                const { code } = await prisma.otpLog.findFirst({
+                    where: { phoneNumber },
+                    orderBy: { createdAt: 'desc' },
+                });
+
+                const { sendPushToUser } = require('../utils/pushNotification.service');
+                await sendPushToUser(user.id, {
+                    title: 'Your OTP Code',
+                    body: `Your Oldful verification code is: ${code}`,
+                    data: { type: 'OTP', code: String(code) }
+                });
+            }
+        } catch (pushErr) {
+            logger.debug('Push OTP fallback skipped:', pushErr.message);
+        }
+
+        res.json({ success: true, message: 'OTP sent successfully' });
     } catch (error) {
         next(error);
     }
@@ -163,8 +188,8 @@ const verifyOTP = async (req, res, next) => {
     try {
         const { phoneNumber, otp } = req.body;
 
-        // Verify OTP via Twilio
-        const verification = await verifyTwilioOTP(phoneNumber, otp);
+        // Verify OTP via notification service
+        const verification = await verifySmsOTP(phoneNumber, otp);
 
         if (!verification.success) {
             return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
@@ -185,9 +210,37 @@ const verifyOTP = async (req, res, next) => {
         const accessToken = generateAccessToken(payload);
         const refreshToken = generateRefreshToken(payload);
 
+        // Generate Firebase custom token for client-side Firebase Auth
+        let firebaseToken = null;
+        try {
+            firebaseToken = await firebaseAuth.createCustomToken(user.id, {
+                phone: user.phone,
+                role: 'user',
+            });
+        } catch (err) {
+            logger.warn('Firebase custom token generation failed:', err.message);
+        }
+
         await prisma.user.update({
             where: { id: user.id },
             data: { refreshToken },
+        });
+
+        // Set secure httpOnly cookies for web persistence
+        res.cookie('auth-token', accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            signed: true,
+            sameSite: 'lax',
+            maxAge: 3600000, // 1 hour
+        });
+
+        res.cookie('refresh-token', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            signed: true,
+            sameSite: 'lax',
+            maxAge: 30 * 24 * 3600000, // 30 days
         });
 
         res.json({
@@ -196,6 +249,7 @@ const verifyOTP = async (req, res, next) => {
                 isNewUser: false,
                 accessToken,
                 refreshToken,
+                firebaseToken,
                 user: {
                     id: user.id,
                     uniqueUserId: user.uniqueUserId,
@@ -214,17 +268,36 @@ const verifyOTP = async (req, res, next) => {
  */
 const userRefreshToken = async (req, res, next) => {
     try {
-        const { refreshToken } = req.body;
+        let { refreshToken } = req.body;
+        
+        // Fallback to cookie
+        if (!refreshToken && req.signedCookies) {
+            refreshToken = req.signedCookies['refresh-token'];
+        }
+
+        if (!refreshToken) {
+            return res.status(400).json({ success: false, message: 'Refresh token required' });
+        }
+
         const jwt = require('jsonwebtoken');
         const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
 
         const user = await prisma.user.findUnique({ where: { id: decoded.id } });
         if (!user || user.refreshToken !== refreshToken) {
-            return res.status(401).json({ success: false, message: 'Invalid refresh token' });
+            return res.status(401).json({ success: false, message: 'Invalid session' });
         }
 
         const payload = { id: user.id, type: 'user' };
         const newAccessToken = generateAccessToken(payload);
+
+        // Update cookie
+        res.cookie('auth-token', newAccessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            signed: true,
+            sameSite: 'lax',
+            maxAge: 3600000, 
+        });
 
         res.json({ success: true, data: { accessToken: newAccessToken } });
     } catch (error) {
@@ -248,7 +321,143 @@ const logout = async (req, res, next) => {
                 data: { refreshToken: null },
             });
         }
+
+        res.clearCookie('auth-token');
+        res.clearCookie('refresh-token');
+
         res.json({ success: true, message: 'Logged out successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * POST /api/auth/google
+ * Google Sign-In: verify Google ID token, find or create user
+ */
+const googleSignIn = async (req, res, next) => {
+    try {
+        const { idToken, accessToken, email, name, photoUrl } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Email is required' });
+        }
+        if (!idToken && !accessToken) {
+            return res.status(400).json({ success: false, message: 'Google token is required' });
+        }
+
+        let googleEmail = email;
+        let googleName = name || '';
+        let googlePhoto = photoUrl || '';
+        let verified = false;
+
+        // 1. Try Firebase ID token verification (works when idToken is a Firebase token)
+        if (idToken && !verified) {
+            try {
+                const decodedToken = await firebaseAuth.verifyIdToken(idToken);
+                googleEmail = decodedToken.email || email;
+                googleName = decodedToken.name || name || '';
+                googlePhoto = decodedToken.picture || photoUrl || '';
+                verified = true;
+            } catch (firebaseErr) {
+                logger.debug('Firebase verifyIdToken failed:', firebaseErr.message);
+            }
+        }
+
+        // 2. Try Google tokeninfo endpoint with idToken (verifies Google-issued JWT)
+        if (idToken && !verified) {
+            try {
+                const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+                if (tokenInfoRes.ok) {
+                    const tokenInfo = await tokenInfoRes.json();
+                    if (tokenInfo.email && tokenInfo.email.toLowerCase() === email.toLowerCase()) {
+                        googleEmail = tokenInfo.email;
+                        googleName = tokenInfo.name || name || '';
+                        googlePhoto = tokenInfo.picture || photoUrl || '';
+                        verified = true;
+                    }
+                }
+            } catch (tokenInfoErr) {
+                logger.debug('Google tokeninfo failed:', tokenInfoErr.message);
+            }
+        }
+
+        // 3. Fall back to userinfo API with accessToken
+        if (accessToken && !verified) {
+            try {
+                const userInfoRes = await fetch('https://www.googleapis.com/userinfo/v2/me', {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                });
+                if (userInfoRes.ok) {
+                    const userInfo = await userInfoRes.json();
+                    if (userInfo.email && userInfo.email.toLowerCase() === email.toLowerCase()) {
+                        googleEmail = userInfo.email;
+                        googleName = userInfo.name || name || '';
+                        googlePhoto = userInfo.picture || photoUrl || '';
+                        verified = true;
+                    }
+                }
+            } catch (fetchErr) {
+                logger.debug('Google userinfo failed:', fetchErr.message);
+            }
+        }
+
+        if (!verified) {
+            return res.status(401).json({ success: false, message: 'Invalid Google token' });
+        }
+
+        // Look up user by email
+        let user = await prisma.user.findFirst({ where: { email: googleEmail } });
+        let isNewUser = !user;
+
+        if (isNewUser) {
+            // Return that it's a new user — frontend will collect phone + profile
+            return res.json({
+                success: true,
+                data: {
+                    isNewUser: true,
+                    email: googleEmail,
+                    name: googleName,
+                    photoUrl: googlePhoto,
+                },
+            });
+        }
+
+        // Existing user — issue tokens
+        const payload = { id: user.id, type: 'user' };
+        const jwtAccessToken = generateAccessToken(payload);
+        const jwtRefreshToken = generateRefreshToken(payload);
+
+        let firebaseToken = null;
+        try {
+            firebaseToken = await firebaseAuth.createCustomToken(user.id, {
+                phone: user.phone,
+                role: 'user',
+            });
+        } catch (err) {
+            logger.warn('Firebase custom token generation failed:', err.message);
+        }
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { refreshToken: jwtRefreshToken },
+        });
+
+        res.json({
+            success: true,
+            data: {
+                isNewUser: false,
+                accessToken: jwtAccessToken,
+                refreshToken: jwtRefreshToken,
+                firebaseToken,
+                user: {
+                    id: user.id,
+                    uniqueUserId: user.uniqueUserId,
+                    name: user.name,
+                    phone: user.phone,
+                },
+            },
+        });
     } catch (error) {
         next(error);
     }
@@ -262,4 +471,5 @@ module.exports = {
     verifyOTP,
     userRefreshToken,
     logout,
+    googleSignIn,
 };

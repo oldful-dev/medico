@@ -30,7 +30,11 @@ const getPublishedConfigs = async (req, res, next) => {
             where: { isVisible: true },
             orderBy: { sortOrder: 'asc' },
         });
+
+        // Cache for 1 hour at edge, 5 mins in browser
+        res.set('Cache-Control', 'public, max-age=300, s-maxage=3600');
         sendResponse(res, 200, configs);
+
     } catch (error) {
         next(error);
     }

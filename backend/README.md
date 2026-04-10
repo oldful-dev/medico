@@ -1,57 +1,409 @@
-# 🏥 Medico Backend — REST API
+# Oldful Backend — REST API
 
-**Production-ready monolithic REST API for the Medico Healthcare Platform.**
+**Production monolithic REST API for the Oldful elder-care platform.**
 
 Built with **Node.js + Express + Prisma + PostgreSQL (Supabase)**.
 
+- **Production URL:** `https://medico-crzu.onrender.com`
+- **Last route audit:** 2026-03-16
+
 ---
 
-## 🏗 Architecture Overview
+## Architecture
 
 ```
-medico-backend/
+backend/
 ├── prisma/
-│   ├── schema.prisma          # 23 database models with full relations
+│   ├── schema.prisma          # 24 database models with full relations
 │   └── seed.js                # Database seed (cities, admins, services, plans)
 ├── src/
-│   ├── config/                # Database, Cloudinary, Razorpay, Logger
-│   ├── controllers/           # 16 controller files (all business logic)
+│   ├── config/                # Database, Razorpay, Logger
+│   ├── controllers/           # 17 controller files
 │   ├── cron/                  # 4 background jobs (node-cron)
-│   ├── middleware/            # Auth, RBAC, Audit, Upload, Validation, Error
-│   ├── routes/                # 22 route files
-│   ├── utils/                 # Helpers, PDF gen, Notifications, File upload
+│   ├── middleware/             # Auth, RBAC, Audit, Upload, Validation, Error
+│   ├── routes/                # 23 route files
+│   ├── utils/                 # Helpers, PDF gen, Notifications, Storage, Redcliffe, OCR
 │   └── server.js              # Express entry point
-├── .env.example               # Environment variable template
+├── .env.example
 └── package.json
 ```
 
 ---
 
-## 🧩 Core Modules (All 15 Implemented)
+## Quick Start
 
-| # | Module | Key Endpoints | Features |
-|---|--------|--------------|----------|
-| 1 | **Authentication** | `/api/auth/*` | Admin login, User OTP, JWT access+refresh, RBAC |
-| 2 | **City Management** | `/api/cities/*` | CRUD, enable/disable, coming soon, revenue agg |
-| 3 | **User Management** | `/api/users/*` | CRUD, auto-ID gen, emergency contacts, medical card, health reports, SLA PDF, block/suspend |
-| 4 | **Service Management** | `/api/services/*` | CRUD, sort reorder, toggle, hero image, dynamic form JSON |
-| 5 | **Booking Management** | `/api/bookings/*` | Create, assign/reassign caregiver, status flow, SLA breach, escalation, city-filter |
-| 6 | **Caregiver Management** | `/api/caregivers/*` | CRUD, doc upload, police verification, availability, performance, salary |
-| 7 | **Plan & Subscription** | `/api/plans/*` `/api/subscriptions/*` | Plan CRUD, activate/pause/resume/extend/cancel, auto-renew, compassionate clause |
-| 8 | **Payment & Invoice** | `/api/payments/*` | Razorpay order, signature verify, GST invoice PDF, email dispatch, refund, coupons |
-| 9 | **SOS Emergency** | `/api/sos/*` | Create alert with GPS, assign responder, notify admin+family via WhatsApp, resolve |
-| 10 | **Notifications** | `/api/notifications/*` | Email/WhatsApp templates, logs, city-targeted campaigns |
-| 11 | **Legal CMS** | `/api/legal/*` | T&C, Privacy, Refund, Disclaimer — draft/publish, version history |
-| 12 | **Wellness Store** | `/api/products/*` `/api/categories/*` | Product/Category CRUD, stock, waitlist |
-| 13 | **Reports & Analytics** | `/api/reports/*` | Revenue by city/plan, service usage, caregiver perf, refund analysis, retention, CSV export |
-| 14 | **Audit Logs** | `/api/audit-logs/*` | Admin action logging with old/new value diff |
-| 15 | **Server-Driven UI** | `/api/ui-config/*` | Config JSON, icons, banners, CTA, sort, visibility, publish versioning |
+```bash
+cd backend
+npm install
+cp .env.example .env        # Fill in Supabase, Razorpay, Fast2SMS, ZeptoMail, GCS keys
+npx prisma generate
+npx prisma migrate deploy
+npm run prisma:seed          # Creates super admin + seed data
+npm run dev                  # Port 5000
+```
 
-**Bonus modules:** Insurance, Support Tickets, Media Library, Razorpay Webhooks
+**Default Admin (after seed):**
+```
+Email:    superadmin@medico.care
+Password: admin123
+```
 
 ---
 
-## 🗄 Database Models (23 Tables)
+## Authentication
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| Admin | Email + Password → JWT | `POST /api/auth/admin/login` |
+| User | Phone + OTP → JWT | `POST /api/auth/request-otp` → `POST /api/auth/verify-otp` |
+| Tokens | Access: 15 min / Refresh: 7 days | |
+
+**RBAC Roles:** `SUPER_ADMIN`, `CITY_ADMIN`, `CARE_MANAGER`, `SUPPORT_AGENT`, `BILLING_EXECUTIVE`
+
+---
+
+## Route Test Results (Audit: 2026-03-16)
+
+All routes tested against production at `https://medico-crzu.onrender.com/api`.
+
+Legend: ✅ Working · ⚠️ Warning · ❌ Broken · 🔒 Auth-guarded (returns 401 without token — correct)
+
+---
+
+### 🔐 Authentication — `/api/auth`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| POST | `/auth/admin/login` | ⚠️ `401` | Route works. Returns "Invalid credentials" — **run `npm run prisma:seed` on production DB to create admin** |
+| POST | `/auth/admin/register` | 🔒 `401` | Requires existing SUPER_ADMIN token |
+| POST | `/auth/admin/refresh` | ⚠️ `400` | Route works. Returns validation error when body is empty (expected) |
+| POST | `/auth/request-otp` | ❌ `200/500` | Route + validation work. **OTP delivery fails — Twilio Trial error. Deploy latest code (Fast2SMS branch) to fix** |
+| POST | `/auth/verify-otp` | ⚠️ `422` | Route works. Returns validation error for empty body (expected) |
+| POST | `/auth/user/refresh` | 🔒 `401` | Requires valid refresh token |
+| POST | `/auth/logout` | 🔒 `401` | Requires auth |
+
+**Issue:** Production is running old Twilio-based code. Local has been refactored to Fast2SMS. Push and redeploy to fix OTP.
+
+---
+
+### 👥 Users — `/api/users`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/users/profile` | 🔒 `401` | |
+| PUT | `/users/profile` | 🔒 `401` | |
+| PUT | `/users/profile/avatar` | 🔒 `401` | Multipart |
+| PUT | `/users/profile/device-token` | 🔒 `401` | |
+| GET | `/users/profile/health-reports` | 🔒 `401` | |
+| GET | `/users` | 🔒 `401` | Admin, city-restricted |
+| GET | `/users/:id` | 🔒 `401` | Admin |
+| POST | `/users` | ❌ `500` | **Bug: crashes when `cityId` is not provided** — `generateUserId(undefined)` triggers Prisma error. Add `cityId` validation. |
+| PUT | `/users/:id` | 🔒 `401` | Admin |
+| PUT | `/users/:id/block` | 🔒 `401` | SUPER/CITY ADMIN |
+| PUT | `/users/:id/suspend` | 🔒 `401` | |
+| PUT | `/users/:id/activate` | 🔒 `401` | |
+| POST | `/users/:id/emergency-contacts` | 🔒 `401` | |
+| DELETE | `/users/:uId/emergency-contacts/:cId` | 🔒 `401` | |
+| POST | `/users/:id/addresses` | 🔒 `401` | |
+| PUT | `/users/:uId/addresses/:aId` | 🔒 `401` | |
+| POST | `/users/:id/medical-card` | 🔒 `401` | |
+| POST | `/users/:id/health-reports` | 🔒 `401` | Multipart |
+
+---
+
+### 🏢 Cities — `/api/cities`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/cities` | ✅ `200` | Returns 6 seeded cities |
+| GET | `/cities/:id` | ✅ `200` | Returns city detail |
+| POST | `/cities` | 🔒 `401` | SUPER_ADMIN |
+| PUT | `/cities/:id` | 🔒 `401` | |
+| DELETE | `/cities/:id` | 🔒 `401` | |
+| GET | `/cities/:id/revenue` | 🔒 `401` | |
+
+---
+
+### 🩺 Services — `/api/services`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/services` | ✅ `200` | Returns 24 seeded services |
+| GET | `/services/:id` | ✅ `200` | |
+| POST | `/services` | 🔒 `401` | Admin |
+| PUT | `/services/reorder` | 🔒 `401` | Admin |
+| PUT | `/services/:id` | 🔒 `401` | Admin |
+| PUT | `/services/:id/toggle` | 🔒 `401` | |
+| POST | `/services/:id/hero-image` | 🔒 `401` | Multipart |
+| DELETE | `/services/:id` | 🔒 `401` | |
+
+---
+
+### 📅 Bookings — `/api/bookings`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/bookings/history` | 🔒 `401` | User self |
+| GET | `/bookings/detail/:id` | 🔒 `401` | User self |
+| POST | `/bookings/:id/cancel` | 🔒 `401` | User self |
+| GET | `/bookings` | 🔒 `401` | Admin, city-restricted |
+| GET | `/bookings/:id` | 🔒 `401` | Admin |
+| POST | `/bookings` | 🔒 `401` | User/Admin |
+| PUT | `/bookings/:id/assign` | 🔒 `401` | Admin |
+| PUT | `/bookings/:id/reassign` | 🔒 `401` | Admin |
+| PUT | `/bookings/:id/status` | 🔒 `401` | Admin |
+| PUT | `/bookings/:id/escalate` | 🔒 `401` | Admin |
+
+---
+
+### 🧑‍⚕️ Caregivers — `/api/caregivers`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/caregivers` | 🔒 `401` | Admin, city-restricted |
+| GET | `/caregivers/:id` | 🔒 `401` | Admin |
+| POST | `/caregivers` | 🔒 `401` | Admin |
+| PUT | `/caregivers/:id` | 🔒 `401` | Admin |
+| PUT | `/caregivers/:id/verification` | 🔒 `401` | |
+| PUT | `/caregivers/:id/availability` | 🔒 `401` | |
+| POST | `/caregivers/:id/documents` | 🔒 `401` | Multipart |
+| DELETE | `/caregivers/:id` | 🔒 `401` | Admin |
+
+---
+
+### 💎 Plans — `/api/plans`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/plans` | ✅ `200` | Returns 4 seeded plans |
+| GET | `/plans/:id` | ✅ `200` | |
+| POST | `/plans` | 🔒 `401` | Admin |
+| PUT | `/plans/:id` | 🔒 `401` | Admin |
+| DELETE | `/plans/:id` | 🔒 `401` | Admin |
+
+---
+
+### 🔄 Subscriptions — `/api/subscriptions`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/subscriptions` | 🔒 `401` | Admin |
+| POST | `/subscriptions` | 🔒 `401` | Admin |
+| PUT | `/subscriptions/:id/pause` | 🔒 `401` | |
+| PUT | `/subscriptions/:id/resume` | 🔒 `401` | |
+| PUT | `/subscriptions/:id/extend` | 🔒 `401` | |
+| PUT | `/subscriptions/:id/cancel` | 🔒 `401` | |
+| PUT | `/subscriptions/:id/auto-renew` | 🔒 `401` | |
+| PUT | `/subscriptions/:id/compassionate` | 🔒 `401` | |
+
+---
+
+### 💳 Payments — `/api/payments`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/payments/methods` | ✅ `200` | Returns UPI, Card, Netbanking, Wallet |
+| POST | `/payments/initiate` | 🔒 `401` | User |
+| POST | `/payments/verify` | 🔒 `401` | User |
+| POST | `/payments/apply-coupon` | 🔒 `401` | User |
+| GET | `/payments` | 🔒 `401` | Admin |
+| POST | `/payments/refund` | 🔒 `401` | Admin |
+| GET | `/payments/:id/refund-status` | 🔒 `401` | Admin |
+
+---
+
+### 🚨 SOS — `/api/sos`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| POST | `/sos` | 🔒 `401` | User |
+| GET | `/sos` | 🔒 `401` | Admin |
+| PUT | `/sos/:id/assign` | 🔒 `401` | Admin |
+| PUT | `/sos/:id/resolve` | 🔒 `401` | Admin |
+
+---
+
+### 🔔 Notifications — `/api/notifications`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/notifications/my` | 🔒 `401` | User — returns paginated notification history |
+| GET | `/notifications/logs` | 🔒 `401` | Admin |
+| GET | `/notifications/templates` | 🔒 `401` | Admin |
+| POST | `/notifications/templates` | 🔒 `401` | Admin |
+| PUT | `/notifications/templates/:id` | 🔒 `401` | Admin |
+| DELETE | `/notifications/templates/:id` | 🔒 `401` | Admin |
+| POST | `/notifications/send-campaign` | 🔒 `401` | Admin |
+
+---
+
+### 📄 Legal CMS — `/api/legal`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/legal/published/TERMS_AND_CONDITIONS` | ✅ `200` | |
+| GET | `/legal/published/PRIVACY_POLICY` | ✅ `200` | |
+| GET | `/legal/published/REFUND_POLICY` | ✅ `200` | |
+| GET | `/legal/published/DISCLAIMER` | ✅ `200` | |
+| GET | `/legal/published/TERMS` | ❌ `500` | **Wrong enum value** — use `TERMS_AND_CONDITIONS` not `TERMS`. Valid values: `TERMS_AND_CONDITIONS`, `PRIVACY_POLICY`, `REFUND_POLICY`, `DISCLAIMER` |
+| GET | `/legal` | 🔒 `401` | Admin |
+| GET | `/legal/:id` | 🔒 `401` | Admin |
+| POST | `/legal` | 🔒 `401` | Admin |
+| PUT | `/legal/:id` | 🔒 `401` | Admin |
+| PUT | `/legal/:id/publish` | 🔒 `401` | Admin |
+
+---
+
+### 📦 Wellness Store — `/api/products` · `/api/categories`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/products` | ✅ `200` | Returns empty list (no products seeded) |
+| GET | `/products/:id` | ✅ `200` | |
+| POST | `/products/:id/waitlist` | 🔒 `401` | User |
+| POST | `/products` | 🔒 `401` | Admin |
+| PUT | `/products/:id` | 🔒 `401` | Admin |
+| DELETE | `/products/:id` | 🔒 `401` | Admin |
+| GET | `/categories` | ✅ `200` | |
+| POST | `/categories` | 🔒 `401` | Admin |
+| PUT | `/categories/:id` | 🔒 `401` | Admin |
+| DELETE | `/categories/:id` | 🔒 `401` | Admin |
+
+---
+
+### 🏥 Insurance — `/api/insurance`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/insurance/plans` | ✅ `200` | |
+| POST | `/insurance/calculate-premium` | ✅ `200` | Returns premium for given age/sum insured |
+| POST | `/insurance/applications` | 🔒 `401` | User |
+| GET | `/insurance/applications/:id` | 🔒 `401` | User |
+| GET | `/insurance/applications` | 🔒 `401` | Admin |
+| PUT | `/insurance/applications/:id` | 🔒 `401` | Admin |
+
+---
+
+### 🎫 Support Tickets — `/api/support`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| POST | `/support/tickets` | 🔒 `401` | User |
+| GET | `/support/tickets/:id` | 🔒 `401` | User |
+| POST | `/support/tickets/:id/messages` | 🔒 `401` | User |
+| GET | `/support/tickets` | 🔒 `401` | Admin |
+| PUT | `/support/tickets/:id` | 🔒 `401` | Admin |
+| PUT | `/support/tickets/:id/resolve` | 🔒 `401` | Admin |
+
+---
+
+### 📊 Reports — `/api/reports`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/reports/dashboard` | 🔒 `401` | Admin |
+| GET | `/reports/revenue-by-city` | 🔒 `401` | Admin |
+| GET | `/reports/revenue-by-plan` | 🔒 `401` | Admin |
+| GET | `/reports/service-usage` | 🔒 `401` | Admin |
+| GET | `/reports/caregiver-performance` | 🔒 `401` | Admin |
+| GET | `/reports/refund-analysis` | 🔒 `401` | Admin |
+| GET | `/reports/customer-retention` | 🔒 `401` | Admin |
+| GET | `/reports/csv/bookings` | 🔒 `401` | Admin — CSV download |
+| GET | `/reports/csv/users` | 🔒 `401` | Admin |
+| GET | `/reports/csv/payments` | 🔒 `401` | Admin |
+
+---
+
+### 🔍 Audit Logs — `/api/audit-logs`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/audit-logs` | 🔒 `401` | SUPER_ADMIN / CITY_ADMIN |
+| GET | `/audit-logs/:id` | 🔒 `401` | |
+
+---
+
+### 🖥 Server-Driven UI — `/api/ui-config`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/ui-config/published` | ✅ `200` | Public — fetches live app config |
+| GET | `/ui-config` | 🔒 `401` | Admin |
+| GET | `/ui-config/:id` | 🔒 `401` | Admin |
+| POST | `/ui-config` | 🔒 `401` | Admin |
+| PUT | `/ui-config/:id` | 🔒 `401` | Admin |
+| PUT | `/ui-config/:id/publish` | 🔒 `401` | Admin |
+| DELETE | `/ui-config/:id` | 🔒 `401` | Admin |
+
+---
+
+### 🖼 Media Library — `/api/media`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/media` | 🔒 `401` | Admin |
+| POST | `/media/upload` | 🔒 `401` | User or Admin, Multipart |
+| DELETE | `/media/:id` | 🔒 `401` | Admin |
+
+---
+
+### 🧪 Labs — `/api/labs`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/labs/tests` | ❌ `404` | **Not deployed** — code exists locally, push to Render |
+| GET | `/labs/packages` | ❌ `404` | **Not deployed** |
+| POST | `/labs/book` | ❌ `404` | **Not deployed** |
+| GET | `/labs/booking/:id` | ❌ `404` | **Not deployed** |
+
+---
+
+### 🪝 Webhooks — `/api/webhooks`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| POST | `/webhooks/razorpay` | ⚠️ `400` | Route works. Returns 400 when `x-razorpay-signature` header is missing (expected — Razorpay sends this header) |
+
+---
+
+### 👤 Admin Management — `/api/admin`
+
+| Method | Route | Status | Notes |
+|--------|-------|--------|-------|
+| GET | `/admin` | 🔒 `401` | SUPER_ADMIN |
+| GET | `/admin/:id` | 🔒 `401` | |
+| PUT | `/admin/:id` | 🔒 `401` | |
+| PUT | `/admin/:id/password` | 🔒 `401` | |
+| DELETE | `/admin/:id` | 🔒 `401` | |
+
+---
+
+## Issues Requiring Action
+
+| # | Severity | Component | Problem | Fix |
+|---|----------|-----------|---------|-----|
+| 1 | 🔴 High | Backend Route | `POST /auth/request-otp` — Twilio Trial error | Push local Fast2SMS branch to Render |
+| 2 | 🔴 High | Backend Route | `GET /labs/*`, `POST /labs/*` — All 4 lab endpoints 404 | Push local branch to Render |
+| 3 | 🔴 High | Backend Route | `POST /users` — 500 crash on missing `cityId` | **✅ FIXED** — Added 400 validation guard |
+| 4 | 🔴 High | Mobile App | Firebase config vars are empty in `.env` | Fill Firebase Console values into `mobile/.env` |
+| 5 | 🔴 High | Mobile App | Duplicate route name 'payment' (root + folder) | **✅ FIXED** — Moved `payment.tsx` → `payment/checkout.tsx` |
+| 6 | 🟡 Low | Backend Route | `POST /auth/admin/login` — "Invalid credentials" | Run `npm run prisma:seed` on production DB |
+| 7 | 🟡 Low | Backend Route | `GET /legal/published/TERMS` — 500 error | Client should use `TERMS_AND_CONDITIONS` enum |
+
+---
+
+## Background Jobs
+
+| Job | Schedule | Description |
+|-----|----------|-------------|
+| Plan Expiry Reminder | Daily 9 AM | WhatsApp + Email for 7-day and 3-day expiry |
+| Subscription Auto-Renew | Daily 1 AM | Auto-creates new subscription for auto-renew users |
+| SLA Breach Checker | Every 30 min | Flags bookings past SLA deadline |
+| Expired Cleanup | Daily 2 AM | Marks expired subscriptions |
+
+---
+
+## Database Models (24 Tables)
 
 ```
 Admin, City, User, Address, EmergencyContact, MedicalCard, HealthReport,
@@ -63,170 +415,7 @@ InsuranceApplication, Coupon, MediaAsset, SupportTicket, TicketMessage
 
 ---
 
-## 🔐 Authentication & Authorization
-
-- **Admin Auth**: Email + Password → JWT (access + refresh tokens)
-- **App User Auth**: Phone + OTP → JWT (access + refresh tokens)
-- **RBAC Roles**: `SUPER_ADMIN`, `CITY_ADMIN`, `CARE_MANAGER`, `SUPPORT_AGENT`, `BILLING_EXECUTIVE`
-- **City Restriction**: Non-SUPER_ADMIN admins only see data from their assigned city
-
----
-
-## ⚙️ Background Jobs (node-cron)
-
-| Job | Schedule | Description |
-|-----|----------|-------------|
-| Plan Expiry Reminder | Daily 9 AM | WhatsApp + Email for 7-day and 3-day expiry |
-| Subscription Auto-Renew | Daily 1 AM | Auto-creates new subscription for auto-renew users |
-| SLA Breach Checker | Every 30 min | Flags bookings past their SLA deadline |
-| Expired Cleanup | Daily 2 AM | Marks expired subscriptions |
-
----
-
-## 🚀 Quick Start
-
-### 1. Clone & Install
-```bash
-cd medico-backend
-npm install
-```
-
-### 2. Configure Environment
-```bash
-cp .env.example .env
-# Edit .env with your Supabase, Razorpay, Cloudinary, SendGrid keys
-```
-
-### 3. Database Setup
-```bash
-npx prisma generate        # Generate Prisma client
-npx prisma migrate dev      # Run migrations
-npm run prisma:seed         # Seed initial data
-```
-
-### 4. Run Development Server
-```bash
-npm run dev                 # Starts on port 5000 with nodemon
-```
-
-### 5. Default Admin Login
-```
-Email: superadmin@medico.care
-Password: admin123
-```
-
----
-
-## 📡 Comprehensive API Documentation
-
-All routes are prefixed with `/api`. Authentication is required unless marked as **[Public]**.
-
-### 🔐 1. Authentication
-- `POST   /auth/admin/login`     → [Public] Admin login (Email + Pwd)
-- `POST   /auth/admin/register`  → Create new admin (**SUPER_ADMIN** only)
-- `POST   /auth/admin/refresh`   → Refresh admin JWT access token
-- `POST   /auth/request-otp`     → [Public] Send OTP to phone for user login
-- `POST   /auth/verify-otp`      → [Public] Verify OTP & return user JWT
-- `POST   /auth/user/refresh`    → Refresh mobile user JWT
-- `POST   /auth/logout`          → Invalidate current session
-
-### 👥 2. User Management
-- `GET    /users`                → List all users (**Admin**, city-restricted)
-- `GET    /users/:id`            → Get full user profile & relations (**Admin**)
-- `POST   /users`                → [Public] Initialize user profile
-- `PUT    /users/:id`            → Update user metadata (**Admin**)
-- `PUT    /users/:id/block`      → Block login/booking (**SUPER/CITY ADMIN**)
-- `PUT    /users/:id/suspend`    → Soft-suspend account (**SUPER/CITY ADMIN**)
-- `PUT    /users/:id/activate`   → Reactivate account (**Admin**)
-- `GET    /users/profile`        → Get own profile (**User self**)
-- `PUT    /users/profile`        → Update own profile (**User self**)
-- `PUT    /users/profile/avatar` → Upload profile image (**User self**, Multipart)
-- `POST   /users/:id/emergency-contacts` → Add contact (User/Admin)
-- `DELETE /users/:uId/emergency-contacts/:cId` → Remove contact
-- `POST   /users/:id/addresses`  → Add saved address
-- `POST   /users/:id/medical-card` → Upsert medical history data
-- `POST   /users/:id/health-reports` → Upload lab report (**Multipart**)
-
-### 🏢 3. City & Region
-- `GET    /cities`               → [Public] List active cities for app
-- `GET    /cities/:id`           → Get city detail
-- `POST   /cities`               → Create city (**SUPER_ADMIN**)
-- `PUT    /cities/:id`           → Update city/enable/disable (**Admin**)
-- `GET    /cities/:id/revenue`   → Get city-specific revenue metrics
-
-### 🩺 4. Services (App Interface)
-- `GET    /services`             → [Public] List active services with UI config
-- `GET    /services/:id`         → [Public] Service detail & form schema
-- `POST   /services`             → Create service with dynamic form schema (**Admin**)
-- `PUT    /services/reorder`     → Update display sequence in app (**Admin**)
-- `PUT    /services/:id/toggle`  → Enable/Disable service (**Admin**)
-- `POST   /services/:id/hero-image` → Upload service banner (**Admin**)
-
-### 📅 5. Bookings & SLA
-- `GET    /bookings`             → List all bookings (**Admin**, city-restricted)
-- `GET    /bookings/:id`         → Get booking detail & notes
-- `POST   /bookings`             → Create new booking (User/Admin)
-- `GET    /bookings/history`     → My booking history (**User self**)
-- `POST   /bookings/:id/cancel`  → Cancel booking (**User self**)
-- `PUT    /bookings/:id/assign`  → Assign caregiver + trigger WhatsApp (**Admin**)
-- `PUT    /bookings/:id/status`  → Update status (e.g. IN_PROGRESS → COMPLETED)
-- `PUT    /bookings/:id/escalate`→ Flag booking for immediate attention (**Admin**)
-
-### 🧑‍⚕️ 6. Caregiver Management
-- `GET    /caregivers`           → List caregivers (**Admin**, city-restricted)
-- `POST   /caregivers`           → Register new caregiver (**Admin**)
-- `PUT    /caregivers/:id/verification` → Update Police/Doc verification status
-- `PUT    /caregivers/:id/availability` → Toggle online/offline
-- `POST   /caregivers/:id/documents` → Upload verification documents (**Multipart**)
-
-### 💎 7. Plans & Subscriptions
-- `GET    /plans`                → [Public] List membership levels
-- `POST   /plans`                → Create/Update plan pricing (**Admin**)
-- `GET    /subscriptions`        → List all active/expired subs (**Admin**)
-- `POST   /subscriptions`        → Create subscription for user (**Admin**)
-- `PUT    /subscriptions/:id/pause` → Pause membership (e.g. user traveling)
-- `PUT    /subscriptions/:id/compassionate` → Add free extension days (**Admin**)
-
-### 💳 8. Payments & Coupons
-- `POST   /payments/initiate`    → Create Razorpay order
-- `POST   /payments/verify`      → Verify signature & generate PDF Invoice
-- `POST   /payments/apply-coupon`→ Validate and apply discount
-- `POST   /payments/refund`      → Initiate refund via Razorpay (**Admin**)
-- `GET    /payments/:id/refund-status` → Check refund progress
-
-### 🚨 9. SOS Emergency
-- `POST   /sos`                  → Create high-priority alert with GPS (**User**)
-- `GET    /sos`                  → Monitor live alerts dashboard (**Admin**)
-- `PUT    /sos/:id/assign`       → Dispatch responder to user location
-- `PUT    /sos/:id/resolve`      → Mark incident as closed with notes
-
-### 📦 10. Wellness Store
-- `GET    /products`             → [Public] List store items
-- `POST   /products/:id/waitlist`→ Join out-of-stock notification list
-- `GET    /categories`           → [Public] List product categories
-- `POST   /products`             → Manage inventory (**Admin**)
-
-### 📄 11. Legal & CMS
-- `GET    /legal/published/:type`→ [Public] Get T&C / Privacy Policy
-- `POST   /legal`                → Create new draft of legal doc (**Admin**)
-- `PUT    /legal/:id/publish`    → Push new version to live app (**Admin**)
-
-### 📊 12. Reports & Analytics
-- `GET    /reports/dashboard`    → Global revenue/user stats
-- `GET    /reports/revenue-by-city`
-- `GET    /reports/service-usage`
-- `GET    /reports/csv/:type`    → Export data to CSV (**Admin**)
-
-### 🔍 13. Audit & System
-- `GET    /audit-logs`           → View historical admin actions (**SUPER_ADMIN**)
-- `GET    /ui-config/published`  → [Public] Fetch live Server-Driven UI config
-- `POST   /ui-config/publish`    → Update app banners/icons/routes (**Admin**)
-- `GET    /notifications/logs`   → Audit trail of WhatsApp/Email sent
-
-
----
-
-## 🧪 Tech Stack
+## Tech Stack
 
 | Component | Technology |
 |-----------|-----------|
@@ -236,21 +425,50 @@ All routes are prefixed with `/api`. Authentication is required unless marked as
 | Database | PostgreSQL (Supabase) |
 | Auth | JWT + bcrypt |
 | Payments | Razorpay |
-| File Storage | Cloudinary |
+| File Storage | Google Cloud Storage (GCS) |
+| CDN | Cloudflare (assets.oldful.com → GCS) |
 | PDF Engine | PDFKit |
 | Cron | node-cron |
-| Email | SendGrid |
-| WhatsApp | Interakt API |
+| Email | ZeptoMail |
+| SMS/OTP | Fast2SMS |
+| WhatsApp | Fast2SMS |
+| Lab Tests | Redcliffe Labs API |
+| OCR | Google Cloud Vision |
 | Logging | Winston + Morgan |
 | Validation | express-validator |
 | Security | Helmet + CORS + Rate Limiting |
 
 ---
 
-## 📋 Compliance
+## Compliance
 
 - ✅ GST Invoice format (18% GST)
 - ✅ User ID generation: `MED-{CITY}-{SEQ}`
-- ✅ Medical data secure storage (encrypted DB)
 - ✅ Audit logging on all admin mutations
-- ✅ Data retention via soft-delete patterns
+- ✅ Soft-delete patterns for data retention
+- ✅ HMAC-SHA256 Razorpay webhook verification
+- ✅ OTP rate limiting: 3 requests per 10 minutes per phone number
+
+---
+
+## Mobile App Firebase Notes
+
+Firebase warnings in dev/Expo are safe to ignore:
+```
+WARN Firebase service initialization failed: [FirebaseError: Remote Config: Indexed DB not supported...]
+WARN @firebase/analytics: Analytics not supported in this environment...
+WARN @firebase/messaging: This browser doesn't support the API's...
+```
+
+These occur because Expo/web environment lacks browser APIs (IndexedDB, window object). The `getSafeService()` wrapper handles these gracefully. App functions normally without Firebase in dev. Production native build will have full Firebase support.
+
+---
+
+## Production Deployment Checklist
+
+- [ ] Fill Firebase credentials in `mobile/.env` (8 vars from Firebase Console)
+- [ ] Push local branch to Render (`git push origin development`)
+- [ ] Run `npm run prisma:seed` on production DB to create admin
+- [ ] Verify `POST /auth/request-otp` works (Fast2SMS code deployed)
+- [ ] Test lab endpoints (`GET /labs/tests`, etc.)
+- [ ] Run smoke tests against all 73 routes

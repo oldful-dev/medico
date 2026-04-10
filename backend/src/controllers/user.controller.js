@@ -1,12 +1,9 @@
-// ──────────────────────────────────────────────
-//  User Management Controller
-// ──────────────────────────────────────────────
-
 const prisma = require('../config/database');
-const { sendResponse, sendPaginatedResponse, paginate, generateUserId } = require('../utils/helpers');
+const { paginate, sendResponse, sendPaginatedResponse, generateUserId } = require('../utils/helpers');
 const { sendWelcomeNotifications } = require('../utils/notifications');
 const { generateWelcomeSLAPDF } = require('../utils/pdfGenerator');
-const { uploadToCloudinary } = require('../utils/fileUpload');
+const { uploadFile, purgeCDNCache } = require('../utils/storage.service');
+const { analyzeMedicalReportFromGCS, analyzeMedicalReportFromBuffer } = require('../utils/ocr.service');
 const { createAuditLog } = require('../middleware/audit');
 
 // GET /api/users
@@ -96,7 +93,11 @@ const getUserById = async (req, res, next) => {
 // POST /api/users  (Admin creates user OR post-OTP registration)
 const createUser = async (req, res, next) => {
     try {
-        const { name, phone, email, gender, dateOfBirth, cityId, preferredLanguage } = req.body;
+        const { name, phone, email, gender, dateOfBirth, cityId, preferredLanguage, profileImageUrl, emergencyNumber, flatNumber, addressLine, line1, line2 } = req.body;
+
+        if (!name || name.trim().length < 3) return sendResponse(res, 400, null, 'name is required (min 3 characters)');
+        if (!phone) return sendResponse(res, 400, null, 'phone is required');
+        if (!cityId) return sendResponse(res, 400, null, 'cityId is required');
 
         const uniqueUserId = await generateUserId(cityId);
 
@@ -110,9 +111,49 @@ const createUser = async (req, res, next) => {
                 dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
                 cityId,
                 preferredLanguage: preferredLanguage || 'en',
+                profileImageUrl: profileImageUrl || null,
             },
             include: { city: { select: { name: true, code: true } } },
         });
+
+        // Create default address if provided during registration
+        const finalLine1 = line1 || flatNumber || '';
+        const finalLine2 = line2 || addressLine || '';
+
+        if (finalLine2) {
+            try {
+                await prisma.address.create({
+                    data: {
+                        userId: user.id,
+                        label: 'Home',
+                        line1: finalLine1,
+                        line2: finalLine2,
+                        cityName: user.city.name,
+                        state: '',
+                        pincode: '',
+                        isDefault: true,
+                    },
+                });
+            } catch (addrErr) {
+                console.error('Address creation during registration failed:', addrErr);
+            }
+        }
+
+        // Create emergency contact if provided
+        if (emergencyNumber) {
+            try {
+                await prisma.emergencyContact.create({
+                    data: {
+                        userId: user.id,
+                        name: 'Emergency',
+                        phone: emergencyNumber,
+                        relationship: 'Other',
+                    },
+                });
+            } catch (ecErr) {
+                console.error('Emergency contact creation during registration failed:', ecErr);
+            }
+        }
 
         // Generate Welcome SLA PDF
         try {
@@ -123,7 +164,7 @@ const createUser = async (req, res, next) => {
                 cityName: user.city.name,
             });
 
-            const { url } = await uploadToCloudinary(pdfBuffer, 'sla-documents', 'raw');
+            const { url } = await uploadFile(pdfBuffer, 'sla-documents', 'sla.pdf');
             // Could store this URL on the user or send via email
         } catch (pdfError) {
             // Non-blocking — don't fail user creation
@@ -260,8 +301,22 @@ const removeEmergencyContact = async (req, res, next) => {
 // POST /api/users/:id/addresses
 const addAddress = async (req, res, next) => {
     try {
+        const { label, line1, line2, flatNumber, addressLine, cityName, state, pincode, landmark, isDefault, latitude, longitude } = req.body;
+
         const address = await prisma.address.create({
-            data: { userId: req.params.id, ...req.body },
+            data: {
+                userId: req.params.id,
+                label: label || 'Home',
+                line1: line1 || flatNumber || '',
+                line2: line2 || addressLine || '',
+                cityName: cityName || '',
+                state: state || '',
+                pincode: pincode || '',
+                landmark: landmark || null,
+                isDefault: !!isDefault,
+                latitude: latitude ? parseFloat(latitude) : null,
+                longitude: longitude ? parseFloat(longitude) : null,
+            },
         });
         sendResponse(res, 201, address, 'Address added');
     } catch (error) {
@@ -272,11 +327,37 @@ const addAddress = async (req, res, next) => {
 // PUT /api/users/:userId/addresses/:addressId
 const updateAddress = async (req, res, next) => {
     try {
+        const { label, line1, line2, flatNumber, addressLine, cityName, state, pincode, landmark, isDefault, latitude, longitude } = req.body;
+        
+        const data = {};
+        if (label !== undefined) data.label = label;
+        if (line1 !== undefined) data.line1 = line1;
+        if (line2 !== undefined) data.line2 = line2;
+        if (flatNumber !== undefined && line1 === undefined) data.line1 = flatNumber;
+        if (addressLine !== undefined && line2 === undefined) data.line2 = addressLine;
+        if (cityName !== undefined) data.cityName = cityName;
+        if (state !== undefined) data.state = state;
+        if (pincode !== undefined) data.pincode = pincode;
+        if (landmark !== undefined) data.landmark = landmark;
+        if (isDefault !== undefined) data.isDefault = !!isDefault;
+        if (latitude !== undefined) data.latitude = parseFloat(latitude);
+        if (longitude !== undefined) data.longitude = parseFloat(longitude);
+
         const address = await prisma.address.update({
             where: { id: req.params.addressId },
-            data: req.body,
+            data,
         });
         sendResponse(res, 200, address, 'Address updated');
+    } catch (error) {
+        next(error);
+    }
+};
+
+// DELETE /api/users/:userId/addresses/:addressId
+const deleteAddress = async (req, res, next) => {
+    try {
+        await prisma.address.delete({ where: { id: req.params.addressId } });
+        sendResponse(res, 200, null, 'Address deleted');
     } catch (error) {
         next(error);
     }
@@ -311,52 +392,86 @@ const upsertMedicalCard = async (req, res, next) => {
 
 // ─── Health Reports ────────────────────────
 
-const { analyzeMedicalReport } = require('../utils/ocr.service');
-
 // POST /api/users/:id/health-reports (file upload)
 const uploadHealthReport = async (req, res, next) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: 'File required' });
 
-        const { url } = await uploadToCloudinary(req.file.buffer, 'health-reports');
+        const { url, gcsUri } = await uploadFile(req.file.buffer, 'health-reports', req.file.originalname, req.file);
 
-        // Trigger OCR Analysis
-        const ocrResult = await analyzeMedicalReport(url, req.file.buffer);
-
+        // Create the report record immediately (no waiting for OCR)
         const report = await prisma.healthReport.create({
             data: {
                 userId: req.params.id,
                 title: req.body.title || req.file.originalname,
                 fileUrl: url,
                 fileType: req.file.mimetype.split('/')[1],
-                uploadedBy: req.user?.type || 'user',
-                flagSeverity: ocrResult.flagSeverity || req.body.flagSeverity || null,
-                flagNote: ocrResult.flagNote || req.body.flagNote || null,
+                uploadedBy: req.user?.id || null,
             },
         });
 
-        // Update User Profile with found tags
-        if (ocrResult.healthTags.length > 0) {
-            const user = await prisma.user.findUnique({ where: { id: req.params.id } });
-
-            // Note: Since healthTag is an Enum and currently only holds a single value, 
-            // we're prioritizing 'DIABETIC'. If the model allowed multiple tags, we'd add all.
-            let newTag = user.healthTag;
-            if (ocrResult.healthTags.includes('DIABETIC') && newTag === 'NORMAL') {
-                newTag = 'DIABETIC';
-            } else if (ocrResult.healthTags.includes('HYPERTENSION') && newTag === 'NORMAL') {
-                newTag = 'HYPERTENSION';
-            }
-
-            if (newTag !== user.healthTag) {
-                await prisma.user.update({
-                    where: { id: req.params.id },
-                    data: { healthTag: newTag }
-                });
-            }
-        }
-
+        // Respond immediately — OCR runs in background
         sendResponse(res, 201, report, 'Health report uploaded');
+
+        // ── Background OCR (non-blocking) ────────────────────
+        // This runs after the response is sent. If it fails, the report
+        // is still saved — OCR results can be retried later.
+        (async () => {
+            try {
+                // Mark as processing
+                await prisma.healthReport.update({
+                    where: { id: report.id },
+                    data: { ocrStatus: 'processing' },
+                });
+
+                const ocrResult = gcsUri
+                    ? await analyzeMedicalReportFromGCS(gcsUri)
+                    : await analyzeMedicalReportFromBuffer(req.file.buffer);
+
+                // Store all OCR results
+                await prisma.healthReport.update({
+                    where: { id: report.id },
+                    data: {
+                        ocrStatus: 'completed',
+                        ocrRawText: ocrResult.fullText || null,
+                        ocrParsedValues: ocrResult.medicalValues && Object.keys(ocrResult.medicalValues).length > 0
+                            ? ocrResult.medicalValues : undefined,
+                        ocrHealthTags: ocrResult.healthTags || [],
+                        ocrFlags: ocrResult.flags?.length > 0 ? ocrResult.flags : undefined,
+                        ocrProcessedAt: new Date(),
+                        flagSeverity: ocrResult.flagSeverity || null,
+                        flagNote: ocrResult.flagNote || null,
+                    },
+                });
+
+                // Update user health tags
+                if (ocrResult.healthTags?.length > 0) {
+                    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+                    let newTag = user?.healthTag || 'NORMAL';
+                    if (ocrResult.healthTags.includes('DIABETIC') && newTag === 'NORMAL') {
+                        newTag = 'DIABETIC';
+                    } else if (ocrResult.healthTags.includes('HYPERTENSION') && newTag === 'NORMAL') {
+                        newTag = 'HYPERTENSION';
+                    }
+                    if (user && newTag !== user.healthTag) {
+                        await prisma.user.update({
+                            where: { id: req.params.id },
+                            data: { healthTag: newTag },
+                        });
+                    }
+                }
+
+                console.log(`OCR completed for report ${report.id}: ${ocrResult.valueCount} values, ${ocrResult.flagCount} flags`);
+            } catch (ocrErr) {
+                // Mark as failed so it can be retried
+                await prisma.healthReport.update({
+                    where: { id: report.id },
+                    data: { ocrStatus: 'failed', flagNote: `OCR failed: ${ocrErr.message}` },
+                }).catch(() => {}); // Don't throw if this update also fails
+                console.error(`Background OCR failed for report ${report.id}:`, ocrErr.message);
+            }
+        })();
+
     } catch (error) {
         next(error);
     }
@@ -391,13 +506,14 @@ const getMyProfile = async (req, res, next) => {
 // PUT /api/users/profile  (App user — update own profile)
 const updateMyProfile = async (req, res, next) => {
     try {
-        const { name, email, gender, dateOfBirth, preferredLanguage } = req.body;
+        const { name, email, gender, dateOfBirth, preferredLanguage, profileImageUrl } = req.body;
         const data = {};
         if (name) data.name = name;
         if (email) data.email = email;
         if (gender) data.gender = gender;
         if (dateOfBirth) data.dateOfBirth = new Date(dateOfBirth);
         if (preferredLanguage) data.preferredLanguage = preferredLanguage;
+        if (profileImageUrl) data.profileImageUrl = profileImageUrl;
 
         const user = await prisma.user.update({
             where: { id: req.user.id },
@@ -424,12 +540,38 @@ const getMyHealthReports = async (req, res, next) => {
     }
 };
 
+// PUT /api/users/profile/device-token  (B-05: Register FCM device token)
+const registerDeviceToken = async (req, res, next) => {
+    try {
+        const { fcmToken } = req.body;
+        if (!fcmToken) return res.status(400).json({ success: false, message: 'fcmToken is required' });
+
+        await prisma.user.update({
+            where: { id: req.user.id },
+            data: { fcmDeviceToken: fcmToken },
+        });
+
+        sendResponse(res, 200, null, 'Device token registered');
+    } catch (error) {
+        next(error);
+    }
+};
+
 // PUT /api/users/profile/avatar  (App user — upload profile image)
 const uploadProfileAvatar = async (req, res, next) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: 'Image file required' });
 
-        const { url } = await uploadToCloudinary(req.file.buffer, 'profile-avatars', 'image');
+        // Delete old avatar from CDN cache if exists
+        const existingUser = await prisma.user.findUnique({ where: { id: req.user.id }, select: { profileImageUrl: true } });
+        if (existingUser?.profileImageUrl) {
+            await purgeCDNCache(existingUser.profileImageUrl).catch(() => {});
+        }
+
+        const { url } = await uploadFile(req.file.buffer, 'profile-avatars', req.file.originalname);
+
+        // Purge CDN cache for the new URL so it's immediately accessible
+        await purgeCDNCache(url).catch(() => {});
 
         const user = await prisma.user.update({
             where: { id: req.user.id },
@@ -458,7 +600,7 @@ module.exports = {
     getUsers, getUserById, createUser, updateUser,
     blockUser, suspendUser, activateUser,
     addEmergencyContact, removeEmergencyContact,
-    addAddress, updateAddress,
+    addAddress, updateAddress, deleteAddress,
     upsertMedicalCard, uploadHealthReport,
-    getMyProfile, updateMyProfile, uploadProfileAvatar, getMyHealthReports,
+    getMyProfile, updateMyProfile, registerDeviceToken, uploadProfileAvatar, getMyHealthReports,
 };

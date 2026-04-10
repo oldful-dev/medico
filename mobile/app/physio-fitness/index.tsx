@@ -6,11 +6,11 @@ import {
     TouchableOpacity,
     Image,
     Platform,
-    ScrollView,
     TextInput,
     Alert,
     ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +20,7 @@ import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgPainRelief = require('@/assets/images/19384cdb0d3b6490a3d5bfa98457389b6d565416.png'); // Pain relief illustration
@@ -31,6 +32,7 @@ const imgCalendar = require('@/assets/images/9db46350ce94677b709648f4aadad318987
 const BODY_PARTS = ['Back', 'Knee', 'Neck', 'Shoulder', 'Leg'];
 
 export default function PhysioFitnessScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
@@ -43,8 +45,11 @@ export default function PhysioFitnessScreen() {
     // API state
     const [cityId, setCityId] = useState('');
     const [serviceId, setServiceId] = useState('');
+    const [serviceName, setServiceName] = useState('Physio & Fitness');
+    const [servicePrice, setServicePrice] = useState(0);
     const [address, setAddress] = useState('Fetching address...');
     const [isBooking, setIsBooking] = useState(false);
+    const [isLoadingInit, setIsLoadingInit] = useState(true);
 
     React.useEffect(() => {
         (async () => {
@@ -60,9 +65,10 @@ export default function PhysioFitnessScreen() {
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'physio-fitness');
-                    if (svc) setServiceId(svc.id);
+                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Physio & Fitness'); setServicePrice(svc.basePrice ?? 0); }
                 }
             } catch (err) { console.log('Physio init failed', err); }
+            finally { setIsLoadingInit(false); }
         })();
     }, []);
 
@@ -85,7 +91,7 @@ export default function PhysioFitnessScreen() {
                 },
             });
             if (res.success && res.data) {
-                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+                router.push({ pathname: '/payment/checkout', params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName } });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
             }
@@ -115,7 +121,7 @@ export default function PhysioFitnessScreen() {
 
             {/* Main Content Area (Rounded Cream Box) */}
             <View style={styles.contentContainer}>
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* ─── Select Service ─── */}
                     <Text style={styles.sectionTitle}>Select Service</Text>
@@ -211,19 +217,21 @@ export default function PhysioFitnessScreen() {
 
                     {/* ─── Book Appointment Button ─── */}
                     <TouchableOpacity
-                        style={[styles.submitButton, isBooking && { opacity: 0.6 }]}
+                        style={[styles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
                         activeOpacity={0.8}
-                        disabled={isBooking}
+                        disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
-                        {isBooking ? (
+                        {isLoadingInit ? (
+                            <Text style={styles.submitButtonText}>Initializing...</Text>
+                        ) : isBooking ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
                             <Text style={styles.submitButtonText}>Book Appointment</Text>
                         )}
                     </TouchableOpacity>
 
-                </ScrollView>
+                </KeyboardAwareScrollView>
             </View>
         </View>
     );
@@ -306,7 +314,10 @@ const styles = StyleSheet.create({
         borderWidth: 1,
     },
     selectedServiceCard: {
-        // We could add an active state border here if desired, skipping for exact match logic
+        borderColor: "#02743F",
+        borderWidth: 2,
+        elevation: 4,
+  transform: [{ scale: 1.03 }],
     },
     painCardVertical: {
         backgroundColor: '#FFEBDF',

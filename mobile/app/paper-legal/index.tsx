@@ -6,9 +6,9 @@ import {
     TouchableOpacity,
     Image,
     Platform,
-    ScrollView,
     TextInput,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +23,7 @@ import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { Alert } from 'react-native';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgCheckmark = require('@/assets/images/019640d27de157c119b045c46aae6a6559dd3a79.png'); // Green Check Circle
@@ -30,13 +31,14 @@ const imgQuestionMark = require('@/assets/images/c359f98cd0aedd8de95a2f5901d6874
 const imgOldfulIllustration = require('@/assets/images/49fa5256c84b3ee062131d88f5ae26383f5d5257.png'); // The lawyer/assistant illustration
 
 export default function PaperLegalScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [selectedService, setSelectedService] = useState('Digital Life Certificate');
     const [details, setDetails] = useState('');
     
     const { userId } = useAuth();
-    const { isReady, cityId, serviceId, address, setAddress, isManualAddress, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('paper-legal');
+    const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, isManualAddress, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('paper-legal');
     
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
     const [isBooking, setIsBooking] = React.useState(false);
@@ -65,13 +67,11 @@ export default function PaperLegalScreen() {
                 }
             };
 
-            const res = await bookingService.createBooking(payload);
+            const res = await bookingService.createBooking({ ...payload, amount: servicePrice });
             if (res.success && res.data) {
                 router.push({
-                    pathname: '/service-confirmation',
-                    params: {
-                        bookingId: res.data.id
-                    }
+                    pathname: '/payment/checkout',
+                    params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName || 'Paperwork & Legal' }
                 });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
@@ -103,7 +103,7 @@ export default function PaperLegalScreen() {
 
             {/* Main Content Area (Rounded Cream Box) */}
             <View style={styles.contentContainer}>
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* ─── Select Service ─── */}
                     <Text style={styles.sectionTitle}>Select Service</Text>
@@ -174,12 +174,12 @@ export default function PaperLegalScreen() {
 
                     {/* ─── Book Assistant Button ─── */}
                     <TouchableOpacity
-                        style={[styles.submitButton, isBooking && { opacity: 0.7 }]}
+                        style={[styles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        disabled={isBooking}
+                        disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
-                        <Text style={styles.submitButtonText}>{isBooking ? 'Processing...' : 'Book Assistant'}</Text>
+                        <Text style={styles.submitButtonText}>{isLoadingInit ? 'Initializing...' : isBooking ? 'Processing...' : 'Book Assistant'}</Text>
                     </TouchableOpacity>
 
                     {/* ─── Oldful Illustration Bottom ─── */}
@@ -187,7 +187,7 @@ export default function PaperLegalScreen() {
                         <Image source={imgOldfulIllustration} style={styles.illustration} resizeMode="contain" />
                     </View>
 
-                </ScrollView>
+                </KeyboardAwareScrollView>
             </View>
         </View>
     );

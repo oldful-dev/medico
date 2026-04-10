@@ -6,8 +6,8 @@ import {
     TouchableOpacity,
     Image,
     Platform,
-    ScrollView,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,12 +20,14 @@ import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgLightning = require('@/assets/images/50ffab5c68d190752695666bb7ec8bee1bc4842a.png'); // Lightning bolt
 const imgChart = require('@/assets/images/45958abae6d20cd413b2ccd515807fab5af92fa7.png'); // Pricing table chart
 
 export default function SmartUpgradeScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { userId } = useAuth();
@@ -88,7 +90,7 @@ export default function SmartUpgradeScreen() {
                 <Text style={styles.headerTitle}>Smart Upgrade</Text>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                 {/* ─── Main Content Box (Gradient) ─── */}
                 <LinearGradient
@@ -116,12 +118,12 @@ export default function SmartUpgradeScreen() {
 
                     {/* ─── Upgrade Button ─── */}
                     <TouchableOpacity
-                        style={[styles.upgradeButton, isBooking && { opacity: 0.7 }]}
+                        style={[styles.upgradeButton, (isBooking || isLoadingInit) && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        disabled={isBooking}
+                        disabled={isBooking || isLoadingInit}
                         onPress={handleUpgrade}
                     >
-                        <Text style={styles.upgradeButtonText}>{isBooking ? 'Processing...' : 'View Plan Details & Upgrade'}</Text>
+                        <Text style={styles.upgradeButtonText}>{isLoadingInit ? 'Initializing...' : isBooking ? 'Processing...' : 'View Plan Details & Upgrade'}</Text>
                     </TouchableOpacity>
 
                     {/* ─── Important Disclaimer ─── */}
@@ -149,7 +151,7 @@ export default function SmartUpgradeScreen() {
                     </View>
 
                 </LinearGradient>
-            </ScrollView>
+            </KeyboardAwareScrollView>
         </View>
     );
 }

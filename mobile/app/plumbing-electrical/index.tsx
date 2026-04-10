@@ -6,9 +6,9 @@ import {
     TouchableOpacity,
     Image,
     Platform,
-    ScrollView,
     TextInput,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,11 +22,13 @@ import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 const imgHero = require('@/assets/images/8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png'); // Clamp/pliers icon
 const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
 const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
 
 export default function PlumbingElectricalScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [address, setAddress] = React.useState('');
@@ -37,7 +39,10 @@ export default function PlumbingElectricalScreen() {
     const { userId } = useAuth();
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
+    const [serviceName, setServiceName] = React.useState('Plumbing & Electrical');
+    const [servicePrice, setServicePrice] = React.useState(0);
     const [isBooking, setIsBooking] = React.useState(false);
+    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
 
     React.useEffect(() => {
         (async () => {
@@ -60,13 +65,14 @@ export default function PlumbingElectricalScreen() {
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'plumbing-electrical');
-                    if (svc) setServiceId(svc.id);
+                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Plumbing & Electrical'); setServicePrice(svc.basePrice ?? 0); }
                 }
 
             } catch (err) {
                 console.log("Initialization failed", err);
             } finally {
                 setIsFetchingLocation(false);
+                setIsLoadingInit(false);
             }
         })();
     }, []);
@@ -95,13 +101,11 @@ export default function PlumbingElectricalScreen() {
                 }
             };
 
-            const res = await bookingService.createBooking(payload);
+            const res = await bookingService.createBooking({ ...payload, amount: servicePrice });
             if (res.success && res.data) {
                 router.push({
-                    pathname: '/service-confirmation',
-                    params: {
-                        bookingId: res.data.id
-                    }
+                    pathname: '/payment/checkout',
+                    params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName }
                 });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
@@ -129,7 +133,7 @@ export default function PlumbingElectricalScreen() {
                 <View style={{ width: 40 }} /> {/* spacer for center alignment */}
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                 {/* ─── Hero Section ─── */}
                 <View style={styles.heroSection}>
@@ -205,16 +209,16 @@ export default function PlumbingElectricalScreen() {
                 {/* ─── Book Service Button ─── */}
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity
-                        style={[styles.bookButton, isBooking && { opacity: 0.7 }]}
+                        style={[styles.bookButton, (isBooking || isLoadingInit) && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        disabled={isBooking}
+                        disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
-                        <Text style={styles.bookButtonText}>{isBooking ? 'Processing...' : 'Book Service'}</Text>
+                        <Text style={styles.bookButtonText}>{isLoadingInit ? 'Initializing...' : isBooking ? 'Processing...' : 'Book Service'}</Text>
                     </TouchableOpacity>
                 </View>
 
-            </ScrollView>
+            </KeyboardAwareScrollView>
         </View>
     );
 }

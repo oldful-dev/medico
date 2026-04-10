@@ -1,128 +1,137 @@
 // ──────────────────────────────────────────────
-//  SOS Emergency Controller
+//  SOS Controller
 // ──────────────────────────────────────────────
 
 const prisma = require('../config/database');
-const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/helpers');
-const { sendSOSNotifications } = require('../utils/notifications');
+const { logger } = require('../config/logger');
+const { sendWhatsApp, sendEmail, sendPushToUser } = require('../utils/notifications');
+const { reverseGeocode } = require('../utils/geocoding.service');
 
-// GET /api/sos
-const getSOSAlerts = async (req, res, next) => {
-    try {
-        const { page, limit, skip } = paginate(req.query);
-        const { status, cityId } = req.query;
+/**
+ * POST /api/sos
+ * Handle incoming SOS alert from Mobile App.
+ * Notifications are non-fatal — SOS is always saved to DB regardless of notification failures.
+ */
+const triggerSOS = async (req, res) => {
+    const { location } = req.body;
+    // authenticateUser middleware loads full user into req.appUser
+    const user = req.appUser;
 
-        const where = {};
-        if (req.cityFilter) {
-            where.cityId = req.cityFilter;
-        } else if (cityId) {
-            where.cityId = cityId;
+    // 1. Reverse geocode — non-fatal
+    let addressSnapshot = null;
+    if (location?.latitude && location?.longitude) {
+        try {
+            const geo = await reverseGeocode(location.latitude, location.longitude);
+            if (geo) addressSnapshot = geo.formattedAddress;
+        } catch (geoErr) {
+            logger.warn('SOS reverse geocode failed (non-fatal):', geoErr.message);
         }
-
-        const [alerts, total] = await Promise.all([
-            prisma.sOSAlert.findMany({
-                where,
-                skip,
-                take: limit,
-                include: {
-                    user: { select: { id: true, name: true, uniqueUserId: true, phone: true } },
-                    city: { select: { name: true } },
-                    responder: { select: { name: true, phone: true } },
-                },
-                orderBy: { createdAt: 'desc' },
-            }),
-            prisma.sOSAlert.count({ where }),
-        ]);
-
-        sendPaginatedResponse(res, alerts, total, page, limit);
-    } catch (error) {
-        next(error);
     }
-};
 
-// POST /api/sos  (App user triggers SOS)
-const createSOSAlert = async (req, res, next) => {
+    // 2. Save SOS record to DB
+    let sosAlert;
     try {
-        const userId = req.user.id;
-        const { latitude, longitude, addressSnapshot } = req.body;
-
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            include: { emergencyContacts: true, city: true },
-        });
-
-        const alert = await prisma.sOSAlert.create({
+        sosAlert = await prisma.sOSAlert.create({
             data: {
-                userId,
+                userId: user.id,
                 cityId: user.cityId,
-                latitude,
-                longitude,
+                latitude: location?.latitude ?? null,
+                longitude: location?.longitude ?? null,
                 addressSnapshot,
+                status: 'ACTIVE',
+                adminNotified: false,
+                familyNotified: false,
             },
         });
-
-        // Send notifications asynchronously
-        sendSOSNotifications({
-            user,
-            location: addressSnapshot || `${latitude}, ${longitude}`,
-            familyContacts: user.emergencyContacts,
-        }).catch(() => { });
-
-        sendResponse(res, 201, alert, 'SOS alert created — help is on the way');
-    } catch (error) {
-        next(error);
+    } catch (dbErr) {
+        logger.error('SOS DB create failed:', dbErr);
+        return res.status(500).json({ success: false, message: 'Failed to record SOS alert' });
     }
-};
 
-// PUT /api/sos/:id/assign
-const assignResponder = async (req, res, next) => {
+    // 3. Build location link
+    const locationLink = (location?.latitude && location?.longitude)
+        ? `https://www.google.com/maps?q=${location.latitude},${location.longitude}`
+        : 'Location unavailable';
+    const addressDisplay = addressSnapshot || locationLink;
+
+    // 4. Notify admin via WhatsApp — non-fatal
+    let adminNotified = false;
     try {
-        const { responderId } = req.body;
-        const alert = await prisma.sOSAlert.update({
-            where: { id: req.params.id },
-            data: { responderId, status: 'RESPONDING' },
+        await sendWhatsApp({
+            phoneNumber: process.env.ADMIN_EMERGENCY_PHONE || '919999999999',
+            templateName: 'sos_alert_admin',
+            parameters: [user.name, user.uniqueUserId, locationLink],
         });
-        sendResponse(res, 200, alert, 'Responder assigned');
-    } catch (error) {
-        next(error);
+        adminNotified = true;
+    } catch (err) {
+        logger.warn('SOS admin WhatsApp failed (non-fatal):', err.message);
     }
-};
 
-// PUT /api/sos/:id/resolve
-const resolveSOSAlert = async (req, res, next) => {
+    // 5. Notify admin via email — non-fatal
     try {
-        const { resolvedNotes, callLogNotes } = req.body;
-        const alert = await prisma.sOSAlert.update({
-            where: { id: req.params.id },
-            data: {
-                status: 'RESOLVED',
-                resolvedAt: new Date(),
-                resolvedNotes,
-                callLogNotes,
-            },
+        await sendEmail({
+            to: process.env.ADMIN_EMAIL || 'admin@oldful.com',
+            subject: `🚨 EMERGENCY: SOS triggered by ${user.name}`,
+            html: `
+                <h2>SOS Alert Triggered</h2>
+                <p><strong>User:</strong> ${user.name} (${user.uniqueUserId})</p>
+                <p><strong>Phone:</strong> ${user.phone}</p>
+                <p><strong>Address:</strong> ${addressDisplay}</p>
+                <p><strong>Map:</strong> <a href="${locationLink}">${locationLink}</a></p>
+                <p>Please take immediate action.</p>
+            `,
         });
-        sendResponse(res, 200, alert, 'SOS alert resolved');
-    } catch (error) {
-        next(error);
+        adminNotified = true;
+    } catch (err) {
+        logger.warn('SOS admin email failed (non-fatal):', err.message);
     }
-};
 
-// PUT /api/sos/:id/notify
-const updateNotificationStatus = async (req, res, next) => {
+    // 6. Notify family contacts via WhatsApp — non-fatal
+    let familyNotified = false;
     try {
-        const { adminNotified, familyNotified } = req.body;
-        const data = {};
-        if (adminNotified !== undefined) data.adminNotified = adminNotified;
-        if (familyNotified !== undefined) data.familyNotified = familyNotified;
-
-        const alert = await prisma.sOSAlert.update({
-            where: { id: req.params.id },
-            data,
-        });
-        sendResponse(res, 200, alert, 'Notification status updated');
-    } catch (error) {
-        next(error);
+        const contacts = await prisma.emergencyContact.findMany({ where: { userId: user.id } });
+        for (const contact of contacts) {
+            try {
+                await sendWhatsApp({
+                    phoneNumber: contact.phone,
+                    templateName: 'sos_alert_family',
+                    parameters: [user.name, contact.name, locationLink],
+                });
+                familyNotified = true;
+            } catch (err) {
+                logger.warn(`SOS family WhatsApp to ${contact.phone} failed (non-fatal):`, err.message);
+            }
+        }
+    } catch (err) {
+        logger.warn('SOS family contacts fetch failed (non-fatal):', err.message);
     }
+
+    // 7. Send push confirmation to user — non-fatal
+    try {
+        await sendPushToUser(user.id, {
+            title: 'SOS Alert Sent',
+            body: 'Your emergency alert has been sent to the Oldful team and your emergency contacts.',
+            data: { type: 'sos_confirmation', sosId: sosAlert.id },
+        });
+    } catch (err) {
+        logger.warn('SOS push to user failed (non-fatal):', err.message);
+    }
+
+    // 8. Update notification flags
+    try {
+        await prisma.sOSAlert.update({
+            where: { id: sosAlert.id },
+            data: { adminNotified, familyNotified },
+        });
+    } catch (err) {
+        logger.warn('SOS flag update failed (non-fatal):', err.message);
+    }
+
+    return res.status(200).json({
+        success: true,
+        message: 'SOS alert recorded and notifications dispatched',
+        data: { sosId: sosAlert.id, adminNotified, familyNotified },
+    });
 };
 
-module.exports = { getSOSAlerts, createSOSAlert, assignResponder, resolveSOSAlert, updateNotificationStatus };
+module.exports = { triggerSOS };

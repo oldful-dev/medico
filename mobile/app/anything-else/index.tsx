@@ -6,9 +6,9 @@ import {
     TouchableOpacity,
     Image,
     Platform,
-    ScrollView,
     TextInput,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +23,7 @@ import { mediaService } from '@/services/api/mediaService';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { Alert } from 'react-native';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgHero = require('@/assets/images/6c8ed456023258e8b4095af93909c6cbc6c4b909.png'); // Lightbulb & Question mark icon
@@ -30,6 +31,7 @@ const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a1
 const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
 
 export default function AnythingElseScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [address, setAddress] = React.useState('');
@@ -41,6 +43,8 @@ export default function AnythingElseScreen() {
     const { userId } = useAuth();
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
+    const [serviceName, setServiceName] = React.useState('Anything Else');
+    const [servicePrice, setServicePrice] = React.useState(0);
     const [isLoadingInit, setIsLoadingInit] = React.useState(true);
     const [isBooking, setIsBooking] = React.useState(false);
 
@@ -66,7 +70,7 @@ export default function AnythingElseScreen() {
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'anything-else');
-                    if (svc) setServiceId(svc.id);
+                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Anything Else'); setServicePrice(svc.basePrice ?? 0); }
                 }
 
             } catch (err) {
@@ -110,13 +114,11 @@ export default function AnythingElseScreen() {
                 }
             };
 
-            const res = await bookingService.createBooking(payload);
+            const res = await bookingService.createBooking({ ...payload, amount: servicePrice });
             if (res.success && res.data) {
                 router.push({
-                    pathname: '/service-confirmation',
-                    params: {
-                        bookingId: res.data.id
-                    }
+                    pathname: '/payment/checkout',
+                    params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName }
                 });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
@@ -144,7 +146,7 @@ export default function AnythingElseScreen() {
                 <View style={{ width: 40 }} /> {/* spacer for center alignment */}
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                 {/* ─── Hero Section ─── */}
                 <View style={styles.heroSection}>
@@ -233,7 +235,7 @@ export default function AnythingElseScreen() {
                     </TouchableOpacity>
                 </View>
 
-            </ScrollView>
+            </KeyboardAwareScrollView>
         </View>
     );
 }

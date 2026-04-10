@@ -6,35 +6,65 @@ import {
     View,
     Text,
     Image,
-    ScrollView,
     TouchableOpacity,
     StyleSheet,
     Platform,
-    KeyboardAvoidingView,
     Alert,
+    ActionSheetIOS,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { FormInput } from '@/components/common';
 import { userService, cityService, ApiError } from '@/services/api';
+import { mediaService } from '@/services/api/mediaService';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 // Figma-exported assets
 const logoImage = require('@/assets/images/2549b5ede370bbb67a088920cac9a8719fec5968.png');
-const profilePhoto = require('@/assets/images/5ee16de31c7d04e701fcca78f59c060b6f999c60.png');
+const defaultProfilePhoto = require('@/assets/images/5ee16de31c7d04e701fcca78f59c060b6f999c60.png');
 const checkmarkImage = require('@/assets/images/5a8dfb52053e366f8cbd3f09d8e940ff289c61af.png');
 
+const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
+const LANGUAGE_OPTIONS = ['English', 'Hindi', 'Kannada', 'Tamil', 'Telugu', 'Bengali'];
+
+// GPS error strings that should NOT be saved as address
+const GPS_ERROR_STATES = [
+    'Fetching GPS Location...',
+    'Failed to fetch location',
+    'Location found, address unavailable',
+    '',
+];
+
 export default function ProfileSetupScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams();
     const passedPhone = typeof params.phone === 'string' ? params.phone : '';
+    const googleEmail = typeof params.googleEmail === 'string' ? params.googleEmail : '';
+    const googleName = typeof params.googleName === 'string' ? params.googleName : '';
+    const googlePhoto = typeof params.googlePhoto === 'string' ? params.googlePhoto : '';
     const { login } = useAuth();
 
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [locationAddress, setLocationAddress] = useState('Fetching GPS Location...');
+    // isGoogleFlow: user came from Google Sign-In with no OTP-verified phone
+    const isGoogleFlow = !passedPhone && !!googleEmail;
+
+    const [name, setName] = useState(googleName);
+    const [email, setEmail] = useState(googleEmail);
+    const [phoneInput, setPhoneInput] = useState(''); // only used in Google flow
+    const [profileImageUri, setProfileImageUri] = useState<string | null>(googlePhoto || null);
+    const [gender, setGender] = useState('');
+    const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [language, setLanguage] = useState('English');
+    const [line1, setLine1] = useState('');
+    const [emergencyNumber, setEmergencyNumber] = useState('');
+    const [line2, setLine2] = useState('Fetching GPS Location...');
     const [locationDenied, setLocationDenied] = useState(false);
     const [agreed, setAgreed] = useState(false);
 
@@ -61,13 +91,13 @@ export default function ProfileSetupScreen() {
 
             if (geocode && geocode.length > 0) {
                 const address = `${geocode[0].street ? geocode[0].street + ', ' : ''}${geocode[0].city ? geocode[0].city + ', ' : ''}${geocode[0].region || ''}`;
-                setLocationAddress(address || 'Location found, address unavailable');
+                setLine2(address || 'Location found, address unavailable');
             } else {
-                setLocationAddress('Location found, address unavailable');
+                setLine2('Location found, address unavailable');
             }
         } catch (error) {
             console.error("Error fetching location:", error);
-            setLocationAddress('Failed to fetch location');
+            setLine2('Failed to fetch location');
         }
     };
 
@@ -75,7 +105,6 @@ export default function ProfileSetupScreen() {
         try {
             const response = await cityService.getCities();
             if (response.data && response.data.length > 0) {
-                // Find an active city, otherwise fallback to the first one
                 const activeCity = response.data.find(c => c.isEnabled && !c.isComingSoon);
                 setCityId(activeCity ? activeCity.id : response.data[0].id);
             }
@@ -89,13 +118,63 @@ export default function ProfileSetupScreen() {
         fetchDefaultCity();
     }, []);
 
+    const handlePickImage = async () => {
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+        if (!result.canceled && result.assets[0]) {
+            setProfileImageUri(result.assets[0].uri);
+        }
+    };
+
+    const handleSelectGender = () => {
+        if (Platform.OS === 'ios') {
+            ActionSheetIOS.showActionSheetWithOptions(
+                { options: ['Cancel', ...GENDER_OPTIONS], cancelButtonIndex: 0 },
+                (idx) => { if (idx > 0) setGender(GENDER_OPTIONS[idx - 1]); }
+            );
+        } else {
+            Alert.alert('Select Gender', '', GENDER_OPTIONS.map(g => ({
+                text: g, onPress: () => setGender(g),
+            })).concat({ text: 'Cancel', onPress: () => {}, style: 'cancel' } as any));
+        }
+    };
+
+    const handleSelectLanguage = () => {
+        if (Platform.OS === 'ios') {
+            ActionSheetIOS.showActionSheetWithOptions(
+                { options: ['Cancel', ...LANGUAGE_OPTIONS], cancelButtonIndex: 0 },
+                (idx) => { if (idx > 0) setLanguage(LANGUAGE_OPTIONS[idx - 1]); }
+            );
+        } else {
+            Alert.alert('Select Language', '', LANGUAGE_OPTIONS.map(l => ({
+                text: l, onPress: () => setLanguage(l),
+            })).concat({ text: 'Cancel', onPress: () => {}, style: 'cancel' } as any));
+        }
+    };
+
+    const formatDOB = (date: Date) => {
+        const d = date.getDate().toString().padStart(2, '0');
+        const m = (date.getMonth() + 1).toString().padStart(2, '0');
+        const y = date.getFullYear();
+        return `${d}/${m}/${y}`;
+    };
+
     const handleSaveAndContinue = async () => {
         if (!agreed) {
             Alert.alert("Permission Denied", "Please agree to the Policies and Terms to continue.");
             return;
         }
         if (!name || name.trim().length < 3) {
-            Alert.alert("Validation", "Please enter a valid full name.");
+            Alert.alert("Validation", "Please enter a valid full name (at least 3 characters).");
+            return;
+        }
+        // Google flow: phone wasn't verified via OTP — must be entered manually
+        if (isGoogleFlow && phoneInput.replace(/\D/g, '').length !== 10) {
+            Alert.alert("Validation", "Please enter a valid 10-digit mobile number.");
             return;
         }
         if (!cityId) {
@@ -103,32 +182,83 @@ export default function ProfileSetupScreen() {
             return;
         }
 
+        // Sanitise emergency number — strip non-digits, keep last 10
+        const cleanEmergency = emergencyNumber.replace(/\D/g, '').slice(-10);
+
+        // Only save address if it's a real value, not a GPS error/loading string
+        const validAddress = !GPS_ERROR_STATES.includes(line2);
+
+        const langCode = language === 'Hindi' ? 'hi'
+            : language === 'Kannada' ? 'kn'
+            : language === 'Tamil' ? 'ta'
+            : language === 'Telugu' ? 'te'
+            : language === 'Bengali' ? 'bn'
+            : 'en';
+
         setIsLoading(true);
         try {
+            // Resolve final phone: OTP-verified phone takes priority; Google flow uses manually entered phone
+            const finalPhone = passedPhone || `+91${phoneInput.replace(/\D/g, '').slice(-10)}`;
+
+            // ── Step 1: Create user (no token yet — profile image skipped here) ──
             const response = await userService.createUser({
                 name: name.trim(),
-                phone: passedPhone,
+                phone: finalPhone,
                 email: email.trim() || undefined,
                 cityId: cityId,
-                preferredLanguage: 'en',
-            });
+                preferredLanguage: langCode,
+                gender: gender.toLowerCase() || undefined,
+                dateOfBirth: dateOfBirth?.toISOString() || undefined,
+                emergencyNumber: cleanEmergency.length === 10 ? `+91${cleanEmergency}` : undefined,
+                line1: line1.trim() || undefined,
+                line2: validAddress ? line2 : undefined,
+            } as any);
 
-            if (response.success && response.data) {
-                // The `createUser` service is now updated to return accessToken and refreshToken
-                const tokens = (response as any).data; // Casting config since types might be strict
-                if (tokens.accessToken && tokens.refreshToken) {
-                    await login(
-                        tokens.accessToken,
-                        tokens.refreshToken,
-                        response.data.id
-                    );
-                }
-
-                // On register success, we replace the stack and navigate home
-                router.replace('/(tabs)');
-            } else {
+            if (!response.success || !response.data) {
                 throw new Error("Invalid response from server");
             }
+
+            const tokens = (response as any).data;
+            if (!tokens.accessToken || !tokens.refreshToken) {
+                throw new Error("Authentication tokens missing from server response");
+            }
+
+            // ── Step 2: Authenticate (sets token on apiClient + persists to storage) ──
+            await login(tokens.accessToken, tokens.refreshToken, response.data.id);
+
+            // ── Step 3: Upload profile image NOW (token is set, media endpoints are open) ──
+            if (profileImageUri) {
+                try {
+                    let imageUrl: string | null = null;
+
+                    if (profileImageUri.startsWith('http')) {
+                        // Google photo — use URL directly
+                        imageUrl = profileImageUri;
+                    } else {
+                        // Local file — upload to GCS via proxy
+                        const uploadResult = await mediaService.uploadMedia(profileImageUri, 'profile-avatars');
+                        if (uploadResult.success && uploadResult.data?.fileUrl) {
+                            imageUrl = uploadResult.data.fileUrl;
+                        } else {
+                            console.warn('PFP upload failed:', uploadResult.message);
+                        }
+                    }
+
+                    if (imageUrl) {
+                        const patchResult = await userService.updateProfile({ profileImageUrl: imageUrl } as any);
+                        if (!patchResult.success) {
+                            console.warn('PFP profile patch failed:', patchResult.message);
+                        }
+                    }
+                } catch (imgErr: any) {
+                    // Non-blocking — user is registered, image just didn't sync
+                    console.warn('Profile image upload failed (non-blocking):', imgErr?.message ?? imgErr);
+                }
+            }
+
+            // ── Step 4: Navigate home ──
+            router.replace('/(tabs)');
+
         } catch (error) {
             const apiError = error as ApiError;
             Alert.alert("Registration Error", apiError.message || "Failed to create profile.");
@@ -140,163 +270,198 @@ export default function ProfileSetupScreen() {
     return (
         <View style={styles.screen}>
             <StatusBar style="dark" />
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            <KeyboardAwareScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                enableOnAndroid
+                extraScrollHeight={20}
             >
-                <ScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                >
-                    {/* ─── Header: Logo + "Let's Create your PROFILE" ─── */}
-                    <View style={styles.header}>
-                        <Image source={logoImage} style={styles.headerLogo} resizeMode="contain" />
-                        <View style={styles.headerRight}>
-                            <Text style={styles.headerSubtitle}>Let's Create your</Text>
-                            <Text style={styles.headerTitle}>PROFILE</Text>
-                        </View>
+                {/* ─── Header: Logo + "Let's Create your PROFILE" ─── */}
+                <View style={styles.header}>
+                    <Image source={logoImage} style={styles.headerLogo} resizeMode="contain" />
+                    <View style={styles.headerRight}>
+                        <Text style={styles.headerSubtitle}>Let's Create your</Text>
+                        <Text style={styles.headerTitle}>PROFILE</Text>
                     </View>
+                </View>
 
-                    {/* ─── Row 1: Full Name + Profile Photo ─── */}
-                    <View style={styles.row}>
-                        <FormInput
-                            placeholder="Enter your full name"
-                            style={styles.nameInput}
-                            value={name}
-                            onChangeText={setName}
+                {/* ─── Row 1: Full Name + Profile Photo ─── */}
+                <View style={styles.row}>
+                    <FormInput
+                        placeholder={t('profile_setup.name_placeholder')}
+                        style={styles.nameInput}
+                        value={name}
+                        onChangeText={setName}
+                    />
+                    <TouchableOpacity style={styles.profilePhotoContainer} onPress={handlePickImage} activeOpacity={0.7}>
+                        <Image
+                            source={profileImageUri ? { uri: profileImageUri } : defaultProfilePhoto}
+                            style={styles.profilePhoto}
                         />
-                        <View style={styles.profilePhotoContainer}>
-                            <Image source={profilePhoto} style={styles.profilePhoto} />
+                        <View style={styles.cameraOverlay}>
+                            <Ionicons name="camera" size={16} color="#FFFFFF" />
                         </View>
-                    </View>
+                    </TouchableOpacity>
+                </View>
 
-                    {/* ─── Row 2: Language ─── */}
+                {/* ─── Row 2: Language ─── */}
+                <TouchableOpacity onPress={handleSelectLanguage} activeOpacity={0.7}>
                     <FormInput
                         placeholder="Language"
                         showChevron
                         style={styles.fullWidthInput}
                         editable={false}
+                        value={language}
                     />
+                </TouchableOpacity>
 
-                    {/* ─── Row 2b: DOB + Gender ─── */}
-                    <View style={styles.row}>
+                {/* ─── Row 2b: DOB + Gender ─── */}
+                <View style={styles.row}>
+                    <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowDatePicker(true)} activeOpacity={0.7}>
                         <FormInput
                             placeholder="DOB"
                             style={styles.halfInput}
                             editable={false}
+                            value={dateOfBirth ? formatDOB(dateOfBirth) : ''}
                         />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={{ flex: 1 }} onPress={handleSelectGender} activeOpacity={0.7}>
                         <FormInput
                             placeholder="Gender"
                             showChevron
                             style={styles.halfInput}
                             editable={false}
+                            value={gender}
                         />
-                    </View>
+                    </TouchableOpacity>
+                </View>
 
-                    {/* ─── Row 3: Email ─── */}
-                    <FormInput
-                        placeholder="Enter your Email ID"
-                        keyboardType="email-address"
-                        style={styles.fullWidthInput}
-                        value={email}
-                        onChangeText={setEmail}
+                {showDatePicker && (
+                    <DateTimePicker
+                        value={dateOfBirth || new Date(2000, 0, 1)}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        maximumDate={new Date()}
+                        minimumDate={new Date(1920, 0, 1)}
+                        onChange={(event, date) => {
+                            // Always close picker on both platforms
+                            setShowDatePicker(false);
+                            if (date) setDateOfBirth(date);
+                        }}
                     />
+                )}
 
-                    {/* ─── Row 4: Mobile Number (Read-only since verified) ─── */}
-                    <FormInput
-                        placeholder="Mobile Number"
-                        value={passedPhone.replace('+91', '')}
-                        prefix="+91"
-                        keyboardType="phone-pad"
-                        style={styles.fullWidthInput}
-                        editable={false}
-                        fontSize={13}
-                    />
+                {/* ─── Row 3: Email ─── */}
+                <FormInput
+                    placeholder="Enter your Email ID"
+                    keyboardType="email-address"
+                    style={styles.fullWidthInput}
+                    value={email}
+                    onChangeText={setEmail}
+                />
 
-                    {/* ─── Row 5: Address (Auto GPS) + Flat Number ─── */}
-                    <View style={styles.addressRowWrapper}>
-                        <View style={styles.row}>
-                            <FormInput
-                                placeholder={locationDenied ? "Type your full address" : "Address"}
-                                value={locationAddress}
-                                editable={locationDenied}
-                                onChangeText={locationDenied ? setLocationAddress : undefined}
-                                style={styles.addressInput}
-                                multiline={true}
-                                fontSize={12}
-                            />
-                            <TouchableOpacity
-                                style={styles.locationButton}
-                                activeOpacity={0.7}
-                                onPress={fetchGPSLocation}
-                            >
-                                <Ionicons name="location" size={27} color="#048357" />
-                            </TouchableOpacity>
-                        </View>
+                {/* ─── Row 4: Mobile Number (read-only if OTP-verified; editable in Google flow) ─── */}
+                <FormInput
+                    placeholder="Mobile Number"
+                    value={isGoogleFlow ? phoneInput : passedPhone.replace('+91', '')}
+                    prefix="+91"
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    style={styles.fullWidthInput}
+                    editable={isGoogleFlow}
+                    onChangeText={isGoogleFlow ? setPhoneInput : undefined}
+                    fontSize={13}
+                />
+
+                {/* ─── Row 5: Address (Auto GPS) + Flat Number ─── */}
+                <View style={styles.addressRowWrapper}>
+                    <View style={styles.row}>
                         <FormInput
-                            placeholder="Type Flat / House Number"
-                            style={[styles.fullWidthInput, { marginTop: 15 }]}
+                            placeholder={locationDenied ? "Type your full address" : "Address"}
+                            value={line2}
+                            editable={locationDenied}
+                            onChangeText={locationDenied ? setLine2 : undefined}
+                            style={styles.addressInput}
+                            multiline={true}
+                            fontSize={12}
                         />
-                    </View>
-
-                    {/* ─── Row 6: Emergency Number ─── */}
-                    <FormInput
-                        placeholder="Emergency Number"
-                        prefix="+91"
-                        keyboardType="phone-pad"
-                        style={styles.fullWidthInput}
-                        fontSize={13}
-                    />
-
-                    {/* ─── Row 7: Auto ID ─── */}
-                    <FormInput
-                        placeholder="Auto Generated Unique ID"
-                        editable={false}
-                        style={styles.fullWidthInput}
-                        value="Will be generated after saving"
-                        fontSize={13}
-                    />
-
-                    {/* ─── Checkbox: Policies ─── */}
-                    <TouchableOpacity
-                        style={styles.checkboxRow}
-                        activeOpacity={0.8}
-                        onPress={() => setAgreed(!agreed)}
-                    >
-                        <View style={styles.checkboxContainer}>
-                            {agreed && <Image source={checkmarkImage} style={styles.checkmark} resizeMode="contain" />}
-                        </View>
-
-                        <Text style={styles.policyText}>
-                            <Text style={styles.policyTextNormal}>I have Read and agreed to the </Text>
-                            <Text style={styles.policyTextUnderline}>policies</Text>
-                        </Text>
-                    </TouchableOpacity>
-
-                    {/* ─── Save & Continue Button ─── */}
-                    <TouchableOpacity
-                        style={[styles.saveButton, (!agreed || isLoading) && { opacity: 0.7 }]}
-                        activeOpacity={0.8}
-                        onPress={handleSaveAndContinue}
-                        disabled={isLoading}
-                    >
-                        <Text style={styles.saveButtonText}>
-                            {isLoading ? "Saving..." : "Save & Continue"}
-                        </Text>
-                    </TouchableOpacity>
-
-                    {/* ─── Already a member? Login ─── */}
-                    <View style={styles.loginRow}>
-                        <Text style={styles.loginText}>Already a member? </Text>
-                        <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-                            <Text style={styles.loginLink}>Login</Text>
+                        <TouchableOpacity
+                            style={styles.locationButton}
+                            activeOpacity={0.7}
+                            onPress={fetchGPSLocation}
+                        >
+                            <Ionicons name="location" size={27} color="#048357" />
                         </TouchableOpacity>
                     </View>
+                    <FormInput
+                        placeholder="Type Flat / House Number"
+                        style={[styles.fullWidthInput, { marginTop: 15 }]}
+                        value={line1}
+                        onChangeText={setLine1}
+                    />
+                </View>
 
-                </ScrollView>
-            </KeyboardAvoidingView>
+                {/* ─── Row 6: Emergency Number ─── */}
+                <FormInput
+                    placeholder="Emergency Number"
+                    prefix="+91"
+                    keyboardType="phone-pad"
+                    style={styles.fullWidthInput}
+                    fontSize={13}
+                    value={emergencyNumber}
+                    onChangeText={setEmergencyNumber}
+                />
+
+                {/* ─── Row 7: Auto ID ─── */}
+                <FormInput
+                    placeholder="Auto Generated Unique ID"
+                    editable={false}
+                    style={styles.fullWidthInput}
+                    value="Will be generated after saving"
+                    fontSize={13}
+                />
+
+                {/* ─── Checkbox: Policies ─── */}
+                <TouchableOpacity
+                    style={styles.checkboxRow}
+                    activeOpacity={0.8}
+                    onPress={() => setAgreed(!agreed)}
+                >
+                    <View style={styles.checkboxContainer}>
+                        {agreed && <Image source={checkmarkImage} style={styles.checkmark} resizeMode="contain" />}
+                    </View>
+
+                    <Text style={styles.policyText}>
+                        <Text style={styles.policyTextNormal}>I have Read and agreed to the </Text>
+                        <TouchableOpacity onPress={() => router.push('/(app)/terms-policy' as any)} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
+                            <Text style={styles.policyTextUnderline}>policies</Text>
+                        </TouchableOpacity>
+                    </Text>
+                </TouchableOpacity>
+
+                {/* ─── Save & Continue Button ─── */}
+                <TouchableOpacity
+                    style={[styles.saveButton, (!agreed || isLoading) && { opacity: 0.7 }]}
+                    activeOpacity={0.8}
+                    onPress={handleSaveAndContinue}
+                    disabled={isLoading}
+                >
+                    <Text style={styles.saveButtonText}>
+                        {isLoading ? t('profile_setup.completing') : t('profile_setup.complete_profile')}
+                    </Text>
+                </TouchableOpacity>
+
+                {/* ─── Already a member? Login ─── */}
+                <View style={styles.loginRow}>
+                    <Text style={styles.loginText}>{t('auth.already_member')} </Text>
+                    <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+                        <Text style={styles.loginLink}>Login</Text>
+                    </TouchableOpacity>
+                </View>
+
+            </KeyboardAwareScrollView>
         </View>
     );
 }
@@ -314,7 +479,7 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 28,
         paddingTop: 57,
-        paddingBottom: 40,
+        paddingBottom: 120,
     },
 
     /* ─── Header ─── */
@@ -374,6 +539,14 @@ const styles = StyleSheet.create({
     profilePhoto: {
         width: '100%',
         height: '100%',
+    },
+    cameraOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: 12,
+        padding: 4,
     },
 
     /* ─── Row 2: Flex Inputs ─── */
@@ -440,6 +613,9 @@ const styles = StyleSheet.create({
     },
     policyText: {
         flex: 1,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
     },
     policyTextNormal: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),

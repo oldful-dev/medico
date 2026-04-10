@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView,
-    Platform, KeyboardAvoidingView, Alert, ActivityIndicator,
+    View, Text, TextInput, StyleSheet, TouchableOpacity,
+    Platform, Alert, ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,10 +11,12 @@ import { useRouter } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useUser } from '@/context/UserContext';
 import { userService } from '@/services/api/userService';
+import { useTranslation } from 'react-i18next';
 
 const GENDER_OPTIONS = ['MALE', 'FEMALE', 'OTHER'];
 
 export default function EditProfileScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const { profile, setProfile } = useUser();
     const [saving, setSaving] = useState(false);
@@ -71,8 +74,7 @@ export default function EditProfileScreen() {
                 </View>
             </SafeAreaView>
 
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <KeyboardAwareScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} enableOnAndroid={true} extraScrollHeight={20} keyboardShouldPersistTaps="handled">
 
                     <Text style={styles.label}>Full Name *</Text>
                     <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Enter your name" placeholderTextColor="#898989" />
@@ -101,8 +103,7 @@ export default function EditProfileScreen() {
                     <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving} activeOpacity={0.7}>
                         {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
                     </TouchableOpacity>
-                </ScrollView>
-            </KeyboardAvoidingView>
+            </KeyboardAwareScrollView>
         </View>
     );
 }

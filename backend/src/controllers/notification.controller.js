@@ -116,7 +116,65 @@ const sendCampaign = async (req, res, next) => {
     }
 };
 
+// GET /api/notifications/my  (app user)
+const getMyNotifications = async (req, res, next) => {
+    try {
+        const { page, limit, skip } = paginate(req.query);
+        const [notifications, total] = await Promise.all([
+            prisma.notificationLog.findMany({
+                where: { recipientId: req.user.id, recipientType: 'user' },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+            }),
+            prisma.notificationLog.count({ where: { recipientId: req.user.id, recipientType: 'user' } }),
+        ]);
+        return sendPaginatedResponse(res, notifications, total, page, limit);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// PUT /api/notifications/my/:id/read  (app user — mark single as read)
+const markNotificationRead = async (req, res, next) => {
+    try {
+        const notification = await prisma.notificationLog.findFirst({
+            where: { id: req.params.id, recipientId: req.user.id },
+        });
+        if (!notification) {
+            return res.status(404).json({ success: false, message: 'Notification not found' });
+        }
+
+        const updated = await prisma.notificationLog.update({
+            where: { id: req.params.id },
+            data: { isRead: true, readAt: new Date() },
+        });
+
+        sendResponse(res, 200, updated, 'Marked as read');
+    } catch (error) {
+        next(error);
+    }
+};
+
+// PUT /api/notifications/my/read-all  (app user — mark all as read)
+const markAllNotificationsRead = async (req, res, next) => {
+    try {
+        const result = await prisma.notificationLog.updateMany({
+            where: {
+                recipientId: req.user.id,
+                recipientType: 'user',
+                isRead: false,
+            },
+            data: { isRead: true, readAt: new Date() },
+        });
+
+        sendResponse(res, 200, { count: result.count }, `${result.count} notifications marked as read`);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getNotificationLogs, getTemplates, createTemplate, updateTemplate, deleteTemplate,
-    sendCampaign,
+    sendCampaign, getMyNotifications, markNotificationRead, markAllNotificationsRead,
 };

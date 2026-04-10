@@ -1,16 +1,21 @@
 // User Context - User profile and service catalog state
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { UserProfile, userService, serviceCatalogService, ServiceItem } from '@/services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { UserProfile, userService, serviceCatalogService } from '@/services/api';
+import { ServiceItem } from '@/services/api/serviceCatalogService';
 import { useAuth } from './AuthContext';
+import i18n from '@/i18n/i18n';
+
+const LANG_KEY = '@oldful_language';
 
 interface UserContextType {
     profile: UserProfile | null;
+    setProfile: (profile: UserProfile | null) => void;
     services: ServiceItem[];
     isLoading: boolean;
     refreshData: () => Promise<void>;
     getServiceBySlug: (slug: string) => ServiceItem | undefined;
-    
-    // Legacy support (optional, can be refactored)
+
     selectedCity: string;
     setSelectedCity: (city: string) => void;
     preferredLanguage: string;
@@ -20,7 +25,7 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-    const { isAuthenticated, userId } = useAuth();
+    const { isAuthenticated } = useAuth();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [services, setServices] = useState<ServiceItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -28,9 +33,24 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const [selectedCity, setSelectedCity] = useState('Bangalore');
     const [preferredLanguage, setPreferredLanguage] = useState('en');
 
+    // Load persisted language on mount
+    useEffect(() => {
+        AsyncStorage.getItem(LANG_KEY).then(saved => {
+            if (saved) {
+                setPreferredLanguage(saved);
+                i18n.changeLanguage(saved);
+            }
+        });
+    }, []);
+
+    const saveLanguage = (lang: string) => {
+        setPreferredLanguage(lang);
+        i18n.changeLanguage(lang);
+        AsyncStorage.setItem(LANG_KEY, lang);
+    };
+
     const loadData = useCallback(async () => {
         if (!isAuthenticated) return;
-        
         setIsLoading(true);
         try {
             const [profileRes, servicesRes] = await Promise.all([
@@ -42,6 +62,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 setProfile(profileRes.data);
                 if (profileRes.data.preferredLanguage) {
                     setPreferredLanguage(profileRes.data.preferredLanguage);
+                    i18n.changeLanguage(profileRes.data.preferredLanguage);
                 }
             }
 
@@ -70,15 +91,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     return (
         <UserContext.Provider value={{
-            profile,
+            profile, setProfile,
             services,
             isLoading,
             refreshData: loadData,
             getServiceBySlug,
-            selectedCity, 
-            setSelectedCity,
-            preferredLanguage, 
-            setPreferredLanguage,
+            selectedCity, setSelectedCity,
+            preferredLanguage, setPreferredLanguage: saveLanguage,
         }}>
             {children}
         </UserContext.Provider>

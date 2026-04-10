@@ -4,7 +4,7 @@
 
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/helpers');
-const { uploadToCloudinary } = require('../utils/fileUpload');
+const { uploadFile } = require('../utils/storage.service');
 
 // GET /api/caregivers
 const getCaregivers = async (req, res, next) => {
@@ -142,7 +142,7 @@ const uploadDocuments = async (req, res, next) => {
 
         const uploads = await Promise.all(
             req.files.map(async (file) => {
-                const { url } = await uploadToCloudinary(file.buffer, 'caregiver-docs');
+                const { url } = await uploadFile(file.buffer, 'caregiver-docs', file.originalname);
                 return { name: file.originalname, url, type: file.mimetype };
             })
         );
