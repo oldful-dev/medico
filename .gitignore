@@ -53,6 +53,7 @@ yarn-error.log*
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+local.properties
 
 # ───── IDE / Editor ─────
 .vscode/
@@ -75,8 +76,10 @@ Desktop.ini
 **/GoogleService-Info.plist
 **/serviceAccount*.json
 **/firebase-service-account*.json
+**/firebase_account_config.json
 **/*-vision-key.json
 **/*-service-key.json
+**/google-vision-key.json
 
 # ───── TypeScript ─────
 *.tsbuildinfo
@@ -104,6 +107,4 @@ tmp-figma/
 # ───── Misc ─────
 *.orig.*
 .gemini/
-backend/src/config/google-vision-key.json
-backend/src/config/firebase-service-account.json
 ./extract
