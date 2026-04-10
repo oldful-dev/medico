@@ -41,14 +41,7 @@ export default function CareersPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      // Calling the new backend endpoint
-      const res = await apiClient.post('/notifications/careers', form); 
-      // Wait, I put it in /api/support/careers in backend. 
-      // Wait, let's check my backend route again. 
-      // I put it in support.routes.js: router.post('/careers', ctrl.submitCareers);
-      // And support routes are usually mounted at /api/support. 
-      // Let's verify server.js mounting for support.
-      
+      const res = await apiClient.post('/support/careers', form); 
       if (res.success) {
         setSuccess(true);
       }
