@@ -1,11 +1,27 @@
-// ──────────────────────────────────────────────
-//  Oldful Backend — Main Server Entry Point
-// ──────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+//  Oldful Backend — Production Server
+//
+//  Security layers:
+//    1. Helmet (HTTP headers)
+//    2. CORS (origin whitelist)
+//    3. Rate limiting (global + per-endpoint)
+//    4. Body size limits
+//    5. Request logging
+//
+//  Rate limit tiers:
+//    Global API:      200 req / 15 min / IP
+//    Auth (OTP):      3 req / 10 min / phone (in auth.routes.js)
+//    Auth (login):    10 req / 15 min / IP
+//    Payments:        30 req / 15 min / user
+//    Uploads:         20 req / 15 min / user
+//    SDUI config:     100 req / 5 min / IP (cached at edge anyway)
+// ══════════════════════════════════════════════════════════════
 
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 
@@ -35,6 +51,10 @@ const insuranceRoutes = require('./routes/insurance.routes');
 const supportRoutes = require('./routes/support.routes');
 const mediaRoutes = require('./routes/media.routes');
 const webhookRoutes = require('./routes/webhook.routes');
+const labRoutes = require('./routes/lab.routes');
+const remoteConfigRoutes = require('./routes/remoteConfig.routes');
+const appConfigRoutes = require('./routes/appConfig.routes');
+const uploadRoutes = require('./routes/upload.routes');
 
 // Initialize cron jobs
 const { initCronJobs } = require('./cron');
@@ -42,104 +62,188 @@ const { initCronJobs } = require('./cron');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ─── Security ───────────────────────────────────────────
-app.use(helmet());
+// ═══ TRUST PROXY (required behind Cloudflare/Render/load balancer) ═══
+// This ensures req.ip returns the real client IP, not the proxy IP.
+// Cloudflare sets X-Forwarded-For; Render sets it too.
+app.set('trust proxy', 1);
+app.use(cookieParser(process.env.JWT_SECRET));
+
+// ─── SECURITY HEADERS ──────────────────────────────────────────
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow CDN-served assets
+    contentSecurityPolicy: false, // Managed at Cloudflare edge
+}));
 
 // ─── CORS ───────────────────────────────────────────────
-const allowedOrigins = [
-  process.env.ADMIN_FRONTEND_URL,
-  process.env.APP_FRONTEND_URL,
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:3003',
-  'http://localhost:8081',
+const ALLOWED_ORIGINS = [
+    process.env.ADMIN_FRONTEND_URL,
+    process.env.APP_FRONTEND_URL,
+    process.env.WEB_FRONTEND_URL,
+    'https://assets.oldful.com',
+    'https://oldful.com',
+    'https://www.oldful.com',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3003',
+    'http://localhost:8081',
 ].filter(Boolean);
 
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    const isAllowed = allowedOrigins.some(o => origin.startsWith(o)) || 
-                     origin.includes('localhost') || 
-                     origin.includes('127.0.0.1') ||
-                     /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin); // Local network IP
+    origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, server-to-server, health checks)
+        if (!origin) return callback(null, true);
+        
+        const isAllowed = ALLOWED_ORIGINS.includes(origin) || 
+                         origin.includes('localhost') || 
+                         origin.includes('127.0.0.1') ||
+                         /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin); // Local network IP
 
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      logger.warn(`🚫 CORS blocked: ${origin}`);
-      callback(null, true); // Temporarily allow while debugging mobile issues, but log it
-    }
-  },
-  credentials: true,
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            logger.warn(`🚫 CORS blocked: ${origin}`);
+            callback(null, true); // Temporarily allow while debugging, but log it
+        }
+    },
+    credentials: true,
+    maxAge: 86400, // Cache preflight for 24h
 }));
 
-// ─── Rate Limiting ──────────────────────────────────────
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200,
-  message: { success: false, message: 'Too many requests, please try again later.' },
+// ═══ RATE LIMITING ══════════════════════════════════════════
+// Global: 200 requests per 15 minutes per IP
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many requests. Please try again later.' },
+    // Skip rate limiting for health checks
+    skip: (req) => req.path === '/api/health',
 });
-app.use('/api/', limiter);
+app.use('/api/', globalLimiter);
 
-// ─── Webhook route (raw body needed before json parse) ──
+// Auth endpoints: 10 requests per 15 minutes (OTP has its own stricter limiter in auth.routes.js)
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many auth attempts. Please try again later.' },
+});
+
+// Payment endpoints: 30 requests per 15 minutes
+const paymentLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many payment requests. Please slow down.' },
+});
+
+// Upload endpoints: 20 requests per 15 minutes
+const uploadLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Upload rate limit exceeded. Please try again later.' },
+});
+
+// ═══ WEBHOOK ROUTES (raw body needed before json parse) ═════
 app.use('/api/webhooks', webhookRoutes);
 
-// ─── Body Parsing ───────────────────────────────────────
+// ═══ BODY PARSING ═══════════════════════════════════════════
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ─── Logging ────────────────────────────────────────────
-app.use(morgan('combined', {
-  stream: { write: (message) => logger.info(message.trim()) },
+// ═══ LOGGING ════════════════════════════════════════════════
+app.use(morgan(':method :url :status :response-time ms - :remote-addr', {
+    stream: { write: (message) => logger.info(message.trim()) },
+    // Skip logging for health checks in production
+    skip: (req) => process.env.NODE_ENV === 'production' && req.path === '/api/health',
 }));
 
-// ─── Health Check ───────────────────────────────────────
-app.get('/api/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Oldful API is running',
-    version: '1.0.0',
-    timestamp: new Date().toISOString(),
-  });
+// ═══ HEALTH CHECK ═══════════════════════════════════════════
+app.get('/api/health', async (req, res) => {
+    // Basic health — always fast
+    const health = {
+        success: true,
+        message: 'Oldful API is running',
+        version: '2.0.0',
+        timestamp: new Date().toISOString(),
+        uptime: Math.floor(process.uptime()),
+    };
+
+    // Deep health check (storage connectivity) — only if ?deep=true
+    if (req.query.deep === 'true') {
+        try {
+            const { healthCheck } = require('./utils/storage.service');
+            health.storage = await healthCheck();
+        } catch (err) {
+            health.storage = { error: err.message };
+        }
+    }
+
+    res.json(health);
 });
 
-// ─── API Routes ─────────────────────────────────────────
-app.use('/api/auth', authRoutes);
+// ═══ API ROUTES ═════════════════════════════════════════════
+// Auth (with stricter rate limiting)
+app.use('/api/auth', authLimiter, authRoutes);
+
+// Admin
 app.use('/api/admin', adminRoutes);
+
+// Core
 app.use('/api/cities', cityRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/caregivers', caregiverRoutes);
+
+// Subscriptions & Payments (with payment rate limiter)
 app.use('/api/plans', planRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
-app.use('/api/payments', paymentRoutes);
+app.use('/api/payments', paymentLimiter, paymentRoutes);
+
+// Communication
 app.use('/api/sos', sosRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/support', supportRoutes);
+
+// Content
 app.use('/api/legal', legalRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
-app.use('/api/audit-logs', auditRoutes);
+
+// Media & Uploads (with upload rate limiter)
+app.use('/api/media', uploadLimiter, mediaRoutes);
+app.use('/api/upload', uploadLimiter, uploadRoutes);
+
+// Config & SDUI
 app.use('/api/ui-config', uiConfigRoutes);
+app.use('/api/remote-config', remoteConfigRoutes);
+app.use('/api/app-config', appConfigRoutes);
+
+// Admin tools
+app.use('/api/audit-logs', auditRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/insurance', insuranceRoutes);
-app.use('/api/support', supportRoutes);
-app.use('/api/media', mediaRoutes);
+app.use('/api/labs', labRoutes);
 
-// ─── Error Handling ─────────────────────────────────────
+// ═══ ERROR HANDLING ═════════════════════════════════════════
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// ─── Start Server ───────────────────────────────────────
+// ═══ START SERVER ═══════════════════════════════════════════
 app.listen(PORT, '0.0.0.0', () => {
-  logger.info(`🚀 Oldful Backend running on port ${PORT}`);
-  logger.info(`📋 Environment: ${process.env.NODE_ENV}`);
+    logger.info(`🚀 Oldful Backend running on port ${PORT}`);
+    logger.info(`📋 Environment: ${process.env.NODE_ENV}`);
+    logger.info(`🔒 Trust proxy: enabled`);
 
-  // Initialize background cron jobs
-  initCronJobs();
-  logger.info('⏰ Cron jobs initialized');
+    // Initialize background cron jobs
+    initCronJobs();
+    logger.info('⏰ Cron jobs initialized');
 });
 
 module.exports = app;

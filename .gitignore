@@ -29,7 +29,7 @@
 *.app/
 *.exe
 *.dmg
-
+.claude
 # ───── Expo / React Native ─────
 mobile/.expo/
 mobile/web-build/
@@ -55,6 +55,7 @@ yarn-error.log*
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+local.properties
 
 # ───── IDE / Editor ─────
 .vscode/
@@ -69,7 +70,18 @@ Desktop.ini
 *.p8
 *.p12
 *.key
+*.keystore
 *.mobileprovision
+
+# ───── Firebase / GCP Service Configs ─────
+**/google-services.json
+**/GoogleService-Info.plist
+**/serviceAccount*.json
+**/firebase-service-account*.json
+**/firebase_account_config.json
+**/*-vision-key.json
+**/*-service-key.json
+**/google-vision-key.json
 
 # ───── TypeScript ─────
 *.tsbuildinfo
@@ -77,6 +89,10 @@ next-env.d.ts
 
 # ───── Vercel ─────
 .vercel
+
+# ───── Razorpay Keys ─────
+*.csv
+rzp-key.csv
 
 # ───── Project Specific Local Files ─────
 Oldful PRD.pdf
@@ -88,8 +104,9 @@ parse_api_list.js
 *.ps1
 API_LIST.pdf
 RedcliffeLabs API Documentation.pdf
+tmp-figma/
+
 # ───── Misc ─────
 *.orig.*
 .gemini/
-backend/src/config/google-vision-key.json
-backend/src/config/firebase-service-account.json
+./extract

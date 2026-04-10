@@ -10,6 +10,7 @@ const ctrl = require('../controllers/user.controller');
 router.get('/profile', authenticateUser, ctrl.getMyProfile);
 router.put('/profile', authenticateUser, ctrl.updateMyProfile);
 router.put('/profile/avatar', authenticateUser, upload.single('avatar'), ctrl.uploadProfileAvatar);
+router.put('/profile/device-token', authenticateUser, ctrl.registerDeviceToken);
 router.get('/profile/health-reports', authenticateUser, ctrl.getMyHealthReports);
 
 // Admin user management
@@ -28,6 +29,7 @@ router.delete('/:userId/emergency-contacts/:contactId', authenticate, ctrl.remov
 // Addresses
 router.post('/:id/addresses', authenticate, ctrl.addAddress);
 router.put('/:userId/addresses/:addressId', authenticate, ctrl.updateAddress);
+router.delete('/:userId/addresses/:addressId', authenticate, ctrl.deleteAddress);
 
 // Medical Card
 router.post('/:id/medical-card', authenticate, ctrl.upsertMedicalCard);

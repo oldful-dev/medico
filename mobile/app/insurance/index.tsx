@@ -6,12 +6,12 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    ScrollView,
     Platform,
     TextInput,
     Alert,
     ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +20,7 @@ import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { useTranslation } from 'react-i18next';
 
 // ─── Initial State Constants ───
 const INITIAL_CONDITIONS = [
@@ -35,6 +36,7 @@ const INITIAL_RECIPIENTS = [
 ];
 
 export default function InsuranceScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
@@ -48,6 +50,7 @@ export default function InsuranceScreen() {
     const [serviceId, setServiceId] = React.useState('');
     const [address, setAddress] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
+    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
 
     React.useEffect(() => {
         (async () => {
@@ -66,6 +69,7 @@ export default function InsuranceScreen() {
                     if (svc) setServiceId(svc.id);
                 }
             } catch (err) { console.log('Insurance init failed', err); }
+            finally { setIsLoadingInit(false); }
         })();
     }, []);
 
@@ -145,10 +149,13 @@ export default function InsuranceScreen() {
 
             {/* ─── Content Card ─── */}
             <View style={styles.contentCard}>
-                <ScrollView
+                <KeyboardAwareScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    enableOnAndroid
+                    extraScrollHeight={20}
                 >
                     {/* ─── Main Form Card (matches Figma Rectangle 157) ─── */}
                     <View style={styles.formWrapper}>
@@ -234,12 +241,14 @@ export default function InsuranceScreen() {
                         {/* ─── Submit Button ─── */}
                         <View style={styles.submitContainer}>
                             <TouchableOpacity
-                                style={[styles.submitButton, isBooking && { opacity: 0.6 }]}
+                                style={[styles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
                                 activeOpacity={0.8}
-                                disabled={isBooking}
+                                disabled={isBooking || isLoadingInit}
                                 onPress={handleBookService}
                             >
-                                {isBooking ? (
+                                {isLoadingInit ? (
+                                    <Text style={styles.submitButtonText}>Initializing...</Text>
+                                ) : isBooking ? (
                                     <ActivityIndicator color="#FFFFFF" />
                                 ) : (
                                     <Text style={styles.submitButtonText}>Submit Request</Text>
@@ -247,7 +256,7 @@ export default function InsuranceScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
-                </ScrollView>
+                </KeyboardAwareScrollView>
             </View>
         </View>
     );

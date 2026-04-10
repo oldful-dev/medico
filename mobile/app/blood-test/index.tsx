@@ -7,10 +7,10 @@ import {
     TouchableOpacity,
     Image,
     Platform,
-    ScrollView,
     Alert,
     ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +22,7 @@ import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { mediaService } from '@/services/api/mediaService';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const cautionIcon = require('@/assets/images/c4f7fda686169deb23b4565362e0a544adc4d7c4.png');
@@ -29,6 +30,7 @@ const clockIcon = require('@/assets/images/b0c2041dcbc9f27873dbb95bd36571aded342
 const calendarIcon = require('@/assets/images/9db46350ce94677b709648f4aadad3189870cab5.png');
 
 export default function BloodTestScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const [selectedTest, setSelectedTest] = useState('Full Body Package');
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -37,6 +39,8 @@ export default function BloodTestScreen() {
     // API & Init state
     const [cityId, setCityId] = useState('');
     const [serviceId, setServiceId] = useState('');
+    const [serviceName, setServiceName] = useState('Blood Test');
+    const [servicePrice, setServicePrice] = useState(0);
     const [address, setAddress] = useState('Fetching address...');
     const [isLoadingInit, setIsLoadingInit] = useState(true);
     const [isBooking, setIsBooking] = useState(false);
@@ -58,7 +62,11 @@ export default function BloodTestScreen() {
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'blood-test');
-                    if (svc) setServiceId(svc.id);
+                    if (svc) {
+                        setServiceId(svc.id);
+                        setServiceName(svc.name || 'Blood Test');
+                        setServicePrice(svc.basePrice ?? 0);
+                    }
                 }
             } catch (err) { 
                 console.log('Blood Test init failed', err); 
@@ -87,13 +95,21 @@ export default function BloodTestScreen() {
                 cityId,
                 scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
                 addressLine: address || undefined,
-                formDataJson: { 
+                amount: servicePrice,
+                formDataJson: {
                     testType: selectedTest,
-                    attachments: uploadedImageUrls 
+                    attachments: uploadedImageUrls
                 },
             });
             if (res.success && res.data) {
-                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+                router.push({
+                    pathname: '/payment/checkout',
+                    params: {
+                        bookingId: res.data.id,
+                        amount: String(servicePrice),
+                        label: serviceName,
+                    },
+                });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
             }
@@ -115,9 +131,9 @@ export default function BloodTestScreen() {
         // Smart Alert Logic
         if (nextTest === 'Sugar (Fasting)' || nextTest === 'Lipid Profile') {
             Alert.alert(
-                "Fasting Required",
-                "Please do not eat 10-12 hours before this test.",
-                [{ text: "Understood", onPress: () => console.log("Alert dismissed") }]
+                t('blood_test.fasting_required'),
+                t('blood_test.fasting_message'),
+                [{ text: t('blood_test.understood'), onPress: () => console.log("Alert dismissed") }]
             );
         }
     };
@@ -134,17 +150,17 @@ export default function BloodTestScreen() {
                     </TouchableOpacity>
                 </View>
 
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* ─── Titles ─── */}
-                    <Text style={styles.title}>Book a Home Blood Test</Text>
-                    <Text style={styles.subtitle}>Lab tests & checkup at your doorstep</Text>
+                    <Text style={styles.title}>{t('blood_test.header')}</Text>
+                    <Text style={styles.subtitle}>{t('blood_test.subtitle')}</Text>
 
                     {/* ─── Select Your Test Box ─── */}
                     <View style={styles.sectionCard}>
-                        <Text style={styles.sectionTitle}>Select Your Test</Text>
+                        <Text style={styles.sectionTitle}>{t('blood_test.select_test')}</Text>
                         <View style={styles.dropdownContainer}>
-                            <Text style={styles.dropdownLabel}>Choose Test</Text>
+                            <Text style={styles.dropdownLabel}>{t('blood_test.choose_test')}</Text>
                             <TouchableOpacity style={styles.dropdownInput} activeOpacity={0.7} onPress={handleTestSelection}>
                                 <Text style={styles.dropdownValue}>{selectedTest}</Text>
                                 <Ionicons name="chevron-down" size={16} color="#AAAEAC" />
@@ -154,7 +170,7 @@ export default function BloodTestScreen() {
 
                     <View style={styles.sectionCardTinted}>
                         <DateTimePickerInput
-                            label="Schedule Your Appointment"
+                            label={t('blood_test.schedule_appointment')}
                             onDateChange={(d) => setSelectedDate(d)}
                         />
                     </View>
@@ -162,8 +178,8 @@ export default function BloodTestScreen() {
                     {/* ─── Upload Prescription ─── */}
                     <View style={{ marginBottom: 20 }}>
                         <ImageUploadBox
-                            title="Upload Prescription (Optional)"
-                            subtitle="Help us understand which tests you need"
+                            title={t('blood_test.upload_prescription')}
+                            subtitle={t('blood_test.upload_prescription_hint')}
                             onImagesChange={setSelectedImages}
                             maxImages={3}
                         />
@@ -180,7 +196,7 @@ export default function BloodTestScreen() {
                                 <ActivityIndicator color="#FFFFFF" />
                             ) : (
                                 <Text style={styles.confirmButtonText}>
-                                    {isLoadingInit ? 'Initializing...' : 'Confirm Booking'}
+                                    {isLoadingInit ? t('common.initializing') : t('booking.confirm_booking')}
                                 </Text>
                             )}
                         </TouchableOpacity>
@@ -188,7 +204,7 @@ export default function BloodTestScreen() {
 
                     {/* Inline warning removed in favor of React Native Alert as per PRD "Popup Alert" requirement */}
 
-                </ScrollView>
+                </KeyboardAwareScrollView>
             </SafeAreaView>
         </View>
     );

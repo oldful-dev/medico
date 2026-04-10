@@ -4,7 +4,7 @@
 
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate, generateBookingCode } = require('../utils/helpers');
-const { bookLabTestSlot } = require('../utils/redcliffe.service');
+const { sendPushToUser } = require('../utils/pushNotification.service');
 
 // GET /api/bookings
 const getBookings = async (req, res, next) => {
@@ -40,9 +40,10 @@ const getBookings = async (req, res, next) => {
                 take: limit,
                 include: {
                     user: { select: { id: true, name: true, uniqueUserId: true, phone: true } },
-                    service: { select: { id: true, name: true, icon: true } },
+                    service: { select: { name: true, slug: true, icon: true, pricingText: true } },
                     city: { select: { name: true } },
                     caregiver: { select: { id: true, name: true, phone: true } },
+                    payments: true,
                 },
                 orderBy: { createdAt: 'desc' },
             }),
@@ -78,66 +79,106 @@ const getBookingById = async (req, res, next) => {
 // POST /api/bookings
 const createBooking = async (req, res, next) => {
     try {
-        const bookingCode = await generateBookingCode();
         const {
             userId, serviceId, cityId,
             scheduledDate, scheduledTime, addressLine, latitude, longitude,
             symptoms, doctorType, staffType, shiftDuration, startDate, endDate, requirements,
             pickupAddress, dropAddress, vehicleType,
-            amount, formDataJson,
+            amount, formDataJson, paymentMethod
         } = req.body;
 
         const finalUserId = userId || (req.user && req.user.id);
         if (!finalUserId) return res.status(400).json({ success: false, message: 'User ID is required' });
 
-        const service = await prisma.service.findUnique({ where: { id: serviceId } });
+        // Find user to get their cityId if not provided
+        const userData = await prisma.user.findUnique({ where: { id: finalUserId }, select: { cityId: true } });
+        const finalCityId = cityId || (userData && userData.cityId);
+
+        if (!finalCityId) return res.status(400).json({ success: false, message: 'City ID is required' });
+
+        // Find service by ID (UUID) or Slug
+        let service = await prisma.service.findFirst({
+            where: {
+                OR: [
+                    { id: serviceId },
+                    { slug: serviceId }
+                ]
+            }
+        });
+        
         if (!service) return res.status(404).json({ success: false, message: 'Service not found' });
+        const finalServiceId = service.id;
 
-        let redcliffeDetails = null;
+        // Note: BLOOD_TEST bookings go through /api/labs/book (2-step Redcliffe flow).
+        // The generic booking controller handles all other service types.
 
-        // Redcliffe Labs Integration for Blood Tests
-        if (service.serviceType === 'BLOOD_TEST') {
-            const user = await prisma.user.findUnique({ where: { id: finalUserId } });
-            redcliffeDetails = await bookLabTestSlot({
-                patientName: user.name,
-                patientPhone: user.phone,
-                testIds: requirements || [], // Ensure 'requirements' carries Redcliffe Test IDs
-                scheduledDate,
-                addressLine,
-            });
+        // Retry up to 3 times on bookingCode collision
+        let booking;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                const bookingCode = await generateBookingCode();
+                booking = await prisma.booking.create({
+                    data: {
+                        bookingCode,
+                        userId: finalUserId,
+                        serviceId: finalServiceId,
+                        cityId: finalCityId,
+                        scheduledDate: new Date(scheduledDate),
+                        scheduledTime,
+                        addressLine,
+                        latitude,
+                        longitude,
+                        symptoms: symptoms || [],
+                        doctorType,
+                        staffType,
+                        shiftDuration,
+                        startDate: startDate ? new Date(startDate) : null,
+                        endDate: endDate ? new Date(endDate) : null,
+                        requirements: requirements || [],
+                        pickupAddress,
+                        dropAddress,
+                        vehicleType,
+                        amount: amount || 0,
+                        formDataJson: formDataJson || null,
+                        status: (paymentMethod === 'cash' || amount === 0) ? 'CONFIRMED' : 'PENDING',
+                        slaDeadline: new Date(Date.now() + 4 * 60 * 60 * 1000),
+                    },
+                    include: {
+                        user: { select: { name: true, phone: true } },
+                        service: { select: { name: true, slug: true, icon: true } },
+                    },
+                });
+                break; // success
+            } catch (err) {
+                const isUniqueViolation = err.code === 'P2002' && err.meta?.target?.includes('bookingCode');
+                if (!isUniqueViolation || attempt === 2) throw err;
+            }
         }
 
-        const booking = await prisma.booking.create({
-            data: {
-                bookingCode,
-                userId: finalUserId,
-                serviceId,
-                cityId,
-                scheduledDate: new Date(scheduledDate),
-                scheduledTime,
-                addressLine,
-                latitude,
-                longitude,
-                symptoms: symptoms || [],
-                doctorType,
-                staffType,
-                shiftDuration,
-                startDate: startDate ? new Date(startDate) : null,
-                endDate: endDate ? new Date(endDate) : null,
-                requirements: requirements || [],
-                pickupAddress,
-                dropAddress,
-                vehicleType,
-                amount: amount || 0,
-                formDataJson: redcliffeDetails ? { ...formDataJson, redcliffeOrder: redcliffeDetails } : formDataJson,
-                // Auto-set SLA deadline (4 hours from now)
-                slaDeadline: new Date(Date.now() + 4 * 60 * 60 * 1000),
-            },
-            include: {
-                user: { select: { name: true, phone: true } },
-                service: { select: { name: true } },
-            },
-        });
+        const bookingCode = booking.bookingCode;
+
+        // Send push notification for booking confirmation
+        const shouldNotify = (paymentMethod === 'cash') || (amount === 0);
+
+        if (shouldNotify) {
+            await sendPushToUser(finalUserId, {
+                title: 'Booking Confirmed',
+                body: `Your ${booking.service.name} booking (${bookingCode}) has been placed successfully.`,
+                data: { type: 'booking_created', bookingId: booking.id, bookingCode },
+            });
+
+            // Send DLT SMS Booking Confirmation
+            if (booking.user?.phone) {
+                const { sendBookingConfirmation } = require('../utils/notifications');
+                await sendBookingConfirmation({ 
+                    user: booking.user, 
+                    bookingCode, 
+                    booking: { serviceName: booking.service?.name } 
+                });
+            }
+        } else {
+            console.log(`[Booking] Deferring notifications for booking ${bookingCode} (Waiting for payment)`);
+        }
 
         sendResponse(res, 201, booking, 'Booking created successfully');
     } catch (error) {
@@ -154,6 +195,14 @@ const assignCaregiver = async (req, res, next) => {
             data: { caregiverId, status: 'ASSIGNED' },
             include: { caregiver: { select: { name: true } } },
         });
+
+        // Notify user that a caregiver has been assigned
+        await sendPushToUser(booking.userId, {
+            title: 'Caregiver Assigned',
+            body: `${booking.caregiver.name} has been assigned to your booking.`,
+            data: { type: 'caregiver_assigned', bookingId: booking.id },
+        });
+
         sendResponse(res, 200, booking, 'Caregiver assigned');
     } catch (error) {
         next(error);
@@ -187,6 +236,22 @@ const updateBookingStatus = async (req, res, next) => {
             where: { id: req.params.id },
             data,
         });
+
+        // Notify user of status change via push
+        const statusMessages = {
+            IN_PROGRESS: 'Your service is now in progress.',
+            COMPLETED: 'Your service has been completed. Thank you!',
+            CANCELLED: 'Your booking has been cancelled.',
+            SLA_BREACH: 'We apologize for the delay. Our team is escalating your booking.',
+        };
+        if (statusMessages[status]) {
+            await sendPushToUser(booking.userId, {
+                title: `Booking ${status.replace('_', ' ')}`,
+                body: statusMessages[status],
+                data: { type: 'booking_status', bookingId: booking.id, status },
+            });
+        }
+
         sendResponse(res, 200, booking, 'Booking status updated');
     } catch (error) {
         next(error);
@@ -221,8 +286,8 @@ const getMyBookings = async (req, res, next) => {
                 skip,
                 take: limit,
                 include: {
-                    service: { select: { name: true, icon: true } },
-                    caregiver: { select: { name: true, phone: true } },
+                    service: { select: { name: true, slug: true, icon: true, pricingText: true } },
+                    payments: true,
                 },
                 orderBy: { createdAt: 'desc' },
             }),
@@ -257,7 +322,6 @@ const cancelBooking = async (req, res, next) => {
     }
 };
 
-// GET /api/bookings/detail/:id  (App user — get own booking by ID)
 const getMyBookingById = async (req, res, next) => {
     try {
         const booking = await prisma.booking.findUnique({
@@ -266,6 +330,9 @@ const getMyBookingById = async (req, res, next) => {
                 service: { select: { name: true, slug: true, icon: true } },
                 caregiver: { select: { name: true, phone: true, profileImageUrl: true } },
                 city: { select: { name: true } },
+                payments: {
+                    include: { invoice: true }
+                },
             },
         });
         if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
@@ -276,9 +343,51 @@ const getMyBookingById = async (req, res, next) => {
     }
 };
 
+const { generateInvoicePDF } = require('../utils/pdfGenerator');
+
+// GET /api/bookings/:id/invoice  (App user — download PDF)
+const downloadInvoice = async (req, res, next) => {
+    try {
+        const booking = await prisma.booking.findUnique({
+            where: { id: req.params.id },
+            include: {
+                user: { select: { name: true, phone: true } },
+                service: { select: { name: true } },
+                payments: {
+                    where: { status: 'SUCCESS' },
+                    include: { invoice: true },
+                },
+            },
+        });
+
+        if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+        if (booking.userId !== req.user.id) return res.status(403).json({ success: false, message: 'Not authorized' });
+
+        const payment = booking.payments[0];
+        if (!payment || !payment.invoice) {
+            return res.status(404).json({ success: false, message: 'Invoice not found for this booking' });
+        }
+
+        const invoiceData = {
+            ...payment.invoice,
+            billingName: booking.user.name,
+            billingAddress: booking.addressLine || 'N/A',
+            description: `${booking.service.name} (${booking.bookingCode})`,
+        };
+
+        const pdfBuffer = await generateInvoicePDF(invoiceData);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=Invoice_${booking.bookingCode}.pdf`);
+        res.send(pdfBuffer);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getBookings, getBookingById, createBooking,
     assignCaregiver, reassignCaregiver, updateBookingStatus, escalateBooking,
-    getMyBookings, getMyBookingById, cancelBooking,
+    getMyBookings, getMyBookingById, cancelBooking, downloadInvoice,
 };
 

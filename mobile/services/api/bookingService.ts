@@ -7,6 +7,7 @@
 // ──────────────────────────────────────────────
 
 import { apiClient, ApiResponse, PaginatedApiResponse } from './apiClient';
+import { AnalyticsEvents } from '../firebase/analyticsEvents';
 
 // ─── Types (aligned with Prisma Booking model) ──
 
@@ -99,7 +100,14 @@ export const bookingService = {
      * Creates a new booking for any service type.
      */
     createBooking: async (data: CreateBookingPayload): Promise<ApiResponse<Booking>> => {
-        return apiClient.post<Booking>('/bookings', data);
+        const response = await apiClient.post<Booking>('/bookings', data);
+        if (response.success && response.data) {
+            AnalyticsEvents.trackBookingCompleted(
+                response.data.service?.name || 'unknown',
+                response.data.bookingCode
+            );
+        }
+        return response;
     },
 
     /**
@@ -123,6 +131,7 @@ export const bookingService = {
      * Cancel an active booking.
      */
     cancelBooking: async (bookingId: string): Promise<ApiResponse> => {
+        AnalyticsEvents.trackBookingCancelled(bookingId);
         return apiClient.post(`/bookings/${bookingId}/cancel`);
     },
 };

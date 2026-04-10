@@ -7,10 +7,10 @@ import {
     TouchableOpacity,
     Image,
     Platform,
-    ScrollView,
     Alert,
     ActivityIndicator,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +20,7 @@ import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgWheelchair = require('@/assets/images/be69e88a2a74b15eb189dce875fc4395704fc6bb.png');
@@ -31,6 +32,7 @@ const calendarIcon = require('@/assets/images/9db46350ce94677b709648f4aadad31898
 const clockIcon = require('@/assets/images/b0c2041dcbc9f27873dbb95bd36571aded3422d2.png');
 
 export default function MedicalEquipmentScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const [selectedEquipment, setSelectedEquipment] = useState('wheelchair');
     const [selectedDuration, setSelectedDuration] = useState('Monthly');
@@ -41,7 +43,10 @@ export default function MedicalEquipmentScreen() {
     // API state
     const [cityId, setCityId] = useState('');
     const [serviceId, setServiceId] = useState('');
+    const [serviceName, setServiceName] = useState('Medical Equipment Rental');
+    const [servicePrice, setServicePrice] = useState(0);
     const [isBooking, setIsBooking] = useState(false);
+    const [isLoadingInit, setIsLoadingInit] = useState(true);
 
     React.useEffect(() => {
         (async () => {
@@ -60,12 +65,14 @@ export default function MedicalEquipmentScreen() {
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'equipment-rental');
-                    if (svc) setServiceId(svc.id);
+                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Medical Equipment Rental'); setServicePrice(svc.basePrice ?? 0); }
                 }
             } catch (err) {
                 console.log('Equipment init failed', err);
                 setIsManualAddress(true);
                 setAddress('');
+            } finally {
+                setIsLoadingInit(false);
             }
         })();
     }, []);
@@ -88,7 +95,7 @@ export default function MedicalEquipmentScreen() {
                 },
             });
             if (res.success && res.data) {
-                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
+                router.push({ pathname: '/payment/checkout', params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName } });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
             }
@@ -112,7 +119,7 @@ export default function MedicalEquipmentScreen() {
                     </TouchableOpacity>
                 </View>
 
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* ─── Titles ─── */}
                     <Text style={styles.title}>Rent Medical Equipment</Text>
@@ -198,12 +205,14 @@ export default function MedicalEquipmentScreen() {
                     {/* ─── Confirm Rental Button ─── */}
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity
-                            style={[styles.confirmButton, isBooking && { opacity: 0.6 }]}
+                            style={[styles.confirmButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
                             activeOpacity={0.8}
-                            disabled={isBooking}
+                            disabled={isBooking || isLoadingInit}
                             onPress={handleBookService}
                         >
-                            {isBooking ? (
+                            {isLoadingInit ? (
+                                <Text style={styles.confirmButtonText}>Initializing...</Text>
+                            ) : isBooking ? (
                                 <ActivityIndicator color="#FFFFFF" />
                             ) : (
                                 <Text style={styles.confirmButtonText}>Confirm Rental</Text>
@@ -211,7 +220,7 @@ export default function MedicalEquipmentScreen() {
                         </TouchableOpacity>
                     </View>
 
-                </ScrollView>
+                </KeyboardAwareScrollView>
             </SafeAreaView>
         </View>
     );

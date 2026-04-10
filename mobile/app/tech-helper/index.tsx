@@ -5,9 +5,9 @@ import {
     StyleSheet,
     TouchableOpacity,
     Platform,
-    ScrollView,
     TextInput
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +21,7 @@ import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { locationService } from '@/services/device/locationService';
 import { Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 // Feature items array according to PRD
 const ISSUES = [
@@ -30,6 +31,7 @@ const ISSUES = [
 ];
 
 export default function TechHelperScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
@@ -43,8 +45,11 @@ export default function TechHelperScreen() {
     const { userId } = useAuth();
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
+    const [serviceName, setServiceName] = React.useState('Tech Helper');
+    const [servicePrice, setServicePrice] = React.useState(0);
     const [address, setAddress] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
+    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
 
     React.useEffect(() => {
         (async () => {
@@ -67,11 +72,13 @@ export default function TechHelperScreen() {
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'tech-helper');
-                    if (svc) setServiceId(svc.id);
+                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Tech Helper'); setServicePrice(svc.basePrice ?? 0); }
                 }
 
             } catch (err) {
                 console.log("Initialization failed", err);
+            } finally {
+                setIsLoadingInit(false);
             }
         })();
     }, []);
@@ -106,13 +113,11 @@ export default function TechHelperScreen() {
                 }
             };
 
-            const res = await bookingService.createBooking(payload);
+            const res = await bookingService.createBooking({ ...payload, amount: servicePrice });
             if (res.success && res.data) {
                 router.push({
-                    pathname: '/service-confirmation',
-                    params: {
-                        bookingId: res.data.id
-                    }
+                    pathname: '/payment/checkout',
+                    params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName }
                 });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
@@ -147,7 +152,7 @@ export default function TechHelperScreen() {
 
             {/* ─── Main Content Container ─── */}
             <View style={styles.contentContainer}>
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* Hero Title & Tagline */}
                     <Text style={styles.mainTitle}>Tech Helper</Text>
@@ -244,15 +249,15 @@ export default function TechHelperScreen() {
                     {/* ─── Book Support Button ─── */}
                     <View style={styles.footerSpacing} />
                     <TouchableOpacity
-                        style={[styles.submitButton, isBooking && { opacity: 0.7 }]}
+                        style={[styles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.7 }]}
                         activeOpacity={0.8}
-                        disabled={isBooking}
+                        disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
-                        <Text style={styles.submitButtonText}>{isBooking ? 'Processing...' : 'Book Tech Support'}</Text>
+                        <Text style={styles.submitButtonText}>{isLoadingInit ? 'Initializing...' : isBooking ? 'Processing...' : 'Book Tech Support'}</Text>
                     </TouchableOpacity>
 
-                </ScrollView>
+                </KeyboardAwareScrollView>
             </View>
         </View>
     );

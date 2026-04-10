@@ -1,62 +1,32 @@
 require("dotenv").config();
-const twilio = require("twilio");
-const readline = require("readline");
+const axios = require("axios");
 
-// Twilio client
-const client = twilio(
-    process.env.TWILIO_ACCOUNT_SID,
-    process.env.TWILIO_AUTH_TOKEN
-);
+// 🔐 Replace with your Fast2SMS API Key
+const API_KEY = process.env.FAST2SMS_API_KEY;
 
-// CLI input
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-
-// Phone number to test
-const phone = "+917362973003"; // change to your number
-
-async function runOTPFlow() {
+const sendSMS = async () => {
     try {
-
-        // STEP 1: Send OTP
-        console.log("Sending OTP...");
-
-        const send = await client.verify.v2
-            .services(process.env.TWILIO_VERIFY_SERVICE_SID)
-            .verifications.create({
-                to: phone,
-                channel: "sms"
-            });
-
-        console.log("OTP status:", send.status);
-
-        // STEP 2: Ask user for OTP
-        rl.question("Enter OTP received on phone: ", async (code) => {
-
-            const check = await client.verify.v2
-                .services(process.env.TWILIO_VERIFY_SERVICE_SID)
-                .verificationChecks.create({
-                    to: phone,
-                    code: code
-                });
-
-            console.log("Verification result:", check.status);
-
-            if (check.status === "approved") {
-                console.log("✅ OTP Verified Successfully");
-            } else {
-                console.log("❌ Invalid OTP");
+        const response = await axios.post(
+            "https://www.fast2sms.com/dev/bulkV2",
+            {
+                route: "q", // q = quick (transactional/auth)
+                message: "Your Oldful OTP is 123456",
+                language: "english",
+                flash: 0,
+                numbers: "7362973003", // comma-separated for multiple
+            },
+            {
+                headers: {
+                    authorization: API_KEY,
+                    "Content-Type": "application/json",
+                },
             }
+        );
 
-            rl.close();
-        });
-
-    } catch (err) {
-        console.error("Error:", err.message);
-        rl.close();
+        console.log("✅ SMS Sent:", response.data);
+    } catch (error) {
+        console.error("❌ Error:", error.response?.data || error.message);
     }
-}
+};
 
-runOTPFlow();
+sendSMS();

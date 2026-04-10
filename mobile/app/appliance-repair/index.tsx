@@ -6,9 +6,9 @@ import {
     TouchableOpacity,
     Image,
     Platform,
-    ScrollView,
     TextInput,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,17 +25,19 @@ import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { mediaService } from '@/services/api/mediaService';
 import { Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 const imgHero = require('@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png');
 const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
 const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
 
 export default function ApplianceRepairScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [appliance, setAppliance] = React.useState('');
     const [issue, setIssue] = React.useState('');
     const { userId } = useAuth();
-    const { isReady, cityId, serviceId, address, setAddress, isManualAddress, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('appliance-repair');
+    const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, isManualAddress, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('appliance-repair');
     
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
@@ -73,12 +75,14 @@ export default function ApplianceRepairScreen() {
                 }
             };
 
-            const res = await bookingService.createBooking(payload);
+            const res = await bookingService.createBooking({ ...payload, amount: servicePrice });
             if (res.success && res.data) {
                 router.push({
-                    pathname: '/service-confirmation',
+                    pathname: '/payment/checkout',
                     params: {
-                        bookingId: res.data.id
+                        bookingId: res.data.id,
+                        amount: String(servicePrice),
+                        label: serviceName || 'Appliance Repair',
                     }
                 });
             } else {
@@ -107,7 +111,7 @@ export default function ApplianceRepairScreen() {
                 <View style={{ width: 40 }} /> {/* spacer for center alignment */}
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                 {/* ─── Hero Section ─── */}
                 <View style={styles.heroSection}>
@@ -205,7 +209,7 @@ export default function ApplianceRepairScreen() {
                     </TouchableOpacity>
                 </View>
 
-            </ScrollView>
+            </KeyboardAwareScrollView>
         </View>
     );
 }

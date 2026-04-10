@@ -8,6 +8,7 @@ import {
     Platform,
     ScrollView,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +20,7 @@ import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { Alert } from 'react-native';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgCarouselIndia = require('@/assets/images/c73921e0062b4c910b14682c3ab2491a1db69321.png'); // Gateway of India image
@@ -31,6 +33,7 @@ const imgPicnic = require('@/assets/images/5bf8c5af10af2edaa6cb38278c8f8ce7133b7
 const imgChai = require('@/assets/images/70f805bc4699a177600d02eb33328392afe8e5f3.png'); // Chai icon
 
 export default function TripTravelsScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [destination, setDestination] = useState('Temple Tours');
@@ -42,6 +45,7 @@ export default function TripTravelsScreen() {
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
+    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
 
     React.useEffect(() => {
         (async () => {
@@ -60,6 +64,8 @@ export default function TripTravelsScreen() {
                 }
             } catch (err) {
                 console.log("Initialization failed", err);
+            } finally {
+                setIsLoadingInit(false);
             }
         })();
     }, []);
@@ -167,7 +173,7 @@ export default function TripTravelsScreen() {
                 <View style={{ width: 40 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                 {/* ─── Intro Text ─── */}
                 <Text style={styles.introText}>
@@ -244,12 +250,12 @@ export default function TripTravelsScreen() {
 
                 {/* ─── Submit Inquiry ─── */}
                 <TouchableOpacity
-                    style={[styles.mainButton, { marginBottom: 35 }, isBooking && { opacity: 0.7 }]}
+                    style={[styles.mainButton, { marginBottom: 35 }, (isBooking || isLoadingInit) && { opacity: 0.7 }]}
                     activeOpacity={0.8}
-                    disabled={isBooking}
+                    disabled={isBooking || isLoadingInit}
                     onPress={handleBookTrip}
                 >
-                    <Text style={styles.mainButtonText}>{isBooking ? 'Processing...' : 'Submit inquiry'}</Text>
+                    <Text style={styles.mainButtonText}>{isLoadingInit ? 'Initializing...' : isBooking ? 'Processing...' : 'Submit inquiry'}</Text>
                 </TouchableOpacity>
 
                 {/* ─── Join Local Events ─── */}
@@ -312,15 +318,15 @@ export default function TripTravelsScreen() {
 
                 {/* ─── Book Seat ─── */}
                 <TouchableOpacity
-                    style={[styles.mainButton, isBooking && { opacity: 0.7 }]}
+                    style={[styles.mainButton, (isBooking || isLoadingInit) && { opacity: 0.7 }]}
                     activeOpacity={0.8}
-                    disabled={isBooking}
+                    disabled={isBooking || isLoadingInit}
                     onPress={handleBookLocalEvent}
                 >
-                    <Text style={styles.mainButtonText}>{isBooking ? 'Processing...' : 'Book Seat'}</Text>
+                    <Text style={styles.mainButtonText}>{isLoadingInit ? 'Initializing...' : isBooking ? 'Processing...' : 'Book Seat'}</Text>
                 </TouchableOpacity>
 
-            </ScrollView>
+            </KeyboardAwareScrollView>
         </View>
     );
 }

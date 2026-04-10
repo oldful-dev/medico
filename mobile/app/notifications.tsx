@@ -1,5 +1,5 @@
 // Notifications Screen - Push notification history and management
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -7,80 +7,185 @@ import {
     TouchableOpacity,
     ScrollView,
     Platform,
-    Image,
+    ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { apiClient } from '@/services/api/apiClient';
+import { useTranslation } from 'react-i18next';
 
-// ─── Dummy notification data (static, no state/logic) ───
-const NOTIFICATIONS = [
-    {
-        id: '1',
-        type: 'booking',
-        title: 'Booking Confirmed',
-        message: 'Your doctor home visit has been confirmed for today at 3:00 PM.',
-        time: '2 min ago',
-        read: false,
-        icon: 'checkmark-circle' as const,
-        iconColor: '#048357',
-    },
-    {
-        id: '2',
-        type: 'reminder',
-        title: 'Upcoming Appointment',
-        message: 'Reminder: Your blood test appointment is scheduled for tomorrow at 10:00 AM.',
-        time: '1 hour ago',
-        read: false,
-        icon: 'alarm' as const,
-        iconColor: '#E8A317',
-    },
-    {
-        id: '3',
-        type: 'payment',
-        title: 'Payment Successful',
-        message: '₹499 paid for AC & Appliance Repair service. Invoice sent to your email.',
-        time: '3 hours ago',
-        read: true,
-        icon: 'wallet' as const,
-        iconColor: '#02743F',
-    },
-    {
-        id: '4',
-        type: 'update',
-        title: 'Service Update',
-        message: 'Your nursing care staff is on the way. Estimated arrival: 20 minutes.',
-        time: '5 hours ago',
-        read: true,
-        icon: 'car' as const,
-        iconColor: '#3B82F6',
-    },
-    {
-        id: '5',
-        type: 'promo',
-        title: 'Special Offer 🎉',
-        message: 'Get 20% off on your next doctor home visit. Use code MEDICO20.',
-        time: 'Yesterday',
-        read: true,
-        icon: 'gift' as const,
-        iconColor: '#E05E5E',
-    },
-    {
-        id: '6',
-        type: 'system',
-        title: 'Profile Updated',
-        message: 'Your address has been successfully updated to 123 Baker St, London.',
-        time: '2 days ago',
-        read: true,
-        icon: 'person-circle' as const,
-        iconColor: '#777777',
-    },
-];
+// ─── Types ───────────────────────────────────────────────
+type NotificationChannel = 'PUSH' | 'SMS' | 'EMAIL' | 'WHATSAPP' | string;
+
+interface RawNotification {
+    id: string;
+    channel: NotificationChannel;
+    subject?: string | null;
+    body?: string | null;
+    templateId?: string | null;
+    isSent: boolean;
+    isRead: boolean;
+    readAt?: string | null;
+    createdAt: string;
+}
+
+interface NotificationItem {
+    id: string;
+    title: string;
+    message: string;
+    time: string;
+    read: boolean;
+    icon: keyof typeof Ionicons.glyphMap;
+    iconColor: string;
+    createdAt: Date;
+}
+
+// ─── Helpers ─────────────────────────────────────────────
+
+function channelToIcon(channel: NotificationChannel, templateId?: string | null): { icon: keyof typeof Ionicons.glyphMap; color: string } {
+    if (templateId?.includes('booking') || templateId?.includes('confirm')) return { icon: 'checkmark-circle', color: '#048357' };
+    if (templateId?.includes('reminder') || templateId?.includes('appointment')) return { icon: 'alarm', color: '#E8A317' };
+    if (templateId?.includes('payment') || templateId?.includes('invoice')) return { icon: 'wallet', color: '#02743F' };
+    if (templateId?.includes('promo') || templateId?.includes('offer')) return { icon: 'gift', color: '#E05E5E' };
+    if (templateId?.includes('update') || templateId?.includes('status')) return { icon: 'car', color: '#3B82F6' };
+    switch (channel) {
+        case 'PUSH': return { icon: 'notifications-outline', color: '#048357' };
+        case 'SMS': return { icon: 'chatbubble-outline', color: '#E8A317' };
+        case 'EMAIL': return { icon: 'mail-outline', color: '#3B82F6' };
+        case 'WHATSAPP': return { icon: 'logo-whatsapp', color: '#25D366' };
+        default: return { icon: 'person-circle', color: '#777777' };
+    }
+}
+
+function formatRelativeTime(date: Date): string {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return 'Just now';
+    if (diffMin < 60) return `${diffMin} min ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr} hour${diffHr > 1 ? 's' : ''} ago`;
+    const diffDays = Math.floor(diffHr / 24);
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+function mapRaw(raw: RawNotification): NotificationItem {
+    const { icon, color } = channelToIcon(raw.channel, raw.templateId);
+    const createdAt = new Date(raw.createdAt);
+    return {
+        id: raw.id,
+        title: raw.subject ?? raw.templateId ?? 'Notification',
+        message: raw.body ?? '',
+        time: formatRelativeTime(createdAt),
+        read: raw.isRead,
+        icon,
+        iconColor: color,
+        createdAt,
+    };
+}
+
+function isToday(date: Date): boolean {
+    const now = new Date();
+    return date.toDateString() === now.toDateString();
+}
+
+// ─── Component ───────────────────────────────────────────
 
 export default function NotificationsScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+
+    const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                // Backend returns paginated: { success, data: [...], pagination: {...} }
+                const res = await apiClient.get<any>('/notifications/my?limit=50');
+                if (cancelled) return;
+                if (res.success) {
+                    // Handle both paginated ({ data: [] }) and flat array responses
+                    const rawList: RawNotification[] = Array.isArray(res.data)
+                        ? res.data
+                        : Array.isArray((res as any).data)
+                            ? (res as any).data
+                            : [];
+                    setNotifications(rawList.map(mapRaw));
+                }
+            } catch {
+                // silently degrade — show empty state
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, []);
+
+    const handleMarkRead = useCallback(async (id: string) => {
+        // Optimistic update
+        setNotifications(prev =>
+            prev.map(n => n.id === id ? { ...n, read: true } : n)
+        );
+        try {
+            await apiClient.put(`/notifications/my/${id}/read`);
+        } catch {
+            // Revert on failure
+            setNotifications(prev =>
+                prev.map(n => n.id === id ? { ...n, read: false } : n)
+            );
+        }
+    }, []);
+
+    const handleMarkAllRead = useCallback(async () => {
+        const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+        if (unreadIds.length === 0) return;
+
+        // Optimistic update
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        try {
+            await apiClient.put('/notifications/my/read-all');
+        } catch {
+            // Revert on failure
+            setNotifications(prev =>
+                prev.map(n => unreadIds.includes(n.id) ? { ...n, read: false } : n)
+            );
+        }
+    }, [notifications]);
+
+    const todayItems = notifications.filter(n => isToday(n.createdAt));
+    const earlierItems = notifications.filter(n => !isToday(n.createdAt));
+
+    const renderCard = (item: NotificationItem) => {
+        return (
+            <TouchableOpacity
+                key={item.id}
+                activeOpacity={0.7}
+                onPress={() => !item.read && handleMarkRead(item.id)}
+                style={[styles.notificationCard, !item.read && styles.notificationCardUnread]}
+            >
+                <View style={[styles.iconCircle, { backgroundColor: `${item.iconColor}15` }]}>
+                    <Ionicons name={item.icon} size={22} color={item.iconColor} />
+                </View>
+                <View style={styles.notificationContent}>
+                    <View style={styles.notificationHeader}>
+                        <Text style={styles.notificationTitle}>{item.title}</Text>
+                        {!item.read && <View style={styles.unreadDot} />}
+                    </View>
+                    <Text style={styles.notificationMessage} numberOfLines={2}>
+                        {item.message}
+                    </Text>
+                    <Text style={styles.notificationTime}>{item.time}</Text>
+                </View>
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <View style={styles.screen}>
@@ -93,70 +198,43 @@ export default function NotificationsScreen() {
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Notifications</Text>
-                <TouchableOpacity style={styles.headerAction}>
+                <TouchableOpacity style={styles.headerAction} onPress={handleMarkAllRead}>
                     <Ionicons name="checkmark-done" size={22} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>
 
             {/* ─── Content ─── */}
             <View style={styles.contentCard}>
-                <ScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                >
-                    {/* Today Section */}
-                    <Text style={styles.sectionLabel}>Today</Text>
-                    {NOTIFICATIONS.filter((_, i) => i < 2).map((item) => (
-                        <View
-                            key={item.id}
-                            style={[
-                                styles.notificationCard,
-                                !item.read && styles.notificationCardUnread,
-                            ]}
-                        >
-                            <View style={[styles.iconCircle, { backgroundColor: `${item.iconColor}15` }]}>
-                                <Ionicons name={item.icon} size={22} color={item.iconColor} />
-                            </View>
-                            <View style={styles.notificationContent}>
-                                <View style={styles.notificationHeader}>
-                                    <Text style={styles.notificationTitle}>{item.title}</Text>
-                                    {!item.read && <View style={styles.unreadDot} />}
-                                </View>
-                                <Text style={styles.notificationMessage} numberOfLines={2}>
-                                    {item.message}
-                                </Text>
-                                <Text style={styles.notificationTime}>{item.time}</Text>
-                            </View>
-                        </View>
-                    ))}
-
-                    {/* Earlier Section */}
-                    <Text style={styles.sectionLabel}>Earlier</Text>
-                    {NOTIFICATIONS.filter((_, i) => i >= 2).map((item) => (
-                        <View
-                            key={item.id}
-                            style={[
-                                styles.notificationCard,
-                                !item.read && styles.notificationCardUnread,
-                            ]}
-                        >
-                            <View style={[styles.iconCircle, { backgroundColor: `${item.iconColor}15` }]}>
-                                <Ionicons name={item.icon} size={22} color={item.iconColor} />
-                            </View>
-                            <View style={styles.notificationContent}>
-                                <View style={styles.notificationHeader}>
-                                    <Text style={styles.notificationTitle}>{item.title}</Text>
-                                    {!item.read && <View style={styles.unreadDot} />}
-                                </View>
-                                <Text style={styles.notificationMessage} numberOfLines={2}>
-                                    {item.message}
-                                </Text>
-                                <Text style={styles.notificationTime}>{item.time}</Text>
-                            </View>
-                        </View>
-                    ))}
-                </ScrollView>
+                {loading ? (
+                    <View style={styles.centerState}>
+                        <ActivityIndicator size="large" color="#048357" />
+                    </View>
+                ) : notifications.length === 0 ? (
+                    <View style={styles.centerState}>
+                        <Ionicons name="notifications-off-outline" size={48} color="#CCCCCC" />
+                        <Text style={styles.emptyTitle}>No notifications yet</Text>
+                        <Text style={styles.emptySubtitle}>You'll see booking updates, reminders, and offers here.</Text>
+                    </View>
+                ) : (
+                    <ScrollView
+                        style={styles.scrollView}
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {todayItems.length > 0 && (
+                            <>
+                                <Text style={styles.sectionLabel}>Today</Text>
+                                {todayItems.map(renderCard)}
+                            </>
+                        )}
+                        {earlierItems.length > 0 && (
+                            <>
+                                <Text style={styles.sectionLabel}>Earlier</Text>
+                                {earlierItems.map(renderCard)}
+                            </>
+                        )}
+                    </ScrollView>
+                )}
             </View>
         </View>
     );
@@ -279,5 +357,28 @@ const styles = StyleSheet.create({
         fontSize: 10,
         color: '#AAAEAC',
         letterSpacing: -0.24,
+    },
+
+    /* ─── States ─── */
+    centerState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 40,
+        gap: 12,
+        marginTop: 60,
+    },
+    emptyTitle: {
+        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontSize: 16,
+        color: '#2F2F2F',
+        textAlign: 'center',
+    },
+    emptySubtitle: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 13,
+        color: '#AAAEAC',
+        textAlign: 'center',
+        lineHeight: 20,
     },
 });

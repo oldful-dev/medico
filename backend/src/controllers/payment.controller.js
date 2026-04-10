@@ -3,11 +3,12 @@
 // ──────────────────────────────────────────────
 
 const prisma = require('../config/database');
-const razorpay = require('../config/razorpay');
+const razorpay = require('../utils/razorpay.service');
+const { logger } = require('../config/logger');
 const { sendResponse, sendPaginatedResponse, paginate, generateInvoiceNumber } = require('../utils/helpers');
 const { generateInvoicePDF } = require('../utils/pdfGenerator');
-const { uploadToCloudinary } = require('../utils/fileUpload');
-const { sendEmail } = require('../utils/notifications');
+const { uploadFile } = require('../utils/storage.service');
+const { sendEmail, sendWhatsApp } = require('../utils/notifications');
 const crypto = require('crypto');
 
 // GET /api/payments
@@ -83,11 +84,7 @@ const initiatePayment = async (req, res, next) => {
         }
 
         // Create Razorpay order
-        const razorpayOrder = await razorpay.orders.create({
-            amount: Math.round(finalAmount * 100), // paise
-            currency: 'INR',
-            receipt: `receipt_${Date.now()}`,
-        });
+        const razorpayOrder = await razorpay.createOrder(finalAmount, `receipt_${Date.now()}`);
 
         // Create payment record
         const payment = await prisma.payment.create({
@@ -118,29 +115,57 @@ const initiatePayment = async (req, res, next) => {
 // POST /api/payments/verify
 const verifyPayment = async (req, res, next) => {
     try {
-        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+        // Accept both camelCase (from mobile SDK) and snake_case (from direct Razorpay)
+        const orderId     = req.body.razorpayOrderId   || req.body.razorpay_order_id;
+        const paymentId   = req.body.razorpayPaymentId  || req.body.razorpay_payment_id;
+        const signature   = req.body.razorpaySignature  || req.body.razorpay_signature;
 
         // Verify signature
-        const body = razorpay_order_id + '|' + razorpay_payment_id;
-        const expectedSignature = crypto
-            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-            .update(body)
-            .digest('hex');
+        const isValid = razorpay.verifySignature(orderId, paymentId, signature);
 
-        if (expectedSignature !== razorpay_signature) {
+        if (!isValid) {
             return res.status(400).json({ success: false, message: 'Payment verification failed' });
         }
 
         // Update payment
         const payment = await prisma.payment.update({
-            where: { razorpayOrderId: razorpay_order_id },
+            where: { razorpayOrderId: orderId },
             data: {
-                razorpayPaymentId: razorpay_payment_id,
-                razorpaySignature: razorpay_signature,
+                razorpayPaymentId: paymentId,
+                razorpaySignature: signature,
                 status: 'SUCCESS',
             },
-            include: { user: true },
+            include: { 
+                user: true,
+                booking: { include: { service: true } }
+            },
         });
+
+        // Trigger deferred booking notifications
+        if (payment.booking) {
+            // Update booking status to CONFIRMED
+            await prisma.booking.update({
+                where: { id: payment.booking.id },
+                data: { status: 'CONFIRMED' }
+            });
+
+            const { sendPushToUser } = require('../utils/pushNotification.service');
+            const { sendBookingConfirmation } = require('../utils/notifications');
+
+            await sendPushToUser(payment.userId, {
+                title: 'Booking Confirmed',
+                body: `Your ${payment.booking.service.name} booking (${payment.booking.bookingCode}) has been confirmed.`,
+                data: { type: 'booking_created', bookingId: payment.booking.id, bookingCode: payment.booking.bookingCode },
+            });
+
+            if (payment.user?.phone) {
+                await sendBookingConfirmation({ 
+                    user: payment.user, 
+                    bookingCode: payment.booking.bookingCode, 
+                    booking: { serviceName: payment.booking.service.name } 
+                });
+            }
+        }
 
         // Generate Invoice
         const gstRate = parseFloat(process.env.GST_RATE) || 18;
@@ -173,26 +198,45 @@ const verifyPayment = async (req, res, next) => {
                 description: 'Oldful Healthcare Services',
             });
 
-            const { url } = await uploadToCloudinary(pdfBuffer, 'invoices', 'raw');
+            const { url } = await uploadFile(pdfBuffer, 'invoices', `invoice-${invoiceNumber}.pdf`);
 
             await prisma.invoice.update({
                 where: { id: invoice.id },
                 data: { pdfUrl: url },
             });
 
-            // Send invoice email
+            // Send invoice via Email
             if (payment.user.email) {
                 await sendEmail({
                     to: payment.user.email,
                     subject: `Invoice ${invoiceNumber} - Oldful Healthcare`,
-                    html: `<p>Dear ${payment.user.name},</p><p>Your payment of ₹${payment.amount} was successful.</p><p>Invoice: ${invoiceNumber}</p>`,
-                });
-
-                await prisma.invoice.update({
-                    where: { id: invoice.id },
-                    data: { emailSentAt: new Date() },
+                    html: `
+                        <p>Dear ${payment.user.name},</p>
+                        <p>Your payment of ₹${payment.amount} was successful.</p>
+                        <p>You can download your GST invoice here: <a href="${url}">Download Invoice</a></p>
+                        <p>Best regards,<br/>Oldful Team</p>
+                    `,
                 });
             }
+
+            // Send payment confirmation via WhatsApp (Interakt)
+            // Template: oldful_receipt — {{1}}=name {{2}}=amount {{3}}=phone {{4}}=email
+            await sendWhatsApp({
+                phoneNumber: payment.user.phone,
+                templateName: 'invoice_confirmation',
+                parameters: [
+                    payment.user.name, 
+                    `₹${payment.amount}`,
+                    '+91 94801 98108',
+                    'client@oldful.com'
+                ],
+                headerUrl: url,
+            });
+
+            await prisma.invoice.update({
+                where: { id: invoice.id },
+                data: { emailSentAt: new Date() },
+            });
         } catch (pdfErr) {
             console.error('Invoice PDF error:', pdfErr);
         }
@@ -216,11 +260,11 @@ const initiateRefund = async (req, res, next) => {
         // Razorpay refund
         let refund;
         try {
-            refund = await razorpay.payments.refund(payment.razorpayPaymentId, {
+            refund = await razorpay.razorpay.payments.refund(payment.razorpayPaymentId, {
                 amount: Math.round(refundAmount * 100),
             });
         } catch (rzpErr) {
-            // In dev, continue without Razorpay
+            logger.warn(`Razorpay refund API failed: ${rzpErr.message} — recording refund locally`);
             refund = { id: `refund_${Date.now()}` };
         }
 
@@ -282,6 +326,7 @@ const applyCoupon = async (req, res, next) => {
         }
 
         sendResponse(res, 200, {
+            valid: true,
             discount,
             finalAmount: amount - discount,
             coupon: { code: coupon.code, description: coupon.description },

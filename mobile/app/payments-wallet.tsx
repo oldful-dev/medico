@@ -11,8 +11,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 export default function PaymentsWalletScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
 
     const PAYMENT_METHODS = [

@@ -1,16 +1,13 @@
-// SOS Routes
-const router = require('express').Router();
-const { authenticate, authenticateAdmin, authenticateUser } = require('../middleware/auth');
-const { cityRestriction } = require('../middleware/rbac');
-const ctrl = require('../controllers/sos.controller');
+// ──────────────────────────────────────────────
+//  SOS Routes
+// ──────────────────────────────────────────────
 
-// App User
-router.post('/', authenticateUser, ctrl.createSOSAlert);
+const express = require('express');
+const router = express.Router();
+const { triggerSOS } = require('../controllers/sos.controller');
+const { authenticateUser } = require('../middleware/auth');
 
-// Admin
-router.get('/', authenticateAdmin, cityRestriction, ctrl.getSOSAlerts);
-router.put('/:id/assign', authenticateAdmin, ctrl.assignResponder);
-router.put('/:id/resolve', authenticateAdmin, ctrl.resolveSOSAlert);
-router.put('/:id/notify', authenticateAdmin, ctrl.updateNotificationStatus);
+// Trigger SOS Alert (App users only)
+router.post('/', authenticateUser, triggerSOS);
 
 module.exports = router;

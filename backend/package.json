@@ -23,16 +23,18 @@
   ],
   "license": "ISC",
   "dependencies": {
+    "@google-cloud/storage": "^7.19.0",
     "@google-cloud/vision": "^5.3.4",
     "@prisma/client": "^6.4.1",
-    "@sendgrid/mail": "^8.1.6",
+    "axios": "^1.13.6",
     "bcryptjs": "^2.4.3",
-    "cloudinary": "^2.5.1",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "express-validator": "^7.2.1",
+    "firebase-admin": "^12.7.0",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
@@ -40,9 +42,10 @@
     "node-cron": "^3.0.3",
     "pdfkit": "^0.15.2",
     "razorpay": "^2.9.5",
-    "twilio": "^5.12.2",
+    "sharp": "^0.34.5",
     "uuid": "^11.1.0",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "zeptomail": "^5.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9",

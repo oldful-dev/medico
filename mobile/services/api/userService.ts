@@ -31,6 +31,7 @@ export interface UserProfile {
     addresses?: Address[];
     emergencyContacts?: EmergencyContact[];
     medicalCards?: MedicalCard[];
+    subscriptions?: any[];
 }
 
 export interface CreateUserPayload {
@@ -154,6 +155,6 @@ export const userService = {
     uploadProfileAvatar: async (file: any): Promise<ApiResponse<UserProfile>> => {
         const formData = new FormData();
         formData.append('avatar', file);
-        return apiClient.request<UserProfile>({ method: 'PUT', endpoint: '/users/profile/avatar', body: formData, isFormData: true });
+        return apiClient.request<UserProfile>({ method: 'PUT', endpoint: '/users/profile/avatar', body: formData, isFormData: true, timeout: 60000 });
     },
 };

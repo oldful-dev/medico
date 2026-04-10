@@ -41,6 +41,7 @@ enum HealthTag {
 
 enum BookingStatus {
   PENDING
+  CONFIRMED
   ASSIGNED
   IN_PROGRESS
   COMPLETED
@@ -242,6 +243,7 @@ model User {
   otpCode           String?
   otpExpiresAt      DateTime?
   refreshToken      String?
+  fcmDeviceToken    String?
 
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
@@ -309,19 +311,27 @@ model MedicalCard {
 // ─── 3d. Health Report ──────────────────────────────────
 
 model HealthReport {
-  id           String   @id @default(uuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title        String
-  fileUrl      String
-  fileType     String                         // pdf, jpg, png
-  uploadedBy   String   @default("user")      // user | admin
-  flagSeverity String?                        // Critical, High, Normal
-  flagNote     String?                        // OCR flag description
-  reportDate   DateTime @default(now())
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  fileUrl         String
+  fileType        String                         // pdf, jpg, png
+  uploadedBy      String   @default("user")      // user | admin
+  flagSeverity    String?                        // CRITICAL, HIGH, NORMAL, LOW
+  flagNote        String?                        // OCR flag description
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  // ─── OCR Results ────────────────────────────
+  ocrStatus       String   @default("pending")   // pending, processing, completed, failed
+  ocrRawText      String?  @db.Text              // Full OCR extracted text
+  ocrParsedValues Json?                          // Structured: {glucose: {value, unit, flag}, bp: {...}, ...}
+  ocrHealthTags   String[] @default([])          // ["DIABETIC", "HYPERTENSION", ...]
+  ocrFlags        Json?                          // [{type: "high_sugar", message: "...", severity: "HIGH"}, ...]
+  ocrProcessedAt  DateTime?                      // When OCR completed
+
+  reportDate      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@map("health_reports")
 }
@@ -335,7 +345,8 @@ model Service {
   icon            String?                        // emoji or URL
   tagline         String?
   description     String?
-  pricingText     String?                        // "₹799 / visit"
+  basePrice       Float?                         // numeric price in INR (e.g. 799.0)
+  pricingText     String?                        // display label "₹799 / visit"
   heroImageUrl    String?
   route           String?                        // /services/doctor-visit
   sortOrder       Int         @default(0)
@@ -604,6 +615,8 @@ model NotificationLog {
   isSent        Boolean  @default(false)
   sentAt        DateTime?
   errorMessage  String?
+  isRead        Boolean  @default(false)
+  readAt        DateTime?
 
   createdAt     DateTime @default(now())
 
@@ -808,7 +821,20 @@ model MediaAsset {
   @@map("media_assets")
 }
 
-// ─── 23. Support Ticket ─────────────────────────────────
+// ─── 23. OTP Log ──────────────────────────────────────
+
+model OtpLog {
+  id          String   @id @default(uuid())
+  phoneNumber String
+  code        String
+  isUsed      Boolean  @default(false)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@map("otp_logs")
+}
+
+// ─── 24. Support Ticket ─────────────────────────────────
 
 model SupportTicket {
   id            String   @id @default(uuid())
