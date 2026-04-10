@@ -282,7 +282,7 @@ function BookingsTab() {
                 </div>
               </div>
               <div className="px-5 pb-4 flex items-center justify-between border-t border-gray-50 pt-3">
-                <span className="text-xs font-mono text-gray-400">{booking.bookingId || booking.id.slice(0, 8).toUpperCase()}</span>
+                <span className="text-xs font-mono text-gray-400">{booking.bookingCode || booking.id.slice(0, 8).toUpperCase()}</span>
                 <div className="flex items-center gap-3">
                   {['CONFIRMED', 'PENDING'].includes(booking.status) && (
                     <button
@@ -721,8 +721,8 @@ function SupportTab() {
   );
 }
 
-// ─── Main Account Page ──────────────────────────────────────────────────────
-export default function AccountPage() {
+// ─── Main Account Page Content ──────────────────────────────────────────────
+function AccountContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { logout, user: authUser, isLoading: authLoading } = useAuthStore();
@@ -829,5 +829,17 @@ export default function AccountPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AccountPage() {
+  return (
+    <React.Suspense fallback={
+      <div className="min-h-screen bg-transparent flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+      </div>
+    }>
+      <AccountContent />
+    </React.Suspense>
   );
 }

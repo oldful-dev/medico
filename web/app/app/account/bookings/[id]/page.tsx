@@ -21,7 +21,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
 
 export default function BookingDetailsPage() {
   const router = useRouter();
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const [isDownloading, setIsDownloading] = React.useState(false);
   
   const { data: res, isLoading, error } = useQuery({
