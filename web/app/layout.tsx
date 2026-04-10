@@ -16,8 +16,8 @@ const lexendDeca = Lexend_Deca({
 });
 
 export const metadata: Metadata = {
-  title: "Medico Web App",
-  description: "Your health, our priority.",
+  title: "Oldful - Senior Care that feels like family",
+  description: "Comprehensive elder care management platform delivering healthcare to your door.",
 };
 
 export default function RootLayout({

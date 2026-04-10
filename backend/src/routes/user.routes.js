@@ -29,6 +29,7 @@ router.delete('/:userId/emergency-contacts/:contactId', authenticate, ctrl.remov
 // Addresses
 router.post('/:id/addresses', authenticate, ctrl.addAddress);
 router.put('/:userId/addresses/:addressId', authenticate, ctrl.updateAddress);
+router.delete('/:userId/addresses/:addressId', authenticate, ctrl.deleteAddress);
 
 // Medical Card
 router.post('/:id/medical-card', authenticate, ctrl.upsertMedicalCard);

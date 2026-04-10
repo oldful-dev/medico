@@ -21,6 +21,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 
@@ -65,6 +66,7 @@ const PORT = process.env.PORT || 5000;
 // This ensures req.ip returns the real client IP, not the proxy IP.
 // Cloudflare sets X-Forwarded-For; Render sets it too.
 app.set('trust proxy', 1);
+app.use(cookieParser(process.env.JWT_SECRET));
 
 // ═══ SECURITY HEADERS ═══════════════════════════════════════
 app.use(helmet({

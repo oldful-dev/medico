@@ -62,9 +62,9 @@ export default function ProfileSetupScreen() {
     const [dateOfBirth, setDateOfBirth] = useState<Date | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [language, setLanguage] = useState('English');
-    const [flatNumber, setFlatNumber] = useState('');
+    const [line1, setLine1] = useState('');
     const [emergencyNumber, setEmergencyNumber] = useState('');
-    const [locationAddress, setLocationAddress] = useState('Fetching GPS Location...');
+    const [line2, setLine2] = useState('Fetching GPS Location...');
     const [locationDenied, setLocationDenied] = useState(false);
     const [agreed, setAgreed] = useState(false);
 
@@ -91,13 +91,13 @@ export default function ProfileSetupScreen() {
 
             if (geocode && geocode.length > 0) {
                 const address = `${geocode[0].street ? geocode[0].street + ', ' : ''}${geocode[0].city ? geocode[0].city + ', ' : ''}${geocode[0].region || ''}`;
-                setLocationAddress(address || 'Location found, address unavailable');
+                setLine2(address || 'Location found, address unavailable');
             } else {
-                setLocationAddress('Location found, address unavailable');
+                setLine2('Location found, address unavailable');
             }
         } catch (error) {
             console.error("Error fetching location:", error);
-            setLocationAddress('Failed to fetch location');
+            setLine2('Failed to fetch location');
         }
     };
 
@@ -186,7 +186,7 @@ export default function ProfileSetupScreen() {
         const cleanEmergency = emergencyNumber.replace(/\D/g, '').slice(-10);
 
         // Only save address if it's a real value, not a GPS error/loading string
-        const validAddress = !GPS_ERROR_STATES.includes(locationAddress);
+        const validAddress = !GPS_ERROR_STATES.includes(line2);
 
         const langCode = language === 'Hindi' ? 'hi'
             : language === 'Kannada' ? 'kn'
@@ -210,8 +210,8 @@ export default function ProfileSetupScreen() {
                 gender: gender.toLowerCase() || undefined,
                 dateOfBirth: dateOfBirth?.toISOString() || undefined,
                 emergencyNumber: cleanEmergency.length === 10 ? `+91${cleanEmergency}` : undefined,
-                flatNumber: flatNumber.trim() || undefined,
-                addressLine: validAddress ? locationAddress : undefined,
+                line1: line1.trim() || undefined,
+                line2: validAddress ? line2 : undefined,
             } as any);
 
             if (!response.success || !response.data) {
@@ -380,9 +380,9 @@ export default function ProfileSetupScreen() {
                     <View style={styles.row}>
                         <FormInput
                             placeholder={locationDenied ? "Type your full address" : "Address"}
-                            value={locationAddress}
+                            value={line2}
                             editable={locationDenied}
-                            onChangeText={locationDenied ? setLocationAddress : undefined}
+                            onChangeText={locationDenied ? setLine2 : undefined}
                             style={styles.addressInput}
                             multiline={true}
                             fontSize={12}
@@ -398,8 +398,8 @@ export default function ProfileSetupScreen() {
                     <FormInput
                         placeholder="Type Flat / House Number"
                         style={[styles.fullWidthInput, { marginTop: 15 }]}
-                        value={flatNumber}
-                        onChangeText={setFlatNumber}
+                        value={line1}
+                        onChangeText={setLine1}
                     />
                 </View>
 

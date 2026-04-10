@@ -226,6 +226,23 @@ const verifyOTP = async (req, res, next) => {
             data: { refreshToken },
         });
 
+        // Set secure httpOnly cookies for web persistence
+        res.cookie('auth-token', accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            signed: true,
+            sameSite: 'lax',
+            maxAge: 3600000, // 1 hour
+        });
+
+        res.cookie('refresh-token', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            signed: true,
+            sameSite: 'lax',
+            maxAge: 30 * 24 * 3600000, // 30 days
+        });
+
         res.json({
             success: true,
             data: {
@@ -251,17 +268,36 @@ const verifyOTP = async (req, res, next) => {
  */
 const userRefreshToken = async (req, res, next) => {
     try {
-        const { refreshToken } = req.body;
+        let { refreshToken } = req.body;
+        
+        // Fallback to cookie
+        if (!refreshToken && req.signedCookies) {
+            refreshToken = req.signedCookies['refresh-token'];
+        }
+
+        if (!refreshToken) {
+            return res.status(400).json({ success: false, message: 'Refresh token required' });
+        }
+
         const jwt = require('jsonwebtoken');
         const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
 
         const user = await prisma.user.findUnique({ where: { id: decoded.id } });
         if (!user || user.refreshToken !== refreshToken) {
-            return res.status(401).json({ success: false, message: 'Invalid refresh token' });
+            return res.status(401).json({ success: false, message: 'Invalid session' });
         }
 
         const payload = { id: user.id, type: 'user' };
         const newAccessToken = generateAccessToken(payload);
+
+        // Update cookie
+        res.cookie('auth-token', newAccessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            signed: true,
+            sameSite: 'lax',
+            maxAge: 3600000, 
+        });
 
         res.json({ success: true, data: { accessToken: newAccessToken } });
     } catch (error) {
@@ -285,6 +321,10 @@ const logout = async (req, res, next) => {
                 data: { refreshToken: null },
             });
         }
+
+        res.clearCookie('auth-token');
+        res.clearCookie('refresh-token');
+
         res.json({ success: true, message: 'Logged out successfully' });
     } catch (error) {
         next(error);

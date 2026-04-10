@@ -8,6 +8,7 @@ const ctrl = require('../controllers/booking.controller');
 // App User routes
 router.get('/history', authenticateUser, ctrl.getMyBookings);
 router.get('/detail/:id', authenticateUser, ctrl.getMyBookingById);
+router.get('/:id/invoice', authenticateUser, ctrl.downloadInvoice);
 router.post('/:id/cancel', authenticateUser, ctrl.cancelBooking);
 
 // Admin routes

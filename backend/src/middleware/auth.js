@@ -9,25 +9,35 @@ const { logger } = require('../config/logger');
 
 /**
  * Verify JWT token and attach decoded payload to req.user
+ * Supports both Authorization header and 'auth-token' cookie
  */
 const authenticate = async (req, res, next) => {
     try {
+        let token = null;
+
+        // 1. Check Authorization Header
         const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ success: false, message: 'Access token required' });
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        } 
+        
+        // 2. Fallback to httpOnly Cookie (for web)
+        if (!token && req.signedCookies) {
+            token = req.signedCookies['auth-token'];
         }
 
-        const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'Authentication required' });
+        }
 
-        req.user = decoded; // { id, role, type: 'admin' | 'user' }
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
         next();
     } catch (error) {
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ success: false, message: 'Token expired' });
         }
-        logger.error('Auth middleware error:', error);
-        return res.status(401).json({ success: false, message: 'Invalid token' });
+        return res.status(401).json({ success: false, message: 'Invalid session' });
     }
 };
 
@@ -36,19 +46,26 @@ const authenticate = async (req, res, next) => {
  */
 const authenticateAdmin = async (req, res, next) => {
     try {
+        let token = null;
+
         const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ success: false, message: 'Access token required' });
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        } 
+        
+        if (!token && req.signedCookies) {
+            token = req.signedCookies['auth-token'];
         }
 
-        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'Admin authentication required' });
+        }
+
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
         if (decoded.type !== 'admin') {
-            return res.status(403).json({ success: false, message: 'Admin access required' });
+            return res.status(403).json({ success: false, message: 'Admin access restricted' });
         }
 
-        // Verify admin still exists and is active
         const admin = await prisma.admin.findUnique({ where: { id: decoded.id } });
         if (!admin || !admin.isActive) {
             return res.status(403).json({ success: false, message: 'Admin account deactivated' });
@@ -61,8 +78,7 @@ const authenticateAdmin = async (req, res, next) => {
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ success: false, message: 'Token expired' });
         }
-        logger.error('Admin auth error:', error);
-        return res.status(401).json({ success: false, message: 'Invalid token' });
+        return res.status(401).json({ success: false, message: 'Invalid session' });
     }
 };
 
@@ -71,21 +87,29 @@ const authenticateAdmin = async (req, res, next) => {
  */
 const authenticateUser = async (req, res, next) => {
     try {
+        let token = null;
+
         const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ success: false, message: 'Access token required' });
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        } 
+        
+        if (!token && req.signedCookies) {
+            token = req.signedCookies['auth-token'];
         }
 
-        const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'Session required' });
+        }
 
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         if (decoded.type !== 'user') {
-            return res.status(403).json({ success: false, message: 'User access required' });
+            return res.status(403).json({ success: false, message: 'User access restricted' });
         }
 
         const user = await prisma.user.findUnique({ where: { id: decoded.id } });
         if (!user || user.status === 'BLOCKED') {
-            return res.status(403).json({ success: false, message: 'Account is blocked' });
+            return res.status(403).json({ success: false, message: 'Account blocked' });
         }
 
         req.appUser = user;
@@ -95,8 +119,7 @@ const authenticateUser = async (req, res, next) => {
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ success: false, message: 'Token expired' });
         }
-        logger.error('User auth error:', error);
-        return res.status(401).json({ success: false, message: 'Invalid token' });
+        return res.status(401).json({ success: false, message: 'Invalid session' });
     }
 };
 

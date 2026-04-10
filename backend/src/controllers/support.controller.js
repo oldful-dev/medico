@@ -242,4 +242,53 @@ const handleInboundEmail = async (req, res, next) => {
     }
 };
 
-module.exports = { getMyTickets, getTickets, getTicketById, createTicket, updateTicket, resolveTicket, addMessage, handleInboundEmail };
+// POST /api/support/careers
+const submitCareers = async (req, res, next) => {
+    try {
+        const { name, email, phone, role, experience, resumeLink, coverLetter } = req.body;
+        
+        await sendEmail({
+            to: 'business@oldful.com',
+            subject: `[Job Application] ${role} - ${name}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+                    <h2 style="color: #048357;">New Job Application Received</h2>
+                    <p>A new candidate has applied for a position at Oldful via the Careers page.</p>
+                    
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <p><strong>Candidate Name:</strong> ${name}</p>
+                        <p><strong>Email:</strong> ${email}</p>
+                        <p><strong>Phone:</strong> ${phone}</p>
+                        <p><strong>Applied Role:</strong> ${role}</p>
+                        <p><strong>Experience:</strong> ${experience} years</p>
+                    </div>
+
+                    <p><strong>Resume Link:</strong> <a href="${resumeLink}" style="color: #048357;">${resumeLink}</a></p>
+                    
+                    <div style="margin-top: 20px;">
+                        <p><strong>Cover Letter:</strong></p>
+                        <blockquote style="border-left: 4px solid #048357; padding-left: 15px; font-style: italic; color: #555;">
+                            ${coverLetter}
+                        </blockquote>
+                    </div>
+                </div>
+            `,
+        });
+
+        sendResponse(res, 200, null, 'Application submitted successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { 
+    getMyTickets, 
+    getTickets, 
+    getTicketById, 
+    createTicket, 
+    updateTicket, 
+    resolveTicket, 
+    addMessage, 
+    handleInboundEmail,
+    submitCareers
+};

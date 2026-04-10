@@ -14,7 +14,8 @@ router.get('/tickets', authenticateAdmin, ctrl.getTickets);
 router.put('/tickets/:id', authenticateAdmin, ctrl.updateTicket);
 router.put('/tickets/:id/resolve', authenticateAdmin, ctrl.resolveTicket);
 
-// Webhook: Inbound email reply → ticket sync (no auth — secured by provider IP/secret)
+// Public
 router.post('/webhook/inbound-email', ctrl.handleInboundEmail);
+router.post('/careers', ctrl.submitCareers);
 
 module.exports = router;

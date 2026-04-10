@@ -36,11 +36,19 @@
   /* Shadows */
   --shadow-card: 0 4px 10px rgba(0, 0, 0, 0.15);
   --shadow-header: 0 4px 10px rgba(0, 0, 0, 0.15);
+
+  /* Fonts */
+  --font-poppins: var(--font-poppins);
+  --font-lexend: var(--font-lexend);
 }
 
 body {
   background-color: var(--color-bg-screen);
   color: var(--color-text-dark);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-lexend), sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-poppins), sans-serif;
+}
