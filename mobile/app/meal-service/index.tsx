@@ -67,7 +67,9 @@ export default function MealServiceScreen() {
         }
         try {
             setIsBooking(true);
-            const res = await bookingService.createBooking({
+
+            // Navigate to checkout — booking created inside checkout after payment succeeds
+            const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: new Date().toISOString(),
@@ -80,14 +82,14 @@ export default function MealServiceScreen() {
                     otherReq: otherReq || undefined,
                 },
             });
-            if (res.success && res.data) {
-                router.push({ pathname: '/payment/checkout', params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName || 'Meal Service' } });
-            } else {
-                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
-            }
+
+            router.push({
+                pathname: '/payment/checkout',
+                params: { bookingPayload, amount: String(servicePrice), label: serviceName || 'Meal Service' },
+            });
         } catch (error) {
-            console.error('Meal booking error:', error);
-            Alert.alert('Error', 'Failed to place order. Please try again.');
+            console.error('Meal service error:', error);
+            Alert.alert('Error', 'Something went wrong. Please try again.');
         } finally {
             setIsBooking(false);
         }

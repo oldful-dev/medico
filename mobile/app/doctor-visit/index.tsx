@@ -85,41 +85,38 @@ export default function DoctorVisitScreen() {
         try {
             setIsBooking(true);
 
-            // Upload images first
+            // Upload media first (safe to do before payment — no booking created yet)
             let uploadedImageUrls: string[] = [];
             if (selectedImages.length > 0) {
                 uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'doctor-visits');
             }
 
-            const res = await bookingService.createBooking({
+            // Navigate to checkout — booking is created INSIDE checkout after payment succeeds
+            const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: new Date().toISOString(),
                 addressLine: address || undefined,
                 symptoms: [selectedProblem],
                 doctorType: selectedDoctorType === 'GP' ? 'general-physician' : 'physiotherapist',
-                amount: servicePrice,
                 formDataJson: {
                     visitType,
                     urgency: selectedWhen,
-                    attachments: uploadedImageUrls
+                    attachments: uploadedImageUrls,
                 },
             });
-            if (res.success && res.data) {
-                router.push({
-                    pathname: '/payment/checkout',
-                    params: {
-                        bookingId: res.data.id,
-                        amount: String(servicePrice),
-                        label: serviceName || 'Doctor Home Visit',
-                    },
-                });
-            } else {
-                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
-            }
+
+            router.push({
+                pathname: '/payment/checkout',
+                params: {
+                    bookingPayload,
+                    amount: String(servicePrice),
+                    label: serviceName || 'Doctor Home Visit',
+                },
+            });
         } catch (error) {
-            console.error('Doctor visit booking error:', error);
-            Alert.alert('Error', 'Failed to create booking. Please try again.');
+            console.error('Doctor visit error:', error);
+            Alert.alert('Error', 'Failed to upload attachments. Please try again.');
         } finally {
             setIsBooking(false);
         }

@@ -32,7 +32,16 @@ export type ServiceType =
     | 'CLUB_EVENTS'
     | 'TIFFIN'
     | 'TECH_HELPER'
-    | 'PAPERWORK_LEGAL';
+    | 'PAPERWORK_LEGAL'
+    | 'BILL_PAYMENT'
+    | 'CAB_DRIVING'
+    | 'DEEP_CLEANING'
+    | 'GROCERY'
+    | 'BANK_PAPERWORK'
+    | 'MEAL_SERVICE'
+    | 'APPLIANCE_REPAIR'
+    | 'PAPER_LEGAL'
+    | 'MISC';
 
 export type ShiftDuration = 'SHORT_VISIT' | 'TWELVE_HOUR' | 'TWENTY_FOUR_HOUR';
 
@@ -60,6 +69,10 @@ export interface CreateBookingPayload {
     pickupAddress?: string;
     dropAddress?: string;
     vehicleType?: string;
+
+    // Financial
+    amount?: number;
+    paymentMethod?: string;
 
     // Dynamic form data
     formDataJson?: Record<string, any>;

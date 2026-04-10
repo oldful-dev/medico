@@ -90,29 +90,23 @@ export default function PlumbingElectricalScreen() {
 
         try {
             setIsBooking(true);
-            const payload = {
+
+            // Navigate to checkout — booking created inside checkout after payment succeeds
+            const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
-                scheduledDate: selectedDate.toISOString(),
+                scheduledDate: selectedDate!.toISOString(),
                 addressLine: address,
-                formDataJson: {
-                    serviceType,
-                    issue
-                }
-            };
+                formDataJson: { serviceType, issue },
+            });
 
-            const res = await bookingService.createBooking({ ...payload, amount: servicePrice });
-            if (res.success && res.data) {
-                router.push({
-                    pathname: '/payment/checkout',
-                    params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName }
-                });
-            } else {
-                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
-            }
+            router.push({
+                pathname: '/payment/checkout',
+                params: { bookingPayload, amount: String(servicePrice), label: serviceName },
+            });
         } catch (error) {
-            console.error('Booking error:', error);
-            Alert.alert('Error', 'Failed to create booking. Please check your connection.');
+            console.error('Plumbing-electrical error:', error);
+            Alert.alert('Error', 'Failed to book. Please check your connection.');
         } finally {
             setIsBooking(false);
         }

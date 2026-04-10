@@ -74,31 +74,23 @@ export default function BillPaymentScreen() {
 
         try {
             setIsBooking(true);
+            // Bill-payment is a concierge service — no Razorpay, goes to /service-confirmation.
             const payload = {
                 serviceId,
                 cityId,
-                scheduledDate: new Date().toISOString(), // Immediate for bill pay
+                scheduledDate: new Date().toISOString(),
                 addressLine: 'Online / Concierge',
-                formDataJson: {
-                    billType,
-                    accountId,
-                    amount
-                }
+                formDataJson: { billType, accountId, amount },
             };
 
             const res = await bookingService.createBooking(payload);
             if (res.success && res.data) {
-                router.push({
-                    pathname: '/service-confirmation',
-                    params: {
-                        bookingId: res.data.id
-                    }
-                });
+                router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
             } else {
                 Alert.alert('Booking Failed', res.message || 'Something went wrong.');
             }
         } catch (error) {
-            console.error('Booking error:', error);
+            console.error('Bill-payment error:', error);
             Alert.alert('Error', 'Failed to create booking. Please check your connection.');
         } finally {
             setIsBooking(false);

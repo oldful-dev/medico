@@ -12,7 +12,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import RazorpayCheckout from 'react-native-razorpay';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { paymentService, PaymentMethod } from '@/services/api/paymentService';
+import { bookingService } from '@/services/api/bookingService';
 import { useTranslation } from 'react-i18next';
+import { NativeModules } from 'react-native';
 
 type MethodOption = { type: PaymentMethod; label: string; icon: keyof typeof Ionicons.glyphMap };
 
@@ -27,7 +29,10 @@ export default function PaymentScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams<{
+        // ─── Existing booking ID (legacy: service screens pre-created the booking)
         bookingId?: string;
+        // ─── New: serialised CreateBookingPayload — checkout creates the booking itself
+        bookingPayload?: string;
         subscriptionId?: string;
         amount?: string;
         label?: string;
@@ -77,14 +82,37 @@ export default function PaymentScreen() {
         setFinalAmount(amount);
     };
 
+    // ─── Booking ID guard (mirrors Next.js createdBookingIds session state) ──
+    // Stored in a ref so it persists across re-renders without causing them.
+    // Prevents duplicate booking records if the user taps "Pay" twice.
+    const sessionBookingId = React.useRef<string | null>(params.bookingId ?? null);
+
     // ─── Open Razorpay native popup ─────────────────────────
     const handlePay = useCallback(async () => {
         if (payLoading) return;
         setPayLoading(true);
         try {
-            // 1. Create order on backend
+            // ─── STEP 1: Create booking ONLY if we don't already have one
+            // (Mirrors Next.js: bookingId guard with createdBookingIds state)
+            // The booking starts as PENDING and is only CONFIRMED after payment verify.
+            if (!sessionBookingId.current && params.bookingPayload) {
+                // bookingPayload is a JSON-serialised CreateBookingPayload passed from service screens
+                const payload = JSON.parse(params.bookingPayload as string);
+                const bookingRes = await bookingService.createBooking({
+                    ...payload,
+                    amount: finalAmount,
+                    paymentMethod: selectedMethod,
+                });
+                if (!bookingRes.success || !bookingRes.data) {
+                    Alert.alert('Booking Error', bookingRes.message ?? 'Could not create booking. Please try again.');
+                    return;
+                }
+                sessionBookingId.current = bookingRes.data.id;
+            }
+
+            // ─── STEP 2: Create Razorpay order on backend
             const initiateRes = await paymentService.initiatePayment({
-                bookingId:      params.bookingId,
+                bookingId:      sessionBookingId.current ?? undefined,
                 subscriptionId: params.subscriptionId,
                 amount:         finalAmount,
                 paymentMethod:  selectedMethod,
@@ -96,20 +124,27 @@ export default function PaymentScreen() {
                 return;
             }
 
-            const { orderId, amount: orderAmount, paymentId } = initiateRes.data;
+            const { orderId, amount: orderAmount } = initiateRes.data;
 
-            // 2. Open Razorpay native checkout sheet
+            // ─── STEP 3: Guard — native module must exist (fails in Expo Go)
+            if (!NativeModules.RNRazorpayCheckout) {
+                Alert.alert(
+                    'Build Required',
+                    'Razorpay involves native code and cannot run in standard Expo Go.\nRun `npx expo run:android` to build a Custom Dev Client.',
+                );
+                return;
+            }
+
+            // ─── STEP 4: Open Razorpay native checkout sheet
             const options = {
                 description:  label,
                 image:        'https://storage.googleapis.com/oldful-assets/mobile/assets/images/oldful-logo.png',
                 currency:     'INR',
                 key:          process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID ?? '',
-                amount:       String(Math.round(orderAmount * 100)), // in paise
+                amount:       String(Math.round(orderAmount * 100)), // paise
                 name:         'Oldful Healthcare',
                 order_id:     orderId,
                 prefill: {
-                    // These will be pre-filled if available — left empty here,
-                    // the calling screen can pass them as params if needed
                     email:   params.email   ?? '',
                     contact: params.phone   ?? '',
                     name:    params.userName ?? '',
@@ -117,19 +152,11 @@ export default function PaymentScreen() {
                 theme: { color: Colors.primary },
             };
 
-            const { NativeModules } = require('react-native');
-            if (!NativeModules.RNRazorpayCheckout) {
-                Alert.alert(
-                    'Build Required',
-                    'Razorpay involves native code and cannot be run in standard Expo Go. Please run `npx expo run:android` to build a Custom Dev Client.'
-                );
-                setPayLoading(false);
-                return;
-            }
-
+            // Await resolves ONLY on successful payment — throws on cancel/failure
             const data = await RazorpayCheckout.open(options);
 
-            // 3. Verify signature on backend
+            // ─── STEP 5: Verify signature on backend
+            // Backend verifyPayment also: updates booking → CONFIRMED, sends push, generates invoice
             const verifyRes = await paymentService.verifyPayment({
                 razorpayPaymentId: data.razorpay_payment_id,
                 razorpayOrderId:   data.razorpay_order_id,
@@ -138,12 +165,12 @@ export default function PaymentScreen() {
 
             if (verifyRes.success) {
                 router.replace({
-                    pathname: params.bookingId ? '/payment/payment-success' : '/(tabs)',
+                    pathname: '/payment/payment-success',
                     params: {
                         paymentSuccess:  'true',
                         invoiceNumber:   verifyRes.data?.invoice?.invoiceNumber ?? '',
                         invoicePdfUrl:   verifyRes.data?.invoice?.pdfUrl ?? '',
-                        bookingId:       params.bookingId ?? '',
+                        bookingId:       sessionBookingId.current ?? '',
                         amount:          String(finalAmount),
                     },
                 });
@@ -154,9 +181,12 @@ export default function PaymentScreen() {
                 );
             }
         } catch (error: any) {
-            // Razorpay SDK throws { code, description } on failure/dismissal
+            // Razorpay SDK throws { code, description } on dismissal and failure.
+            // code === 0 means the user explicitly closed the modal — no action needed.
+            // Any other code is a genuine payment failure.
             if (error?.code === 0) {
-                // User dismissed — do nothing
+                // User dismissed — booking remains PENDING, no further action.
+                // The backend has a cleanup job for stale PENDING bookings.
                 return;
             }
             const msg = error?.description ?? error?.message ?? 'Something went wrong.';

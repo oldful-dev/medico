@@ -56,29 +56,26 @@ export default function PaperLegalScreen() {
 
         try {
             setIsBooking(true);
-            const payload = {
+
+            // Navigate to checkout — booking created inside checkout after payment succeeds
+            const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: selectedDate.toISOString(),
                 addressLine: address,
                 formDataJson: {
                     selectedService,
-                    details
-                }
-            };
+                    details,
+                },
+            });
 
-            const res = await bookingService.createBooking({ ...payload, amount: servicePrice });
-            if (res.success && res.data) {
-                router.push({
-                    pathname: '/payment/checkout',
-                    params: { bookingId: res.data.id, amount: String(servicePrice), label: serviceName || 'Paperwork & Legal' }
-                });
-            } else {
-                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
-            }
+            router.push({
+                pathname: '/payment/checkout',
+                params: { bookingPayload, amount: String(servicePrice), label: serviceName || 'Paperwork & Legal' },
+            });
         } catch (error) {
-            console.error('Booking error:', error);
-            Alert.alert('Error', 'Failed to create booking. Please check your connection.');
+            console.error('Paper-legal error:', error);
+            Alert.alert('Error', 'Something went wrong. Please check your connection.');
         } finally {
             setIsBooking(false);
         }

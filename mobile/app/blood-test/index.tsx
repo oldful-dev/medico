@@ -84,38 +84,31 @@ export default function BloodTestScreen() {
         try {
             setIsBooking(true);
 
-            // Upload images first
+            // Upload images first (safe before payment — no booking created yet)
             let uploadedImageUrls: string[] = [];
             if (selectedImages.length > 0) {
                 uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'blood-tests');
             }
 
-            const res = await bookingService.createBooking({
+            // Navigate to checkout — booking created inside checkout after payment succeeds
+            const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
                 addressLine: address || undefined,
-                amount: servicePrice,
                 formDataJson: {
                     testType: selectedTest,
-                    attachments: uploadedImageUrls
+                    attachments: uploadedImageUrls,
                 },
             });
-            if (res.success && res.data) {
-                router.push({
-                    pathname: '/payment/checkout',
-                    params: {
-                        bookingId: res.data.id,
-                        amount: String(servicePrice),
-                        label: serviceName,
-                    },
-                });
-            } else {
-                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
-            }
+
+            router.push({
+                pathname: '/payment/checkout',
+                params: { bookingPayload, amount: String(servicePrice), label: serviceName },
+            });
         } catch (error) {
-            console.error('Blood test booking error:', error);
-            Alert.alert('Error', 'Failed to create booking. Please try again.');
+            console.error('Blood test error:', error);
+            Alert.alert('Error', 'Failed to upload prescription. Please try again.');
         } finally {
             setIsBooking(false);
         }
