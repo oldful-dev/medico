@@ -29,7 +29,7 @@
 *.app/
 *.exe
 *.dmg
-.claude
+.claude/
 # ───── Expo / React Native ─────
 mobile/.expo/
 mobile/web-build/
