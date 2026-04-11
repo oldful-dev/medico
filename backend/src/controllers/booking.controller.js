@@ -117,6 +117,32 @@ const createBooking = async (req, res, next) => {
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
                 const bookingCode = await generateBookingCode();
+
+                // ─── COD Restriction: Prevent multiple active COD bookings ───────
+                if (paymentMethod === 'CASH') {
+                    const activeCODBookings = await prisma.booking.count({
+                        where: {
+                            userId: finalUserId,
+                            // Real operational bookings that haven't been completed/cancelled/paid
+                            status: { in: ['PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'] },
+                            paymentStatus: { in: ['PENDING', 'INITIATED'] }
+                        }
+                    });
+                    
+                    // Note: if user already has 2 or more active COD bookings, restrict them.
+                    if (activeCODBookings >= 2) {
+                        return res.status(403).json({ 
+                            success: false, 
+                            message: 'You have too many active cash-on-delivery bookings. Please complete your existing ones first.' 
+                        });
+                    }
+                }
+
+                // ─── Status logic ─────────────────────────────────────────
+                // COD / free services → CONFIRMED + paymentStatus=PENDING
+                // Prepaid (UPI/CARD)  → PAYMENT_PENDING (awaiting verify)
+                const isCOD = paymentMethod === 'CASH' || paymentMethod === 'cash' || !amount || amount === 0;
+
                 booking = await prisma.booking.create({
                     data: {
                         bookingCode,
@@ -140,13 +166,10 @@ const createBooking = async (req, res, next) => {
                         vehicleType,
                         amount: amount || 0,
                         formDataJson: formDataJson || null,
-                        // ─── Status logic ─────────────────────────────────────────
-                        // COD / free services → PENDING (real booking, ready to assign)
-                        // Prepaid (UPI/CARD)  → PAYMENT_PENDING (not real yet — awaiting verify)
-                        // The payment.verify endpoint will upgrade this to CONFIRMED.
-                        status: (paymentMethod === 'cash' || !amount || amount === 0) ? 'PENDING' : 'PAYMENT_PENDING',
+                        status: isCOD ? 'CONFIRMED' : 'PAYMENT_PENDING',
+                        paymentStatus: isCOD ? 'PENDING' : 'INITIATED',
                         // Only start SLA clock for real bookings
-                        slaDeadline: (paymentMethod === 'cash' || !amount || amount === 0) ? new Date(Date.now() + 4 * 60 * 60 * 1000) : null,
+                        slaDeadline: isCOD ? new Date(Date.now() + 4 * 60 * 60 * 1000) : null,
                     },
                     include: {
                         user: { select: { name: true, phone: true } },
