@@ -7,6 +7,7 @@ const ctrl = require('../controllers/payment.controller');
 router.get('/methods', ctrl.getPaymentMethods);
 router.post('/initiate', authenticate, ctrl.initiatePayment);
 router.post('/verify', authenticate, ctrl.verifyPayment);
+router.post('/cancel', authenticate, ctrl.cancelPayment);   // Called on dismiss / failure
 router.post('/apply-coupon', authenticate, ctrl.applyCoupon);
 
 // Admin routes

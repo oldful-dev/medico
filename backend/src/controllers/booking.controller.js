@@ -140,8 +140,13 @@ const createBooking = async (req, res, next) => {
                         vehicleType,
                         amount: amount || 0,
                         formDataJson: formDataJson || null,
-                        status: (paymentMethod === 'cash' || amount === 0) ? 'CONFIRMED' : 'PENDING',
-                        slaDeadline: new Date(Date.now() + 4 * 60 * 60 * 1000),
+                        // ─── Status logic ─────────────────────────────────────────
+                        // COD / free services → PENDING (real booking, ready to assign)
+                        // Prepaid (UPI/CARD)  → PAYMENT_PENDING (not real yet — awaiting verify)
+                        // The payment.verify endpoint will upgrade this to CONFIRMED.
+                        status: (paymentMethod === 'cash' || !amount || amount === 0) ? 'PENDING' : 'PAYMENT_PENDING',
+                        // Only start SLA clock for real bookings
+                        slaDeadline: (paymentMethod === 'cash' || !amount || amount === 0) ? new Date(Date.now() + 4 * 60 * 60 * 1000) : null,
                     },
                     include: {
                         user: { select: { name: true, phone: true } },

@@ -24,6 +24,19 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [createdBookingIds, setCreatedBookingIds] = useState<string[] | null>(null);
 
+  // ─── Stores orderId after initiatePayment — used by cancel/failure handlers ──
+  // Prevents ghost PAYMENT_PENDING bookings from remaining after dismiss/failure.
+  const pendingOrderId = React.useRef<string | null>(null);
+
+  // ─── Helper: mark the booking PAYMENT_FAILED on backend (non-blocking) ────────
+  const cancelPaymentOnBackend = async () => {
+    if (pendingOrderId.current) {
+      try { await paymentService.cancelPayment(pendingOrderId.current); }
+      catch (e) { console.warn('cancelPayment non-blocking error:', e); }
+      pendingOrderId.current = null;
+    }
+  };
+
   useEffect(() => {
      // Load Razorpay script
      const script = document.createElement('script');
@@ -85,13 +98,13 @@ export default function CheckoutPage() {
 
        // 2. Handle Payment Flow
        if (paymentMethod === 'cash') {
-          // COD Flow - Direct Success (or different status in backend)
-          toast.success('Service booked successfully (COD)');
+          // COD Flow — booking is created as PENDING (real booking), caregiver collects cash
+          toast.success('Booking confirmed! Our provider will collect payment upon arrival.');
           clearCart();
           router.push('/app/success');
        } else {
           // Razorpay Flow
-          // a. Initiate Payment (Create Order in Backend)
+          // a. Initiate Payment (creates Razorpay order on backend)
           const initiateRes = await paymentService.initiatePayment({
              amount: total,
              bookingId: bookingId,
@@ -103,6 +116,11 @@ export default function CheckoutPage() {
 
           const { orderId, amount, currency, key } = initiateRes.data;
 
+          // ─── CRITICAL: Store orderId so cancel/failure handlers can call cancelPayment
+          // The booking is now PAYMENT_PENDING on backend — invisible to bookings list.
+          // It must be promoted to CONFIRMED (via verify) or dropped to PAYMENT_FAILED.
+          pendingOrderId.current = orderId;
+
           // b. Open Razorpay Modal
           const options: any = {
              key: key,
@@ -112,7 +130,8 @@ export default function CheckoutPage() {
              description: `Payment for ${items.length} service(s)`,
              order_id: orderId,
              handler: async function (response: any) {
-                // c. Verify Payment
+                // c. Verify Payment on backend — this is the source of truth
+                // Backend: PAYMENT_PENDING → CONFIRMED + SLA clock starts
                 setIsProcessing(true);
                 try {
                    const verifyRes = await paymentService.verifyPayment({
@@ -122,14 +141,16 @@ export default function CheckoutPage() {
                    });
 
                    if (verifyRes.success) {
-                      toast.success('Payment successful!');
+                      pendingOrderId.current = null; // clear so cancel helper won't fire
+                      toast.success('Payment successful! Your booking is confirmed.');
                       clearCart();
                       router.push('/app/success');
                    } else {
-                      toast.error('Payment verification failed');
+                      // Signature mismatch — backend already marks PAYMENT_FAILED
+                      toast.error('Payment verification failed. Our team has been notified. Please do NOT retry the payment.');
                    }
                 } catch (err: any) {
-                   toast.error('Error verifying payment');
+                   toast.error('Error verifying payment. Please contact support.');
                 } finally {
                    setIsProcessing(false);
                 }
@@ -163,16 +184,23 @@ export default function CheckoutPage() {
              },
              modal: {
                 confirm_close: true,
-                ondismiss: function() {
+                // ─── CRITICAL: User dismissed Razorpay ──────────────────────────────
+                // Must mark booking PAYMENT_FAILED so it disappears from bookings list.
+                ondismiss: async function() {
+                   await cancelPaymentOnBackend();
                    setIsProcessing(false);
+                   toast('Payment cancelled. You can try again anytime.', { icon: 'ℹ️' });
                 }
              }
           };
 
           const rzp = new window.Razorpay(options);
-          
-          rzp.on('payment.failed', function (response: any) {
-             toast.error(response.error.description || 'Payment failed');
+
+          // ─── CRITICAL: Payment failure event ────────────────────────────────────
+          // Mark booking PAYMENT_FAILED so it disappears from the bookings list.
+          rzp.on('payment.failed', async function (response: any) {
+             await cancelPaymentOnBackend();
+             toast.error(response.error?.description || 'Payment failed. Please try again.');
              setIsProcessing(false);
           });
 

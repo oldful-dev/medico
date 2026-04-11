@@ -40,7 +40,9 @@ enum HealthTag {
 }
 
 enum BookingStatus {
-  PENDING
+  PAYMENT_PENDING  // Prepaid booking created, awaiting Razorpay payment — NOT a real booking yet
+  PAYMENT_FAILED   // Payment failed or cancelled — booking is dead, not shown as active
+  PENDING          // COD / free services — real booking, awaiting assignment
   CONFIRMED
   ASSIGNED
   IN_PROGRESS

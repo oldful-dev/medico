@@ -124,6 +124,22 @@ const verifyPayment = async (req, res, next) => {
         const isValid = razorpay.verifySignature(orderId, paymentId, signature);
 
         if (!isValid) {
+            // ─── Signature invalid: mark payment + booking as FAILED ───────────────
+            try {
+                const failedPayment = await prisma.payment.update({
+                    where: { razorpayOrderId: orderId },
+                    data:  { status: 'FAILED' },
+                    select: { bookingId: true },
+                });
+                if (failedPayment.bookingId) {
+                    await prisma.booking.update({
+                        where: { id: failedPayment.bookingId },
+                        data:  { status: 'PAYMENT_FAILED' },
+                    });
+                }
+            } catch (updateErr) {
+                logger.warn('Could not mark failed payment/booking:', updateErr.message);
+            }
             return res.status(400).json({ success: false, message: 'Payment verification failed' });
         }
 
@@ -141,12 +157,14 @@ const verifyPayment = async (req, res, next) => {
             },
         });
 
-        // Trigger deferred booking notifications
+        // ─── Promote booking: PAYMENT_PENDING → CONFIRMED + start SLA clock ──────
         if (payment.booking) {
-            // Update booking status to CONFIRMED
             await prisma.booking.update({
                 where: { id: payment.booking.id },
-                data: { status: 'CONFIRMED' }
+                data: {
+                    status: 'CONFIRMED',
+                    slaDeadline: new Date(Date.now() + 4 * 60 * 60 * 1000), // SLA starts NOW
+                }
             });
 
             const { sendPushToUser } = require('../utils/pushNotification.service');
@@ -242,6 +260,38 @@ const verifyPayment = async (req, res, next) => {
         }
 
         sendResponse(res, 200, { payment, invoice }, 'Payment verified successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
+// POST /api/payments/cancel  (called on Razorpay ondismiss or payment failure from app)
+// Marks the payment + booking as FAILED so they disappear from Cart/Active views.
+const cancelPayment = async (req, res, next) => {
+    try {
+        const { orderId } = req.body; // razorpay order_id
+        if (!orderId) return res.status(400).json({ success: false, message: 'orderId is required' });
+
+        let bookingId = null;
+        try {
+            const payment = await prisma.payment.update({
+                where: { razorpayOrderId: orderId },
+                data:  { status: 'FAILED' },
+                select: { bookingId: true },
+            });
+            bookingId = payment.bookingId;
+        } catch (e) {
+            logger.warn(`cancelPayment: payment record not found for orderId ${orderId}`);
+        }
+
+        if (bookingId) {
+            await prisma.booking.update({
+                where: { id: bookingId },
+                data:  { status: 'PAYMENT_FAILED' },
+            });
+        }
+
+        sendResponse(res, 200, { orderId, bookingId }, 'Payment cancelled');
     } catch (error) {
         next(error);
     }
@@ -352,6 +402,6 @@ const getPaymentMethods = async (req, res, next) => {
 };
 
 module.exports = {
-    getPayments, initiatePayment, verifyPayment,
+    getPayments, initiatePayment, verifyPayment, cancelPayment,
     initiateRefund, getRefundStatus, applyCoupon, getPaymentMethods,
 };

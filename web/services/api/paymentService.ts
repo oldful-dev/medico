@@ -22,6 +22,16 @@ export const paymentService = {
         return apiClient.post('/payments/verify', data);
     },
 
+    /**
+     * POST /api/payments/cancel
+     * Called when user dismisses Razorpay (ondismiss) or payment.failed fires.
+     * Marks the payment + booking as PAYMENT_FAILED on the backend.
+     * Prevents ghost PAYMENT_PENDING bookings from appearing in the bookings list.
+     */
+    cancelPayment: async (orderId: string): Promise<ApiResponse> => {
+        return apiClient.post('/payments/cancel', { orderId });
+    },
+
     getPaymentMethods: async (): Promise<ApiResponse> => {
         return apiClient.get('/payments/methods');
     },

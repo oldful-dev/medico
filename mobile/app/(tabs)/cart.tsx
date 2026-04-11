@@ -57,9 +57,14 @@ export default function CartScreen() {
             const res = await bookingService.getMyBookings();
             
             if (res.success && res.data) {
-                // Same logic as Order History but filtered for Active
+                // ─── Only show real confirmed/operational bookings in Cart ────────────
+                // PAYMENT_PENDING = awaiting payment (not a real booking yet)
+                // PAYMENT_FAILED  = payment failed/cancelled (dead booking)
                 const active = res.data.filter(b => 
-                    b.status !== 'COMPLETED' && b.status !== 'CANCELLED'
+                    b.status !== 'COMPLETED' && 
+                    b.status !== 'CANCELLED' &&
+                    b.status !== 'PAYMENT_PENDING' &&
+                    b.status !== 'PAYMENT_FAILED'
                 );
                 setBookings(active);
             }
