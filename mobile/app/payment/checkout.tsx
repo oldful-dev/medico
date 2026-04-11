@@ -45,10 +45,15 @@ export default function PaymentScreen() {
         userName?: string;
     }>();
 
+    // ─── COD Restriction: Hide CASH if it's a subscription ──────────────────
+    const availableMethods = params.subscriptionId 
+        ? PAYMENT_METHODS.filter(m => m.type !== 'CASH')
+        : PAYMENT_METHODS;
+
     const amount = parseFloat(params.amount ?? '0');
     const label  = params.label ?? 'Service Booking';
 
-    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('UPI');
+    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(params.subscriptionId ? 'UPI' : 'UPI');
     const [couponCode,     setCouponCode]     = useState('');
     const [couponApplied,  setCouponApplied]  = useState(false);
     const [discount,       setDiscount]       = useState(0);
@@ -187,11 +192,14 @@ export default function PaymentScreen() {
             if (selectedMethod === 'CASH') {
                 // COD Flow — Direct success (Booking is already PENDING)
                 setFlowState('success');
-                Alert.alert('Booking Confirmed', 'Your service has been booked successfully. Our provider will collect the payment upon arrival.');
-                router.replace({ 
-                    pathname: '/service-confirmation', 
-                    params: { bookingId: sessionBookingId.current! } 
-                });
+                Alert.alert(
+                    'Booking Received', 
+                    'Your service has been scheduled. Please pay ₹' + finalAmount + ' in cash to our provider when they arrive.',
+                    [{ text: 'OK', onPress: () => router.replace({ 
+                        pathname: '/service-confirmation', 
+                        params: { bookingId: sessionBookingId.current! } 
+                    }) }]
+                );
                 return;
             }
 
@@ -403,7 +411,7 @@ export default function PaymentScreen() {
                 {/* Payment Method */}
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>Payment Method</Text>
-                    {PAYMENT_METHODS.map(m => (
+                    {availableMethods.map(m => (
                         <TouchableOpacity
                             key={m.type}
                             style={[styles.methodRow, selectedMethod === m.type && styles.methodRowActive]}

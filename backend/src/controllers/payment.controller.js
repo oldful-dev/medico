@@ -163,6 +163,7 @@ const verifyPayment = async (req, res, next) => {
                 where: { id: payment.booking.id },
                 data: {
                     status: 'CONFIRMED',
+                    paymentStatus: 'SUCCESS', // Integrity: mark operational record as paid
                     slaDeadline: new Date(Date.now() + 4 * 60 * 60 * 1000), // SLA starts NOW
                 }
             });
@@ -389,13 +390,66 @@ const applyCoupon = async (req, res, next) => {
 // GET /api/payments/methods
 const getPaymentMethods = async (req, res, next) => {
     try {
-        // Static payment methods — could be made dynamic later
-        sendResponse(res, 200, [
+        const { type, amount, userId } = req.query;
+
+        const methods = [
             { id: 'upi', type: 'UPI', label: 'UPI (GPay, PhonePe, Paytm)', isDefault: true },
             { id: 'card', type: 'CARD', label: 'Credit / Debit Card', isDefault: false },
-            { id: 'netbanking', type: 'NETBANKING', label: 'Net Banking', isDefault: false },
-            { id: 'wallet', type: 'WALLET', label: 'Wallet', isDefault: false },
-        ]);
+        ];
+
+        // ─── COD Restriction logic ─────────────────────────────────────────────
+        // 1. COD is NOT allowed for subscriptions
+        // 2. COD is NOT allowed if the user has >= 2 active unpaid (COD) bookings
+        let allowCash = type !== 'subscription';
+
+        if (allowCash && userId) {
+            const activeUnpaid = await prisma.booking.count({
+                where: {
+                    userId,
+                    status: { in: ['PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'] },
+                    paymentStatus: { in: ['PENDING', 'INITIATED'] }
+                }
+            });
+            if (activeUnpaid >= 2) allowCash = false;
+        }
+
+        if (allowCash) {
+            methods.push({ id: 'cash', type: 'CASH', label: 'Cash on Delivery', isDefault: false });
+        }
+
+        sendResponse(res, 200, methods);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// POST /api/payments/manual-success (Admin only)
+const manualPaymentSuccess = async (req, res, next) => {
+    try {
+        const { bookingId } = req.body;
+        
+        await prisma.booking.update({
+            where: { id: bookingId },
+            data: { paymentStatus: 'SUCCESS' }
+        });
+
+        // Also create a successful payment record for bookkeeping
+        const booking = await prisma.booking.findUnique({
+             where: { id: bookingId },
+             select: { amount: true, userId: true }
+        });
+
+        await prisma.payment.create({
+            data: {
+                userId: booking.userId,
+                bookingId,
+                amount: booking.amount,
+                status: 'SUCCESS',
+                paymentMethod: 'CASH'
+            }
+        });
+
+        sendResponse(res, 200, null, 'Payment marked as successful');
     } catch (error) {
         next(error);
     }
@@ -404,4 +458,5 @@ const getPaymentMethods = async (req, res, next) => {
 module.exports = {
     getPayments, initiatePayment, verifyPayment, cancelPayment,
     initiateRefund, getRefundStatus, applyCoupon, getPaymentMethods,
+    manualPaymentSuccess
 };

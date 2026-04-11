@@ -98,8 +98,11 @@ export default function CheckoutPage() {
 
        // 2. Handle Payment Flow
        if (paymentMethod === 'cash') {
-          // COD Flow — booking is created as PENDING (real booking), caregiver collects cash
-          toast.success('Booking confirmed! Our provider will collect payment upon arrival.');
+          // COD Flow — Booking is CONFIRMED (real booking), caregiver will collect payment
+          toast.success('Booking Awaiting Payment! Our provider will collect ₹' + total + ' upon arrival.', {
+             duration: 6000,
+             icon: '⌛'
+          });
           clearCart();
           router.push('/app/success');
        } else {
@@ -272,18 +275,22 @@ export default function CheckoutPage() {
                 </div>
               </button>
 
-              <button 
-                onClick={() => setPaymentMethod('cash')}
-                className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${paymentMethod === 'cash' ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5' : 'border-gray-100 bg-white'}`}
-              >
-                <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center text-amber-600 text-lg font-black">
-                  ₹
-                </div>
-                <div className="flex-1 text-left font-bold text-gray-800">Cash on Delivery</div>
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'cash' ? 'border-[var(--color-primary)]' : 'border-gray-300'}`}>
-                  {paymentMethod === 'cash' && <div className="w-2.5 h-2.5 bg-[var(--color-primary)] rounded-full" />}
-                </div>
-              </button>
+              {/* COD Restriction: Only show if NOT a subscription checkout */}
+              {/* @ts-ignore - subscriptionId check for future growth */}
+              {!searchParams.get('subscriptionId') && (
+                <button 
+                  onClick={() => setPaymentMethod('cash')}
+                  className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${paymentMethod === 'cash' ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5' : 'border-gray-100 bg-white'}`}
+                >
+                  <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center text-amber-600 text-lg font-black">
+                    ₹
+                  </div>
+                  <div className="flex-1 text-left font-bold text-gray-800">Cash on Delivery</div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'cash' ? 'border-[var(--color-primary)]' : 'border-gray-300'}`}>
+                    {paymentMethod === 'cash' && <div className="w-2.5 h-2.5 bg-[var(--color-primary)] rounded-full" />}
+                  </div>
+                </button>
+              )}
            </div>
         </div>
 

@@ -103,6 +103,7 @@ enum SubscriptionStatus {
 
 enum PaymentStatus {
   INITIATED
+  PENDING           // Specifically for COD / deferred payments
   SUCCESS
   FAILED
   REFUND_INITIATED
@@ -114,6 +115,7 @@ enum PaymentMethod {
   CARD
   NETBANKING
   WALLET
+  CASH              // New: for Cash on Delivery
 }
 
 enum RefundType {
@@ -404,6 +406,7 @@ model Booking {
   // Common
   amount          Float         @default(0)
   status          BookingStatus @default(PENDING)
+  paymentStatus   PaymentStatus @default(PENDING)  // Added: differentiates paid vs COD states
   adminNotes      String?
   isEscalated     Boolean       @default(false)
   isSLABreached   Boolean       @default(false)
