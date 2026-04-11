@@ -1,6 +1,7 @@
 // Payment Screen — Razorpay native in-app popup
-// Flow: Order summary → optional coupon → initiate order → native Razorpay sheet → verify
-import React, { useState, useEffect, useCallback } from 'react';
+// Flow: Order summary → optional coupon → create booking → initiate order → native Razorpay → verify → success
+// Edge cases: cancel (ondismiss), failure (retry), app crash (AsyncStorage recovery)
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity,
     TextInput, ActivityIndicator, StyleSheet, Platform, Alert,
@@ -13,16 +14,19 @@ import RazorpayCheckout from 'react-native-razorpay';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { paymentService, PaymentMethod } from '@/services/api/paymentService';
 import { bookingService } from '@/services/api/bookingService';
+import { storageService, STORAGE_KEYS } from '@/services/device/storageService';
 import { useTranslation } from 'react-i18next';
 import { NativeModules } from 'react-native';
+
+// ─── Payment Flow States (for debugging & recovery) ──────
+type PaymentFlowState = 'idle' | 'creating_booking' | 'initiating_order' | 'checkout_opened' | 'verifying' | 'success' | 'failed' | 'cancelled';
 
 type MethodOption = { type: PaymentMethod; label: string; icon: keyof typeof Ionicons.glyphMap };
 
 const PAYMENT_METHODS: MethodOption[] = [
-    { type: 'UPI',        label: 'UPI / GPay / PhonePe', icon: 'phone-portrait-outline' },
-    { type: 'CARD',       label: 'Credit / Debit Card',  icon: 'card-outline' },
-    { type: 'NETBANKING', label: 'Net Banking',           icon: 'business-outline' },
-    { type: 'WALLET',     label: 'Mobile Wallet',         icon: 'wallet-outline' },
+    { type: 'UPI',  label: 'UPI (GPay / PhonePe / Paytm)', icon: 'phone-portrait-outline' },
+    { type: 'CARD', label: 'Credit / Debit Card',         icon: 'card-outline' },
+    { type: 'CASH', label: 'Cash on Delivery',             icon: 'cash-outline' },
 ];
 
 export default function PaymentScreen() {
@@ -51,8 +55,58 @@ export default function PaymentScreen() {
     const [finalAmount,    setFinalAmount]    = useState(amount);
     const [couponLoading,  setCouponLoading]  = useState(false);
     const [payLoading,     setPayLoading]     = useState(false);
+    const [flowState,      setFlowState]      = useState<PaymentFlowState>('idle');
+    const [pendingRecovery, setPendingRecovery] = useState(false);
 
     useEffect(() => { setFinalAmount(amount - discount); }, [amount, discount]);
+
+    // ─── EDGE CASE: Recover pending payment after app crash/close ──────
+    // On mount, check if there's a pending Razorpay order in AsyncStorage.
+    // If found, offer user to check the payment status with backend.
+    useEffect(() => {
+        const checkPendingOrder = async () => {
+            try {
+                const pendingOrderId = await storageService.getItem(STORAGE_KEYS.PENDING_ORDER_ID);
+                const pendingBookingId = await storageService.getItem(STORAGE_KEYS.PENDING_BOOKING_ID);
+                if (pendingOrderId && pendingBookingId) {
+                    setPendingRecovery(true);
+                    sessionBookingId.current = pendingBookingId;
+                    Alert.alert(
+                        'Pending Payment Found',
+                        'You have a payment that was interrupted. Would you like to check its status?',
+                        [
+                            {
+                                text: 'Dismiss',
+                                style: 'cancel',
+                                onPress: async () => {
+                                    // Clear stale pending order
+                                    await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_ID);
+                                    await storageService.removeItem(STORAGE_KEYS.PENDING_BOOKING_ID);
+                                    setPendingRecovery(false);
+                                },
+                            },
+                            {
+                                text: 'Check Status',
+                                onPress: async () => {
+                                    // Navigate to service-confirmation which fetches booking from backend
+                                    // The backend will have the real payment status from Razorpay webhooks
+                                    await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_ID);
+                                    await storageService.removeItem(STORAGE_KEYS.PENDING_BOOKING_ID);
+                                    router.replace({
+                                        pathname: '/service-confirmation',
+                                        params: { bookingId: pendingBookingId },
+                                    });
+                                },
+                            },
+                        ],
+                    );
+                }
+            } catch (e) {
+                console.warn('Pending order check failed:', e);
+            }
+        };
+        checkPendingOrder();
+    }, []);
 
     // ─── Apply coupon ───────────────────────────────────────
     const handleApplyCoupon = useCallback(async () => {
@@ -85,7 +139,24 @@ export default function PaymentScreen() {
     // ─── Booking ID guard (mirrors Next.js createdBookingIds session state) ──
     // Stored in a ref so it persists across re-renders without causing them.
     // Prevents duplicate booking records if the user taps "Pay" twice.
-    const sessionBookingId = React.useRef<string | null>(params.bookingId ?? null);
+    const sessionBookingId = useRef<string | null>(params.bookingId ?? null);
+    // ─── Pending order ID — set after initiatePayment, used by cancel/failure handler ──
+    const pendingOrderId = useRef<string | null>(null);
+
+    // ─── Helper: Clear pending order from storage (called on success/failure) ──
+    const clearPendingOrder = async () => {
+        await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_ID);
+        await storageService.removeItem(STORAGE_KEYS.PENDING_BOOKING_ID);
+    };
+
+    // ─── Helper: Cancel payment on backend (dismiss / failure) ────────────────
+    // Marks booking as PAYMENT_FAILED so it disappears from Cart/Active.
+    const cancelPaymentOnBackend = async () => {
+        if (pendingOrderId.current) {
+            try { await paymentService.cancelPayment(pendingOrderId.current); } 
+            catch (e) { console.warn('cancelPayment call failed (non-blocking):', e); }
+        }
+    };
 
     // ─── Open Razorpay native popup ─────────────────────────
     const handlePay = useCallback(async () => {
@@ -95,6 +166,7 @@ export default function PaymentScreen() {
             // ─── STEP 1: Create booking ONLY if we don't already have one
             // (Mirrors Next.js: bookingId guard with createdBookingIds state)
             // The booking starts as PENDING and is only CONFIRMED after payment verify.
+            setFlowState('creating_booking');
             if (!sessionBookingId.current && params.bookingPayload) {
                 // bookingPayload is a JSON-serialised CreateBookingPayload passed from service screens
                 const payload = JSON.parse(params.bookingPayload as string);
@@ -104,13 +176,27 @@ export default function PaymentScreen() {
                     paymentMethod: selectedMethod,
                 });
                 if (!bookingRes.success || !bookingRes.data) {
+                    setFlowState('failed');
                     Alert.alert('Booking Error', bookingRes.message ?? 'Could not create booking. Please try again.');
                     return;
                 }
                 sessionBookingId.current = bookingRes.data.id;
             }
 
-            // ─── STEP 2: Create Razorpay order on backend
+            // ─── STEP 2: Handle COD (Cash on Delivery) vs Razorpay
+            if (selectedMethod === 'CASH') {
+                // COD Flow — Direct success (Booking is already PENDING)
+                setFlowState('success');
+                Alert.alert('Booking Confirmed', 'Your service has been booked successfully. Our provider will collect the payment upon arrival.');
+                router.replace({ 
+                    pathname: '/service-confirmation', 
+                    params: { bookingId: sessionBookingId.current! } 
+                });
+                return;
+            }
+
+            // ─── STEP 3: Create Razorpay order on backend
+            setFlowState('initiating_order');
             const initiateRes = await paymentService.initiatePayment({
                 bookingId:      sessionBookingId.current ?? undefined,
                 subscriptionId: params.subscriptionId,
@@ -120,13 +206,15 @@ export default function PaymentScreen() {
             });
 
             if (!initiateRes.success || !initiateRes.data) {
+                setFlowState('failed');
                 Alert.alert('Payment Error', initiateRes.message ?? 'Could not initiate payment.');
                 return;
             }
 
-            const { orderId, amount: orderAmount } = initiateRes.data;
+            const { orderId, amount: orderAmount, key: backendKey } = initiateRes.data as any;
+            pendingOrderId.current = orderId; // Store for cancel/failure handler
 
-            // ─── STEP 3: Guard — native module must exist (fails in Expo Go)
+            // ─── STEP 4: Guard — native module must exist (fails in Expo Go)
             if (!NativeModules.RNRazorpayCheckout) {
                 Alert.alert(
                     'Build Required',
@@ -135,19 +223,29 @@ export default function PaymentScreen() {
                 return;
             }
 
-            // ─── STEP 4: Open Razorpay native checkout sheet
-            const options = {
+            // ─── STEP 5: Persist pending order for crash recovery ──────
+            // If the app crashes while Razorpay is open, we can recover on next launch.
+            await storageService.setItem(STORAGE_KEYS.PENDING_ORDER_ID, orderId);
+            if (sessionBookingId.current) {
+                await storageService.setItem(STORAGE_KEYS.PENDING_BOOKING_ID, sessionBookingId.current);
+            }
+
+            // ─── STEP 6: Open Razorpay native checkout sheet
+            setFlowState('checkout_opened');
+            const options: any = {
                 description:  label,
                 image:        'https://storage.googleapis.com/oldful-assets/mobile/assets/images/oldful-logo.png',
                 currency:     'INR',
-                key:          process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID ?? '',
+                key:          backendKey || process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || '',
                 amount:       String(Math.round(orderAmount * 100)), // paise
                 name:         'Oldful Healthcare',
                 order_id:     orderId,
+                method:       selectedMethod.toLowerCase(),
                 prefill: {
                     email:   params.email   ?? '',
                     contact: params.phone   ?? '',
                     name:    params.userName ?? '',
+                    method:  selectedMethod.toLowerCase(),
                 },
                 theme: { color: Colors.primary },
             };
@@ -155,42 +253,75 @@ export default function PaymentScreen() {
             // Await resolves ONLY on successful payment — throws on cancel/failure
             const data = await RazorpayCheckout.open(options);
 
-            // ─── STEP 5: Verify signature on backend
+            // ─── STEP 7: Verify signature on backend
             // Backend verifyPayment also: updates booking → CONFIRMED, sends push, generates invoice
+            setFlowState('verifying');
             const verifyRes = await paymentService.verifyPayment({
                 razorpayPaymentId: data.razorpay_payment_id,
                 razorpayOrderId:   data.razorpay_order_id,
                 razorpaySignature: data.razorpay_signature,
             });
 
+            // ─── Clear pending order from storage (payment is resolved)
+            await clearPendingOrder();
+
             if (verifyRes.success) {
+                setFlowState('success');
+                // Route to dedicated success screen (clear UX for elderly users)
                 router.replace({
                     pathname: '/payment/payment-success',
                     params: {
-                        paymentSuccess:  'true',
-                        invoiceNumber:   verifyRes.data?.invoice?.invoiceNumber ?? '',
-                        invoicePdfUrl:   verifyRes.data?.invoice?.pdfUrl ?? '',
-                        bookingId:       sessionBookingId.current ?? '',
-                        amount:          String(finalAmount),
+                        bookingId:     sessionBookingId.current ?? '',
+                        amount:        String(finalAmount),
+                        invoiceNumber: verifyRes.data?.invoice?.invoiceNumber ?? '',
+                        invoicePdfUrl: verifyRes.data?.invoice?.pdfUrl ?? '',
                     },
                 });
             } else {
+                setFlowState('failed');
                 Alert.alert(
                     'Verification Failed',
-                    'Payment was received but could not be verified. Our team will resolve this within 24 hours.',
+                    'Payment was received but could not be verified. Our team will resolve this within 24 hours. Please do NOT retry the payment.',
                 );
             }
         } catch (error: any) {
+            // ─── Clear pending order from storage
+            await clearPendingOrder();
+
             // Razorpay SDK throws { code, description } on dismissal and failure.
             // code === 0 means the user explicitly closed the modal — no action needed.
             // Any other code is a genuine payment failure.
             if (error?.code === 0) {
-                // User dismissed — booking remains PENDING, no further action.
-                // The backend has a cleanup job for stale PENDING bookings.
+                // User explicitly dismissed Razorpay
+                setFlowState('cancelled');
+                // ─── CRITICAL: Mark booking as PAYMENT_FAILED on backend ────────────
+                // Without this, the PAYMENT_PENDING booking stays visible in Cart/Active.
+                await cancelPaymentOnBackend();
+                await clearPendingOrder();
+                Alert.alert(
+                    'Payment Cancelled',
+                    'You can try again whenever you are ready. Your booking details have been saved.',
+                    [{ text: 'OK' }],
+                );
                 return;
             }
+
+            // Genuine payment failure — mark failed and offer retry
+            setFlowState('failed');
+            await cancelPaymentOnBackend();
+            await clearPendingOrder();
             const msg = error?.description ?? error?.message ?? 'Something went wrong.';
-            Alert.alert('Payment Failed', msg);
+            Alert.alert(
+                'Payment Failed',
+                msg,
+                [
+                    { text: 'Go Back', style: 'cancel', onPress: () => router.back() },
+                    { text: 'Retry Payment', onPress: () => {
+                        setFlowState('idle');
+                        // handlePay will be called again by the user pressing the button
+                    }},
+                ],
+            );
         } finally {
             setPayLoading(false);
         }
@@ -295,9 +426,12 @@ export default function PaymentScreen() {
 
                 {/* Security note */}
                 <View style={styles.securityNote}>
-                    <Ionicons name="shield-checkmark-outline" size={16} color="#666" />
+                    <Ionicons name={selectedMethod === 'CASH' ? "information-circle-outline" : "shield-checkmark-outline"} size={16} color="#666" />
                     <Text style={styles.securityText}>
-                        Secured by Razorpay. Your payment information is encrypted and safe.
+                        {selectedMethod === 'CASH' 
+                            ? 'Please prepare exact change if possible. Our provider will collect the amount upon arrival.'
+                            : 'Secured by Razorpay. Your payment information is encrypted and safe.'
+                        }
                     </Text>
                 </View>
 
@@ -314,8 +448,13 @@ export default function PaymentScreen() {
                     {payLoading
                         ? <ActivityIndicator color={Colors.textWhite} />
                         : <>
-                            <Ionicons name="lock-closed-outline" size={18} color={Colors.textWhite} />
-                            <Text style={styles.payBtnText}>Pay ₹{finalAmount.toLocaleString('en-IN')}</Text>
+                            <Ionicons name={selectedMethod === 'CASH' ? "checkmark-circle-outline" : "lock-closed-outline"} size={18} color={Colors.textWhite} />
+                            <Text style={styles.payBtnText}>
+                                {selectedMethod === 'CASH' 
+                                    ? `Confirm Booking (₹${finalAmount.toLocaleString('en-IN')})`
+                                    : `Pay ₹${finalAmount.toLocaleString('en-IN')}`
+                                }
+                            </Text>
                         </>
                     }
                 </TouchableOpacity>

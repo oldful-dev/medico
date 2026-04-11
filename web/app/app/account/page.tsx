@@ -36,11 +36,14 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
 ];
 
 const BOOKING_STATUS_STYLE: Record<string, string> = {
-  CONFIRMED:  'bg-emerald-50 text-emerald-700 border-emerald-200',
-  COMPLETED:  'bg-gray-100 text-gray-600 border-gray-200',
-  CANCELLED:  'bg-red-50 text-red-600 border-red-100',
-  PENDING:    'bg-amber-50 text-amber-700 border-amber-200',
-  IN_PROGRESS:'bg-blue-50 text-blue-700 border-blue-200',
+  CONFIRMED:       'bg-emerald-50 text-emerald-700 border-emerald-200',
+  COMPLETED:       'bg-gray-100 text-gray-600 border-gray-200',
+  CANCELLED:       'bg-red-50 text-red-600 border-red-100',
+  PENDING:         'bg-amber-50 text-amber-700 border-amber-200',   // COD — real booking
+  IN_PROGRESS:     'bg-blue-50 text-blue-700 border-blue-200',
+  ASSIGNED:        'bg-indigo-50 text-indigo-700 border-indigo-200',
+  PAYMENT_PENDING: 'bg-orange-50 text-orange-600 border-orange-200',// Awaiting payment
+  PAYMENT_FAILED:  'bg-red-50 text-red-500 border-red-100',         // Failed /cancelled
 };
 
 // ─── Reusable UI atoms ──────────────────────────────────────────────────────
@@ -201,9 +204,14 @@ function BookingsTab() {
     onSuccess: () => qc.invalidateQueries({ queryKey: QKEY.bookings }),
   });
 
-  const bookings: Booking[] = (res?.data || []).filter((b: Booking) => b.status !== 'PENDING');
+  // ─── Filter: exclude ghost payment bookings from the main list ────────────
+  // PAYMENT_PENDING = booking created but Razorpay not completed yet (not a real booking)
+  // PAYMENT_FAILED  = payment failed or user cancelled (booking is dead)
+  const bookings: Booking[] = (res?.data || []).filter((b: Booking) =>
+    b.status !== 'PAYMENT_PENDING' && b.status !== 'PAYMENT_FAILED'
+  );
 
-  const upcoming = bookings.filter(b => ['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'].includes(b.status));
+  const upcoming = bookings.filter(b => ['PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'].includes(b.status));
   const past = bookings.filter(b => ['COMPLETED', 'CANCELLED'].includes(b.status));
 
   return (

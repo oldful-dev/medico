@@ -10,19 +10,51 @@ import { SERVICES_CONFIG } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import Image from 'next/image';
 import { toast } from 'react-hot-toast';
+import { useAuthStore } from '@/store/authStore';
+import { paymentService } from '@/services/api/paymentService';
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-  CONFIRMED: { label: 'Confirmed', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: ShieldCheck },
-  PENDING: { label: 'Pending Payment', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: Clock },
-  COMPLETED: { label: 'Service Completed', color: 'bg-blue-50 text-blue-700 border-blue-200', icon: Package },
-  CANCELLED: { label: 'Cancelled', color: 'bg-red-50 text-red-600 border-red-200', icon: AlertCircle },
-  IN_PROGRESS: { label: 'In Progress', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: Activity },
+  CONFIRMED:       { label: 'Confirmed',         color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: ShieldCheck },
+  PENDING:         { label: 'Pay on Arrival',    color: 'bg-amber-50 text-amber-700 border-amber-200',   icon: Clock },       // COD real booking
+  ASSIGNED:        { label: 'Provider Assigned', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: ShieldCheck },
+  COMPLETED:       { label: 'Service Completed', color: 'bg-blue-50 text-blue-700 border-blue-200',   icon: Package },
+  CANCELLED:       { label: 'Cancelled',         color: 'bg-red-50 text-red-600 border-red-200',      icon: AlertCircle },
+  IN_PROGRESS:     { label: 'In Progress',       color: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: Activity },
+  // ─── New payment-state statuses ─────────────────────────────────────────────
+  PAYMENT_PENDING: { label: 'Awaiting Payment',  color: 'bg-orange-50 text-orange-600 border-orange-200', icon: Clock },
+  PAYMENT_FAILED:  { label: 'Payment Failed',    color: 'bg-red-50 text-red-600 border-red-200',      icon: AlertCircle },
 };
 
 export default function BookingDetailsPage() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
   const [isDownloading, setIsDownloading] = React.useState(false);
+  const { user } = useAuthStore();
+  const [isProcessingPayment, setIsProcessingPayment] = React.useState(false);
+  const pendingOrderId = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+     // Load Razorpay script for retries
+     const script = document.createElement('script');
+     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+     script.async = true;
+     document.body.appendChild(script);
+     return () => { document.body.removeChild(script); };
+  }, []);
+
+  const cancelPaymentOnBackend = async () => {
+    if (pendingOrderId.current) {
+      try { await paymentService.cancelPayment(pendingOrderId.current); }
+      catch (e) { console.warn('cancelPayment error:', e); }
+      pendingOrderId.current = null;
+    }
+  };
   
   const { data: res, isLoading, error } = useQuery({
     queryKey: ['booking', id],
@@ -53,6 +85,87 @@ export default function BookingDetailsPage() {
      } finally {
         setIsDownloading(false);
      }
+  };
+
+  const handleRetryPayment = async () => {
+    if (!user || !booking) return;
+
+    setIsProcessingPayment(true);
+    try {
+       const total = (booking.amount || 0) + Math.round((booking.amount || 0) * 0.18) + 50;
+
+       const initiateRes = await paymentService.initiatePayment({
+          amount: total,
+          bookingId: booking.id,
+       });
+
+       if (!initiateRes.success) {
+          throw new Error(initiateRes.message || 'Failed to initiate payment');
+       }
+
+       const { orderId, amount, currency, key } = initiateRes.data;
+       pendingOrderId.current = orderId;
+
+       const options: any = {
+          key: key,
+          amount: amount * 100, // paise
+          currency: currency,
+          name: 'Oldful Healthcare',
+          description: `Payment for Booking #${booking.bookingCode || booking.id.slice(0,8)}`,
+          order_id: orderId,
+          handler: async function (response: any) {
+             setIsProcessingPayment(true);
+             try {
+                const verifyRes = await paymentService.verifyPayment({
+                   razorpayOrderId: response.razorpay_order_id,
+                   razorpayPaymentId: response.razorpay_payment_id,
+                   razorpaySignature: response.razorpay_signature,
+                });
+
+                if (verifyRes.success) {
+                   pendingOrderId.current = null;
+                   toast.success('Payment successful! Your booking is confirmed.');
+                   // Refresh the page
+                   window.location.reload();
+                } else {
+                   toast.error('Payment verification failed. Please do NOT retry.');
+                }
+             } catch (err: any) {
+                toast.error('Error verifying payment. Please contact support.');
+             } finally {
+                setIsProcessingPayment(false);
+             }
+          },
+          prefill: {
+             name: user.name,
+             contact: user.phone,
+             email: user.email || '',
+             method: 'upi',
+          },
+          theme: { color: '#10b981' },
+          modal: {
+             confirm_close: true,
+             ondismiss: async function() {
+                await cancelPaymentOnBackend();
+                setIsProcessingPayment(false);
+                toast('Payment cancelled. You can try again anytime.', { icon: 'ℹ️' });
+             }
+          }
+       };
+
+       const rzp = new window.Razorpay(options);
+       rzp.on('payment.failed', async function (response: any) {
+          await cancelPaymentOnBackend();
+          toast.error(response.error?.description || 'Payment failed. Please try again.');
+          setIsProcessingPayment(false);
+       });
+
+       rzp.open();
+    } catch (error: any) {
+       console.error('Retry Payment Error:', error);
+       toast.error(error?.message || 'Failed to initialize payment.');
+       setIsProcessingPayment(false);
+    }
   };
 
   if (isLoading) {
@@ -256,10 +369,23 @@ export default function BookingDetailsPage() {
                  )}
                  <span className="text-xs font-bold text-gray-800">Invoice</span>
               </button>
+           ) : ['PAYMENT_PENDING', 'PAYMENT_FAILED'].includes(booking.status) ? (
+              <button 
+                onClick={handleRetryPayment}
+                disabled={isProcessingPayment}
+                className={`flex flex-col items-center justify-center p-4 bg-[var(--color-primary)] text-white rounded-2xl shadow-sm active:scale-95 transition-transform ${isProcessingPayment ? 'opacity-70' : ''}`}
+              >
+                 {isProcessingPayment ? (
+                   <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mb-2" />
+                 ) : (
+                   <CreditCard className="w-6 h-6 mb-2" />
+                 )}
+                 <span className="text-xs font-bold">Retry Payment</span>
+              </button>
            ) : (
               <div className="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-2xl border border-gray-100 opacity-50 cursor-not-allowed">
                  <AlertCircle className="w-6 h-6 text-gray-400 mb-2" />
-                 <span className="text-xs font-bold text-gray-400 text-center leading-tight">Payment<br/>Pending</span>
+                 <span className="text-xs font-bold text-gray-400 text-center leading-tight">Invoice<br/>Pending</span>
               </div>
            )}
         </div>

@@ -10,7 +10,7 @@ import { useRouter } from 'expo-router';
 import { bookingService, Booking } from '@/services/api/bookingService';
 import { useTranslation } from 'react-i18next';
 
-type TabType = 'All' | 'Active' | 'Completed';
+type TabType = 'All' | 'Active' | 'Pending Payment' | 'Completed';
 
 const SERVICE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
     'DOCTOR_HOME_VISIT': 'medkit-outline',
@@ -54,30 +54,38 @@ export default function OrderHistoryScreen() {
     const onRefresh = () => { setRefreshing(true); fetchBookings(); };
 
     const mapStatus = (status: string): string => {
-        if (status === 'COMPLETED') return 'Completed';
-        if (status === 'CANCELLED') return 'Cancelled';
-        return 'Active'; // PENDING, ASSIGNED, IN_PROGRESS
+        if (status === 'COMPLETED')         return 'Completed';
+        if (status === 'CANCELLED')         return 'Cancelled';
+        if (status === 'PAYMENT_PENDING')   return 'Pending Payment'; // Awaiting Razorpay
+        if (status === 'PAYMENT_FAILED')    return 'Payment Failed';  // Failed / dismissed
+        return 'Active'; // PENDING (COD), CONFIRMED, ASSIGNED, IN_PROGRESS
     };
 
     const filteredBookings = bookings.filter(b => {
         const mapped = mapStatus(b.status);
         if (activeTab === 'All') return true;
+        if (activeTab === 'Active') return mapped === 'Active';
+        if (activeTab === 'Pending Payment') return mapped === 'Pending Payment' || mapped === 'Payment Failed';
         return mapped === activeTab;
     });
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'Completed': return '#34C759';
-            case 'Cancelled': return '#FF3B30';
-            default: return '#048357';
+            case 'Completed':        return '#34C759';
+            case 'Cancelled':        return '#FF3B30';
+            case 'Payment Failed':   return '#FF3B30';
+            case 'Pending Payment':  return '#FF9500'; // orange — awaiting action
+            default:                 return '#048357'; // Active
         }
     };
 
     const getStatusBg = (status: string) => {
         switch (status) {
-            case 'Completed': return '#F0FFF4';
-            case 'Cancelled': return '#FFF5F5';
-            default: return '#E8F5E9';
+            case 'Completed':        return '#F0FFF4';
+            case 'Cancelled':        return '#FFF5F5';
+            case 'Payment Failed':   return '#FFF5F5';
+            case 'Pending Payment':  return '#FFF8EE'; // soft orange
+            default:                 return '#E8F5E9'; // Active
         }
     };
 
@@ -102,7 +110,7 @@ export default function OrderHistoryScreen() {
             <View style={styles.body}>
                 {/* ─── Tabs ─── */}
                 <View style={styles.tabRow}>
-                    {(['All', 'Active', 'Completed'] as TabType[]).map(tab => (
+                    {(['All', 'Active', 'Pending Payment', 'Completed'] as TabType[]).map(tab => (
                         <TouchableOpacity
                             key={tab}
                             style={[styles.tab, activeTab === tab && styles.tabActive]}

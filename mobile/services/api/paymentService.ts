@@ -11,7 +11,7 @@ import { AnalyticsEvents } from '../firebase/analyticsEvents';
 
 // ─── Types (aligned with Prisma schema) ───────
 
-export type PaymentMethod = 'UPI' | 'CARD' | 'NETBANKING' | 'WALLET';
+export type PaymentMethod = 'UPI' | 'CARD' | 'NETBANKING' | 'WALLET' | 'CASH';
 export type PaymentStatus = 'INITIATED' | 'SUCCESS' | 'FAILED' | 'REFUND_INITIATED' | 'REFUNDED';
 
 export interface PaymentMethodOption {
@@ -111,5 +111,15 @@ export const paymentService = {
      */
     applyCoupon: async (data: ApplyCouponPayload): Promise<ApiResponse<ApplyCouponResponse>> => {
         return apiClient.post<ApplyCouponResponse>('/payments/apply-coupon', data);
+    },
+
+    /**
+     * POST /api/payments/cancel
+     * Called when user dismisses Razorpay (ondismiss) or payment fails.
+     * Marks the payment + booking as PAYMENT_FAILED on the backend.
+     * This prevents the booking from appearing in Cart/Active views.
+     */
+    cancelPayment: async (orderId: string): Promise<ApiResponse<{ orderId: string; bookingId: string | null }>> => {
+        return apiClient.post('/payments/cancel', { orderId });
     },
 };

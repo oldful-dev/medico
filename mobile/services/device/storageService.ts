@@ -16,6 +16,9 @@ export const STORAGE_KEYS = {
     SELECTED_CITY: 'oldful_selected_city',
     PREFERRED_LANGUAGE: 'oldful_preferred_language',
     PUSH_TOKEN: 'oldful_push_token',
+    // Payment recovery — persisted before Razorpay opens, cleared on success/failure
+    PENDING_ORDER_ID: 'oldful_pending_order_id',
+    PENDING_BOOKING_ID: 'oldful_pending_booking_id',
 } as const;
 
 // ─── Service ──────────────────────────────────
