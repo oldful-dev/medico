@@ -1,10 +1,9 @@
 import React from "react";
 import { View, ScrollView, Text, Image, TouchableOpacity, StyleSheet, } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Colors, Fonts, Radius, Shadow, FontSize } from '@/constants/theme';
-import { useTranslation } from 'react-i18next';
-export default (props) => {
-    const { t } = useTranslation();
+import { Fonts } from '@/constants/theme';
+
+export default function HomepageScreen(props: any) {
     return (
         <SafeAreaProvider style={styles.container}>
             <ScrollView style={styles.scrollView}>

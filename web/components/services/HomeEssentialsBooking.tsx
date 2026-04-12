@@ -2,28 +2,26 @@
 
 import React, { useState } from 'react';
 import {
-   Clock, MapPin, Shield, Star, CheckCircle2,
+   MapPin, CheckCircle2,
    Info, Camera, Calendar, ArrowRight, ChevronRight,
-   Sparkles, Wrench, Droplet, Zap, Utensils, Smartphone
 } from 'lucide-react';
-import Image from 'next/image';
 import { ServiceConfig } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import { useAuthStore } from '@/store/authStore';
 
 interface Props {
    config: ServiceConfig;
-   onBook: (data: any) => void;
+   onBook: (data: Record<string, unknown>) => void;
 }
 
 export default function HomeEssentialsBooking({ config, onBook }: Props) {
    const { user } = useAuthStore();
-   const [formData, setFormData] = useState<Record<string, any>>({});
+   const [formData, setFormData] = useState<Record<string, unknown>>({});
    const [selectedDate, setSelectedDate] = useState('');
    const [address, setAddress] = useState(user?.addresses?.[0]?.line1 || '');
    const [images, setImages] = useState<File[]>([]);
 
-   const handleFieldChange = (id: string, value: any) => {
+   const handleFieldChange = (id: string, value: unknown) => {
       setFormData(prev => ({ ...prev, [id]: value }));
    };
 

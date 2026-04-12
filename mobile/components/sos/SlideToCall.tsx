@@ -5,13 +5,11 @@ import {
     Animated,
     PanResponder,
     StyleSheet,
-    Platform,
-    Dimensions,
     Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SOSCountdown from './SOSCountdown';
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
 import { sosService } from '@/services/device/sosService';
 import { AnalyticsEvents } from '@/services/firebase/analyticsEvents';
 

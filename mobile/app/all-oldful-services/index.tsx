@@ -6,14 +6,12 @@ import {
     ScrollView,
     TouchableOpacity,
     StyleSheet,
-    Platform,
     useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Fonts } from '@/constants/theme';
-import { useTranslation } from 'react-i18next';
 
 // Service grid images
 const doctorVisitImg = require('@/assets/images/32a4661f97e2fa2dd2c85c403a7c530b7214e7f7.png');
@@ -41,7 +39,6 @@ const SERVICE_GRID = [
 ];
 
 export default function AllOldfulServicesScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const { width } = useWindowDimensions();
 
@@ -54,7 +51,7 @@ export default function AllOldfulServicesScreen() {
     const exactCardHeight = exactImageHeight + 56;
 
     // Pad the grid array for clean left alignment in last row
-    const paddedGrid: Array<typeof SERVICE_GRID[0] | { empty: boolean }> = [...SERVICE_GRID];
+    const paddedGrid: (typeof SERVICE_GRID[0] | { empty: boolean })[] = [...SERVICE_GRID];
     while (paddedGrid.length % 3 !== 0) {
         paddedGrid.push({ empty: true });
     }

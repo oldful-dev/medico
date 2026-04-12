@@ -11,28 +11,23 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
-import { locationService } from '@/services/device/locationService';
-import { userService } from '@/services/api/userService';
-import { bookingService } from '@/services/api/bookingService';
-import { apiClient } from '@/services/api/apiClient';
-import { useTranslation } from 'react-i18next';
+import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+
 
 // ─── Figma Assets ───
 const imgPainRelief = require('@/assets/images/19384cdb0d3b6490a3d5bfa98457389b6d565416.png'); // Pain relief illustration
 const imgSeniorFitnessRight = require('@/assets/images/a6d4ed0a2bd9de082ab0ad9c67504e0708c7343f.png'); // Senior fitness rigth illustration
 const imgSeniorFitnessLeft = require('@/assets/images/3abc2815df401d4b6b19fda9a2f8c9fd80b8f9e3.png'); // Senior fitness left illustration
-const imgCalendar = require('@/assets/images/9db46350ce94677b709648f4aadad3189870cab5.png'); // 3D Calendar Icon
 
 // Constants
 const BODY_PARTS = ['Back', 'Knee', 'Neck', 'Shoulder', 'Leg'];
 
 export default function PhysioFitnessScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
@@ -41,36 +36,11 @@ export default function PhysioFitnessScreen() {
     const [selectedBodyPart, setSelectedBodyPart] = useState<string>('Back');
     const [otherIssue, setOtherIssue] = useState<string>('');
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-
-    // API state
-    const [cityId, setCityId] = useState('');
-    const [serviceId, setServiceId] = useState('');
-    const [serviceName, setServiceName] = useState('Physio & Fitness');
-    const [servicePrice, setServicePrice] = useState(0);
-    const [address, setAddress] = useState('Fetching address...');
     const [isBooking, setIsBooking] = useState(false);
-    const [isLoadingInit, setIsLoadingInit] = useState(true);
 
-    React.useEffect(() => {
-        (async () => {
-            try {
-                const hasPermission = await locationService.requestPermission();
-                if (hasPermission) {
-                    const coords = await locationService.getCurrentLocation();
-                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
-                    setAddress(fetchedAddress);
-                } else { setAddress(''); }
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) setCityId(profileRes.data.cityId);
-                const serviceRes = await apiClient.get<any[]>('/services');
-                if (serviceRes.success && serviceRes.data) {
-                    const svc = serviceRes.data.find((s: any) => s.slug === 'physio-fitness');
-                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Physio & Fitness'); setServicePrice(svc.basePrice ?? 0); }
-                }
-            } catch (err) { console.log('Physio init failed', err); }
-            finally { setIsLoadingInit(false); }
-        })();
-    }, []);
+    const { cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('physio-fitness');
+
+
 
     const handleBookService = async () => {
         if (!cityId || !serviceId) {

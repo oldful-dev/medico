@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { authService } from '@/services/api/authService';
 import { useAuthStore, AuthUser } from '@/store/authStore';
@@ -13,7 +13,6 @@ import { Footer } from '@/components/common/Footer';
 
 function AuthForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { login } = useAuthStore();
 
   const [step, setStep] = useState<'PHONE' | 'OTP'>('PHONE');
@@ -29,13 +28,6 @@ function AuthForm() {
   const phoneValue = watch('phone');
   const otpValue = watch('otp');
 
-  // Auto-submit OTP
-  React.useEffect(() => {
-    if (step === 'OTP' && otpValue?.length === 4 && !loading) {
-      handleSubmit(onVerifyOTP)();
-    }
-  }, [otpValue, step, loading, handleSubmit]);
-
   const onRequestOTP = async (data: { phone: string }) => {
     setLoading(true);
     setError('');
@@ -47,14 +39,14 @@ function AuthForm() {
       } else {
         setError(response.message || 'Failed to send OTP');
       }
-    } catch (err: any) {
-      setError(err.message || 'Network error. Please try again.');
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : null) || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const onVerifyOTP = async (data: { phone: string; otp: string }) => {
+  const onVerifyOTP = useCallback(async (data: { phone: string; otp: string }) => {
     if (isVerifyingRef.current) return;
     isVerifyingRef.current = true;
     setLoading(true);
@@ -88,13 +80,20 @@ function AuthForm() {
       } else {
         setError(response.message || 'Invalid or expired OTP');
       }
-    } catch (err: any) {
-      setError(err.message || 'Verification failed. Please try again.');
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : null) || 'Verification failed. Please try again.');
     } finally {
       setLoading(false);
       isVerifyingRef.current = false;
     }
-  };
+  }, [phone, login, router]);
+
+  // Auto-submit OTP — placed after onVerifyOTP to avoid TDZ error
+  React.useEffect(() => {
+    if (step === 'OTP' && otpValue?.length === 4 && !loading) {
+      handleSubmit(onVerifyOTP)();
+    }
+  }, [otpValue, step, loading, handleSubmit, onVerifyOTP]);
 
   return (
     <>

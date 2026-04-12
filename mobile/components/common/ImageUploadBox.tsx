@@ -54,9 +54,10 @@ export default function ImageUploadBox({
         });
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
-            addImage(result.assets[0].uri);
+            const uri = result.assets[0].uri;
+            setImages(prev => [...prev, uri].slice(0, maxImages));
         }
-    }, [images]);
+    }, [maxImages, t]);
 
     const openGallery = useCallback(async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -74,23 +75,22 @@ export default function ImageUploadBox({
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const newUris = result.assets.map((asset: ImagePicker.ImagePickerAsset) => asset.uri);
-            const combined = [...images, ...newUris].slice(0, maxImages);
-            setImages(combined);
-            if (onImagesChange) onImagesChange(combined);
+            setImages(prev => [...prev, ...newUris].slice(0, maxImages));
         }
-    }, [images, maxImages, onImagesChange]);
+    }, [images.length, maxImages, t]);
 
-    const addImage = (uri: string) => {
-        const newImages = [...images, uri];
-        setImages(newImages);
-        if (onImagesChange) onImagesChange(newImages);
-    };
+    React.useEffect(() => {
+        if (onImagesChange) {
+            onImagesChange(images);
+        }
+    }, [images, onImagesChange]);
 
     const removeImage = (index: number) => {
-        const newImages = [...images];
-        newImages.splice(index, 1);
-        setImages(newImages);
-        if (onImagesChange) onImagesChange(newImages);
+        setImages(prev => {
+            const updated = [...prev];
+            updated.splice(index, 1);
+            return updated;
+        });
     };
 
     return (

@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useUser } from '@/context/UserContext';
 import { userService } from '@/services/api/userService';
-import { useTranslation } from 'react-i18next';
+
 
 interface EmergencyContact {
     id: string;
@@ -22,7 +22,6 @@ interface EmergencyContact {
 const RELATIONSHIPS = ['Son', 'Daughter', 'Spouse', 'Neighbour', 'Sibling', 'Friend', 'Other'];
 
 export default function EmergencyContactsScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const { profile, setProfile } = useUser();
     const [showAddForm, setShowAddForm] = useState(false);

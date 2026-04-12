@@ -1,80 +1,37 @@
-// Book a Home Blood Test
 import React, { useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     TouchableOpacity,
-    Image,
     Platform,
     Alert,
     ActivityIndicator,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
-import { locationService } from '@/services/device/locationService';
-import { userService } from '@/services/api/userService';
-import { bookingService } from '@/services/api/bookingService';
-import { apiClient } from '@/services/api/apiClient';
-import { mediaService } from '@/services/api/mediaService';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
-import { useTranslation } from 'react-i18next';
+import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { mediaService } from '@/services/api/mediaService';
 
-// ─── Figma Assets ───
-const cautionIcon = require('@/assets/images/c4f7fda686169deb23b4565362e0a544adc4d7c4.png');
-const clockIcon = require('@/assets/images/b0c2041dcbc9f27873dbb95bd36571aded3422d2.png');
-const calendarIcon = require('@/assets/images/9db46350ce94677b709648f4aadad3189870cab5.png');
+
 
 export default function BloodTestScreen() {
     const { t } = useTranslation();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [selectedTest, setSelectedTest] = useState('Full Body Package');
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
-
-    // API & Init state
-    const [cityId, setCityId] = useState('');
-    const [serviceId, setServiceId] = useState('');
-    const [serviceName, setServiceName] = useState('Blood Test');
-    const [servicePrice, setServicePrice] = useState(0);
-    const [address, setAddress] = useState('Fetching address...');
-    const [isLoadingInit, setIsLoadingInit] = useState(true);
     const [isBooking, setIsBooking] = useState(false);
 
-    React.useEffect(() => {
-        (async () => {
-            try {
-                setIsLoadingInit(true);
-                const hasPermission = await locationService.requestPermission();
-                if (hasPermission) {
-                    const coords = await locationService.getCurrentLocation();
-                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
-                    setAddress(fetchedAddress);
-                } else { setAddress(''); }
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) {
-                    setCityId(profileRes.data.cityId);
-                }
-                const serviceRes = await apiClient.get<any[]>('/services');
-                if (serviceRes.success && serviceRes.data) {
-                    const svc = serviceRes.data.find((s: any) => s.slug === 'blood-test');
-                    if (svc) {
-                        setServiceId(svc.id);
-                        setServiceName(svc.name || 'Blood Test');
-                        setServicePrice(svc.basePrice ?? 0);
-                    }
-                }
-            } catch (err) { 
-                console.log('Blood Test init failed', err); 
-            } finally {
-                setIsLoadingInit(false);
-            }
-        })();
-    }, []);
+    const { cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('blood-test');
+
+
 
     const handleBookService = async () => {
         if (!cityId || !serviceId) {
@@ -133,9 +90,10 @@ export default function BloodTestScreen() {
 
     return (
         <View style={styles.screen}>
+            <View style={{ backgroundColor: '#FDFDE8', height: insets.top }} />
             <StatusBar style="dark" />
 
-            <SafeAreaView style={styles.container} edges={['top']}>
+            <View style={styles.container}>
                 {/* ─── Header ─── */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -198,7 +156,7 @@ export default function BloodTestScreen() {
                     {/* Inline warning removed in favor of React Native Alert as per PRD "Popup Alert" requirement */}
 
                 </KeyboardAwareScrollView>
-            </SafeAreaView>
+            </View>
         </View>
     );
 }

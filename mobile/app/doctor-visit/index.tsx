@@ -21,11 +21,8 @@ import { useTranslation } from 'react-i18next';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { locationService } from '@/services/device/locationService';
-import { userService } from '@/services/api/userService';
-import { useUser } from '@/context/UserContext';
+import FormInput from '@/components/common/FormInput';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
-import { bookingService } from '@/services/api/bookingService';
-import { apiClient } from '@/services/api/apiClient';
 import { mediaService } from '@/services/api/mediaService';
 
 // ─── Figma-exported Assets ───
@@ -61,7 +58,7 @@ export default function DoctorVisitScreen() {
     const { width } = useWindowDimensions();
 
     // ─── Global State ───
-    const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('doctor-home-visit');
+    const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, isLoading: isLoadingInit } = useServiceInitialization('doctor-home-visit');
 
     // ─── State ───
     const [selectedProblem, setSelectedProblem] = React.useState<string | null>(null);
@@ -78,6 +75,10 @@ export default function DoctorVisitScreen() {
             Alert.alert('Select Problem', 'Please select a health problem first.');
             return;
         }
+        if (locationDenied && (!address || address.trim().length < 5)) {
+            Alert.alert('Address Required', 'Since location access is denied, please type your full address manually so the doctor can reach you.');
+            return;
+        }
         if (!isReady) {
             Alert.alert('Error', 'Service initialization incomplete. Please check your internet connection or try logging out and back in.');
             return;
@@ -92,11 +93,14 @@ export default function DoctorVisitScreen() {
             }
 
             // Navigate to checkout — booking is created INSIDE checkout after payment succeeds
+            const gps = await locationService.getCurrentLocation().catch(() => null);
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: new Date().toISOString(),
                 addressLine: address || undefined,
+                latitude: gps?.latitude,
+                longitude: gps?.longitude,
                 symptoms: [selectedProblem],
                 doctorType: selectedDoctorType === 'GP' ? 'general-physician' : 'physiotherapist',
                 formDataJson: {
@@ -296,15 +300,29 @@ export default function DoctorVisitScreen() {
                     <View style={styles.sectionCardSmall}>
                         <Text style={styles.sectionTitle}>{t('booking.confirm_address')}</Text>
 
-                        <View style={styles.addressBox}>
-                            <Ionicons name="location-outline" size={16} color="#2F2F2F" style={styles.addressIcon} />
-                            <Text style={styles.addressText} numberOfLines={1}>{address}</Text>
-                            <TouchableOpacity>
-                                <Text style={styles.addressEdit}>Edit</Text>
-                            </TouchableOpacity>
-                        </View>
+                        {locationDenied ? (
+                            <FormInput
+                                placeholder="Type your full address manually"
+                                value={address}
+                                onChangeText={setAddress}
+                                multiline
+                                style={{ elevation: 0 }} // Remove shadow to match card style
+                            />
+                        ) : (
+                            <View style={styles.addressBox}>
+                                <Ionicons name="location-outline" size={16} color="#2F2F2F" style={styles.addressIcon} />
+                                <Text style={styles.addressText} numberOfLines={1}>{address}</Text>
+                                <TouchableOpacity onPress={() => router.push('/(auth)/city-selection')}>
+                                    <Text style={styles.addressEdit}>Edit</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
 
-                        <Text style={styles.addressHelper}>Auto-fitted from user profile(Google maps location).</Text>
+                        <Text style={styles.addressHelper}>
+                            {locationDenied
+                                ? "GPS Access Denied. Please provide exact location."
+                                : "Auto-fitted from user profile(Google maps location)."}
+                        </Text>
                     </View>
 
                     {/* Bottom Padding for Fixed App Bar */}

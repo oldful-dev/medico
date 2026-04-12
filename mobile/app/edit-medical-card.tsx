@@ -1,22 +1,20 @@
 import React, { useState } from 'react';
 import {
     View, Text, TextInput, StyleSheet, TouchableOpacity,
-    Platform, Alert, ActivityIndicator, Switch,
+    Alert, ActivityIndicator, Switch,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Colors, Fonts, FontSize } from '@/constants/theme';
 import { useUser } from '@/context/UserContext';
 import { userService } from '@/services/api/userService';
-import { useTranslation } from 'react-i18next';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 export default function EditMedicalCardScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const { profile, setProfile } = useUser();
     const [saving, setSaving] = useState(false);

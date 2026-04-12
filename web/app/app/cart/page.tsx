@@ -16,7 +16,7 @@ export default function CartPage() {
       <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-[var(--color-bg-screen)]">
         <div className="w-24 h-24 bg-white rounded-3xl shadow-2xl shadow-emerald-900/10 flex items-center justify-center text-4xl mb-6 animate-bounce">🛒</div>
         <h2 className="text-2xl font-black text-gray-900">Your cart is empty</h2>
-        <p className="text-gray-500 mt-2 text-center max-w-xs font-medium">Looks like you haven't booked any service yet. Let's find something for you!</p>
+        <p className="text-gray-500 mt-2 text-center max-w-xs font-medium">Looks like you haven&apos;t booked any service yet. Let&apos;s find something for you!</p>
         <button 
           onClick={() => router.push('/app/services')}
           className="mt-10 bg-[var(--color-primary-deep)] text-white font-bold h-14 px-10 rounded-2xl shadow-xl shadow-emerald-900/20 active:scale-95 transition-all"
@@ -107,7 +107,7 @@ export default function CartPage() {
                   </div>
 
                   {/* Dynamic Fields Details */}
-                  {Object.entries(item).some(([k, v]) => !['id', 'serviceId', 'price', 'address', 'scheduleTime', 'problem', 'providerType'].includes(k)) && (
+                  {Object.entries(item).some(([k]) => !['id', 'serviceId', 'price', 'address', 'scheduleTime', 'problem', 'providerType'].includes(k)) && (
                      <div className="bg-gray-50 rounded-2xl p-4 flex flex-col gap-2">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
                            <Info className="w-3 h-3" /> Additional Details

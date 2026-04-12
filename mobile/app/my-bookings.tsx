@@ -5,7 +5,6 @@ import {
     StyleSheet,
     TouchableOpacity,
     FlatList,
-    Platform,
     ActivityIndicator,
     RefreshControl
 } from 'react-native';
@@ -15,10 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { bookingService, Booking } from '@/services/api/bookingService';
-import { useTranslation } from 'react-i18next';
 
 export default function MyBookingsScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [bookings, setBookings] = useState<Booking[]>([]);

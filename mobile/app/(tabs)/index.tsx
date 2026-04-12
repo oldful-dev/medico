@@ -9,7 +9,8 @@
 // Service screen routing uses Expo Router push() — screens are static,
 // only the listing/visibility is dynamic.
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -19,16 +20,18 @@ import {
   StyleSheet,
   useWindowDimensions,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+
 import { useTranslation } from 'react-i18next';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { locationService } from '@/services/device/locationService';
 import { useUser } from '@/context/UserContext';
-import { sduiService, HomeConfig, HomeSection, HomeBanner } from '@/services/firebase/sduiService';
+import { useAppConfig } from '@/context/AppConfigContext';
+import { sduiService, HomeConfig, HomeSection } from '@/services/firebase/sduiService';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 
 // ─── Logo (only static asset — not content-driven) ───────────────────────────
@@ -175,8 +178,10 @@ function EssentialsGrid({ section, itemWidth, cardHeight }: EssentialsGridProps)
 export default function HomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const { profile } = useUser();
+  const { profile, selectedCity, setSelectedCity } = useUser();
+  const { cities } = useAppConfig();
   const [currentLocationStr, setCurrentLocationStr] = useState('Loading...');
+  const [isCitySupported, setIsCitySupported] = useState(true);
   const [homeConfig, setHomeConfig] = useState<HomeConfig | null>(null);
 
   // ── Load Remote Config ──────────────────────────────────────────────────
@@ -188,34 +193,46 @@ export default function HomeScreen() {
   }, []);
 
   // ── Location ────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (profile?.city?.name) {
-      setCurrentLocationStr(profile.city.name);
-      return;
-    }
-    (async () => {
-      try {
-        const hasPermission = await locationService.requestPermission();
-        if (hasPermission) {
-          const coords = await locationService.getCurrentLocation();
-          const results = await require('expo-location').reverseGeocodeAsync({
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-          });
-          if (results.length > 0) {
-            const place = results[0];
-            setCurrentLocationStr(place.city || place.subregion || place.region || 'Unknown');
-          } else {
-            setCurrentLocationStr('Unknown');
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        try {
+          // Priority: User's manual selection -> Profile City -> GPS
+          if (selectedCity) {
+            setCurrentLocationStr(selectedCity);
+            const cityData = cities.find((c: any) => c.name.toLowerCase() === selectedCity.toLowerCase());
+            setIsCitySupported(!!cityData && cityData.available);
+            return;
           }
-        } else {
-          setCurrentLocationStr('Location Required');
+
+          setCurrentLocationStr('Loading...');
+          const hasPermission = await locationService.requestPermission();
+          if (hasPermission) {
+            const coords = await locationService.getCurrentLocation();
+            const address = await locationService.getAddressFromCoordinates(coords);
+            
+            // Show locality (first part of formatted address)
+            const locality = address.split(',')[0] || 'Unknown Location';
+            setCurrentLocationStr(locality);
+            
+            // Detect city for "Coming Soon" banner
+            const detectedCityMatch = cities.find((c: any) => address.toLowerCase().includes(c.name.toLowerCase()));
+            if (detectedCityMatch) {
+              setSelectedCity(detectedCityMatch.name);
+              setIsCitySupported(true);
+            } else {
+              setIsCitySupported(false);
+            }
+          } else {
+            setCurrentLocationStr('Location Required');
+          }
+        } catch (e) {
+          console.error("Home location fetch error:", e);
+          setCurrentLocationStr('Permission Required');
         }
-      } catch {
-        setCurrentLocationStr('Location Required');
-      }
-    })();
-  }, []);
+      })();
+    }, [selectedCity, cities, setSelectedCity])
+  );
 
   // ── Pixel math (prevents sub-pixel wrapping) ────────────────────────────
   const availableWidth = width - 60;
@@ -252,11 +269,17 @@ export default function HomeScreen() {
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.header}>
           <Image source={logoSmall} style={styles.logoSmall} resizeMode="contain" />
-          <TouchableOpacity style={styles.locationPill}>
+          <TouchableOpacity
+            style={styles.locationPill}
+            onPress={() => router.push('/(auth)/city-selection')}
+          >
             <Ionicons name="location-outline" size={14} color="#2F2F2F" />
             <Text style={styles.locationText} numberOfLines={1}>{currentLocationStr}</Text>
           </TouchableOpacity>
           <View style={styles.headerRight}>
+            <TouchableOpacity onPress={() => router.push('/search')}>
+              <Ionicons name="search-outline" size={22} color="#2F2F2F" />
+            </TouchableOpacity>
             <TouchableOpacity style={styles.sosTag} onPress={() => router.push('/sos-emergency')}>
               <Text style={styles.sosTagText}>SOS</Text>
             </TouchableOpacity>
@@ -273,6 +296,24 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Coming Soon Banner (PRD Requirement) */}
+        {!isCitySupported && (
+          <View style={styles.comingSoonBanner}>
+            <View style={styles.comingSoonContent}>
+              <Ionicons name="notifications-circle" size={40} color="#048357" />
+              <View style={styles.comingSoonTextRow}>
+                <Text style={styles.comingSoonTitle}>We&apos;re coming soon to {currentLocationStr}!</Text>
+                <Text style={styles.comingSoonDesc}>Notify me when you launch in my city.</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.notifyMeButton}
+              onPress={() => Alert.alert('Success', "We'll notify you as soon as we start operations in " + currentLocationStr)}
+            >
+              <Text style={styles.notifyMeText}>Notify Me</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         {/* ─── Hero Banner (Firebase-driven) ─── */}
         {activeBanner && (
           <TouchableOpacity
@@ -698,5 +739,50 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'center',
     lineHeight: 12,
+  },
+  /* ═══ Coming Soon Banner ═══ */
+  comingSoonBanner: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: '#048357',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  comingSoonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  comingSoonTextRow: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  comingSoonTitle: {
+    fontFamily: Fonts.semiBold,
+    fontSize: 16,
+    color: '#2F2F2F',
+    marginBottom: 2,
+  },
+  comingSoonDesc: {
+    fontFamily: Fonts.regular,
+    fontSize: 12,
+    color: '#777777',
+  },
+  notifyMeButton: {
+    backgroundColor: '#048357',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  notifyMeText: {
+    fontFamily: Fonts.medium,
+    fontSize: 14,
+    color: '#FFFFFF',
   },
 });

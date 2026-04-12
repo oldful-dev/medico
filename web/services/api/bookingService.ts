@@ -6,7 +6,7 @@ export interface CreateBookingData {
     scheduledTime?: string;
     addressLine?: string;
     amount?: number;
-    formDataJson?: any;
+    formDataJson?: Record<string, unknown>;
     // Add other optional fields supported by the backend
     symptoms?: string[];
     doctorType?: string;

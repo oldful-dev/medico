@@ -11,16 +11,14 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
-import { locationService } from '@/services/device/locationService';
-import { userService } from '@/services/api/userService';
-import { bookingService } from '@/services/api/bookingService';
-import { apiClient } from '@/services/api/apiClient';
-import { useTranslation } from 'react-i18next';
+import { FormInput } from '@/components/common';
+import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+
 
 // ─── Figma Assets ───
 const imgEye = require('@/assets/images/e9d68d0206e443ceceadd7907cd94f1c86fcacd4.png');
@@ -31,9 +29,7 @@ const imgCancer = require('@/assets/images/12a939ac9402eccf1948ba9378dc7ffb07838
 const imgDental = require('@/assets/images/fde7739eae440fa8bbeccc49dfe81d9417584cdb.png');
 const imgHospitalIcon = require('@/assets/images/31bbfde9d06049efbd9fd2f7dfc3a946806d9b19.png');
 const imgRadioIcon = require('@/assets/images/9e6f2fbe6164dacc5707082a5ca833130f9cddd9.png');
-const imgCalendar = require('@/assets/images/9db46350ce94677b709648f4aadad3189870cab5.png');
-const imgClock = require('@/assets/images/b0c2041dcbc9f27873dbb95bd36571aded3422d2.png');
-const imgCheckGreen = require('@/assets/images/c1f317625cf9b96d966c7fadf2845119f35f1007.png'); // Add-ons checked icon/car?
+// If no explicit image for the add-ons row, we will use ionicons.
 // If no explicit image for the add-ons row, we will use ionicons. Check screen cap:
 // Add-ons list: Transport (unchecked circle by default, I'll use ionicons), Support (green check), Car/Money ($500)
 
@@ -47,7 +43,6 @@ const SPECIALISTS = [
 ];
 
 export default function HospitalTripScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
@@ -57,40 +52,33 @@ export default function HospitalTripScreen() {
     const [preferredDoctor, setPreferredDoctor] = useState('');
     const [transportAddon, setTransportAddon] = useState(false);
     const [supportAddon, setSupportAddon] = useState(true);
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+    const [selectedDate] = useState<Date | undefined>(undefined);
 
-    // API state
-    const [cityId, setCityId] = useState('');
-    const [serviceId, setServiceId] = useState('');
-    const [serviceName, setServiceName] = useState('Hospital Trip');
-    const [servicePrice, setServicePrice] = useState(0);
-    const [address, setAddress] = useState('Fetching address...');
+    // API state (Refactored to Hook)
+    const {
+        cityId,
+        serviceId,
+        serviceName,
+        servicePrice,
+        address,
+        setAddress,
+        locationDenied,
+        isLoading: isLoadingInit,
+        isReady
+    } = useServiceInitialization('hospital-trip');
+
     const [isBooking, setIsBooking] = useState(false);
-    const [isLoadingInit, setIsLoadingInit] = useState(true);
-
-    React.useEffect(() => {
-        (async () => {
-            try {
-                const hasPermission = await locationService.requestPermission();
-                if (hasPermission) {
-                    const coords = await locationService.getCurrentLocation();
-                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
-                    setAddress(fetchedAddress);
-                } else { setAddress(''); }
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) setCityId(profileRes.data.cityId);
-                const serviceRes = await apiClient.get<any[]>('/services');
-                if (serviceRes.success && serviceRes.data) {
-                    const svc = serviceRes.data.find((s: any) => s.slug === 'hospital-trip');
-                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Hospital Trip'); setServicePrice(svc.basePrice ?? 0); }
-                }
-            } catch (err) { console.log('Hospital Trip init failed', err); }
-            finally { setIsLoadingInit(false); }
-        })();
-    }, []);
 
     const handleBookService = async () => {
-        if (!cityId || !serviceId) {
+        if (!selectedSpecialist) {
+            Alert.alert('Select Specialist', 'Please select a specialist category first.');
+            return;
+        }
+        if (locationDenied && (!address || address.trim().length < 5)) {
+            Alert.alert('Address Required', 'Since location access is denied, please type your pickup address manually.');
+            return;
+        }
+        if (!isReady) {
             Alert.alert('Error', 'Service initialization incomplete. Please try again.');
             return;
         }
@@ -195,7 +183,7 @@ export default function HospitalTripScreen() {
                         <View style={styles.checkedBox}>
                             <Ionicons name="checkmark" size={12} color="#FFFFFF" />
                         </View>
-                        <Text style={styles.selectedHospitalText}>St.John’s Hospital</Text>
+                        <Text style={styles.selectedHospitalText}>St.John&apos;s Hospital</Text>
                         <Ionicons name="search" size={20} color="#555" style={{ marginLeft: 'auto' }} />
                     </View>
 
@@ -298,6 +286,34 @@ export default function HospitalTripScreen() {
                                 <Text style={styles.costActuals}>Fee + Actuals</Text>
                             </Text>
                         </View>
+                    </View>
+
+                    {/* ─── Confirm Pickup Address ─── */}
+                    <View style={styles.addonsContainer}>
+                        <Text style={styles.sectionTitle}>Confirm Pickup Address</Text>
+
+                        {locationDenied ? (
+                            <FormInput
+                                placeholder="Type your full pickup address"
+                                value={address}
+                                onChangeText={setAddress}
+                                multiline
+                                style={{ elevation: 0, borderWidth: 1, borderColor: '#D9D9D9' }}
+                            />
+                        ) : (
+                            <View style={[styles.inputCard, { marginBottom: 5, backgroundColor: 'rgba(217, 217, 217, 0.2)' }]}>
+                                <Ionicons name="location-outline" size={18} color="#2F2F2F" style={{ marginRight: 10 }} />
+                                <Text style={{ flex: 1, fontFamily: 'LexendDeca_400Regular', color: '#2F2F2F' }} numberOfLines={1}>
+                                    {address}
+                                </Text>
+                                <TouchableOpacity onPress={() => router.push('/(auth)/city-selection')}>
+                                    <Text style={{ color: '#02743F', fontFamily: 'LexendDeca_500Medium' }}>Edit</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                        <Text style={{ fontSize: 10, color: '#888', marginTop: 4, marginLeft: 2 }}>
+                            {locationDenied ? "GPS Access Denied. Please provide exact location." : "Auto-filled from Google Maps location."}
+                        </Text>
                     </View>
 
                     {/* ─── Confirm Button ─── */}

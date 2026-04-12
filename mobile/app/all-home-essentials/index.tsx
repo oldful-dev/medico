@@ -6,7 +6,6 @@ import {
     ScrollView,
     TouchableOpacity,
     StyleSheet,
-    Platform,
     useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,7 +14,6 @@ import { useRouter } from 'expo-router';
 import { Fonts } from '@/constants/theme';
 
 import { apiClient } from '@/services/api/apiClient';
-import { useTranslation } from 'react-i18next';
 
 // Home essentials icons
 const acRepairIcon = require('@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png');
@@ -43,7 +41,6 @@ const ICON_MAPPING: Record<string, any> = {
 };
 
 export default function AllHomeEssentialsScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const { width } = useWindowDimensions();
     const [services, setServices] = React.useState<any[]>([]);

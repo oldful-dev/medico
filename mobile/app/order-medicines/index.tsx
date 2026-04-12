@@ -13,20 +13,18 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { locationService } from '@/services/device/locationService';
-import { userService } from '@/services/api/userService';
-import { bookingService } from '@/services/api/bookingService';
-import { apiClient } from '@/services/api/apiClient';
+import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
 import { useTranslation } from 'react-i18next';
 
+
 // ─── Figma Assets ───
-const imgBell = require('@/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png');
+
 const cameraIcon = require('@/assets/images/288b8d22e862e8e7e85fb51ab6158d4b0fd84dcc.png');
 const galleryIcon = require('@/assets/images/82b1e49607f9f5b0817c6d51de25f6b752ac4908.png');
 
@@ -35,20 +33,13 @@ export default function OrderMedicinesScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [duration, setDuration] = useState('1 Month');
-    const [address, setAddress] = useState('Fetching location...');
-    const [isManualAddress, setIsManualAddress] = useState(false);
     const [autoRefill, setAutoRefill] = useState(true);
     const [isManualEntry, setIsManualEntry] = useState(false);
     const [manualText, setManualText] = useState('');
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
-    
-    // API & Init state
-    const [cityId, setCityId] = useState('');
-    const [serviceId, setServiceId] = useState('');
-    const [serviceName, setServiceName] = useState('Order Medicines');
-    const [servicePrice, setServicePrice] = useState(0);
-    const [isLoadingInit, setIsLoadingInit] = useState(true);
     const [isBooking, setIsBooking] = useState(false);
+
+    const { cityId, serviceId, serviceName, servicePrice, address, setAddress, isManualAddress, isLoading: isLoadingInit } = useServiceInitialization('medicines');
 
     const openCamera = async () => {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -97,37 +88,7 @@ export default function OrderMedicinesScreen() {
         else await openGallery();
     };
 
-    React.useEffect(() => {
-        (async () => {
-            try {
-                setIsLoadingInit(true);
-                const hasPermission = await locationService.requestPermission();
-                if (hasPermission) {
-                    const coords = await locationService.getCurrentLocation();
-                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
-                    setAddress(fetchedAddress);
-                } else {
-                    setIsManualAddress(true);
-                    setAddress('');
-                }
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) {
-                    setCityId(profileRes.data.cityId);
-                }
-                const serviceRes = await apiClient.get<any[]>('/services');
-                if (serviceRes.success && serviceRes.data) {
-                    const svc = serviceRes.data.find((s: any) => s.slug === 'medicines');
-                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Order Medicines'); setServicePrice(svc.basePrice ?? 0); }
-                }
-            } catch (error) {
-                console.log('Medicines init failed:', error);
-                setIsManualAddress(true);
-                setAddress('');
-            } finally {
-                setIsLoadingInit(false);
-            }
-        })();
-    }, []);
+
 
 
     const handleBookService = async () => {

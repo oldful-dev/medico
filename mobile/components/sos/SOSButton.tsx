@@ -9,7 +9,7 @@ const ringThirdImg = require('@/assets/images/b80c4c1ba6d24bda41dfd3542f19e84d43
 const ringSecondImg = require('@/assets/images/4ba5d3e861b882471ce1c114d1910688e7d39afe.png');
 const ringInnerImg = require('@/assets/images/6426813f7d645f381f72a7867f3211021f97bb25.png');
 
-export default function SOSRings() {
+export default function SOSButton() {
     return (
         <View style={styles.wrapper}>
             {/* Concentric ring layers — stacked via absolute positioning (unavoidable for layered rings) */}

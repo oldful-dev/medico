@@ -10,11 +10,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { supportService, SupportTicket, TicketCategory } from '@/services/api/supportService';
-import { useTranslation } from 'react-i18next';
 import { useAppConfig } from '@/context/AppConfigContext';
 
 export default function HelpSupportScreen() {
-    const { t } = useTranslation();
     const router      = useRouter();
     const insets      = useSafeAreaInsets();
     const { helpSupportConfig } = useAppConfig();
@@ -165,7 +163,7 @@ export default function HelpSupportScreen() {
                                 </View>
                                 <View style={styles.contactTextGroup}>
                                     <Text style={styles.contactTitle}>Raise a Ticket</Text>
-                                    <Text style={styles.contactDesc}>Submit a request and we'll respond shortly.</Text>
+                                    <Text style={styles.contactDesc}>Submit a request and we&apos;ll respond shortly.</Text>
                                 </View>
                                 <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
                             </TouchableOpacity>

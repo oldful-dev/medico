@@ -19,7 +19,7 @@ export interface AuthUser {
     email?: string;
     profileImageUrl?: string;
     uniqueUserId?: string;
-    addresses?: any[];
+    addresses?: Record<string, unknown>[];
 }
 
 interface AuthState {

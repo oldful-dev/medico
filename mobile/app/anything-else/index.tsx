@@ -7,80 +7,34 @@ import {
     Image,
     Platform,
     TextInput,
+    Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { locationService } from '@/services/device/locationService';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
-import { useAuth } from '@/context/AuthContext';
-import { userService } from '@/services/api/userService';
-import { bookingService } from '@/services/api/bookingService';
-import { apiClient } from '@/services/api/apiClient';
+import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
-import { Alert } from 'react-native';
-import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
-import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgHero = require('@/assets/images/6c8ed456023258e8b4095af93909c6cbc6c4b909.png'); // Lightbulb & Question mark icon
-const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
-const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
 
 export default function AnythingElseScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const [address, setAddress] = React.useState('');
-    const [isFetchingLocation, setIsFetchingLocation] = React.useState(true);
     const [reqTitle, setReqTitle] = React.useState('');
     const [reqDesc, setReqDesc] = React.useState('');
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
-    const { userId } = useAuth();
-    const [cityId, setCityId] = React.useState('');
-    const [serviceId, setServiceId] = React.useState('');
-    const [serviceName, setServiceName] = React.useState('Anything Else');
-    const [servicePrice, setServicePrice] = React.useState(0);
-    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
     const [isBooking, setIsBooking] = React.useState(false);
 
-    React.useEffect(() => {
-        (async () => {
-            try {
-                setIsLoadingInit(true);
-                // Fetch location
-                const hasPermission = await locationService.requestPermission();
-                if (hasPermission) {
-                    const coords = await locationService.getCurrentLocation();
-                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
-                    setAddress(fetchedAddress);
-                }
+    const { cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('anything-else');
 
-                // Fetch User Profile for City ID
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) {
-                    setCityId(profileRes.data.cityId);
-                }
 
-                // Fetch Service ID for Anything Else
-                const serviceRes = await apiClient.get<any[]>('/services');
-                if (serviceRes.success && serviceRes.data) {
-                    const svc = serviceRes.data.find((s: any) => s.slug === 'anything-else');
-                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Anything Else'); setServicePrice(svc.basePrice ?? 0); }
-                }
-
-            } catch (err) {
-                console.log("Initialization failed", err);
-            } finally {
-                setIsFetchingLocation(false);
-                setIsLoadingInit(false);
-            }
-        })();
-    }, []);
 
     const handleBookService = async () => {
         if (!reqTitle || !reqDesc || !selectedDate || !address) {
@@ -202,10 +156,10 @@ export default function AnythingElseScreen() {
                         <Ionicons name="location-outline" size={18} color="#048357" style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
-                            placeholder={isFetchingLocation ? "Fetching location..." : "Enter your full address"}
+                            placeholder={isLoadingInit ? "Fetching location..." : "Enter your full address"}
                             placeholderTextColor="#898989"
                             value={address}
-                            onChangeText={setAddress}
+                            editable={false}
                         />
                     </View>
                 </View>
@@ -226,7 +180,7 @@ export default function AnythingElseScreen() {
                         onPress={handleBookService}
                     >
                         <Text style={styles.bookButtonText}>
-                            {isBooking ? 'Processing...' : (isLoadingInit ? 'Initializing...' : 'Book Service')}
+                            {isLoadingInit ? "Initializing..." : isBooking ? <ActivityIndicator color="#FFFFFF" /> : "Confirm & Pay"}
                         </Text>
                     </TouchableOpacity>
                 </View>

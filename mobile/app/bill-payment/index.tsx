@@ -7,23 +7,17 @@ import {
     Image,
     Platform,
     TextInput,
+    Alert,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/context/AuthContext';
-import { userService } from '@/services/api/userService';
-import { bookingService } from '@/services/api/bookingService';
-import { apiClient } from '@/services/api/apiClient';
-import { Alert } from 'react-native';
-import { useTranslation } from 'react-i18next';
+import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 
 // ─── Figma Assets ───
 const imgHero = require('@/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png'); // Bill icon
-const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
-const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
 
 export default function BillPaymentScreen() {
     const { t } = useTranslation();
@@ -32,34 +26,11 @@ export default function BillPaymentScreen() {
     const [billType, setBillType] = React.useState('');
     const [accountId, setAccountId] = React.useState('');
     const [amount, setAmount] = React.useState('');
-    const { userId } = useAuth();
-    const [cityId, setCityId] = React.useState('');
-    const [serviceId, setServiceId] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
-    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
 
-    React.useEffect(() => {
-        (async () => {
-            try {
-                // Fetch User Profile for City ID
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) {
-                    setCityId(profileRes.data.cityId);
-                }
+    const { cityId, serviceId, isLoading: isLoadingInit } = useServiceInitialization('bill-payment');
 
-                // Fetch Service ID for Bill Payment
-                const serviceRes = await apiClient.get<any[]>('/services');
-                if (serviceRes.success && serviceRes.data) {
-                    const svc = serviceRes.data.find((s: any) => s.slug === 'bill-payment');
-                    if (svc) setServiceId(svc.id);
-                }
-            } catch (err) {
-                console.log("Initialization failed", err);
-            } finally {
-                setIsLoadingInit(false);
-            }
-        })();
-    }, []);
+
 
     const handleBookService = async () => {
         if (!billType || !accountId || !amount) {

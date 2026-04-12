@@ -6,14 +6,14 @@ import {
     StyleSheet,
     TouchableOpacity,
     ScrollView,
-    Platform,
     TextInput,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useTranslation } from 'react-i18next';
+import { useUser } from '@/context/UserContext';
 
 // ─── Static Categories & Popular Searches ───
 const CATEGORIES = [
@@ -29,30 +29,65 @@ const POPULAR_SEARCHES = [
     'Doctor home visit',
     'Blood test at home',
     'Nursing care',
-    'AC repair near me',
+    'AC repair',
     'Physiotherapy',
     'Order medicines',
-    'Insurance plan',
-    'Grocery delivery',
-];
-
-const RECENT_SEARCHES = [
-    'Doctor visit for fever',
-    'BP check at home',
-    'Plumbing service',
 ];
 
 export default function SearchScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { services } = useUser();
+
+    const [query, setQuery] = React.useState('');
+    const [results, setResults] = React.useState<{ id?: string; name: string; description?: string; slug: string; route?: string }[]>([]);
+    const [recentSearches, setRecentSearches] = React.useState<string[]>([]);
+
+    // ─── Persistence ───
+    React.useEffect(() => {
+        (async () => {
+            const saved = await AsyncStorage.getItem('@recent_searches');
+            if (saved) setRecentSearches(JSON.parse(saved));
+        })();
+    }, []);
+
+    const saveRecent = async (term: string) => {
+        if (!term.trim()) return;
+        const updated = [term, ...recentSearches.filter(s => s !== term)].slice(0, 5);
+        setRecentSearches(updated);
+        await AsyncStorage.setItem('@recent_searches', JSON.stringify(updated));
+    };
+
+    const clearRecent = async () => {
+        setRecentSearches([]);
+        await AsyncStorage.removeItem('@recent_searches');
+    };
+
+    // ─── Search Logic ───
+    React.useEffect(() => {
+        if (query.trim().length > 1) {
+            const filtered = services.filter(s =>
+                s.name.toLowerCase().includes(query.toLowerCase()) ||
+                s.description?.toLowerCase().includes(query.toLowerCase()) ||
+                s.slug.toLowerCase().includes(query.toLowerCase())
+            );
+            setResults(filtered);
+        } else {
+            setResults([]);
+        }
+    }, [query, services]);
+
+    const handleServiceSelect = (service: { name: string; slug: string; route?: string }) => {
+        saveRecent(service.name);
+        router.push((service.route || `/${service.slug}`) as Parameters<typeof router.push>[0]);
+    };
 
     return (
         <View style={styles.screen}>
             <View style={{ backgroundColor: '#048357', height: insets.top }} />
             <StatusBar style="light" backgroundColor="#048357" />
 
-            {/* ─── Header ─── */}
+            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
@@ -61,67 +96,115 @@ export default function SearchScreen() {
                 <View style={{ width: 34 }} />
             </View>
 
-            {/* ─── Content Card ─── */}
             <View style={styles.contentCard}>
-                <ScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                >
-                    {/* Search Input */}
+                <View style={styles.searchBarContainer}>
                     <View style={styles.searchBar}>
                         <Ionicons name="search" size={18} color="#AAAEAC" style={styles.searchIcon} />
                         <TextInput
                             style={styles.searchInput}
                             placeholder="Search services, doctors, tests..."
                             placeholderTextColor="#AAAEAC"
-                            editable={true}
+                            autoFocus={true}
+                            value={query}
+                            onChangeText={setQuery}
                         />
-                        <TouchableOpacity style={styles.filterButton}>
-                            <Ionicons name="options-outline" size={18} color="#02743F" />
-                        </TouchableOpacity>
+                        {query.length > 0 && (
+                            <TouchableOpacity onPress={() => setQuery('')}>
+                                <Ionicons name="close-circle" size={18} color="#AAAEAC" />
+                            </TouchableOpacity>
+                        )}
                     </View>
+                </View>
 
-                    {/* ─── Browse Categories ─── */}
-                    <Text style={styles.sectionTitle}>Browse Categories</Text>
-                    <View style={styles.categoriesGrid}>
-                        {CATEGORIES.map((cat, index) => (
-                            <TouchableOpacity key={index} style={styles.categoryCard}>
-                                <View style={[styles.categoryIconCircle, { backgroundColor: `${cat.color}12` }]}>
-                                    <Ionicons name={cat.icon} size={22} color={cat.color} />
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    {query.length > 1 ? (
+                        <View style={styles.resultsContainer}>
+                            <Text style={styles.sectionTitle}>Results for &quot;{query}&quot;</Text>
+                            {results.length > 0 ? (
+                                results.map((item, index) => (
+                                    <TouchableOpacity
+                                        key={item.id || index}
+                                        style={styles.resultItem}
+                                        onPress={() => handleServiceSelect(item)}
+                                    >
+                                        <View style={styles.resultIconBox}>
+                                            <Ionicons name="medical" size={20} color="#048357" />
+                                        </View>
+                                        <View style={styles.resultInfo}>
+                                            <Text style={styles.resultName}>{item.name}</Text>
+                                            <Text style={styles.resultDesc} numberOfLines={1}>{item.description}</Text>
+                                        </View>
+                                        <Ionicons name="chevron-forward" size={16} color="#AAAEAC" />
+                                    </TouchableOpacity>
+                                ))
+                            ) : (
+                                <View style={styles.emptyResults}>
+                                    <Ionicons name="search-outline" size={48} color="#AAAEAC" />
+                                    <Text style={styles.emptyText}>No services found matching &quot;{query}&quot;</Text>
                                 </View>
-                                <Text style={styles.categoryLabel} numberOfLines={2}>{cat.label}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
+                            )}
+                        </View>
+                    ) : (
+                        <>
+                            <Text style={styles.sectionTitle}>Browse Categories</Text>
+                            <View style={styles.categoriesGrid}>
+                                {CATEGORIES.map((cat, index) => (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={styles.categoryCard}
+                                        onPress={() => setQuery(cat.label)}
+                                    >
+                                        <View style={[styles.categoryIconCircle, { backgroundColor: `${cat.color}12` }]}>
+                                            <Ionicons name={cat.icon} size={22} color={cat.color} />
+                                        </View>
+                                        <Text style={styles.categoryLabel}>{cat.label}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
 
-                    {/* ─── Recent Searches ─── */}
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Recent Searches</Text>
-                        <TouchableOpacity>
-                            <Text style={styles.clearText}>Clear</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.recentList}>
-                        {RECENT_SEARCHES.map((item, index) => (
-                            <TouchableOpacity key={index} style={styles.recentItem}>
-                                <Ionicons name="time-outline" size={16} color="#AAAEAC" />
-                                <Text style={styles.recentText}>{item}</Text>
-                                <Ionicons name="arrow-forward-outline" size={14} color="#AAAEAC" />
-                            </TouchableOpacity>
-                        ))}
-                    </View>
+                            {recentSearches.length > 0 && (
+                                <>
+                                    <View style={styles.sectionHeader}>
+                                        <Text style={styles.sectionTitle}>Recent Searches</Text>
+                                        <TouchableOpacity onPress={clearRecent}>
+                                            <Text style={styles.clearText}>Clear</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View style={styles.recentList}>
+                                        {recentSearches.map((item, index) => (
+                                            <TouchableOpacity
+                                                key={index}
+                                                style={styles.recentItem}
+                                                onPress={() => setQuery(item)}
+                                            >
+                                                <Ionicons name="time-outline" size={16} color="#AAAEAC" />
+                                                <Text style={styles.recentText}>{item}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                </>
+                            )}
 
-                    {/* ─── Popular Searches ─── */}
-                    <Text style={styles.sectionTitle}>Popular Searches</Text>
-                    <View style={styles.popularGrid}>
-                        {POPULAR_SEARCHES.map((item, index) => (
-                            <TouchableOpacity key={index} style={styles.popularChip}>
-                                <Ionicons name="trending-up" size={12} color="#02743F" style={styles.chipIcon} />
-                                <Text style={styles.popularChipText}>{item}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
+                            <Text style={styles.sectionTitle}>Popular Searches</Text>
+                            <View style={styles.popularGrid}>
+                                {POPULAR_SEARCHES.map((item, index) => (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={styles.popularChip}
+                                        onPress={() => setQuery(item)}
+                                    >
+                                        <Ionicons name="trending-up" size={12} color="#02743F" style={styles.chipIcon} />
+                                        <Text style={styles.popularChipText}>{item}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </>
+                    )}
                 </ScrollView>
             </View>
         </View>
@@ -129,186 +212,40 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-    screen: {
-        flex: 1,
-        backgroundColor: '#048357',
-    },
-
-    /* ─── Header ─── */
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#048357',
-        paddingHorizontal: 16,
-        paddingBottom: 20,
-        paddingTop: 10,
-    },
-    backButton: {
-        padding: 5,
-    },
-    headerTitle: {
-        flex: 1,
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 20,
-        color: '#FFFFFF',
-        textAlign: 'center',
-        letterSpacing: -0.24,
-    },
-
-    /* ─── Content Card ─── */
-    contentCard: {
-        flex: 1,
-        backgroundColor: '#FDFDE8',
-        borderTopLeftRadius: 45,
-        borderTopRightRadius: 45,
-        overflow: 'hidden',
-    },
-    scrollView: {
-        flex: 1,
-    },
-    scrollContent: {
-        paddingHorizontal: 20,
-        paddingTop: 28,
-        paddingBottom: 40,
-    },
-
-    /* ─── Search Bar ─── */
+    screen: { flex: 1, backgroundColor: '#048357' },
+    header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 20, paddingTop: 10 },
+    backButton: { padding: 5 },
+    headerTitle: { flex: 1, fontFamily: 'Poppins_600SemiBold', fontSize: 20, color: '#FFFFFF', textAlign: 'center' },
+    contentCard: { flex: 1, backgroundColor: '#FDFDE8', borderTopLeftRadius: 45, borderTopRightRadius: 45, overflow: 'hidden' },
+    searchBarContainer: { paddingHorizontal: 20, paddingTop: 28 },
     searchBar: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        height: 48,
-        paddingHorizontal: 14,
-        marginBottom: 24,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
-        elevation: 3,
+        flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 12, height: 48, paddingHorizontal: 14,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 3,
     },
-    searchIcon: {
-        marginRight: 10,
-    },
-    searchInput: {
-        flex: 1,
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 13,
-        color: '#2F2F2F',
-        height: '100%',
-    },
-    filterButton: {
-        padding: 4,
-        marginLeft: 8,
-    },
-
-    /* ─── Section Headers ─── */
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
-        marginTop: 8,
-    },
-    sectionTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 15,
-        color: '#02743F',
-        marginBottom: 12,
-        letterSpacing: -0.24,
-    },
-    clearText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 12,
-        color: '#E05E5E',
-        marginBottom: 12,
-    },
-
-    /* ─── Browse Categories ─── */
-    categoriesGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        marginBottom: 20,
-    },
-    categoryCard: {
-        width: '31%',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        paddingVertical: 16,
-        alignItems: 'center',
-        marginBottom: 10,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 6,
-        elevation: 2,
-    },
-    categoryIconCircle: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    categoryLabel: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 10,
-        color: '#2F2F2F',
-        textAlign: 'center',
-        letterSpacing: -0.24,
-    },
-
-    /* ─── Recent Searches ─── */
-    recentList: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        marginBottom: 20,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 6,
-        elevation: 2,
-    },
-    recentItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 14,
-        paddingVertical: 12,
-        borderBottomWidth: 0.5,
-        borderBottomColor: 'rgba(0,0,0,0.05)',
-        gap: 10,
-    },
-    recentText: {
-        flex: 1,
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 12,
-        color: '#555555',
-    },
-
-    /* ─── Popular Searches ─── */
-    popularGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    popularChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(2, 116, 63, 0.08)',
-        borderRadius: 20,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderWidth: 0.5,
-        borderColor: 'rgba(2, 116, 63, 0.2)',
-    },
-    chipIcon: {
-        marginRight: 4,
-    },
-    popularChipText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 11,
-        color: '#02743F',
-    },
+    searchIcon: { marginRight: 10 },
+    searchInput: { flex: 1, fontFamily: 'LexendDeca_400Regular', fontSize: 13, color: '#2F2F2F' },
+    scrollView: { flex: 1 },
+    scrollContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 },
+    sectionTitle: { fontFamily: 'Poppins_600SemiBold', fontSize: 15, color: '#02743F', marginBottom: 12 },
+    categoriesGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20 },
+    categoryCard: { width: '31%', backgroundColor: '#FFFFFF', borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginBottom: 10, elevation: 2 },
+    categoryIconCircle: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+    categoryLabel: { fontFamily: 'LexendDeca_500Medium', fontSize: 10, color: '#2F2F2F', textAlign: 'center' },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    clearText: { fontFamily: 'LexendDeca_400Regular', fontSize: 12, color: '#E05E5E' },
+    recentList: { backgroundColor: '#FFFFFF', borderRadius: 12, marginBottom: 20, elevation: 2 },
+    recentItem: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 0.5, borderBottomColor: '#F0F0F0', gap: 10 },
+    recentText: { flex: 1, fontFamily: 'LexendDeca_400Regular', fontSize: 12, color: '#555' },
+    popularGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    popularChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(2, 116, 63, 0.08)', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 },
+    popularChipText: { fontFamily: 'LexendDeca_500Medium', fontSize: 11, color: '#02743F' },
+    chipIcon: { marginRight: 4 },
+    resultsContainer: { paddingBottom: 20 },
+    resultItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, marginBottom: 10, elevation: 2 },
+    resultIconBox: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(4, 131, 87, 0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+    resultInfo: { flex: 1 },
+    resultName: { fontFamily: 'Poppins_600SemiBold', fontSize: 14, color: '#2F2F2F' },
+    resultDesc: { fontFamily: 'LexendDeca_400Regular', fontSize: 11, color: '#777' },
+    emptyResults: { alignItems: 'center', marginTop: 40 },
+    emptyText: { fontFamily: 'LexendDeca_400Regular', fontSize: 14, color: '#AAAEAC', marginTop: 10 },
 });

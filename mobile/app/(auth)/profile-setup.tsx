@@ -16,7 +16,6 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { FormInput } from '@/components/common';
@@ -24,6 +23,7 @@ import { userService, cityService, ApiError } from '@/services/api';
 import { mediaService } from '@/services/api/mediaService';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { locationService } from '@/services/device/locationService';
 
 // Figma-exported assets
 const logoImage = require('@/assets/images/2549b5ede370bbb67a088920cac9a8719fec5968.png');
@@ -72,28 +72,36 @@ export default function ProfileSetupScreen() {
     const [isLoading, setIsLoading] = useState(false);
 
     const fetchGPSLocation = async () => {
-        setLocationAddress('Fetching GPS Location...');
+        setLine2('Fetching GPS Location...');
         setLocationDenied(false);
 
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-            setLocationAddress('');
-            setLocationDenied(true);
-            return;
-        }
-
         try {
-            let location = await Location.getCurrentPositionAsync({});
-            let geocode = await Location.reverseGeocodeAsync({
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude
-            });
+            const hasPermission = await locationService.requestPermission();
+            if (!hasPermission) {
+                setLine2('');
+                setLocationDenied(true);
+                return;
+            }
 
-            if (geocode && geocode.length > 0) {
-                const address = `${geocode[0].street ? geocode[0].street + ', ' : ''}${geocode[0].city ? geocode[0].city + ', ' : ''}${geocode[0].region || ''}`;
-                setLine2(address || 'Location found, address unavailable');
-            } else {
-                setLine2('Location found, address unavailable');
+            const coords = await locationService.getCurrentLocation();
+            const address = await locationService.getAddressFromCoordinates(coords);
+            setLine2(address);
+
+            // Extract city for auto-matching
+            // Simple extraction: last part of address usually contains city/pincode in formatted_address
+            // but we can also use locationService to return an object if needed.
+            // For now, let's just use the string.
+            const parts = address.split(',');
+            const city = parts[parts.length - 2]?.trim() || ''; 
+            
+            if (city) {
+                try {
+                    const response = await cityService.getCities();
+                    if (response.data) {
+                        const match = response.data.find(c => city.toLowerCase().includes(c.name.toLowerCase()) && c.isEnabled);
+                        if (match) setCityId(match.id);
+                    }
+                } catch { }
             }
         } catch (error) {
             console.error("Error fetching location:", error);
@@ -139,7 +147,7 @@ export default function ProfileSetupScreen() {
         } else {
             Alert.alert('Select Gender', '', GENDER_OPTIONS.map(g => ({
                 text: g, onPress: () => setGender(g),
-            })).concat({ text: 'Cancel', onPress: () => {}, style: 'cancel' } as any));
+            })).concat({ text: 'Cancel', onPress: () => { }, style: 'cancel' } as any));
         }
     };
 
@@ -152,7 +160,7 @@ export default function ProfileSetupScreen() {
         } else {
             Alert.alert('Select Language', '', LANGUAGE_OPTIONS.map(l => ({
                 text: l, onPress: () => setLanguage(l),
-            })).concat({ text: 'Cancel', onPress: () => {}, style: 'cancel' } as any));
+            })).concat({ text: 'Cancel', onPress: () => { }, style: 'cancel' } as any));
         }
     };
 
@@ -190,10 +198,10 @@ export default function ProfileSetupScreen() {
 
         const langCode = language === 'Hindi' ? 'hi'
             : language === 'Kannada' ? 'kn'
-            : language === 'Tamil' ? 'ta'
-            : language === 'Telugu' ? 'te'
-            : language === 'Bengali' ? 'bn'
-            : 'en';
+                : language === 'Tamil' ? 'ta'
+                    : language === 'Telugu' ? 'te'
+                        : language === 'Bengali' ? 'bn'
+                            : 'en';
 
         setIsLoading(true);
         try {
@@ -282,7 +290,7 @@ export default function ProfileSetupScreen() {
                 <View style={styles.header}>
                     <Image source={logoImage} style={styles.headerLogo} resizeMode="contain" />
                     <View style={styles.headerRight}>
-                        <Text style={styles.headerSubtitle}>Let's Create your</Text>
+                        <Text style={styles.headerSubtitle}>Let&apos;s Create your</Text>
                         <Text style={styles.headerTitle}>PROFILE</Text>
                     </View>
                 </View>

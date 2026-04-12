@@ -3,12 +3,13 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cartStore';
-import { CheckCircle2, ChevronRight, FileText, User } from 'lucide-react';
+import { CheckCircle2, ChevronRight, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function SuccessPage() {
   const router = useRouter();
   const clearCart = useCartStore(state => state.clearCart);
+  const [bookingId] = React.useState(() => Math.floor(100000 + Math.random() * 900000));
 
   // Clear cart upon successful landing since order is complete
   useEffect(() => {
@@ -46,7 +47,7 @@ export default function SuccessPage() {
       >
         Your provider has been notified and will arrive at your scheduled time.
         <br/><br/>
-        <span className="bg-white/20 px-3 py-1 rounded-md text-xs tracking-widest uppercase">ID: ODF-{Math.floor(100000 + Math.random() * 900000)}</span>
+        <span className="bg-white/20 px-3 py-1 rounded-md text-xs tracking-widest uppercase">ID: ODF-{bookingId}</span>
       </motion.p>
 
       <motion.div 

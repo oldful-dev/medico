@@ -13,7 +13,6 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
 import { userService, UserProfile, Address, EmergencyContact, MedicalCard, Booking } from '@/services/api/userService';
-import { apiClient } from '@/services/api/apiClient';
 import { SERVICES_CONFIG } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 
@@ -72,7 +71,6 @@ function EmptyState({ icon: Icon, text }: { icon: React.ElementType; text: strin
 // ─── Profile Tab ────────────────────────────────────────────────────────────
 function ProfileTab({ profile }: { profile: UserProfile }) {
   const qc = useQueryClient();
-  const { user: authUser } = useAuthStore();
   const fileRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
@@ -276,7 +274,7 @@ function BookingsTab() {
                     </span>
                     <div className="flex flex-col items-end">
                       {booking.amount && <span className="text-sm font-bold text-gray-900">₹{booking.amount}</span>}
-                      {booking.payments?.some((p: any) => p.status === 'SUCCESS') ? (
+                      {booking.payments?.some((p: Record<string, unknown>) => p.status === 'SUCCESS') ? (
                         <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 mt-1 flex items-center gap-0.5">
                           <CheckCircle2 className="w-2.5 h-2.5" /> PAID
                         </span>
@@ -592,7 +590,7 @@ function MedicalTab({ profile }: { profile: UserProfile }) {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-400 text-center py-4">Click "Update" to fill in your medical details.</p>
+          <p className="text-sm text-gray-400 text-center py-4">Click &quot;Update&quot; to fill in your medical details.</p>
         )}
       </SectionCard>
 
@@ -731,7 +729,6 @@ function SupportTab() {
 
 // ─── Main Account Page Content ──────────────────────────────────────────────
 function AccountContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { logout, user: authUser, isLoading: authLoading } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabId>('profile');

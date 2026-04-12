@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, SlidersHorizontal, ArrowRight, Clock, Star, ChevronRight } from 'lucide-react';
+import { Search, SlidersHorizontal, ArrowRight, Clock, Star } from 'lucide-react';
 import { useSDUIHooks } from '@/hooks/useSDUIHooks';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 
@@ -25,7 +25,7 @@ export default function ServicesPage() {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
-  const sections = config?.sections || [];
+  const sections = useMemo(() => config?.sections || [], [config?.sections]);
 
   const categoryNames = useMemo(() => {
     return ['All', ...sections.map(s => s.title || 'Other').filter(Boolean)];
@@ -94,7 +94,7 @@ export default function ServicesPage() {
         {!isLoading && (
           <p className="text-sm text-gray-500 mb-6">
             Showing <span className="font-semibold text-gray-800">{totalCount}</span> services
-            {search && <> for "<span className="text-[var(--color-primary)] font-semibold">{search}</span>"</>}
+            {search && <> for &quot;<span className="text-[var(--color-primary)] font-semibold">{search}</span>&quot;</>}
           </p>
         )}
 

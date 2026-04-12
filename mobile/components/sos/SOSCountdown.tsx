@@ -1,10 +1,7 @@
 // SOS Countdown Overlay - Full screen countdown before triggering emergency
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Modal } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { Colors, Fonts } from '@/constants/theme';
-
-const { width, height } = Dimensions.get('window');
+import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { Fonts } from '@/constants/theme';
 
 interface SOSCountdownProps {
     seconds?: number;

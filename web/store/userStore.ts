@@ -7,14 +7,14 @@ export interface UserProfile {
   name: string;
   email: string;
   phone: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface ServiceItem {
   id: string;
   slug: string;
   name: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface UserState {

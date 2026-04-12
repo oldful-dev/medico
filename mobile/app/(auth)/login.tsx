@@ -27,8 +27,10 @@ import { authService, ApiError } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 
+const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '604340037909-fdhnci4koamsb4g7sb55l7rbpjg57js7.apps.googleusercontent.com';
+
 GoogleSignin.configure({
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
+    webClientId: WEB_CLIENT_ID,
     offlineAccess: true,
 });
 
@@ -43,7 +45,6 @@ export default function LoginScreen() {
     // ─── State ───
     const [phoneNumber, setPhoneNumber] = useState('');
     const [otpSent, setOtpSent] = useState(false);
-    const [otpValue, setOtpValue] = useState('');
     const [timer, setTimer] = useState(30);
     const [canResend, setCanResend] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -207,7 +208,17 @@ export default function LoginScreen() {
                 Alert.alert('Error', 'Google Play Services not available.');
             } else {
                 console.error('Google sign-in error:', error);
-                Alert.alert('Error', 'Google sign-in failed. Please try again.');
+                
+                // DEVELOPER_ERROR common instructions
+                if (error.message?.includes('DEVELOPER_ERROR') || String(error).includes('DEVELOPER_ERROR')) {
+                    Alert.alert(
+                        'Configuration Error',
+                        'Google Sign-In failed with DEVELOPER_ERROR. This usually means the SHA-1 fingerprint of your development machine is not registered in the Google Cloud Console.\n\nPlease check the troubleshooting guide in the project root if this persists.',
+                        [{ text: 'OK' }]
+                    );
+                } else {
+                    Alert.alert('Error', 'Google sign-in failed. Please try again.');
+                }
             }
         } finally {
             setIsGoogleLoading(false);
@@ -307,7 +318,7 @@ export default function LoginScreen() {
                             {/* Resend Row */}
                             <View style={styles.resendRow}>
                                 <View style={styles.resendLeft}>
-                                    <Text style={styles.resendText}>Didn't receive the code?</Text>
+                                    <Text style={styles.resendText}>Didn&apos;t receive the code?</Text>
                                     {canResend ? (
                                         <TouchableOpacity onPress={handleResendOTP}>
                                             <Text style={styles.resendLink}> {t('auth.resend_otp')}</Text>
@@ -362,7 +373,7 @@ export default function LoginScreen() {
 
                     {/* ─── Sign Up Link ─── */}
                     <View style={styles.signupRow}>
-                        <Text style={styles.signupText}>Don't have an account? </Text>
+                        <Text style={styles.signupText}>Don&apos;t have an account? </Text>
                         <TouchableOpacity onPress={() => router.push('/(auth)/profile-setup')}>
                             <Text style={styles.signupLink}>Signup</Text>
                         </TouchableOpacity>

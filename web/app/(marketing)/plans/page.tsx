@@ -8,7 +8,7 @@ export default function PlansPage() {
         
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 tracking-tight">Flexible plans for every family</h1>
-          <p className="text-lg text-gray-500 font-medium tracking-wide">Choose the care subscription that fits your parents' needs perfectly.</p>
+          <p className="text-lg text-gray-500 font-medium tracking-wide">Choose the care subscription that fits your parents&apos; needs perfectly.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

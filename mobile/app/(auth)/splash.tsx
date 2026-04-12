@@ -2,25 +2,19 @@
 // Layout: Cream background, centered Oldful logo, ISO badge below, mandala bottom-left
 // No business logic — pure presentation
 import React, { useEffect, useState } from 'react';
-import { View, Image, StyleSheet, Dimensions, Animated } from 'react-native';
+import { View, Image, StyleSheet, Animated } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import * as ExpoSplashScreen from 'expo-splash-screen';
 import { useAuth } from '@/context/AuthContext';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 // Figma-exported assets
 const logoImage = require('@/assets/images/2549b5ede370bbb67a088920cac9a8719fec5968.png');
 const isoBadgeImage = require('@/assets/images/727280010474dfd5bcb5f19d227968488ebee634.png');
 const mandalaImage = require('@/assets/images/0b96a399f500dd9db46b7a473a511a23fa2abc2b.png');
 
-import * as ExpoSplashScreen from 'expo-splash-screen';
-import { useTranslation } from 'react-i18next';
- 
  export default function SplashScreen() {
-    const { t } = useTranslation();
-     const router = useRouter();
-     const { isAuthenticated, isLoading } = useAuth();
+      const router = useRouter();
+      const { isAuthenticated, isLoading } = useAuth();
      const [fadeAnim] = useState(new Animated.Value(0));
  
      useEffect(() => {
@@ -60,7 +54,7 @@ import { useTranslation } from 'react-i18next';
              }, 2000); // ensure we still wait at least 2s total
              return () => clearTimeout(checkAuth);
          }
-     }, [isLoading, isAuthenticated]);
+     }, [isLoading, isAuthenticated, router]);
 
     return (
         <View style={styles.container}>

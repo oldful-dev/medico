@@ -12,7 +12,7 @@ import { toast } from 'react-hot-toast';
 
 declare global {
   interface Window {
-    Razorpay: any;
+    Razorpay: new (options: Record<string, unknown>) => { open(): void; on(event: string, cb: (r: Record<string, unknown>) => void): void };
   }
 }
 
@@ -126,14 +126,14 @@ function CheckoutContent() {
           pendingOrderId.current = orderId;
 
           // b. Open Razorpay Modal
-          const options: any = {
+          const options: Record<string, unknown> = {
              key: key,
              amount: amount * 100, // Razorpay expects paise
              currency: currency,
              name: 'Oldful Healthcare',
              description: `Payment for ${items.length} service(s)`,
              order_id: orderId,
-             handler: async function (response: any) {
+             handler: async function (response: Record<string, string>) {
                 // c. Verify Payment on backend — this is the source of truth
                 // Backend: PAYMENT_PENDING → CONFIRMED + SLA clock starts
                 setIsProcessing(true);
@@ -153,7 +153,7 @@ function CheckoutContent() {
                       // Signature mismatch — backend already marks PAYMENT_FAILED
                       toast.error('Payment verification failed. Our team has been notified. Please do NOT retry the payment.');
                    }
-                } catch (err: any) {
+                } catch {
                    toast.error('Error verifying payment. Please contact support.');
                 } finally {
                    setIsProcessing(false);
@@ -202,7 +202,7 @@ function CheckoutContent() {
 
           // ─── CRITICAL: Payment failure event ────────────────────────────────────
           // Mark booking PAYMENT_FAILED so it disappears from the bookings list.
-          rzp.on('payment.failed', async function (response: any) {
+          rzp.on('payment.failed', async function (response: Record<string, Record<string, string>>) {
              await cancelPaymentOnBackend();
              toast.error(response.error?.description || 'Payment failed. Please try again.');
              setIsProcessing(false);
@@ -210,9 +210,9 @@ function CheckoutContent() {
 
           rzp.open();
        }
-    } catch (error: any) {
+    } catch (error: unknown) {
        console.error('Checkout error:', error);
-       toast.error(error?.message || 'Failed to process booking. Please check your connection.');
+       toast.error((error instanceof Error ? error.message : null) || 'Failed to process booking. Please check your connection.');
        setIsProcessing(false);
     }
   };
@@ -277,7 +277,7 @@ function CheckoutContent() {
               </button>
 
               {/* COD Restriction: Only show if NOT a subscription checkout */}
-              {/* @ts-ignore - subscriptionId check for future growth */}
+              {/* @ts-expect-error - subscriptionId check for future growth */}
               {!searchParams.get('subscriptionId') && (
                 <button 
                   onClick={() => setPaymentMethod('cash')}

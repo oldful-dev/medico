@@ -4,10 +4,9 @@ import {
     Text,
     StyleSheet,
     Image,
-    Platform,
     ScrollView,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';

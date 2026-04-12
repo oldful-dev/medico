@@ -11,16 +11,12 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
-import { locationService } from '@/services/device/locationService';
-import { userService } from '@/services/api/userService';
-import { bookingService } from '@/services/api/bookingService';
-import { apiClient } from '@/services/api/apiClient';
-import { useTranslation } from 'react-i18next';
+
 
 // ─── Figma Assets ───
 const imgThali = require('@/assets/images/6fdd60a0eb22e90770fb958a6ddcf54c1c9dc6b6.png'); // Meal image
@@ -46,7 +42,6 @@ const CheckedSolidRadio = () => (
 );
 
 export default function MealServiceScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
@@ -57,12 +52,12 @@ export default function MealServiceScreen() {
     const [otherReq, setOtherReq] = useState('');
 
     // Global Initialization
-    const { isReady, cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('tiffin');
+    const { cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('tiffin');
     const [isBooking, setIsBooking] = useState(false);
 
     const handleBookService = async () => {
-        if (!isReady) {
-            Alert.alert('Error', 'Service initialization incomplete. Please check your internet connection or try logging out and back in.');
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
             return;
         }
         try {

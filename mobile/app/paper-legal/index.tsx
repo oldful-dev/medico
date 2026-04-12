@@ -7,38 +7,27 @@ import {
     Image,
     Platform,
     TextInput,
+    Alert,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
-import { useAuth } from '@/context/AuthContext';
-import { useUser } from '@/context/UserContext';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
-import { userService } from '@/services/api/userService';
-import { bookingService } from '@/services/api/bookingService';
-import { apiClient } from '@/services/api/apiClient';
-import { Alert } from 'react-native';
-import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
-import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
-const imgCheckmark = require('@/assets/images/019640d27de157c119b045c46aae6a6559dd3a79.png'); // Green Check Circle
-const imgQuestionMark = require('@/assets/images/c359f98cd0aedd8de95a2f5901d68748695c53d9.png'); // 3D Question mark icon
 const imgOldfulIllustration = require('@/assets/images/49fa5256c84b3ee062131d88f5ae26383f5d5257.png'); // The lawyer/assistant illustration
 
 export default function PaperLegalScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [selectedService, setSelectedService] = useState('Digital Life Certificate');
     const [details, setDetails] = useState('');
     
-    const { userId } = useAuth();
-    const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, isManualAddress, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('paper-legal');
+    const { cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('paper-legal');
     
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
     const [isBooking, setIsBooking] = React.useState(false);
@@ -49,8 +38,8 @@ export default function PaperLegalScreen() {
             return;
         }
 
-        if (!isReady) {
-            Alert.alert('Error', 'Service initialization incomplete. Please check your internet connection or try logging out and back in.');
+        if (!cityId || !serviceId) {
+            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
             return;
         }
 

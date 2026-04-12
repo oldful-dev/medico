@@ -123,7 +123,7 @@ export default function OtpVerificationScreen() {
             {/* Figma: "Didn't receive the code?" #AAAEAC + "Resend" #02743F + timer #9C9C9C */}
             <View style={styles.resendRow}>
                 <View style={styles.resendLeft}>
-                    <Text style={styles.resendText}>Didn't receive the code?</Text>
+                    <Text style={styles.resendText}>Didn&apos;t receive the code?</Text>
                     <Text style={styles.resendSpacer}>  </Text>
                     <TouchableOpacity onPress={handleResend} disabled={!canResend}>
                         <Text style={[styles.resendLink, !canResend && styles.resendLinkDisabled]}>{t('auth.resend_otp')}</Text>

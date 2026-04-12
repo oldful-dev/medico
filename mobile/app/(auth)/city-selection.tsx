@@ -8,12 +8,13 @@ import {
     StyleSheet,
     TouchableOpacity,
     ScrollView,
+    Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Fonts, Colors } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
 import { useUser } from '@/context/UserContext';
 import { useAppConfig } from '@/context/AppConfigContext';
 import { useTranslation } from 'react-i18next';
@@ -65,6 +66,34 @@ export default function CitySelectionScreen() {
                             Select your city to see available services near you.
                         </Text>
                     </View>
+
+                    {/* Auto-detect button */}
+                    <TouchableOpacity
+                        style={styles.autoDetectButton}
+                        onPress={async () => {
+                            try {
+                                const { locationService } = await import('@/services/device/locationService');
+                                const coords = await locationService.getCurrentLocation();
+                                const Location = await import('expo-location');
+                                const results = await Location.reverseGeocodeAsync({
+                                    latitude: coords.latitude,
+                                    longitude: coords.longitude,
+                                });
+                                if (results.length > 0) {
+                                    const city = results[0].city || results[0].subregion;
+                                    if (city) {
+                                        setSelectedCity(city);
+                                        router.back();
+                                    }
+                                }
+                            } catch {
+                                Alert.alert('Error', 'Could not detect location. Please select manually.');
+                            }
+                        }}
+                    >
+                        <Ionicons name="navigate" size={18} color="#048357" />
+                        <Text style={styles.autoDetectText}>Detect My Location Automatically</Text>
+                    </TouchableOpacity>
 
                     {/* Available Cities (SDUI) */}
                     {availableCities.length > 0 && (
@@ -132,7 +161,7 @@ export default function CitySelectionScreen() {
                     <View style={styles.notifyBanner}>
                         <Ionicons name="notifications-outline" size={20} color="#02743F" />
                         <Text style={styles.notifyText}>
-                            We'll notify you when we launch in your city!
+                            We&apos;ll notify you when we launch in your city!
                         </Text>
                     </View>
                 </ScrollView>
@@ -197,4 +226,21 @@ const styles = StyleSheet.create({
     },
     continueButton: { width: '85%', maxWidth: 320, height: 48, backgroundColor: '#02743F', borderRadius: 24, justifyContent: 'center', alignItems: 'center' },
     continueButtonText: { fontFamily: Fonts.medium, fontSize: 15, color: '#FFFFFF' },
+    autoDetectButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#048357',
+        borderRadius: 12,
+        paddingVertical: 12,
+        marginBottom: 24,
+        gap: 10,
+    },
+    autoDetectText: {
+        fontFamily: Fonts.medium,
+        fontSize: 14,
+        color: '#048357',
+    },
 });
