@@ -6,7 +6,8 @@ import {
     TouchableOpacity,
     FlatList,
     ActivityIndicator,
-    RefreshControl
+    RefreshControl,
+    Alert
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -43,6 +44,36 @@ export default function MyBookingsScreen() {
     const onRefresh = () => {
         setRefreshing(true);
         fetchBookings();
+    };
+
+    const handleCancelBooking = (bookingId: string) => {
+        Alert.alert(
+            "Cancel Booking",
+            "Are you sure you want to cancel this booking?",
+            [
+                { text: "No", style: "cancel" },
+                { 
+                    text: "Yes, Cancel", 
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            setLoading(true);
+                            const res = await bookingService.cancelBooking(bookingId);
+                            if (res.success) {
+                                Alert.alert("Success", "Booking cancelled successfully");
+                                fetchBookings(); // Refresh list
+                            } else {
+                                Alert.alert("Error", res.message || "Failed to cancel booking");
+                            }
+                        } catch (err) {
+                            Alert.alert("Error", "Something went wrong");
+                        } finally {
+                            setLoading(false);
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const getStatusColor = (status: string) => {
@@ -96,7 +127,17 @@ export default function MyBookingsScreen() {
                     <Ionicons name="wallet-outline" size={14} color={Colors.textMuted} />
                     <Text style={styles.footerText}>₹{item.amount}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={Colors.textLight} />
+                
+                {['PENDING', 'CONFIRMED', 'ASSIGNED'].includes(item.status) ? (
+                    <TouchableOpacity 
+                        style={styles.cancelLink}
+                        onPress={() => handleCancelBooking(item.id)}
+                    >
+                        <Text style={styles.cancelLinkText}>Cancel</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <Ionicons name="chevron-forward" size={18} color={Colors.textLight} />
+                )}
             </View>
         </TouchableOpacity>
     );
@@ -282,5 +323,14 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
         color: Colors.textWhite,
+    },
+    cancelLink: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+    },
+    cancelLinkText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: 12,
+        color: '#EB5757',
     },
 });

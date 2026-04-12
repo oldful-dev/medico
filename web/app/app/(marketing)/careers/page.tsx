@@ -3,8 +3,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Briefcase, Send, CheckCircle, ArrowRight, Star, Heart, Clock, Shield } from 'lucide-react';
-import Navbar from '@/components/layout/Navbar';
-import { Footer } from '@/components/common/Footer';
 import { apiClient } from '@/services/api/apiClient';
 
 const ROLES = [
@@ -55,7 +53,6 @@ export default function CareersPage() {
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-screen)] selection:bg-[var(--color-primary)] selection:text-white">
-      <Navbar />
       
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-6 relative overflow-hidden">
@@ -240,8 +237,6 @@ export default function CareersPage() {
           )}
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }

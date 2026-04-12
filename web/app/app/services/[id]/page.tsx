@@ -59,7 +59,12 @@ export default function ServiceDetailPage() {
             <HomeEssentialsBooking 
               config={config} 
               onBook={(data) => {
-                addItem({ serviceId: config.slug, ...data, price: config.pricing[0].price });
+                addItem({ 
+                  serviceId: config.slug, 
+                  ...data, 
+                  scheduleTime: (data.selectedDate as string) || '',
+                  price: config.pricing[0].price 
+                });
                 router.push('/app/cart');
               }} 
             />

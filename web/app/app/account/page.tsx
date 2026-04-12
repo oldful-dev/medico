@@ -15,6 +15,8 @@ import { useAuthStore } from '@/store/authStore';
 import { userService, UserProfile, Address, EmergencyContact, MedicalCard, Booking } from '@/services/api/userService';
 import { SERVICES_CONFIG } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
+import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
+import { toast } from 'react-hot-toast';
 
 // ─── Query Keys ────────────────────────────────────────────────────────────
 const QKEY = {
@@ -197,10 +199,27 @@ function BookingsTab() {
     queryFn: () => userService.getMyBookings(),
   });
 
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelId, setCancelId] = useState<string | null>(null);
+
   const cancelMut = useMutation({
     mutationFn: (id: string) => userService.cancelBooking(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QKEY.bookings }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: QKEY.bookings });
+      toast.success('Booking cancelled successfully');
+      setShowCancelModal(false);
+      setCancelId(null);
+    },
+    onError: () => {
+      toast.error('Failed to cancel booking');
+      setShowCancelModal(false);
+    }
   });
+
+  const handleCancelClick = (id: string) => {
+    setCancelId(id);
+    setShowCancelModal(true);
+  };
 
   // ─── Filter: exclude ghost payment bookings from the main list ────────────
   // PAYMENT_PENDING = booking created but Razorpay not completed yet (not a real booking)
@@ -290,13 +309,13 @@ function BookingsTab() {
               <div className="px-5 pb-4 flex items-center justify-between border-t border-gray-50 pt-3">
                 <span className="text-xs font-mono text-gray-400">{booking.bookingCode || booking.id.slice(0, 8).toUpperCase()}</span>
                 <div className="flex items-center gap-3">
-                  {['CONFIRMED', 'PENDING'].includes(booking.status) && (
+                  {['CONFIRMED', 'PENDING', 'ASSIGNED'].includes(booking.status) && (
                     <button
-                      onClick={() => cancelMut.mutate(booking.id)}
-                      disabled={cancelMut.isPending}
+                      onClick={() => handleCancelClick(booking.id)}
+                      disabled={cancelMut.isPending && cancelId === booking.id}
                       className="text-xs font-semibold text-red-500 hover:underline disabled:opacity-50"
                     >
-                      {cancelMut.isPending ? 'Cancelling...' : 'Cancel'}
+                      {cancelMut.isPending && cancelId === booking.id ? 'Cancelling...' : 'Cancel'}
                     </button>
                   )}
                   <button 
@@ -311,6 +330,18 @@ function BookingsTab() {
           ))}
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={() => cancelId && cancelMut.mutate(cancelId)}
+        title="Cancel Booking"
+        message="Are you sure you want to cancel this booking? This action cannot be undone."
+        confirmText="Yes, Cancel"
+        cancelText="No, Keep It"
+        type="danger"
+        isLoading={cancelMut.isPending}
+      />
     </div>
   );
 }
