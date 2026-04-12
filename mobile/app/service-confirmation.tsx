@@ -7,6 +7,7 @@ import {
     Image,
     ScrollView,
     ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -51,6 +52,35 @@ export default function ServiceConfirmationScreen() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleCancelRequest = () => {
+        if (!booking?.id) return;
+
+        Alert.alert(
+            "Cancel Request",
+            "Are you sure you want to cancel this booking request?",
+            [
+                { text: "No, Keep It", style: "cancel" },
+                { 
+                    text: "Yes, Cancel", 
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            const res = await bookingService.cancelBooking(booking.id);
+                            if (res.success) {
+                                Alert.alert("Success", "Booking cancelled successfully");
+                                fetchBooking(booking.id); // Refresh
+                            } else {
+                                Alert.alert("Error", res.message || "Failed to cancel booking");
+                            }
+                        } catch (err) {
+                            Alert.alert("Error", "Something went wrong while cancelling");
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     // Helper to format description from JSON
@@ -307,9 +337,15 @@ export default function ServiceConfirmationScreen() {
                             })()}
                         </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionButton, styles.cancelBtn]} activeOpacity={0.8}>
-                        <Text style={[styles.actionButtonText, styles.cancelText]}>Cancel Request</Text>
-                    </TouchableOpacity>
+                    {booking && !['CANCELLED', 'COMPLETED'].includes(booking.status) && (
+                        <TouchableOpacity 
+                            style={[styles.actionButton, styles.cancelBtn]} 
+                            activeOpacity={0.8}
+                            onPress={handleCancelRequest}
+                        >
+                            <Text style={[styles.actionButtonText, styles.cancelText]}>Cancel Request</Text>
+                        </TouchableOpacity>
+                    )}
                     <TouchableOpacity style={[styles.actionButton, styles.callBtn]} activeOpacity={0.8}>
                         <Ionicons name="call-outline" size={18} color={Colors.primaryDark} style={{ marginRight: 8 }} />
                         <Text style={[styles.actionButtonText, styles.callText]}>Call Support</Text>

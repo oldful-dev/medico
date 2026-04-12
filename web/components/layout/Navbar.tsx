@@ -14,6 +14,7 @@ const GUEST_LINKS = [
   { href: '/plans',        label: 'Plans' },
   { href: '/app/services', label: 'Services' },
   { href: '/about',        label: 'About' },
+  { href: '/contact',      label: 'Contact' },
 ];
 
 const AUTH_LINKS = [
@@ -166,7 +167,7 @@ export function Navbar() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className={`fixed md:hidden z-50 left-4 right-4 bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-100 overflow-hidden ${isScrolled ? 'top-20' : 'top-24'}`}
+            className={`fixed md:hidden z-50 left-4 right-4 bg-white/98 backdrop-blur-2xl rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-white/50 overflow-hidden ${isScrolled ? 'top-20' : 'top-24'}`}
           >
             <div className="flex flex-col p-4">
               {/* Authenticated user card */}

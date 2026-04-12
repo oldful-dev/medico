@@ -67,21 +67,39 @@ function CheckoutContent() {
        // 1. Create Booking only if we haven't already for this session
        if (!bookingId) {
           const bookingPromises = items.map(item => {
-             // Safety check for scheduleTime to prevent crash
-             const scheduleTime = item.scheduleTime || '';
-             const cleanedDate = scheduleTime.includes(' at ') 
-                ? scheduleTime.replace(' at ', ' ') 
-                : scheduleTime;
+             // Support both 'scheduleTime' (QuickServices) and 'selectedDate' (Standard Services)
+             const rawDate = item.scheduleTime || (item as any).selectedDate || '';
+             const cleanedDate = rawDate.includes(' at ') 
+                ? rawDate.replace(' at ', ' ') 
+                : rawDate;
              
+             // If rawDate is ASAP, we should use now, otherwise we use the user's date
+             const finalScheduledDate = (cleanedDate && cleanedDate !== 'ASAP') 
+                ? cleanedDate 
+                : new Date().toISOString();
+
              return bookingService.createBooking({
+                // Common fields
                 serviceId: item.serviceId,
-                scheduledDate: cleanedDate || new Date().toISOString(),
-                scheduledTime: item.scheduleTime,
+                scheduledDate: finalScheduledDate,
+                scheduledTime: item.scheduleTime || 'Scheduled',
                 addressLine: item.address,
                 amount: item.price,
-                staffType: item.providerType || undefined,
-                formDataJson: item,
                 paymentMethod: paymentMethod,
+                formDataJson: { ...item, confirmedDate: finalScheduledDate },
+
+                // Specialized fields mapping (Cart Item Key -> API Field)
+                // We spread item's properties that match API fields
+                staffType: item.providerType || (item as any).providerType,
+                pickupAddress: (item as any).pickup || (item as any).pickupAddress,
+                dropAddress: (item as any).destination || (item as any).dropAddress,
+                vehicleType: (item as any).vehicle || (item as any).vehicleType,
+                symptoms: item.problem ? [item.problem] : (item as any).symptoms,
+                
+                // Duration & Dates for nursing/caregiver
+                shiftDuration: (item as any).duration || (item as any).shiftDuration,
+                startDate: (item as any).startDate,
+                endDate: (item as any).endDate,
              });
           });
 

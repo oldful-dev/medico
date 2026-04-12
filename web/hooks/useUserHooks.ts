@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/api/apiClient';
+import { useAuthStore } from '@/store/authStore';
 
 export const USER_QUERY_KEYS = {
     profile: ['user', 'profile'] as const,
@@ -11,6 +12,7 @@ export const USER_QUERY_KEYS = {
 
 export const useUserHooks = () => {
     const queryClient = useQueryClient();
+    const { isAuthenticated } = useAuthStore();
 
     const useProfile = () => {
         return useQuery({
@@ -19,6 +21,7 @@ export const useUserHooks = () => {
                 const res = await apiClient.get<Record<string, unknown>>('/users/profile');
                 return res.data;
             },
+            enabled: isAuthenticated,
             // High staleTime because user profiles rarely change actively during a session
             staleTime: 10 * 60 * 1000, 
         });
@@ -43,7 +46,7 @@ export const useUserHooks = () => {
                 const res = await apiClient.get<Record<string, unknown>[]>('/bookings/history');
                 return res.data;
             },
-            enabled: !!apiClient.getToken(),
+            enabled: isAuthenticated,
             staleTime: 5 * 60 * 1000,
         });
     };
@@ -55,8 +58,63 @@ export const useUserHooks = () => {
                 const res = await apiClient.get<Record<string, unknown>[]>('/notifications/my');
                 return res.data;
             },
-            enabled: !!apiClient.getToken(),
+            enabled: isAuthenticated,
             staleTime: 2 * 60 * 1000,
+        });
+    };
+
+    const useMarkNotificationAsRead = () => {
+        return useMutation({
+            mutationFn: async (id: string) => {
+                return apiClient.put(`/notifications/my/${id}/read`, {});
+            },
+            onMutate: async (id) => {
+                await queryClient.cancelQueries({ queryKey: USER_QUERY_KEYS.notifications });
+                const previous = queryClient.getQueryData(USER_QUERY_KEYS.notifications);
+                queryClient.setQueryData(USER_QUERY_KEYS.notifications, (old: any) => 
+                    old?.map((n: any) => n.id === id ? { ...n, isRead: true } : n)
+                );
+                return { previous };
+            },
+            onError: (err, id, context: any) => {
+                if (context?.previous) queryClient.setQueryData(USER_QUERY_KEYS.notifications, context.previous);
+            },
+            onSettled: () => {
+                queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.notifications });
+            }
+        });
+    };
+
+    const useMarkAllNotificationsAsRead = () => {
+        return useMutation({
+            mutationFn: async () => {
+                return apiClient.put('/notifications/my/read-all', {});
+            },
+            onMutate: async () => {
+                await queryClient.cancelQueries({ queryKey: USER_QUERY_KEYS.notifications });
+                const previous = queryClient.getQueryData(USER_QUERY_KEYS.notifications);
+                queryClient.setQueryData(USER_QUERY_KEYS.notifications, (old: any) => 
+                    old?.map((n: any) => ({ ...n, isRead: true }))
+                );
+                return { previous };
+            },
+            onError: (err, variables, context: any) => {
+                if (context?.previous) queryClient.setQueryData(USER_QUERY_KEYS.notifications, context.previous);
+            },
+            onSettled: () => {
+                queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.notifications });
+            }
+        });
+    };
+
+    const useCancelBooking = () => {
+        return useMutation({
+            mutationFn: async (id: string) => {
+                return apiClient.post(`/bookings/${id}/cancel`, {});
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.bookings });
+            }
         });
     };
 
@@ -65,5 +123,8 @@ export const useUserHooks = () => {
         useUpdateProfile,
         useBookings,
         useNotifications,
+        useMarkNotificationAsRead,
+        useMarkAllNotificationsAsRead,
+        useCancelBooking,
     };
 };
