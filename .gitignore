@@ -110,3 +110,33 @@ tmp-figma/
 *.orig.*
 .gemini/
 ./extract
+# Added by code-review-graph
+.code-review-graph/
+
+# ───── Tooling and Scratch Scripts ─────
+.cursorrules
+.windsurfrules
+.mcp.json
+.opencode.json
+.claude/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+read_raw.js
+mobile/check1.js
+mobile/check_pngs.js
+mobile/convert_images.js
+mobile/convert_images.py
+mobile/download_fonts.py
+mobile/replace_fonts.js
+mobile/standardize_ui.js
+mobile/update_fonts_lexend.js
+mobile/lint_*.txt
+mobile/lint_*.json
+mobile/GOOGLE_AUTH_FIX.md
+!mobile/app.json
+!mobile/eas.json
+!mobile/metro.config.js
+!mobile/babel.config.js
+!mobile/eslint.config.js
+!mobile/i18n/i18n.ts
