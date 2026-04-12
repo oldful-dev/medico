@@ -3,7 +3,7 @@
 import React from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, Clock, MapPin, Package, ShieldCheck, CreditCard, ChevronRight, Phone, MessageSquare, Download, AlertCircle, Calendar, FileText, Activity } from 'lucide-react';
+import { ChevronLeft, Clock, MapPin, Package, ShieldCheck, CreditCard, ChevronRight, Phone, Download, AlertCircle, Calendar, FileText, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { bookingService } from '@/services/api/bookingService';
 import { SERVICES_CONFIG } from '@/lib/services-config';
@@ -15,11 +15,11 @@ import { paymentService } from '@/services/api/paymentService';
 
 declare global {
   interface Window {
-    Razorpay: any;
+    Razorpay: new (options: Record<string, unknown>) => { open(): void; on(event: string, cb: (r: Record<string, unknown>) => void): void };
   }
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   CONFIRMED:       { label: 'Confirmed',         color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: ShieldCheck },
   PENDING:         { label: 'Pay on Arrival',    color: 'bg-amber-50 text-amber-700 border-amber-200',   icon: Clock },       // COD real booking
   ASSIGNED:        { label: 'Provider Assigned', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: ShieldCheck },
@@ -80,8 +80,8 @@ export default function BookingDetailsPage() {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
         toast.success('Invoice downloaded', { id: tId });
-     } catch (err: any) {
-        toast.error(err?.message || 'Failed to download invoice', { id: tId });
+     } catch (err: unknown) {
+        toast.error((err instanceof Error ? err.message : null) || 'Failed to download invoice', { id: tId });
      } finally {
         setIsDownloading(false);
      }
@@ -106,14 +106,14 @@ export default function BookingDetailsPage() {
        const { orderId, amount, currency, key } = initiateRes.data;
        pendingOrderId.current = orderId;
 
-       const options: any = {
+       const options: Record<string, unknown> = {
           key: key,
           amount: amount * 100, // paise
           currency: currency,
           name: 'Oldful Healthcare',
           description: `Payment for Booking #${booking.bookingCode || booking.id.slice(0,8)}`,
           order_id: orderId,
-          handler: async function (response: any) {
+          handler: async function (response: Record<string, string>) {
              setIsProcessingPayment(true);
              try {
                 const verifyRes = await paymentService.verifyPayment({
@@ -130,7 +130,7 @@ export default function BookingDetailsPage() {
                 } else {
                    toast.error('Payment verification failed. Please do NOT retry.');
                 }
-             } catch (err: any) {
+             } catch {
                 toast.error('Error verifying payment. Please contact support.');
              } finally {
                 setIsProcessingPayment(false);
@@ -154,16 +154,16 @@ export default function BookingDetailsPage() {
        };
 
        const rzp = new window.Razorpay(options);
-       rzp.on('payment.failed', async function (response: any) {
+       rzp.on('payment.failed', async function (response: Record<string, Record<string, string>>) {
           await cancelPaymentOnBackend();
           toast.error(response.error?.description || 'Payment failed. Please try again.');
           setIsProcessingPayment(false);
        });
 
        rzp.open();
-    } catch (error: any) {
+    } catch (error: unknown) {
        console.error('Retry Payment Error:', error);
-       toast.error(error?.message || 'Failed to initialize payment.');
+       toast.error((error instanceof Error ? error.message : null) || 'Failed to initialize payment.');
        setIsProcessingPayment(false);
     }
   };
@@ -182,7 +182,7 @@ export default function BookingDetailsPage() {
       <div className="min-h-screen bg-white p-6 flex flex-col items-center justify-center text-center">
          <AlertCircle className="w-16 h-16 text-red-200 mb-4" />
          <h1 className="text-xl font-bold text-gray-900">Booking not found</h1>
-         <p className="text-gray-500 mt-2 max-w-xs">We couldn't retrieve the details for this booking. It might have been deleted or moved.</p>
+         <p className="text-gray-500 mt-2 max-w-xs">We couldn&apos;t retrieve the details for this booking. It might have been deleted or moved.</p>
          <button 
            onClick={() => router.back()}
            className="mt-6 px-6 py-3 bg-[var(--color-primary)] text-white font-bold rounded-2xl"
@@ -356,7 +356,7 @@ export default function BookingDetailsPage() {
               <Phone className="w-6 h-6 text-emerald-600 mb-2" />
               <span className="text-xs font-bold text-gray-800">Support</span>
            </button>
-           {booking.payments?.some((p: any) => p.status === 'SUCCESS') ? (
+           {booking.payments?.some((p: Record<string, unknown>) => p.status === 'SUCCESS') ? (
               <button 
                 onClick={handleDownload}
                 disabled={isDownloading}

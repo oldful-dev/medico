@@ -4,7 +4,7 @@
 import React, { useState, useCallback } from 'react';
 import {
     View, Text, Image, TouchableOpacity, StyleSheet,
-    Platform, Switch, Modal, Alert, ActivityIndicator, Linking,
+    Switch, Modal, Alert, ActivityIndicator,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StatusBar } from 'expo-status-bar';

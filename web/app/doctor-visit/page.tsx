@@ -36,6 +36,26 @@ export default function DoctorVisitScreen() {
   const [selectedWhen, setSelectedWhen] = useState<'ASAP' | 'Later'>('ASAP');
   const [isBooking, setIsBooking] = useState(false);
 
+  const [address, setAddress] = useState<string>('');
+  const [isDetecting, setIsDetecting] = useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      setIsDetecting(true);
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          setAddress(`${latitude.toFixed(4)}, ${longitude.toFixed(4)} (GPS)`);
+          setIsDetecting(false);
+        },
+        () => {
+          setIsDetecting(false);
+          setAddress('');
+        }
+      );
+    }
+  }, []);
+
   const handleBookService = async () => {
     if (!selectedProblem) {
       alert('Please select a health problem first.');
@@ -201,10 +221,12 @@ export default function DoctorVisitScreen() {
             <h2 className="text-[var(--color-primary)] font-semibold text-lg mb-3">Confirm address</h2>
             <div className="flex items-center bg-[#d9d9d94a] border border-[#8f8f8f26] rounded-md px-3 py-2 mb-2">
               <svg className="w-4 h-4 text-gray-700 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-              <span className="text-sm flex-1 truncate text-gray-800">123 Street, Bangalore, India</span>
-              <button className="text-[var(--color-primary)] text-sm ml-2">Edit</button>
+              <span className="text-sm flex-1 truncate text-gray-800">
+                {isDetecting ? 'Detecting location...' : address || 'No address found. Please update profile.'}
+              </span>
+              <button className="text-[var(--color-primary)] text-sm ml-2" onClick={() => router.push('/app/account')}>Edit</button>
             </div>
-            <p className="text-[var(--color-primary)] text-xs ml-1">Auto-fitted from user profile(Google maps location).</p>
+            <p className="text-[var(--color-primary)] text-xs ml-1">Location detected from browser.</p>
           </div>
 
         </div>

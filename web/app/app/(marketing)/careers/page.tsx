@@ -83,7 +83,7 @@ export default function CareersPage() {
             transition={{ delay: 0.2 }}
             className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed"
           >
-            Building the future of elder healthcare in India. We're looking for compassionate, bold, and skilled individuals to join our mission.
+            Building the future of elder healthcare in India. We&apos;re looking for compassionate, bold, and skilled individuals to join our mission.
           </motion.p>
         </div>
         
@@ -141,7 +141,7 @@ export default function CareersPage() {
             <div className="bg-white/70 backdrop-blur-xl border border-gray-100 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative">
               <div className="mb-10">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Apply for a position</h2>
-                <p className="text-sm text-gray-500 font-medium">Please fill out the form below and we'll be in touch.</p>
+                <p className="text-sm text-gray-500 font-medium">Please fill out the form below and we&apos;ll be in touch.</p>
               </div>
 
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">

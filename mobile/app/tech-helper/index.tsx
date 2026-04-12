@@ -4,8 +4,8 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    Platform,
-    TextInput
+    TextInput,
+    Alert,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,13 +15,9 @@ import { useRouter } from 'expo-router';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
-import { useAuth } from '@/context/AuthContext';
 import { userService } from '@/services/api/userService';
-import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { locationService } from '@/services/device/locationService';
-import { Alert } from 'react-native';
-import { useTranslation } from 'react-i18next';
 
 // Feature items array according to PRD
 const ISSUES = [
@@ -31,7 +27,6 @@ const ISSUES = [
 ];
 
 export default function TechHelperScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
@@ -42,7 +37,6 @@ export default function TechHelperScreen() {
     // State for mode selection (radio button)
     const [selectedMode, setSelectedMode] = useState<'home' | 'phone'>('home');
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
-    const { userId } = useAuth();
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
     const [serviceName, setServiceName] = React.useState('Tech Helper');
@@ -157,7 +151,7 @@ export default function TechHelperScreen() {
                     <View style={styles.divider} />
 
                     {/* ─── What's the issue? (Multi-select) ─── */}
-                    <Text style={styles.sectionTitle}>What's the issue?</Text>
+                    <Text style={styles.sectionTitle}>What&apos;s the issue?</Text>
 
                     {ISSUES.map((issue) => {
                         const isSelected = selectedIssues.includes(issue.id);

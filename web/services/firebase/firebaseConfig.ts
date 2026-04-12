@@ -1,5 +1,5 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import { getAuth, Auth } from "firebase/auth";
 import { getRemoteConfig, fetchAndActivate, getValue } from "firebase/remote-config";
 
 // ─── Firebase App ─────────────────────────────────────────────────────────────
@@ -14,11 +14,11 @@ const firebaseConfig = {
     measurementId:     process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID     ?? "",
 };
 
-export const app = getApps().length > 0 
-    ? getApp() 
-    : (firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null as any);
+export const app: FirebaseApp | null = getApps().length > 0
+    ? getApp()
+    : (firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null);
 
-export const auth = app ? getAuth(app) : null as any;
+export const auth: Auth | null = app ? getAuth(app) : null;
 export const remoteConfig = (typeof window !== 'undefined' && app) ? getRemoteConfig(app) : null;
 
 // ─── Remote Config ────────────────────────────────────────────────────────────

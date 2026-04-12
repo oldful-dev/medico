@@ -15,8 +15,6 @@ import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { paymentService, PaymentMethod } from '@/services/api/paymentService';
 import { bookingService } from '@/services/api/bookingService';
 import { storageService, STORAGE_KEYS } from '@/services/device/storageService';
-import { useTranslation } from 'react-i18next';
-import { NativeModules } from 'react-native';
 
 // ─── Payment Flow States (for debugging & recovery) ──────
 type PaymentFlowState = 'idle' | 'creating_booking' | 'initiating_order' | 'checkout_opened' | 'verifying' | 'success' | 'failed' | 'cancelled';
@@ -29,8 +27,7 @@ const PAYMENT_METHODS: MethodOption[] = [
     { type: 'CASH', label: 'Cash on Delivery',             icon: 'cash-outline' },
 ];
 
-export default function PaymentScreen() {
-    const { t } = useTranslation();
+export default function CheckoutScreen() {
     const router = useRouter();
     const params = useLocalSearchParams<{
         // ─── Existing booking ID (legacy: service screens pre-created the booking)
@@ -60,14 +57,17 @@ export default function PaymentScreen() {
     const [finalAmount,    setFinalAmount]    = useState(amount);
     const [couponLoading,  setCouponLoading]  = useState(false);
     const [payLoading,     setPayLoading]     = useState(false);
-    const [flowState,      setFlowState]      = useState<PaymentFlowState>('idle');
-    const [pendingRecovery, setPendingRecovery] = useState(false);
+    const [, setFlowState] = useState<PaymentFlowState>('idle');
+    const [, setPendingRecovery] = useState(false);
 
     useEffect(() => { setFinalAmount(amount - discount); }, [amount, discount]);
 
     // ─── EDGE CASE: Recover pending payment after app crash/close ──────
     // On mount, check if there's a pending Razorpay order in AsyncStorage.
     // If found, offer user to check the payment status with backend.
+    const sessionBookingId = useRef<string | null>(params.bookingId ?? null);
+    const pendingOrderId = useRef<string | null>(null);
+
     useEffect(() => {
         const checkPendingOrder = async () => {
             try {
@@ -111,7 +111,7 @@ export default function PaymentScreen() {
             }
         };
         checkPendingOrder();
-    }, []);
+    }, [router]);
 
     // ─── Apply coupon ───────────────────────────────────────
     const handleApplyCoupon = useCallback(async () => {
@@ -140,13 +140,6 @@ export default function PaymentScreen() {
         setDiscount(0);
         setFinalAmount(amount);
     };
-
-    // ─── Booking ID guard (mirrors Next.js createdBookingIds session state) ──
-    // Stored in a ref so it persists across re-renders without causing them.
-    // Prevents duplicate booking records if the user taps "Pay" twice.
-    const sessionBookingId = useRef<string | null>(params.bookingId ?? null);
-    // ─── Pending order ID — set after initiatePayment, used by cancel/failure handler ──
-    const pendingOrderId = useRef<string | null>(null);
 
     // ─── Helper: Clear pending order from storage (called on success/failure) ──
     const clearPendingOrder = async () => {
@@ -377,7 +370,7 @@ export default function PaymentScreen() {
                     {couponApplied ? (
                         <View style={styles.couponApplied}>
                             <Ionicons name="checkmark-circle" size={18} color="#2e7d32" />
-                            <Text style={styles.couponAppliedText}>"{couponCode}" applied — saved ₹{discount}</Text>
+                            <Text style={styles.couponAppliedText}>&quot;{couponCode}&quot; applied — saved ₹{discount}</Text>
                             <TouchableOpacity onPress={handleRemoveCoupon}>
                                 <Ionicons name="close-circle-outline" size={18} color="#999" />
                             </TouchableOpacity>

@@ -39,6 +39,7 @@ const QuickServices = memo(({ section }: SectionProps) => (
     ))}
   </div>
 ));
+QuickServices.displayName = 'QuickServices';
 
 const ServiceGrid = memo(({ section }: SectionProps) => {
   const displayItems = section.services.slice(0, section.max_items || 6);
@@ -84,6 +85,7 @@ const ServiceGrid = memo(({ section }: SectionProps) => {
     </div>
   );
 });
+ServiceGrid.displayName = 'ServiceGrid';
 
 const EssentialsGrid = memo(({ section }: SectionProps) => {
   const displayItems = section.services.slice(0, section.max_items || 8);
@@ -129,6 +131,7 @@ const EssentialsGrid = memo(({ section }: SectionProps) => {
     </div>
   );
 });
+EssentialsGrid.displayName = 'EssentialsGrid';
 
 const TrustBadges = memo(({ section }: SectionProps) => (
   <div className="mx-4 mt-4 bg-white rounded-2xl py-5 px-2 shadow-[var(--shadow-card)] flex items-center justify-around divide-x divide-gray-100">
@@ -149,6 +152,7 @@ const TrustBadges = memo(({ section }: SectionProps) => (
     ))}
   </div>
 ));
+TrustBadges.displayName = 'TrustBadges';
 
 // ─── Registry ────────────────────────────────────────────────────────────────
 
@@ -169,3 +173,4 @@ export const SDUIRenderer = memo(({ section }: SectionProps) => {
 
   return <Renderer section={section} />;
 });
+SDUIRenderer.displayName = 'SDUIRenderer';

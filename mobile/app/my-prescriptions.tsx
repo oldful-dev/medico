@@ -7,11 +7,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+
 import { userService } from '@/services/api/userService';
 import { useUser } from '@/context/UserContext';
 import * as ImagePicker from 'expo-image-picker';
-import { useTranslation } from 'react-i18next';
+
 
 interface HealthReport {
     id: string;
@@ -26,7 +26,6 @@ interface HealthReport {
 }
 
 export default function MyPrescriptionsScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const { profile } = useUser();
     const [reports, setReports] = useState<HealthReport[]>([]);

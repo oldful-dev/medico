@@ -80,7 +80,7 @@ export function useServiceInitialization(slug: string) {
         servicePrice,
         address,
         setAddress,
-        isManualAddress,
+        locationDenied: isManualAddress,
         setIsManualAddress,
         isLoading: isLoadingInit || isCatalogLoading,
         isReady

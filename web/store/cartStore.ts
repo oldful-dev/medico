@@ -23,7 +23,7 @@ export const useCartStore = create<CartState>()(
   persist(
     (set) => ({
       items: [],
-      addItem: (item) => set((state) => ({
+      addItem: (item) => set(() => ({
         // Overwrite existing items for this specific UX since usually one heavy service booking at a time
         // Or keep accumulating? The prompt design says "Show selected service", implies single checkout
         items: [{ ...item, id: Date.now().toString() }],

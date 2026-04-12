@@ -14,8 +14,7 @@ import { useSDUIHooks } from '@/hooks/useSDUIHooks';
 import { useAuthStore } from '@/store/authStore';
 import { useUserHooks } from '@/hooks/useUserHooks';
 import { getAssetUrl } from '@/utils/getAssetUrl';
-import { userService, Booking } from '@/services/api/userService';
-import { notificationService, Notification } from '@/services/api/notificationService';
+import { notificationService } from '@/services/api/notificationService';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 
@@ -37,7 +36,7 @@ const STATS = [
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading: authLoading } = useAuthStore();
+  const { user, isLoading: authLoading } = useAuthStore();
   const { useBookings, useNotifications, useProfile } = useUserHooks();
   const { useHomeConfig } = useSDUIHooks();
   
@@ -50,7 +49,7 @@ export default function DashboardPage() {
 
   // Derived Values
   const totalBookingsCount = bookings?.length || 0;
-  const activePlan = profile?.subscriptions?.find((s: any) => s.status === 'ACTIVE')?.plan?.name || 'Guest User';
+  const activePlan = profile?.subscriptions?.find((s: Record<string, unknown>) => s.status === 'ACTIVE')?.plan?.name || 'Guest User';
   const nextBooking = bookings ? [...bookings]
     .filter(b => b.scheduledDate && new Date(b.scheduledDate) > new Date() && !['CANCELLED', 'PENDING'].includes(b.status))
     .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime())[0] : null;

@@ -1,7 +1,7 @@
 // SOS Emergency Screen — Hybrid implementation (M-01)
 // Flow: View screen → Press SOS button → 3s countdown → Trigger SOS (phone call + GPS + API alert)
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,13 +12,28 @@ import { SOSButton, SlideToCall, BackgroundGlow } from '@/components/sos';
 import SOSCountdown from '@/components/sos/SOSCountdown';
 import { sosService } from '@/services/device/sosService';
 import { Fonts } from '@/constants/theme';
-import { useTranslation } from 'react-i18next';
 
 export default function SOSEmergencyScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const [showCountdown, setShowCountdown] = useState(false);
     const [isTriggering, setIsTriggering] = useState(false);
+    const [prefetchedLocation, setPrefetchedLocation] = useState<any>(null);
+
+    // ─── Pre-fetch Location on Mount (PRD line 41) ───
+    useEffect(() => {
+        (async () => {
+            try {
+                // Just trigger permission and a silent fetch to warm up GPS
+                const hasPermission = await sosService.requestLocationPermission();
+                if (hasPermission) {
+                    const loc = await sosService.getCurrentLocation();
+                    setPrefetchedLocation(loc);
+                }
+            } catch (e) {
+                console.log('Location pre-fetch failed', e);
+            }
+        })();
+    }, []);
 
     // ─── SOS Trigger Flow ────────────────────
     const handleSOSPress = useCallback(() => {
@@ -31,8 +46,8 @@ export default function SOSEmergencyScreen() {
 
         try {
             // 1. Trigger SOS alert to backend (GPS + notification to admin & family)
-            // cityId is resolved server-side from req.appUser — no need to pass it
-            const result = await sosService.triggerSOS();
+            // Use pre-fetched location if available for instant response
+            const result = await sosService.triggerSOS(prefetchedLocation);
 
             if (result.success) {
                 // 2. Simultaneously open phone dialer for emergency call
@@ -45,7 +60,7 @@ export default function SOSEmergencyScreen() {
                     'Phone call initiated. Backend alert may not have been sent. Please try again if needed.'
                 );
             }
-        } catch (error) {
+        } catch {
             // Even if everything fails, try the phone call as last resort
             try {
                 await sosService.callEmergencyHotline('112');
@@ -55,7 +70,7 @@ export default function SOSEmergencyScreen() {
         } finally {
             setIsTriggering(false);
         }
-    }, []);
+    }, [prefetchedLocation]);
 
     const handleCountdownCancel = useCallback(() => {
         setShowCountdown(false);

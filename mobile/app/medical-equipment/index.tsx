@@ -1,4 +1,3 @@
-// Rent Medical Equipment
 import React, { useState } from 'react';
 import {
     View,
@@ -11,16 +10,13 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
-import { locationService } from '@/services/device/locationService';
-import { userService } from '@/services/api/userService';
-import { bookingService } from '@/services/api/bookingService';
-import { apiClient } from '@/services/api/apiClient';
-import { useTranslation } from 'react-i18next';
+import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+
 
 // ─── Figma Assets ───
 const imgWheelchair = require('@/assets/images/be69e88a2a74b15eb189dce875fc4395704fc6bb.png');
@@ -28,54 +24,17 @@ const imgHospitalBed = require('@/assets/images/a0ea0f0ea3ae64a73040f3c67ee409ba
 const imgOxygen = require('@/assets/images/d05fd81c3840f7904feae65b06c33bf8b18f55b6.png');
 const imgWalker = require('@/assets/images/00863cfbd96593a21fa1f5b136210f8574404c11.png');
 
-const calendarIcon = require('@/assets/images/9db46350ce94677b709648f4aadad3189870cab5.png');
-const clockIcon = require('@/assets/images/b0c2041dcbc9f27873dbb95bd36571aded3422d2.png');
+
 
 export default function MedicalEquipmentScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [selectedEquipment, setSelectedEquipment] = useState('wheelchair');
     const [selectedDuration, setSelectedDuration] = useState('Monthly');
-    const [address, setAddress] = useState('Fetching address...');
-    const [isManualAddress, setIsManualAddress] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-
-    // API state
-    const [cityId, setCityId] = useState('');
-    const [serviceId, setServiceId] = useState('');
-    const [serviceName, setServiceName] = useState('Medical Equipment Rental');
-    const [servicePrice, setServicePrice] = useState(0);
     const [isBooking, setIsBooking] = useState(false);
-    const [isLoadingInit, setIsLoadingInit] = useState(true);
 
-    React.useEffect(() => {
-        (async () => {
-            try {
-                const hasPermission = await locationService.requestPermission();
-                if (hasPermission) {
-                    const coords = await locationService.getCurrentLocation();
-                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
-                    setAddress(fetchedAddress);
-                } else {
-                    setIsManualAddress(true);
-                    setAddress('');
-                }
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) setCityId(profileRes.data.cityId);
-                const serviceRes = await apiClient.get<any[]>('/services');
-                if (serviceRes.success && serviceRes.data) {
-                    const svc = serviceRes.data.find((s: any) => s.slug === 'equipment-rental');
-                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Medical Equipment Rental'); setServicePrice(svc.basePrice ?? 0); }
-                }
-            } catch (err) {
-                console.log('Equipment init failed', err);
-                setIsManualAddress(true);
-                setAddress('');
-            } finally {
-                setIsLoadingInit(false);
-            }
-        })();
-    }, []);
+    const { cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('equipment-rental');
 
     const handleBookService = async () => {
         if (!cityId || !serviceId) {
@@ -111,9 +70,10 @@ export default function MedicalEquipmentScreen() {
 
     return (
         <View style={styles.screen}>
+            <View style={{ height: insets.top, backgroundColor: '#FDFDE8' }} />
             <StatusBar style="dark" />
 
-            <SafeAreaView style={styles.container} edges={['top']}>
+            <View style={styles.container}>
                 {/* ─── Header ─── */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -223,7 +183,7 @@ export default function MedicalEquipmentScreen() {
                     </View>
 
                 </KeyboardAwareScrollView>
-            </SafeAreaView>
+            </View>
         </View>
     );
 }

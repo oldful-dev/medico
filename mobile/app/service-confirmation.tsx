@@ -6,7 +6,6 @@ import {
     TouchableOpacity,
     Image,
     ScrollView,
-    Platform,
     ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,10 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { bookingService, Booking } from '@/services/api/bookingService';
-import { useTranslation } from 'react-i18next';
 
 export default function ServiceConfirmationScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
@@ -49,8 +46,8 @@ export default function ServiceConfirmationScreen() {
             if (res.success && res.data) {
                 setBooking(res.data);
             }
-        } catch (error) {
-            console.error('Failed to fetch booking details:', error);
+        } catch {
+            console.error('Failed to fetch booking details');
         } finally {
             setLoading(false);
         }
@@ -68,7 +65,7 @@ export default function ServiceConfirmationScreen() {
         if (typeof formData === 'string') {
             try {
                 formData = JSON.parse(formData);
-            } catch (e) {}
+            } catch { }
         }
         
         if (formData && typeof formData === 'object') {
@@ -119,7 +116,7 @@ export default function ServiceConfirmationScreen() {
         if (typeof formData === 'string') {
             try {
                 formData = JSON.parse(formData);
-            } catch (e) {}
+            } catch { }
         }
         if (!formData || typeof formData !== 'object') return [];
 

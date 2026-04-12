@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Star, Globe, TrendingUp } from 'lucide-react';
+import { Star, Globe } from 'lucide-react';
 
 const FloatingCard = ({ children, className, delay = 0, yOffset = 10 }: { children: React.ReactNode, className: string, delay?: number, yOffset?: number }) => (
   <motion.div

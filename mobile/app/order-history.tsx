@@ -8,7 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { bookingService, Booking } from '@/services/api/bookingService';
-import { useTranslation } from 'react-i18next';
+
 
 type TabType = 'All' | 'Active' | 'Pending Payment' | 'Completed';
 
@@ -28,7 +28,6 @@ const SERVICE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 export default function OrderHistoryScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<TabType>('All');
     const [bookings, setBookings] = useState<Booking[]>([]);
@@ -137,7 +136,7 @@ export default function OrderHistoryScreen() {
                             <View style={styles.emptyState}>
                                 <Ionicons name="receipt-outline" size={60} color="#AAAEAC" />
                                 <Text style={styles.emptyTitle}>No Orders Found</Text>
-                                <Text style={styles.emptyDesc}>You don't have any {activeTab.toLowerCase()} orders yet.</Text>
+                                <Text style={styles.emptyDesc}>You don&apos;t have any {activeTab.toLowerCase()} orders yet.</Text>
                             </View>
                         ) : (
                             filteredBookings.map(booking => {

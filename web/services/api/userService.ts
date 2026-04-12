@@ -77,7 +77,7 @@ export interface Booking {
     addressLine?: string;
     latitude?: number;
     longitude?: number;
-    payments?: any[];
+    payments?: Record<string, unknown>[];
     createdAt: string;
 }
 

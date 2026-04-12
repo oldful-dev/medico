@@ -30,7 +30,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const [services, setServices] = useState<ServiceItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    const [selectedCity, setSelectedCity] = useState('Bangalore');
+    const [selectedCity, setSelectedCity] = useState('');
     const [preferredLanguage, setPreferredLanguage] = useState('en');
 
     // Load persisted language on mount

@@ -67,18 +67,35 @@ export const locationService = {
     },
 
     /**
-     * Reverse geocode coordinates to a human-readable address
+     * Reverse geocode coordinates to a human-readable address using Google Maps API
      */
     getAddressFromCoordinates: async (coords: LocationCoordinates): Promise<string> => {
-        const results = await Location.reverseGeocodeAsync({
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-        });
+        try {
+            const apiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+            const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${coords.latitude},${coords.longitude}&key=${apiKey}`;
+            
+            const response = await fetch(url);
+            const data = await response.json();
 
-        if (results.length > 0) {
-            const addr = results[0];
-            const parts = [addr.street, addr.city, addr.region, addr.postalCode].filter(Boolean);
-            return parts.join(', ');
+            if (data.status === 'OK' && data.results.length > 0) {
+                // Focus on the most detailed address
+                const result = data.results[0];
+                return result.formatted_address;
+            }
+            
+            // Fallback to native geocoding if Google fails or is missing key
+            const results = await Location.reverseGeocodeAsync({
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+            });
+
+            if (results.length > 0) {
+                const addr = results[0];
+                const parts = [addr.street, addr.city, addr.region, addr.postalCode].filter(Boolean);
+                return parts.join(', ');
+            }
+        } catch (error) {
+            console.error('Reverse geocoding failed:', error);
         }
 
         return `${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`;

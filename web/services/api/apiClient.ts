@@ -10,13 +10,13 @@
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://oldful.onrender.com/api';
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
     success: boolean;
     message?: string;
     data?: T;
 }
 
-export interface PaginatedApiResponse<T = any> {
+export interface PaginatedApiResponse<T = unknown> {
     success: boolean;
     data: T[];
     pagination: {
@@ -30,9 +30,9 @@ export interface PaginatedApiResponse<T = any> {
 
 export class ApiError extends Error {
     statusCode: number;
-    details: any;
+    details: unknown;
 
-    constructor(statusCode: number, message: string, details?: any) {
+    constructor(statusCode: number, message: string, details?: unknown) {
         super(message);
         this.name = 'ApiError';
         this.statusCode = statusCode;
@@ -170,21 +170,21 @@ class ApiClient {
         return this.request<T>(endpoint, { method: 'GET' });
     }
 
-    async post<T>(endpoint: string, body?: any): Promise<ApiResponse<T>> {
+    async post<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
         return this.request<T>(endpoint, {
             method: 'POST',
             body: body instanceof FormData ? body : JSON.stringify(body),
         });
     }
 
-    async put<T>(endpoint: string, body?: any): Promise<ApiResponse<T>> {
+    async put<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
         return this.request<T>(endpoint, {
             method: 'PUT',
             body: body instanceof FormData ? body : JSON.stringify(body),
         });
     }
 
-    async patch<T>(endpoint: string, body?: any): Promise<ApiResponse<T>> {
+    async patch<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
         return this.request<T>(endpoint, {
             method: 'PATCH',
             body: body instanceof FormData ? body : JSON.stringify(body),

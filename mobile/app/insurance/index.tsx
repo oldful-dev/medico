@@ -20,7 +20,7 @@ import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
-import { useTranslation } from 'react-i18next';
+
 
 // ─── Initial State Constants ───
 const INITIAL_CONDITIONS = [
@@ -36,7 +36,6 @@ const INITIAL_RECIPIENTS = [
 ];
 
 export default function InsuranceScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
@@ -226,7 +225,7 @@ export default function InsuranceScreen() {
                         ))}
 
                         {/* ─── Requirements Text Area ─── */}
-                        <Text style={styles.requirementsLabel}>Write what you're looking for</Text>
+                        <Text style={styles.requirementsLabel}>Write what you&apos;re looking for</Text>
                         <View style={styles.textAreaCard}>
                             <TextInput
                                 style={styles.textArea}

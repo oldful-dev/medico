@@ -5,81 +5,32 @@ import {
     StyleSheet,
     TouchableOpacity,
     Image,
-    Platform,
     TextInput,
+    Alert,
+    Platform,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { locationService } from '@/services/device/locationService';
-import ImageUploadBox from '@/components/common/ImageUploadBox';
-import DateTimePickerInput from '@/components/common/DateTimePickerInput';
+import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
-import { useAuth } from '@/context/AuthContext';
-import { userService } from '@/services/api/userService';
-import { bookingService } from '@/services/api/bookingService';
-import { apiClient } from '@/services/api/apiClient';
-import { Alert } from 'react-native';
-import { useTranslation } from 'react-i18next';
-const imgHero = require('@/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png'); // Grocery bag icon
-const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
+import DateTimePickerInput from '@/components/common/DateTimePickerInput';
+import ImageUploadBox from '@/components/common/ImageUploadBox';
+
+const imgHero = require('@/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png');
 const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
 
 export default function GroceryRunScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const [address, setAddress] = React.useState('Fetching address...');
-    const [isManualAddress, setIsManualAddress] = React.useState(false);
     const [items, setItems] = React.useState('');
     const [store, setStore] = React.useState('');
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
-    const { userId } = useAuth();
-    const [cityId, setCityId] = React.useState('');
-    const [serviceId, setServiceId] = React.useState('');
-    const [serviceName, setServiceName] = React.useState('Grocery Run');
-    const [servicePrice, setServicePrice] = React.useState(0);
     const [isBooking, setIsBooking] = React.useState(false);
-    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
 
-    React.useEffect(() => {
-        (async () => {
-            try {
-                // Fetch location
-                const hasPermission = await locationService.requestPermission();
-                if (hasPermission) {
-                    const coords = await locationService.getCurrentLocation();
-                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
-                    setAddress(fetchedAddress);
-                } else {
-                    setIsManualAddress(true);
-                    setAddress('');
-                }
-
-                // Fetch User Profile for City ID
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) {
-                    setCityId(profileRes.data.cityId);
-                }
-
-                // Fetch Service ID for Grocery Run
-                const serviceRes = await apiClient.get<any[]>('/services');
-                if (serviceRes.success && serviceRes.data) {
-                    const svc = serviceRes.data.find((s: any) => s.slug === 'grocery-run');
-                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Grocery Run'); setServicePrice(svc.basePrice ?? 0); }
-                }
-
-            } catch (err) {
-                console.log("Initialization failed", err);
-                setIsManualAddress(true);
-                setAddress('');
-            } finally {
-                setIsLoadingInit(false);
-            }
-        })();
-    }, []);
+    const { cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('grocery-run');
 
     const handleBookService = async () => {
         if (!items || !selectedDate || !address) {
@@ -177,7 +128,8 @@ export default function GroceryRunScreen() {
                 {/* ─── Delivery Schedule ─── */}
                 <DateTimePickerInput
                     label="Delivery Time"
-                    onDateChange={() => { }}
+                    value={selectedDate}
+                    onDateChange={setSelectedDate}
                 />
 
                 {/* ─── Location Card ─── */}
@@ -186,19 +138,9 @@ export default function GroceryRunScreen() {
                     <View style={styles.locationContainer}>
                         <View style={styles.locationInputBox}>
                             <Ionicons name="location-outline" size={18} color="#048357" style={styles.locationIcon} />
-                            {isManualAddress ? (
-                                <TextInput
-                                    style={[styles.locationTextPrimary, { flex: 1 }]}
-                                    placeholder="Enter your address manually"
-                                    placeholderTextColor="#898989"
-                                    value={address}
-                                    onChangeText={setAddress}
-                                />
-                            ) : (
-                                <Text style={styles.locationTextPrimary} numberOfLines={1}>
-                                    {address}
-                                </Text>
-                            )}
+                            <Text style={styles.locationTextPrimary} numberOfLines={1}>
+                                {isLoadingInit ? "Fetching address..." : address}
+                            </Text>
                         </View>
                         <Image source={imgMap} style={styles.mapImage} />
                     </View>

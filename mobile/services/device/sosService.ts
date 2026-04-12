@@ -35,36 +35,53 @@ export interface LocationCoordinates {
 
 export const sosService = {
     /**
+     * Request location permission
+     */
+    requestLocationPermission: async (): Promise<boolean> => {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        return status === 'granted';
+    },
+
+    /**
+     * Get current GPS coordinates (Balanced accuracy for speed)
+     */
+    getCurrentLocation: async (): Promise<LocationCoordinates> => {
+        const location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+        });
+        return {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+        };
+    },
+
+    /**
      * Full SOS flow:
-     * 1. Get GPS location from device
+     * 1. Get GPS location from device (or use pre-fetched)
      * 2. POST /api/sos with location data
      * 3. Backend notifies admin + family via WhatsApp/SMS
      */
-    triggerSOS: async (): Promise<ApiResponse<SOSAlert>> => {
-        // 1. Request location permission
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-            // Still send SOS without coordinates — backend uses user profile cityId
-            return apiClient.post<SOSAlert>('/sos', {});
-        }
+    triggerSOS: async (prefetchedLocation?: LocationCoordinates): Promise<ApiResponse<SOSAlert>> => {
+        let location = prefetchedLocation;
 
-        // 2. Get current position — Balanced is faster than High in emergency situations
-        try {
-            const location = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.Balanced,
-            });
-
-            // 3. Send to backend with GPS
-            return apiClient.post<SOSAlert>('/sos', {
-                location: {
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude,
+        if (!location) {
+            try {
+                const hasPermission = await sosService.requestLocationPermission();
+                if (hasPermission) {
+                    location = await sosService.getCurrentLocation();
                 }
-            });
-        } catch {
-            // Location fetch failed — send without coordinates
-            return apiClient.post<SOSAlert>('/sos', { location: null });
+            } catch (e) {
+                console.warn('SOS Location fetch failed', e);
+            }
         }
+
+        // Send to backend (with location if available, otherwise fallback to profile city)
+        return apiClient.post<SOSAlert>('/sos', {
+            location: location ? {
+                latitude: location.latitude,
+                longitude: location.longitude,
+            } : null
+        });
     },
 
     /**

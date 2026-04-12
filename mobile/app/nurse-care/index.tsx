@@ -1,4 +1,3 @@
-// Book Home Nursing Care - Full Form
 import React, { useState } from 'react';
 import {
     View,
@@ -11,26 +10,23 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { locationService } from '@/services/device/locationService';
-import { userService } from '@/services/api/userService';
-import { bookingService } from '@/services/api/bookingService';
-import { apiClient } from '@/services/api/apiClient';
+import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
-import ImageUploadBox from '@/components/common/ImageUploadBox';
+import FormInput from '@/components/common/FormInput';
 
 // ─── Figma Assets ───
 const familyIcon = require('@/assets/images/cb86876504871abc5e6db19e5612175dae2b0479.png');
 const nurseIcon = require('@/assets/images/ad2bd697d39bc0738ca19a09e58ce4677761ca47.png');
-const ideaIcon = require('@/assets/images/c1c9dfda80d0a21cae62694d5d1f8d7ea182b581.png');
 
 export default function BookNursingCareScreen() {
     const { t } = useTranslation();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
 
     // Local UI state for radio buttons/selections
     const [selectedWho, setSelectedWho] = useState('Self');
@@ -38,52 +34,28 @@ export default function BookNursingCareScreen() {
     const [selectedDuration, setSelectedDuration] = useState('12 Hours (Night Shift)');
     const [selectedCondition, setSelectedCondition] = useState('');
     const [selectedGender, setSelectedGender] = useState('');
-    const [selectedImages, setSelectedImages] = useState<string[]>([]);
+    const [selectedImages] = useState<string[]>([]);
 
-    // API & Init state
-    const [cityId, setCityId] = useState('');
-    const [serviceId, setServiceId] = useState('');
-    const [serviceName, setServiceName] = useState('Nurse Care');
-    const [servicePrice, setServicePrice] = useState(0);
-    const [isLoadingInit, setIsLoadingInit] = useState(true);
-    const [address, setAddress] = useState('Fetching address...');
+    const {
+        cityId,
+        serviceId,
+        serviceName,
+        servicePrice,
+        address,
+        setAddress,
+        locationDenied,
+        isLoading: isLoadingInit,
+        isReady
+    } = useServiceInitialization('home-nurse');
+
     const [isBooking, setIsBooking] = useState(false);
 
-    React.useEffect(() => {
-        (async () => {
-            try {
-                setIsLoadingInit(true);
-                const hasPermission = await locationService.requestPermission();
-                if (hasPermission) {
-                    const coords = await locationService.getCurrentLocation();
-                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
-                    setAddress(fetchedAddress);
-                } else {
-                    setAddress('');
-                }
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) {
-                    setCityId(profileRes.data.cityId);
-                }
-                const serviceRes = await apiClient.get<any[]>('/services');
-                if (serviceRes.success && serviceRes.data) {
-                    const svc = serviceRes.data.find((s: any) => s.slug === 'home-nurse');
-                    if (svc) {
-                        setServiceId(svc.id);
-                        setServiceName(svc.name || 'Nurse Care');
-                        setServicePrice(svc.basePrice ?? 0);
-                    }
-                }
-            } catch (err) {
-                console.log('Nurse Care init failed', err);
-            } finally {
-                setIsLoadingInit(false);
-            }
-        })();
-    }, []);
-
     const handleBookService = async () => {
-        if (!cityId || !serviceId) {
+        if (locationDenied && (!address || address.trim().length < 5)) {
+            Alert.alert('Address Required', 'Please type your full address manually since location access is denied.');
+            return;
+        }
+        if (!isReady) {
             Alert.alert('Error', 'Service initialization incomplete. Please try again.');
             return;
         }
@@ -133,10 +105,10 @@ export default function BookNursingCareScreen() {
 
     return (
         <View style={styles.screen}>
+            <View style={{ backgroundColor: '#048357', height: insets.top }} />
             <StatusBar style="light" />
 
-            {/* ─── Header Section (Green Background) ─── */}
-            <SafeAreaView style={styles.headerSafe} edges={['top']}>
+            <View style={styles.container}>
                 <View style={styles.headerRow}>
                     <TouchableOpacity
                         onPress={() => {
@@ -153,7 +125,6 @@ export default function BookNursingCareScreen() {
                     <Text style={styles.headerTitle}>{t('nurse_care.header')}</Text>
                     <View style={styles.headerRight} />
                 </View>
-            </SafeAreaView>
 
             {/* ─── Main Content Card (Cream Background with Top Radius) ─── */}
             <View style={styles.contentCard}>
@@ -315,18 +286,31 @@ export default function BookNursingCareScreen() {
                     </View>
 
                     {/* ─── Not Sure Banner ─── */}
-                    <View style={styles.notSureBanner}>
-                        <Image source={ideaIcon} style={styles.ideaIcon} resizeMode="contain" />
-                        <View style={styles.notSureTextGroup}>
-                            <Text style={styles.notSureTitle}>{t('nurse_care.not_sure_title')}</Text>
-                            <Text style={styles.notSureSubtitle}>{t('nurse_care.not_sure_subtitle')}</Text>
-                        </View>
+                    {/* ─── Confirm Address ─── */}
+                    <View style={styles.sectionContainer}>
+                        <Text style={styles.sectionTitle}>Confirm Address</Text>
+                        {locationDenied ? (
+                            <FormInput
+                                placeholder="Type your full address"
+                                value={address}
+                                onChangeText={setAddress}
+                                multiline
+                                style={{ elevation: 0, backgroundColor: '#FFF' }}
+                            />
+                        ) : (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(217,217,217,0.3)', padding: 12, borderRadius: 8 }}>
+                                <Ionicons name="location-outline" size={16} color="#2F2F2F" style={{ marginRight: 8 }} />
+                                <Text style={{ flex: 1, fontFamily: 'LexendDeca_400Regular', color: '#2F2F2F' }} numberOfLines={1}>{address}</Text>
+                                <TouchableOpacity onPress={() => router.push('/(auth)/city-selection')}>
+                                    <Text style={{ color: '#02743F', fontFamily: 'LexendDeca_500Medium', marginLeft: 8 }}>Edit</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     </View>
-
                 </KeyboardAwareScrollView>
 
                 {/* ─── Fixed Normal Bottom Bar ─── */}
-                <SafeAreaView edges={['bottom']} style={styles.bottomBarContainer}>
+                <View style={[styles.bottomBarContainer, { paddingBottom: insets.bottom || 20 }]}>
                     <TouchableOpacity
                         style={[styles.confirmButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
                         activeOpacity={0.8}
@@ -341,9 +325,10 @@ export default function BookNursingCareScreen() {
                             </Text>
                         )}
                     </TouchableOpacity>
-                </SafeAreaView>
+                </View>
             </View>
         </View>
+    </View>
     );
 }
 

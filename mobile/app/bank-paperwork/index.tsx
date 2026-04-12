@@ -5,74 +5,32 @@ import {
     StyleSheet,
     TouchableOpacity,
     Image,
-    Platform,
     TextInput,
+    Alert,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { locationService } from '@/services/device/locationService';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
-import { useAuth } from '@/context/AuthContext';
-import { userService } from '@/services/api/userService';
-import { bookingService } from '@/services/api/bookingService';
-import { apiClient } from '@/services/api/apiClient';
-import { Alert } from 'react-native';
-import { useTranslation } from 'react-i18next';
+import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 const imgHero = require('@/assets/images/056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png'); // Document and pen icon
-const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
-const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
 
 export default function BankPaperworkScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [bankName, setBankName] = React.useState('');
     const [procedureType, setProcedureType] = React.useState('');
-    const [address, setAddress] = React.useState('');
+
+    const { cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('bank-paperwork');
+
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
-    const { userId } = useAuth();
-    const [cityId, setCityId] = React.useState('');
-    const [serviceId, setServiceId] = React.useState('');
-    const [serviceName, setServiceName] = React.useState('Bank & Paperwork');
-    const [servicePrice, setServicePrice] = React.useState(0);
     const [isBooking, setIsBooking] = React.useState(false);
-    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
 
-    React.useEffect(() => {
-        (async () => {
-            try {
-                // Fetch location
-                const hasPermission = await locationService.requestPermission();
-                if (hasPermission) {
-                    const coords = await locationService.getCurrentLocation();
-                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
-                    setAddress(fetchedAddress);
-                }
 
-                // Fetch User Profile for City ID
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) {
-                    setCityId(profileRes.data.cityId);
-                }
-
-                // Fetch Service ID for Bank Paperwork
-                const serviceRes = await apiClient.get<any[]>('/services');
-                if (serviceRes.success && serviceRes.data) {
-                    const svc = serviceRes.data.find((s: any) => s.slug === 'bank-paperwork');
-                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Bank & Paperwork'); setServicePrice(svc.basePrice ?? 0); }
-                }
-            } catch (err) {
-                console.log("Initialization failed", err);
-            } finally {
-                setIsLoadingInit(false);
-            }
-        })();
-    }, []);
 
     const handleBookService = async () => {
         if (!bankName || !procedureType || !selectedDate || !address) {

@@ -16,7 +16,7 @@ export const useUserHooks = () => {
         return useQuery({
             queryKey: USER_QUERY_KEYS.profile,
             queryFn: async () => {
-                const res = await apiClient.get<any>('/users/profile');
+                const res = await apiClient.get<Record<string, unknown>>('/users/profile');
                 return res.data;
             },
             // High staleTime because user profiles rarely change actively during a session
@@ -26,7 +26,7 @@ export const useUserHooks = () => {
 
     const useUpdateProfile = () => {
         return useMutation({
-            mutationFn: async (data: any) => {
+            mutationFn: async (data: Record<string, unknown>) => {
                 return apiClient.put('/users/profile', data);
             },
             onSuccess: (updatedData) => {
@@ -40,7 +40,7 @@ export const useUserHooks = () => {
         return useQuery({
             queryKey: USER_QUERY_KEYS.bookings,
             queryFn: async () => {
-                const res = await apiClient.get<any[]>('/bookings/history');
+                const res = await apiClient.get<Record<string, unknown>[]>('/bookings/history');
                 return res.data;
             },
             enabled: !!apiClient.getToken(),
@@ -52,7 +52,7 @@ export const useUserHooks = () => {
         return useQuery({
             queryKey: USER_QUERY_KEYS.notifications,
             queryFn: async () => {
-                const res = await apiClient.get<any[]>('/notifications/my');
+                const res = await apiClient.get<Record<string, unknown>[]>('/notifications/my');
                 return res.data;
             },
             enabled: !!apiClient.getToken(),

@@ -1,14 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
-import { useTranslation } from 'react-i18next';
 
 export default function PaymentSuccessScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams<{
         invoiceNumber?: string;

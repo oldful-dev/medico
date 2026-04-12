@@ -4,10 +4,8 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    Platform,
     ScrollView,
     ActivityIndicator,
-    Image,
     RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -51,15 +49,13 @@ export default function CartScreen() {
         return SERVICE_ICONS[slug] || 'calendar-outline';
     };
 
-    const fetchActiveBookings = async () => {
+    const fetchActiveBookings = React.useCallback(async () => {
         try {
             if (!refreshing) setLoading(true);
             const res = await bookingService.getMyBookings();
             
             if (res.success && res.data) {
                 // ─── Only show real confirmed/operational bookings in Cart ────────────
-                // PAYMENT_PENDING = awaiting payment (not a real booking yet)
-                // PAYMENT_FAILED  = payment failed/cancelled (dead booking)
                 const active = res.data.filter(b => 
                     b.status !== 'COMPLETED' && 
                     b.status !== 'CANCELLED' &&
@@ -74,12 +70,12 @@ export default function CartScreen() {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [refreshing]);
 
     useFocusEffect(
         React.useCallback(() => {
             fetchActiveBookings();
-        }, [])
+        }, [fetchActiveBookings])
     );
 
     const onRefresh = () => {

@@ -32,7 +32,7 @@ export function Testimonials() {
          
          <div className="text-center mb-16">
            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">Loved by Families</h2>
-           <p className="text-lg text-gray-500 max-w-2xl mx-auto">Don't just take our word for it. Here's what our community says about their experience with Oldful.</p>
+           <p className="text-lg text-gray-500 max-w-2xl mx-auto">Don&apos;t just take our word for it. Here&apos;s what our community says about their experience with Oldful.</p>
          </div>
 
          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
@@ -52,7 +52,7 @@ export function Testimonials() {
                  </div>
                  
                  <p className="text-gray-700 text-lg font-medium leading-relaxed italic mb-8">
-                   "{review.text}"
+                   &quot;{review.text}&quot;
                  </p>
                  
                  <div className="flex items-center gap-4">

@@ -7,76 +7,35 @@ import {
     Image,
     Platform,
     TextInput,
+    Alert,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { locationService } from '@/services/device/locationService';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
-import { useAuth } from '@/context/AuthContext';
-import { userService } from '@/services/api/userService';
-import { bookingService } from '@/services/api/bookingService';
-import { apiClient } from '@/services/api/apiClient';
-import { Alert } from 'react-native';
-import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
-import { useTranslation } from 'react-i18next';
+import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 
 // ─── Figma Assets ───
 const imgHero = require('@/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png'); // Yellow Car Icon
-const imgCheckmark = require('@/assets/images/bd57304cc6eaf62cb9cca48825822022a152326a.png');
-const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
 
 export default function DrivingCabScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [pickupLocation, setPickupLocation] = React.useState('');
     const [dropLocation, setDropLocation] = React.useState('');
     const [vehiclePref, setVehiclePref] = React.useState('');
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
-    const [isFetchingLocation, setIsFetchingLocation] = React.useState(true);
-    const { userId } = useAuth();
-    const [cityId, setCityId] = React.useState('');
-    const [serviceId, setServiceId] = React.useState('');
-    const [serviceName, setServiceName] = React.useState('Driving & Cab');
-    const [servicePrice, setServicePrice] = React.useState(0);
     const [isBooking, setIsBooking] = React.useState(false);
-    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
+
+    const { cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('driving-cab');
 
     React.useEffect(() => {
-        (async () => {
-            try {
-                // Fetch location
-                const hasPermission = await locationService.requestPermission();
-                if (hasPermission) {
-                    const coords = await locationService.getCurrentLocation();
-                    const address = await locationService.getAddressFromCoordinates(coords);
-                    setPickupLocation(address);
-                }
+        if (address) setPickupLocation(address);
+    }, [address]);
 
-                // Fetch User Profile for City ID
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) {
-                    setCityId(profileRes.data.cityId);
-                }
 
-                // Fetch Service ID for Driving / Cab
-                const serviceRes = await apiClient.get<any[]>('/services');
-                if (serviceRes.success && serviceRes.data) {
-                    const svc = serviceRes.data.find((s: any) => s.slug === 'driving-cab');
-                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Driving & Cab'); setServicePrice(svc.basePrice ?? 0); }
-                }
-
-            } catch (err) {
-                console.log("Initialization failed", err);
-            } finally {
-                setIsFetchingLocation(false);
-                setIsLoadingInit(false);
-            }
-        })();
-    }, []);
 
     const handleBookService = async () => {
         if (!pickupLocation || !dropLocation || !selectedDate) {
@@ -122,13 +81,12 @@ export default function DrivingCabScreen() {
             <View style={{ backgroundColor: '#048357', height: insets.top }} />
             <StatusBar style="light" backgroundColor="#048357" />
 
-            {/* ─── Custom Dark Green Header ─── */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Driving / Cab Booking</Text>
-                <View style={{ width: 40 }} /> {/* spacer for center alignment */}
+                <View style={{ width: 40 }} />
             </View>
 
             <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
@@ -155,7 +113,7 @@ export default function DrivingCabScreen() {
                         <Ionicons name="location-outline" size={18} color="#048357" style={styles.inputIcon} />
                         <TextInput
                             style={styles.input}
-                            placeholder={isFetchingLocation ? "Fetching location..." : "Enter Pickup Location"}
+                            placeholder={isLoadingInit ? "Fetching location..." : "Pick-up Address"}
                             placeholderTextColor="#898989"
                             value={pickupLocation}
                             onChangeText={setPickupLocation}

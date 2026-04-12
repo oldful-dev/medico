@@ -7,25 +7,21 @@ import {
     Image,
     Platform,
     ScrollView,
+    Alert,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
-import { useAuth } from '@/context/AuthContext';
-import { userService } from '@/services/api/userService';
+import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { bookingService } from '@/services/api/bookingService';
-import { apiClient } from '@/services/api/apiClient';
-import { Alert } from 'react-native';
-import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
-import { useTranslation } from 'react-i18next';
+
 
 // ─── Figma Assets ───
 const imgCarouselIndia = require('@/assets/images/c73921e0062b4c910b14682c3ab2491a1db69321.png'); // Gateway of India image
 const imgCarouselOther = require('@/assets/images/ed2f1e34305aceebaaeb35f1b9e59d02cc97c79e.png'); // Edge of other image
-const imgGreenCheckmark = require('@/assets/images/019640d27de157c119b045c46aae6a6559dd3a79.png'); // Green Check Circle
 const imgQuestionMark = require('@/assets/images/c359f98cd0aedd8de95a2f5901d68748695c53d9.png'); // 3D Question mark icon
 const imgCalendar = require('@/assets/images/90b351b656f19748f6824ce10c01ad95a0f686f6.png'); // Calendar 3D icon
 const imgYoga = require('@/assets/images/3abc2815df401d4b6b19fda9a2f8c9fd80b8f9e3.png'); // Yoga icon
@@ -33,7 +29,6 @@ const imgPicnic = require('@/assets/images/5bf8c5af10af2edaa6cb38278c8f8ce7133b7
 const imgChai = require('@/assets/images/70f805bc4699a177600d02eb33328392afe8e5f3.png'); // Chai icon
 
 export default function TripTravelsScreen() {
-    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [destination, setDestination] = useState('Temple Tours');
@@ -41,34 +36,11 @@ export default function TripTravelsScreen() {
     const [selectedEvent, setSelectedEvent] = useState('Morning Yoga Group');
     const [eventPeopleCount, setEventPeopleCount] = useState(1);
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
-    const { userId } = useAuth();
-    const [cityId, setCityId] = React.useState('');
-    const [serviceId, setServiceId] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
-    const [isLoadingInit, setIsLoadingInit] = React.useState(true);
 
-    React.useEffect(() => {
-        (async () => {
-            try {
-                // Fetch User Profile for City ID
-                const profileRes = await userService.getProfile();
-                if (profileRes.success && profileRes.data) {
-                    setCityId(profileRes.data.cityId);
-                }
+    const { cityId, serviceId, isLoading: isLoadingInit } = useServiceInitialization('trip-travels');
 
-                // Fetch Service ID for Trip & Travels
-                const serviceRes = await apiClient.get<any[]>('/services');
-                if (serviceRes.success && serviceRes.data) {
-                    const svc = serviceRes.data.find((s: any) => s.slug === 'trip-travels');
-                    if (svc) setServiceId(svc.id);
-                }
-            } catch (err) {
-                console.log("Initialization failed", err);
-            } finally {
-                setIsLoadingInit(false);
-            }
-        })();
-    }, []);
+
 
     const handleBookTrip = async () => {
         if (!destination || !selectedDate) {

@@ -54,7 +54,7 @@ export async function POST() {
         });
 
         return response;
-    } catch (err) {
+    } catch {
         return NextResponse.json(
             { success: false, message: 'Failed to refresh session' },
             { status: 500 }
