@@ -12,7 +12,10 @@ import { toast } from 'react-hot-toast';
 
 declare global {
   interface Window {
-    Razorpay: new (options: Record<string, unknown>) => { open(): void; on(event: string, cb: (r: Record<string, unknown>) => void): void };
+    Razorpay: new (options: Record<string, unknown>) => { 
+      open(): void; 
+      on(event: string, cb: (r: any) => void): void 
+    };
   }
 }
 
@@ -78,39 +81,62 @@ function CheckoutContent() {
                 ? cleanedDate 
                 : new Date().toISOString();
 
-             return bookingService.createBooking({
+              // ─── Enum Constants & Mappings ───
+              const SHIFT_DURATION_MAP: Record<string, string> = {
+                'Short Visit': 'SHORT_VISIT',
+                '12 Hours (Day)': 'TWELVE_HOUR',
+                '12 Hours (Night)': 'TWELVE_HOUR',
+                '24 Hours (Live-in)': 'TWENTY_FOUR_HOUR',
+                '24 Hours (Full Day)': 'TWENTY_FOUR_HOUR', // fallback
+                'Brief Visit (1-2 Hours)': 'SHORT_VISIT'   // fallback
+              };
+
+              // Map shiftDuration if present
+              const rawDuration = item.duration || (item as any).shiftDuration;
+              const mappedShiftDuration = rawDuration ? SHIFT_DURATION_MAP[rawDuration] : undefined;
+
+              // Map staffType/doctorType if present
+              const STAFF_MAP: Record<string, string> = {
+                'Qualified Nurse': 'qualified-nurse',
+                'Bedside Attendant': 'bedside-attendant',
+                'General Physician': 'general-physician',
+                'Physiotherapist': 'physiotherapist'
+              };
+
+              const rawStaff = item.providerType || (item as any).staffType || (item as any).doctorType;
+              const mappedStaffType = rawStaff ? (STAFF_MAP[rawStaff] || rawStaff.toLowerCase().replace(' ', '-')) : undefined;
+
+              return bookingService.createBooking({
                 // Common fields
                 serviceId: item.serviceId,
                 scheduledDate: finalScheduledDate,
                 scheduledTime: item.scheduleTime || 'Scheduled',
                 addressLine: item.address,
                 amount: item.price,
-                paymentMethod: paymentMethod,
+                paymentMethod: paymentMethod.toUpperCase() as any, // UPI, CARD, CASH
                 formDataJson: { ...item, confirmedDate: finalScheduledDate },
 
                 // Specialized fields mapping (Cart Item Key -> API Field)
-                // We spread item's properties that match API fields
-                staffType: item.providerType || (item as any).providerType,
+                staffType: (item.serviceId === 'home-nurse' ? mappedStaffType : undefined) as any,
+                doctorType: (item.serviceId === 'doctor-home-visit' ? mappedStaffType : undefined) as any,
+                shiftDuration: mappedShiftDuration as any,
                 pickupAddress: (item as any).pickup || (item as any).pickupAddress,
                 dropAddress: (item as any).destination || (item as any).dropAddress,
                 vehicleType: (item as any).vehicle || (item as any).vehicleType,
                 symptoms: item.problem ? [item.problem] : (item as any).symptoms,
-                
-                // Duration & Dates for nursing/caregiver
-                shiftDuration: (item as any).duration || (item as any).shiftDuration,
                 startDate: (item as any).startDate,
                 endDate: (item as any).endDate,
              });
           });
 
           const bookingResults = await Promise.all(bookingPromises);
-          const allBookingsSuccessful = bookingResults.every(res => res.success);
+          const allBookingsSuccessful = bookingResults.every(res => res.success && res.data);
 
           if (!allBookingsSuccessful) {
              throw new Error('Failed to create booking records. Please try again.');
           }
 
-          const newIds = bookingResults.map(res => res.data.id);
+          const newIds = bookingResults.map(res => res.data!.id);
           setCreatedBookingIds(newIds);
           bookingId = newIds[0];
        }
@@ -132,7 +158,7 @@ function CheckoutContent() {
              bookingId: bookingId,
           });
 
-          if (!initiateRes.success) {
+          if (!initiateRes.success || !initiateRes.data) {
              throw new Error(initiateRes.message || 'Failed to initiate payment');
           }
 
@@ -220,7 +246,7 @@ function CheckoutContent() {
 
           // ─── CRITICAL: Payment failure event ────────────────────────────────────
           // Mark booking PAYMENT_FAILED so it disappears from the bookings list.
-          rzp.on('payment.failed', async function (response: Record<string, Record<string, string>>) {
+          rzp.on('payment.failed', async function (response: any) {
              await cancelPaymentOnBackend();
              toast.error(response.error?.description || 'Payment failed. Please try again.');
              setIsProcessing(false);
@@ -295,7 +321,6 @@ function CheckoutContent() {
               </button>
 
               {/* COD Restriction: Only show if NOT a subscription checkout */}
-              {/* @ts-expect-error - subscriptionId check for future growth */}
               {!searchParams.get('subscriptionId') && (
                 <button 
                   onClick={() => setPaymentMethod('cash')}

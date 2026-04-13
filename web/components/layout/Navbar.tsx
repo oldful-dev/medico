@@ -14,6 +14,7 @@ const GUEST_LINKS = [
   { href: '/plans',        label: 'Plans' },
   { href: '/app/services', label: 'Services' },
   { href: '/about',        label: 'About' },
+  { href: '/team',         label: 'Team' },
   { href: '/contact',      label: 'Contact' },
 ];
 
@@ -22,6 +23,7 @@ const AUTH_LINKS = [
   { href: '/app/services',  label: 'Services' },
   { href: '/wellness',      label: 'Wellness' },
   { href: '/plans',         label: 'Plans' },
+  { href: '/team',          label: 'Team' },
 ];
 
 export function Navbar() {
@@ -68,10 +70,10 @@ export function Navbar() {
       >
         {/* Logo */}
         <Link href={isAuthenticated ? '/app/dashboard' : '/'} className="flex items-center gap-1.5 sm:gap-2 group">
-          <div className={`relative transition-all duration-300 ${isScrolled ? 'w-10 h-10' : 'w-14 h-14'}`}>
+          <div className={`relative transition-all duration-300 ${isScrolled ? 'w-8 h-8' : 'w-11 h-11'}`}>
             <Image src="/olfful-logo.png" alt="Oldful Logo" fill className="object-contain" priority />
           </div>
-          <span className={`text-[var(--color-primary-deep)] font-bold tracking-tight hidden sm:block transition-all duration-300 ${isScrolled ? 'text-xl' : 'text-2xl'}`}>
+          <span className={`text-[var(--color-primary-deep)] font-bold tracking-tight hidden sm:block transition-all duration-300 ${isScrolled ? 'text-lg' : 'text-xl'}`}>
             Oldful
           </span>
         </Link>

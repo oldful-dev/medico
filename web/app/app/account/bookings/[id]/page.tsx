@@ -22,7 +22,10 @@ import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 
 declare global {
    interface Window {
-      Razorpay: new (options: Record<string, unknown>) => { open(): void; on(event: string, cb: (r: Record<string, unknown>) => void): void };
+      Razorpay: new (options: Record<string, unknown>) => { 
+         open(): void; 
+         on(event: string, cb: (r: any) => void): void 
+      };
    }
 }
 
@@ -106,7 +109,7 @@ export default function BookingDetailsPage() {
             bookingId: booking.id,
          });
 
-         if (!initiateRes.success) {
+         if (!initiateRes.success || !initiateRes.data) {
             throw new Error(initiateRes.message || 'Failed to initiate payment');
          }
 
@@ -159,7 +162,7 @@ export default function BookingDetailsPage() {
          };
 
          const rzp = new window.Razorpay(options);
-         rzp.on('payment.failed', async function (response: Record<string, Record<string, string>>) {
+         rzp.on('payment.failed', async function (response: any) {
             await cancelPaymentOnBackend();
             toast.error(response.error?.description || 'Payment failed.');
             setIsProcessingPayment(false);
@@ -230,7 +233,7 @@ export default function BookingDetailsPage() {
                <div className="flex items-start gap-4">
                   <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center p-2">
                      {serviceConfig?.icon ? (
-                        <Image src={getAssetUrl(serviceConfig.icon)} alt={booking.service.name} width={48} height={48} className="object-contain" />
+                        <Image src={getAssetUrl(serviceConfig.icon)} alt={booking.service?.name || 'Service'} width={48} height={48} className="object-contain" />
                      ) : (
                         <Package className="w-8 h-8 text-emerald-500" />
                      )}

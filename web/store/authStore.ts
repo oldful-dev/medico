@@ -12,6 +12,8 @@
 import { create } from 'zustand';
 import { apiClient } from '@/services/api/apiClient';
 
+import { Address } from '@/services/api/userService';
+
 export interface AuthUser {
     id: string;
     name: string;
@@ -19,7 +21,7 @@ export interface AuthUser {
     email?: string;
     profileImageUrl?: string;
     uniqueUserId?: string;
-    addresses?: Record<string, unknown>[];
+    addresses?: Address[];
 }
 
 interface AuthState {

@@ -13,12 +13,19 @@ export interface VerifyPaymentData {
     razorpaySignature: string;
 }
 
+export interface PaymentInitiateResponse {
+    orderId: string;
+    amount: number;
+    currency: string;
+    key: string;
+}
+
 export const paymentService = {
-    initiatePayment: async (data: InitiatePaymentData): Promise<ApiResponse> => {
-        return apiClient.post('/payments/initiate', data);
+    initiatePayment: async (data: InitiatePaymentData): Promise<ApiResponse<PaymentInitiateResponse>> => {
+        return apiClient.post<PaymentInitiateResponse>('/payments/initiate', data);
     },
 
-    verifyPayment: async (data: VerifyPaymentData): Promise<ApiResponse> => {
+    verifyPayment: async (data: VerifyPaymentData): Promise<ApiResponse<any>> => {
         return apiClient.post('/payments/verify', data);
     },
 
@@ -28,15 +35,15 @@ export const paymentService = {
      * Marks the payment + booking as PAYMENT_FAILED on the backend.
      * Prevents ghost PAYMENT_PENDING bookings from appearing in the bookings list.
      */
-    cancelPayment: async (orderId: string): Promise<ApiResponse> => {
+    cancelPayment: async (orderId: string): Promise<ApiResponse<any>> => {
         return apiClient.post('/payments/cancel', { orderId });
     },
 
-    getPaymentMethods: async (): Promise<ApiResponse> => {
+    getPaymentMethods: async (): Promise<ApiResponse<any>> => {
         return apiClient.get('/payments/methods');
     },
 
-    applyCoupon: async (couponCode: string, amount: number): Promise<ApiResponse> => {
+    applyCoupon: async (couponCode: string, amount: number): Promise<ApiResponse<any>> => {
         return apiClient.post('/payments/apply-coupon', { couponCode, amount });
     }
 };

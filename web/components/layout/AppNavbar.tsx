@@ -53,10 +53,10 @@ export function AppNavbar() {
       >
         {/* Logo */}
         <Link href="/app/dashboard" className="flex items-center gap-1.5 sm:gap-2 shrink-0 group">
-          <div className={`relative transition-all duration-300 ${isScrolled ? 'w-10 h-10' : 'w-14 h-14'}`}>
+          <div className={`relative transition-all duration-300 ${isScrolled ? 'w-8 h-8' : 'w-11 h-11'}`}>
             <Image src="/olfful-logo.png" alt="Oldful" fill className="object-contain" priority />
           </div>
-          <span className={`text-[var(--color-primary-deep)] font-bold tracking-tight hidden sm:block transition-all duration-300 ${isScrolled ? 'text-xl' : 'text-2xl'}`}>
+          <span className={`text-[var(--color-primary-deep)] font-bold tracking-tight hidden sm:block transition-all duration-300 ${isScrolled ? 'text-lg' : 'text-xl'}`}>
             Oldful
           </span>
         </Link>

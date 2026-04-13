@@ -111,7 +111,7 @@ function AuthForm() {
       <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl relative z-10">
       {/* Logo */}
       <div className="mb-10 flex flex-col items-center text-center">
-        <div className="w-32 h-32 relative mb-4">
+        <div className="w-24 h-24 relative mb-4">
           <Image
             src="/olfful-logo.png"
             alt="Oldful Logo"
