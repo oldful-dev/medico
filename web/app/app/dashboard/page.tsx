@@ -50,7 +50,7 @@ export default function DashboardPage() {
 
   // Derived Values
   const totalBookingsCount = bookings?.length || 0;
-  const activePlan = profile?.subscriptions?.find((s: Record<string, unknown>) => s.status === 'ACTIVE')?.plan?.name || 'Guest User';
+  const activePlan = profile?.subscriptions?.find((s) => s.status === 'ACTIVE')?.plan?.name || 'Guest User';
   const notifications = notificationsData || [];
   const unreadCount = notifications.filter(n => !n.isRead).length;
 

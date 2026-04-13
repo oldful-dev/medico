@@ -1,4 +1,5 @@
 import { apiClient, ApiResponse } from './apiClient';
+import { Booking } from './userService';
 
 export interface CreateBookingData {
     serviceId: string;
@@ -22,20 +23,20 @@ export interface CreateBookingData {
 }
 
 export const bookingService = {
-    createBooking: async (data: CreateBookingData): Promise<ApiResponse> => {
-        return apiClient.post('/bookings', data);
+    createBooking: async (data: CreateBookingData): Promise<ApiResponse<Booking>> => {
+        return apiClient.post<Booking>('/bookings', data);
     },
 
-    getMyBookings: async (page = 1, limit = 10): Promise<ApiResponse> => {
-        return apiClient.get(`/bookings/history?page=${page}&limit=${limit}`);
+    getMyBookings: async (page = 1, limit = 10): Promise<ApiResponse<Booking[]>> => {
+        return apiClient.get<Booking[]>(`/bookings/history?page=${page}&limit=${limit}`);
     },
 
-    getBookingById: async (id: string): Promise<ApiResponse> => {
-        return apiClient.get(`/bookings/detail/${id}`);
+    getBookingById: async (id: string): Promise<ApiResponse<Booking>> => {
+        return apiClient.get<Booking>(`/bookings/detail/${id}`);
     },
 
-    cancelBooking: async (id: string): Promise<ApiResponse> => {
-        return apiClient.post(`/bookings/${id}/cancel`);
+    cancelBooking: async (id: string): Promise<ApiResponse<null>> => {
+        return apiClient.post<null>(`/bookings/${id}/cancel`, {});
     },
 
     downloadInvoice: async (id: string): Promise<Blob> => {

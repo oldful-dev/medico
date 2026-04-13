@@ -77,7 +77,8 @@ export interface Booking {
     addressLine?: string;
     latitude?: number;
     longitude?: number;
-    payments?: Record<string, unknown>[];
+    payments?: any[];
+    formDataJson?: Record<string, unknown>;
     createdAt: string;
 }
 

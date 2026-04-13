@@ -9,7 +9,7 @@ export function Footer() {
         {/* Brand & Mission */}
         <div className="col-span-1 md:col-span-1 flex flex-col gap-4">
            <div className="flex items-center gap-4 mb-2">
-            <div className="w-14 h-14 relative">
+            <div className="w-11 h-11 relative">
               <Image
                 src="/olfful-logo.png"
                 alt="Oldful Logo"
@@ -17,7 +17,7 @@ export function Footer() {
                 className="object-contain"
               />
             </div>
-            <span className="text-white font-bold text-2xl tracking-tight">Oldful</span>
+            <span className="text-white font-bold text-xl tracking-tight">Oldful</span>
           </div>
           <p className="text-sm text-gray-400 leading-relaxed pr-4">
             Comprehensive elder care management platform, combining technology with human empathy to keep your loved ones safe, healthy, and happy.
