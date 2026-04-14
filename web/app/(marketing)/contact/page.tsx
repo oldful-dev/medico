@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { supportService, SupportTicket, TicketCategory } from '@/services/api/supportService';
 import { useAuthStore } from '@/store/authStore';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 // Data from backend DEFAULT_CONFIG
 const FAQ_DATA = [

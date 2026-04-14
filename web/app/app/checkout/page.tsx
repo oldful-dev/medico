@@ -8,7 +8,7 @@ import { ChevronLeft, Lock, ShieldCheck, CreditCard, Wallet, AlertCircle } from 
 import { motion } from 'framer-motion';
 import { bookingService } from '@/services/api/bookingService';
 import { paymentService } from '@/services/api/paymentService';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 declare global {
   interface Window {
