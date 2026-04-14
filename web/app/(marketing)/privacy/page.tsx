@@ -8,10 +8,10 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="bg-[#FFFCF6] min-h-screen pb-24 px-6 md:px-12 lg:px-24 font-[var(--font-poppins)]">
-      <div className="max-w-4xl mx-auto flex flex-col gap-8">
+    <div className="bg-[#FFFCF6] min-h-screen pb-16 px-6 md:px-12 lg:px-24 font-[var(--font-poppins)]">
+      <div className="max-w-4xl mx-auto flex flex-col gap-6">
         
-        <header className="mb-8">
+        <header className="mb-6">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
           <p className="text-sm text-gray-500 uppercase tracking-widest font-bold">Last Updated: 01/01/2026</p>
         </header>

@@ -3,10 +3,10 @@ import React from 'react';
 // This page is now wrapped by (marketing)/layout.tsx which includes the Navbar.
 export default function PlansPage() {
   return (
-    <div className="min-h-screen bg-[#FFFCF6] font-[var(--font-poppins)] pb-24">
+    <div className="min-h-screen bg-[#FFFCF6] font-[var(--font-poppins)] pb-16">
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 tracking-tight">Flexible plans for every family</h1>
           <p className="text-lg text-gray-500 font-medium tracking-wide">Choose the care subscription that fits your parents&apos; needs perfectly.</p>
         </div>

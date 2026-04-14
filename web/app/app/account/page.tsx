@@ -782,8 +782,8 @@ function AccountContent() {
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-screen)]">
-      <div className="max-w-7xl mx-auto px-6 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
 
           {/* ── LEFT SIDEBAR ── */}
           <div className="lg:col-span-1 flex flex-col gap-4">

@@ -125,10 +125,10 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-screen)]">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-6">
 
         {/* ── Top Bar ── */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-5">
           <div>
             {authLoading ? (
               <div className="h-8 w-48 bg-gray-200 animate-pulse rounded-lg" />
