@@ -8,6 +8,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
+        "EXPO_PUBLIC_API_URL": "https://oldful.onrender.com/api",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "604340037909-fdhnci4koamsb4g7sb55l7rbpjg57js7.apps.googleusercontent.com"
       }
     },

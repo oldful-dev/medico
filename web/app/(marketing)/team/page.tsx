@@ -84,7 +84,7 @@ export default function TeamPage() {
   return (
     <div className="min-h-screen bg-[var(--color-bg-screen)]">
       {/* Hero Section */}
-      <section className="relative pt-20 pb-32 overflow-hidden">
+      <section className="relative pt-10 md:pt-16 pb-16 overflow-hidden">
         <div className="absolute top-0 right-0 w-1/3 h-full bg-emerald-50/50 rounded-bl-[200px] -z-10" />
         <div className="container mx-auto px-6 text-center md:text-left">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl">
@@ -102,7 +102,7 @@ export default function TeamPage() {
       </section>
 
       {/* Grid */}
-      <section className="pb-40">
+      <section className="pb-20">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
             {team.map((member, index) => (
@@ -129,7 +129,7 @@ export default function TeamPage() {
         )}
       </AnimatePresence>
 
-      <section className="bg-[var(--color-primary-deep)] py-24 relative overflow-hidden">
+      <section className="bg-[var(--color-primary-deep)] py-16 md:py-20 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-400/10 rounded-full blur-[100px]" />
         <div className="container mx-auto px-6 text-center relative z-10">
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-8">Building the future of Senior Care.</h2>

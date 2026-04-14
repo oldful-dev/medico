@@ -55,7 +55,7 @@ export default function CareersPage() {
     <div className="min-h-screen bg-[var(--color-bg-screen)] selection:bg-[var(--color-primary)] selection:text-white">
       
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6 relative overflow-hidden">
+      <section className="pt-10 md:pt-16 pb-16 px-6 relative overflow-hidden">
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -90,7 +90,7 @@ export default function CareersPage() {
       </section>
 
       {/* Perks Grid */}
-      <section className="py-20 px-6 bg-white/50 border-y border-gray-100">
+      <section className="py-12 md:py-16 px-6 bg-white/50 border-y border-gray-100">
         <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {PERKS.map((perk, i) => (
             <motion.div
@@ -112,7 +112,7 @@ export default function CareersPage() {
       </section>
 
       {/* Application Form */}
-      <section className="py-24 px-6 relative" id="apply">
+      <section className="py-16 md:py-20 px-6 relative" id="apply">
         <div className="max-w-3xl mx-auto">
           {success ? (
             <motion.div

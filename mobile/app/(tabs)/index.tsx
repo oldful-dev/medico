@@ -37,6 +37,15 @@ import { getAssetUrl } from '@/utils/getAssetUrl';
 // ─── Logo (only static asset — not content-driven) ───────────────────────────
 const logoSmall = require('@/assets/images/9d3e74b5e16af4e10bcec4b72af07a9d93ea14b8.png');
 
+// ─── Route Resolver ──────────────────────────────────────────────────────────
+const resolveRoute = (route?: string) => {
+  if (!route) return '/';
+  const clean = route.toLowerCase().trim();
+  if (clean.includes('home essentials')) return '/all-home-essentials';
+  if (clean.includes('oldful services')) return '/all-oldful-services';
+  return route;
+};
+
 // ─── Section Renderers ────────────────────────────────────────────────────────
 
 interface QuickServicesProps {
@@ -88,7 +97,7 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight }: ServiceGri
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{section.title}</Text>
         {section.view_all_route && (
-          <TouchableOpacity onPress={() => router.push(section.view_all_route as any)}>
+          <TouchableOpacity onPress={() => router.push(resolveRoute(section.view_all_route) as any)}>
             <Text style={styles.viewAllText}>{t('common.view_all')}</Text>
           </TouchableOpacity>
         )}
@@ -140,7 +149,7 @@ function EssentialsGrid({ section, itemWidth, cardHeight }: EssentialsGridProps)
       <View style={styles.sectionHeader}>
         <Text style={styles.essentialsTitle}>{section.title}</Text>
         {section.view_all_route && (
-          <TouchableOpacity onPress={() => router.push(section.view_all_route as any)}>
+          <TouchableOpacity onPress={() => router.push(resolveRoute(section.view_all_route) as any)}>
             <Text style={styles.viewAllSmall}>View All</Text>
           </TouchableOpacity>
         )}
@@ -295,9 +304,9 @@ export default function HomeScreen() {
             <Text style={styles.locationText} numberOfLines={1}>{currentLocationStr}</Text>
           </TouchableOpacity>
           <View style={styles.headerRight}>
-            <TouchableOpacity onPress={() => router.push('/search')}>
+            {/* <TouchableOpacity onPress={() => router.push('/search')}>
               <Ionicons name="search-outline" size={22} color="#2F2F2F" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity style={styles.sosTag} onPress={() => router.push('/sos-emergency')}>
               <Text style={styles.sosTagText}>SOS</Text>
             </TouchableOpacity>

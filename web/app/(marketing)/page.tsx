@@ -35,7 +35,7 @@ export default function LandingPage() {
       <Testimonials />
 
       {/* CTA Section */}
-      <section className="w-full bg-[var(--color-bg-screen)] py-24 px-8 flex flex-col items-center justify-center text-center">
+      <section className="w-full bg-[var(--color-bg-screen)] py-16 px-8 flex flex-col items-center justify-center text-center">
          <h2 className="text-4xl font-bold tracking-tight text-[var(--color-primary-deep)] mb-6">Ready to prioritize your health?</h2>
          <p className="text-gray-600 mb-10 max-w-2xl text-lg">Join 1.8M users today and get the best medical care directly at your fingertips.</p>
          <a

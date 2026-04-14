@@ -162,9 +162,9 @@ export default function ContactPage() {
     );
 
     return (
-        <div className="min-h-screen bg-gray-50/50 flex flex-col pt-20 md:pt-24 lg:pt-28">
+        <div className="min-h-screen bg-gray-50/50 flex flex-col">
         {/* ─── Hero Section ─── */}
-        <section className="bg-[var(--color-primary-deep)] py-16 md:py-24 px-6 relative overflow-hidden flex flex-col items-center">
+        <section className="bg-[var(--color-primary-deep)] py-12 md:py-16 px-6 relative overflow-hidden flex flex-col items-center">
             <div className="max-w-4xl w-full text-center relative z-10 px-4">
                 <motion.h1 
                     initial={{ opacity: 0, y: 15 }}

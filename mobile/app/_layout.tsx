@@ -78,6 +78,10 @@ export default function RootLayout() {
                 <Stack.Screen name="search" options={{ headerShown: false }} />
                 <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
 
+                {/* Service Listing Screens */}
+                <Stack.Screen name="all-home-essentials/index" options={{ headerShown: false }} />
+                <Stack.Screen name="all-oldful-services/index" options={{ headerShown: false }} />
+
                 {/* Unmapped Screens */}
                 <Stack.Screen name="smart-upgrade/index" options={{ headerShown: false }} />
                 <Stack.Screen name="hospital-trip/index" options={{ headerShown: false }} />
