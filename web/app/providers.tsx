@@ -11,7 +11,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthInitializer />
-      <Toaster position="bottom-right" richColors closeButton />
+      <Toaster position="top-right" richColors closeButton />
       {children}
     </QueryClientProvider>
   );

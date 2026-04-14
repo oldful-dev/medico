@@ -167,7 +167,7 @@ export default function DashboardPage() {
             
             <button 
               className="flex items-center gap-2 bg-red-500 text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-red-500/30 hover:bg-red-600 transition-colors"
-              onClick={() => router.push('/app/account?tab=emergency')}
+              onClick={() => router.push('/app/sos')}
             >
               🚨 SOS
             </button>
