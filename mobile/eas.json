@@ -8,6 +8,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
+        "GOOGLE_SERVICES_JSON": "GOOGLE_SERVICES_JSON",
         "EXPO_PUBLIC_API_URL": "https://oldful.onrender.com/api",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "604340037909-fdhnci4koamsb4g7sb55l7rbpjg57js7.apps.googleusercontent.com"
       }
@@ -17,6 +18,7 @@
         "buildType": "apk"
       },
       "env": {
+        "GOOGLE_SERVICES_JSON": "GOOGLE_SERVICES_JSON",
         "EXPO_PUBLIC_API_URL": "https://oldful.onrender.com/api",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "604340037909-fdhnci4koamsb4g7sb55l7rbpjg57js7.apps.googleusercontent.com"
       }
@@ -24,6 +26,7 @@
     "production": {
       "autoIncrement": true,
       "env": {
+        "GOOGLE_SERVICES_JSON": "GOOGLE_SERVICES_JSON",
         "EXPO_PUBLIC_API_URL": "https://oldful.onrender.com/api",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "604340037909-fdhnci4koamsb4g7sb55l7rbpjg57js7.apps.googleusercontent.com"
       }
