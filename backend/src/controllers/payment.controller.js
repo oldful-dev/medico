@@ -83,30 +83,52 @@ const initiatePayment = async (req, res, next) => {
             }
         }
 
-        // Create Razorpay order
-        const razorpayOrder = await razorpay.createOrder(finalAmount, `receipt_${Date.now()}`);
+        // Create Razorpay order (Only if amount >= 1 INR)
+        if (finalAmount >= 1) {
+            const razorpayOrder = await razorpay.createOrder(finalAmount, `receipt_${Date.now()}`);
 
-        // Create payment record
+            // Create payment record
+            const payment = await prisma.payment.create({
+                data: {
+                    userId: userId || req.user.id,
+                    bookingId,
+                    subscriptionId,
+                    amount: finalAmount,
+                    couponCode,
+                    discountAmount,
+                    razorpayOrderId: razorpayOrder.id,
+                    status: 'INITIATED',
+                },
+            });
+
+            return sendResponse(res, 200, {
+                paymentId: payment.id,
+                orderId: razorpayOrder.id,
+                amount: finalAmount,
+                currency: 'INR',
+                key: process.env.RAZORPAY_KEY_ID,
+            });
+        }
+
+        // ─── Handle Zero Amount (Free Service / Payment Later) ───────────────
+        // No Razorpay order needed. Create a successful payment record directly.
         const payment = await prisma.payment.create({
             data: {
                 userId: userId || req.user.id,
                 bookingId,
                 subscriptionId,
                 amount: finalAmount,
-                couponCode,
-                discountAmount,
-                razorpayOrderId: razorpayOrder.id,
-                status: 'INITIATED',
+                status: 'SUCCESS',
+                paymentMethod: 'CASH', // Default for free/zero-amount
             },
         });
 
         sendResponse(res, 200, {
             paymentId: payment.id,
-            orderId: razorpayOrder.id,
-            amount: finalAmount,
-            currency: 'INR',
-            key: process.env.RAZORPAY_KEY_ID,
-        });
+            orderId: null,
+            amount: 0,
+            paymentNotRequired: true,
+        }, 'No payment required for this booking');
     } catch (error) {
         next(error);
     }

@@ -29,10 +29,11 @@ export interface InitiatePaymentPayload {
 }
 
 export interface InitiatePaymentResponse {
-    orderId: string;            // razorpayOrderId
+    orderId: string | null;            // razorpayOrderId (null if not required)
     amount: number;
     currency: string;
     paymentId: string;          // internal payment record ID
+    paymentNotRequired?: boolean; // True if amount < ₹1
 }
 
 export interface VerifyPaymentPayload {

@@ -210,13 +210,31 @@ export default function HomeScreen() {
           if (hasPermission) {
             const coords = await locationService.getCurrentLocation();
             const address = await locationService.getAddressFromCoordinates(coords);
-            
+
             // Show locality (first part of formatted address)
             const locality = address.split(',')[0] || 'Unknown Location';
             setCurrentLocationStr(locality);
-            
+
+            // ─── City Name Normalization ───
+            const CITY_SYNONYMS: Record<string, string[]> = {
+              'Bangalore': ['bengaluru', 'bangalore urban', 'bangalore rural'],
+              'Gurgaon': ['gurugram'],
+              'Delhi NCR': ['new delhi', 'delhi', 'noida', 'gurgaon', 'gurugram', 'faridabad', 'ghaziabad'],
+              'Mumbai': ['bombay', 'navi mumbai', 'thane'],
+            };
+
+            const isMatch = (cityName: string, addressStr: string) => {
+              const addr = addressStr.toLowerCase();
+              const primary = cityName.toLowerCase();
+              if (addr.includes(primary)) return true;
+
+              const synonyms = CITY_SYNONYMS[cityName] || [];
+              return synonyms.some(s => addr.includes(s));
+            };
+
             // Detect city for "Coming Soon" banner
-            const detectedCityMatch = cities.find((c: any) => address.toLowerCase().includes(c.name.toLowerCase()));
+            const detectedCityMatch = cities.find((c: any) => isMatch(c.name, address));
+
             if (detectedCityMatch) {
               setSelectedCity(detectedCityMatch.name);
               setIsCitySupported(true);

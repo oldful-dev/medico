@@ -188,6 +188,7 @@ model Admin {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  @@index([name, email, role, isActive])
   @@map("admins")
 }
 
@@ -451,6 +452,7 @@ model Caregiver {
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
 
+  @@index([name, phone, specialization, policeVerification, isAvailable])
   @@map("caregivers")
 }
 

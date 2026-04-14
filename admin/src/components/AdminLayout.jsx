@@ -1,17 +1,21 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import useAuthStore from "@/store/useAuthStore";
 import useThemeStore from "@/store/useThemeStore";
 
-export default function AdminLayout({ children, currentPage, setCurrentPage }) {
+export default function AdminLayout({ children }) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const router = useRouter();
+    const pathname = usePathname();
     const { isAuthenticated, loading, checkAuth } = useAuthStore();
     const { theme } = useThemeStore();
+
+    // The key is the ID used in our navSections
+    const currentPage = pathname.split('/').pop() || 'dashboard';
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
@@ -52,16 +56,14 @@ export default function AdminLayout({ children, currentPage, setCurrentPage }) {
                 collapsed={sidebarCollapsed}
                 open={sidebarOpen}
                 currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
                 onClose={() => setSidebarOpen(false)}
             />
             <div className="main-content">
                 <Header
                     onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
                     onMobileMenu={() => setSidebarOpen(!sidebarOpen)}
-                    setCurrentPage={setCurrentPage}
                 />
-                <div className="page-content page-enter">
+                <div className="page-content">
                     {children}
                 </div>
             </div>

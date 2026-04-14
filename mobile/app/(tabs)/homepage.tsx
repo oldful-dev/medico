@@ -1,7 +1,7 @@
 import React from "react";
 import { View, ScrollView, Text, Image, TouchableOpacity, StyleSheet, } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Fonts } from '@/constants/theme';
+import { Fonts, Colors } from '@/constants/theme';
 
 export default function HomepageScreen(props: any) {
     return (
