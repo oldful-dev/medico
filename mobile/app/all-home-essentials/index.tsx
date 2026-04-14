@@ -55,11 +55,19 @@ export default function AllHomeEssentialsScreen() {
             setLoading(true);
             const res = await apiClient.get<any[]>('/services?isEnabled=true');
             if (res.success && res.data) {
-                // Filter for Home Essentials and map to include icon
+                // Utility to resolve mismatched slugs to valid mobile routes
+                const resolveSlugToRoute = (slug: string) => {
+                    if (slug === 'tech-helper-essentials') return '/tech-helper';
+                    if (slug === 'home-essentials') return '/all-home-essentials';
+                    return `/${slug}`;
+                };
+
+                // Filter for Home Essentials, excluding the parent category item itself
                 const filtered = res.data
-                    .filter((s: any) => s.serviceType === 'HOME_ESSENTIALS')
+                    .filter((s: any) => s.serviceType === 'HOME_ESSENTIALS' && s.slug !== 'home-essentials')
                     .map((s: any) => ({
                         ...s,
+                        route: resolveSlugToRoute(s.slug),
                         iconAsset: ICON_MAPPING[s.slug] || anythingElseIcon,
                         displayLabel: s.name.replace(' & ', '\n').replace(' ', '\n')
                     }));

@@ -14,7 +14,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { bookingService } from '@/services/api/bookingService';
 
 // ─── Figma Assets ───
 const imgHero = require('@/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png'); // Bill icon

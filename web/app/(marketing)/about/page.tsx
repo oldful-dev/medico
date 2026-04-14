@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="bg-[#FFFCF6] min-h-screen pb-24 px-6 md:px-12 lg:px-24 font-[var(--font-poppins)]">
+    <div className="bg-[#FFFCF6] min-h-screen pt-12 md:pt-16 pb-16 px-6 md:px-12 lg:px-24 font-[var(--font-poppins)]">
       <div className="max-w-4xl mx-auto flex flex-col gap-12">
         <section>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">About Oldful</h1>

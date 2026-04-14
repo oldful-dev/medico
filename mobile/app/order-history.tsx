@@ -21,7 +21,7 @@ export default function OrderHistoryScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    
+
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -56,8 +56,8 @@ export default function OrderHistoryScreen() {
     // ─── Filtering Logic ───
     const filteredBookings = useMemo(() => {
         return bookings.filter(b => {
-            if (activeTab === 'Active') return ['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'].includes(b.status);
-            if (activeTab === 'Payment') return b.status === 'PENDING';
+            if (activeTab === 'Active') return ['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS', 'PENDING'].includes(b.status);
+            if (activeTab === 'Payment') return ['PAYMENT_PENDING', 'PAYMENT_FAILED'].includes(b.status);
             if (activeTab === 'History') return ['COMPLETED', 'CANCELLED'].includes(b.status);
             return false;
         }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -68,9 +68,9 @@ export default function OrderHistoryScreen() {
     const renderEmptyState = () => (
         <View style={styles.emptyContainer}>
             <View style={styles.emptyIconCircle}>
-                <Ionicons 
-                    name={activeTab === 'History' ? 'receipt-outline' : 'calendar-clear-outline'} 
-                    size={40} color={Colors.primary} 
+                <Ionicons
+                    name={activeTab === 'History' ? 'receipt-outline' : 'calendar-clear-outline'}
+                    size={40} color={Colors.primary}
                 />
             </View>
             <Text style={styles.emptyTitle}>No {activeTab.toLowerCase()} bookings</Text>
@@ -84,7 +84,7 @@ export default function OrderHistoryScreen() {
     return (
         <View style={styles.screen}>
             <StatusBar style="dark" />
-            
+
             {/* ─── Header ─── */}
             <View style={[styles.header, { paddingTop: insets.top + (Platform.OS === 'ios' ? 10 : 20) }]}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -97,8 +97,8 @@ export default function OrderHistoryScreen() {
             {/* ─── Custom Tab Bar (Old Style) ─── */}
             <View style={styles.tabBar}>
                 {(['Active', 'Payment', 'History'] as TabType[]).map((tab) => (
-                    <TouchableOpacity 
-                        key={tab} 
+                    <TouchableOpacity
+                        key={tab}
                         onPress={() => setActiveTab(tab)}
                         style={[styles.tabItem, activeTab === tab && styles.tabItemActive]}
                     >
@@ -110,7 +110,7 @@ export default function OrderHistoryScreen() {
                 ))}
             </View>
 
-            <ScrollView 
+            <ScrollView
                 style={styles.container}
                 contentContainerStyle={styles.scrollContent}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
@@ -119,8 +119,8 @@ export default function OrderHistoryScreen() {
                     <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 50 }} />
                 ) : filteredBookings.length === 0 ? renderEmptyState() : (
                     filteredBookings.map((booking) => (
-                        <TouchableOpacity 
-                            key={booking.id} 
+                        <TouchableOpacity
+                            key={booking.id}
                             style={styles.bookingCard}
                             onPress={() => router.push({ pathname: '/service-confirmation', params: { bookingId: booking.id } })}
                         >
@@ -129,7 +129,7 @@ export default function OrderHistoryScreen() {
                                     <View style={styles.iconBox}>
                                         <MaterialCommunityIcons name="medical-bag" size={20} color={Colors.primary} />
                                     </View>
-                                    <View>
+                                    <View style={{ flex: 1 }}>
                                         <Text style={styles.serviceName}>{booking.service?.name || 'Service'}</Text>
                                         <Text style={styles.bookingCode}>#{booking.bookingCode}</Text>
                                     </View>
@@ -157,11 +157,11 @@ export default function OrderHistoryScreen() {
                             <View style={styles.cardFooter}>
                                 <Text style={styles.priceText}>₹{booking.amount}</Text>
                                 {activeTab === 'Payment' && (
-                                    <TouchableOpacity 
+                                    <TouchableOpacity
                                         style={styles.payBtn}
-                                        onPress={() => router.push({ 
-                                            pathname: '/payment/checkout', 
-                                            params: { bookingId: booking.id, amount: String(booking.amount), label: booking.service?.name } 
+                                        onPress={() => router.push({
+                                            pathname: '/payment/checkout',
+                                            params: { bookingId: booking.id, amount: String(booking.amount), label: booking.service?.name }
                                         })}
                                     >
                                         <Text style={styles.payBtnText}>Pay Now</Text>
@@ -183,39 +183,39 @@ export default function OrderHistoryScreen() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#FAFAFA' },
-    header: { 
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', 
-        paddingHorizontal: 20, paddingBottom: 15, backgroundColor: '#FFF' 
+    header: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingHorizontal: 20, paddingBottom: 15, backgroundColor: '#FFF'
     },
     backBtn: { width: 44, height: 44, justifyContent: 'center' },
-    headerTitle: { fontFamily: Fonts.bold, fontSize: 18, color: Colors.textDark },
+    headerTitle: { fontFamily: Fonts.bold, fontSize: 18, color: Colors.textDark, flex: 1, textAlign: 'center' },
     container: { flex: 1 },
     scrollContent: { padding: 20, paddingBottom: 50 },
 
     /* Tab Bar */
     tabBar: { flexDirection: 'row', backgroundColor: '#FFF', paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
     tabItem: { flex: 1, paddingVertical: 15, alignItems: 'center', position: 'relative' },
-    tabItemActive: { },
+    tabItemActive: {},
     tabText: { fontFamily: Fonts.medium, fontSize: 14, color: Colors.textMuted },
     tabTextActive: { color: Colors.primary, fontFamily: Fonts.bold },
     tabUnderline: { position: 'absolute', bottom: 0, width: '60%', height: 3, backgroundColor: Colors.primary, borderTopLeftRadius: 3, borderTopRightRadius: 3 },
 
     /* Booking Card */
-    bookingCard: { 
-        backgroundColor: '#FFF', borderRadius: 20, padding: 18, marginBottom: 16, 
-        ...Shadow.card, borderWidth: 1, borderColor: '#F0F0F0' 
+    bookingCard: {
+        backgroundColor: '#FFF', borderRadius: 20, padding: 18, marginBottom: 16,
+        ...Shadow.card, borderWidth: 1, borderColor: '#F0F0F0'
     },
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 },
-    serviceInfo: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15, gap: 10 },
+    serviceInfo: { flexDirection: 'row', gap: 12, alignItems: 'center', flex: 1 },
     iconBox: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(4, 131, 87, 0.05)', justifyContent: 'center', alignItems: 'center' },
-    serviceName: { fontFamily: Fonts.bold, fontSize: 16, color: Colors.textDark },
+    serviceName: { fontFamily: Fonts.bold, fontSize: 16, color: Colors.textDark, flexShrink: 1 },
     bookingCode: { fontFamily: Fonts.medium, fontSize: 11, color: Colors.textMuted, marginTop: 2 },
     statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
     statusText: { fontSize: 10, fontFamily: Fonts.bold, textTransform: 'uppercase' },
 
     cardDetails: { gap: 10, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
     detailRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    detailText: { fontFamily: Fonts.medium, fontSize: 12, color: Colors.textLight },
+    detailText: { fontFamily: Fonts.medium, fontSize: 12, color: Colors.textLight, flex: 1 },
 
     cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15 },
     priceText: { fontFamily: Fonts.bold, fontSize: 18, color: Colors.textDark },

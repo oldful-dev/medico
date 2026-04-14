@@ -38,7 +38,7 @@ export default function TripTravelsScreen() {
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
     const [isBooking, setIsBooking] = React.useState(false);
 
-    const { cityId, serviceId, isLoading: isLoadingInit } = useServiceInitialization('trip-travels');
+    const { isReady, cityId, serviceId, isLoading: isLoadingInit } = useServiceInitialization('trip-travels');
 
 
 

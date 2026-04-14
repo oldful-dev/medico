@@ -1,9 +1,19 @@
 import React from "react";
 import { View, ScrollView, Text, Image, TouchableOpacity, StyleSheet, } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useRouter } from 'expo-router';
 import { Fonts, Colors } from '@/constants/theme';
 
 export default function HomepageScreen(props: any) {
+    const router = useRouter();
+
+    const resolveRoute = (route: string) => {
+        const clean = route.toLowerCase().trim();
+        if (clean.includes('home essentials')) return '/all-home-essentials';
+        if (clean.includes('oldful services')) return '/all-oldful-services';
+        return route;
+    };
+
     return (
         <SafeAreaProvider style={styles.container}>
             <ScrollView style={styles.scrollView}>
@@ -75,7 +85,7 @@ export default function HomepageScreen(props: any) {
                 />
                 <View style={styles.column4}>
                     <View style={styles.row4}>
-                        <View style={styles.column5}>
+                        <TouchableOpacity style={styles.column5} onPress={() => router.push('/doctor-visit')}>
                             <Image
                                 source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/AZ4lzdolGa/52ig4lm0_expires_30_days.png" }}
                                 resizeMode={"stretch"}
@@ -89,8 +99,8 @@ export default function HomepageScreen(props: any) {
                                     {"Visit"}
                                 </Text>
                             </View>
-                        </View>
-                        <View style={styles.column7}>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.column7} onPress={() => router.push('/nurse-care')}>
                             <Image
                                 source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/AZ4lzdolGa/07gl0gy7_expires_30_days.png" }}
                                 resizeMode={"stretch"}
@@ -104,16 +114,16 @@ export default function HomepageScreen(props: any) {
                                     {"Care"}
                                 </Text>
                             </View>
-                        </View>
-                        <View style={styles.column9}>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.column9} onPress={() => router.push('/anything-else')}>
                             <Text style={styles.text5}>
                                 {"Caregiver "}
                             </Text>
                             <Text style={styles.text4}>
                                 {"Support"}
                             </Text>
-                        </View>
-                        <View style={styles.column10}>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.column10} onPress={() => router.push('/sos-emergency')}>
                             <Image
                                 source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/AZ4lzdolGa/sht3zx01_expires_30_days.png" }}
                                 resizeMode={"stretch"}
@@ -127,7 +137,7 @@ export default function HomepageScreen(props: any) {
                                     {"Assist"}
                                 </Text>
                             </View>
-                        </View>
+                        </TouchableOpacity>
                         <Image
                             source={{ uri: "https://storage.googleapis.com/tagjs-prod.appspot.com/v1/AZ4lzdolGa/3mmchgtv_expires_30_days.png" }}
                             resizeMode={"stretch"}
@@ -140,9 +150,11 @@ export default function HomepageScreen(props: any) {
                                 <Text style={styles.text7}>
                                     {"Oldful Services"}
                                 </Text>
-                                <Text style={styles.text8}>
-                                    {"View All"}
-                                </Text>
+                                <TouchableOpacity onPress={() => router.push(resolveRoute('all-oldful-services'))}>
+                                    <Text style={styles.text8}>
+                                        {"View All"}
+                                    </Text>
+                                </TouchableOpacity>
                             </View>
                             <View style={styles.row6}>
                                 <View style={styles.column14}>
@@ -380,7 +392,7 @@ export default function HomepageScreen(props: any) {
                                     <Text style={styles.text18}>
                                         {"Medical Support?"}
                                     </Text>
-                                    <TouchableOpacity style={styles.buttonRow} onPress={() => alert('Pressed!')}>
+                                    <TouchableOpacity style={styles.buttonRow} onPress={() => router.push('/sos-emergency')}>
                                         <Text style={styles.text19}>
                                             {"Click here"}
                                         </Text>
@@ -404,9 +416,11 @@ export default function HomepageScreen(props: any) {
                             <Text style={styles.text20}>
                                 {"Home Essentials Services"}
                             </Text>
-                            <Text style={styles.text14}>
-                                {"View All"}
-                            </Text>
+                            <TouchableOpacity onPress={() => router.push(resolveRoute('all-home-essentials'))}>
+                                <Text style={styles.text14}>
+                                    {"View All"}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
                         <View style={styles.row15}>
                             <View style={styles.column30}>

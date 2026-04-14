@@ -338,6 +338,9 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#048357', // Hero green background
     },
+    container: {
+        flex: 1,
+    },
 
     /* ─── Header ─── */
     headerSafe: {

@@ -27,7 +27,7 @@ export default function ApplianceRepairScreen() {
     const insets = useSafeAreaInsets();
     const [appliance, setAppliance] = React.useState('');
     const [issue, setIssue] = React.useState('');
-    const { cityId, serviceId, serviceName, servicePrice, address, setAddress, isManualAddress, isLoading: isLoadingInit } = useServiceInitialization('appliance-repair');
+    const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, isLoading: isLoadingInit } = useServiceInitialization('appliance-repair');
     
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
@@ -162,7 +162,7 @@ export default function ApplianceRepairScreen() {
                     <View style={styles.locationContainer}>
                         <View style={styles.locationInputBox}>
                             <Ionicons name="location-outline" size={18} color="#048357" style={styles.locationIcon} />
-                            {isManualAddress ? (
+                            {locationDenied ? (
                                 <TextInput
                                     style={[styles.locationTextPrimary, { flex: 1 }]}
                                     placeholder="Enter your address manually"

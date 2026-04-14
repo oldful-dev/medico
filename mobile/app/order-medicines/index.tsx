@@ -39,7 +39,7 @@ export default function OrderMedicinesScreen() {
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
     const [isBooking, setIsBooking] = useState(false);
 
-    const { cityId, serviceId, serviceName, servicePrice, address, setAddress, isManualAddress, isLoading: isLoadingInit } = useServiceInitialization('medicines');
+    const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('medicines');
 
     const openCamera = async () => {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -92,7 +92,7 @@ export default function OrderMedicinesScreen() {
 
 
     const handleBookService = async () => {
-        if (!cityId || !serviceId) {
+        if (!isReady) {
             Alert.alert('Error', 'Service initialization incomplete. Please try again.');
             return;
         }
@@ -210,7 +210,7 @@ export default function OrderMedicinesScreen() {
                         activeOpacity={0.7}
                         onPress={() => setIsManualEntry(!isManualEntry)}
                     >
-                        {/* Simulated "Type" Icon (lines) */}
+                       {/* Simulated "Type" Icon (lines) */}
                         <View style={styles.typeIconBox}>
                             <View style={styles.typeIconLine} />
                             <View style={styles.typeIconLine} />
@@ -244,7 +244,7 @@ export default function OrderMedicinesScreen() {
                     <View style={[styles.uploadOptionCard, { marginBottom: 15 }]}>
                         <Ionicons name="location" size={24} color="#85C3A8" style={{ marginLeft: 2, marginRight: 15 }} />
                         <View style={styles.uploadTextContainer}>
-                            {isManualAddress ? (
+                            {locationDenied ? (
                                 <TextInput
                                     style={[styles.addressText, { flex: 1 }]}
                                     placeholder={t('order_medicines.address_manual_placeholder')}
