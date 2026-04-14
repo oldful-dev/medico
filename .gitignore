@@ -140,3 +140,4 @@ mobile/GOOGLE_AUTH_FIX.md
 !mobile/babel.config.js
 !mobile/eslint.config.js
 !mobile/i18n/i18n.ts
+"google-services.json" 
