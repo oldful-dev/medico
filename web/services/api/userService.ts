@@ -149,4 +149,9 @@ export const userService = {
     // POST /bookings/:id/cancel
     cancelBooking: (bookingId: string): Promise<ApiResponse<null>> =>
         apiClient.post<null>(`/bookings/${bookingId}/cancel`, {}),
+
+    // ── Registration/Creation ──
+    // POST /users — register/create new user profile post-OTP
+    createUser: (data: any): Promise<ApiResponse<UserProfile & { accessToken: string; refreshToken: string }>> =>
+        apiClient.post<UserProfile & { accessToken: string; refreshToken: string }>('/users', data),
 };
