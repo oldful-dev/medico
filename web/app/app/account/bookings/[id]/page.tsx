@@ -13,7 +13,7 @@ import { bookingService } from '@/services/api/bookingService';
 import { SERVICES_CONFIG } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import Image from 'next/image';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
 import { paymentService } from '@/services/api/paymentService';
 import { BookingDetailsSkeleton } from '@/components/booking/BookingDetailsSkeleton';

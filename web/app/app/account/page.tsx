@@ -16,7 +16,7 @@ import { userService, UserProfile, Address, EmergencyContact, MedicalCard, Booki
 import { SERVICES_CONFIG } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 // ─── Query Keys ────────────────────────────────────────────────────────────
 const QKEY = {
