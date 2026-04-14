@@ -49,12 +49,12 @@ const BOOKING_STATUS_STYLE: Record<string, string> = {
 
 // ─── Reusable UI atoms ──────────────────────────────────────────────────────
 function SectionCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-5 ${className}`}>{children}</div>;
+  return <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-4 ${className}`}>{children}</div>;
 }
 
 function SectionHeader({ title, action }: { title: string; action?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between mb-5">
+    <div className="flex items-center justify-between mb-4">
       <h2 className="text-lg font-bold text-gray-900">{title}</h2>
       {action}
     </div>
@@ -63,7 +63,7 @@ function SectionHeader({ title, action }: { title: string; action?: React.ReactN
 
 function EmptyState({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
   return (
-    <div className="flex flex-col items-center gap-3 py-12 text-center text-gray-400">
+    <div className="flex flex-col items-center gap-3 py-8 text-center text-gray-400">
       <Icon className="w-10 h-10 opacity-30" />
       <p className="text-sm">{text}</p>
     </div>

@@ -14,7 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Solid sticky top bar for all authenticated pages */}
         <AppNavbar />
 
-        <main className="flex-1 pt-32">
+        <main className="flex-1 pt-20">
           {children}
         </main>
 

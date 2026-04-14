@@ -28,13 +28,13 @@ export default function HomeEssentialsBooking({ config, onBook }: Props) {
    const isFormValid = config.formFields.every(f => !f.required || formData[f.id]) && selectedDate && address;
 
    return (
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
          {/* ── LEFT COLUMN: INFO (7 Cols) ── */}
-         <div className="lg:col-span-7 flex flex-col gap-8">
+         <div className="lg:col-span-7 flex flex-col gap-6">
 
             {/* Hero Banner */}
-            <div className="relative h-[300px] rounded-3xl overflow-hidden group shadow-2xl">
+            <div className="relative h-[240px] rounded-3xl overflow-hidden group shadow-xl">
                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
                <div className="absolute inset-0 bg-emerald-900/10 group-hover:bg-transparent transition-all duration-500 z-5" />
 
@@ -56,12 +56,12 @@ export default function HomeEssentialsBooking({ config, onBook }: Props) {
             </div>
 
             {/* Description Section */}
-            <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm relative overflow-hidden group">
+            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm relative overflow-hidden group">
                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-bl-full -z-10 transition-transform group-hover:scale-110" />
-               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+               <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
                   <Info className="w-5 h-5 text-emerald-500" /> About this service
                </h2>
-               <p className="text-gray-600 leading-relaxed text-base">{config.description}</p>
+               <p className="text-gray-600 leading-relaxed text-sm">{config.description}</p>
             </div>
 
             {/* Benefits Grid */}
@@ -77,19 +77,19 @@ export default function HomeEssentialsBooking({ config, onBook }: Props) {
             </div>
 
             {/* How it Works (Visual Steps) */}
-            <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-               <h2 className="text-xl font-bold text-gray-900 mb-8">How it works</h2>
+            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+               <h2 className="text-lg font-bold text-gray-900 mb-6">How it works</h2>
                <div className="relative">
-                  <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-100" />
-                  <div className="flex flex-col gap-8">
+                  <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-100" />
+                  <div className="flex flex-col gap-6">
                      {config.howItWorks.map((step, i) => (
-                        <div key={i} className="relative flex items-center gap-6 pl-14 group">
-                           <div className="absolute left-0 w-12 h-12 bg-white border-2 border-emerald-500 text-emerald-600 rounded-2xl flex items-center justify-center font-bold text-lg z-10 transition-all group-hover:bg-emerald-500 group-hover:text-white shadow-lg">
+                        <div key={i} className="relative flex items-center gap-5 pl-12 group">
+                           <div className="absolute left-0 w-10 h-10 bg-white border-2 border-emerald-500 text-emerald-600 rounded-2xl flex items-center justify-center font-bold text-base z-10 transition-all group-hover:bg-emerald-500 group-hover:text-white shadow-lg">
                               {i + 1}
                            </div>
                            <div className="flex-1">
-                              <p className="text-base font-bold text-gray-800 mb-1">{step}</p>
-                              <p className="text-sm text-gray-400">Step {i + 1} of the process</p>
+                              <p className="text-sm font-bold text-gray-800 mb-0.5">{step}</p>
+                              <p className="text-xs text-gray-400">Step {i + 1} of the process</p>
                            </div>
                         </div>
                      ))}
@@ -132,7 +132,7 @@ export default function HomeEssentialsBooking({ config, onBook }: Props) {
                   </div>
                </div>
 
-               <div className="p-6 flex flex-col gap-6">
+               <div className="p-4 flex flex-col gap-4">
 
                   {/* Dynamic Fields */}
                   {config.formFields.map(field => (
@@ -206,12 +206,12 @@ export default function HomeEssentialsBooking({ config, onBook }: Props) {
                   </div>
 
                   {/* Total Section */}
-                  <div className="mt-4 p-5 bg-emerald-50 rounded-2xl border border-emerald-100">
-                     <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-emerald-700 uppercase tracking-widest">Total Payable</span>
-                        <span className="text-2xl font-black text-emerald-800">₹{config.pricing[0]?.price}</span>
+                  <div className="mt-3 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                     <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">Total Payable</span>
+                        <span className="text-xl font-black text-emerald-800">₹{config.pricing[0]?.price}</span>
                      </div>
-                     <p className="text-[10px] text-emerald-600 font-medium">Inclusive of taxes & visit charges</p>
+                     <p className="text-[9px] text-emerald-600 font-medium">Inclusive of taxes & visit charges</p>
                   </div>
 
                   {/* Submit */}
