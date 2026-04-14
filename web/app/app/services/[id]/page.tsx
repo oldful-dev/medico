@@ -98,25 +98,25 @@ export default function ServiceDetailPage() {
   const visitType = 'Home'; // Default
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-screen)] pb-24">
+    <div className="min-h-screen bg-[var(--color-bg-screen)] pb-16">
       {/* Header Banner */}
-      <div className="bg-[var(--color-primary-deep)] text-white pt-10 pb-20 px-6">
-        <div className="max-w-4xl mx-auto flex items-start gap-6">
+      <div className="bg-[var(--color-primary-deep)] text-white pt-6 pb-14 px-6">
+        <div className="max-w-4xl mx-auto flex items-start gap-4">
           <button onClick={() => router.back()} className="mt-1 p-2 bg-white/10 rounded-xl hover:bg-white/20 transition-colors">
             <ChevronLeft className="w-6 h-6" />
           </button>
           <div>
-            <h1 className="text-3xl font-black mb-2">{config?.title}</h1>
-            <p className="text-emerald-100/80 font-medium">{config?.tagline}</p>
+            <h1 className="text-3xl font-black mb-1">{config?.title}</h1>
+            <p className="text-emerald-100/80 font-medium text-sm">{config?.tagline}</p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto -mt-12 px-6 grid grid-cols-1 gap-6">
+      <div className="max-w-4xl mx-auto -mt-6 px-6 grid grid-cols-1 gap-6">
          
          {/* Step 1: Selection Grid */}
-         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100">
-            <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100">
+            <h2 className="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
                <Activity className="w-5 h-5 text-emerald-500" /> 
                {isDoctorVisit ? 'What is the health problem?' : 'Select a Specialist'}
             </h2>
@@ -249,9 +249,9 @@ export default function ServiceDetailPage() {
          </div>
 
          {/* Step 3: Logistics */}
-         <div className="bg-white rounded-3xl p-8 shadow-md border border-gray-100 space-y-6">
+         <div className="bg-white rounded-3xl p-6 shadow-md border border-gray-100 space-y-5">
             <div className="flex flex-col gap-2">
-               <label className="text-sm font-bold text-gray-400 uppercase tracking-widest">Confirm Location</label>
+               <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Confirm Location</label>
                <div className="relative group">
                   <MapPin className="absolute left-4 top-4 w-5 h-5 text-emerald-500" />
                   <textarea 

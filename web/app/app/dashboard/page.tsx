@@ -128,7 +128,7 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto px-6 py-6">
 
         {/* ── Top Bar ── */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-3">
           <div>
             {authLoading ? (
               <div className="h-8 w-48 bg-gray-200 animate-pulse rounded-lg" />
@@ -188,7 +188,7 @@ export default function DashboardPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="relative h-52 rounded-2xl overflow-hidden shadow-lg group cursor-pointer"
+                className="relative h-44 rounded-2xl overflow-hidden shadow-lg group cursor-pointer"
             >
                 <Image
                   src="https://storage.googleapis.com/oldful-assets/mobile/assets/images/welcome_banner.png"
@@ -198,7 +198,7 @@ export default function DashboardPage() {
                   sizes="900px"
                   priority
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent flex flex-col justify-end p-8">
+                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent flex flex-col justify-end p-6">
                   <span className="text-emerald-300 text-xs font-bold uppercase tracking-widest mb-2">
                     {greeting()}
                   </span>
@@ -245,14 +245,14 @@ export default function DashboardPage() {
             </motion.div>
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <div className="flex items-center justify-between mb-5">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-bold text-gray-900">Quick Actions</h2>
                 <Link href="/app/services" className="text-xs text-[var(--color-primary)] font-semibold flex items-center gap-1 hover:gap-2 transition-all">
                   All Services <ChevronRight className="w-3 h-3" />
                 </Link>
               </div>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                 {QUICK_ACTIONS.map(action => (
                   <Link
                     key={action.label}
@@ -267,8 +267,8 @@ export default function DashboardPage() {
             </div>
 
             {/* Services Grid */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <div className="flex items-center justify-between mb-5">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-bold text-gray-900">Our Services</h2>
                 <Link href="/app/services" className="text-xs text-[var(--color-primary)] font-semibold flex items-center gap-1 hover:gap-2 transition-all">
                   Browse all <ChevronRight className="w-3 h-3" />

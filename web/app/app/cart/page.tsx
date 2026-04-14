@@ -33,17 +33,17 @@ export default function CartPage() {
   const total = subtotal + taxes + platformFee;
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f8f9fc] pb-40">
+    <div className="flex flex-col min-h-screen bg-[#f8f9fc] pb-32">
       {/* Premium Header */}
-      <header className="px-6 pt-12 pb-6 flex items-center justify-between sticky top-0 bg-[#f8f9fc]/80 backdrop-blur-xl z-30">
+      <header className="px-6 pt-8 pb-4 flex items-center justify-between sticky top-0 bg-[#f8f9fc]/80 backdrop-blur-xl z-30">
         <button 
           onClick={() => router.back()}
-          className="w-11 h-11 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center text-gray-800 active:scale-90 transition-transform"
+          className="w-10 h-10 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center text-gray-800 active:scale-90 transition-transform"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         <h1 className="text-xl font-black text-gray-900 tracking-tight">Booking Cart</h1>
-        <div className="w-11"></div>
+        <div className="w-10"></div>
       </header>
 
       <div className="px-5 flex flex-col gap-6 max-w-2xl mx-auto w-full">
@@ -131,8 +131,8 @@ export default function CartPage() {
         </div>
 
         {/* Bill Details */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
-           <h3 className="font-black text-gray-900 text-sm uppercase tracking-widest border-b border-gray-50 pb-3 mb-2">Bill Summary</h3>
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col gap-3">
+           <h3 className="font-black text-gray-900 text-sm uppercase tracking-widest border-b border-gray-50 pb-2 mb-1">Bill Summary</h3>
            
            <div className="flex justify-between text-sm font-bold text-gray-500">
              <span>Items Subtotal</span>
