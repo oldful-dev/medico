@@ -3,13 +3,13 @@ import React from 'react';
 // This page is now wrapped by (marketing)/layout.tsx which includes the Navbar.
 export default function WellnessPage() {
   return (
-    <div className="min-h-screen bg-[#FFFCF6] font-[var(--font-poppins)] pb-20 relative overflow-hidden">
+    <div className="min-h-screen bg-[#FFFCF6] font-[var(--font-poppins)] pb-12 relative overflow-hidden">
       
       {/* Decorative Blur Backgrounds */}
       <div className="absolute top-1/4 left-10 w-[40vw] h-[40vw] max-w-[500px] max-h-[500px] rounded-full bg-gradient-radial from-[#34C759]/20 to-transparent blur-3xl opacity-50 pointer-events-none"></div>
       <div className="absolute bottom-10 right-10 w-[30vw] h-[30vw] max-w-[400px] max-h-[400px] rounded-full bg-gradient-radial from-orange-400/10 to-transparent blur-3xl opacity-60 pointer-events-none"></div>
 
-      <main className="container mx-auto px-6 relative z-10 flex flex-col md:flex-row items-center gap-12 max-w-6xl">
+      <main className="container mx-auto px-6 relative z-10 flex flex-col md:flex-row items-center gap-10 max-w-6xl">
         
         {/* Text Content & Waitlist */}
         <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left mt-8 md:mt-0">
