@@ -1,227 +1,234 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    Platform, ActivityIndicator, RefreshControl,
+    ActivityIndicator, RefreshControl, Platform
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { Colors, Fonts, FontSize, Radius, Shadow, Spacing } from '@/constants/theme';
 import { bookingService, Booking } from '@/services/api/bookingService';
+import { useTranslation } from 'react-i18next';
 
+type TabType = 'Active' | 'Payment' | 'History';
 
-type TabType = 'All' | 'Active' | 'Pending Payment' | 'Completed';
-
-const SERVICE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-    'DOCTOR_HOME_VISIT': 'medkit-outline',
-    'HOME_NURSE': 'heart-outline',
-    'HOSPITAL_TRIP': 'car-outline',
-    'BLOOD_TEST': 'water-outline',
-    'MEDICINES': 'medical-outline',
-    'INSURANCE': 'shield-checkmark-outline',
-    'PHYSIO_FITNESS': 'fitness-outline',
-    'EQUIPMENT_RENTAL': 'construct-outline',
-    'HOME_ESSENTIALS': 'sparkles-outline',
-    'TIFFIN': 'restaurant-outline',
-    'TECH_HELPER': 'phone-portrait-outline',
-    'PAPERWORK_LEGAL': 'document-text-outline',
-};
-
+/**
+ * ORDER HISTORY — Restored Tabbed UI
+ * Strict post-booking tracking.
+ */
 export default function OrderHistoryScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<TabType>('All');
+    const insets = useSafeAreaInsets();
+    
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [activeTab, setActiveTab] = useState<TabType>('Active');
 
-    const fetchBookings = async () => {
+    const fetchBookings = useCallback(async () => {
         try {
+            if (!refreshing) setLoading(true);
             const res = await bookingService.getMyBookings();
             if (res.success && res.data) {
                 setBookings(res.data);
             }
         } catch (err) {
-            console.error('Order history fetch error:', err);
+            console.error('Failed to fetch orders:', err);
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
+    }, [refreshing]);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchBookings();
+        }, [fetchBookings])
+    );
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        fetchBookings();
     };
 
-    useEffect(() => { fetchBookings(); }, []);
+    // ─── Filtering Logic ───
+    const filteredBookings = useMemo(() => {
+        return bookings.filter(b => {
+            if (activeTab === 'Active') return ['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'].includes(b.status);
+            if (activeTab === 'Payment') return b.status === 'PENDING';
+            if (activeTab === 'History') return ['COMPLETED', 'CANCELLED'].includes(b.status);
+            return false;
+        }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }, [bookings, activeTab]);
 
-    const onRefresh = () => { setRefreshing(true); fetchBookings(); };
+    // ─── Render Components ───
 
-    const mapStatus = (status: string): string => {
-        if (status === 'COMPLETED')         return 'Completed';
-        if (status === 'CANCELLED')         return 'Cancelled';
-        if (status === 'PAYMENT_PENDING')   return 'Pending Payment'; // Awaiting Razorpay
-        if (status === 'PAYMENT_FAILED')    return 'Payment Failed';  // Failed / dismissed
-        return 'Active'; // PENDING (COD), CONFIRMED, ASSIGNED, IN_PROGRESS
-    };
-
-    const filteredBookings = bookings.filter(b => {
-        const mapped = mapStatus(b.status);
-        if (activeTab === 'All') return true;
-        if (activeTab === 'Active') return mapped === 'Active';
-        if (activeTab === 'Pending Payment') return mapped === 'Pending Payment' || mapped === 'Payment Failed';
-        return mapped === activeTab;
-    });
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'Completed':        return '#34C759';
-            case 'Cancelled':        return '#FF3B30';
-            case 'Payment Failed':   return '#FF3B30';
-            case 'Pending Payment':  return '#FF9500'; // orange — awaiting action
-            default:                 return '#048357'; // Active
-        }
-    };
-
-    const getStatusBg = (status: string) => {
-        switch (status) {
-            case 'Completed':        return '#F0FFF4';
-            case 'Cancelled':        return '#FFF5F5';
-            case 'Payment Failed':   return '#FFF5F5';
-            case 'Pending Payment':  return '#FFF8EE'; // soft orange
-            default:                 return '#E8F5E9'; // Active
-        }
-    };
-
-    const getIcon = (booking: Booking): keyof typeof Ionicons.glyphMap => {
-        const slug = booking.service?.slug?.toUpperCase().replace(/-/g, '_') || '';
-        return SERVICE_ICONS[slug] || 'receipt-outline';
-    };
+    const renderEmptyState = () => (
+        <View style={styles.emptyContainer}>
+            <View style={styles.emptyIconCircle}>
+                <Ionicons 
+                    name={activeTab === 'History' ? 'receipt-outline' : 'calendar-clear-outline'} 
+                    size={40} color={Colors.primary} 
+                />
+            </View>
+            <Text style={styles.emptyTitle}>No {activeTab.toLowerCase()} bookings</Text>
+            <Text style={styles.emptySubtitle}>Your entries for this category will appear here once you take action.</Text>
+            <TouchableOpacity style={styles.exploreBtn} onPress={() => router.push('/')}>
+                <Text style={styles.exploreBtnText}>Book New Service</Text>
+            </TouchableOpacity>
+        </View>
+    );
 
     return (
         <View style={styles.screen}>
-            <StatusBar style="light" />
-            <SafeAreaView style={styles.headerSafe} edges={['top']}>
-                <View style={styles.headerRow}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                        <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Order History</Text>
-                    <View style={{ width: 24 }} />
-                </View>
-            </SafeAreaView>
-
-            <View style={styles.body}>
-                {/* ─── Tabs ─── */}
-                <View style={styles.tabRow}>
-                    {(['All', 'Active', 'Pending Payment', 'Completed'] as TabType[]).map(tab => (
-                        <TouchableOpacity
-                            key={tab}
-                            style={[styles.tab, activeTab === tab && styles.tabActive]}
-                            onPress={() => setActiveTab(tab)}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                {/* ─── Content ─── */}
-                {loading ? (
-                    <View style={styles.centerContainer}>
-                        <ActivityIndicator size="large" color="#048357" />
-                    </View>
-                ) : (
-                    <ScrollView
-                        contentContainerStyle={styles.scrollContent}
-                        showsVerticalScrollIndicator={false}
-                        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#048357']} />}
-                    >
-                        {filteredBookings.length === 0 ? (
-                            <View style={styles.emptyState}>
-                                <Ionicons name="receipt-outline" size={60} color="#AAAEAC" />
-                                <Text style={styles.emptyTitle}>No Orders Found</Text>
-                                <Text style={styles.emptyDesc}>You don&apos;t have any {activeTab.toLowerCase()} orders yet.</Text>
-                            </View>
-                        ) : (
-                            filteredBookings.map(booking => {
-                                const displayStatus = mapStatus(booking.status);
-                                return (
-                                    <View key={booking.id} style={styles.orderCard}>
-                                        <View style={styles.orderLeft}>
-                                            <View style={styles.orderIconCircle}>
-                                                <Ionicons name={getIcon(booking)} size={22} color="#048357" />
-                                            </View>
-                                            <View style={styles.orderInfo}>
-                                                <Text style={styles.orderService}>{booking.service?.name || 'Service'}</Text>
-                                                <Text style={styles.orderDate}>{new Date(booking.scheduledDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</Text>
-                                            </View>
-                                        </View>
-                                        <View style={styles.orderRight}>
-                                            <Text style={styles.orderAmount}>₹{booking.amount}</Text>
-                                            <View style={[styles.statusBadge, { backgroundColor: getStatusBg(displayStatus) }]}>
-                                                <Text style={[styles.statusText, { color: getStatusColor(displayStatus) }]}>{displayStatus}</Text>
-                                            </View>
-                                        </View>
-                                    </View>
-                                );
-                            })
-                        )}
-                    </ScrollView>
-                )}
+            <StatusBar style="dark" />
+            
+            {/* ─── Header ─── */}
+            <View style={[styles.header, { paddingTop: insets.top + (Platform.OS === 'ios' ? 10 : 20) }]}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                    <Ionicons name="arrow-back" size={24} color={Colors.textDark} />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>My Bookings</Text>
+                <View style={{ width: 44 }} />
             </View>
+
+            {/* ─── Custom Tab Bar (Old Style) ─── */}
+            <View style={styles.tabBar}>
+                {(['Active', 'Payment', 'History'] as TabType[]).map((tab) => (
+                    <TouchableOpacity 
+                        key={tab} 
+                        onPress={() => setActiveTab(tab)}
+                        style={[styles.tabItem, activeTab === tab && styles.tabItemActive]}
+                    >
+                        <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                            {tab}
+                        </Text>
+                        {activeTab === tab && <View style={styles.tabUnderline} />}
+                    </TouchableOpacity>
+                ))}
+            </View>
+
+            <ScrollView 
+                style={styles.container}
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
+            >
+                {loading && !refreshing ? (
+                    <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 50 }} />
+                ) : filteredBookings.length === 0 ? renderEmptyState() : (
+                    filteredBookings.map((booking) => (
+                        <TouchableOpacity 
+                            key={booking.id} 
+                            style={styles.bookingCard}
+                            onPress={() => router.push({ pathname: '/service-confirmation', params: { bookingId: booking.id } })}
+                        >
+                            <View style={styles.cardHeader}>
+                                <View style={styles.serviceInfo}>
+                                    <View style={styles.iconBox}>
+                                        <MaterialCommunityIcons name="medical-bag" size={20} color={Colors.primary} />
+                                    </View>
+                                    <View>
+                                        <Text style={styles.serviceName}>{booking.service?.name || 'Service'}</Text>
+                                        <Text style={styles.bookingCode}>#{booking.bookingCode}</Text>
+                                    </View>
+                                </View>
+                                <View style={[styles.statusBadge, { backgroundColor: booking.status === 'COMPLETED' ? '#E8F5E9' : '#FFF3E0' }]}>
+                                    <Text style={[styles.statusText, { color: booking.status === 'COMPLETED' ? '#2E7D32' : '#EF6C00' }]}>
+                                        {booking.status}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.cardDetails}>
+                                <View style={styles.detailRow}>
+                                    <Ionicons name="calendar-outline" size={14} color={Colors.textMuted} />
+                                    <Text style={styles.detailText}>
+                                        {new Date(booking.scheduledDate).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })} • {booking.scheduledTime || 'ASAP'}
+                                    </Text>
+                                </View>
+                                <View style={styles.detailRow}>
+                                    <Ionicons name="location-outline" size={14} color={Colors.textMuted} />
+                                    <Text style={styles.detailText} numberOfLines={1}>{booking.addressLine || 'Home Address'}</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.cardFooter}>
+                                <Text style={styles.priceText}>₹{booking.amount}</Text>
+                                {activeTab === 'Payment' && (
+                                    <TouchableOpacity 
+                                        style={styles.payBtn}
+                                        onPress={() => router.push({ 
+                                            pathname: '/payment/checkout', 
+                                            params: { bookingId: booking.id, amount: String(booking.amount), label: booking.service?.name } 
+                                        })}
+                                    >
+                                        <Text style={styles.payBtnText}>Pay Now</Text>
+                                    </TouchableOpacity>
+                                )}
+                                {activeTab === 'History' && (
+                                    <TouchableOpacity style={styles.rebookBtn}>
+                                        <Text style={styles.rebookBtnText}>Rebook</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                    ))
+                )}
+            </ScrollView>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: '#048357' },
-    headerSafe: { backgroundColor: '#048357' },
-    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-    backBtn: { padding: 4 },
-    headerTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 20, color: '#FFFFFF',
+    screen: { flex: 1, backgroundColor: '#FAFAFA' },
+    header: { 
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', 
+        paddingHorizontal: 20, paddingBottom: 15, backgroundColor: '#FFF' 
     },
-    body: { flex: 1, backgroundColor: '#FFFFE3', borderTopLeftRadius: 30, borderTopRightRadius: 30 },
-    tabRow: { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 4, gap: 10 },
-    tab: { paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5E5' },
-    tabActive: { backgroundColor: '#048357', borderColor: '#048357' },
-    tabText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 13, color: '#555555',
-    },
-    tabTextActive: { color: '#FFFFFF' },
+    backBtn: { width: 44, height: 44, justifyContent: 'center' },
+    headerTitle: { fontFamily: Fonts.bold, fontSize: 18, color: Colors.textDark },
+    container: { flex: 1 },
     scrollContent: { padding: 20, paddingBottom: 50 },
-    centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 80 },
-    orderCard: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, marginBottom: 12,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+
+    /* Tab Bar */
+    tabBar: { flexDirection: 'row', backgroundColor: '#FFF', paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+    tabItem: { flex: 1, paddingVertical: 15, alignItems: 'center', position: 'relative' },
+    tabItemActive: { },
+    tabText: { fontFamily: Fonts.medium, fontSize: 14, color: Colors.textMuted },
+    tabTextActive: { color: Colors.primary, fontFamily: Fonts.bold },
+    tabUnderline: { position: 'absolute', bottom: 0, width: '60%', height: 3, backgroundColor: Colors.primary, borderTopLeftRadius: 3, borderTopRightRadius: 3 },
+
+    /* Booking Card */
+    bookingCard: { 
+        backgroundColor: '#FFF', borderRadius: 20, padding: 18, marginBottom: 16, 
+        ...Shadow.card, borderWidth: 1, borderColor: '#F0F0F0' 
     },
-    orderLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-    orderIconCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center' },
-    orderInfo: { flex: 1 },
-    orderService: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 14, color: '#2F2F2F',
-    },
-    orderDate: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 12, color: '#898989', marginTop: 2,
-    },
-    orderRight: { alignItems: 'flex-end' },
-    orderAmount: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 15, color: '#2F2F2F',
-    },
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12, marginTop: 4 },
-    statusText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 11,
-    },
-    emptyState: { alignItems: 'center', marginTop: 60 },
-    emptyTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 18, color: '#2F2F2F', marginTop: 16,
-    },
-    emptyDesc: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 14, color: '#898989', marginTop: 4, textAlign: 'center',
-    },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 },
+    serviceInfo: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+    iconBox: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(4, 131, 87, 0.05)', justifyContent: 'center', alignItems: 'center' },
+    serviceName: { fontFamily: Fonts.bold, fontSize: 16, color: Colors.textDark },
+    bookingCode: { fontFamily: Fonts.medium, fontSize: 11, color: Colors.textMuted, marginTop: 2 },
+    statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+    statusText: { fontSize: 10, fontFamily: Fonts.bold, textTransform: 'uppercase' },
+
+    cardDetails: { gap: 10, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
+    detailRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    detailText: { fontFamily: Fonts.medium, fontSize: 12, color: Colors.textLight },
+
+    cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15 },
+    priceText: { fontFamily: Fonts.bold, fontSize: 18, color: Colors.textDark },
+    payBtn: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 10 },
+    payBtnText: { color: '#FFF', fontFamily: Fonts.bold, fontSize: 13 },
+    rebookBtn: { borderWidth: 1, borderColor: Colors.primary, paddingHorizontal: 15, paddingVertical: 6, borderRadius: 10 },
+    rebookBtnText: { color: Colors.primary, fontFamily: Fonts.bold, fontSize: 12 },
+
+    /* Empty State */
+    emptyContainer: { alignItems: 'center', paddingVertical: 60 },
+    emptyIconCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#F9F9F9', justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#EEE' },
+    emptyTitle: { fontFamily: Fonts.bold, fontSize: 18, color: Colors.textDark, marginBottom: 8 },
+    emptySubtitle: { fontFamily: Fonts.medium, fontSize: 13, color: Colors.textMuted, textAlign: 'center', paddingHorizontal: 40, lineHeight: 18, marginBottom: 25 },
+    exploreBtn: { backgroundColor: Colors.primaryDark, paddingHorizontal: 30, paddingVertical: 12, borderRadius: 15, ...Shadow.card },
+    exploreBtnText: { fontFamily: Fonts.bold, color: '#FFF', fontSize: 14 },
 });

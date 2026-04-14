@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 import { FormInput } from '@/components/common';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
@@ -43,6 +44,7 @@ const SPECIALISTS = [
 ];
 
 export default function HospitalTripScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
 

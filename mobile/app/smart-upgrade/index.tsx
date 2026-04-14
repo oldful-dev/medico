@@ -5,6 +5,8 @@ import {
     StyleSheet,
     TouchableOpacity,
     Image,
+    Platform,
+    Alert,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { bookingService } from '@/services/api/bookingService';
 
 // ─── Figma Assets ───
 const imgLightning = require('@/assets/images/50ffab5c68d190752695666bb7ec8bee1bc4842a.png'); // Lightning bolt

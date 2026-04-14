@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity,
-    TextInput, ActivityIndicator, StyleSheet, Platform, Alert,
+    TextInput, ActivityIndicator, StyleSheet, Platform, Alert, NativeModules,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -212,10 +212,25 @@ export default function CheckoutScreen() {
                 return;
             }
 
-            const { orderId, amount: orderAmount, key: backendKey } = initiateRes.data as any;
+            const { orderId, amount: orderAmount, key: backendKey, paymentNotRequired } = initiateRes.data as any;
             pendingOrderId.current = orderId; // Store for cancel/failure handler
 
-            // ─── STEP 4: Guard — native module must exist (fails in Expo Go)
+            // ─── STEP 4: Handle Zero Amount Booking (Post-Initiation) ─────────
+            if (paymentNotRequired) {
+                setFlowState('success');
+                // The backend already marks it as SUCCESS in this case
+                router.replace({
+                    pathname: '/payment/payment-success',
+                    params: {
+                        bookingId: sessionBookingId.current ?? '',
+                        amount: '0',
+                        invoiceNumber: 'FREE-BOOKING',
+                    },
+                });
+                return;
+            }
+
+            // ─── STEP 5: Guard — native module must exist (fails in Expo Go)
             if (!NativeModules.RNRazorpayCheckout) {
                 Alert.alert(
                     'Build Required',
@@ -241,14 +256,31 @@ export default function CheckoutScreen() {
                 amount:       String(Math.round(orderAmount * 100)), // paise
                 name:         'Oldful Healthcare',
                 order_id:     orderId,
-                method:       selectedMethod.toLowerCase(),
                 prefill: {
-                    email:   params.email   ?? '',
-                    contact: params.phone   ?? '',
-                    name:    params.userName ?? '',
+                    name:    params.userName || '',
+                    contact: params.phone    || '',
+                    email:   params.email    || '',
                     method:  selectedMethod.toLowerCase(),
                 },
                 theme: { color: Colors.primary },
+                config: {
+                    display: {
+                        blocks: {
+                            banks: {
+                                name: selectedMethod === 'UPI' ? 'UPI' : 'Card',
+                                instruments: [
+                                    {
+                                        method: selectedMethod.toLowerCase() as any,
+                                    },
+                                ],
+                            },
+                        },
+                        sequence: ['block.banks'],
+                        preferences: {
+                            show_default_blocks: false,
+                        },
+                    },
+                },
             };
 
             // Await resolves ONLY on successful payment — throws on cancel/failure

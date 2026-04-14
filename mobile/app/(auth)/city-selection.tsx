@@ -79,16 +79,36 @@ export default function CitySelectionScreen() {
                                     latitude: coords.latitude,
                                     longitude: coords.longitude,
                                 });
-                                if (results.length > 0) {
-                                    const city = results[0].city || results[0].subregion;
-                                    if (city) {
-                                        setSelectedCity(city);
-                                        router.back();
+                                    if (results.length > 0) {
+                                        const detectedCity = (results[0].city || results[0].subregion || '').toLowerCase();
+                                        
+                                        const CITY_SYNONYMS: Record<string, string[]> = {
+                                            'Bangalore': ['bengaluru', 'bangalore urban', 'bangalore rural'],
+                                            'Gurgaon': ['gurugram'],
+                                            'Delhi NCR': ['new delhi', 'delhi', 'noida', 'gurgaon', 'gurugram', 'faridabad', 'ghaziabad'],
+                                            'Mumbai': ['bombay', 'navi mumbai', 'thane'],
+                                        };
+
+                                        // Find best match in our supported cities list
+                                        const match = cities.find(c => {
+                                            const primary = c.name.toLowerCase();
+                                            if (detectedCity.includes(primary) || primary.includes(detectedCity)) return true;
+                                            const synonyms = CITY_SYNONYMS[c.name] || [];
+                                            return synonyms.some(s => detectedCity.includes(s) || s.includes(detectedCity));
+                                        });
+
+                                        if (match) {
+                                            setSelectedCity(match.name);
+                                            router.back();
+                                        } else if (detectedCity) {
+                                            setSelectedCity(results[0].city || results[0].subregion || 'Unknown');
+                                            router.back();
+                                        }
                                     }
+                                } catch (error) {
+                                    console.error("Auto-detect failed:", error);
+                                    Alert.alert('Error', 'Could not detect location. Please select manually.');
                                 }
-                            } catch {
-                                Alert.alert('Error', 'Could not detect location. Please select manually.');
-                            }
                         }}
                     >
                         <Ionicons name="navigate" size={18} color="#048357" />

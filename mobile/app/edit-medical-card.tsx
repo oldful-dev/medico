@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Colors, Fonts, FontSize } from '@/constants/theme';
+import { Colors, Fonts, FontSize, Shadow } from '@/constants/theme';
 import { useUser } from '@/context/UserContext';
 import { userService } from '@/services/api/userService';
 

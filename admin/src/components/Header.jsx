@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import Link from "next/link";
 import { Search, Bell, Moon, Sun, Menu, User, LogOut, Settings } from "lucide-react";
 import useThemeStore from "@/store/useThemeStore";
 import useAuthStore from "@/store/useAuthStore";
-import { authAPI } from "@/lib/api";
 
-export default function Header({ onToggleSidebar, onMobileMenu, setCurrentPage }) {
+export default function Header({ onToggleSidebar, onMobileMenu }) {
     const { theme, toggleTheme } = useThemeStore();
     const { user, logout } = useAuthStore();
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -12,11 +12,6 @@ export default function Header({ onToggleSidebar, onMobileMenu, setCurrentPage }
     const handleLogout = async () => {
         setDropdownOpen(false);
         await logout();
-    };
-
-    const handleNav = (id) => {
-        setCurrentPage(id);
-        setDropdownOpen(false);
     };
 
     return (
@@ -58,12 +53,12 @@ export default function Header({ onToggleSidebar, onMobileMenu, setCurrentPage }
                                 <span>{user?.role?.replace('_', ' ') || 'Admin'}</span>
                             </div>
                             <div className="dropdown-divider" />
-                            <button className="dropdown-item" onClick={() => handleNav('profile')}>
+                            <Link href="/profile" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
                                 <User size={16} /> Profile Settings
-                            </button>
-                            <button className="dropdown-item" onClick={() => handleNav('dashboard')}>
-                                <Settings size={16} /> System Config
-                            </button>
+                            </Link>
+                            <Link href="/dashboard" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                                <Settings size={16} /> Overview
+                            </Link>
                             <div className="dropdown-divider" />
                             <button className="dropdown-item logout" onClick={handleLogout}>
                                 <LogOut size={16} /> Logout

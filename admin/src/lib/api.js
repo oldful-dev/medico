@@ -70,6 +70,18 @@ export const adminAPI = {
     delete: (id) => api.delete(`/admin/${id}`),
 };
 
+export const profilesAPI = {
+    getAll: (params) => api.get('/admin/profiles', { params }),
+    getMetadata: () => api.get('/admin/profiles/metadata'),
+    updateMetadata: (data) => api.put('/admin/profiles/metadata', data),
+    getUploadUrl: (data) => api.post('/admin/profiles/upload-url', data),
+    bulkStatus: (data) => api.post('/admin/profiles/bulk-status', data),
+    bulkDelete: (data) => api.post('/admin/profiles/bulk-delete', data),
+    delete: (id, type) => api.delete(`/admin/profiles/${id}`, { params: { type } }),
+    update: (id, type, data) => api.put(`/admin/profiles/${id}`, data, { params: { type } }),
+    create: (type, data) => api.post('/admin/profiles', data, { params: { type } }),
+};
+
 // ── Cities ───────────────────────────────────────────
 export const cityAPI = {
     getAll: () => api.get('/cities'),
