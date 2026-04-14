@@ -133,7 +133,7 @@ export default function MetadataSettings() {
                     <div className="warning-box">
                         <AlertCircle size={18} />
                         <div>
-                            <strong>Enterprise Warning:</strong> Deleting a specialization here removes it from the "Select" dropdowns. 
+                            <strong>Enterprise Warning:</strong> Deleting a specialization here removes it from the &quot;Select&quot; dropdowns. 
                             It does <strong>not</strong> delete records already assigned to it.
                         </div>
                     </div>

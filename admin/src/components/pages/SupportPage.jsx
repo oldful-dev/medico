@@ -20,7 +20,18 @@ export default function SupportPage() {
     const chatEndRef = useRef(null);
     const pollRef = useRef(null);
 
-    useEffect(() => { loadTickets(); }, [page, filters]);
+    const loadTickets = useCallback(async () => {
+        try {
+            setLoading(true);
+            const params = { page, limit, ...filters };
+            Object.keys(params).forEach(k => !params[k] && delete params[k]);
+            const r = await supportAPI.getTickets(params);
+            setTickets(r.data?.data?.tickets || r.data?.data || []);
+            setTotal(r.data?.data?.total || 0);
+        } catch (e) { console.error(e); } finally { setLoading(false); }
+    }, [page, filters, limit]);
+
+    useEffect(() => { loadTickets(); }, [loadTickets]);
 
     // Poll for new messages when a ticket is selected (every 5s)
     useEffect(() => {
@@ -57,16 +68,7 @@ export default function SupportPage() {
         }
     }, [selected?.messages?.length]);
 
-    async function loadTickets() {
-        try {
-            setLoading(true);
-            const params = { page, limit, ...filters };
-            Object.keys(params).forEach(k => !params[k] && delete params[k]);
-            const r = await supportAPI.getTickets(params);
-            setTickets(r.data?.data?.tickets || r.data?.data || []);
-            setTotal(r.data?.data?.total || 0);
-        } catch (e) { console.error(e); } finally { setLoading(false); }
-    }
+
 
     async function viewTicket(id) {
         try {

@@ -258,7 +258,7 @@ export default function ProfilesPage() {
                                 <td>
                                     <div className="staff-info">
                                         <div className="avatar">
-                                            {p.profileImageUrl ? <img src={p.profileImageUrl} /> : p.name.charAt(0)}
+                                            {p.profileImageUrl ? <img src={p.profileImageUrl} alt={p.name} /> : p.name.charAt(0)}
                                         </div>
                                         <div className="name-box">
                                             <div className="name">{p.name}</div>

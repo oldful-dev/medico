@@ -15,12 +15,12 @@ export default function PaymentsPage() {
     const [refundData, setRefundData] = useState({ refundType: 'CANCELLATION', refundReason: '', refundAmount: 0 });
     const limit = 20;
 
-    useEffect(() => { loadPayments(); }, [page]);
-
-    async function loadPayments() {
+    const loadPayments = useCallback(async () => {
         try { setLoading(true); const r = await paymentAPI.getAll({ page, limit }); setPayments(r.data?.data?.payments || r.data?.data || []); setTotal(r.data?.data?.total || 0); }
         catch (e) { console.error(e); } finally { setLoading(false); }
-    }
+    }, [page, limit]);
+
+    useEffect(() => { loadPayments(); }, [loadPayments]);
 
     async function handleRefund() {
         try {
