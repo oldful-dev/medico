@@ -10,9 +10,7 @@ export default function ServicesPage({ filterType }) {
     const [editingService, setEditingService] = useState(null);
     const [showModal, setShowModal] = useState(false);
 
-    useEffect(() => { loadServices(); }, []);
-
-    async function loadServices() {
+    const loadServices = useCallback(async () => {
         try {
             setLoading(true);
             let res = await serviceAPI.getAll();
@@ -23,7 +21,9 @@ export default function ServicesPage({ filterType }) {
             setServices(svc.sort((a, b) => a.sortOrder - b.sortOrder));
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
-    }
+    }, [filterType]);
+
+    useEffect(() => { loadServices(); }, [loadServices]);
 
     async function toggleService(id) {
         try {
