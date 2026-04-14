@@ -83,7 +83,7 @@ export const HOME_CONFIG_FALLBACK: HomeConfig = {
                 { id: 'doctor',    label: 'Oldful\nDoctor',     icon: '98e939543c86f26f5f26210bb160eb927b5ff057.png', route: '/app/services/doctor-home-visit',  enabled: true,  sort_order: 1 },
                 { id: 'nursing',   label: 'Nursing\nCare',      icon: '21e5a8a8650cf8eda36be3744c70099580173129.png', route: '/app/services/home-nurse',    enabled: true,  sort_order: 2 },
                 { id: 'caregiver', label: 'Caregiver\nSupport', icon: '2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png', route: '/app/services/home-nurse',    enabled: true,  sort_order: 3 },
-                { id: 'emergency', label: 'Emergency\nAssist',  icon: 'e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/sos-emergency', enabled: true,  sort_order: 4 },
+                { id: 'emergency', label: 'Emergency\nAssist',  icon: 'e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/app/sos', enabled: true,  sort_order: 4 },
             ],
         },
         {
@@ -141,7 +141,7 @@ export const HOME_CONFIG_FALLBACK: HomeConfig = {
         title_line1: 'Need Immediate',
         title_line2: 'Medical Support?',
         cta_text: 'Click here',
-        cta_route: '/sos-emergency',
+        cta_route: '/app/sos',
         icon: '5eedb2a89f68f0fea90ef304401e7d38d0fc1790.png',
         illustration: 'e453f94c7e87531b0da0b6712f8dc4b3bc7084a9.png',
     },
