@@ -172,7 +172,7 @@ const createBooking = async (req, res, next) => {
                         slaDeadline: isCOD ? new Date(Date.now() + 4 * 60 * 60 * 1000) : null,
                     },
                     include: {
-                        user: { select: { name: true, phone: true } },
+                        user: { select: { id: true, name: true, phone: true } },
                         service: { select: { name: true, slug: true, icon: true } },
                     },
                 });

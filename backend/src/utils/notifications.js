@@ -216,27 +216,35 @@ const sendSOSNotifications = async ({ user, location, familyContacts }) => {
 // ─── Booking Confirmation ─────────────────
 
 const sendBookingConfirmation = async ({ user, bookingCode, booking = null }) => {
+    // 🛡️ Ensure we have current preferences even if the caller passed a partial user object
+    let fullUser = user;
+    if (user.id && user.smsEnabled === undefined) {
+        fullUser = await prisma.user.findUnique({ 
+            where: { id: user.id },
+            select: { id: true, name: true, phone: true, email: true, smsEnabled: true, whatsappEnabled: true, pushEnabled: true }
+        }) || user;
+    }
+
     // Primary: WhatsApp via Interakt
-    // Template: service_request_ — {{1}}=name {{2}}=service {{3}}=orderId {{4}}=phone {{5}}=email
     await sendWhatsApp({
-        phoneNumber: user.phone,
+        phoneNumber: fullUser.phone,
         templateName: 'booking_confirmation',
         parameters: [
-            user.name,
+            fullUser.name,
             booking?.serviceName || 'your requested service',
             bookingCode || '-',
             '+91 94801 98108',
             'client@oldful.com',
         ],
-        userId: user.id,
+        userId: fullUser.id,
     });
 
-    // Also send DLT SMS if template is configured (belt-and-suspenders)
-    if (process.env.FAST2SMS_ORDER_TEMPLATE_ID) {
+    // Also send DLT SMS if template is configured AND user allows SMS
+    if (process.env.FAST2SMS_ORDER_TEMPLATE_ID && fullUser.smsEnabled !== false) {
         await fast2sms.sendDLTSMS(
-            user.phone,
+            fullUser.phone,
             process.env.FAST2SMS_ORDER_TEMPLATE_ID,
-            [user.name, bookingCode, process.env.ADMIN_EMERGENCY_PHONE || '9480198108']
+            [fullUser.name, bookingCode, process.env.ADMIN_EMERGENCY_PHONE || '9480198108']
         );
     }
 };
@@ -244,13 +252,22 @@ const sendBookingConfirmation = async ({ user, bookingCode, booking = null }) =>
 // ─── Expiry Reminder ──────────────────────
 
 const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
+    // 🛡️ Ensure preferences
+    let fullUser = user;
+    if (user.id && user.whatsappEnabled === undefined) {
+        fullUser = await prisma.user.findUnique({ 
+            where: { id: user.id },
+            select: { id: true, name: true, phone: true, email: true, whatsappEnabled: true, emailMarketingEnabled: true }
+        }) || user;
+    }
+
     await sendEmail({
-        to: user.email,
+        to: fullUser.email,
         subject: `Your ${plan.name} plan expires in ${daysLeft} days`,
-        userId: user.id,
+        userId: fullUser.id,
         html: `
       <h2>Plan Expiry Reminder</h2>
-      <p>Dear ${user.name},</p>
+      <p>Dear ${fullUser.name},</p>
       <p>Your <strong>${plan.name}</strong> plan expires on <strong>${new Date(expiryDate).toLocaleDateString('en-IN')}</strong> (${daysLeft} days remaining).</p>
       <p>Renew now to continue enjoying uninterrupted healthcare services.</p>
       <p>Best regards,<br>Team Oldful</p>
@@ -259,15 +276,15 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
 
     // Template: renewal_reminder — {{1}}=name {{2}}=planName {{3}}=phone {{4}}=email
     await sendWhatsApp({
-        phoneNumber: user.phone,
+        phoneNumber: fullUser.phone,
         templateName: 'plan_expiry_reminder',
         parameters: [
-            user.name,
+            fullUser.name,
             plan.name || 'Oldful Plan',
             '+91 94801 98108',
             'client@oldful.com',
         ],
-        userId: user.id,
+        userId: fullUser.id,
     });
 };
 
