@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Settings, ArrowUp, ArrowDown, ToggleLeft, ToggleRight, Edit2, Plus, Trash2 } from "lucide-react";
 import { serviceAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";

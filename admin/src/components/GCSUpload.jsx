@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import axios from 'axios';
-import { profilesAPI } from '@/lib/api';
+import { profilesAPI, mediaAPI } from '@/lib/api';
 import { showToast } from '@/lib/hooks';
 
 export default function GCSUpload({ 
@@ -70,7 +70,7 @@ export default function GCSUpload({
 
             // Step 3: Confirm upload with backend (registers in media library + makes public)
             // Note: We use the existing media API for confirmation to ensure consistency
-            const confirmRes = await axios.post('/api/media/confirm', {
+            const confirmRes = await mediaAPI.confirm({
                 storagePath,
                 fileUrl,
                 gcsUri,

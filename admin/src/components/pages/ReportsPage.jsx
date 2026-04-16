@@ -62,7 +62,7 @@ export default function ReportsPage() {
                     <div className="card-body">
                         {revByCity.length > 0 ? (
                             <ResponsiveContainer width="100%" height={280}>
-                                <BarChart data={revByCity}><CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" /><XAxis dataKey="cityName" stroke="#64748b" fontSize={12} /><YAxis stroke="#64748b" fontSize={12} /><Tooltip contentStyle={chartTooltipStyle} /><Bar dataKey="totalRevenue" fill="#6366f1" radius={[6, 6, 0, 0]} /></BarChart>
+                                <BarChart data={revByCity}><CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" /><XAxis dataKey="name" stroke="#64748b" fontSize={12} /><YAxis stroke="#64748b" fontSize={12} /><Tooltip contentStyle={chartTooltipStyle} /><Bar dataKey="totalRevenue" fill="#6366f1" radius={[6, 6, 0, 0]} /></BarChart>
                             </ResponsiveContainer>
                         ) : <p className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No data</p>}
                     </div>
@@ -73,9 +73,9 @@ export default function ReportsPage() {
                         {svcUsage.length > 0 ? (
                             <>
                                 <ResponsiveContainer width="50%" height={240}>
-                                    <PieChart><Pie data={svcUsage.map((s, i) => ({ ...s, color: colors[i % colors.length] }))} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={4} dataKey="bookingCount">{svcUsage.map((_, i) => <Cell key={i} fill={colors[i % colors.length]} />)}</Pie><Tooltip contentStyle={chartTooltipStyle} /></PieChart>
+                                    <PieChart><Pie data={svcUsage.map((s, i) => ({ ...s, color: colors[i % colors.length] }))} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={4} dataKey="totalBookings">{svcUsage.map((_, i) => <Cell key={i} fill={colors[i % colors.length]} />)}</Pie><Tooltip contentStyle={chartTooltipStyle} /></PieChart>
                                 </ResponsiveContainer>
-                                <div style={{ flex: 1 }}>{svcUsage.map((s, i) => <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}><div style={{ width: 10, height: 10, borderRadius: "50%", background: colors[i % colors.length] }} /><span style={{ flex: 1, fontSize: 13, color: "var(--text-secondary)" }}>{s.name}</span><span style={{ fontWeight: 600, fontSize: 13 }}>{s.bookingCount}</span></div>)}</div>
+                                <div style={{ flex: 1 }}>{svcUsage.map((s, i) => <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}><div style={{ width: 10, height: 10, borderRadius: "50%", background: colors[i % colors.length] }} /><span style={{ flex: 1, fontSize: 13, color: "var(--text-secondary)" }}>{s.name}</span><span style={{ fontWeight: 600, fontSize: 13 }}>{s.totalBookings}</span></div>)}</div>
                             </>
                         ) : <p className="text-muted" style={{ textAlign: 'center', width: '100%', padding: 24 }}>No data</p>}
                     </div>
@@ -103,7 +103,7 @@ export default function ReportsPage() {
                                 <div><div className="text-sm text-muted">Total Users</div><div style={{ fontSize: 24, fontWeight: 700 }}>{retention.totalUsers || 0}</div></div>
                                 <div><div className="text-sm text-muted">Active Subscribers</div><div style={{ fontSize: 24, fontWeight: 700, color: "var(--accent-success)" }}>{retention.activeSubscribers || 0}</div></div>
                                 <div><div className="text-sm text-muted">Retention Rate</div><div style={{ fontSize: 24, fontWeight: 700, color: "var(--accent-primary-light)" }}>{retention.retentionRate || '—'}%</div></div>
-                                <div><div className="text-sm text-muted">Churn Rate</div><div style={{ fontSize: 24, fontWeight: 700, color: "var(--accent-danger)" }}>{retention.churnRate || '—'}%</div></div>
+                                <div><div className="text-sm text-muted">Churn Rate</div><div style={{ fontSize: 24, fontWeight: 700, color: "var(--accent-danger)" }}>{retention.retentionRate ? (100 - parseFloat(retention.retentionRate)).toFixed(1) : '—'}%</div></div>
                             </div>
                         ) : <p className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No data</p>}
                     </div>

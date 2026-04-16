@@ -259,6 +259,7 @@ export const supportAPI = {
 export const mediaAPI = {
     getAll: (params) => api.get('/media', { params }),
     upload: (formData) => api.post('/media/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+    confirm: (data) => api.post('/media/confirm', data),
     delete: (id) => api.delete(`/media/${id}`),
 };
 

@@ -1,6 +1,10 @@
-"use client";
 import MetadataSettings from "@/components/pages/MetadataSettings";
+import AdminLayout from "@/components/AdminLayout";
 
 export default function MetadataPage() {
-    return <MetadataSettings />;
+    return (
+        <AdminLayout>
+            <MetadataSettings />
+        </AdminLayout>
+    );
 }

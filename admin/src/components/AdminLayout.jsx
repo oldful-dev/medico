@@ -14,9 +14,6 @@ export default function AdminLayout({ children }) {
     const { isAuthenticated, loading, checkAuth } = useAuthStore();
     const { theme } = useThemeStore();
 
-    // The key is the ID used in our navSections
-    const currentPage = pathname.split('/').pop() || 'dashboard';
-
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
     }, [theme]);
@@ -55,7 +52,7 @@ export default function AdminLayout({ children }) {
             <Sidebar
                 collapsed={sidebarCollapsed}
                 open={sidebarOpen}
-                currentPage={currentPage}
+                currentPath={pathname}
                 onClose={() => setSidebarOpen(false)}
             />
             <div className="main-content">
