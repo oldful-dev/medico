@@ -17,6 +17,18 @@ import { cityService, City } from '@/services/api/cityService';
 import { useAuthStore, AuthUser } from '@/store/authStore';
 import { Suspense } from 'react';
 
+interface ProfileFormData {
+  name: string;
+  email: string;
+  gender: string;
+  dateOfBirth: string;
+  preferredLanguage: string;
+  cityId: string;
+  line1: string;
+  line2: string;
+  emergencyNumber: string;
+}
+
 function ProfileSetupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -114,7 +126,7 @@ function ProfileSetupForm() {
     }
   };
 
-  const onSubmit = async (data: any) => {
+   const onSubmit = async (data: ProfileFormData) => {
     if (!agreed) {
       setError('Please agree to the Policies and Terms to continue.');
       return;
@@ -132,7 +144,7 @@ function ProfileSetupForm() {
       });
 
       if (res.success && res.data) {
-        const { accessToken, refreshToken, ...user } = res.data as any;
+        const { accessToken, refreshToken, ...user } = res.data as { accessToken: string; refreshToken: string } & AuthUser;
 
         // 2. Authenticate
         await login(accessToken, refreshToken, user as AuthUser);
@@ -151,8 +163,9 @@ function ProfileSetupForm() {
       } else {
         setError(res.message || 'Failed to complete profile registration');
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during registration.');
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
+      setError(e.response?.data?.message || e.message || 'An error occurred during registration.');
     } finally {
       setLoading(false);
     }

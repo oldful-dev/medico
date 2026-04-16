@@ -24,7 +24,7 @@ declare global {
    interface Window {
       Razorpay: new (options: Record<string, unknown>) => { 
          open(): void; 
-         on(event: string, cb: (r: any) => void): void 
+         on(event: string, cb: (r: Record<string, unknown>) => void): void 
       };
    }
 }
@@ -162,9 +162,10 @@ export default function BookingDetailsPage() {
          };
 
          const rzp = new window.Razorpay(options);
-         rzp.on('payment.failed', async function (response: any) {
+         rzp.on('payment.failed', async function (response: Record<string, unknown>) {
             await cancelPaymentOnBackend();
-            toast.error(response.error?.description || 'Payment failed.');
+            const rzpErr = response.error as { description?: string } | undefined;
+            toast.error(rzpErr?.description || 'Payment failed.');
             setIsProcessingPayment(false);
          });
          rzp.open();
@@ -179,8 +180,9 @@ export default function BookingDetailsPage() {
          await cancelBookingMutation.mutateAsync(id as string);
          toast.success('Booking cancelled successfully');
          setShowCancelModal(false);
-      } catch (err: any) {
-         toast.error(err?.response?.data?.message || 'Failed to cancel booking');
+      } catch (err: unknown) {
+         const e = err as { response?: { data?: { message?: string } }; message?: string };
+         toast.error(e.response?.data?.message || e.message || 'Failed to cancel booking');
       }
    };
 
@@ -193,7 +195,7 @@ export default function BookingDetailsPage() {
          <div className="min-h-screen bg-white p-6 flex flex-col items-center justify-center text-center">
             <AlertCircle className="w-16 h-16 text-red-200 mb-4" />
             <h1 className="text-xl font-bold text-gray-900">Booking not found</h1>
-            <p className="text-gray-500 mt-2 max-w-xs">We couldn't retrieve the details for this booking.</p>
+            <p className="text-gray-500 mt-2 max-w-xs">We couldn&apos;t retrieve the details for this booking.</p>
             <button onClick={() => router.back()} className="mt-6 px-6 py-3 bg-[var(--color-primary)] text-white font-bold rounded-2xl">
                Go Back
             </button>
@@ -322,7 +324,7 @@ export default function BookingDetailsPage() {
                   </button>
                )}
                
-               {booking.payments?.some((p: any) => p.status === 'SUCCESS') ? (
+               {booking.payments?.some((p) => p.status === 'SUCCESS') ? (
                   <button onClick={handleDownload} disabled={isDownloading} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-transform disabled:opacity-50">
                      {isDownloading ? <div className="w-5 h-5 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mb-2" /> : <Download className="w-5 h-5 text-emerald-600 mb-2" />}
                      <span className="text-[10px] font-bold text-gray-800 uppercase tracking-tight">Invoice</span>

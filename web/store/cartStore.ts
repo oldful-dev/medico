@@ -3,10 +3,14 @@ import { persist } from 'zustand/middleware';
 
 export interface CartItem {
   id: string;
-  serviceId: string;
+  type?: 'service' | 'plan'; 
+  serviceId?: string;
+  planId?: string;
+  billingCycle?: string;
   price: number;
-  // Dynamic fields for different services (pickup, attachments, duration, etc.)
-  [key: string]: any;
+  name?: string; // Cache name for display
+  // Dynamic fields for different services
+  [key: string]: unknown;
 }
 
 interface CartState {

@@ -124,8 +124,8 @@ export default function CareersPage() {
                 <CheckCircle className="w-10 h-10 text-emerald-600" />
               </div>
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Application Received!</h2>
-              <p className="text-gray-500 mb-8 max-w-sm mx-auto">
-                Thank you for applying to join Oldful. Our talent acquisition team will review your profile and get back to you at <strong>business@oldful.com</strong> soon.
+              <p className="text-gray-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                Thank you for applying, <strong>{form.name}</strong>. We&apos;ve sent a confirmation email to <strong>{form.email}</strong>. Our team typically reviews applications within 3-5 business days.
               </p>
               <button 
                 onClick={() => setSuccess(false)}

@@ -25,7 +25,7 @@ export function ServicesPreview() {
   };
 
   return (
-    <section className="w-full bg-[#f8f9fc] py-24 px-4 flex flex-col items-center">
+    <section className="w-full bg-[#f8f9fc] py-16 px-4 flex flex-col items-center">
       <div className="max-w-5xl w-full">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 px-4 gap-4">
           <div>

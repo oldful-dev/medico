@@ -67,10 +67,6 @@ export default function ServicesPage() {
               onChange={e => setSearch(e.target.value)}
             />
           </div>
-          <button className="flex items-center gap-2 h-12 px-5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 shadow-sm hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-all">
-            <SlidersHorizontal className="w-4 h-4" />
-            Filter
-          </button>
         </div>
 
         {/* ── Category Pills ── */}

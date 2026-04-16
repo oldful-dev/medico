@@ -23,7 +23,7 @@ export default function LandingPage() {
       <ServicesPreview />
 
       {/* Trust Signals Section */}
-      <section className="w-full bg-white py-16 sm:py-24 border-t border-gray-100 flex flex-col items-center">
+      <section className="w-full bg-white py-12 sm:py-16 border-t border-gray-100 flex flex-col items-center">
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-8 sm:mb-12 text-center px-4">
           Trusted by world class organizations
         </h2>
@@ -35,7 +35,7 @@ export default function LandingPage() {
       <Testimonials />
 
       {/* CTA Section */}
-      <section className="w-full bg-[var(--color-bg-screen)] py-16 px-8 flex flex-col items-center justify-center text-center">
+      <section className="w-full bg-[var(--color-bg-screen)] py-20 px-8 flex flex-col items-center justify-center text-center">
          <h2 className="text-4xl font-bold tracking-tight text-[var(--color-primary-deep)] mb-6">Ready to prioritize your health?</h2>
          <p className="text-gray-600 mb-10 max-w-2xl text-lg">Join 1.8M users today and get the best medical care directly at your fingertips.</p>
          <a

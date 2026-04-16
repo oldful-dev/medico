@@ -69,13 +69,13 @@ export const useUserHooks = () => {
             },
             onMutate: async (id) => {
                 await queryClient.cancelQueries({ queryKey: USER_QUERY_KEYS.notifications });
-                const previous = queryClient.getQueryData(USER_QUERY_KEYS.notifications);
+                const previous = queryClient.getQueryData<Notification[]>(USER_QUERY_KEYS.notifications);
                 queryClient.setQueryData(USER_QUERY_KEYS.notifications, (old: Notification[] | undefined) => 
                     old?.map((n) => n.id === id ? { ...n, isRead: true } : n)
                 );
                 return { previous };
             },
-            onError: (err, id, context: any) => {
+            onError: (err, id, context: { previous?: Notification[] } | undefined) => {
                 if (context?.previous) queryClient.setQueryData(USER_QUERY_KEYS.notifications, context.previous);
             },
             onSettled: () => {
@@ -91,13 +91,13 @@ export const useUserHooks = () => {
             },
             onMutate: async () => {
                 await queryClient.cancelQueries({ queryKey: USER_QUERY_KEYS.notifications });
-                const previous = queryClient.getQueryData(USER_QUERY_KEYS.notifications);
+                const previous = queryClient.getQueryData<Notification[]>(USER_QUERY_KEYS.notifications);
                 queryClient.setQueryData(USER_QUERY_KEYS.notifications, (old: Notification[] | undefined) => 
                     old?.map((n) => ({ ...n, isRead: true }))
                 );
                 return { previous };
             },
-            onError: (err, variables, context: any) => {
+            onError: (err, variables, context: { previous?: Notification[] } | undefined) => {
                 if (context?.previous) queryClient.setQueryData(USER_QUERY_KEYS.notifications, context.previous);
             },
             onSettled: () => {

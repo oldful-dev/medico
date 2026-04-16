@@ -45,7 +45,7 @@ const getSubscriptions = async (req, res, next) => {
 // POST /api/subscriptions
 const createSubscription = async (req, res, next) => {
     try {
-        const { userId, planId, billingCycle, startDate, amount, autoRenew } = req.body;
+        const { userId, planId, billingCycle, startDate, amount, autoRenew, status } = req.body;
         const start = new Date(startDate || Date.now());
         const expiryDate = calculateExpiryDate(start, billingCycle);
 
@@ -58,11 +58,39 @@ const createSubscription = async (req, res, next) => {
                 expiryDate,
                 amount,
                 autoRenew: autoRenew || false,
+                status: status || 'ACTIVE',
             },
             include: { plan: true, user: { select: { name: true } } },
         });
 
         sendResponse(res, 201, subscription, 'Subscription activated');
+    } catch (error) {
+        next(error);
+    }
+};
+
+// POST /api/subscriptions/initiate (User authenticated)
+const initiateUserSubscription = async (req, res, next) => {
+    try {
+        const { planId, billingCycle, amount } = req.body;
+        const userId = req.user.id;
+        
+        const start = new Date();
+        const expiryDate = calculateExpiryDate(start, billingCycle);
+
+        const subscription = await prisma.subscription.create({
+            data: {
+                userId,
+                planId,
+                billingCycle,
+                startDate: start,
+                expiryDate,
+                amount,
+                status: 'PAYMENT_PENDING',
+            },
+        });
+
+        sendResponse(res, 201, subscription, 'Subscription initiated');
     } catch (error) {
         next(error);
     }
@@ -164,7 +192,7 @@ const compassionateExtension = async (req, res, next) => {
 };
 
 module.exports = {
-    getSubscriptions, createSubscription,
+    getSubscriptions, createSubscription, initiateUserSubscription,
     pauseSubscription, resumeSubscription, extendSubscription,
     cancelSubscription, toggleAutoRenew, compassionateExtension,
 };

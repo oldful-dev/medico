@@ -335,8 +335,12 @@ const cancelBooking = async (req, res, next) => {
         if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
         if (booking.userId !== req.user.id) return res.status(403).json({ success: false, message: 'Not your booking' });
 
-        if (['COMPLETED', 'CANCELLED'].includes(booking.status)) {
-            return res.status(400).json({ success: false, message: 'Cannot cancel this booking' });
+        if (booking.status === 'CANCELLED') {
+            return sendResponse(res, 200, booking, 'Booking is already cancelled');
+        }
+
+        if (booking.status === 'COMPLETED') {
+            return res.status(400).json({ success: false, message: 'Cannot cancel a completed booking' });
         }
 
         const updated = await prisma.booking.update({

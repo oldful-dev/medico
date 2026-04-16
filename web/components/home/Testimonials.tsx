@@ -27,7 +27,7 @@ const REVIEWS = [
 
 export function Testimonials() {
   return (
-    <section className="w-full bg-white py-24 px-4 flex flex-col items-center">
+    <section className="w-full bg-white py-4 px-4 flex flex-col items-center">
        <div className="max-w-5xl w-full">
          
          <div className="text-center mb-16">

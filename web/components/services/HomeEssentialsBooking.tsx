@@ -34,23 +34,23 @@ export default function HomeEssentialsBooking({ config, onBook }: Props) {
          <div className="lg:col-span-7 flex flex-col gap-6">
 
             {/* Hero Banner */}
-            <div className="relative h-[240px] rounded-3xl overflow-hidden group shadow-xl">
-               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
+            <div className="relative min-h-[260px] md:min-h-[300px] rounded-3xl overflow-hidden group shadow-xl bg-[var(--color-primary-deep)] flex items-center justify-center">
+               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10" />
                <div className="absolute inset-0 bg-emerald-900/10 group-hover:bg-transparent transition-all duration-500 z-5" />
 
                {/* Mock Hero Image Background */}
-               <div className="absolute inset-0 bg-[var(--color-primary-deep)] flex items-center justify-center overflow-hidden">
+               <div className="absolute inset-0 overflow-hidden">
                   <div className="absolute w-full h-full opacity-30 scale-150 blur-3xl bg-emerald-400 rounded-full animate-pulse" />
-                  <div className="relative z-20 flex flex-col items-center text-center px-10">
-                     <div className="w-24 h-24 bg-white/20 backdrop-blur-xl rounded-3xl flex items-center justify-center mb-6 border border-white/30 shadow-2xl">
+                  <div className="relative z-20 flex flex-col items-center text-center px-6 md:px-10 py-10">
+                     <div className="w-20 h-20 md:w-24 md:h-24 bg-white/20 backdrop-blur-xl rounded-3xl flex items-center justify-center mb-5 border border-white/30 shadow-2xl">
                         <img 
                            src={getAssetUrl(config.icon)} 
                            alt={config.title} 
-                           className="w-16 h-16 object-contain" 
+                           className="w-12 h-12 md:w-16 md:h-16 object-contain" 
                         />
                      </div>
-                     <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">{config.title}</h1>
-                     <p className="text-emerald-100 text-lg font-medium opacity-90">{config.tagline}</p>
+                     <h1 className="text-3xl md:text-5xl font-black text-white mb-3 tracking-tight leading-tight">{config.title}</h1>
+                     <p className="text-emerald-100 text-base md:text-lg font-medium opacity-90 max-w-md">{config.tagline}</p>
                   </div>
                </div>
             </div>

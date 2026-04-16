@@ -67,8 +67,20 @@ export const useAuthStore = create<AuthState>((set) => ({
             }
         });
 
-        // 4. Update Zustand state
-        set({ isAuthenticated: true, user, isLoading: false });
+        // 4. Fetch full profile to ensure consistency (e.g. profile picture)
+        let fullUser = user;
+        try {
+            const profileRes = await fetch('/api/auth/me');
+            const profileData = await profileRes.json();
+            if (profileRes.ok && profileData.success && profileData.data) {
+                fullUser = profileData.data as AuthUser;
+            }
+        } catch (err) {
+            console.warn('[Auth] Post-login profile sync failed:', err);
+        }
+
+        // 5. Update Zustand state
+        set({ isAuthenticated: true, user: fullUser, isLoading: false });
     },
 
     // ─── Logout ───────────────────────────────────────────────────────────

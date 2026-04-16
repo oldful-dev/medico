@@ -58,14 +58,16 @@ export default function ServiceDetailPage() {
             </div>
             <HomeEssentialsBooking 
               config={config} 
-              onBook={(data) => {
-                addItem({ 
-                  serviceId: config.slug, 
-                  ...data, 
-                  scheduleTime: (data.selectedDate as string) || '',
-                  price: config.pricing[0].price 
+              onBook={async (data) => {
+                addItem({
+                  serviceId: config.slug,
+                  name: config.title,
+                  price: config.pricing[0].price,
+                  image: config.icon, // Ensure icon is passed for cart UI
+                  address: (data.address as string) || '',
+                  scheduleTime: (data.selectedDate as string) || new Date().toLocaleDateString(),
                 });
-                router.push('/app/cart');
+                router.push('/app/checkout');
               }} 
             />
          </div>
@@ -80,19 +82,23 @@ export default function ServiceDetailPage() {
     else setSelectedProvider('GP');
   };
 
-  const handleBookQuickService = () => {
+  const handleBookQuickService = async () => {
     if ((isDoctorVisit && !selectedProblem) || (isHospitalTrip && !selectedProblem)) return;
+    
+    const finalPrice = isDoctorVisit ? (selectedProvider === 'Physio' ? 699 : 499) : 500;
     
     addItem({
       serviceId: config?.slug || id,
-      problem: selectedProblem || '',
-      providerType: selectedProvider,
-      visitType: visitType,
+      name: config?.title || (isDoctorVisit ? 'Doctor Visit' : 'Hospital Trip'),
+      price: finalPrice,
+      image: config?.icon || (isDoctorVisit ? '9bbd0539ddfd504d8362c951cb07d107b0df9fdf.png' : 'e9d68d0206e443ceceadd7907cd94f1c86fcacd4.png'),
+      address: address,
       scheduleTime: timeMode === 'ASAP' ? 'ASAP' : scheduleDate,
-      address,
-      price: isDoctorVisit ? (selectedProvider === 'Physio' ? 699 : 499) : 500
+      providerType: selectedProvider,
+      problem: selectedProblem || '',
     });
-    router.push('/app/cart');
+
+    router.push('/app/checkout');
   };
 
   const visitType = 'Home'; // Default

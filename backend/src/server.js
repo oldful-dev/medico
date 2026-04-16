@@ -55,6 +55,8 @@ const labRoutes = require('./routes/lab.routes');
 const remoteConfigRoutes = require('./routes/remoteConfig.routes');
 const appConfigRoutes = require('./routes/appConfig.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const waitlistRoutes = require('./routes/waitlist.routes');
+
 
 // Initialize cron jobs
 const { initCronJobs } = require('./cron');
@@ -230,6 +232,8 @@ app.use('/api/audit-logs', auditRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/insurance', insuranceRoutes);
 app.use('/api/labs', labRoutes);
+app.use('/api/waitlist', waitlistRoutes);
+
 
 // ═══ ERROR HANDLING ═════════════════════════════════════════
 app.use(notFoundHandler);

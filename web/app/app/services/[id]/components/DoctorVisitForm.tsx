@@ -77,30 +77,35 @@ export default function DoctorVisitForm() {
 
   const handleFinish = async () => {
     setIsUploading(true);
+    let uploadedUrls: string[] = [];
+    
     try {
-      const uploadedUrls = await mediaService.uploadMultipleMedia(images, 'doctor-visits');
-      addItem({
+      if (images.length > 0) {
+        uploadedUrls = await mediaService.uploadMultipleMedia(images, 'doctor-visits');
+      }
+
+      const bookingPayload = {
         serviceId: 'doctor-home-visit',
-        problem: selectedProblem || 'Checkup',
-        providerType: doctorType,
-        scheduleTime: timeMode === 'ASAP' ? 'ASAP (Next 60 mins)' : scheduleDate,
-        address,
-        price: doctorType === 'GP' ? 499 : 699,
-        attachments: uploadedUrls,
-      });
-      router.push('/app/cart');
+        scheduledDate: timeMode === 'ASAP' ? new Date().toISOString() : scheduleDate,
+        addressLine: address,
+        amount: doctorType === 'GP' ? 499 : 699,
+        paymentMethod: 'cod', // Services default to request/COD mode
+        formDataJson: {
+          problem: selectedProblem || 'Checkup',
+          providerType: doctorType,
+          scheduleTime: timeMode === 'ASAP' ? 'ASAP (Next 60 mins)' : scheduleDate,
+          attachments: uploadedUrls
+        }
+      };
+
+      // Import is injected at top of file, using any generic path since we are in components
+      const { bookingService } = await import('@/services/api/bookingService');
+      await bookingService.createBooking(bookingPayload);
+      
+      router.push('/app/success');
     } catch (error) {
-      console.error('Upload failed:', error);
-      // Fallback
-      addItem({
-        serviceId: 'doctor-home-visit',
-        problem: selectedProblem || 'Checkup',
-        providerType: doctorType,
-        scheduleTime: timeMode === 'ASAP' ? 'ASAP (Next 60 mins)' : scheduleDate,
-        address,
-        price: doctorType === 'GP' ? 499 : 699,
-      });
-      router.push('/app/cart');
+      console.error('Booking failed:', error);
+      alert('Failed to submit booking request. Please try again.');
     } finally {
       setIsUploading(false);
     }

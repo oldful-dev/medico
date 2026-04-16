@@ -17,5 +17,6 @@ router.put('/tickets/:id/resolve', authenticateAdmin, ctrl.resolveTicket);
 // Public
 router.post('/webhook/inbound-email', ctrl.handleInboundEmail);
 router.post('/careers', ctrl.submitCareers);
+router.post('/subscribe', ctrl.subscribeNewsletter);
 
 module.exports = router;

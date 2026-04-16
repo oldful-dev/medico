@@ -56,7 +56,7 @@ export function AppNavbar() {
           <div className={`relative transition-all duration-300 ${isScrolled ? 'w-8 h-8' : 'w-11 h-11'}`}>
             <Image src="/olfful-logo.png" alt="Oldful" fill className="object-contain" priority />
           </div>
-          <span className={`text-[var(--color-primary-deep)] font-bold tracking-tight hidden sm:block transition-all duration-300 ${isScrolled ? 'text-lg' : 'text-xl'}`}>
+          <span className={`text-[var(--color-primary-deep)] font-bold tracking-tight transition-all duration-300 ${isScrolled ? 'text-base sm:text-lg' : 'text-lg sm:text-xl'}`}>
             Oldful
           </span>
         </Link>

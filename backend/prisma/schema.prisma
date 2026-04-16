@@ -88,12 +88,14 @@ enum CaregiverShift {
 }
 
 enum BillingCycle {
+  MONTHLY
   QUARTERLY
   BIANNUAL
   YEARLY
 }
 
 enum SubscriptionStatus {
+  PAYMENT_PENDING
   ACTIVE
   EXPIRING
   EXPIRED
@@ -876,4 +878,16 @@ model TicketMessage {
   createdAt   DateTime      @default(now())
 
   @@map("ticket_messages")
+}
+
+// ─── 25. Wellness Waitlist ────────────────────────────────
+model WellnessWaitlist {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  city      String?
+  source    String   @default("wellness_page")
+  createdAt DateTime @default(now())
+
+  @@map("wellness_waitlist")
 }

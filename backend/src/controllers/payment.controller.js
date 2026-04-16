@@ -208,6 +208,22 @@ const verifyPayment = async (req, res, next) => {
             }
         }
 
+        // ─── Promote subscription: PAYMENT_PENDING → ACTIVE ───────────────────
+        if (payment.subscriptionId) {
+            const subscription = await prisma.subscription.update({
+                where: { id: payment.subscriptionId },
+                data: { status: 'ACTIVE' },
+                include: { plan: true }
+            });
+
+            const { sendPushToUser } = require('../utils/pushNotification.service');
+            await sendPushToUser(payment.userId, {
+                title: 'Plan Activated!',
+                body: `Your ${subscription.plan.name} plan is now active. Welcome to Oldful Family!`,
+                data: { type: 'subscription_activated', subscriptionId: subscription.id },
+            });
+        }
+
         // Generate Invoice
         const gstRate = parseFloat(process.env.GST_RATE) || 18;
         const subtotal = payment.amount / (1 + gstRate / 100);

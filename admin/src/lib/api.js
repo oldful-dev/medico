@@ -262,4 +262,8 @@ export const mediaAPI = {
     delete: (id) => api.delete(`/media/${id}`),
 };
 
+export const waitlistAPI = {
+    getAll: () => api.get('/waitlist'),
+};
+
 export default api;

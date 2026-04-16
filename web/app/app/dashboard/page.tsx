@@ -20,12 +20,12 @@ import { Loader2 } from 'lucide-react';
 import { NotificationDropdown } from '@/components/dashboard/NotificationDropdown';
 
 const QUICK_ACTIONS = [
-  { icon: Stethoscope, label: 'Doctor Visit', href: '/app/services/doctor-visit', color: 'bg-emerald-50 text-emerald-700', border: 'border-emerald-100' },
-  { icon: Activity, label: 'Health Check', href: '/app/services', color: 'bg-blue-50 text-blue-700', border: 'border-blue-100' },
+  { icon: Stethoscope, label: 'Doctor Visit', href: '/app/services/doctor-home-visit', color: 'bg-emerald-50 text-emerald-700', border: 'border-emerald-100' },
+  { icon: Activity, label: 'Health Check', href: '/app/services/blood-test', color: 'bg-blue-50 text-blue-700', border: 'border-blue-100' },
   { icon: CalendarDays, label: 'My Bookings', href: '/app/account?tab=bookings', color: 'bg-violet-50 text-violet-700', border: 'border-violet-100' },
-  { icon: Heart, label: 'Wellness', href: '/app/wellness', color: 'bg-rose-50 text-rose-700', border: 'border-rose-100' },
-  { icon: FileText, label: 'Reports', href: '/app/account?tab=bookings', color: 'bg-amber-50 text-amber-700', border: 'border-amber-100' },
-  { icon: Ambulance, label: 'Emergency', href: '/app/account?tab=emergency', color: 'bg-red-50 text-red-600', border: 'border-red-100' },
+  { icon: Heart, label: 'Wellness', href: '/wellness', color: 'bg-rose-50 text-rose-700', border: 'border-rose-100' },
+  { icon: FileText, label: 'Medical Card', href: '/app/account?tab=medical', color: 'bg-amber-50 text-amber-700', border: 'border-amber-100' },
+  { icon: Ambulance, label: 'Emergency', href: '/app/account?tab=medical', color: 'bg-red-50 text-red-600', border: 'border-red-100' },
 ];
 
 const STATS = [
@@ -42,14 +42,20 @@ export default function DashboardPage() {
   const { useHomeConfig } = useSDUIHooks();
   
   const { data: config, isLoading: configLoading } = useHomeConfig();
-  const { data: bookings, isLoading: bookingsLoading } = useBookings();
+  const { data: bookingsData, isLoading: bookingsLoading } = useBookings();
   const { data: notificationsData, isLoading: notificationsLoading } = useNotifications();
-  const { data: profile } = useProfile();
+  const { data: profile, isLoading: profileLoading } = useProfile();
 
   const [showNotifications, setShowNotifications] = React.useState(false);
 
   // Derived Values
-  const totalBookingsCount = bookings?.length || 0;
+  // Filter out ghost/failed bookings (Synchronized with Account page logic)
+  const bookings = (bookingsData || []).filter(b => {
+    const s = b.status?.toUpperCase();
+    return s !== 'PAYMENT_PENDING' && s !== 'PAYMENT_FAILED';
+  });
+  
+  const totalBookingsCount = bookings.length;
   const activePlan = profile?.subscriptions?.find((s) => s.status === 'ACTIVE')?.plan?.name || 'Guest User';
   const notifications = notificationsData || [];
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -77,20 +83,34 @@ export default function DashboardPage() {
 
   const banner = config?.banners?.[0];
 
-  const nextBooking = React.useMemo(() => bookings ? [...bookings]
-    .filter(b => b.scheduledDate && new Date(b.scheduledDate) > new Date() && b.status !== 'CANCELLED')
-    .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime())[0] : null, [bookings]);
+  const upcomingUpcoming = React.useMemo(() => {
+    if (!bookings) return [];
+    const now = new Date();
+    // Reset hours for date comparison
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    return [...bookings]
+      .filter(b => {
+        if (!b.scheduledDate) return false;
+        const s = b.status?.toUpperCase();
+        if (s === 'CANCELLED' || s === 'COMPLETED') return false;
+        
+        const bDate = new Date(b.scheduledDate);
+        return bDate >= today; 
+      })
+      .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
+  }, [bookings]);
+
 
   const getStatusStyles = (status: string) => {
-    switch(status.toUpperCase()) {
-      case 'PENDING': return 'text-amber-600 bg-amber-50';
-      case 'CANCELLED': return 'text-red-600 bg-red-50';
-      default: return 'text-emerald-600 bg-emerald-50';
-    }
+    const s = status.toUpperCase();
+    if (s.includes('PENDING') || s === 'PAYMENT_PENDING') return 'text-amber-600 bg-amber-50';
+    if (s.includes('FAILED') || s === 'CANCELLED') return 'text-red-600 bg-red-50';
+    return 'text-emerald-600 bg-emerald-50';
   };
 
   // Dynamic Stats
-  const emergencyContactsCount = (profile as any)?.emergencyContacts?.length || 0;
+  const emergencyContactsCount = profile?.emergencyContacts?.length || 0;
   
   const STATS = [
     { 
@@ -127,21 +147,21 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[var(--color-bg-screen)]">
       <div className="max-w-7xl mx-auto px-6 py-6">
 
-        {/* ── Top Bar ── */}
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            {authLoading ? (
+        {/* ── Header ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div className="flex-1 min-w-0">
+            {profileLoading ? (
               <div className="h-8 w-48 bg-gray-200 animate-pulse rounded-lg" />
             ) : (
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words pr-4">
                 {greeting()}, {user?.name?.split(' ')[0] || 'there'} 👋
               </h1>
             )}
-            <p className="text-sm text-gray-500 mt-0.5">
+            <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
               {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
             </p>
           </div>
-          <div className="flex items-center gap-3 relative">
+          <div className="flex items-center gap-3 relative shrink-0">
             <div className="relative">
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
@@ -188,7 +208,7 @@ export default function DashboardPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="relative h-44 rounded-2xl overflow-hidden shadow-lg group cursor-pointer"
+                className="relative min-h-[185px] h-auto rounded-2xl overflow-hidden shadow-lg group cursor-pointer"
             >
                 <Image
                   src="https://storage.googleapis.com/oldful-assets/mobile/assets/images/welcome_banner.png"
@@ -198,16 +218,16 @@ export default function DashboardPage() {
                   sizes="900px"
                   priority
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent flex flex-col justify-end p-6">
-                  <span className="text-emerald-300 text-xs font-bold uppercase tracking-widest mb-2">
+                <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent flex flex-col justify-end p-4 sm:p-6">
+                  <span className="text-emerald-300 text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-1 sm:mb-2">
                     {greeting()}
                   </span>
-                  <h2 className="text-white font-bold text-2xl leading-tight max-w-sm">
+                  <h2 className="text-white font-bold text-lg sm:text-2xl leading-tight max-w-[200px] sm:max-w-sm break-words">
                     {new Date().getHours() >= 16 
                       ? `Good Evening, ${user?.name || 'Member'}`
                       : `How can we help you, ${user?.name?.split(' ')[0] || 'Member'}?`}
                   </h2>
-                  <p className="text-white/80 text-sm mt-2">
+                  <p className="text-white/80 text-[11px] sm:text-sm mt-1 sm:mt-2 line-clamp-2">
                     {new Date().getHours() >= 16 
                       ? "Ready for your evening wellness check?"
                       : "Your health journey continues here."}
@@ -341,25 +361,29 @@ export default function DashboardPage() {
               <div className="flex flex-col gap-3">
                 {bookingsLoading ? (
                   <div className="h-16 bg-gray-50 animate-pulse rounded-xl" />
-                ) : nextBooking ? (
-                  <div className="flex items-center gap-3 p-3 bg-[var(--color-bg-screen)] rounded-xl">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl">
-                      {nextBooking.service?.name?.toLowerCase().includes('doctor') ? '👨‍⚕️' : '🏥'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-gray-800 truncate">{nextBooking.service?.name}</div>
-                      <div className="text-xs text-gray-500">
-                        {new Date(nextBooking.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, 
-                        {nextBooking.scheduledTime || 'TBD'}
+                ) : upcomingUpcoming.length > 0 ? (
+                  <div className="flex flex-col gap-3 max-h-[320px] overflow-y-auto pr-1 custom-scrollbar">
+                    {upcomingUpcoming.map((booking) => (
+                      <div key={booking.id} className="flex items-center gap-3 p-3 bg-[var(--color-bg-screen)] rounded-xl border border-gray-100/50">
+                        <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl shrink-0">
+                          {booking.service?.slug?.toLowerCase().includes('doctor') ? '👨‍⚕️' : '🏥'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-gray-800 truncate">{booking.service?.name}</div>
+                          <div className="text-[10px] text-gray-500">
+                            {new Date(booking.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, 
+                            {booking.scheduledTime || 'TBD'}
+                          </div>
+                        </div>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full capitalize shrink-0 ${getStatusStyles(booking.status)}`}>
+                          {booking.status.toLowerCase()}
+                        </span>
                       </div>
-                    </div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${getStatusStyles(nextBooking.status)}`}>
-                      {nextBooking.status.toLowerCase()}
-                    </span>
+                    ))}
                   </div>
                 ) : (
                   <div className="text-center py-4 px-2">
-                    <p className="text-xs text-gray-500 mb-3">No upcoming bookings scheduled.</p>
+                    <p className="text-[11px] text-gray-500 mb-2">No upcoming bookings scheduled.</p>
                     <Link href="/app/services" className="text-xs font-bold text-[var(--color-primary)] hover:underline">
                       Book a Service now
                     </Link>
@@ -385,19 +409,7 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            {/* Search */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search services..."
-                  className="w-full pl-9 pr-4 py-2.5 text-sm bg-[var(--color-bg-screen)] rounded-xl outline-none focus:ring-2 ring-[var(--color-primary)]/20 transition-all"
-                  onClick={() => router.push('/app/services')}
-                  readOnly
-                />
-              </div>
-            </div>
+            {/* Search removed as requested */}
           </div>
         </div>
       </div>

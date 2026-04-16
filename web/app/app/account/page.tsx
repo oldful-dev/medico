@@ -8,32 +8,31 @@ import {
   LogOut, ChevronRight, Shield, Bell, Phone, Mail,
   Edit3, Plus, Trash2, CheckCircle2, AlertCircle,
   Clock, Package, Stethoscope, Activity, Camera,
-  Save, X, Loader2
+  Save, X, Loader2, ExternalLink, UploadCloud, History, Image as LucideImage
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
-import { userService, UserProfile, Address, EmergencyContact, MedicalCard, Booking } from '@/services/api/userService';
+import { userService, UserProfile, Address, EmergencyContact, MedicalCard, Booking, HealthReport } from '@/services/api/userService';
+import { useUserHooks, USER_QUERY_KEYS } from '@/hooks/useUserHooks';
 import { SERVICES_CONFIG } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
 import { toast } from 'sonner';
 
 // ─── Query Keys ────────────────────────────────────────────────────────────
-const QKEY = {
-  profile: ['account', 'profile'] as const,
-  bookings: ['account', 'bookings'] as const,
-};
+// Standardized query keys are now handled via useUserHooks.
 
 // ─── Tab types ──────────────────────────────────────────────────────────────
-type TabId = 'profile' | 'bookings' | 'addresses' | 'medical' | 'preferences' | 'support';
+type TabId = 'profile' | 'bookings' | 'addresses' | 'medical' | 'preferences' | 'support' | 'prescriptions';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
-  { id: 'profile',     label: 'My Profile',     icon: User },
-  { id: 'bookings',    label: 'My Bookings',    icon: Package },
-  { id: 'addresses',   label: 'Addresses',      icon: MapPin },
-  { id: 'medical',     label: 'Medical Card',   icon: Heart },
-  { id: 'preferences', label: 'Preferences',    icon: Settings },
-  { id: 'support',     label: 'Help & Support', icon: HelpCircle },
+  { id: 'profile',       label: 'Profile',       icon: User },
+  { id: 'bookings',      label: 'Bookings',      icon: Package },
+  { id: 'addresses',     label: 'Addresses',        icon: MapPin },
+  { id: 'prescriptions', label: 'Prescriptions', icon: FileText },
+  { id: 'medical',       label: 'Medical Card',     icon: Heart },
+  { id: 'preferences',   label: 'Preferences',      icon: Settings },
+  { id: 'support',       label: 'Help & Support',   icon: HelpCircle },
 ];
 
 const BOOKING_STATUS_STYLE: Record<string, string> = {
@@ -82,14 +81,14 @@ function ProfileTab({ profile }: { profile: UserProfile }) {
     dateOfBirth: profile.dateOfBirth?.split('T')[0] || '',
   });
 
-  const updateMut = useMutation({
-    mutationFn: (data: typeof form) => userService.updateProfile(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: QKEY.profile }); setEditing(false); },
-  });
+  const { useUpdateProfile } = useUserHooks();
+  const updateMut = useUpdateProfile();
 
   const avatarMut = useMutation({
     mutationFn: (file: File) => userService.uploadAvatar(file),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QKEY.profile }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile });
+    },
   });
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -194,27 +193,13 @@ function ProfileTab({ profile }: { profile: UserProfile }) {
 function BookingsTab() {
   const router = useRouter();
   const qc = useQueryClient();
-  const { data: res, isLoading } = useQuery({
-    queryKey: QKEY.bookings,
-    queryFn: () => userService.getMyBookings(),
-  });
+  const { useBookings, useCancelBooking } = useUserHooks();
+  const { data: bookingsData, isLoading } = useBookings();
 
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelId, setCancelId] = useState<string | null>(null);
 
-  const cancelMut = useMutation({
-    mutationFn: (id: string) => userService.cancelBooking(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: QKEY.bookings });
-      toast.success('Booking cancelled successfully');
-      setShowCancelModal(false);
-      setCancelId(null);
-    },
-    onError: () => {
-      toast.error('Failed to cancel booking');
-      setShowCancelModal(false);
-    }
-  });
+  const cancelMut = useCancelBooking();
 
   const handleCancelClick = (id: string) => {
     setCancelId(id);
@@ -224,9 +209,10 @@ function BookingsTab() {
   // ─── Filter: exclude ghost payment bookings from the main list ────────────
   // PAYMENT_PENDING = booking created but Razorpay not completed yet (not a real booking)
   // PAYMENT_FAILED  = payment failed or user cancelled (booking is dead)
-  const bookings: Booking[] = (res?.data || []).filter((b: Booking) =>
-    b.status !== 'PAYMENT_PENDING' && b.status !== 'PAYMENT_FAILED'
-  );
+  const bookings: Booking[] = (bookingsData || []).filter((b: Booking) => {
+    const s = b.status?.toUpperCase();
+    return s !== 'PAYMENT_PENDING' && s !== 'PAYMENT_FAILED';
+  });
 
   const upcoming = bookings.filter(b => ['PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'].includes(b.status));
   const past = bookings.filter(b => ['COMPLETED', 'CANCELLED'].includes(b.status));
@@ -234,7 +220,7 @@ function BookingsTab() {
   return (
     <div className="flex flex-col gap-5">
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-2">
         {[
           { label: 'Total', value: bookings.length, icon: Package, color: 'text-gray-700 bg-gray-50' },
           { label: 'Upcoming', value: upcoming.length, icon: Clock, color: 'text-emerald-700 bg-emerald-50' },
@@ -284,7 +270,12 @@ function BookingsTab() {
                           ? new Date(booking.scheduledDate).toLocaleDateString('en-IN', { dateStyle: 'medium' }) + ' · ' + (booking.scheduledTime || 'TBD')
                           : 'Time TBD'}
                       </div>
-                      {booking.addressLine && <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-1"><MapPin className="w-3 h-3" />{booking.addressLine}</div>}
+                      {booking.addressLine && (
+                        <div className="text-[10px] sm:text-xs text-gray-400 mt-1 flex items-start gap-1 leading-normal max-w-[180px] sm:max-w-none break-words">
+                          <MapPin className="w-3 h-3 shrink-0 mt-0.5" />
+                          <span>{booking.addressLine}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2 shrink-0">
@@ -293,7 +284,7 @@ function BookingsTab() {
                     </span>
                     <div className="flex flex-col items-end">
                       {booking.amount && <span className="text-sm font-bold text-gray-900">₹{booking.amount}</span>}
-                      {booking.payments?.some((p: Record<string, unknown>) => p.status === 'SUCCESS') ? (
+                      {booking.payments?.some((p) => p.status === 'SUCCESS') ? (
                         <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 mt-1 flex items-center gap-0.5">
                           <CheckCircle2 className="w-2.5 h-2.5" /> PAID
                         </span>
@@ -334,7 +325,20 @@ function BookingsTab() {
       <ConfirmationModal
         isOpen={showCancelModal}
         onClose={() => setShowCancelModal(false)}
-        onConfirm={() => cancelId && cancelMut.mutate(cancelId)}
+        onConfirm={() => {
+          if (!cancelId) return;
+          cancelMut.mutate(cancelId, {
+            onSuccess: () => {
+              setShowCancelModal(false);
+              setCancelId(null);
+              toast.success('Booking cancelled successfully');
+            },
+            onError: (err: unknown) => {
+              const e = err as { response?: { data?: { message?: string } }; message?: string };
+              toast.error(e.response?.data?.message || e.message || 'Failed to cancel booking');
+            }
+          });
+        }}
         title="Cancel Booking"
         message="Are you sure you want to cancel this booking? This action cannot be undone."
         confirmText="Yes, Cancel"
@@ -354,18 +358,18 @@ function AddressesTab({ profile }: { profile: UserProfile }) {
   const [form, setForm] = useState({ label: 'Home', line1: '', line2: '', landmark: '', pincode: '', cityName: '', state: '' });
 
   const addMut = useMutation({
-    mutationFn: (data: typeof form) => userService.addAddress(profile.id, data),
+    mutationFn: (data: Partial<Address>) => userService.addAddress(profile.id, data),
     onSuccess: () => { 
-      qc.invalidateQueries({ queryKey: QKEY.profile }); 
+      qc.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile }); 
       setAdding(false); 
       setForm({ label: 'Home', line1: '', line2: '', landmark: '', pincode: '', cityName: '', state: '' }); 
     },
   });
 
   const updateMut = useMutation({
-    mutationFn: (data: typeof form) => userService.updateAddress(profile.id, editingId!, data),
+    mutationFn: (data: Partial<Address>) => userService.updateAddress(profile.id, editingId!, data),
     onSuccess: () => { 
-      qc.invalidateQueries({ queryKey: QKEY.profile }); 
+      qc.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile }); 
       setEditingId(null); 
       setForm({ label: 'Home', line1: '', line2: '', landmark: '', pincode: '', cityName: '', state: '' }); 
     },
@@ -373,7 +377,7 @@ function AddressesTab({ profile }: { profile: UserProfile }) {
 
   const deleteMut = useMutation({
     mutationFn: (addressId: string) => userService.deleteAddress(profile.id, addressId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QKEY.profile }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile }),
   });
 
   const handleEdit = (addr: Address) => {
@@ -511,6 +515,131 @@ function AddressesTab({ profile }: { profile: UserProfile }) {
   );
 }
 
+
+// ─── Prescriptions Tab ───────────────────────────────────────────────────────
+function PrescriptionsTab({ profile }: { profile: UserProfile }) {
+  const qc = useQueryClient();
+  const [uploading, setUploading] = useState(false);
+  const reports = profile.healthReports || [];
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File sized exceeds 5MB limit');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const title = file.name.split('.')[0].replace(/[-_]/g, ' ');
+      const res = await userService.uploadHealthReport(profile.id, file, title);
+      
+      if (res.success) {
+        toast.success('Prescription uploaded successfully');
+        qc.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile });
+      } else {
+        toast.error(res.message || 'Upload failed');
+      }
+    } catch (err) {
+      toast.error('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const getSeverityStyles = (severity?: string) => {
+    switch (severity?.toUpperCase()) {
+      case 'CRITICAL': return 'text-red-600 bg-red-50 border-red-100';
+      case 'HIGH': return 'text-orange-600 bg-orange-50 border-orange-100';
+      default: return 'text-emerald-600 bg-emerald-50 border-emerald-100';
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-5">
+      <SectionCard className="!p-0 overflow-hidden">
+        <div className="p-6 flex items-center justify-between border-b border-gray-50 flex-wrap gap-4">
+           <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+                 <History className="w-5 h-5" />
+              </div>
+              <div>
+                 <h3 className="font-bold text-gray-900">Upload History</h3>
+                 <p className="text-xs text-gray-400 font-medium">{reports.length} reports stored</p>
+              </div>
+           </div>
+
+           <label className="relative cursor-pointer group">
+              <input 
+                type="file" 
+                className="hidden" 
+                accept="image/*,application/pdf"
+                onChange={handleFileUpload}
+                disabled={uploading}
+              />
+              <div className="bg-[var(--color-primary)] text-white font-bold px-6 py-3 rounded-xl flex items-center gap-2 hover:bg-[var(--color-primary-deep)] hover:shadow-lg active:scale-95 transition-all disabled:opacity-50 text-sm">
+                 {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
+                 <span>{uploading ? 'Uploading...' : 'Upload New'}</span>
+              </div>
+           </label>
+        </div>
+
+        <div className="p-6">
+          {reports.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center py-12 bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-100">
+               <FileText className="w-10 h-10 text-gray-200 mb-4" />
+               <h4 className="text-sm font-bold text-gray-900 mb-1">No prescriptions yet</h4>
+               <p className="text-xs text-gray-400 max-w-[200px] mx-auto leading-relaxed">
+                 Upload your first prescription or medical lab report here.
+               </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {reports.map((report: HealthReport) => (
+                <div 
+                  key={report.id}
+                  className="group bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all flex flex-col gap-3 relative"
+                >
+                  <div className="flex items-start gap-3">
+                     <div className={`shrink-0 w-11 h-11 rounded-xl flex items-center justify-center ${report.fileType === 'pdf' ? 'bg-orange-50 text-orange-500' : 'bg-emerald-50 text-emerald-500'}`}>
+                        {report.fileType === 'pdf' ? <FileText className="w-5 h-5" /> : <LucideImage className="w-5 h-5" />}
+                     </div>
+                     
+                     <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-gray-900 truncate pr-4 text-xs uppercase tracking-tight">{report.title}</h4>
+                        <p className="text-[10px] text-gray-400 font-semibold mt-0.5">
+                          {new Date(report.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </p>
+                     </div>
+
+                     <a 
+                       href={report.fileUrl} 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                     >
+                       <ExternalLink className="w-4 h-4" />
+                     </a>
+                  </div>
+
+                  {report.flagNote && (
+                      <div className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[9px] font-bold border uppercase tracking-wider ${getSeverityStyles(report.flagSeverity)}`}>
+                         <AlertCircle className="w-3 h-3" />
+                         <span className="truncate">{report.flagSeverity}: {report.flagNote}</span>
+                      </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
 // ─── Medical Card Tab ────────────────────────────────────────────────────────
 function MedicalTab({ profile }: { profile: UserProfile }) {
   const qc = useQueryClient();
@@ -518,14 +647,48 @@ function MedicalTab({ profile }: { profile: UserProfile }) {
   const [editing, setEditing] = useState(!card);
   const [form, setForm] = useState({
     bloodGroup: card?.bloodGroup || '',
-    allergies: card?.allergies || '',
-    chronicConditions: card?.chronicConditions || '',
-    currentMedications: card?.currentMedications || '',
+    allergies: card?.allergies?.join(', ') || '',
+    chronicConditions: card?.chronicConditions?.join(', ') || '',
+    currentMedications: card?.currentMedications?.join(', ') || '',
   });
 
+  // Emergency Contact state
+  const [addingEc, setAddingEc] = useState(false);
+  const [ecForm, setEcForm] = useState({ name: '', phone: '', relationship: '' });
+
   const upsertMut = useMutation({
-    mutationFn: () => userService.upsertMedicalCard(profile.id, form),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: QKEY.profile }); setEditing(false); },
+    mutationFn: () => {
+      const payload = {
+        ...form,
+        allergies: form.allergies ? form.allergies.split(',').map(s => s.trim()).filter(Boolean) : [],
+        chronicConditions: form.chronicConditions ? form.chronicConditions.split(',').map(s => s.trim()).filter(Boolean) : [],
+        currentMedications: form.currentMedications ? form.currentMedications.split(',').map(s => s.trim()).filter(Boolean) : [],
+      };
+      return userService.upsertMedicalCard(profile.id, payload);
+    },
+    onSuccess: () => { 
+      qc.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile }); 
+      setEditing(false); 
+      toast.success('Medical Card updated');
+    },
+  });
+
+  const addEcMut = useMutation({
+    mutationFn: (data: Omit<EmergencyContact, 'id'>) => userService.addEmergencyContact(profile.id, data),
+    onSuccess: () => { 
+      qc.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile }); 
+      setAddingEc(false);
+      setEcForm({ name: '', phone: '', relationship: '' });
+      toast.success('Emergency contact added');
+    },
+  });
+
+  const removeEcMut = useMutation({
+    mutationFn: (contactId: string) => userService.removeEmergencyContact(profile.id, contactId),
+    onSuccess: () => { 
+      qc.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile }); 
+      toast.success('Emergency contact removed');
+    },
   });
 
   return (
@@ -544,8 +707,8 @@ function MedicalTab({ profile }: { profile: UserProfile }) {
           {[
             { label: 'Blood Group', value: card?.bloodGroup || '—' },
             { label: 'Patient', value: profile.name },
-            { label: 'Allergies', value: card?.allergies || 'None' },
-            { label: 'Conditions', value: card?.chronicConditions || 'None' },
+            { label: 'Allergies', value: card?.allergies?.join(', ') || 'None' },
+            { label: 'Conditions', value: card?.chronicConditions?.join(', ') || 'None' },
           ].map(item => (
             <div key={item.label}>
               <div className="text-white/50 text-xs mb-0.5">{item.label}</div>
@@ -607,9 +770,9 @@ function MedicalTab({ profile }: { profile: UserProfile }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
               { label: 'Blood Group', value: card.bloodGroup, icon: Heart },
-              { label: 'Allergies', value: card.allergies, icon: AlertCircle },
-              { label: 'Chronic Conditions', value: card.chronicConditions, icon: Activity },
-              { label: 'Current Medications', value: card.currentMedications, icon: FileText },
+              { label: 'Allergies', value: card.allergies?.join(', '), icon: AlertCircle },
+              { label: 'Chronic Conditions', value: card.chronicConditions?.join(', '), icon: Activity },
+              { label: 'Current Medications', value: card.currentMedications?.join(', '), icon: FileText },
             ].map(f => (
               <div key={f.label} className="p-4 bg-[var(--color-bg-screen)] rounded-xl">
                 <div className="flex items-center gap-2 mb-1.5">
@@ -627,11 +790,55 @@ function MedicalTab({ profile }: { profile: UserProfile }) {
 
       {/* Emergency Contacts */}
       <SectionCard>
-        <SectionHeader title="Emergency Contacts" />
+        <SectionHeader 
+          title="Emergency Contacts" 
+          action={
+            <button
+              onClick={() => setAddingEc(!addingEc)}
+              className="text-xs font-bold text-[var(--color-primary)] flex items-center gap-1 hover:underline"
+            >
+              {addingEc ? <><X className="w-3.5 h-3.5" /> Cancel</> : <><Plus className="w-3.5 h-3.5" /> Add New</>}
+            </button>
+          }
+        />
+
+        {addingEc && (
+          <div className="bg-[var(--color-bg-screen)] p-4 rounded-xl mb-4 border border-emerald-100 flex flex-col gap-3">
+             <div className="grid grid-cols-2 gap-3">
+                <input 
+                  placeholder="Full Name" 
+                  className="w-full px-3 py-2 text-sm bg-white border border-gray-100 rounded-lg outline-none focus:border-emerald-500"
+                  value={ecForm.name}
+                  onChange={e => setEcForm({...ecForm, name: e.target.value})}
+                />
+                <input 
+                  placeholder="Phone Number" 
+                  className="w-full px-3 py-2 text-sm bg-white border border-gray-100 rounded-lg outline-none focus:border-emerald-500"
+                  value={ecForm.phone}
+                  onChange={e => setEcForm({...ecForm, phone: e.target.value})}
+                />
+             </div>
+             <input 
+                placeholder="Relationship (e.g. Son, Wife)" 
+                className="w-full px-3 py-2 text-sm bg-white border border-gray-100 rounded-lg outline-none focus:border-emerald-500"
+                value={ecForm.relationship}
+                onChange={e => setEcForm({...ecForm, relationship: e.target.value})}
+             />
+             <button 
+                disabled={!ecForm.name || !ecForm.phone || addEcMut.isPending}
+                onClick={() => addEcMut.mutate(ecForm)}
+                className="bg-[var(--color-primary-deep)] text-white py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 disabled:bg-gray-300"
+             >
+                {addEcMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save Contact
+             </button>
+          </div>
+        )}
+
         {profile.emergencyContacts?.length > 0 ? (
           <div className="flex flex-col gap-3">
             {profile.emergencyContacts.map((ec: EmergencyContact) => (
-              <div key={ec.id} className="flex items-center justify-between p-3 bg-[var(--color-bg-screen)] rounded-xl">
+              <div key={ec.id} className="flex items-center justify-between p-3 bg-[var(--color-bg-screen)] rounded-xl group relative">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center">
                     <Phone className="w-4 h-4 text-red-500" />
@@ -641,10 +848,17 @@ function MedicalTab({ profile }: { profile: UserProfile }) {
                     <div className="text-xs text-gray-500">{ec.phone} · {ec.relationship || 'Contact'}</div>
                   </div>
                 </div>
+                <button 
+                  onClick={() => { if(confirm('Remove this contact?')) removeEcMut.mutate(ec.id); }}
+                  disabled={removeEcMut.isPending}
+                  className="p-2 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             ))}
           </div>
-        ) : (
+        ) : !addingEc && (
           <EmptyState icon={Phone} text="No emergency contacts added." />
         )}
       </SectionCard>
@@ -659,7 +873,7 @@ function PreferencesTab({ profile }: { profile: UserProfile }) {
 
   const langMut = useMutation({
     mutationFn: (lang: string) => userService.updateProfile({ preferredLanguage: lang }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QKEY.profile }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile }),
   });
 
   const LANGS = [
@@ -727,8 +941,8 @@ function SupportTab() {
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {[
-          { label: 'Call Us', sub: '+91 80001 23456', icon: Phone, color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-          { label: 'Email Support', sub: 'support@oldful.com', icon: Mail, color: 'text-blue-700 bg-blue-50 border-blue-200' },
+          { label: 'Call Us', sub: '+91 80621 80429', icon: Phone, color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+          { label: 'Email Support', sub: 'client@oldful.com', icon: Mail, color: 'text-blue-700 bg-blue-50 border-blue-200' },
         ].map(item => (
           <div key={item.label} className={`${item.color} border rounded-2xl p-5`}>
             <item.icon className="w-6 h-6 mb-3" />
@@ -771,13 +985,8 @@ function AccountContent() {
     }
   }, [searchParams]);
 
-  const { data: profileRes, isLoading: profileLoading } = useQuery({
-    queryKey: QKEY.profile,
-    queryFn: () => userService.getProfile(),
-    enabled: !authLoading,
-  });
-
-  const profile: UserProfile | undefined = profileRes?.data;
+  const { useProfile } = useUserHooks();
+  const { data: profile, isLoading: profileLoading } = useProfile();
   const isLoading = authLoading || profileLoading;
 
   return (
@@ -852,12 +1061,13 @@ function AccountContent() {
               </SectionCard>
             ) : (
               <>
-                {activeTab === 'profile'     && <ProfileTab profile={profile} />}
-                {activeTab === 'bookings'    && <BookingsTab />}
-                {activeTab === 'addresses'   && <AddressesTab profile={profile} />}
-                {activeTab === 'medical'     && <MedicalTab profile={profile} />}
-                {activeTab === 'preferences' && <PreferencesTab profile={profile} />}
-                {activeTab === 'support'     && <SupportTab />}
+                {activeTab === 'profile'       && <ProfileTab profile={profile} />}
+                {activeTab === 'bookings'      && <BookingsTab />}
+                {activeTab === 'addresses'     && <AddressesTab profile={profile} />}
+                {activeTab === 'prescriptions' && <PrescriptionsTab profile={profile} />}
+                {activeTab === 'medical'       && <MedicalTab profile={profile} />}
+                {activeTab === 'preferences'   && <PreferencesTab profile={profile} />}
+                {activeTab === 'support'       && <SupportTab />}
               </>
             )}
           </div>

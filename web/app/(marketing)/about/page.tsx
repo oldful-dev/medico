@@ -28,7 +28,7 @@ export default function AboutPage() {
                 <li><strong className="text-gray-800">Legal Name:</strong> OLDFUL GENTLORA ESTEEM LLP</li>
                 <li><strong className="text-gray-800">Headquarters Address:</strong> No 402-B 1TF, ITI HBCS Layout, Phase 3, Mysore Road Rajarajeshwari Nagar Bangalore 560039</li>
                 <li><strong className="text-gray-800">Email:</strong> <a href="mailto:compliance@oldful.com" className="text-[var(--color-primary)] hover:underline">compliance@oldful.com</a></li>
-                <li><strong className="text-gray-800">Mobile:</strong> +91-94801-98108</li>
+                <li><strong className="text-gray-800">Mobile:</strong> +91 80621 80429</li>
                 <li><strong className="text-gray-800">Website:</strong> www.oldful.com</li>
               </ul>
             </div>
@@ -39,7 +39,7 @@ export default function AboutPage() {
               <ul className="list-none flex flex-col gap-2 text-gray-600 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <li><strong className="text-gray-800">Grievance Officer:</strong> SK Murgan</li>
                 <li><strong className="text-gray-800">Email:</strong> <a href="mailto:compliance@oldful.com" className="text-[var(--color-primary)] hover:underline">compliance@oldful.com</a></li>
-                <li><strong className="text-gray-800">Phone:</strong> +91 94801-98108</li>
+                <li><strong className="text-gray-800">Phone:</strong> +91 80621 80429</li>
                 <li><strong className="text-gray-800">Address:</strong> No 402-B 1TF, ITI HBCS Layout, Phase 3, Mysore Road Rajarajeshwari Nagar Bangalore 560039</li>
               </ul>
               <p className="text-gray-600 mt-4 leading-relaxed bg-blue-50/50 p-4 rounded-xl border border-blue-100">

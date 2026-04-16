@@ -146,7 +146,13 @@ export default function TeamPage() {
 
 import { AnimatePresence } from 'framer-motion';
 
-function TeamMemberCard({ member, index, onSelect, onEmail, onLinkedIn }: any) {
+function TeamMemberCard({ member, index, onSelect, onEmail, onLinkedIn }: {
+  member: TeamMember;
+  index: number;
+  onSelect: (m: TeamMember) => void;
+  onEmail: (e: React.MouseEvent, email: string) => void;
+  onLinkedIn: (e: React.MouseEvent, linkedin: string) => void;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -172,7 +178,7 @@ function TeamMemberCard({ member, index, onSelect, onEmail, onLinkedIn }: any) {
           </div>
         </div>
 
-        <p className="text-gray-600 mt-2 leading-relaxed line-clamp-3 text-sm italic opacity-80">"{member.shortBio}"</p>
+        <p className="text-gray-600 mt-2 leading-relaxed line-clamp-3 text-sm italic opacity-80">&quot;{member.shortBio}&quot;</p>
         
         {/* Directly visible contact links */}
         <div className="mt-6 flex flex-col gap-2 relative z-20">
@@ -223,6 +229,13 @@ function FullProfileModal({ member, onClose }: { member: TeamMember; onClose: ()
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         className="relative bg-white w-full max-w-5xl h-fit max-h-[90vh] overflow-hidden rounded-[40px] shadow-2xl flex flex-col md:flex-row z-[110]"
       >
+        <button 
+          onClick={onClose} 
+          className="absolute top-6 right-6 z-[120] w-12 h-12 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center text-gray-400 hover:bg-emerald-50 hover:text-emerald-600 transition-all shadow-lg border border-gray-100"
+        >
+          <X className="w-6 h-6" />
+        </button>
+
         {/* Left Side: Image */}
         <div className="w-full md:w-2/5 h-64 md:h-auto relative bg-gray-100">
            <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
@@ -233,10 +246,7 @@ function FullProfileModal({ member, onClose }: { member: TeamMember; onClose: ()
         </div>
 
         {/* Right Side: Content */}
-        <div className="flex-1 overflow-y-auto p-8 md:p-16 relative">
-          <button onClick={onClose} className="absolute top-8 right-8 w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:bg-emerald-50 hover:text-emerald-600 transition-all">
-            <X className="w-6 h-6" />
-          </button>
+        <div className="flex-1 overflow-y-auto p-8 md:p-16">
 
           <div className="max-w-xl">
              <div className="flex gap-4 mb-10">
