@@ -88,7 +88,10 @@ export function NotificationDropdown({ isOpen, onClose, notifications, isLoading
                                                         {new Date(n.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                                                     </span>
                                                 </div>
-                                                <p className="text-xs text-gray-600 leading-relaxed">{n.body}</p>
+                                                <div 
+                                                    className="text-xs text-gray-600 leading-relaxed notification-body"
+                                                    dangerouslySetInnerHTML={{ __html: n.body }}
+                                                />
                                             </div>
                                         </div>
                                     ))}

@@ -16,6 +16,7 @@ import { userService, UserProfile, Address, EmergencyContact, MedicalCard, Booki
 import { useUserHooks, USER_QUERY_KEYS } from '@/hooks/useUserHooks';
 import { SERVICES_CONFIG } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
+import { formatPrice } from '@/utils/formatPrice';
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
 import { toast } from 'sonner';
 
@@ -283,7 +284,7 @@ function BookingsTab() {
                       {booking.status}
                     </span>
                     <div className="flex flex-col items-end">
-                      {booking.amount && <span className="text-sm font-bold text-gray-900">₹{booking.amount}</span>}
+                      {booking.amount && <span className="text-sm font-bold text-gray-900">₹{formatPrice(booking.amount)}</span>}
                       {booking.payments?.some((p) => p.status === 'SUCCESS') ? (
                         <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 mt-1 flex items-center gap-0.5">
                           <CheckCircle2 className="w-2.5 h-2.5" /> PAID

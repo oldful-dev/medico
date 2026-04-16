@@ -106,22 +106,29 @@ export const useAuthStore = create<AuthState>((set) => ({
     initialize: async () => {
         set({ isLoading: true });
         try {
-            // Step 1: Exchange refresh cookie for a new access token
             const refreshRes = await fetch('/api/auth/refresh', { method: 'POST' });
-            const refreshData = await refreshRes.json();
+            
+            // Safety check: if response is not JSON or not OK (e.g. 404 HTML), handle gracefully
+            if (!refreshRes.ok) {
+                console.warn('[Auth] Session refresh failed (status:', refreshRes.status, ')');
+                // If it's 401/404/500, we should ensure cookies are cleared to prevent middleware loops
+                await fetch('/api/auth/logout', { method: 'POST' }).catch(() => null);
+                set({ isAuthenticated: false, user: null, isLoading: false });
+                return;
+            }
 
-            if (!refreshRes.ok || !refreshData.success || !refreshData.data?.accessToken) {
-                // No valid session — user is a guest
+            const refreshData = await refreshRes.json().catch(() => null);
+
+            if (!refreshData || !refreshData.success || !refreshData.data?.accessToken) {
+                // Invalid session response — clear cookies via logout just in case
+                await fetch('/api/auth/logout', { method: 'POST' }).catch(() => null);
                 set({ isAuthenticated: false, user: null, isLoading: false });
                 return;
             }
 
             const accessToken = refreshData.data.accessToken;
-
-            // Step 2: Hydrate apiClient (mirrors mobile: apiClient.setAuthToken)
             apiClient.setToken(accessToken);
 
-            // Step 3: Register callbacks
             apiClient.setAuthFailureCallback(() => {
                 set({ isAuthenticated: false, user: null, isLoading: false });
                 if (typeof globalThis.location !== 'undefined') {
@@ -129,22 +136,21 @@ export const useAuthStore = create<AuthState>((set) => ({
                 }
             });
 
-            // Step 4: Fetch user profile using auth-token cookie
             const profileRes = await fetch('/api/auth/me');
-            const profileData = await profileRes.json();
+            const profileData = await profileRes.json().catch(() => null);
 
-            if (profileRes.ok && profileData.success && profileData.data) {
+            if (profileRes.ok && profileData?.success && profileData?.data) {
                 set({
                     isAuthenticated: true,
                     user: profileData.data as AuthUser,
                     isLoading: false,
                 });
             } else {
-                // Access token is valid but profile unavailable — still mark as authenticated
                 set({ isAuthenticated: true, user: null, isLoading: false });
             }
         } catch (err) {
-            console.error('[Auth] Initialization failed:', err);
+            console.error('[Auth] Initialization network/parsing error:', err);
+            // On catastrophic failure, clear state to guest
             set({ isAuthenticated: false, user: null, isLoading: false });
         }
     },

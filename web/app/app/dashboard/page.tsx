@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useSDUIHooks } from '@/hooks/useSDUIHooks';
 import { useAuthStore } from '@/store/authStore';
-import { useUserHooks } from '@/hooks/useUserHooks';
+import { useUserHooks, USER_QUERY_KEYS } from '@/hooks/useUserHooks';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import { notificationService } from '@/services/api/notificationService';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -65,7 +65,7 @@ export default function DashboardPage() {
   const handleMarkAsRead = async (id: string) => {
     try {
       await notificationService.markAsRead(id);
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.notifications });
     } catch (e) { console.error(e); }
   };
 
@@ -115,28 +115,28 @@ export default function DashboardPage() {
   const STATS = [
     { 
       label: 'My Bookings', 
-      value: String(totalBookingsCount), 
+      value: bookingsLoading ? '—' : String(totalBookingsCount), 
       sub: 'All time', 
       icon: CalendarDays, 
       color: 'text-emerald-600' 
     },
     { 
       label: 'Unread Alerts', 
-      value: String(unreadCount), 
+      value: notificationsLoading ? '—' : String(unreadCount), 
       sub: 'Notifications', 
       icon: Bell, 
       color: 'text-blue-600' 
     },
     { 
       label: 'Emergency', 
-      value: String(emergencyContactsCount), 
+      value: profileLoading ? '—' : String(emergencyContactsCount), 
       sub: 'Contacts set', 
       icon: Heart, 
       color: 'text-rose-600' 
     },
     { 
       label: 'Active Plan', 
-      value: activePlan === 'Guest User' ? 'None' : activePlan.split(' ')[0], 
+      value: profileLoading ? '—' : (activePlan === 'Guest User' ? 'None' : activePlan.split(' ')[0]), 
       sub: 'Subscription', 
       icon: Shield, 
       color: 'text-violet-600' 
@@ -341,7 +341,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 mb-4">
-                {[{ label: 'Bookings', val: String(totalBookingsCount) }, { label: 'Plan', val: activePlan }].map(s => (
+                {[{ label: 'Bookings', val: bookingsLoading ? '—' : String(totalBookingsCount) }, { label: 'Plan', val: profileLoading ? '—' : activePlan }].map(s => (
                   <div key={s.label} className="bg-white/10 rounded-xl p-3 text-center">
                     <div className="font-bold text-lg truncate" title={s.val}>{s.val}</div>
                     <div className="text-white/60 text-[10px] uppercase tracking-wider">{s.label}</div>

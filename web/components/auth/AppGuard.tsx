@@ -18,7 +18,12 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
         return <DashboardShell />;
     }
 
-    // Note: Middleware handles the redirect to /auth if !isAuthenticated.
-    // We just ensure we don't render children while loading.
+    if (!isAuthenticated) {
+        if (typeof window !== 'undefined') {
+            window.location.href = '/auth?reason=unauthorized';
+        }
+        return <DashboardShell />;
+    }
+
     return <>{children}</>;
 }

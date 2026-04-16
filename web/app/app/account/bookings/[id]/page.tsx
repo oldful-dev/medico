@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { 
     ChevronLeft, Clock, MapPin, Package, ShieldCheck, 
     CreditCard, ChevronRight, Phone, Download, AlertCircle, 
-    Calendar, FileText, Activity, X 
+    Calendar, FileText, Activity, X, Camera, Eye 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { bookingService } from '@/services/api/bookingService';
@@ -278,7 +278,7 @@ export default function BookingDetailsPage() {
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
                      {Object.entries(booking.formDataJson).map(([key, value]) => {
-                        if (['serviceId', 'id', 'price', 'address', 'scheduleTime', 'providerType'].includes(key)) return null;
+                        if (['serviceId', 'id', 'price', 'address', 'scheduleTime', 'providerType', 'attachments', 'photos', 'documents'].includes(key)) return null;
                         if (typeof value !== 'string' && typeof value !== 'number') return null;
                         return (
                            <div key={key}>
@@ -290,6 +290,51 @@ export default function BookingDetailsPage() {
                   </div>
                </div>
             )}
+
+            {/* Uploaded Documents Section */}
+            {(() => {
+               const allAttachments = [
+                  ...(booking.attachments || []),
+                  ...(booking.photos || []),
+                  ...(booking.formDataJson?.attachments as string[] || []),
+                  ...(booking.formDataJson?.photos as string[] || []),
+                  ...(booking.formDataJson?.documents as string[] || []),
+               ].filter((v, i, a) => v && typeof v === 'string' && a.indexOf(v) === i);
+
+               if (allAttachments.length === 0) return null;
+
+               return (
+                  <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                     <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <Camera className="w-4 h-4 text-emerald-500" /> Uploaded Documents
+                     </h3>
+                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {allAttachments.map((url, i) => (
+                           <motion.div 
+                              key={i} 
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => window.open(getAssetUrl(url), '_blank')}
+                              className="group relative aspect-[4/3] rounded-2xl overflow-hidden bg-gray-100 border border-gray-100 cursor-pointer shadow-sm hover:shadow-md transition-all"
+                           >
+                              <Image 
+                                 src={getAssetUrl(url)} 
+                                 alt={`Attachment ${i + 1}`} 
+                                 fill 
+                                 className="object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                 <Eye className="w-6 h-6 text-white" />
+                              </div>
+                           </motion.div>
+                        ))}
+                     </div>
+                     <p className="text-[10px] text-gray-400 mt-3 font-medium text-center">
+                        Click on an image to view it in full screen
+                     </p>
+                  </div>
+               );
+            })()}
 
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
                <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">

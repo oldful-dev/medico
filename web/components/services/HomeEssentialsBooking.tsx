@@ -3,18 +3,20 @@
 import React, { useState } from 'react';
 import {
    MapPin, CheckCircle2,
-   Info, Camera, Calendar, ArrowRight, ChevronRight,
+   Info, Camera, Calendar, ArrowRight, ChevronRight, Loader2,
 } from 'lucide-react';
 import { ServiceConfig } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import { useAuthStore } from '@/store/authStore';
+import { formatPrice } from '@/utils/formatPrice';
 
 interface Props {
    config: ServiceConfig;
    onBook: (data: Record<string, unknown>) => void;
+   isLoading?: boolean;
 }
 
-export default function HomeEssentialsBooking({ config, onBook }: Props) {
+export default function HomeEssentialsBooking({ config, onBook, isLoading = false }: Props) {
    const { user } = useAuthStore();
    const [formData, setFormData] = useState<Record<string, unknown>>({});
    const [selectedDate, setSelectedDate] = useState('');
@@ -124,7 +126,7 @@ export default function HomeEssentialsBooking({ config, onBook }: Props) {
                   <div className="flex items-center justify-between">
                      <div>
                         <h3 className="text-xl font-bold text-white">Book Now</h3>
-                        <p className="text-emerald-200 text-xs mt-1">Starting from ₹{config.pricing[0]?.price || '---'}</p>
+                        <p className="text-emerald-200 text-xs mt-1">Starting from ₹{formatPrice(config.pricing[0]?.price)}</p>
                      </div>
                      <div className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-lg text-white text-[10px] font-bold uppercase tracking-widest border border-white/10">
                         Available
@@ -209,22 +211,28 @@ export default function HomeEssentialsBooking({ config, onBook }: Props) {
                   <div className="mt-3 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
                      <div className="flex items-center justify-between mb-0.5">
                         <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">Total Payable</span>
-                        <span className="text-xl font-black text-emerald-800">₹{config.pricing[0]?.price}</span>
+                        <span className="text-xl font-black text-emerald-800">₹{formatPrice(config.pricing[0]?.price)}</span>
                      </div>
                      <p className="text-[9px] text-emerald-600 font-medium">Inclusive of taxes & visit charges</p>
                   </div>
 
                   {/* Submit */}
                   <button
-                     disabled={!isFormValid}
+                     disabled={!isFormValid || isLoading}
                      onClick={() => onBook({ ...formData, selectedDate, address, images })}
-                     className={`group relative w-full h-16 rounded-2xl font-black text-base shadow-xl transition-all active:scale-[0.98] ${isFormValid
+                     className={`group relative w-full h-16 rounded-2xl font-black text-base shadow-xl transition-all active:scale-[0.98] ${isFormValid && !isLoading
                         ? 'bg-[var(--color-primary-deep)] text-white hover:bg-[#023d22] shadow-emerald-900/20'
                         : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         }`}
                   >
                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        Confirm Booking <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        {isLoading ? (
+                           <>
+                              <Loader2 className="w-5 h-5 animate-spin" /> Preparing...
+                           </>
+                        ) : (
+                           <>Confirm Booking <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></>
+                        )}
                      </span>
                      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
                   </button>

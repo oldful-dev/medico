@@ -103,9 +103,8 @@ const compressImage = async (buffer, mimeType, opts = {}) => {
 /**
  * Step 1: Upload raw file to GCS.
  */
-const uploadToGCS = async (buffer, folder, originalName, file) => {
-    const rawFolder = `uploads/raw/${folder}`;
-    const result = await uploadFile(buffer, rawFolder, originalName, file);
+const uploadToGCS = async (buffer, folder, originalName, file, userId = null) => {
+    const result = await uploadFile(buffer, folder, originalName, file, userId);
     return result; // { url, storagePath, gcsUri, provider: 'gcs' }
 };
 
@@ -175,10 +174,8 @@ const processUpload = async (file, opts = {}) => {
     } = opts;
 
     const startTime = Date.now();
-    const uploadFolder = `${folder}/${userId}`;
-
     // ── Step 1: Upload raw to GCS ──────────────────────
-    const gcsResult = await uploadToGCS(file.buffer, uploadFolder, file.originalname, file);
+    const gcsResult = await uploadToGCS(file.buffer, folder, file.originalname, file, userId);
 
     logger.info(`Pipeline Step 1 [GCS Upload]: ${Date.now() - startTime}ms`);
 
@@ -223,13 +220,13 @@ const processUpload = async (file, opts = {}) => {
  * Lightweight upload — skips OCR, just uploads to GCS and makes it public.
  * Used for service booking attachments where CDN isn't critical.
  */
-const quickUpload = async (file, folder = 'general') => {
+const quickUpload = async (file, folder = 'general', userId = null) => {
     const validation = validateFile(file);
     if (!validation.valid) {
         throw new Error(validation.errors.join('; '));
     }
 
-    const result = await uploadFile(file.buffer, folder, file.originalname, file);
+    const result = await uploadFile(file.buffer, folder, file.originalname, file, userId);
     return {
         url: result.url,
         storagePath: result.storagePath,

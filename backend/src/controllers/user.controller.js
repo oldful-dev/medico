@@ -397,7 +397,7 @@ const uploadHealthReport = async (req, res, next) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: 'File required' });
 
-        const { url, gcsUri } = await uploadFile(req.file.buffer, 'health-reports', req.file.originalname, req.file);
+        const { url, gcsUri } = await uploadFile(req.file.buffer, 'health-reports', req.file.originalname, req.file, req.params.id);
 
         // Create the report record immediately (no waiting for OCR)
         const report = await prisma.healthReport.create({
@@ -568,7 +568,7 @@ const uploadProfileAvatar = async (req, res, next) => {
             await purgeCDNCache(existingUser.profileImageUrl).catch(() => {});
         }
 
-        const { url } = await uploadFile(req.file.buffer, 'profile-avatars', req.file.originalname);
+        const { url } = await uploadFile(req.file.buffer, 'profile-avatars', req.file.originalname, null, req.user.id);
 
         // Purge CDN cache for the new URL so it's immediately accessible
         await purgeCDNCache(url).catch(() => {});

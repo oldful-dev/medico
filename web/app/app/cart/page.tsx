@@ -6,6 +6,7 @@ import { useCartStore } from '@/store/cartStore';
 import { ChevronLeft, Info, Calendar, MapPin, Stethoscope, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
 import { SERVICES_CONFIG } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
+import { formatPrice } from '@/utils/formatPrice';
 
 export default function CartPage() {
   const router = useRouter();
@@ -80,7 +81,7 @@ export default function CartPage() {
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                       <div className="font-black text-gray-900 text-lg">₹{item.price}</div>
+                       <div className="font-black text-gray-900 text-lg">₹{formatPrice(item.price)}</div>
                        <button 
                          onClick={() => removeItem(item.id)}
                          className="text-[10px] font-black text-red-400 uppercase tracking-tighter hover:text-red-600 transition-colors"
