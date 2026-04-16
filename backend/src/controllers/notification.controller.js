@@ -94,19 +94,19 @@ const sendCampaign = async (req, res, next) => {
 
         const users = await prisma.user.findMany({
             where: { ...where, status: 'ACTIVE' },
-            select: { email: true, phone: true, name: true },
+            select: { id: true, email: true, phone: true, name: true }, // Added id: true
         });
 
         let sentCount = 0;
 
         for (const user of users) {
             if (channel === 'EMAIL' && user.email) {
-                await sendEmail({ to: user.email, subject, html: body });
-                sentCount++;
+                const sent = await sendEmail({ to: user.email, subject, html: body, userId: user.id, isMarketing: true });
+                if (sent) sentCount++;
             }
             if (channel === 'WHATSAPP' && user.phone) {
-                await sendWhatsApp({ phoneNumber: user.phone, templateName: templateId || 'campaign', parameters: [user.name] });
-                sentCount++;
+                const sent = await sendWhatsApp({ phoneNumber: user.phone, templateName: templateId || 'campaign', parameters: [user.name], userId: user.id });
+                if (sent) sentCount++;
             }
         }
 
