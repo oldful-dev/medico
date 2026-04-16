@@ -35,7 +35,7 @@ export default function WaitlistPage() {
         <div>
             <div className="page-header">
                 <h2>Wellness Waitlist</h2>
-                <p>Manage and export leads from the Wellness "Coming Soon" page campaign.</p>
+                <p>Manage and export leads from the Wellness &quot;Coming Soon&quot; page campaign.</p>
             </div>
 
             <div className="filter-bar">
