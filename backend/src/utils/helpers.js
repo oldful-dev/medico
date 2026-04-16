@@ -95,6 +95,9 @@ const generateOTP = () => {
 const calculateExpiryDate = (startDate, billingCycle) => {
     const date = new Date(startDate);
     switch (billingCycle) {
+        case 'MONTHLY':
+            date.setMonth(date.getMonth() + 1);
+            break;
         case 'QUARTERLY':
             date.setMonth(date.getMonth() + 3);
             break;
@@ -104,6 +107,8 @@ const calculateExpiryDate = (startDate, billingCycle) => {
         case 'YEARLY':
             date.setFullYear(date.getFullYear() + 1);
             break;
+        default:
+            date.setMonth(date.getMonth() + 1); // Fallback to 1 month
     }
     return date;
 };

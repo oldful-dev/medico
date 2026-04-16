@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Phone, Mail, MessageSquare, Search, Plus, 
   CheckCircle, Info, ArrowRight, X, Clock,
-  Loader2, BadgeHelp, CheckCircle2
+  Loader2, BadgeHelp, CheckCircle2, MapPin, User
 } from 'lucide-react';
-import { supportService, SupportTicket, TicketCategory } from '@/services/api/supportService';
+import { supportService, SupportTicket, TicketCategory, TicketMessage } from '@/services/api/supportService';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
 
@@ -50,12 +50,26 @@ export default function ContactPage() {
     const [loadingTickets, setLoadingTickets] = useState(false);
     
     // New Ticket Form
-    const [form, setForm] = useState({ subject: '', description: '', category: 'service' as TicketCategory });
+    const [form, setForm] = useState({ 
+        subject: '', 
+        description: '', 
+        category: 'service' as TicketCategory,
+        priority: 'medium',
+        contactNumber: ''
+    });
     const [submitting, setSubmitting] = useState(false);
 
+    const { user } = useAuthStore();
+
+    useEffect(() => {
+        if (user?.phone) {
+            setForm(prev => ({ ...prev, contactNumber: user.phone }));
+        }
+    }, [user]);
+
     const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
-    const [ticketDetails, setTicketDetails] = useState<any>(null);
-    const [messages, setMessages] = useState<any[]>([]);
+    const [ticketDetails, setTicketDetails] = useState<(SupportTicket & { messages?: TicketMessage[] }) | null>(null);
+    const [messages, setMessages] = useState<TicketMessage[]>([]);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [chatLoading, setChatLoading] = useState(false);
     const [replyText, setReplyText] = useState('');
@@ -127,12 +141,14 @@ export default function ContactPage() {
         try {
             const res = await supportService.addMessage(selectedTicketId, text);
             if (res.success && res.data) {
-                setMessages(prev => [...prev, res.data]);
+                const newMessage = res.data;
+                setMessages(prev => [...prev, newMessage]);
                 setReplyText('');
                 // Scroll to bottom logic would go here if we had a ref
             }
-        } catch (err: any) {
-            toast.error(err.message || 'Failed to send message');
+        } catch (err: unknown) {
+            const error = err as { message?: string };
+            toast.error(error.message || 'Failed to send message');
         } finally {
             setReplying(false);
         }
@@ -146,11 +162,18 @@ export default function ContactPage() {
             if (res.success) {
                 toast.success('Ticket raised successfully');
                 setShowTicketModal(false);
-                setForm({ subject: '', description: '', category: 'service' });
+                setForm({ 
+                    subject: '', 
+                    description: '', 
+                    category: 'service' as TicketCategory,
+                    priority: 'medium',
+                    contactNumber: user?.phone || ''
+                });
                 fetchTickets();
             }
-        } catch (err: any) {
-            toast.error(err.message || 'Failed to raise ticket');
+        } catch (err: unknown) {
+            const error = err as { message?: string };
+            toast.error(error.message || 'Failed to raise ticket');
         } finally {
             setSubmitting(false);
         }
@@ -206,14 +229,14 @@ export default function ContactPage() {
                                 title="Call Us"
                                 desc="24/7 Support Line"
                                 color="bg-blue-50 text-blue-600"
-                                onClick={() => window.open('tel:+919480198108')}
+                                onClick={() => window.open('tel:+918062180429')}
                             />
                             <ContactCard 
                                 icon={MessageSquare}
                                 title="WhatsApp"
                                 desc="Quick Chat Help"
                                 color="bg-emerald-50 text-emerald-600"
-                                onClick={() => window.open('https://wa.me/919480198108')}
+                                onClick={() => window.open('https://wa.me/918062180429')}
                             />
                             <ContactCard 
                                 icon={Plus}
@@ -324,32 +347,62 @@ export default function ContactPage() {
 
                         {/* 2. Official Contacts */}
                         <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] border border-gray-100 shadow-xl p-6 md:p-8">
-                            <h3 className="font-bold text-gray-900 mb-6">Contact Details</h3>
-                            <div className="space-y-8">
+                            <h2 className="font-bold text-gray-900 mb-8 flex items-center gap-2">
+                                <Info className="w-5 h-5 text-emerald-500" />
+                                Contact Details
+                            </h2>
+                            
+                            <div className="space-y-5">
+                                {/* Headquarters */}
                                 <div>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Customer Support</p>
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-3 text-sm font-semibold text-gray-700">
-                                            <div className="w-8 h-8 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center">
-                                                <Phone className="w-4 h-4" />
-                                            </div>
-                                            +91 94801 98108
+                                    <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-4">Headquarters</p>
+                                    <div className="flex gap-4 items-start">
+                                        <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
+                                            <MapPin className="w-5 h-5" />
                                         </div>
-                                        <div className="flex items-center gap-3 text-sm font-semibold text-gray-700">
-                                            <div className="w-8 h-8 bg-emerald-50 text-emerald-500 rounded-lg flex items-center justify-center">
-                                                <Mail className="w-4 h-4" />
+                                        <div>
+                                            <h4 className="text-sm font-bold text-gray-900 mb-1 leading-tight">Oldful Gentlora Esteem LLP</h4>
+                                            <p className="text-[13px] text-gray-500 leading-relaxed font-medium">
+                                                No 402-B 1TF, ITI HBCS Layout, Phase 3,<br />
+                                                Mysore Road, Rajarajeshwari Nagar,<br />
+                                                Bangalore 560039
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Customer Support */}
+                                <div className="pt-8 border-t border-gray-50">
+                                    <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-4">Customer Support</p>
+                                    <div className="space-y-5">
+                                        <div className="flex items-center gap-4 text-sm font-bold text-gray-800">
+                                            <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center shrink-0">
+                                                <Phone className="w-5 h-5" />
+                                            </div>
+                                            +91 80621 80429
+                                        </div>
+                                        <div className="flex items-center gap-4 text-sm font-bold text-gray-800">
+                                            <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center shrink-0">
+                                                <Mail className="w-5 h-5" />
                                             </div>
                                             client@oldful.com
                                         </div>
                                     </div>
                                 </div>
-                                <div className="pt-6 border-t border-gray-50">
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Grievance Officer</p>
-                                    <div className="space-y-4">
-                                        <p className="text-sm font-bold text-gray-900">SK Murgan</p>
-                                        <div className="flex items-center gap-3 text-sm font-semibold text-gray-700">
-                                            <div className="w-8 h-8 bg-amber-50 text-amber-500 rounded-lg flex items-center justify-center">
-                                                <Mail className="w-4 h-4" />
+
+                                {/* Grievance Redressal */}
+                                <div className="pt-8 border-t border-gray-50">
+                                    <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-4">Grievance Officer</p>
+                                    <div className="space-y-5">
+                                        <div className="flex items-center gap-4 text-sm font-bold text-gray-800">
+                                            <div className="w-10 h-10 bg-gray-50 text-gray-500 rounded-xl flex items-center justify-center shrink-0">
+                                                <User className="w-5 h-5" />
+                                            </div>
+                                            SK Murgan
+                                        </div>
+                                        <div className="flex items-center gap-4 text-sm font-bold text-gray-800">
+                                            <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center shrink-0 transition-colors">
+                                                <Mail className="w-5 h-5" />
                                             </div>
                                             compliance@oldful.com
                                         </div>
@@ -392,7 +445,7 @@ export default function ContactPage() {
                                     </div>
                                 </div>
                                 <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-tighter ${STATUS_COLORS[ticketDetails?.status || 'open']}`}>
-                                    {ticketDetails?.status.replace('_', ' ')}
+                                    {ticketDetails?.status?.replace('_', ' ') || 'open'}
                                 </span>
                             </div>
 
@@ -414,7 +467,7 @@ export default function ContactPage() {
                                             <div className="pt-4 border-t border-gray-50 text-[10px] font-semibold text-gray-400 flex items-center gap-3">
                                                 <span>{ticketDetails?.category}</span>
                                                 <div className="w-1 h-1 bg-gray-200 rounded-full" />
-                                                <span>Created {new Date(ticketDetails?.createdAt).toLocaleDateString()}</span>
+                                                <span>Created {ticketDetails?.createdAt ? new Date(ticketDetails.createdAt).toLocaleDateString() : ''}</span>
                                             </div>
                                         </div>
 
@@ -458,7 +511,7 @@ export default function ContactPage() {
                             {(ticketDetails?.status === 'resolved' || ticketDetails?.status === 'closed') ? (
                                 <div className="p-6 md:p-8 bg-white border-t border-gray-100 flex items-center justify-center">
                                     <div className="flex items-center gap-2 text-sm text-gray-400 font-medium">
-                                        <Clock className="w-4 h-4" /> This ticket has been {ticketDetails.status.replace('_', ' ')}.
+                                        <Clock className="w-4 h-4" /> This ticket has been {ticketDetails?.status?.replace('_', ' ')}.
                                     </div>
                                 </div>
                             ) : (
@@ -474,7 +527,7 @@ export default function ContactPage() {
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter' && !e.shiftKey) {
                                                         e.preventDefault();
-                                                        handleSendReply(e as any);
+                                                        handleSendReply(e as unknown as React.FormEvent);
                                                     }
                                                 }}
                                             />
@@ -509,67 +562,102 @@ export default function ContactPage() {
                             initial={{ opacity: 0, y: 50, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 50, scale: 0.95 }}
-                            className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden"
+                            className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden border border-emerald-100"
                         >
-                            <div className="p-8 border-b border-gray-50 flex items-center justify-between">
-                                <h3 className="text-2xl font-bold text-gray-900">Raise a Support Ticket</h3>
-                                <button onClick={() => setShowTicketModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
+                            <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gradient-to-r from-white to-emerald-50/30">
+                                <div>
+                                    <h3 className="text-2xl font-bold text-gray-900">Raise a Support Ticket</h3>
+                                    <p className="text-xs text-gray-500 mt-1">Our team typically responds in less than 48 hours.</p>
+                                </div>
+                                <button onClick={() => setShowTicketModal(false)} className="p-2 hover:bg-white hover:shadow-sm rounded-full transition-all">
                                     <X className="w-6 h-6 text-gray-400" />
                                 </button>
                             </div>
 
-                            <form onSubmit={handleCreateTicket} className="p-8 space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">Subject</label>
-                                    <input 
-                                        required
-                                        type="text" 
-                                        placeholder="Brief summary of your issue"
-                                        className="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-4 ring-emerald-500/10 focus:border-emerald-500/30 transition-all"
-                                        value={form.subject}
-                                        onChange={e => setForm({...form, subject: e.target.value})}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">Category</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {TICKET_CATEGORIES.map(c => (
-                                            <button 
-                                                key={c.id}
-                                                type="button"
-                                                onClick={() => setForm({...form, category: c.id as TicketCategory})}
-                                                className={`px-4 py-2 rounded-full text-xs font-bold border transition-all ${
-                                                    form.category === c.id 
-                                                    ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-lg shadow-emerald-200' 
-                                                    : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
-                                                }`}
-                                            >
-                                                {c.label}
-                                            </button>
-                                        ))}
+                            <form onSubmit={handleCreateTicket} className="p-8 space-y-5 overflow-y-auto max-h-[70vh] scrollbar-thin">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Category</label>
+                                        <select 
+                                            className="w-full px-4 py-3 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:ring-4 ring-emerald-500/10 focus:border-emerald-500/30 transition-all text-sm outline-none cursor-pointer"
+                                            value={form.category}
+                                            onChange={e => setForm({...form, category: e.target.value as TicketCategory})}
+                                        >
+                                            {TICKET_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Priority</label>
+                                        <div className="flex bg-gray-50 p-1 rounded-xl">
+                                            {['low', 'medium', 'high'].map(p => (
+                                                <button
+                                                    key={p}
+                                                    type="button"
+                                                    onClick={() => setForm({...form, priority: p})}
+                                                    className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                                        form.priority === p 
+                                                        ? 'bg-white text-emerald-700 shadow-sm border border-emerald-100' 
+                                                        : 'text-gray-400 hover:text-gray-600'
+                                                    }`}
+                                                >
+                                                    {p}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">Detailed Description</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1 text-emerald-600">Subject</label>
+                                    <div className="relative">
+                                        <BadgeHelp className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                        <input 
+                                            required
+                                            type="text" 
+                                            placeholder="Brief summary of your issue"
+                                            className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-4 ring-emerald-500/10 focus:border-emerald-500/30 transition-all text-sm"
+                                            value={form.subject}
+                                            onChange={e => setForm({...form, subject: e.target.value})}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Contact Phone</label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                                        <input 
+                                            required
+                                            type="tel" 
+                                            placeholder="+91..."
+                                            className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-4 ring-emerald-500/10 focus:border-emerald-500/30 transition-all text-sm"
+                                            value={form.contactNumber}
+                                            onChange={e => setForm({...form, contactNumber: e.target.value})}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Detailed Description</label>
                                     <textarea 
                                         required
                                         rows={4}
-                                        placeholder="Describe your issue in detail..."
-                                        className="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-4 ring-emerald-500/10 focus:border-emerald-500/30 transition-all resize-none"
+                                        placeholder="Describe your issue in detail. Providing dates or booking codes helps resolve issues faster."
+                                        className="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-4 ring-emerald-500/10 focus:border-emerald-500/30 transition-all resize-none text-sm outline-none"
                                         value={form.description}
                                         onChange={e => setForm({...form, description: e.target.value})}
                                     />
                                 </div>
 
-                                <button 
-                                    disabled={submitting}
-                                    type="submit"
-                                    className="w-full bg-[var(--color-primary-deep)] text-white py-4 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-emerald-900/20 active:translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:bg-gray-300"
-                                >
-                                    {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Submit Ticket"}
-                                </button>
+                                <div className="pt-2">
+                                    <button 
+                                        disabled={submitting}
+                                        type="submit"
+                                        className="w-full bg-[var(--color-primary-deep)] text-white py-4 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-emerald-900/20 active:translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:bg-gray-300 shadow-xl shadow-emerald-900/10"
+                                    >
+                                        {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Submit Ticket <ArrowRight className="w-5 h-5" /></>}
+                                    </button>
+                                </div>
                             </form>
                         </motion.div>
                     </div>
@@ -581,7 +669,15 @@ export default function ContactPage() {
 
 // ─── Sub-Components ───
 
-function ContactCard({ icon: Icon, title, desc, color, onClick }: any) {
+interface ContactCardProps {
+    icon: React.ElementType;
+    title: string;
+    desc: string;
+    color: string;
+    onClick: () => void;
+}
+
+function ContactCard({ icon: Icon, title, desc, color, onClick }: ContactCardProps) {
     return (
         <button 
             onClick={onClick}

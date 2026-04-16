@@ -2,19 +2,26 @@
 
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCartStore } from '@/store/cartStore';
+import { USER_QUERY_KEYS } from '@/hooks/useUserHooks';
 import { CheckCircle2, ChevronRight, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function SuccessPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const clearCart = useCartStore(state => state.clearCart);
   const [bookingId] = React.useState(() => Math.floor(100000 + Math.random() * 900000));
 
-  // Clear cart upon successful landing since order is complete
+  // Clear cart and invalidate queries upon successful landing since order is complete
   useEffect(() => {
     clearCart();
-  }, [clearCart]);
+    
+    // Proactively refresh data for Dashboard/Account
+    queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.bookings });
+    queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile });
+  }, [clearCart, queryClient, USER_QUERY_KEYS]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[var(--color-primary-deep)] p-6 text-white pb-24 text-center">

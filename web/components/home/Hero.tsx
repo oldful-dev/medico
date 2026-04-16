@@ -9,7 +9,7 @@ import Image from 'next/image';
 
 export function Hero() {
   return (
-    <section className="relative w-full min-h-[100vh] bg-gradient-to-b from-[#FFFCF6] to-[#FFF3E0]/30 pb-20 overflow-hidden flex flex-col items-center">
+    <section className="relative w-full min-h-[90vh] bg-gradient-to-b from-[#FFFCF6] to-[#FFF3E0]/30 pt-8 pb-20 overflow-hidden flex flex-col items-center">
 
       {/* Background Radial Glow */}
       <div className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[90vw] h-[90vw] max-w-[900px] max-h-[900px] bg-gradient-radial from-[#FFF3E0] via-white/40 to-transparent rounded-full opacity-80 pointer-events-none z-0 blur-[80px]"></div>

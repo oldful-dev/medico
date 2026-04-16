@@ -8,7 +8,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "eas-build-pre-install": "node -e \"const fs = require('fs'); const content = process.env.GOOGLE_SERVICES_JSON; if (content) { try { const decoded = content.startsWith('{') ? content : Buffer.from(content, 'base64').toString(); fs.writeFileSync('google-services.json', decoded); console.log('google-services.json created successfully.'); } catch (e) { console.error('Failed to create google-services.json:', e); process.exit(1); } } else { console.warn('GOOGLE_SERVICES_JSON environment variable is missing.'); }\""
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

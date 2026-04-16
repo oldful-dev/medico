@@ -41,6 +41,17 @@
         "EXPO_PUBLIC_FIREBASE_APP_ID": "EXPO_PUBLIC_FIREBASE_APP_ID"
       }
     },
+    "preview2": {
+      "android": {
+        "gradleCommand": ":app:assembleRelease"
+      }
+    },
+    "preview3": {
+      "developmentClient": true
+    },
+    "preview4": {
+      "distribution": "internal"
+    },
     "production": {
       "autoIncrement": true,
       "env": {

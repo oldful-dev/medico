@@ -20,8 +20,9 @@ function AuthForm() {
   const [error, setError] = useState('');
   const [phone, setPhoneState] = useState('');
   const isVerifyingRef = useRef(false);
+  const lastAttemptedOtpRef = useRef('');
 
-  const { register, handleSubmit, watch } = useForm({
+  const { register, handleSubmit, watch, setValue } = useForm({
     defaultValues: { phone: '', otp: '' },
   });
 
@@ -79,18 +80,23 @@ function AuthForm() {
         }
       } else {
         setError(response.message || 'Invalid or expired OTP');
+        setValue('otp', '');
+        lastAttemptedOtpRef.current = '';
       }
     } catch (err: unknown) {
       setError((err instanceof Error ? err.message : null) || 'Verification failed. Please try again.');
+      setValue('otp', '');
+      lastAttemptedOtpRef.current = '';
     } finally {
       setLoading(false);
       isVerifyingRef.current = false;
     }
   }, [phone, login, router]);
 
-  // Auto-submit OTP — placed after onVerifyOTP to avoid TDZ error
+  // Auto-submit OTP
   React.useEffect(() => {
-    if (step === 'OTP' && otpValue?.length === 4 && !loading) {
+    if (step === 'OTP' && otpValue?.length === 4 && !loading && otpValue !== lastAttemptedOtpRef.current) {
+      lastAttemptedOtpRef.current = otpValue;
       handleSubmit(onVerifyOTP)();
     }
   }, [otpValue, step, loading, handleSubmit, onVerifyOTP]);

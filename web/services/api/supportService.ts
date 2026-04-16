@@ -36,4 +36,7 @@ export const supportService = {
 
     addMessage: (id: string, text: string): Promise<ApiResponse<TicketMessage>> =>
         apiClient.post<TicketMessage>(`/support/tickets/${id}/messages`, { message: text }),
+
+    subscribe: (email: string): Promise<ApiResponse<null>> =>
+        apiClient.post<null>('/support/subscribe', { email }),
 };

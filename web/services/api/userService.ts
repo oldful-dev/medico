@@ -43,9 +43,9 @@ export interface EmergencyContact {
 export interface MedicalCard {
     id: string;
     bloodGroup?: string;
-    allergies?: string;
-    chronicConditions?: string;
-    currentMedications?: string;
+    allergies?: string[];
+    chronicConditions?: string[];
+    currentMedications?: string[];
     lastUpdated?: string;
 }
 
@@ -56,6 +56,8 @@ export interface HealthReport {
     fileType?: string;
     reportDate?: string;
     ocrStatus?: string;
+    flagNote?: string;
+    flagSeverity?: string;
     createdAt: string;
 }
 
@@ -63,7 +65,17 @@ export interface Subscription {
     id: string;
     status: string;
     plan: { name: string; price?: number };
-    expiresAt?: string;
+    startDate: string;
+    expiryDate: string;
+}
+
+export interface Payment {
+    id: string;
+    amount: number;
+    status: string;
+    razorpayOrderId?: string;
+    razorpayPaymentId?: string;
+    createdAt: string;
 }
 
 export interface Booking {
@@ -77,7 +89,7 @@ export interface Booking {
     addressLine?: string;
     latitude?: number;
     longitude?: number;
-    payments?: any[];
+    payments?: Payment[];
     formDataJson?: Record<string, unknown>;
     createdAt: string;
 }
@@ -141,6 +153,25 @@ export const userService = {
     getHealthReports: (): Promise<ApiResponse<HealthReport[]>> =>
         apiClient.get<HealthReport[]>('/users/profile/health-reports'),
 
+    // POST /users/:id/health-reports — multipart upload
+    uploadHealthReport: async (userId: string, file: File, title: string): Promise<ApiResponse<HealthReport>> => {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('title', title);
+        const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/users/${userId}/health-reports`,
+            {
+                method: 'POST',
+                headers: { 
+                    Authorization: `Bearer ${apiClient.getToken()}` 
+                    // Note: Browser adds boundary automatically for FormData, don't set Content-Type manually
+                },
+                body: form,
+            }
+        );
+        return res.json();
+    },
+
     // ── Bookings ──
     // GET /bookings/history
     getMyBookings: (): Promise<ApiResponse<Booking[]>> =>
@@ -152,6 +183,6 @@ export const userService = {
 
     // ── Registration/Creation ──
     // POST /users — register/create new user profile post-OTP
-    createUser: (data: any): Promise<ApiResponse<UserProfile & { accessToken: string; refreshToken: string }>> =>
+    createUser: (data: Record<string, unknown>): Promise<ApiResponse<UserProfile & { accessToken: string; refreshToken: string }>> =>
         apiClient.post<UserProfile & { accessToken: string; refreshToken: string }>('/users', data),
 };

@@ -9,21 +9,21 @@ import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 
 const GUEST_LINKS = [
-  { href: '/',             label: 'Home' },
-  { href: '/wellness',      label: 'Wellness' },
-  { href: '/plans',        label: 'Plans' },
+  { href: '/', label: 'Home' },
+  { href: '/wellness', label: 'Wellness' },
+  { href: '/plans', label: 'Plans' },
   { href: '/app/services', label: 'Services' },
-  { href: '/about',        label: 'About' },
-  { href: '/team',         label: 'Team' },
-  { href: '/contact',      label: 'Contact' },
+  { href: '/about', label: 'About' },
+  { href: '/team', label: 'Team' },
+  { href: '/contact', label: 'Contact' },
 ];
 
 const AUTH_LINKS = [
   { href: '/app/dashboard', label: 'Dashboard' },
-  { href: '/app/services',  label: 'Services' },
-  { href: '/wellness',      label: 'Wellness' },
-  { href: '/plans',         label: 'Plans' },
-  { href: '/team',          label: 'Team' },
+  { href: '/app/services', label: 'Services' },
+  { href: '/wellness', label: 'Wellness' },
+  { href: '/plans', label: 'Plans' },
+  { href: '/team', label: 'Team' },
 ];
 
 export function Navbar() {
@@ -62,18 +62,17 @@ export function Navbar() {
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className={`z-[60] transition-all duration-300 flex items-center justify-between mx-auto backdrop-blur-xl fixed ${
-          isScrolled
+        className={`z-[60] transition-all duration-300 flex items-center justify-between mx-auto backdrop-blur-xl fixed ${isScrolled
             ? 'top-4 left-4 right-4 sm:left-6 sm:right-6 max-w-6xl px-4 sm:px-6 py-2 bg-white/70 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/20'
             : 'top-0 left-0 right-0 w-full px-4 sm:px-8 py-4 bg-transparent'
-        }`}
+          }`}
       >
         {/* Logo */}
         <Link href={isAuthenticated ? '/app/dashboard' : '/'} className="flex items-center gap-1.5 sm:gap-2 group">
           <div className={`relative transition-all duration-300 ${isScrolled ? 'w-8 h-8' : 'w-11 h-11'}`}>
             <Image src="/olfful-logo.png" alt="Oldful Logo" fill className="object-contain" priority />
           </div>
-          <span className={`text-[var(--color-primary-deep)] font-bold tracking-tight hidden sm:block transition-all duration-300 ${isScrolled ? 'text-lg' : 'text-xl'}`}>
+          <span className={`text-[var(--color-primary-deep)] font-bold tracking-tight transition-all duration-300 ${isScrolled ? 'text-base sm:text-lg' : 'text-lg sm:text-xl'}`}>
             Oldful
           </span>
         </Link>
@@ -86,11 +85,10 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`relative font-semibold text-xs lg:text-sm transition-colors ${
-                  active
+                className={`relative font-semibold text-xs lg:text-sm transition-colors ${active
                     ? 'text-[var(--color-primary-deep)]'
                     : 'text-gray-500 hover:text-[var(--color-primary)]'
-                }`}
+                  }`}
               >
                 {link.label}
                 {active && (
@@ -122,11 +120,10 @@ export function Navbar() {
                 {/* Avatar */}
                 <button
                   onClick={() => router.push('/app/account')}
-                  className={`rounded-full font-bold text-[var(--color-primary-deep)] flex items-center justify-center overflow-hidden border-2 transition-all duration-300 ${
-                    pathname === '/app/account'
+                  className={`rounded-full font-bold text-[var(--color-primary-deep)] flex items-center justify-center overflow-hidden border-2 transition-all duration-300 ${pathname === '/app/account'
                       ? 'ring-2 ring-[var(--color-primary)] ring-offset-2 scale-105 border-transparent shadow-emerald-200'
                       : 'border-white/40 shadow-sm hover:shadow-md'
-                  } ${isScrolled ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'}`}
+                    } ${isScrolled ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'}`}
                 >
                   {user?.profileImageUrl ? (
                     <Image src={user.profileImageUrl} alt={user.name || 'User'} width={40} height={40} className="w-full h-full object-cover" />
@@ -198,11 +195,10 @@ export function Navbar() {
                     key={link.href}
                     href={link.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`py-3 px-4 flex items-center gap-3 font-semibold text-sm border-b border-gray-50 last:border-0 rounded-lg transition-colors ${
-                      active
+                    className={`py-3 px-4 flex items-center gap-3 font-semibold text-sm border-b border-gray-50 last:border-0 rounded-lg transition-colors ${active
                         ? 'text-[var(--color-primary-deep)]'
                         : 'text-gray-700 hover:text-[var(--color-primary)]'
-                    }`}
+                      }`}
                   >
                     {link.label === 'Account' && <UserIcon className="w-4 h-4" />}
                     {link.label}

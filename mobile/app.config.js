@@ -1,4 +1,4 @@
-{
+export default {
   "expo": {
     "name": "oldful",
     "slug": "medico",
@@ -24,7 +24,7 @@
       "predictiveBackGestureEnabled": false,
       "config": {
         "googleMaps": {
-          "apiKey": "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+          "apiKey": process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
         }
       }
     },
@@ -63,4 +63,4 @@
       "reactCompiler": true
     }
   }
-}
+};

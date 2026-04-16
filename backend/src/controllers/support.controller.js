@@ -247,6 +247,7 @@ const submitCareers = async (req, res, next) => {
     try {
         const { name, email, phone, role, experience, resumeLink, coverLetter } = req.body;
         
+        // 1. Notify Internal Team
         await sendEmail({
             to: 'business@oldful.com',
             subject: `[Job Application] ${role} - ${name}`,
@@ -275,7 +276,98 @@ const submitCareers = async (req, res, next) => {
             `,
         });
 
+        // 2. Send Confirmation to Candidate
+        await sendEmail({
+            to: email,
+            subject: `Application Received: ${role} at Oldful`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6; border: 1px solid #eee; padding: 30px; border-radius: 20px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h2 style="color: #048357; margin-bottom: 10px;">Application Received!</h2>
+                        <p style="font-size: 16px; color: #666;">Hi ${name}, thank you for your interest in joining Oldful.</p>
+                    </div>
+                    
+                    <p style="text-align: center;">We've received your application for the <strong>${role}</strong> position. Our talent acquisition team is currently reviewing your profile and will get back to you if your qualifications match our current needs.</p>
+                    
+                    <div style="background: #f8fbf9; border: 1px solid #e0f2e9; padding: 25px; border-radius: 15px; margin: 25px 0;">
+                        <h4 style="margin-top: 0; color: #048357; text-align: center;">What happens next?</h4>
+                        <div style="display: block; width: fit-content; margin: 0 auto;">
+                            <ol style="margin-bottom: 0; padding-left: 0; list-style-position: inside; font-size: 14px; color: #444;">
+                                <li style="margin-bottom: 8px;"><b>Profile Review:</b> Our team reviews applications within 3-5 days.</li>
+                                <li style="margin-bottom: 8px;"><b>Initial Screening:</b> Shortlisted candidates get a brief call.</li>
+                                <li><b>Interviews:</b> Deep-dive sessions with team leads.</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <p style="font-size: 12px; color: #888; text-align: center; margin-top: 30px;">Note: This is an automated confirmation. Please do not reply directly to this email.</p>
+                    
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;"/>
+                    
+                    <div style="text-align: center;">
+                        <p style="font-size: 14px; font-weight: bold; color: #048357; margin-bottom: 5px;">Team Oldful</p>
+                        <p style="font-size: 12px; color: #aaa;">Making Elder Care Better, Together.</p>
+                    </div>
+                </div>
+            `,
+        });
+
         sendResponse(res, 200, null, 'Application submitted successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
+// POST /api/support/subscribe
+const subscribeNewsletter = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
+
+        // In a real app, you'd save this to a Newsletter table
+        // For now, we just send a confirmation email
+
+        await sendEmail({
+            to: email,
+            subject: 'Welcome to the Oldful Journal!',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6; border: 1px solid #eee; padding: 40px; border-radius: 24px; text-align: center;">
+                    <div style="margin-bottom: 30px;">
+                        <h1 style="color: #048357; margin-bottom: 10px; font-size: 28px;">You're In!</h1>
+                        <p style="font-size: 16px; color: #666;">Thank you for subscribing to the Oldful Journal.</p>
+                    </div>
+                    
+                    <div style="background: #f8fbf9; border: 1px solid #e0f2e9; padding: 30px; border-radius: 20px; margin: 30px 0;">
+                        <p style="margin: 0; color: #444; font-size: 15px;">
+                            We're excited to share our latest insights, geriatric care tips, 
+                            and community stories with you every week. 
+                            Our mission is to help every family give their elders the dignity and care they deserve.
+                        </p>
+                    </div>
+
+                    <p style="font-size: 14px; color: #888; margin-top: 30px;">
+                        Stay tuned for our next issue. To ensure our emails reach you, 
+                        please add <b>care@oldful.com</b> to your contacts.
+                    </p>
+                    
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 40px 0;"/>
+                    
+                    <div>
+                        <p style="font-size: 16px; font-weight: bold; color: #048357; margin-bottom: 5px;">Team Oldful</p>
+                        <p style="font-size: 12px; color: #aaa;">Digital Health & Elder Care Management</p>
+                    </div>
+                </div>
+            `,
+        });
+
+        // Also notify business team of new sub
+        await sendEmail({
+            to: 'business@oldful.com',
+            subject: `[New Subscriber] ${email}`,
+            html: `<p>New newsletter subscription from: <b>${email}</b></p>`
+        });
+
+        sendResponse(res, 200, null, 'Subscribed successfully');
     } catch (error) {
         next(error);
     }
@@ -290,5 +382,6 @@ module.exports = {
     resolveTicket, 
     addMessage, 
     handleInboundEmail,
-    submitCareers
+    submitCareers,
+    subscribeNewsletter
 };
