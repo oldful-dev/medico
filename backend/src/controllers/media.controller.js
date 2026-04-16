@@ -64,6 +64,7 @@ const requestSignedUrl = async (req, res, next) => {
             fileName,
             contentType,
             15, // 15-minute window
+            req.user?.id || 'anonymous'
         );
 
         res.json({
@@ -143,6 +144,7 @@ const uploadMedia = async (req, res, next) => {
             folder,
             req.file.originalname,
             req.file,
+            req.user?.id || 'anonymous'
         );
 
         const asset = await prisma.mediaAsset.create({

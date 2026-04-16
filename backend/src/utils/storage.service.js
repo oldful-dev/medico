@@ -58,15 +58,51 @@ const PRIVATE_FOLDERS = new Set([
 ]);
 
 const isPrivateFolder = (folder) => {
+    if (!folder) return false;
     return PRIVATE_FOLDERS.has(folder) ||
            folder.startsWith('documents/') ||
-           folder.startsWith('admin/');
+           folder.startsWith('admin/') ||
+           folder.includes('health-reports') ||
+           folder.includes('medical-records') ||
+           folder.includes('documents');
 };
 
-// ─── Build file path with UUID (collision-free) ──
-const buildFilePath = (folder, originalName) => {
+/**
+ * Build a structured, collision-free file path.
+ * If userId is provided, nests under /users/{userId}/... for "Beautiful Structure".
+ * 
+ * @param {string} folder - logical category (e.g. 'health-reports')
+ * @param {string} originalName - for extension extraction
+ * @param {string|null} userId - optional owner ID for nesting
+ */
+const buildFilePath = (folder, originalName, userId = null) => {
     const ext = path.extname(originalName);
-    return `${folder}/${uuidv4()}${ext}`;
+    const fileName = `${uuidv4()}${ext}`;
+    
+    if (!userId || userId === 'anonymous') {
+        return `${folder}/${fileName}`;
+    }
+
+    // Beautiful Hierarchy Logic
+    if (folder === 'profile-avatars' || folder === 'avatar') {
+        return `users/${userId}/profile/avatar${ext}`; // Overwrite user avatar
+    }
+
+    if (folder === 'health-reports' || folder === 'records' || folder === 'medical-records') {
+        return `users/${userId}/medical-records/${fileName}`;
+    }
+
+    if (folder === 'sla-documents' || folder === 'documents' || folder === 'user-docs') {
+        return `users/${userId}/documents/${fileName}`;
+    }
+
+    // For service bookings, nest under bookings/
+    if (folder.includes('-') || folder === 'doctor-visits' || folder === 'general' || folder === 'attachments') {
+       return `users/${userId}/bookings/${folder}/${fileName}`;
+    }
+
+    // Default nested structure
+    return `users/${userId}/${folder}/${fileName}`;
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -158,14 +194,14 @@ const purgeCDNCache = async (fileUrl) => {
 //  For client-direct uploads, use getSignedUploadUrl() instead.
 //  ⚠️  No fallback to any other provider. If GCS fails, it throws.
 // ══════════════════════════════════════════════════════════════
-const uploadFile = async (buffer, folder = 'general', originalName = 'file', file = null) => {
+const uploadFile = async (buffer, folder = 'general', originalName = 'file', file = null, userId = null) => {
     if (!gcsBucket) {
         const msg = 'GCS is not configured. Cannot upload. Check GOOGLE_STORAGE_BUCKET_NAME and FIREBASE_SERVICE_ACCOUNT_PATH.';
         logger.error(`❌ ${msg}`);
         throw new Error(msg);
     }
 
-    const storagePath = buildFilePath(folder, originalName);
+    const storagePath = buildFilePath(folder, originalName, userId);
     const contentType = detectMimeType(originalName, file);
     const isPrivate = isPrivateFolder(folder);
 
@@ -209,10 +245,10 @@ const uploadFile = async (buffer, folder = 'general', originalName = 'file', fil
 //  SIGNED URL — UPLOAD (client → GCS directly, bypasses Node.js)
 //  Flow: client → POST /media/signed-url → PUT to GCS → POST /media/confirm
 // ══════════════════════════════════════════════════════════════
-const getSignedUploadUrl = async (folder, originalName, contentType, expiresMinutes = 15) => {
+const getSignedUploadUrl = async (folder, originalName, contentType, expiresMinutes = 15, userId = null) => {
     if (!gcsBucket) throw new Error('GCS not configured');
 
-    const storagePath = buildFilePath(folder, originalName);
+    const storagePath = buildFilePath(folder, originalName, userId);
     const gcsFile = gcsBucket.file(storagePath);
     const isPrivate = isPrivateFolder(folder);
 

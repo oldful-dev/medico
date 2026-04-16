@@ -14,6 +14,10 @@ import { getAssetUrl } from '@/utils/getAssetUrl';
 import { SERVICES_CONFIG } from '@/lib/services-config';
 import HomeEssentialsBooking from '@/components/services/HomeEssentialsBooking';
 import { motion } from 'framer-motion';
+import { mediaService } from '@/services/api/mediaService';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
+import { formatPrice } from '@/utils/formatPrice';
 
 const PROBLEMS = [
   { id: 'fever', label: 'Fever / Flu', icon: '85703338762dce300aaacb9a05f302adc3d527f4.png', provider: 'GP' },
@@ -39,6 +43,8 @@ export default function ServiceDetailPage() {
   const [timeMode, setTimeMode] = useState<'ASAP' | 'SCHEDULE'>('ASAP');
   const [scheduleDate, setScheduleDate] = useState('');
   const [address, setAddress] = useState('');
+  const [isBooking, setIsBooking] = useState(false);
+  const [quickServiceFiles, setQuickServiceFiles] = useState<File[]>([]);
 
   const isDoctorVisit = id === 'doctor-home-visit' || id === 'doctor-visit';
   const isHospitalTrip = id === 'hospital-trip';
@@ -58,16 +64,34 @@ export default function ServiceDetailPage() {
             </div>
             <HomeEssentialsBooking 
               config={config} 
+              isLoading={isBooking}
               onBook={async (data) => {
-                addItem({
-                  serviceId: config.slug,
-                  name: config.title,
-                  price: config.pricing[0].price,
-                  image: config.icon, // Ensure icon is passed for cart UI
-                  address: (data.address as string) || '',
-                  scheduleTime: (data.selectedDate as string) || new Date().toLocaleDateString(),
-                });
-                router.push('/app/checkout');
+                setIsBooking(true);
+                try {
+                  const images = data.images as File[];
+                  let photoUrls: string[] = [];
+                  
+                  if (images && images.length > 0) {
+                    toast.loading('Uploading photos...', { id: 'upload' });
+                    photoUrls = await mediaService.uploadMultipleMedia(images, config.slug);
+                    toast.success('Photos uploaded', { id: 'upload' });
+                  }
+
+                  addItem({
+                    serviceId: config.slug,
+                    name: config.title,
+                    price: config.pricing[0].price,
+                    image: config.icon, 
+                    address: (data.address as string) || '',
+                    scheduleTime: (data.selectedDate as string) || new Date().toLocaleDateString(),
+                    attachments: photoUrls, // Add the uploaded URLs to the cart item
+                  });
+                  router.push('/app/checkout');
+                } catch (err: any) {
+                  console.error('BOOKING UPLOAD ERROR:', err);
+                  toast.error(`Upload failed: ${err.message || 'Please try again.'}`, { id: 'upload' });
+                  setIsBooking(false);
+                }
               }} 
             />
          </div>
@@ -85,20 +109,34 @@ export default function ServiceDetailPage() {
   const handleBookQuickService = async () => {
     if ((isDoctorVisit && !selectedProblem) || (isHospitalTrip && !selectedProblem)) return;
     
-    const finalPrice = isDoctorVisit ? (selectedProvider === 'Physio' ? 699 : 499) : 500;
-    
-    addItem({
-      serviceId: config?.slug || id,
-      name: config?.title || (isDoctorVisit ? 'Doctor Visit' : 'Hospital Trip'),
-      price: finalPrice,
-      image: config?.icon || (isDoctorVisit ? '9bbd0539ddfd504d8362c951cb07d107b0df9fdf.png' : 'e9d68d0206e443ceceadd7907cd94f1c86fcacd4.png'),
-      address: address,
-      scheduleTime: timeMode === 'ASAP' ? 'ASAP' : scheduleDate,
-      providerType: selectedProvider,
-      problem: selectedProblem || '',
-    });
+    setIsBooking(true);
+    try {
+      let documentUrls: string[] = [];
+      if (quickServiceFiles.length > 0) {
+        toast.loading('Uploading documents...', { id: 'upload' });
+        documentUrls = await mediaService.uploadMultipleMedia(quickServiceFiles, config?.slug || 'quick-service');
+        toast.success('Documents uploaded', { id: 'upload' });
+      }
 
-    router.push('/app/checkout');
+      const finalPrice = isDoctorVisit ? (selectedProvider === 'Physio' ? 699 : 499) : 500;
+      
+      addItem({
+        serviceId: config?.slug || id,
+        name: config?.title || (isDoctorVisit ? 'Doctor Visit' : 'Hospital Trip'),
+        price: finalPrice,
+        image: config?.icon || (isDoctorVisit ? '9bbd0539ddfd504d8362c951cb07d107b0df9fdf.png' : 'e9d68d0206e443ceceadd7907cd94f1c86fcacd4.png'),
+        address: address,
+        scheduleTime: timeMode === 'ASAP' ? 'ASAP' : scheduleDate,
+        providerType: selectedProvider,
+        problem: selectedProblem || '',
+        attachments: documentUrls,
+      });
+
+      router.push('/app/checkout');
+    } catch (err) {
+      toast.error('Failed to prepare booking', { id: 'upload' });
+      setIsBooking(false);
+    }
   };
 
   const visitType = 'Home'; // Default
@@ -271,13 +309,21 @@ export default function ServiceDetailPage() {
 
             <div className="flex flex-col gap-2">
                <label className="text-sm font-bold text-gray-400 uppercase tracking-widest">Add Reports / Photos (Optional)</label>
-               <div className="border-2 border-dashed border-gray-100 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 hover:border-emerald-300 transition-all cursor-pointer bg-gray-50/50">
+               <label className="border-2 border-dashed border-gray-100 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 hover:border-emerald-300 transition-all cursor-pointer bg-gray-50/50 relative">
+                  <input 
+                    type="file" 
+                    multiple 
+                    className="absolute inset-0 opacity-0 cursor-pointer" 
+                    onChange={(e) => setQuickServiceFiles(Array.from(e.target.files || []))}
+                  />
                   <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
                      <FileText className="w-6 h-6 text-gray-400" />
                   </div>
-                  <p className="text-xs font-bold text-gray-500">Click to upload medical documents</p>
+                  <p className="text-xs font-bold text-gray-500">
+                    {quickServiceFiles.length > 0 ? `${quickServiceFiles.length} files selected` : 'Click to upload medical documents'}
+                  </p>
                   <p className="text-[10px] text-gray-400">PDF, JPG or PNG (Max 5MB)</p>
-               </div>
+               </label>
             </div>
          </div>
 
@@ -288,14 +334,20 @@ export default function ServiceDetailPage() {
          <div className="max-w-4xl w-full flex items-center justify-between gap-6">
             <div className="hidden sm:block">
                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Amount</p>
-               <p className="text-2xl font-black text-gray-900">₹{isDoctorVisit ? (selectedProvider === 'Physio' ? 699 : 499) : 500}</p>
+               <p className="text-2xl font-black text-gray-900">₹{formatPrice(isDoctorVisit ? (selectedProvider === 'Physio' ? 699 : 499) : 500)}</p>
             </div>
             <button 
                onClick={handleBookQuickService}
-               disabled={!selectedProblem || !address}
+               disabled={!selectedProblem || !address || isBooking}
                className="flex-1 sm:flex-none sm:min-w-[280px] h-14 bg-[var(--color-primary-deep)] text-white rounded-2xl font-black shadow-xl shadow-emerald-900/20 active:scale-[0.98] transition-all disabled:opacity-30 flex items-center justify-center gap-3"
             >
-               Confirm & Book Now <ArrowRight className="w-5 h-5" />
+               {isBooking ? (
+                 <>
+                   <Loader2 className="w-5 h-5 animate-spin" /> Preparing...
+                 </>
+               ) : (
+                 <>Confirm & Book Now <ArrowRight className="w-5 h-5" /></>
+               )}
             </button>
          </div>
       </div>

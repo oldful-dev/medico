@@ -104,7 +104,7 @@ const quickUploadHandler = async (req, res, next) => {
         }
 
         const folder = req.body.folder || 'general';
-        const result = await quickUpload(req.file, folder);
+        const result = await quickUpload(req.file, folder, req.user?.id || 'anonymous');
 
         // Register in DB
         const asset = await prisma.mediaAsset.create({

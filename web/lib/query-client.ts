@@ -5,11 +5,11 @@ export const createQueryClient = () =>
     defaultOptions: {
       queries: {
         // Highly aggressive caching as per performance requirements
-        staleTime: 10 * 60 * 1000, // 10 minutes
+        staleTime: 5 * 1000, // 5 seconds (standard for dynamic apps)
         gcTime: 15 * 60 * 1000,    // 15 minutes
-        refetchOnWindowFocus: false,
-        refetchOnMount: false,
-        refetchOnReconnect: false,
+        refetchOnWindowFocus: true,
+        refetchOnMount: true,
+        refetchOnReconnect: true,
         retry: 1,
         // Ensure data stability
         structuralSharing: true,

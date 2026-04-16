@@ -73,8 +73,9 @@ function AuthForm() {
           // Mirror mobile's: login(accessToken, refreshToken, userId)
           await login(accessToken, refreshToken, user as AuthUser);
 
-          // Always redirect to dashboard after login
-          router.replace('/app/dashboard');
+          // Always redirect to dashboard after login using hard navigation 
+          // to ensure cookies are synced with Middleware and server-side state.
+          window.location.href = '/app/dashboard';
         } else {
           setError('Invalid response from server. Please try again.');
         }

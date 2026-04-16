@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCartStore } from '@/store/cartStore';
+import { formatPrice } from '@/utils/formatPrice';
 import { useAuthStore } from '@/store/authStore';
 import { ChevronLeft, Lock, ShieldCheck, CreditCard, Wallet, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -112,7 +113,7 @@ function CheckoutContent() {
        }
 
        if (paymentMethod === 'cash') {
-          toast.success('Confirmed! Please pay ₹' + total.toFixed(2) + ' upon arrival.', { icon: '⌛' });
+          toast.success('Confirmed! Please pay ₹' + formatPrice(total) + ' upon arrival.', { icon: '⌛' });
           const { USER_QUERY_KEYS } = await import('@/hooks/useUserHooks');
           queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.bookings });
           queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile });
@@ -228,7 +229,7 @@ function CheckoutContent() {
            <span className="text-sm text-gray-500 font-medium tracking-wide flex items-center justify-center gap-2">
              <ShieldCheck className="w-4 h-4 text-emerald-500" /> Secure Payment Summary
            </span>
-           <span className="text-4xl font-extrabold text-gray-900 mt-2 block">₹{total.toFixed(2)}</span>
+            <span className="text-4xl font-extrabold text-gray-900 mt-2 block">₹{formatPrice(total)}</span>
         </div>
 
         <div className="text-left">
@@ -287,7 +288,7 @@ function CheckoutContent() {
 
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-6 pb-10 md:bottom-8 md:max-w-xl md:mx-auto md:rounded-3xl shadow-2xl z-20">
          <button onClick={handlePayment} disabled={isProcessing} className="w-full h-15 bg-gray-900 text-white rounded-2xl font-black text-lg flex items-center justify-center transition-all active:scale-95 hover:bg-black shadow-xl disabled:opacity-50">
-            {isProcessing ? <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" /> : `Complete Payment • ₹${total.toFixed(2)}`}
+            {isProcessing ? <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" /> : `Complete Payment • ₹${formatPrice(total)}`}
          </button>
       </div>
     </div>

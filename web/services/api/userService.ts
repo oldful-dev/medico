@@ -91,6 +91,8 @@ export interface Booking {
     longitude?: number;
     payments?: Payment[];
     formDataJson?: Record<string, unknown>;
+    photos?: string[];          // From [id]/page.tsx
+    attachments?: string[];     // From DoctorVisitForm.tsx
     createdAt: string;
 }
 

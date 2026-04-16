@@ -14,13 +14,19 @@ export default function SuccessPage() {
   const clearCart = useCartStore(state => state.clearCart);
   const [bookingId] = React.useState(() => Math.floor(100000 + Math.random() * 900000));
 
-  // Clear cart and invalidate queries upon successful landing since order is complete
   useEffect(() => {
     clearCart();
     
     // Proactively refresh data for Dashboard/Account
-    queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.bookings });
-    queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile });
+    const refreshData = async () => {
+      await Promise.all([
+        queryClient.resetQueries({ queryKey: USER_QUERY_KEYS.bookings }),
+        queryClient.resetQueries({ queryKey: USER_QUERY_KEYS.profile }),
+        queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.notifications }),
+      ]);
+    };
+    
+    refreshData();
   }, [clearCart, queryClient, USER_QUERY_KEYS]);
 
   return (
