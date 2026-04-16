@@ -252,6 +252,12 @@ model User {
   refreshToken      String?
   fcmDeviceToken    String?
 
+  // Notification Preferences
+  pushEnabled            Boolean   @default(true)
+  smsEnabled             Boolean   @default(true)
+  whatsappEnabled        Boolean   @default(true)
+  emailMarketingEnabled  Boolean   @default(false)
+
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 

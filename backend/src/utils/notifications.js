@@ -15,8 +15,16 @@ const prisma = require('../config/database');
 
 const zeptoMail = require('./zeptomail');
 
-const sendEmail = async ({ to, subject, html, attachments = [], userId = null }) => {
+const sendEmail = async ({ to, subject, html, attachments = [], userId = null, isMarketing = false }) => {
     try {
+        if (userId) {
+            const user = await prisma.user.findUnique({ where: { id: userId }, select: { emailMarketingEnabled: true } });
+            if (isMarketing && user && !user.emailMarketingEnabled) {
+                logger.info(`🚫 Skipping marketing email to ${to} (Unsubscribed)`);
+                return false;
+            }
+        }
+
         const success = await zeptoMail.sendEmail({ to, subject, html });
 
         if (success) {
@@ -52,16 +60,26 @@ const fast2sms = require('./fast2sms');
 
 /**
  * Send a WhatsApp template message via Interakt.
- * Signature is backward-compatible with the old Fast2SMS wrapper —
- * callers that pass `parameters` (array) continue to work.
- *
- * @param {object} opts
- * @param {string}   opts.phoneNumber   - Recipient phone
- * @param {string}   opts.templateName  - Interakt template name
- * @param {string[]|object[]} opts.parameters - Template body variables
- * @param {string}   [opts.userId]      - For notification log
  */
 const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [], userId = null }) => {
+    try {
+        if (userId) {
+            const user = await prisma.user.findUnique({ where: { id: userId }, select: { whatsappEnabled: true, smsEnabled: true } });
+            if (user && !user.whatsappEnabled) {
+                logger.info(`🚫 Skipping WhatsApp to ${phoneNumber} (User disabled WhatsApp)`);
+                
+                // If SMS is enabled, attempt SMS fallback immediately or just return
+                if (user.smsEnabled) {
+                    logger.info(`🔄 Attempting SMS fallback for ${phoneNumber} instead...`);
+                } else {
+                    return false;
+                }
+            }
+        }
+    } catch (err) {
+        logger.error('Preference check failed:', err);
+    }
+
     // Normalise parameters: support both old array-of-strings and
     // object array formats ({ name, value }) used in payment controller
     const variables = parameters.map(p =>
@@ -72,27 +90,36 @@ const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [], userId
     let errorMessage = null;
 
     try {
-        success = await interakt.sendWhatsAppMessage({
-            phone: phoneNumber,
-            templateName,
-            variables,
-        });
+        const userPrefs = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
+        
+        // Only send WhatsApp if enabled
+        if (!userPrefs || userPrefs.whatsappEnabled) {
+            success = await interakt.sendWhatsAppMessage({
+                phone: phoneNumber,
+                templateName,
+                variables,
+            });
+        }
 
         if (!success) {
-            // Fallback to Fast2SMS SMS if Interakt fails and a DLT template is available
-            logger.warn(`[Notifications] Interakt failed for ${templateName} — attempting SMS fallback`);
-            const fallbackTemplateId = process.env[`FAST2SMS_${templateName.toUpperCase()}_TEMPLATE_ID`];
-            if (fallbackTemplateId) {
-                const smsSent = await fast2sms.sendDLTSMS(phoneNumber, fallbackTemplateId, variables);
-                if (smsSent) {
-                    logger.info(`[Notifications] SMS fallback succeeded for ${templateName}`);
-                    success = true;
-                    errorMessage = 'Interakt failed; delivered via SMS fallback';
+            // Fallback to Fast2SMS SMS if Interakt fails (or is disabled) and SMS is enabled
+            if (!userPrefs || userPrefs.smsEnabled) {
+                logger.warn(`[Notifications] WhatsApp failed or disabled for ${templateName} — attempting SMS`);
+                const fallbackTemplateId = process.env[`FAST2SMS_${templateName.toUpperCase()}_TEMPLATE_ID`];
+                if (fallbackTemplateId) {
+                    const smsSent = await fast2sms.sendDLTSMS(phoneNumber, fallbackTemplateId, variables);
+                    if (smsSent) {
+                        logger.info(`[Notifications] SMS delivered for ${templateName}`);
+                        success = true;
+                        errorMessage = 'Delivered via SMS';
+                    } else {
+                        errorMessage = 'Interakt failed; SMS fallback also failed';
+                    }
                 } else {
-                    errorMessage = 'Interakt failed; SMS fallback also failed';
+                    errorMessage = 'Interakt failed; no SMS fallback configured';
                 }
             } else {
-                errorMessage = 'Interakt failed; no SMS fallback configured';
+                errorMessage = 'Interakt failed; user has SMS disabled';
             }
         }
     } catch (error) {

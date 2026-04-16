@@ -199,7 +199,7 @@ const createUser = async (req, res, next) => {
 // PUT /api/users/:id
 const updateUser = async (req, res, next) => {
     try {
-        const { name, email, gender, dateOfBirth, preferredLanguage, healthTag, status } = req.body;
+        const { name, email, gender, dateOfBirth, preferredLanguage, healthTag, status, pushEnabled, smsEnabled, whatsappEnabled, emailMarketingEnabled } = req.body;
         const data = {};
         if (name !== undefined) data.name = name;
         if (email !== undefined) data.email = email;
@@ -208,6 +208,10 @@ const updateUser = async (req, res, next) => {
         if (preferredLanguage !== undefined) data.preferredLanguage = preferredLanguage;
         if (healthTag !== undefined) data.healthTag = healthTag;
         if (status !== undefined) data.status = status;
+        if (pushEnabled !== undefined) data.pushEnabled = pushEnabled;
+        if (smsEnabled !== undefined) data.smsEnabled = smsEnabled;
+        if (whatsappEnabled !== undefined) data.whatsappEnabled = whatsappEnabled;
+        if (emailMarketingEnabled !== undefined) data.emailMarketingEnabled = emailMarketingEnabled;
 
         const user = await prisma.user.update({
             where: { id: req.params.id },
@@ -506,14 +510,18 @@ const getMyProfile = async (req, res, next) => {
 // PUT /api/users/profile  (App user — update own profile)
 const updateMyProfile = async (req, res, next) => {
     try {
-        const { name, email, gender, dateOfBirth, preferredLanguage, profileImageUrl } = req.body;
+        const { name, email, gender, dateOfBirth, preferredLanguage, profileImageUrl, pushEnabled, smsEnabled, whatsappEnabled, emailMarketingEnabled } = req.body;
         const data = {};
-        if (name) data.name = name;
-        if (email) data.email = email;
-        if (gender) data.gender = gender;
-        if (dateOfBirth) data.dateOfBirth = new Date(dateOfBirth);
-        if (preferredLanguage) data.preferredLanguage = preferredLanguage;
-        if (profileImageUrl) data.profileImageUrl = profileImageUrl;
+        if (name !== undefined) data.name = name;
+        if (email !== undefined) data.email = email;
+        if (gender !== undefined) data.gender = gender;
+        if (dateOfBirth !== undefined) data.dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null;
+        if (preferredLanguage !== undefined) data.preferredLanguage = preferredLanguage;
+        if (profileImageUrl !== undefined) data.profileImageUrl = profileImageUrl;
+        if (pushEnabled !== undefined) data.pushEnabled = pushEnabled;
+        if (smsEnabled !== undefined) data.smsEnabled = smsEnabled;
+        if (whatsappEnabled !== undefined) data.whatsappEnabled = whatsappEnabled;
+        if (emailMarketingEnabled !== undefined) data.emailMarketingEnabled = emailMarketingEnabled;
 
         const user = await prisma.user.update({
             where: { id: req.user.id },

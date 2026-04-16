@@ -14,6 +14,13 @@ export interface UserProfile {
     preferredLanguage?: string;
     healthTag?: string;
     city?: { name: string; code: string };
+    
+    // Notification Preferences
+    pushEnabled?: boolean;
+    smsEnabled?: boolean;
+    whatsappEnabled?: boolean;
+    emailMarketingEnabled?: boolean;
+
     addresses: Address[];
     emergencyContacts: EmergencyContact[];
     medicalCards: MedicalCard[];

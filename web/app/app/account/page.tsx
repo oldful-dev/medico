@@ -872,9 +872,11 @@ function PreferencesTab({ profile }: { profile: UserProfile }) {
   const qc = useQueryClient();
   const [selectedLang, setSelectedLang] = useState(profile.preferredLanguage || 'en');
 
-  const langMut = useMutation({
-    mutationFn: (lang: string) => userService.updateProfile({ preferredLanguage: lang }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile }),
+  const updateMut = useMutation({
+    mutationFn: (data: Partial<UserProfile>) => userService.updateProfile(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile });
+    },
   });
 
   const LANGS = [
@@ -886,18 +888,20 @@ function PreferencesTab({ profile }: { profile: UserProfile }) {
     { code: 'bn', label: 'বাংলা' },
   ];
 
+  const NOTIF_PREFS = [
+    { id: 'pushEnabled',           label: 'Push Notifications', sub: 'Booking updates, reminders', on: !!profile.pushEnabled },
+    { id: 'smsEnabled',            label: 'SMS Alerts',         sub: 'Doctor arrival, status updates', on: !!profile.smsEnabled },
+    { id: 'whatsappEnabled',       label: 'WhatsApp Updates',   sub: 'Booking confirmation on WhatsApp', on: !!profile.whatsappEnabled },
+    { id: 'emailMarketingEnabled', label: 'Email Marketing',    sub: 'Health tips, new services', on: !!profile.emailMarketingEnabled },
+  ] as const;
+
   return (
     <div className="flex flex-col gap-5">
       <SectionCard>
         <SectionHeader title="Notification Preferences" />
         <div className="divide-y divide-gray-50">
-          {[
-            { label: 'Push Notifications', sub: 'Booking updates, reminders', on: true },
-            { label: 'SMS Alerts', sub: 'Doctor arrival, status updates', on: true },
-            { label: 'WhatsApp Updates', sub: 'Booking confirmation on WhatsApp', on: true },
-            { label: 'Email Marketing', sub: 'Health tips, new services', on: false },
-          ].map(pref => (
-            <div key={pref.label} className="flex items-center justify-between py-4">
+          {NOTIF_PREFS.map(pref => (
+            <div key={pref.id} className="flex items-center justify-between py-4">
               <div className="flex items-center gap-3">
                 <Bell className="w-4 h-4 text-gray-400" />
                 <div>
@@ -905,9 +909,18 @@ function PreferencesTab({ profile }: { profile: UserProfile }) {
                   <div className="text-xs text-gray-500">{pref.sub}</div>
                 </div>
               </div>
-              <div className={`w-11 h-6 rounded-full cursor-pointer transition-colors relative ${pref.on ? 'bg-[var(--color-primary)]' : 'bg-gray-200'}`}>
+              <button 
+                onClick={() => updateMut.mutate({ [pref.id]: !pref.on })}
+                disabled={updateMut.isPending}
+                className={`w-11 h-6 rounded-full transition-colors relative focus:outline-none ${pref.on ? 'bg-[var(--color-primary)]' : 'bg-gray-200'}`}
+              >
                 <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${pref.on ? 'left-6' : 'left-1'}`} />
-              </div>
+                {updateMut.isPending && updateMut.variables && (updateMut.variables as any)[pref.id] !== undefined && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <Loader2 className="w-3 h-3 animate-spin text-white opacity-40" />
+                  </div>
+                )}
+              </button>
             </div>
           ))}
         </div>
@@ -919,7 +932,7 @@ function PreferencesTab({ profile }: { profile: UserProfile }) {
           {LANGS.map(lang => (
             <button
               key={lang.code}
-              onClick={() => { setSelectedLang(lang.code); langMut.mutate(lang.code); }}
+              onClick={() => { setSelectedLang(lang.code); updateMut.mutate({ preferredLanguage: lang.code }); }}
               className={`py-2.5 px-4 rounded-xl border text-sm font-semibold transition-all ${
                 selectedLang === lang.code
                   ? 'border-[var(--color-primary)] bg-emerald-50 text-[var(--color-primary-deep)]'
@@ -930,7 +943,7 @@ function PreferencesTab({ profile }: { profile: UserProfile }) {
             </button>
           ))}
         </div>
-        {langMut.isPending && <p className="text-xs text-gray-400 mt-2">Saving...</p>}
+        {updateMut.isPending && (updateMut.variables as any)?.preferredLanguage && <p className="text-xs text-gray-400 mt-2">Saving...</p>}
       </SectionCard>
     </div>
   );

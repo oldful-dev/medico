@@ -28,6 +28,13 @@ export interface UserProfile {
     healthTag: string;
     status: string;
     cityId: string;
+
+    // Notification Preferences
+    pushEnabled?: boolean;
+    smsEnabled?: boolean;
+    whatsappEnabled?: boolean;
+    emailMarketingEnabled?: boolean;
+
     addresses?: Address[];
     emergencyContacts?: EmergencyContact[];
     medicalCards?: MedicalCard[];
