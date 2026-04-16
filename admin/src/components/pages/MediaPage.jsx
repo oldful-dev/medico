@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Upload, Trash2, Copy, Image, FileText, Film } from "lucide-react";
+import { Upload, Trash2, Copy, Image, FileText, Film, Info } from "lucide-react";
 import { mediaAPI } from "@/lib/api";
 import { showToast, formatDateTime } from "@/lib/hooks";
 
@@ -9,6 +9,7 @@ export default function MediaPage() {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('');
     const [uploading, setUploading] = useState(false);
+    const [previewImage, setPreviewImage] = useState(null);
 
     useEffect(() => { loadAssets(); }, [filter]);
 
@@ -68,8 +69,11 @@ export default function MediaPage() {
                                         <td className="text-sm">{formatDateTime(a.createdAt)}</td>
                                         <td>
                                             <div className="flex gap-2">
-                                                <button className="btn btn-sm btn-secondary" onClick={() => copyUrl(a.fileUrl)}><Copy size={14} /></button>
-                                                <button className="btn btn-sm btn-danger" onClick={() => deleteAsset(a.id)}><Trash2 size={14} /></button>
+                                                {a.fileType?.includes('image') && (
+                                                    <button className="btn btn-sm btn-info" onClick={() => setPreviewImage(a.fileUrl)} title="Preview"><Info size={14} /></button>
+                                                )}
+                                                <button className="btn btn-sm btn-secondary" onClick={() => copyUrl(a.fileUrl)} title="Copy URL"><Copy size={14} /></button>
+                                                <button className="btn btn-sm btn-danger" onClick={() => deleteAsset(a.id)} title="Delete"><Trash2 size={14} /></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -77,6 +81,24 @@ export default function MediaPage() {
                     </tbody>
                 </table>
             </div></div>
+
+            {previewImage && (
+                <div className="modal-overlay" onClick={() => setPreviewImage(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '90vw', width: 'auto', padding: 12 }}>
+                        <div className="modal-header" style={{ marginBottom: 12 }}>
+                            <h3>Image Preview</h3>
+                            <button className="btn btn-sm btn-secondary" onClick={() => setPreviewImage(null)}>✕</button>
+                        </div>
+                        <div style={{ maxHeight: '75vh', overflow: 'hidden', display: 'flex', justifyContent: 'center' }}>
+                            <img src={previewImage} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8 }} />
+                        </div>
+                        <div className="modal-footer" style={{ marginTop: 12 }}>
+                            <button className="btn btn-secondary" onClick={() => { navigator.clipboard.writeText(previewImage); showToast('URL copied'); }}>Copy URL</button>
+                            <button className="btn btn-primary" onClick={() => setPreviewImage(null)}>Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

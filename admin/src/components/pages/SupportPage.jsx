@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { MessageSquare, CheckCircle, Eye, Send, ChevronLeft, ChevronRight, RefreshCw, ArrowLeft, Clock, User, Headphones } from "lucide-react";
 import { supportAPI } from "@/lib/api";
 import { showToast, formatDateTime, timeAgo } from "@/lib/hooks";

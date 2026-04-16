@@ -5,7 +5,7 @@ import useAuthStore from "@/store/useAuthStore";
 import {
     LayoutDashboard, Users, Shield, MapPin, UserCog, Settings, CalendarCheck,
     HeartPulse, CreditCard, DollarSign, AlertTriangle, Bell, FileText,
-    ShoppingBag, Image as ImageIcon, BarChart3, ClipboardList, Sliders, LifeBuoy, Brain, ChevronRight, X
+    ShoppingBag, Image as ImageIcon, BarChart3, ClipboardList, Sliders, LifeBuoy, Brain, ChevronRight, X, Clock
 } from "lucide-react";
 
 const navSections = [
@@ -59,11 +59,12 @@ const navSections = [
             { id: "server-ui", href: "/server-ui", label: "Server Driven UI", icon: Sliders, roles: ['SUPER_ADMIN'] },
             { id: "support", href: "/support", label: "Support & Tickets", icon: LifeBuoy, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'SUPPORT_AGENT'] },
             { id: "smart", href: "/smart", label: "Smart Features", icon: Brain, roles: ['SUPER_ADMIN'] },
+            { id: "waitlist", href: "/waitlist", label: "Wellness Waitlist", icon: Clock, roles: ['SUPER_ADMIN'] },
         ],
     },
 ];
 
-export default function Sidebar({ collapsed, open, currentPage, onClose }) {
+export default function Sidebar({ collapsed, open, currentPath, onClose }) {
     const { user } = useAuthStore();
     const userRole = user?.role || 'CITY_ADMIN';
 
@@ -95,7 +96,7 @@ export default function Sidebar({ collapsed, open, currentPage, onClose }) {
                                 {!collapsed && <div className="sidebar-section-title">{section.title}</div>}
                                 {filteredItems.map((item) => {
                                     const Icon = item.icon;
-                                    const isActive = currentPage === item.id;
+                                    const isActive = currentPath === item.href;
                                     return (
                                         <Link
                                             key={item.id}
