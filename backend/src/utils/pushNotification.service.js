@@ -14,11 +14,12 @@ const sendPushToUser = async (userId, { title, body, data = {} }) => {
     try {
         const user = await prisma.user.findUnique({
             where: { id: userId },
-            select: { fcmDeviceToken: true },
+            select: { fcmDeviceToken: true, pushEnabled: true },
         });
 
-        if (!user?.fcmDeviceToken) {
-            logger.debug(`No FCM token for user ${userId} — skipping push (still logging to inbox)`);
+        if (!user?.fcmDeviceToken || user.pushEnabled === false) {
+            const reason = !user?.fcmDeviceToken ? 'No FCM token' : 'User disabled push';
+            logger.debug(`${reason} for user ${userId} — skipping push (still logging to inbox)`);
             
             await prisma.notificationLog.create({
                 data: {
@@ -28,7 +29,7 @@ const sendPushToUser = async (userId, { title, body, data = {} }) => {
                     subject: title,
                     body,
                     isSent: false,
-                    errorMessage: 'No FCM token',
+                    errorMessage: reason,
                 },
             });
             return false;

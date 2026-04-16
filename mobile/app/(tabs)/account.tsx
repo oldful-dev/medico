@@ -29,14 +29,32 @@ export default function AccountScreen() {
     const { languages } = useAppConfig();
 
     const { t } = useTranslation();
-    const [whatsappEnabled, setWhatsappEnabled] = useState(true);
-    const [promoEnabled, setPromoEnabled] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
     // Language Modal
     const { preferredLanguage, setPreferredLanguage } = useUser();
     const [langModalVisible, setLangModalVisible] = useState(false);
     const [savingLang, setSavingLang] = useState(false);
+
+    const handleToggle = async (key: string, value: boolean) => {
+        if (!profile) return;
+        
+        // Optimistic update
+        const oldProfile = { ...profile };
+        const newProfile = { ...profile, [key]: value };
+        setProfile(newProfile);
+
+        try {
+            const res = await userService.updateProfile({ [key]: value } as any);
+            if (!res.success) {
+                setProfile(oldProfile);
+                Alert.alert('Error', res.message || 'Failed to update preference');
+            }
+        } catch (error) {
+            setProfile(oldProfile);
+            Alert.alert('Error', 'Network error. Please try again.');
+        }
+    };
 
     const currentLangLabel = languages.find(l => l.code === preferredLanguage)?.label ?? 'English';
 
@@ -291,6 +309,40 @@ export default function AccountScreen() {
                     </View>
                 </TouchableOpacity>
 
+                {/* Push Notifications */}
+                <View style={styles.toggleCard}>
+                    <View style={styles.linkLeft}>
+                        <View style={[styles.linkIcon, { backgroundColor: '#E1F5FE' }]}>
+                            <Ionicons name="notifications-outline" size={20} color="#0288D1" />
+                        </View>
+                        <Text style={styles.linkTitle}>Push Notifications</Text>
+                    </View>
+                    <Switch 
+                        trackColor={{ false: '#AAAEAC', true: Colors.primary }} 
+                        thumbColor="#FFFFFF"
+                        ios_backgroundColor="#AAAEAC" 
+                        onValueChange={(val) => handleToggle('pushEnabled', val)} 
+                        value={!!profile.pushEnabled} 
+                    />
+                </View>
+
+                {/* SMS Alerts */}
+                <View style={styles.toggleCard}>
+                    <View style={styles.linkLeft}>
+                        <View style={[styles.linkIcon, { backgroundColor: '#FFF3E0' }]}>
+                            <Ionicons name="chatbubble-outline" size={20} color="#EF6C00" />
+                        </View>
+                        <Text style={styles.linkTitle}>SMS Alerts</Text>
+                    </View>
+                    <Switch 
+                        trackColor={{ false: '#AAAEAC', true: Colors.primary }} 
+                        thumbColor="#FFFFFF"
+                        ios_backgroundColor="#AAAEAC" 
+                        onValueChange={(val) => handleToggle('smsEnabled', val)} 
+                        value={!!profile.smsEnabled} 
+                    />
+                </View>
+
                 {/* WhatsApp Updates */}
                 <View style={styles.toggleCard}>
                     <View style={styles.linkLeft}>
@@ -299,8 +351,13 @@ export default function AccountScreen() {
                         </View>
                         <Text style={styles.linkTitle}>{t('account.whatsapp_updates')}</Text>
                     </View>
-                    <Switch trackColor={{ false: '#AAAEAC', true: Colors.primary }} thumbColor="#FFFFFF"
-                        ios_backgroundColor="#AAAEAC" onValueChange={setWhatsappEnabled} value={whatsappEnabled} />
+                    <Switch 
+                        trackColor={{ false: '#AAAEAC', true: Colors.primary }} 
+                        thumbColor="#FFFFFF"
+                        ios_backgroundColor="#AAAEAC" 
+                        onValueChange={(val) => handleToggle('whatsappEnabled', val)} 
+                        value={!!profile.whatsappEnabled} 
+                    />
                 </View>
 
                 {/* Promotional Offers */}
@@ -311,8 +368,13 @@ export default function AccountScreen() {
                         </View>
                         <Text style={styles.linkTitle}>{t('account.promotional_offers')}</Text>
                     </View>
-                    <Switch trackColor={{ false: '#AAAEAC', true: Colors.primary }} thumbColor="#FFFFFF"
-                        ios_backgroundColor="#AAAEAC" onValueChange={setPromoEnabled} value={promoEnabled} />
+                    <Switch 
+                        trackColor={{ false: '#AAAEAC', true: Colors.primary }} 
+                        thumbColor="#FFFFFF"
+                        ios_backgroundColor="#AAAEAC" 
+                        onValueChange={(val) => handleToggle('emailMarketingEnabled', val)} 
+                        value={!!profile.emailMarketingEnabled} 
+                    />
                 </View>
 
                 {/* ══════════════════════════════════════════════════
