@@ -134,4 +134,118 @@ const triggerSOS = async (req, res) => {
     });
 };
 
-module.exports = { triggerSOS };
+/**
+ * GET /api/sos
+ * ADMIN: Get all SOS alerts with filtering and pagination
+ */
+const getSOSAlerts = async (req, res) => {
+    try {
+        const { status, cityId, page = 1, limit = 20 } = req.query;
+        const skip = (page - 1) * limit;
+
+        const where = {};
+        if (status) where.status = status;
+        if (cityId) where.cityId = cityId;
+
+        const alerts = await prisma.sOSAlert.findMany({
+            where,
+            include: {
+                user: { select: { name: true, phone: true, uniqueUserId: true } },
+                city: { select: { name: true } },
+                responder: { select: { name: true, phone: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+            skip: parseInt(skip),
+            take: parseInt(limit),
+        });
+
+        const total = await prisma.sOSAlert.count({ where });
+
+        res.json({
+            success: true,
+            data: { alerts, total, page: parseInt(page), pages: Math.ceil(total / limit) }
+        });
+    } catch (err) {
+        logger.error('Failed to fetch SOS alerts:', err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+};
+
+/**
+ * PUT /api/sos/:id/assign
+ * ADMIN: Assign a responder to an SOS alert
+ */
+const assignResponder = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { responderId } = req.body;
+
+        const alert = await prisma.sOSAlert.update({
+            where: { id },
+            data: {
+                responderId,
+                status: 'RESPONDING',
+            },
+            include: { responder: true, user: true }
+        });
+
+        res.json({ success: true, message: 'Responder assigned successfully', data: alert });
+    } catch (err) {
+        logger.error('Failed to assign SOS responder:', err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+};
+
+/**
+ * PUT /api/sos/:id/resolve
+ * ADMIN: Resolve an SOS alert with notes
+ */
+const resolveSOS = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { notes } = req.body;
+
+        const alert = await prisma.sOSAlert.update({
+            where: { id },
+            data: {
+                status: 'RESOLVED',
+                resolvedAt: new Date(),
+                resolvedNotes: notes,
+            }
+        });
+
+        res.json({ success: true, message: 'SOS alert resolved', data: alert });
+    } catch (err) {
+        logger.error('Failed to resolve SOS alert:', err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+};
+
+/**
+ * PUT /api/sos/:id/notify
+ * ADMIN: Update notification notes/logs for an SOS alert
+ */
+const updateSOSNotification = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { notes } = req.body;
+
+        const alert = await prisma.sOSAlert.update({
+            where: { id },
+            data: { callLogNotes: notes }
+        });
+
+        res.json({ success: true, message: 'Notification log updated', data: alert });
+    } catch (err) {
+        logger.error('Failed to update SOS notification log:', err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+};
+
+module.exports = { 
+    triggerSOS, 
+    getSOSAlerts, 
+    assignResponder, 
+    resolveSOS, 
+    updateSOSNotification 
+};

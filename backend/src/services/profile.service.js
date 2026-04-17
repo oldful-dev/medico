@@ -150,7 +150,7 @@ const updateMetadata = async (metadata) => {
         where: { key: 'sdui_staff_metadata' },
         create: {
             key: 'sdui_staff_metadata',
-            type: 'SYSTEM',
+            type: 'CUSTOM',
             label: 'Staff System Metadata',
             configJson: metadata,
             version: 1,
@@ -338,5 +338,6 @@ module.exports = {
     bulkDelete,
     deleteProfile,
     updateProfile,
-    createProfile
+    createProfile,
+    updateMetadata
 };
