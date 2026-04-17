@@ -2,6 +2,8 @@
 const router = require('express').Router();
 const { authenticateUser } = require('../middleware/auth');
 const ctrl = require('../controllers/lab.controller');
+const holdCtrl = require('../controllers/redcliffeHold.controller');
+const confirmCtrl = require('../controllers/redcliffeConfirm.controller');
 
 // ─── Location (public) ───────────────────────
 router.get('/location/search', ctrl.searchLocation);
@@ -15,6 +17,9 @@ router.get('/packages',       ctrl.getPackages);
 router.get('/packages/:code', ctrl.getPackageDetails);
 
 // ─── Booking (auth required) ─────────────────
+router.post('/book/hold', authenticateUser, holdCtrl.holdBooking);
+router.post('/book/confirm', authenticateUser, confirmCtrl.confirmBooking);
+
 router.post('/book',                        authenticateUser, ctrl.bookLabTest);
 router.post('/booking/:id/confirm',         authenticateUser, ctrl.confirmLabBooking);
 router.get( '/booking/:id',                 authenticateUser, ctrl.getLabBookingStatus);

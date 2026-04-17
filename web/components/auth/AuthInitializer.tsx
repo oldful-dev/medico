@@ -16,6 +16,11 @@ export function AuthInitializer() {
     const initialize = useAuthStore((state) => state.initialize);
 
     useEffect(() => {
+        // Prevent infinite loops: skip initialization if already on the auth page
+        if (typeof window !== 'undefined' && window.location.pathname === '/auth') {
+            return;
+        }
+
         initialize();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Empty deps — run once on mount, like mobile's boot useEffect

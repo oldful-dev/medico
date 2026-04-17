@@ -17,3 +17,4 @@ export { cityService } from './cityService';
 export { uiConfigService } from './uiConfigService';
 export { legalService } from './legalService';
 export { storeService } from './storeService';
+export { labService } from './labService';

@@ -104,6 +104,11 @@ class ApiClient {
 
             // 401 handling — attempt silent refresh once (mirrors mobile)
             if (response.status === 401 && !isRetry) {
+                // If we're already on /auth, don't try to refresh or redirect again
+                if (typeof window !== 'undefined' && window.location.pathname === '/auth') {
+                    throw new ApiError(401, 'Unauthorized');
+                }
+
                 const refreshed = await this.attemptTokenRefresh();
                 if (refreshed) {
                     return this.request<T>(endpoint, options, true); // retry with new token

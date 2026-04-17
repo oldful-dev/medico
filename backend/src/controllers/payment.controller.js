@@ -4,6 +4,7 @@
 
 const prisma = require('../config/database');
 const razorpay = require('../utils/razorpay.service');
+const rc = require('../services/redcliffe.service');
 const { logger } = require('../config/logger');
 const { sendResponse, sendPaginatedResponse, paginate, generateInvoiceNumber } = require('../utils/helpers');
 const { generateInvoicePDF } = require('../utils/pdfGenerator');
@@ -189,6 +190,25 @@ const verifyPayment = async (req, res, next) => {
                     slaDeadline: new Date(Date.now() + 4 * 60 * 60 * 1000), // SLA starts NOW
                 }
             });
+
+            // ─── PARTNER INTEGRATION: Redcliffe Labs ────────────────────────
+            if (payment.booking.service.slug === 'blood-test') {
+                try {
+                    const formData = payment.booking.formDataJson || {};
+                    const rcId = formData.redcliffeBookingId;
+                    
+                    if (rcId) {
+                        logger.info(`Finalizing Redcliffe booking ${rcId} for appointment ${payment.booking.bookingCode}`);
+                        await rc.confirmBooking(rcId, true);
+                    } else {
+                        logger.warn(`Missing redcliffeBookingId for Blood Test booking ${payment.booking.bookingCode}`);
+                    }
+                } catch (rcErr) {
+                    logger.error(`Redcliffe confirmation failed for booking ${payment.booking.bookingCode}:`, rcErr.message);
+                    // Note: We don't throw here to avoid failing the whole payment verification
+                    // The admin can manually confirm later if needed.
+                }
+            }
 
             const { sendPushToUser } = require('../utils/pushNotification.service');
             const { sendBookingConfirmation } = require('../utils/notifications');

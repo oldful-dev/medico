@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { bookingService } from '@/services/api/bookingService';
+import { labService } from '@/services/api/labService';
 import { SERVICES_CONFIG } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import Image from 'next/image';
@@ -73,8 +74,18 @@ export default function BookingDetailsPage() {
       queryFn: () => bookingService.getBookingById(id as string),
       enabled: !!id && isAuthenticated,
    });
-
+   
    const booking = res?.data;
+   const rcId = booking?.formDataJson?.redcliffeBookingId;
+
+   const { data: labRes, isLoading: isLabLoading } = useQuery({
+      queryKey: ['lab-status', rcId],
+      queryFn: () => labService.getBookingStatus(rcId as string),
+      enabled: !!rcId && booking?.service?.slug === 'blood-test',
+      refetchInterval: 30000, // Refresh status every 30s
+   });
+
+   const labStatusData = labRes?.data?.data?.[0]; // Redcliffe returns array of matches
    const serviceConfig = booking?.service?.slug ? SERVICES_CONFIG[booking.service.slug] : null;
 
    const handleDownload = async () => {
@@ -230,6 +241,83 @@ export default function BookingDetailsPage() {
                </div>
                <ChevronRight className="w-5 h-5 opacity-30" />
             </motion.div>
+
+            {/* ─── LAB TEST TRACKER (CONDITIONAL) ─── */}
+            {booking?.service?.slug === 'blood-test' && (
+               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 overflow-hidden relative">
+                  <div className="flex items-center justify-between mb-6">
+                     <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-emerald-500" /> Lab Test Progress
+                     </h3>
+                     {isLabLoading && <div className="w-4 h-4 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />}
+                  </div>
+
+                  {!labStatusData ? (
+                     <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-100">
+                        <Clock className="w-5 h-5 text-gray-300" />
+                        <p className="text-xs font-medium text-gray-400">Waiting for lab to acknowledge...</p>
+                     </div>
+                  ) : (
+                     <div className="space-y-6">
+                        {/* Phlebo Card */}
+                        {labStatusData.phlebo_name && (
+                           <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                              <div className="flex items-center gap-3">
+                                 <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm">🤵</div>
+                                 <div>
+                                    <p className="text-[10px] text-emerald-600 font-bold uppercase">Phlebotomist Assigned</p>
+                                    <p className="text-sm font-black text-emerald-900">{labStatusData.phlebo_name}</p>
+                                 </div>
+                              </div>
+                              <a href={`tel:${labStatusData.phlebo_mobile}`} className="w-10 h-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+                                 <Phone className="w-4 h-4" />
+                              </a>
+                           </div>
+                        )}
+
+                        {/* Status Timeline / Steps */}
+                        <div className="grid grid-cols-4 gap-2">
+                           {[
+                              { label: 'Booking', active: true },
+                              { label: 'Sample', active: !!labStatusData.sample_collected_time },
+                              { label: 'In Lab', active: labStatusData.booking_status === 'Testing' || labStatusData.booking_status === 'Partially Report Published' || labStatusData.booking_status === 'Final Report Published' },
+                              { label: 'Report', active: labStatusData.booking_status === 'Final Report Published' }
+                           ].map((step, idx) => (
+                              <div key={idx} className="flex flex-col items-center gap-2">
+                                 <div className={`h-1.5 w-full rounded-full ${step.active ? 'bg-emerald-500' : 'bg-gray-100'}`} />
+                                 <span className={`text-[9px] font-black uppercase ${step.active ? 'text-emerald-700' : 'text-gray-300'}`}>{step.label}</span>
+                              </div>
+                           ))}
+                        </div>
+
+                        {/* Report Download Action */}
+                        {(labStatusData.booking_status === 'Final Report Published' || labStatusData.booking_status === 'Partially Report Published') && (
+                           <button 
+                              onClick={async () => {
+                                 const tId = toast.loading('Opening report...');
+                                 try {
+                                    const blob = await labService.downloadReport(rcId as string);
+                                    const url = window.URL.createObjectURL(blob);
+                                    window.open(url, '_blank');
+                                    toast.success('Report opened', { id: tId });
+                                 } catch (err) {
+                                    toast.error('Could not fetch report yet', { id: tId });
+                                 }
+                              }}
+                              className="w-full h-14 bg-emerald-700 text-white rounded-2xl font-black shadow-xl shadow-emerald-900/20 flex items-center justify-center gap-2 active:scale-95 transition-all"
+                           >
+                              <Download className="w-5 h-5" /> View Results
+                           </button>
+                        )}
+                     </div>
+                  )}
+
+                  <div className="mt-4 p-3 bg-gray-50/50 rounded-xl flex items-center gap-2">
+                     <AlertCircle className="w-3 h-3 text-gray-400" />
+                     <p className="text-[9px] text-gray-400 font-bold leading-tight">Reports are typically shared 12-24 hours after sample collection.</p>
+                  </div>
+               </motion.div>
+            )}
 
             <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm p-6 space-y-6">
                <div className="flex items-start gap-4">

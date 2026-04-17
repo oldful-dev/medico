@@ -168,6 +168,23 @@ enum UIConfigType {
   CUSTOM
 }
 
+enum LabStatus {
+  PENDING
+  HOLD_CREATED
+  PAYMENT_PENDING
+  CONFIRMED
+  SAMPLE_COLLECTED
+  PROCESSING
+  REPORT_GENERATED
+  FAILED
+  MANUAL_RECOVERY_NEEDED
+}
+
+enum LabBookingType {
+  HOME
+  DROP_OFF
+}
+
 // ======================== MODELS ========================
 
 // ─── 1. Admin ───────────────────────────────────────────
@@ -246,6 +263,7 @@ model User {
   sosAlerts         SOSAlert[]
   insuranceApps     InsuranceApplication[]
   waitlistEntries   WaitlistEntry[]
+  labOrders         LabOrder[]
 
   otpCode           String?
   otpExpiresAt      DateTime?
@@ -423,6 +441,7 @@ model Booking {
   formDataJson    Json?                          // dynamic form field responses
 
   payments        Payment[]
+  labOrders       LabOrder[]
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -896,4 +915,37 @@ model WellnessWaitlist {
   createdAt DateTime @default(now())
 
   @@map("wellness_waitlist")
+}
+
+// ─── 26. Lab Order (Redcliffe API specific) ─────────────────
+model LabOrder {
+  id                 String         @id @default(uuid())
+  userId             String
+  user               User           @relation(fields: [userId], references: [id])
+  bookingId          String?        // optional relation
+  booking            Booking?       @relation(fields: [bookingId], references: [id])
+  redcliffeBookingId String?        @unique
+  clientRefId        String         @unique
+
+  status             LabStatus      @default(PENDING)
+  bookingType        LabBookingType
+
+  patient            Json?          // name, age, gender, phone, email
+  additionalMembers  Json?          // [ {name, age, gender, packages} ]
+  address            Json?          // lat, long, landmark, pincode (for Home)
+  packages           Json?          // [ {code, name, price} ]
+  slot               Json?          // date, time, slotId
+
+  paymentDetails     Json?          // razorpayOrderId, amount, isPaid
+
+  processedEvents    String[]       @default([])
+
+  holdExpiresAt      DateTime?
+  trackingLink       String?
+  reportUrl          String?
+
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@map("lab_orders")
 }

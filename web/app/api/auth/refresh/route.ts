@@ -54,10 +54,14 @@ export async function POST() {
         });
 
         return response;
-    } catch {
-        return NextResponse.json(
+    } catch (err) {
+        // Critical: Even on 500 Network error, clear cookies to prevent middleware loops
+        const response = NextResponse.json(
             { success: false, message: 'Failed to refresh session' },
             { status: 500 }
         );
+        response.cookies.delete('auth-token');
+        response.cookies.delete('refresh-token');
+        return response;
     }
 }
