@@ -915,7 +915,7 @@ function PreferencesTab({ profile }: { profile: UserProfile }) {
                 className={`w-11 h-6 rounded-full transition-colors relative focus:outline-none ${pref.on ? 'bg-[var(--color-primary)]' : 'bg-gray-200'}`}
               >
                 <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${pref.on ? 'left-6' : 'left-1'}`} />
-                {updateMut.isPending && updateMut.variables && (updateMut.variables as any)[pref.id] !== undefined && (
+                {updateMut.isPending && updateMut.variables && (updateMut.variables as Partial<UserProfile>)[pref.id as keyof UserProfile] !== undefined && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <Loader2 className="w-3 h-3 animate-spin text-white opacity-40" />
                   </div>
@@ -943,7 +943,7 @@ function PreferencesTab({ profile }: { profile: UserProfile }) {
             </button>
           ))}
         </div>
-        {updateMut.isPending && (updateMut.variables as any)?.preferredLanguage && <p className="text-xs text-gray-400 mt-2">Saving...</p>}
+        {updateMut.isPending && (updateMut.variables as Partial<UserProfile>)?.preferredLanguage && <p className="text-xs text-gray-400 mt-2">Saving...</p>}
       </SectionCard>
     </div>
   );

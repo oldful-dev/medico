@@ -2,7 +2,8 @@
 //  Lab Controller  (Redcliffe Labs integration)
 // ──────────────────────────────────────────────
 
-const { sendResponse } = require('../utils/helpers');
+const prisma = require('../config/database');
+const { sendResponse, paginate, sendPaginatedResponse } = require('../utils/helpers');
 const { logger } = require('../config/logger');
 const rc = require('../services/redcliffe.service');
 
@@ -302,6 +303,43 @@ const getConsolidatedReport = async (req, res, next) => {
     }
 };
 
+// GET /api/labs/admin/orders
+const adminGetLabOrders = async (req, res, next) => {
+    try {
+        const { page, limit, skip } = paginate(req.query);
+        const { status, search } = req.query;
+
+        const where = {};
+        if (status) where.status = status;
+        if (search) {
+            where.OR = [
+                { clientRefId: { contains: search, mode: 'insensitive' } },
+                { redcliffeBookingId: { contains: search, mode: 'insensitive' } },
+                // JSON query for patient name if possible, or simple check
+                { patient: { path: ['name'], string_contains: search } }
+            ];
+        }
+
+        const [orders, total] = await Promise.all([
+            prisma.labOrder.findMany({
+                where,
+                skip,
+                take: limit,
+                include: {
+                    user: { select: { name: true, phone: true } },
+                    booking: { select: { bookingCode: true } }
+                },
+                orderBy: { createdAt: 'desc' },
+            }),
+            prisma.labOrder.count({ where }),
+        ]);
+
+        sendPaginatedResponse(res, orders, total, page, limit);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     searchLocation,
     getLatLng,
@@ -317,4 +355,5 @@ module.exports = {
     updateLabPackage,
     getDigitalReport,
     getConsolidatedReport,
+    adminGetLabOrders,
 };

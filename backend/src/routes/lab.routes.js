@@ -1,9 +1,12 @@
 // Lab Routes (Redcliffe Labs integration)
 const router = require('express').Router();
-const { authenticateUser } = require('../middleware/auth');
+const { authenticateUser, authenticateAdmin } = require('../middleware/auth');
 const ctrl = require('../controllers/lab.controller');
 const holdCtrl = require('../controllers/redcliffeHold.controller');
 const confirmCtrl = require('../controllers/redcliffeConfirm.controller');
+
+// ─── Admin Routes ────────────────────────────
+router.get('/admin/orders', authenticateAdmin, ctrl.adminGetLabOrders);
 
 // ─── Location (public) ───────────────────────
 router.get('/location/search', ctrl.searchLocation);

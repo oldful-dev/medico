@@ -42,7 +42,7 @@ export const mediaService = {
         }
 
         console.log('API BATCH UPLOAD ATTEMPT:', { endpoint: '/upload/batch', fileCount: files.length, folder });
-        const res = await apiClient.upload<any>('/upload/batch', formData).catch(err => {
+        const res = await apiClient.upload<Record<string, unknown>>('/upload/batch', formData).catch(err => {
             console.error('API BATCH UPLOAD FETCH ERROR:', err);
             throw err;
         });
@@ -51,8 +51,8 @@ export const mediaService = {
         
         // Backend returns: { success: true, data: { uploaded: [ { cdnUrl: '...', ... }, ... ], ... } }
         if (res.success && res.data?.uploaded && Array.isArray(res.data.uploaded)) {
-            return res.data.uploaded.map((item: any) => {
-                const url = item.cdnUrl || item.url || item.gcsUrl;
+            return res.data.uploaded.map((item: Record<string, unknown>) => {
+                const url = (item.cdnUrl || item.url || item.gcsUrl) as string;
                 if (!url) console.warn('Item in upload response missing URL:', item);
                 return url;
             }).filter(Boolean);
