@@ -4,15 +4,17 @@
 
 const { sendResponse } = require('../utils/helpers');
 const { logger } = require('../config/logger');
-const rc = require('../utils/redcliffe.service');
+const rc = require('../services/redcliffe.service');
 
 // GET /api/labs/location/search?q=
 const searchLocation = async (req, res, next) => {
     try {
         const { q } = req.query;
         if (!q) return sendResponse(res, 400, null, 'Query parameter q is required');
-        const data = await rc.searchLocation(q);
-        sendResponse(res, 200, data);
+        const result = await rc.searchLocation(q);
+        // Ensure we send only the array of locations
+        const locations = result.data || [];
+        sendResponse(res, 200, locations);
     } catch (error) {
         logger.error('searchLocation error:', error.message);
         next(error);
@@ -37,9 +39,15 @@ const getTimeSlots = async (req, res, next) => {
     try {
         const { date, lat, lng, gender } = req.query;
         if (!date || !lat || !lng) return sendResponse(res, 400, null, 'date, lat and lng are required');
-        const data = await rc.getTimeSlots(date, lat, lng, gender);
-        sendResponse(res, 200, data);
+        const result = await rc.getTimeSlots(date, lat, lng, gender);
+        // Ensure we send only the array of slots to the frontend
+        const slots = result.data || [];
+        sendResponse(res, 200, slots);
     } catch (error) {
+        // If Redcliffe returns 400, it usually means no slots for that criteria
+        if (error.response?.status === 400) {
+            return sendResponse(res, 200, [], 'No slots available for the selected criteria');
+        }
         logger.error('getTimeSlots error:', error.message);
         next(error);
     }
@@ -49,9 +57,19 @@ const getTimeSlots = async (req, res, next) => {
 const getPackages = async (req, res, next) => {
     try {
         const { search } = req.query;
-        const data = await rc.getPackages(search || '');
-        sendResponse(res, 200, data);
+        const result = await rc.getPackages(search || '');
+        // Redcliffe returns { status: 'success', data: [...] }
+        // We only want to send the array [...] to the frontend
+        const packages = (result.data || []).map(pkg => ({
+            ...pkg,
+            // Normalize fasting flag from various possible Redcliffe API versions
+            fasting: pkg.fasting ?? pkg.is_fasting ?? pkg.fasting_required ?? false
+        }));
+        sendResponse(res, 200, packages);
     } catch (error) {
+        if (error.response?.status === 400) {
+            return sendResponse(res, 200, [], 'No packages found');
+        }
         logger.error('getPackages error:', error.message);
         next(error);
     }
@@ -169,10 +187,31 @@ const confirmLabBooking = async (req, res, next) => {
 // GET /api/labs/booking/:id
 const getLabBookingStatus = async (req, res, next) => {
     try {
-        const data = await rc.getBookingStatus({ booking_id: req.params.id });
-        sendResponse(res, 200, data);
+        const { id } = req.params;
+        logger.info(`Fetching Lab status for ID: ${id}`);
+
+        let params = {};
+        // If it starts with LAB-, it's our internal client reference
+        if (id.startsWith('LAB-')) {
+            params.client_ref_id = id;
+        } 
+        // If it's pure numeric, it's the Redcliffe internal ID
+        else if (/^\d+$/.test(id)) {
+            params.booking_id = parseInt(id);
+        }
+        // Otherwise, it's likely a Permanent ID or mixed ID
+        else {
+            params.booking_id = id;
+        }
+
+        const result = await rc.getBookingStatus(params);
+        sendResponse(res, 200, result);
     } catch (error) {
-        logger.error('getLabBookingStatus error:', error.message);
+        logger.error('getLabBookingStatus error:', error.response?.data || error.message);
+        // If we get a 400 from Redcliffe, respond with a helpful message
+        if (error.response?.status === 400) {
+            return sendResponse(res, 400, null, `Redcliffe Status Error: ${error.response?.data?.message || 'Invalid ID'}`);
+        }
         next(error);
     }
 };

@@ -13,6 +13,7 @@ import { useCartStore } from '@/store/cartStore';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import { SERVICES_CONFIG } from '@/lib/services-config';
 import HomeEssentialsBooking from '@/components/services/HomeEssentialsBooking';
+import LabTestBooking from '@/components/services/LabTestBooking';
 import { motion } from 'framer-motion';
 import { mediaService } from '@/services/api/mediaService';
 import { toast } from 'sonner';
@@ -51,6 +52,15 @@ export default function ServiceDetailPage() {
 
   // Use the unified booking UI for all standard service categories (except Quick Services)
   if (config && ['home-essentials', 'medical', 'diagnostic', 'wellness'].includes(config.category) && !isDoctorVisit && !isHospitalTrip) {
+     // Special case for Redcliffe Labs API integration
+     if (id === 'blood-test') {
+       return (
+         <div className="min-h-screen bg-[#FDFDE8] pt-10">
+           <LabTestBooking />
+         </div>
+       );
+     }
+
      // ... (standard layout)
      return (
        <div className="min-h-screen bg-[var(--color-bg-screen)]">
