@@ -11,7 +11,19 @@ export interface LabPackage {
 
 export interface TimeSlot {
     slot_id: number;
-    slot_time: string;
+    slot: string;
+}
+
+export interface LabBookingStatus {
+    data: any[];
+    [key: string]: any;
+}
+
+export interface LabBookingResponse {
+    order?: {
+        redcliffeBookingId: string;
+        clientRefId: string;
+    };
 }
 
 export interface LabBookingPayload {
@@ -57,19 +69,19 @@ export const labService = {
         return apiClient.get<TimeSlot[]>(`/labs/time-slots?date=${date}&lat=${lat}&lng=${lng}`);
     },
 
-    holdBooking: async (payload: LabBookingPayload): Promise<ApiResponse<any>> => {
-        return apiClient.post<any>('/labs/book/hold', payload);
+    holdBooking: async (payload: LabBookingPayload): Promise<ApiResponse<LabBookingResponse>> => {
+        return apiClient.post<LabBookingResponse>('/labs/book/hold', payload);
     },
 
-    getBookingStatus: async (bookingId: string): Promise<ApiResponse<any>> => {
-        return apiClient.get<any>(`/labs/booking/${bookingId}`);
+    getBookingStatus: async (bookingId: string): Promise<ApiResponse<LabBookingStatus>> => {
+        return apiClient.get<LabBookingStatus>(`/labs/booking/${bookingId}`);
     },
     
-    getDigitalReport: async (bookingId: string): Promise<ApiResponse<any>> => {
-        return apiClient.get<any>(`/labs/booking/${bookingId}/digital-report`);
+    getDigitalReport: async (bookingId: string): Promise<ApiResponse<LabBookingStatus>> => {
+        return apiClient.get<LabBookingStatus>(`/labs/booking/${bookingId}/digital-report`);
     },
 
     downloadReport: async (bookingId: string): Promise<Blob> => {
-        return apiClient.get<Blob>(`/labs/booking/${bookingId}/report`, { responseType: 'blob' });
+        return apiClient.download(`/labs/booking/${bookingId}/report`);
     }
 };

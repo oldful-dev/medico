@@ -97,9 +97,10 @@ export default function ServiceDetailPage() {
                     attachments: photoUrls, // Add the uploaded URLs to the cart item
                   });
                   router.push('/app/checkout');
-                } catch (err: any) {
-                  console.error('BOOKING UPLOAD ERROR:', err);
-                  toast.error(`Upload failed: ${err.message || 'Please try again.'}`, { id: 'upload' });
+                } catch (err) {
+                  const error = err as Error;
+                  console.error('BOOKING UPLOAD ERROR:', error);
+                  toast.error(`Upload failed: ${error.message || 'Please try again.'}`, { id: 'upload' });
                   setIsBooking(false);
                 }
               }} 

@@ -14,14 +14,13 @@ import { DashboardShell } from '@/components/layout/DashboardShell';
 export function AppGuard({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, isLoading } = useAuthStore();
 
-    if (isLoading) {
-        return <DashboardShell />;
-    }
-
-    if (!isAuthenticated) {
-        if (typeof window !== 'undefined') {
+    React.useEffect(() => {
+        if (!isLoading && !isAuthenticated) {
             window.location.href = '/auth?reason=unauthorized';
         }
+    }, [isLoading, isAuthenticated]);
+
+    if (isLoading || !isAuthenticated) {
         return <DashboardShell />;
     }
 

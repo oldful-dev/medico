@@ -71,7 +71,7 @@ export default function LabTestBooking() {
         }
     }, [user]);
 
-    const updateAddressFromStored = (addr: any) => {
+    const updateAddressFromStored = (addr: { label?: string; line1: string; cityName?: string; pincode?: string }) => {
         const label = addr.label || 'Saved Address';
         setAddress(`${label}: ${addr.line1}${addr.cityName ? ', ' + addr.cityName : ''}`);
         setPincode(addr.pincode || '');
@@ -126,7 +126,7 @@ export default function LabTestBooking() {
                 },
                 address: { lat: "12.9716", long: "77.5946", pincode, line1: address },
                 packages: [{ code: selectedPackage.code, name: selectedPackage.name, cost: selectedPackage.discounted_cost || selectedPackage.cost }],
-                slot: { date: bookingDate, time: selectedSlot.slot || selectedSlot.slot_time, slotId: selectedSlot.slot_id }
+                slot: { date: bookingDate, time: selectedSlot.slot || selectedSlot.slot_time || '', slotId: selectedSlot.slot_id }
             };
 
             const res = await labService.holdBooking(payload);
@@ -142,8 +142,8 @@ export default function LabTestBooking() {
                   serviceId: 'blood-test', // Slug used in backend to identify lab bookings
                   name: selectedPackage.name,
                   price: totalPayable,
-                  redcliffeBookingId: res.order?.redcliffeBookingId,
-                  clientRefId: res.order?.clientRefId,
+                  redcliffeBookingId: res.data?.order?.redcliffeBookingId,
+                  clientRefId: res.data?.order?.clientRefId,
                   slot: payload.slot,
                   address: address,
                   pincode: pincode,
@@ -154,8 +154,9 @@ export default function LabTestBooking() {
                 toast.success('Slot reserved! Proceeding to payment...');
                 router.push('/app/checkout');
             }
-        } catch (err: any) {
-            toast.error(err.message || 'Booking failed');
+        } catch (err) {
+            const error = err as Error;
+            toast.error(error.message || 'Booking failed');
         } finally {
             setBookingLoading(false);
         }
