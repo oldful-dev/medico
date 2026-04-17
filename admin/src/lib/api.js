@@ -263,6 +263,15 @@ export const mediaAPI = {
     delete: (id) => api.delete(`/media/${id}`),
 };
 
+// ── Lab Orders ───────────────────────────────────────
+export const labAPI = {
+    getOrders: (params) => api.get('/labs/admin/orders', { params }),
+    getOrderStatus: (id) => api.get(`/labs/booking/${id}`),
+    updateOrder: (id, data) => api.post(`/labs/booking/${id}/update`, data),
+    getDigitalReport: (id) => api.get(`/labs/booking/${id}/digital-report`),
+    downloadReport: (id) => api.get(`/labs/booking/${id}/report`, { responseType: 'blob' }),
+};
+
 export const waitlistAPI = {
     getAll: () => api.get('/waitlist'),
 };
