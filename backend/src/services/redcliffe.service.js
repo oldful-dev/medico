@@ -14,6 +14,17 @@ const client = axios.create({
     }
 });
 
+// Debug interceptor for unauthorized requests
+client.interceptors.response.use(
+    res => res,
+    error => {
+        if (error.response?.status === 403) {
+            logger.error(`[Redcliffe] 403 Forbidden: Check API Key and IP Whitelisting. Body: ${JSON.stringify(error.response.data)}`);
+        }
+        return Promise.reject(error);
+    }
+);
+
 /**
  * Sanitizes phone number for Redcliffe (10-digits only, no prefix)
  */

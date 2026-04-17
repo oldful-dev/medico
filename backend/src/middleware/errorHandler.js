@@ -33,6 +33,12 @@ const errorHandler = (err, req, res, next) => {
         message = 'Invalid token';
     }
 
+    // Axios partner API errors
+    if (err.isAxiosError && err.response) {
+        statusCode = err.response.status;
+        message = err.response.data?.message || err.message;
+    }
+
     // Validation errors (express-validator)
     if (err.array && typeof err.array === 'function') {
         statusCode = 422;
