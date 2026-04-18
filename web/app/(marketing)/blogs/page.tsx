@@ -122,7 +122,10 @@ export default function BlogsPage() {
             <p className="text-gray-200 text-sm md:text-base mb-6 line-clamp-2 opacity-90">
               Integrating artificial intelligence with compassionate human care is providing new avenues for early detection and personalized care plans for those living with memory loss.
             </p>
-            <button className="flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-xl font-bold text-sm hover:bg-emerald-50 transition-all">
+            <button 
+              onClick={() => toast.info('Full article coming soon!', { description: 'We are working on bringing you the complete story.' })}
+              className="flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-xl font-bold text-sm hover:bg-emerald-50 transition-all active:scale-95 shadow-sm"
+            >
               Read Full Story <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -167,7 +170,10 @@ export default function BlogsPage() {
                   {post.excerpt}
                 </p>
                 <div className="mt-auto">
-                  <button className="flex items-center gap-2 text-[var(--color-primary)] font-bold text-sm group/btn">
+                  <button 
+                    onClick={() => toast.info('Full article coming soon!', { description: 'We are working on bringing you the complete story.' })}
+                    className="flex items-center gap-2 text-[var(--color-primary)] font-bold text-sm group/btn hover:underline"
+                  >
                     Keep Reading <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
                   </button>
                 </div>

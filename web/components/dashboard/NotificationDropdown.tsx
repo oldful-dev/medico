@@ -35,6 +35,11 @@ export function NotificationDropdown({ isOpen, onClose, notifications, isLoading
         markAllAsRead.mutate();
     };
 
+    const filteredNotifications = notifications.filter(n => 
+        n.body?.includes('Template:') !== true && 
+        n.title?.includes('Template:') !== true
+    );
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -67,14 +72,14 @@ export function NotificationDropdown({ isOpen, onClose, notifications, isLoading
                                     </motion.div>
                                     <p className="text-xs text-gray-400">Fetching alerts...</p>
                                 </div>
-                            ) : notifications.length === 0 ? (
+                            ) : filteredNotifications.length === 0 ? (
                                 <div className="p-12 text-center text-gray-400">
                                     <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
                                     <p className="text-sm">No new notifications</p>
                                 </div>
                             ) : (
                                 <div className="divide-y divide-gray-50">
-                                    {notifications.map((n) => (
+                                    {filteredNotifications.map((n) => (
                                         <div
                                             key={n.id}
                                             className={`p-4 hover:bg-emerald-50/30 transition-colors relative cursor-pointer ${!n.isRead ? 'bg-emerald-50/10' : ''}`}

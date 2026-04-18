@@ -15,8 +15,8 @@ export interface TimeSlot {
 }
 
 export interface LabBookingStatus {
-    data: any[];
-    [key: string]: any;
+    data: unknown[];
+    [key: string]: unknown;
 }
 
 export interface LabBookingResponse {

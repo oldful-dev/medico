@@ -5,8 +5,12 @@ import { getAssetUrl } from '@/utils/getAssetUrl';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/store/cartStore';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, Calendar as CalendarIcon, Clock, MapPin, CheckCircle, Camera, X, Loader2 } from 'lucide-react';
+import { 
+  ChevronLeft, Calendar as CalendarIcon, Clock, MapPin, 
+  CheckCircle, Camera, X, Loader2 
+} from 'lucide-react';
 import { mediaService } from '@/services/api/mediaService';
+import { PhoneInput } from '@/components/common/PhoneInput';
 
 // Icon Registry (Simulated from SDUI)
 const problemIcons: Record<string, string> = {
@@ -44,6 +48,7 @@ export default function DoctorVisitForm() {
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [contactPhone, setContactPhone] = useState('');
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -94,6 +99,7 @@ export default function DoctorVisitForm() {
           problem: selectedProblem || 'Checkup',
           providerType: doctorType,
           scheduleTime: timeMode === 'ASAP' ? 'ASAP (Next 60 mins)' : scheduleDate,
+          phone: contactPhone || undefined,
           attachments: uploadedUrls
         }
       };
@@ -234,7 +240,7 @@ export default function DoctorVisitForm() {
             <button onClick={handleBack} className="text-sm font-semibold text-gray-500 pl-1 flex items-center gap-1"><ChevronLeft className="w-4 h-4" /> Back</button>
             <h2 className="text-xl font-bold text-gray-800">Confirm Address</h2>
 
-            <div className="bg-white rounded-2xl p-5 border-2 border-gray-100 shadow-sm">
+            <div className="bg-white rounded-2xl p-5 border-2 border-gray-100 shadow-sm space-y-4">
               <div className="flex items-start gap-4">
                 <MapPin className="w-6 h-6 text-[var(--color-primary)] shrink-0 mt-1" />
                 <div className="flex-1">
@@ -247,8 +253,18 @@ export default function DoctorVisitForm() {
                   />
                 </div>
               </div>
-              <div className="text-xs text-gray-400 mt-4 pt-4 border-t border-gray-100">
-                You can edit this address or proceed directly to checkout.
+
+              <div className="pt-4 border-t border-gray-100">
+                <PhoneInput
+                  label="Contact Number (Optional)"
+                  placeholder="Verify for this visit"
+                  value={contactPhone}
+                  onChange={setContactPhone}
+                />
+              </div>
+
+              <div className="text-xs text-gray-400 mt-2">
+                You can edit the address and contact for this specific visit.
               </div>
             </div>
 

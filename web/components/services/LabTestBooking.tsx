@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { PhoneInput } from '@/components/common/PhoneInput';
 
 interface LabSlot {
     slot_id: number;
@@ -45,6 +46,7 @@ export default function LabTestBooking() {
 
     const [coords, setCoords] = useState({ lat: "12.9716", long: "77.5946" });
     const [showAddressPicker, setShowAddressPicker] = useState(false);
+    const [patientPhone, setPatientPhone] = useState(user?.phone || '');
 
     useEffect(() => {
         fetchPackages();
@@ -68,6 +70,9 @@ export default function LabTestBooking() {
         if (user?.addresses && user.addresses.length > 0) {
             const def = user.addresses.find(a => a.isDefault) || user.addresses[0];
             updateAddressFromStored(def);
+        }
+        if (user?.phone) {
+            setPatientPhone(user.phone.replace('+91', ''));
         }
     }, [user]);
 
@@ -122,7 +127,7 @@ export default function LabTestBooking() {
                     name: user?.name || 'User',
                     age: 30,
                     gender: 'Male',
-                    phone: user?.phone || '',
+                    phone: patientPhone || user?.phone || '',
                 },
                 address: { lat: "12.9716", long: "77.5946", pincode, line1: address },
                 packages: [{ code: selectedPackage.code, name: selectedPackage.name, cost: selectedPackage.discounted_cost || selectedPackage.cost }],
@@ -354,7 +359,7 @@ export default function LabTestBooking() {
                             className="w-full pl-16 pr-6 py-6 bg-gray-50 rounded-2xl border-2 border-transparent focus:border-emerald-500 focus:bg-white outline-none transition-all text-sm font-medium min-h-[100px]"
                         />
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                         <div className="flex-1 h-14 relative group">
                             <input 
                                 placeholder="Pincode"
@@ -363,10 +368,16 @@ export default function LabTestBooking() {
                                 className="w-full h-full px-6 bg-gray-50 border-2 border-transparent focus:border-emerald-500 rounded-xl outline-none font-bold text-sm text-gray-700"
                             />
                         </div>
-                        <div className="bg-emerald-50 text-emerald-600 px-4 h-14 rounded-xl flex items-center gap-2 border border-emerald-100">
-                            <Zap className="w-4 h-4" />
-                            <span className="text-[10px] font-black uppercase">Serviceable</span>
-                        </div>
+                        <PhoneInput 
+                            value={patientPhone}
+                            onChange={setPatientPhone}
+                            className="!space-y-0"
+                            placeholder="Collection Contact"
+                        />
+                    </div>
+                    <div className="bg-emerald-50 text-emerald-600 px-4 h-14 rounded-xl flex items-center gap-2 border border-emerald-100 mt-4">
+                        <Zap className="w-4 h-4" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Pin Serve-able</span>
                     </div>
                 </motion.div>
 

@@ -10,6 +10,7 @@ import {
 import { supportService, SupportTicket, TicketCategory, TicketMessage } from '@/services/api/supportService';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
+import { PhoneInput } from '@/components/common/PhoneInput';
 
 // Data from backend DEFAULT_CONFIG
 const FAQ_DATA = [
@@ -622,20 +623,11 @@ export default function ContactPage() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Contact Phone</label>
-                                    <div className="relative">
-                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                                        <input 
-                                            required
-                                            type="tel" 
-                                            placeholder="+91..."
-                                            className="w-full pl-11 pr-5 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:ring-4 ring-emerald-500/10 focus:border-emerald-500/30 transition-all text-sm"
-                                            value={form.contactNumber}
-                                            onChange={e => setForm({...form, contactNumber: e.target.value})}
-                                        />
-                                    </div>
-                                </div>
+                                <PhoneInput
+                                    label="Contact Phone"
+                                    value={form.contactNumber}
+                                    onChange={val => setForm({...form, contactNumber: val})}
+                                />
 
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Detailed Description</label>

@@ -39,7 +39,7 @@ export default function PlansPage() {
   const handleChoosePlan = (plan: Plan) => {
     if (!isAuthenticated) {
       toast.error('Please login to continue');
-      router.push('/auth?redirect=/plans');
+      router.push('/auth?redirect=/app/plans');
       return;
     }
 
@@ -146,7 +146,7 @@ export default function PlansPage() {
            </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
            {plans.map((plan, idx) => {
              const isPro = plan.name === 'Care Plus' || plan.name.toLowerCase().includes('pro') || idx === 1;
              const isActive = profile?.subscriptions?.some(s => s.status === 'ACTIVE' && s.plan.name === plan.name);
@@ -154,7 +154,7 @@ export default function PlansPage() {
              return (
                <div 
                  key={plan.id}
-                 className={`rounded-[24px] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border transition-all relative flex flex-col ${
+                 className={`rounded-[24px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border transition-all relative flex flex-col ${
                    isPro 
                     ? 'bg-[var(--color-primary)] border-0 -translate-y-2 shadow-2xl z-10' 
                     : 'bg-white border-gray-100 hover:shadow-xl'

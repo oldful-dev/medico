@@ -293,6 +293,7 @@ export default function ServiceDetailPage() {
                            <input 
                               type="datetime-local" 
                               value={scheduleDate}
+                              min={new Date().toISOString().slice(0, 16)}
                               onChange={(e) => setScheduleDate(e.target.value)}
                               className="w-full h-11 bg-white border-2 border-emerald-100 rounded-xl px-4 text-xs font-bold text-emerald-800 outline-none focus:border-emerald-500 transition-all cursor-pointer"
                            />

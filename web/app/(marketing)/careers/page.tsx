@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Briefcase, Send, CheckCircle, ArrowRight, Star, Heart, Clock, Shield } from 'lucide-react';
 import { apiClient } from '@/services/api/apiClient';
+import { PhoneInput } from '@/components/common/PhoneInput';
 
 const ROLES = [
   "General Caregiver",
@@ -164,17 +165,12 @@ export default function CareersPage() {
                     onChange={e => setForm({...form, email: e.target.value})}
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Phone Number</label>
-                  <input
-                    required
-                    type="tel"
-                    placeholder="+91 00000 00000"
-                    className="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl outline-none focus:ring-2 ring-[var(--color-primary)]/20 focus:bg-white focus:border-[var(--color-primary)]/30 transition-all text-sm"
-                    value={form.phone}
-                    onChange={e => setForm({...form, phone: e.target.value})}
-                  />
-                </div>
+                <PhoneInput
+                  label="Phone Number"
+                  value={form.phone}
+                  onChange={val => setForm({...form, phone: val})}
+                  className="md:col-span-1"
+                />
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Role of Interest</label>
                   <select

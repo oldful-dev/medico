@@ -1,72 +1,121 @@
-// OTP Input — 4-digit input boxes
-// Figma: 4 rounded rectangles 52×49 each, gap 17px, with center bottom line 24px
-// Border-radius 10, stroke #C4C4C4, background white, shadow subtle
-import React, { useRef, useState } from 'react';
-import { View, TextInput, StyleSheet, Platform } from 'react-native';
+import React, { useRef, useState, useImperativeHandle, useEffect } from 'react';
+import { View, TextInput, StyleSheet, Platform, Pressable, Text } from 'react-native';
+import { Colors, Fonts, FontSize, Radius } from '@/constants/theme';
+
+export interface OTPInputRef {
+    clear: () => void;
+    focus: () => void;
+}
 
 interface OTPInputProps {
     length?: number;
     disabled?: boolean;
     onComplete?: (otp: string) => void;
+    onChange?: (otp: string) => void;
+    /**
+     * Optional ref-like prop to avoid forwardRef issues in some environments.
+     */
+    otpRef?: React.RefObject<OTPInputRef | null>;
 }
 
-export default function OTPInput({ length = 4, disabled, onComplete }: OTPInputProps) {
-    const [otpValues, setOtpValues] = useState<string[]>(Array(length).fill(''));
-    const inputRefs = useRef<(TextInput | null)[]>([]);
+/**
+ * OTPInput component with reliable auto-fill support.
+ * Uses a single hidden TextInput to manage the string value and native auto-fill.
+ */
+export default function OTPInput({ 
+    length = 4, 
+    disabled = false, 
+    onComplete, 
+    onChange,
+    otpRef 
+}: OTPInputProps) {
+    const [otp, setOtp] = useState('');
+    const inputRef = useRef<TextInput>(null);
 
-    const handleChange = (text: string, index: number) => {
-        const newValues = [...otpValues];
-        newValues[index] = text;
-        setOtpValues(newValues);
-
-        if (text.length === 1 && index < length - 1) {
-            inputRefs.current[index + 1]?.focus();
+    // Expose clear and focus methods to parent components via otpRef prop
+    useImperativeHandle(otpRef, () => ({
+        clear: () => {
+            setOtp('');
+        },
+        focus: () => {
+            inputRef.current?.focus();
         }
+    }), []);
 
-        // If all boxes are filled, trigger onComplete
-        if (text.length === 1 && newValues.every(val => val.length === 1)) {
-            if (onComplete) {
-                onComplete(newValues.join(''));
+    const handleChangeText = (text: string) => {
+        const cleaned = text.replace(/[^0-9]/g, '');
+        if (cleaned.length <= length) {
+            setOtp(cleaned);
+            onChange?.(cleaned);
+            if (cleaned.length === length) {
+                onComplete?.(cleaned);
             }
         }
     };
 
-    const handleKeyPress = (e: any, index: number) => {
-        if (e.nativeEvent.key === 'Backspace' && index > 0 && otpValues[index] === '') {
-            inputRefs.current[index - 1]?.focus();
-        }
+    const handlePress = () => {
+        inputRef.current?.focus();
     };
 
     return (
         <View style={styles.container}>
-            {Array.from({ length }).map((_, index) => (
-                <View key={index} style={styles.box}>
-                    <TextInput
-                        ref={(ref) => { inputRefs.current[index] = ref; }}
-                        style={styles.input}
-                        maxLength={1}
-                        keyboardType="number-pad"
-                        value={otpValues[index]}
-                        onChangeText={(text) => handleChange(text, index)}
-                        onKeyPress={(e) => handleKeyPress(e, index)}
-                        selectTextOnFocus
-                        editable={!disabled}
-                        textContentType={index === 0 ? 'oneTimeCode' : 'none'}
-                        autoComplete={index === 0 ? 'sms-otp' : 'off'}
-                    />
-                    <View style={styles.underline} />
-                </View>
-            ))}
+            {/* Hidden TextInput for native auto-fill and keyboard handling */}
+            <TextInput
+                ref={inputRef}
+                style={styles.hiddenInput}
+                value={otp}
+                onChangeText={handleChangeText}
+                maxLength={length}
+                keyboardType="number-pad"
+                textContentType="oneTimeCode"
+                autoComplete="sms-otp"
+                importantForAutofill="yes"
+                caretHidden={true}
+                editable={!disabled}
+            />
+
+            {/* Visual Boxes */}
+            <Pressable style={styles.boxesRow} onPress={handlePress}>
+                {Array.from({ length }).map((_, index) => {
+                    const char = otp[index] || '';
+                    const isFocused = !disabled && otp.length === index;
+                    const isLastFilled = index === length - 1 && otp.length === length;
+                    
+                    return (
+                        <View 
+                            key={index} 
+                            style={[
+                                styles.box, 
+                                (isFocused || (isLastFilled && index === length - 1)) && styles.focusedBox,
+                                char !== '' && styles.filledBox
+                            ]}
+                        >
+                            <Text style={styles.boxText}>{char}</Text>
+                            <View style={[styles.underline, (isFocused || char !== '') && styles.activeUnderline]} />
+                        </View>
+                    );
+                })}
+            </Pressable>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    hiddenInput: {
+        position: 'absolute',
+        width: 1,
+        height: 1,
+        opacity: 0,
+    },
+    boxesRow: {
         flexDirection: 'row',
         gap: 17,
     },
-    /* Figma: 52×49, rounded-rectangle, border-radius ~10 */
     box: {
         width: 52,
         height: 49,
@@ -82,21 +131,27 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 2,
     },
-    input: {
-        width: '100%',
-        height: '100%',
-        textAlign: 'center',
+    focusedBox: {
+        borderColor: '#02743F',
+        borderWidth: 1.5,
+    },
+    filledBox: {
+        borderColor: '#02743F',
+    },
+    boxText: {
         fontSize: 22,
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontWeight: '500',
         color: '#2F2F2F',
     },
-    /* Figma: Line inside box, 24px wide, centered at bottom */
     underline: {
         position: 'absolute',
         bottom: 10,
         width: 24,
         height: 1,
         backgroundColor: '#C4C4C4',
+    },
+    activeUnderline: {
+        backgroundColor: '#02743F',
     },
 });
