@@ -14,8 +14,16 @@ export interface TimeSlot {
     slot: string;
 }
 
+export interface LabBookingData {
+    phlebo_name?: string;
+    phlebo_mobile?: string;
+    sample_collected_time?: string;
+    booking_status?: string;
+    [key: string]: unknown;
+}
+
 export interface LabBookingStatus {
-    data: unknown[];
+    data: LabBookingData[];
     [key: string]: unknown;
 }
 
