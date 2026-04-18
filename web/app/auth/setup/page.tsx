@@ -16,6 +16,8 @@ import { userService } from '@/services/api/userService';
 import { cityService, City } from '@/services/api/cityService';
 import { useAuthStore, AuthUser } from '@/store/authStore';
 import { Suspense } from 'react';
+import { PhoneInput } from '@/components/common/PhoneInput';
+import Link from 'next/link';
 
 interface ProfileFormData {
   name: string;
@@ -43,7 +45,7 @@ function ProfileSetupForm() {
   const [agreed, setAgreed] = useState(false);
   const [detecting, setDetecting] = useState(false);
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm({
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
       name: '',
       email: '',
@@ -159,7 +161,8 @@ function ProfileSetupForm() {
         }
 
         // 4. Success - use hard navigation to ensure cookies sync with Middleware and Zustand hydrates fresh data
-        window.location.href = '/app/dashboard';
+        const redirect = searchParams.get('redirect') || '/app/dashboard';
+        window.location.href = redirect;
       } else {
         setError(res.message || 'Failed to complete profile registration');
       }
@@ -330,18 +333,12 @@ function ProfileSetupForm() {
         </div>
 
         {/* Row 6: Emergency */}
-        <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Emergency Contact Number</label>
-          <div className="flex items-center bg-gray-50 border-2 border-transparent focus-within:border-emerald-500 focus-within:bg-white rounded-2xl overflow-hidden transition-all">
-             <span className="pl-5 pr-3 text-sm font-bold text-gray-400">+91</span>
-             <input 
-               {...register('emergencyNumber')}
-               maxLength={10}
-               placeholder="10-digit number"
-               className="w-full h-14 pr-5 text-sm font-semibold outline-none bg-transparent"
-             />
-          </div>
-        </div>
+        <PhoneInput
+          label="Emergency Contact Number"
+          value={watch('emergencyNumber')}
+          onChange={(val) => setValue('emergencyNumber', val)}
+          error={errors.emergencyNumber ? 'Please enter a valid 10-digit number' : ''}
+        />
 
         {/* Policies Checkbox */}
         <label className="flex items-start gap-3 cursor-pointer group mt-4">
@@ -357,7 +354,13 @@ function ProfileSetupForm() {
               </div>
            </div>
            <div className="flex-1 text-[11px] leading-snug text-gray-500 font-medium">
-              I have read and agreed to the <span className="text-[var(--color-primary-deep)] font-black underline decoration-emerald-200/50 underline-offset-2">Policies and Terms of Service</span> for the Oldful platform.
+              I have read and agreed to the{' '}
+              <Link href="/terms" className="text-[var(--color-primary-deep)] font-black underline decoration-emerald-200/50 underline-offset-2">Terms</Link>
+              {', '}
+              <Link href="/privacy" className="text-[var(--color-primary-deep)] font-black underline decoration-emerald-200/50 underline-offset-2">Privacy Policy</Link>
+              {' and '}
+              <Link href="/service-policy" className="text-[var(--color-primary-deep)] font-black underline decoration-emerald-200/50 underline-offset-2">Service Policy</Link>
+              {' for the Oldful platform.'}
            </div>
         </label>
 

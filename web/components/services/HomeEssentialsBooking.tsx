@@ -187,6 +187,7 @@ export default function HomeEssentialsBooking({ config, onBook, isLoading = fals
                         <input
                            type="datetime-local"
                            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white rounded-2xl text-sm font-medium outline-none transition-all cursor-pointer"
+                           min={new Date().toISOString().slice(0, 16)}
                            onChange={(e) => setSelectedDate(e.target.value)}
                         />
                      </div>

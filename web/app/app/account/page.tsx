@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   User, MapPin, FileText, Heart, Settings, HelpCircle,
   LogOut, ChevronRight, Shield, Bell, Phone, Mail,
@@ -18,6 +19,7 @@ import { SERVICES_CONFIG } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import { formatPrice } from '@/utils/formatPrice';
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
+import { PhoneInput } from '@/components/common/PhoneInput';
 import { toast } from 'sonner';
 
 // ─── Query Keys ────────────────────────────────────────────────────────────
@@ -89,7 +91,11 @@ function ProfileTab({ profile }: { profile: UserProfile }) {
     mutationFn: (file: File) => userService.uploadAvatar(file),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile });
+      toast.success('Profile picture updated');
     },
+    onError: () => {
+      toast.error('Failed to upload profile picture');
+    }
   });
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,7 +117,7 @@ function ProfileTab({ profile }: { profile: UserProfile }) {
             onClick={() => fileRef.current?.click()}
             className="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:border-[var(--color-primary)] transition-colors"
           >
-            {avatarMut.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-400" /> : <Camera className="w-3.5 h-3.5 text-gray-500" />}
+            {avatarMut.isPending ? <Loader2 className="w-5 h-5 animate-spin text-emerald-600" /> : <Camera className="w-3.5 h-3.5 text-gray-500" />}
           </button>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
         </div>
@@ -157,14 +163,21 @@ function ProfileTab({ profile }: { profile: UserProfile }) {
             ))}
           </div>
           <button
-            onClick={() => updateMut.mutate(form)}
+            onClick={() => updateMut.mutate(form, { 
+              onSuccess: () => {
+                setEditing(false);
+                toast.success('Profile updated successfully');
+              },
+              onError: () => {
+                toast.error('Failed to update profile');
+              }
+            })}
             disabled={updateMut.isPending}
-            className="flex items-center gap-2 bg-[var(--color-primary-deep)] text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-[#023d22] transition-colors disabled:opacity-60"
+            className="flex items-center gap-2 bg-[var(--color-primary-deep)] text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-[#023d22] transition-colors disabled:opacity-50"
           >
-            {updateMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {updateMut.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
             Save Changes
           </button>
-          {updateMut.isError && <p className="text-xs text-red-500 mt-2">Failed to save. Please try again.</p>}
         </SectionCard>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -207,9 +220,6 @@ function BookingsTab() {
     setShowCancelModal(true);
   };
 
-  // ─── Filter: exclude ghost payment bookings from the main list ────────────
-  // PAYMENT_PENDING = booking created but Razorpay not completed yet (not a real booking)
-  // PAYMENT_FAILED  = payment failed or user cancelled (booking is dead)
   const bookings: Booking[] = (bookingsData || []).filter((b: Booking) => {
     const s = b.status?.toUpperCase();
     return s !== 'PAYMENT_PENDING' && s !== 'PAYMENT_FAILED';
@@ -220,7 +230,6 @@ function BookingsTab() {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-2">
         {[
           { label: 'Total', value: bookings.length, icon: Package, color: 'text-gray-700 bg-gray-50' },
@@ -288,6 +297,14 @@ function BookingsTab() {
                       {booking.payments?.some((p) => p.status === 'SUCCESS') ? (
                         <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 mt-1 flex items-center gap-0.5">
                           <CheckCircle2 className="w-2.5 h-2.5" /> PAID
+                        </span>
+                      ) : booking.payments?.some((p) => p.status === 'REFUND_INITIATED') ? (
+                        <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 mt-1 flex items-center gap-0.5">
+                          <Clock className="w-2.5 h-2.5" /> REFUND PROCESSING
+                        </span>
+                      ) : booking.payments?.some((p) => p.status === 'REFUNDED') ? (
+                        <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 mt-1 flex items-center gap-0.5">
+                          <CheckCircle2 className="w-2.5 h-2.5" /> REFUNDED
                         </span>
                       ) : (
                         <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 mt-1">
@@ -759,11 +776,11 @@ function MedicalTab({ profile }: { profile: UserProfile }) {
               </div>
             ))}
             <button
-              onClick={() => upsertMut.mutate()}
+               onClick={() => upsertMut.mutate()}
               disabled={upsertMut.isPending}
               className="flex items-center gap-2 bg-[var(--color-primary-deep)] text-white px-5 py-2.5 rounded-xl text-sm font-bold disabled:opacity-50 w-fit hover:bg-[#023d22] transition-colors"
             >
-              {upsertMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {upsertMut.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
               Save Medical Card
             </button>
           </div>
@@ -790,6 +807,7 @@ function MedicalTab({ profile }: { profile: UserProfile }) {
       </SectionCard>
 
       {/* Emergency Contacts */}
+      <div id="emergency-section" />
       <SectionCard>
         <SectionHeader 
           title="Emergency Contacts" 
@@ -812,11 +830,11 @@ function MedicalTab({ profile }: { profile: UserProfile }) {
                   value={ecForm.name}
                   onChange={e => setEcForm({...ecForm, name: e.target.value})}
                 />
-                <input 
-                  placeholder="Phone Number" 
-                  className="w-full px-3 py-2 text-sm bg-white border border-gray-100 rounded-lg outline-none focus:border-emerald-500"
+                <PhoneInput 
                   value={ecForm.phone}
-                  onChange={e => setEcForm({...ecForm, phone: e.target.value})}
+                  onChange={val => setEcForm({...ecForm, phone: val})}
+                  placeholder="Phone"
+                  className="!space-y-0"
                 />
              </div>
              <input 
@@ -827,8 +845,14 @@ function MedicalTab({ profile }: { profile: UserProfile }) {
              />
              <button 
                 disabled={!ecForm.name || !ecForm.phone || addEcMut.isPending}
-                onClick={() => addEcMut.mutate(ecForm)}
-                className="bg-[var(--color-primary-deep)] text-white py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 disabled:bg-gray-300"
+                onClick={() => {
+                  if (ecForm.phone.length < 10) {
+                    toast.error('Please enter a valid 10-digit phone number');
+                    return;
+                  }
+                  addEcMut.mutate(ecForm);
+                }}
+                className="bg-[var(--color-primary-deep)] text-white py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 disabled:bg-gray-300 transition-all active:scale-[0.98]"
              >
                 {addEcMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Save Contact
@@ -876,7 +900,11 @@ function PreferencesTab({ profile }: { profile: UserProfile }) {
     mutationFn: (data: Partial<UserProfile>) => userService.updateProfile(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: USER_QUERY_KEYS.profile });
+      toast.success('Preferences updated successfully');
     },
+    onError: () => {
+      toast.error('Failed to update preferences. Please try again.');
+    }
   });
 
   const LANGS = [
@@ -912,12 +940,12 @@ function PreferencesTab({ profile }: { profile: UserProfile }) {
               <button 
                 onClick={() => updateMut.mutate({ [pref.id]: !pref.on })}
                 disabled={updateMut.isPending}
-                className={`w-11 h-6 rounded-full transition-colors relative focus:outline-none ${pref.on ? 'bg-[var(--color-primary)]' : 'bg-gray-200'}`}
+                className={`w-12 h-7 rounded-full transition-all relative focus:outline-none ${pref.on ? 'bg-[var(--color-primary)] shadow-lg shadow-emerald-500/20' : 'bg-gray-200'}`}
               >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${pref.on ? 'left-6' : 'left-1'}`} />
+                <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all ${pref.on ? 'left-6' : 'left-1'}`} />
                 {updateMut.isPending && updateMut.variables && (updateMut.variables as Partial<UserProfile>)[pref.id as keyof UserProfile] !== undefined && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <Loader2 className="w-3 h-3 animate-spin text-white opacity-40" />
+                    <Loader2 className={`w-5 h-5 animate-spin ${pref.on ? 'text-white' : 'text-emerald-600'}`} />
                   </div>
                 )}
               </button>
@@ -951,6 +979,16 @@ function PreferencesTab({ profile }: { profile: UserProfile }) {
 
 // ─── Support Tab ────────────────────────────────────────────────────────────
 function SupportTab() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const faqs = [
+    { q: 'How do I reschedule a booking?', a: 'You can reschedule any confirmed booking up to 2 hours before the scheduled time from the "Bookings" tab in your account.' },
+    { q: 'How do I cancel and get a refund?', a: 'Cancellations made 2+ hours in advance are eligible for a full refund. Refunds typically take 5-7 business days to process.' },
+    { q: 'Is my health data secure?', a: 'Yes, we use industry-standard encryption and follow strict privacy protocols to ensure your sensitive health data is always safe.' },
+    { q: 'How do I add a family member?', a: 'You can book services for others by selecting "Book for Others" during checkout or managing family details in your profile settings.' },
+    { q: 'What service areas do you cover?', a: 'Currently, we provide comprehensive home-healthcare services across Bangalore, Mysore, and Chennai. Check our "Locations" page for the latest updates.' },
+  ];
+
   return (
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -968,17 +1006,32 @@ function SupportTab() {
       <SectionCard>
         <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Frequently Asked</div>
         <div className="divide-y divide-gray-50">
-          {[
-            'How do I reschedule a booking?',
-            'How do I cancel and get a refund?',
-            'Is my health data secure?',
-            'How do I add a family member?',
-            'What service areas do you cover?',
-          ].map(q => (
-            <button key={q} className="w-full flex items-center justify-between py-4 text-sm text-gray-700 font-medium hover:bg-gray-50 rounded-xl px-2 transition-colors text-left">
-              {q}
-              <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
-            </button>
+          {faqs.map((faq, i) => (
+            <div key={faq.q} className="py-0.5">
+              <button 
+                onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                className={`w-full flex items-center justify-between py-4 text-sm font-medium rounded-xl px-2 transition-all text-left ${
+                  openIndex === i ? 'text-[var(--color-primary-deep)] bg-emerald-50/50' : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {faq.q}
+                <ChevronRight className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-300 ${openIndex === i ? 'rotate-90 text-[var(--color-primary)]' : ''}`} />
+              </button>
+              {openIndex === i && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-2 pb-5 pt-3 text-sm text-gray-600 leading-relaxed border-t border-emerald-100/30 mt-1">
+                    <div className="flex gap-2">
+                       <span className="text-emerald-600 font-black text-[10px] uppercase tracking-wider mt-1 shrink-0">Answer:</span> 
+                       <span className="font-medium">{faq.a}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </div>
           ))}
         </div>
       </SectionCard>
@@ -993,9 +1046,16 @@ function AccountContent() {
   const [activeTab, setActiveTab] = useState<TabId>('profile');
 
   React.useEffect(() => {
-    const tab = searchParams.get('tab') as TabId;
-    if (tab && TABS.some(t => t.id === tab)) {
-      setActiveTab(tab);
+    const tab = searchParams.get('tab');
+    if (tab === 'emergency') {
+      setActiveTab('medical');
+      // Small timeout to ensure the tab content is rendered before scrolling
+      setTimeout(() => {
+        const el = document.getElementById('emergency-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    } else if (tab && TABS.some(t => t.id === tab)) {
+      setActiveTab(tab as TabId);
     }
   }, [searchParams]);
 

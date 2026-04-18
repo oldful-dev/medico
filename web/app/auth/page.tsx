@@ -10,6 +10,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Footer } from '@/components/common/Footer';
+import { PhoneInput } from '@/components/common/PhoneInput';
 
 function AuthForm() {
   const router = useRouter();
@@ -22,7 +23,7 @@ function AuthForm() {
   const isVerifyingRef = useRef(false);
   const lastAttemptedOtpRef = useRef('');
 
-  const { register, handleSubmit, watch, setValue } = useForm({
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
     defaultValues: { phone: '', otp: '' },
   });
 
@@ -62,7 +63,10 @@ function AuthForm() {
       if (response.success && response.data) {
         if (response.data.isNewUser) {
           // New user — redirect to profile setup
-          router.push(`/auth/setup?phone=${encodeURIComponent(`+91${phone}`)}`);
+          const searchParams = new URLSearchParams(window.location.search);
+          const redirect = searchParams.get('redirect') || '';
+          const setupUrl = `/auth/setup?phone=${encodeURIComponent(`+91${phone}`)}${redirect ? `&redirect=${encodeURIComponent(redirect)}` : ''}`;
+          router.push(setupUrl);
           return;
         }
 
@@ -75,7 +79,9 @@ function AuthForm() {
 
           // Always redirect to dashboard after login using hard navigation 
           // to ensure cookies are synced with Middleware and server-side state.
-          window.location.href = '/app/dashboard';
+          const searchParams = new URLSearchParams(window.location.search);
+          const redirect = searchParams.get('redirect') || '/app/dashboard';
+          window.location.href = redirect;
         } else {
           setError('Invalid response from server. Please try again.');
         }
@@ -146,19 +152,11 @@ function AuthForm() {
 
       {step === 'PHONE' ? (
         <form onSubmit={handleSubmit(onRequestOTP)} className="flex flex-col gap-4">
-          <div className="flex flex-row items-center border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-[var(--color-primary)] transition-colors">
-            <span className="pl-4 pr-3 text-gray-600 font-semibold text-base border-r border-gray-200 py-3">
-              +91
-            </span>
-            <input
-              type="tel"
-              maxLength={10}
-              className="flex-1 py-3 px-3 text-base outline-none bg-transparent"
-              placeholder="Enter 10-digit number"
-              autoFocus
-              {...register('phone', { required: true, pattern: /^[0-9]{10}$/ })}
-            />
-          </div>
+          <PhoneInput
+            value={phoneValue}
+            onChange={(val) => setValue('phone', val)}
+            error={errors.phone ? 'Phone number must be exactly 10 digits' : ''}
+          />
 
           <button
             type="submit"
@@ -168,6 +166,7 @@ function AuthForm() {
             {loading ? 'Sending OTP...' : 'Get OTP'}
           </button>
         </form>
+
       ) : (
         <form onSubmit={handleSubmit(onVerifyOTP)} className="flex flex-col gap-4">
           <input

@@ -348,6 +348,12 @@ const cancelBooking = async (req, res, next) => {
             data: { status: 'CANCELLED' },
         });
 
+        // 🛡️ If there was a successful payment, mark it for refund
+        await prisma.payment.updateMany({
+            where: { bookingId: req.params.id, status: 'SUCCESS' },
+            data: { status: 'REFUND_INITIATED' }
+        });
+
         sendResponse(res, 200, updated, 'Booking cancelled');
     } catch (error) {
         next(error);

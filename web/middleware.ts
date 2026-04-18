@@ -2,13 +2,18 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Routes that require authentication
-const PROTECTED_PATHS = ['/app', '/account', '/cart'];
+const PROTECTED_PATHS = ['/app', '/account', '/cart', '/plans'];
 
 // Marketing/public routes that logged-in users should NOT see (landing page)
 const MARKETING_PATHS = ['/'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Legacy redirect for moved plans page
+  if (pathname === '/plans') {
+    return NextResponse.redirect(new URL('/app/plans', request.url));
+  }
 
   // Use refresh-token as session indicator (30-day lifetime).
   // Even if the access token has expired, presence of refresh-token

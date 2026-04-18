@@ -21,7 +21,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
-import { OTPInput } from '@/components/common';
+import { OTPInput, GoogleIcon } from '@/components/common';
 import { Colors, Fonts, FontSize, Radius } from '@/constants/theme';
 import { authService, ApiError } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
@@ -50,6 +50,7 @@ export default function LoginScreen() {
     const [isLoading, setIsLoading] = useState(false);
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const isVerifyingRef = useRef(false);
+    const otpRef = useRef<{ clear: () => void }>(null);
 
 
     // Animation for OTP section reveal
@@ -117,7 +118,6 @@ export default function LoginScreen() {
     }, [phoneNumber]);
 
     const handleOTPComplete = useCallback(async (otp: string) => {
-        setOtpValue(otp);
         // Auto-trigger login as soon as all 4 digits are filled
         if (otp.length === 4 && !isVerifyingRef.current) {
             isVerifyingRef.current = true;
@@ -149,6 +149,7 @@ export default function LoginScreen() {
             } catch (error) {
                 const apiError = error as ApiError;
                 Alert.alert('Error', apiError.message || 'Invalid or expired OTP');
+                otpRef.current?.clear();
             } finally {
                 setIsLoading(false);
                 isVerifyingRef.current = false;
@@ -245,13 +246,7 @@ export default function LoginScreen() {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    {/* ─── Help Link (top-right) ─── */}
-                    <View style={styles.helpRow}>
-                        <TouchableOpacity style={styles.helpButton} onPress={() => router.push('/help-support')}>
-                            <Ionicons name="help-circle-outline" size={16} color="#2F2F2F" />
-                            <Text style={styles.helpText}>Help</Text>
-                        </TouchableOpacity>
-                    </View>
+
 
                     {/* ─── Oldful Logo ─── */}
                     <View style={styles.logoContainer}>
@@ -310,6 +305,7 @@ export default function LoginScreen() {
                             {/* OTP Boxes */}
                             <View style={styles.otpContainer}>
                                 <OTPInput
+                                    otpRef={otpRef}
                                     length={4}
                                     onComplete={handleOTPComplete}
                                 />
@@ -349,33 +345,31 @@ export default function LoginScreen() {
                         <View style={styles.dividerLine} />
                     </View>
 
-                    {/* ─── Social Login Buttons ─── */}
-                    <TouchableOpacity
-                        style={[styles.socialButton, isGoogleLoading && { opacity: 0.6 }]}
-                        activeOpacity={0.7}
-                        onPress={handleGoogleSignIn}
-                        disabled={isGoogleLoading}
-                    >
-                        {isGoogleLoading ? (
-                            <ActivityIndicator size="small" color={Colors.primary} />
-                        ) : (
-                            <>
-                                <Text style={styles.googleIcon}>G</Text>
-                                <Text style={styles.socialButtonText}>{t('auth.google_signin')}</Text>
-                            </>
-                        )}
-                    </TouchableOpacity>
+                    {/* ─── Social Login Icons ─── */}
+                    <View style={styles.socialButtonsRow}>
+                        <TouchableOpacity
+                            style={[styles.socialIconButton, isGoogleLoading && { opacity: 0.6 }]}
+                            activeOpacity={0.7}
+                            onPress={handleGoogleSignIn}
+                            disabled={isGoogleLoading}
+                        >
+                            {isGoogleLoading ? (
+                                <ActivityIndicator size="small" color={Colors.primary} />
+                            ) : (
+                                <GoogleIcon size={24} />
+                            )}
+                        </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.socialButton} activeOpacity={0.7}>
-                        <Ionicons name="logo-apple" size={20} color="#000000" />
-                        <Text style={styles.socialButtonText}>Continue with Apple</Text>
-                    </TouchableOpacity>
+                        <TouchableOpacity style={styles.socialIconButton} activeOpacity={0.7}>
+                            <Ionicons name="logo-apple" size={24} color="#000000" />
+                        </TouchableOpacity>
+                    </View>
 
                     {/* ─── Sign Up Link ─── */}
                     <View style={styles.signupRow}>
                         <Text style={styles.signupText}>Don&apos;t have an account? </Text>
                         <TouchableOpacity onPress={() => router.push('/(auth)/profile-setup')}>
-                            <Text style={styles.signupLink}>Signup</Text>
+                            <Text style={styles.signupLink}>SIGNUP</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>
@@ -399,24 +393,7 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
 
-    /* ─── Help Row ─── */
-    helpRow: {
-        width: '100%',
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        paddingTop: 10,
-        marginBottom: 10,
-    },
-    helpButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    helpText: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.body,
-        color: '#2F2F2F',
-    },
+
 
     /* ─── Logo ─── */
     logoContainer: {
@@ -503,16 +480,17 @@ const styles = StyleSheet.create({
         fontSize: FontSize.bodySmall,
         color: '#777777',
         marginBottom: 12,
+        textAlign: 'center',
     },
     otpContainer: {
-        alignItems: 'flex-start',
+        alignItems: 'center',
         marginBottom: 14,
     },
 
     /* ─── Resend Row ─── */
     resendRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 18,
     },
@@ -578,34 +556,29 @@ const styles = StyleSheet.create({
     },
 
     /* ─── Social Login ─── */
-    socialButton: {
-        width: '100%',
-        height: 50,
-        borderRadius: 25,
-        borderWidth: 1,
-        borderColor: '#E0E0E0',
-        backgroundColor: '#FFFFFF',
+    socialButtonsRow: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 10,
-        marginBottom: 12,
+        gap: 20,
+        marginBottom: 20,
+    },
+    socialIconButton: {
+        width: 54,
+        height: 54,
+        borderRadius: 27,
+        borderWidth: 1,
+        borderColor: '#E0E0E0',
+        backgroundColor: '#FFFFFF',
+        justifyContent: 'center',
+        alignItems: 'center',
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
+        shadowOpacity: 0.1,
         shadowRadius: 3,
-        elevation: 1,
+        elevation: 2,
     },
-    googleIcon: {
-        fontSize: 18,
-        fontFamily: Fonts.bold,
-        color: '#4285F4',
-    },
-    socialButtonText: {
-        fontFamily: Fonts.medium,
-        fontSize: FontSize.body,
-        color: '#2F2F2F',
-    },
+
 
     /* ─── Sign Up ─── */
     signupRow: {

@@ -25,7 +25,7 @@ const QUICK_ACTIONS = [
   { icon: CalendarDays, label: 'My Bookings', href: '/app/account?tab=bookings', color: 'bg-violet-50 text-violet-700', border: 'border-violet-100' },
   { icon: Heart, label: 'Wellness', href: '/wellness', color: 'bg-rose-50 text-rose-700', border: 'border-rose-100' },
   { icon: FileText, label: 'Medical Card', href: '/app/account?tab=medical', color: 'bg-amber-50 text-amber-700', border: 'border-amber-100' },
-  { icon: Ambulance, label: 'Emergency', href: '/app/account?tab=medical', color: 'bg-red-50 text-red-600', border: 'border-red-100' },
+  { icon: Ambulance, label: 'Emergency', href: '/app/account?tab=emergency', color: 'bg-red-50 text-red-600', border: 'border-red-100' },
 ];
 
 const STATS = [
@@ -57,7 +57,10 @@ export default function DashboardPage() {
   
   const totalBookingsCount = bookings.length;
   const activePlan = profile?.subscriptions?.find((s) => s.status === 'ACTIVE')?.plan?.name || 'Guest User';
-  const notifications = notificationsData || [];
+  const notifications = (notificationsData || []).filter(n => 
+    n.body?.includes('Template:') !== true && 
+    n.title?.includes('Template:') !== true
+  );
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const queryClient = useQueryClient();

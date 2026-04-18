@@ -5,3 +5,4 @@ export { default as LoadingSpinner } from './LoadingSpinner';
 export { default as EmptyState } from './EmptyState';
 export { default as NotificationBadge } from './NotificationBadge';
 export { default as FormInput } from './FormInput';
+export { default as GoogleIcon } from './GoogleIcon';

@@ -1,7 +1,7 @@
 // Profile Setup Screen — Pixel-matched to Figma frame "Registration Screen" (602:368)
 // Layout: ScrollView with form fields, profile photo, checkbox, save button
 // No business logic — pure presentation
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -19,8 +19,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { FormInput } from '@/components/common';
-import { userService, cityService, ApiError } from '@/services/api';
+import { userService, cityService, ApiError, authService } from '@/services/api';
 import { mediaService } from '@/services/api/mediaService';
+import { OTPInput } from '@/components/common';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { locationService } from '@/services/device/locationService';
@@ -70,6 +71,10 @@ export default function ProfileSetupScreen() {
 
     const [cityId, setCityId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isPhoneVerified, setIsPhoneVerified] = useState(!isGoogleFlow);
+    const [otpSent, setOtpSent] = useState(false);
+    const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+    const otpRef = useRef<{ clear: () => void }>(null);
 
     const fetchGPSLocation = async () => {
         setLine2('Fetching GPS Location...');
@@ -126,6 +131,38 @@ export default function ProfileSetupScreen() {
         fetchDefaultCity();
     }, []);
 
+    const handleReqOTP = async () => {
+        if (phoneInput.length !== 10) {
+            Alert.alert("Invalid Phone", "Please enter a 10-digit mobile number.");
+            return;
+        }
+        setIsVerifyingOtp(true);
+        try {
+            await authService.requestOTP({ phoneNumber: `+91${phoneInput}` });
+            setOtpSent(true);
+            Alert.alert("OTP Sent", "Verification code has been sent to your mobile.");
+        } catch (error: any) {
+            Alert.alert("Error", error.message || "Failed to send OTP");
+        } finally {
+            setIsVerifyingOtp(false);
+        }
+    };
+
+    const handleVerifyOTP = async (otp: string) => {
+        setIsLoading(true);
+        try {
+            await authService.verifyOTP({ phoneNumber: `+91${phoneInput}`, otp });
+            setIsPhoneVerified(true);
+            setOtpSent(false);
+            Alert.alert("Verified", "Phone number verified successfully!");
+        } catch (error: any) {
+            Alert.alert("Error", error.message || "Invalid OTP");
+            otpRef.current?.clear();
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handlePickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images'],
@@ -181,8 +218,8 @@ export default function ProfileSetupScreen() {
             return;
         }
         // Google flow: phone wasn't verified via OTP — must be entered manually
-        if (isGoogleFlow && phoneInput.replace(/\D/g, '').length !== 10) {
-            Alert.alert("Validation", "Please enter a valid 10-digit mobile number.");
+        if (isGoogleFlow && !isPhoneVerified) {
+            Alert.alert("Validation", "Please verify your mobile number via OTP first.");
             return;
         }
         if (!cityId) {
@@ -314,34 +351,37 @@ export default function ProfileSetupScreen() {
                     </TouchableOpacity>
                 </View>
 
-                {/* ─── Row 2: Language ─── */}
-                <TouchableOpacity onPress={handleSelectLanguage} activeOpacity={0.7}>
-                    <FormInput
-                        placeholder="Language"
-                        showChevron
-                        style={styles.fullWidthInput}
-                        editable={false}
-                        value={language}
-                    />
-                </TouchableOpacity>
+                {/* ─── Row 2: Language, DOB, Gender (Shared Row) ─── */}
+                <View style={[styles.row, { marginBottom: 15 }]}>
+                    <TouchableOpacity style={{ flex: 1 }} onPress={handleSelectLanguage} activeOpacity={0.7}>
+                        <FormInput
+                            placeholder="Language"
+                            showChevron
+                            style={styles.flexInput}
+                            editable={false}
+                            value={language}
+                            fontSize={11}
+                        />
+                    </TouchableOpacity>
 
-                {/* ─── Row 2b: DOB + Gender ─── */}
-                <View style={styles.row}>
                     <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowDatePicker(true)} activeOpacity={0.7}>
                         <FormInput
                             placeholder="DOB"
-                            style={styles.halfInput}
+                            style={styles.flexInput}
                             editable={false}
                             value={dateOfBirth ? formatDOB(dateOfBirth) : ''}
+                            fontSize={11}
                         />
                     </TouchableOpacity>
+
                     <TouchableOpacity style={{ flex: 1 }} onPress={handleSelectGender} activeOpacity={0.7}>
                         <FormInput
                             placeholder="Gender"
                             showChevron
-                            style={styles.halfInput}
+                            style={styles.flexInput}
                             editable={false}
                             value={gender}
+                            fontSize={11}
                         />
                     </TouchableOpacity>
                 </View>
@@ -378,10 +418,30 @@ export default function ProfileSetupScreen() {
                     keyboardType="phone-pad"
                     maxLength={10}
                     style={styles.fullWidthInput}
-                    editable={isGoogleFlow}
+                    editable={isGoogleFlow && !isPhoneVerified}
                     onChangeText={isGoogleFlow ? setPhoneInput : undefined}
                     fontSize={13}
+                    suffix={
+                        isGoogleFlow && !isPhoneVerified ? (
+                            <TouchableOpacity onPress={handleReqOTP} disabled={phoneInput.length !== 10 || isVerifyingOtp}>
+                                <Text style={[styles.verifyBtnText, phoneInput.length === 10 ? { color: '#048357' } : { color: '#CCC' }]}>
+                                    {otpSent ? 'RESEND' : 'VERIFY'}
+                                </Text>
+                            </TouchableOpacity>
+                        ) : isPhoneVerified && isGoogleFlow ? (
+                            <Ionicons name="checkmark-circle" size={20} color="#048357" />
+                        ) : null
+                    }
                 />
+
+                {/* ─── OTP Input for Google Flow ─── */}
+                {isGoogleFlow && otpSent && !isPhoneVerified && (
+                    <View style={styles.otpVerifyContainer}>
+                        <Text style={styles.otpHint}>Enter 4-digit code sent to +91 {phoneInput}</Text>
+                        <OTPInput otpRef={otpRef} length={4} onComplete={handleVerifyOTP} />
+                    </View>
+                )}
+
 
                 {/* ─── Row 5: Address (Auto GPS) + Flat Number ─── */}
                 <View style={styles.addressRowWrapper}>
@@ -411,43 +471,46 @@ export default function ProfileSetupScreen() {
                     />
                 </View>
 
-                {/* ─── Row 6: Emergency Number ─── */}
-                <FormInput
-                    placeholder="Emergency Number"
-                    prefix="+91"
-                    keyboardType="phone-pad"
-                    style={styles.fullWidthInput}
-                    fontSize={13}
-                    value={emergencyNumber}
-                    onChangeText={setEmergencyNumber}
-                />
-
-                {/* ─── Row 7: Auto ID ─── */}
-                <FormInput
-                    placeholder="Auto Generated Unique ID"
-                    editable={false}
-                    style={styles.fullWidthInput}
-                    value="Will be generated after saving"
-                    fontSize={13}
-                />
+                {/* ─── Row 6: Emergency Number + Auto ID (Shared Row) ─── */}
+                <View style={styles.row}>
+                    <FormInput
+                        placeholder="Emergency No"
+                        prefix="+91"
+                        keyboardType="phone-pad"
+                        style={styles.flexInput}
+                        fontSize={12}
+                        value={emergencyNumber}
+                        onChangeText={setEmergencyNumber}
+                    />
+                    <FormInput
+                        placeholder="Unique ID"
+                        editable={false}
+                        style={styles.flexInput}
+                        value="TBD"
+                        fontSize={12}
+                    />
+                </View>
 
                 {/* ─── Checkbox: Policies ─── */}
-                <TouchableOpacity
-                    style={styles.checkboxRow}
-                    activeOpacity={0.8}
-                    onPress={() => setAgreed(!agreed)}
-                >
-                    <View style={styles.checkboxContainer}>
+                <View style={styles.checkboxRow}>
+                    <TouchableOpacity
+                        style={styles.checkboxContainer}
+                        activeOpacity={0.8}
+                        onPress={() => setAgreed(!agreed)}
+                    >
                         {agreed && <Image source={checkmarkImage} style={styles.checkmark} resizeMode="contain" />}
-                    </View>
+                    </TouchableOpacity>
 
                     <Text style={styles.policyText}>
                         <Text style={styles.policyTextNormal}>I have Read and agreed to the </Text>
-                        <TouchableOpacity onPress={() => router.push('/(app)/terms-policy' as any)} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
-                            <Text style={styles.policyTextUnderline}>policies</Text>
-                        </TouchableOpacity>
+                        <Text
+                            style={styles.policyTextUnderline}
+                            onPress={() => router.push('/terms-policy')}
+                        >
+                            policies
+                        </Text>
                     </Text>
-                </TouchableOpacity>
+                </View>
 
                 {/* ─── Save & Continue Button ─── */}
                 <TouchableOpacity
@@ -463,7 +526,7 @@ export default function ProfileSetupScreen() {
 
                 {/* ─── Already a member? Login ─── */}
                 <View style={styles.loginRow}>
-                    <Text style={styles.loginText}>{t('auth.already_member')} </Text>
+                    <Text style={styles.loginText}>Already a member? </Text>
                     <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
                         <Text style={styles.loginLink}>Login</Text>
                     </TouchableOpacity>
@@ -574,6 +637,22 @@ const styles = StyleSheet.create({
         flex: 1,
         elevation: 0,
     },
+    verifyBtnText: {
+        fontFamily: Platform.select({ ios: 'Poppins-Bold', android: 'Poppins_700Bold', default: 'System' }),
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    otpVerifyContainer: {
+        marginBottom: 20,
+        alignItems: 'center',
+    },
+    otpHint: {
+        fontFamily: Platform.select({ ios: 'Poppins-Regular', android: 'Poppins_400Regular', default: 'System' }),
+        fontSize: 12,
+        color: '#666',
+        marginBottom: 10,
+    },
+
 
     /* ─── Row 5: Address (Flex) + Location pin button ─── */
     addressRowWrapper: {

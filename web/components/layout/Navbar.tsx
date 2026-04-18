@@ -11,7 +11,7 @@ import Image from 'next/image';
 const GUEST_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/wellness', label: 'Wellness' },
-  { href: '/plans', label: 'Plans' },
+  { href: '/app/plans', label: 'Plans' },
   { href: '/app/services', label: 'Services' },
   { href: '/about', label: 'About' },
   { href: '/team', label: 'Team' },
@@ -22,7 +22,7 @@ const AUTH_LINKS = [
   { href: '/app/dashboard', label: 'Dashboard' },
   { href: '/app/services', label: 'Services' },
   { href: '/wellness', label: 'Wellness' },
-  { href: '/plans', label: 'Plans' },
+  { href: '/app/plans', label: 'Plans' },
   { href: '/team', label: 'Team' },
 ];
 
@@ -148,8 +148,8 @@ export function Navbar() {
               </div>
             ) : (
               <Link
-                href="/auth"
-                className={`text-[var(--color-primary-deep)] border-2 border-[var(--color-primary-deep)] rounded-full font-bold hover:bg-[var(--color-primary-deep)] hover:text-white transition-all active:scale-95 ${isScrolled ? 'px-4 py-1.5 text-[11px] sm:text-xs' : 'px-5 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm'}`}
+                href={`/auth?redirect=${pathname}`}
+                className={`text-[var(--color-primary-deep)] border-2 border-[var(--color-primary-deep)] rounded-full font-bold hover:bg-[var(--color-primary-deep)] hover:text-white transition-all active:scale-[0.98] ${isScrolled ? 'px-4 py-1.5 text-[11px] sm:text-xs' : 'px-5 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm'}`}
               >
                 Login
               </Link>
@@ -217,7 +217,7 @@ export function Navbar() {
                   </button>
                 ) : (
                   <Link
-                    href="/auth"
+                    href={`/auth?redirect=${pathname}`}
                     className="block w-full text-center bg-[var(--color-primary-deep)] text-white py-3 rounded-full text-sm font-semibold shadow-lg active:scale-95 transition-all"
                   >
                     Login
