@@ -120,12 +120,11 @@ export default function HospitalTripScreen() {
             <View style={{ backgroundColor: '#048357', height: insets.top }} />
             <StatusBar style="light" backgroundColor="#048357" />
 
-            <View style={styles.headerContainer}>
-                {/* Back Button Overlay */}
+            <View style={styles.headerRow}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('hospital_trip.header')}</Text>
+                <Text style={styles.headerTitle} numberOfLines={1}>{t('hospital_trip.header')}</Text>
             </View>
 
             {/* Main Content Area (Rounded Cream Box) */}
@@ -162,7 +161,7 @@ export default function HospitalTripScreen() {
                     {/* ─── Destination Details ─── */}
                     <View style={styles.sectionHeaderRow}>
                         <Image source={imgRadioIcon} style={styles.sectionHeaderIcon} resizeMode="contain" />
-                        <Text style={styles.sectionTitle}>Destination Details</Text>
+                        <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Destination Details</Text>
                     </View>
 
                     {/* Input: Preferred Hospital */}
@@ -347,24 +346,23 @@ const styles = StyleSheet.create({
     },
 
     /* ─── Header ─── */
-    headerContainer: {
-        backgroundColor: '#048357',
+    headerRow: {
+        flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 15,
+        paddingHorizontal: 16,
+        paddingTop: 10,
         paddingBottom: 25,
-        position: 'relative',
+        backgroundColor: '#048357',
     },
     backButton: {
-        position: 'absolute',
-        top: 15,
-        left: 16,
-        padding: 5,
-        zIndex: 10,
+        padding: 4,
     },
     headerTitle: {
+        flex: 1,
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
         color: '#FFFFFF',
+        marginLeft: 12,
         letterSpacing: -0.24,
     },
 
@@ -392,13 +390,13 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: '#2F2F2F',
         marginBottom: 5,
-        textAlign: 'center',
+        textAlign: 'left',
     },
     subTitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 14,
         color: '#898989',
-        textAlign: 'center',
+        textAlign: 'left',
         marginBottom: 15,
     },
     divider: {
@@ -690,7 +688,7 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         justifyContent: 'center',
         alignItems: 'center',
-        width: 281,
+        width: 230,
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),

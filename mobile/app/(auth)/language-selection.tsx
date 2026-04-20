@@ -1,4 +1,4 @@
-// Language Selection Screen — Server-Driven UI
+﻿// Language Selection Screen — Server-Driven UI
 // Language list comes from AppConfigContext.
 // Admin can add new language options without an app release.
 import React, { useState } from 'react';
@@ -47,7 +47,6 @@ export default function LanguageSelectionScreen() {
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{t('language_selection.header')}</Text>
-                <View style={{ width: 34 }} />
             </View>
 
             <View style={styles.contentCard}>
@@ -107,7 +106,7 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#048357' },
     header: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#048357', paddingHorizontal: 16, paddingBottom: 20, paddingTop: 10 },
     backButton: { padding: 5 },
-    headerTitle: { flex: 1, fontFamily: Fonts.semiBold, fontSize: 20, color: '#FFFFFF', textAlign: 'center' },
+    headerTitle: { flex: 1, fontFamily: Fonts.semiBold, fontSize: 20, color: '#FFFFFF', textAlign: "left", marginLeft: 12 },
     contentCard: { flex: 1, backgroundColor: '#FDFDE8', borderTopLeftRadius: 45, borderTopRightRadius: 45, overflow: 'hidden' },
     scrollView: { flex: 1 },
     scrollContent: { paddingHorizontal: 24, paddingTop: 30, paddingBottom: 120 },

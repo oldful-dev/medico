@@ -91,7 +91,6 @@ export default function OrderHistoryScreen() {
                     <Ionicons name="arrow-back" size={24} color={Colors.textDark} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>My Bookings</Text>
-                <View style={{ width: 44 }} />
             </View>
 
             {/* ─── Custom Tab Bar (Old Style) ─── */}
@@ -184,11 +183,11 @@ export default function OrderHistoryScreen() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#FAFAFA' },
     header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        flexDirection: 'row', alignItems: 'center',
         paddingHorizontal: 20, paddingBottom: 15, backgroundColor: '#FFF'
     },
-    backBtn: { width: 44, height: 44, justifyContent: 'center' },
-    headerTitle: { fontFamily: Fonts.bold, fontSize: 18, color: Colors.textDark, flex: 1, textAlign: 'center' },
+    backBtn: { width: 44, height: 44, justifyContent: 'center', marginRight: -8 },
+    headerTitle: { fontFamily: Fonts.bold, fontSize: 18, color: Colors.textDark, flex: 1, textAlign: 'left' },
     container: { flex: 1 },
     scrollContent: { padding: 20, paddingBottom: 50 },
 

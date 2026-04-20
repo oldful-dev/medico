@@ -8,6 +8,7 @@ import {
     Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import SOSCountdown from './SOSCountdown';
 import { Fonts } from '@/constants/theme';
 import { sosService } from '@/services/device/sosService';
@@ -97,18 +98,19 @@ export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
 
     return (
         <View style={styles.track}>
-            {/* Gradient text label — centered in track */}
+            {/* Text label — centered in track */}
             <View style={styles.labelContainer}>
                 <Text style={styles.label}>Slide to Call for Help</Text>
             </View>
 
-            {/* Draggable thumb */}
+            {/* Draggable thumb with phone icon */}
             <Animated.View
                 style={[styles.thumb, { transform: [{ translateX }] }]}
                 {...panResponder.panHandlers}
             >
                 <View style={styles.thumbInner}>
-                    <Ionicons name="call" size={18} color="#FFFFFF" />
+                    {/* Figma: phone handset with radiating arcs = "phone-in-talk" */}
+                    <MaterialCommunityIcons name="phone-in-talk" size={26} color="#FFFFFF" />
                 </View>
             </Animated.View>
 
@@ -123,29 +125,25 @@ export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
 }
 
 const styles = StyleSheet.create({
-    /* Slide track — Figma: 303×69, border 1.5 #02743F, radius 34.5, shadow */
+    /* Slide track — Figma: 303×69, border 1.5 #02743F, radius 34.5 */
     track: {
         width: TRACK_WIDTH,
         height: TRACK_HEIGHT,
         borderRadius: 34.5,
         borderWidth: 1.5,
-        borderColor: '#02743F',
+        borderColor: '#FF9A6C',   // Salmon border matching Figma ellipse color
         backgroundColor: 'transparent',
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: PADDING,
-        // Figma shadow: 0px 4px 20px rgba(0,0,0,0.41)
-        shadowColor: '#000000',
+        // Figma shadow: subtle warm glow
+        shadowColor: '#FF9A6C',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.41,
-        shadowRadius: 20,
-        // elevation: 8,
-        // overflow: 'hidden', // Disabled to allow SOSCountdown full-screen overlay if needed, 
-        // but better to handle overlay at a higher level.
-        // However, absoluteFill in SOSCountdown will cover the nearest relative parent.
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
     },
 
-    /* Text label — Figma: Inter Bold 15px */
+    /* Text label — Figma: Poppins Bold, salmon color */
     labelContainer: {
         ...StyleSheet.absoluteFillObject,
         justifyContent: 'center',
@@ -154,7 +152,7 @@ const styles = StyleSheet.create({
     label: {
         fontFamily: Fonts.bold,
         fontSize: 15,
-        color: '#FF9468',
+        color: '#FF9A6C',
         textAlign: 'center',
     },
 
@@ -169,16 +167,16 @@ const styles = StyleSheet.create({
         width: THUMB_WIDTH,
         height: THUMB_SIZE,
         borderRadius: 28,
-        backgroundColor: '#FF9468',
+        backgroundColor: '#FF9A6C',
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2.5,
         borderColor: '#FFFFFF',
-        // Thumb shadow
+        // Figma: warm salmon thumb glow
         shadowColor: '#FF7E7B',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.4,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.5,
+        shadowRadius: 10,
         elevation: 6,
     },
 });

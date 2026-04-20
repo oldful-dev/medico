@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-// ─── Figma Assets ───
-const familyIcon = require('@/assets/images/cb86876504871abc5e6db19e5612175dae2b0479.png');
+// ─── Figma Assets (Local relative path) ───
+const familyIcon = require('../../assets/images/cb86876504871abc5e6db19e5612175dae2b0479.png');
 
 interface InsurancePlanCardProps {
     onSubmit?: (data: any) => void;
@@ -69,6 +69,11 @@ export default function InsurancePlanCard({ onSubmit }: InsurancePlanCardProps) 
                         onPress={() => setSelectedTarget('Parents')}
                         activeOpacity={0.8}
                     >
+                        <Ionicons
+                            name={selectedTarget === 'Parents' ? "radio-button-on" : "radio-button-off"}
+                            size={16}
+                            color={selectedTarget === 'Parents' ? "#048357" : "#AAAEAC"}
+                        />
                         <Image source={familyIcon} style={styles.familyIcon} resizeMode="contain" />
                         <Text style={styles.targetText}>Parents</Text>
                     </TouchableOpacity>
@@ -206,7 +211,8 @@ const styles = StyleSheet.create({
     familyIcon: {
         width: 22,
         height: 22,
-        marginRight: 6,
+        marginLeft: 6,
+        marginRight: 2,
     },
     targetText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),

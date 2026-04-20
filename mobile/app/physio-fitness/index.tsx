@@ -81,14 +81,14 @@ export default function PhysioFitnessScreen() {
             <StatusBar style="light" backgroundColor="#048357" />
 
             {/* ─── Header ─── */}
-            <View style={styles.headerContainer}>
-                {/* Back Button Overlay */}
+            <View style={styles.headerRow}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-
-                <Text style={styles.headerTitle}>Physio & Fitness</Text>
-                <Text style={styles.headerSubtitle}>Pain relief therapy and senior-friendly yoga.</Text>
+                <View style={styles.headerTextCol}>
+                    <Text style={styles.headerTitle}>Physio & Fitness</Text>
+                    <Text style={styles.headerSubtitle}>Pain relief therapy and yoga.</Text>
+                </View>
             </View>
 
             {/* Main Content Area (Rounded Cream Box) */}
@@ -216,34 +216,32 @@ const styles = StyleSheet.create({
     },
 
     /* ─── Header ─── */
-    headerContainer: {
-        backgroundColor: '#048357',
+    headerRow: {
+        flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 20,
-        paddingBottom: 40,
-        position: 'relative',
+        paddingHorizontal: 16,
+        paddingTop: 10,
+        paddingBottom: 25,
+        backgroundColor: '#048357',
     },
     backButton: {
-        position: 'absolute',
-        top: 20,
-        left: 16,
-        padding: 5,
-        zIndex: 10,
+        padding: 4,
+    },
+    headerTextCol: {
+        flex: 1,
+        marginLeft: 12,
     },
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 26,
+        fontSize: 20,
         color: '#FFFFFF',
         letterSpacing: -0.24,
-        marginBottom: 8,
     },
     headerSubtitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 16,
+        fontSize: 13,
         color: '#D9D9D9',
-        textAlign: 'center',
         letterSpacing: -0.24,
-        paddingHorizontal: 20,
     },
 
     /* ─── Main Content Container (Cream Box) ─── */
@@ -289,7 +287,7 @@ const styles = StyleSheet.create({
         borderColor: "#02743F",
         borderWidth: 2,
         elevation: 4,
-  transform: [{ scale: 1.03 }],
+        transform: [{ scale: 1.03 }],
     },
     painCardVertical: {
         backgroundColor: '#FFEBDF',
@@ -470,8 +468,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#02743F',
         height: 48,
         borderRadius: 24,
-        width: '100%',
-        maxWidth: 320,
+        width: 230,
         alignSelf: 'center',
         justifyContent: 'center',
         alignItems: 'center',

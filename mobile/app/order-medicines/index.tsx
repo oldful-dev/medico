@@ -13,7 +13,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -136,18 +136,18 @@ export default function OrderMedicinesScreen() {
     return (
         <View style={styles.screen}>
             {/* Dark green background covers top half */}
-            <View style={[styles.headerBackground, { paddingTop: insets.top }]}>
+            <SafeAreaView style={styles.headerBackground} edges={['top']}>
                 <StatusBar style="light" backgroundColor="#048357" />
-                <View style={styles.header}>
-                    <Text style={styles.headerTitle}>{t('order_medicines.header')}</Text>
-                    <Text style={styles.headerSubtitle}>{t('order_medicines.header_subtitle')}</Text>
+                <View style={styles.headerRow}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <View style={styles.headerTextCol}>
+                        <Text style={styles.headerTitle}>{t('order_medicines.header')}</Text>
+                        <Text style={styles.headerSubtitle}>{t('order_medicines.header_subtitle')}</Text>
+                    </View>
                 </View>
-            </View>
-
-            {/* Back Button Overlay */}
-            <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { top: insets.top + 10 }]}>
-                <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
+            </SafeAreaView>
 
             {/* Main Content Area (Rounded Cream Box) */}
             <View style={styles.contentContainer}>
@@ -328,32 +328,32 @@ const styles = StyleSheet.create({
     },
     headerBackground: {
         backgroundColor: '#048357',
+    },
+    headerRow: {
+        flexDirection: 'row',
         alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingTop: 10,
         paddingBottom: 40,
     },
-    header: {
-        alignItems: 'center',
-        marginTop: 20,
-        paddingHorizontal: 20,
+    backButton: {
+        padding: 4,
+    },
+    headerTextCol: {
+        flex: 1,
+        marginLeft: 12,
     },
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 24,
+        fontSize: 20,
         color: '#FFFFFF',
         letterSpacing: -0.24,
-        marginBottom: 8,
     },
     headerSubtitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 13,
         color: '#FFFFFF',
         letterSpacing: -0.24,
-        textAlign: 'center',
-    },
-    backButton: {
-        position: 'absolute',
-        left: 16,
-        padding: 5,
         zIndex: 10,
     },
 
@@ -537,8 +537,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#02743F',
         height: 48, // Slightly taller for better touch area
         borderRadius: 24,
-        width: '100%', // Makes button perfectly responsive on all widths
-        maxWidth: 340, // Stops it from getting awkwardly wide on tablets
+        width: 230, // Consistently smaller as requested
         alignSelf: 'center',
         justifyContent: 'center',
         alignItems: 'center',

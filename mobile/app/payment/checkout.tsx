@@ -371,7 +371,6 @@ export default function CheckoutScreen() {
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Checkout</Text>
-                <View style={{ width: 40 }} />
             </View>
 
             <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} showsVerticalScrollIndicator={false}>
@@ -499,11 +498,16 @@ export default function CheckoutScreen() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: Colors.primary },
     header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start',
         paddingHorizontal: Spacing.xl, paddingVertical: Spacing.lg,
     },
     backBtn: { padding: 8 },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: Colors.textWhite },
+    headerTitle: { 
+        fontFamily: Fonts.semiBold, 
+        fontSize: FontSize.heading2, 
+        color: Colors.textWhite,
+        marginLeft: 12,
+    },
 
     body: { flex: 1, backgroundColor: Colors.bgScreen ?? '#FAFAF0', borderTopLeftRadius: 24, borderTopRightRadius: 24 },
     bodyContent: { padding: Spacing.xl, paddingBottom: 100, gap: Spacing.lg },
@@ -533,9 +537,18 @@ const styles = StyleSheet.create({
     couponApplied: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#E8F5E9', padding: Spacing.md, borderRadius: Radius.sm },
     couponAppliedText: { flex: 1, fontFamily: Fonts.medium, fontSize: FontSize.caption ?? 13, color: '#2e7d32' },
 
-    methodRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.md, paddingHorizontal: Spacing.md, borderRadius: Radius.md, borderWidth: 1.5, borderColor: '#EEEEEE' },
+    methodRow: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        gap: Spacing.md, 
+        paddingVertical: Spacing.md, 
+        paddingHorizontal: Spacing.lg, 
+        borderRadius: Radius.md, 
+        borderWidth: 1.5, 
+        borderColor: '#EEEEEE' 
+    },
     methodRowActive: { borderColor: Colors.primary, backgroundColor: '#F0FAF4' },
-    methodLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textLight },
+    methodLabel: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textLight },
     methodLabelActive: { color: Colors.textDark, fontFamily: Fonts.medium },
 
     securityNote: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: Spacing.md },

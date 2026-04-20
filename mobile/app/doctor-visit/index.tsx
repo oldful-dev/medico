@@ -154,8 +154,6 @@ export default function DoctorVisitScreen() {
                         <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{t('doctor_visit.header')}</Text>
-                    {/* Placeholder for flex layout balance */}
-                    <View style={styles.headerRight} />
                 </View>
             </SafeAreaView>
 
@@ -365,7 +363,7 @@ const styles = StyleSheet.create({
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-start',
         paddingHorizontal: 20,
         paddingBottom: 25,
         paddingTop: 10,
@@ -378,6 +376,7 @@ const styles = StyleSheet.create({
         fontSize: FontSize.heading2,
         color: Colors.textWhite,
         letterSpacing: -0.24,
+        marginLeft: 12,
     },
     headerRight: {
         width: 32, // to balance back button width
@@ -683,8 +682,7 @@ const styles = StyleSheet.create({
         paddingTop: 18,
     },
     bookButton: {
-        width: '85%',
-        maxWidth: 340,
+        width: 230,
         height: 48,
         backgroundColor: Colors.primary,
         borderRadius: Radius.full,

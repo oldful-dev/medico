@@ -18,7 +18,7 @@ export default function SOSButton() {
             <Image source={ringSecondImg} style={[styles.ring, styles.ringSecond]} resizeMode="contain" />
             <Image source={ringInnerImg} style={[styles.ring, styles.ringInner]} resizeMode="contain" />
 
-            {/* Neumorphic SOS Button (center) */}
+            {/* Neumorphic SOS Button (center) — matching Figma gradient #FFAD59 → #FF7E7B */}
             <View style={styles.neuOuterRing}>
                 <View style={styles.neuInnerCircle}>
                     <Text style={styles.sosText}>SOS</Text>
@@ -57,39 +57,40 @@ const styles = StyleSheet.create({
         height: 240,
     },
 
-    /* Neumorphic outer ring — Figma: #F5F5FA ellipse with inner shadows */
+    /* Neumorphic outer ring — Figma: #F5F5FA ellipse, soft shadow */
     neuOuterRing: {
         width: 193,
         height: 189,
         borderRadius: 96.5,
-        backgroundColor: '#F5F5FA',
+        backgroundColor: '#F0EFF4',
         justifyContent: 'center',
         alignItems: 'center',
-        // Neumorphic shadow (light side)
-        shadowColor: '#AAAACC',
+        // Figma: soft neumorphic shadow
+        shadowColor: '#C4B8C9',
         shadowOffset: { width: 6, height: 6 },
-        shadowOpacity: 0.5,
-        shadowRadius: 24,
-        elevation: 10,
+        shadowOpacity: 0.4,
+        shadowRadius: 20,
+        elevation: 8,
     },
 
-    /* Inner gradient circle — Figma: radial #FFAD59 → #FF7E7B */
+    /* Inner circle — Figma: salmon-orange gradient #FFAD59 → #FF7E7B */
     neuInnerCircle: {
         width: 145,
         height: 142,
         borderRadius: 72.5,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#FF9468',
-        // Glow shadow
+        // Approximate the Figma gradient with a mid-point color
+        backgroundColor: '#FF9A6C',
+        // Warm orange-salmon glow matching Figma
         shadowColor: '#FF7E7B',
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.45,
-        shadowRadius: 24,
-        elevation: 12,
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
+        elevation: 10,
     },
 
-    /* "SOS" label — Figma: Inter Bold 40px white */
+    /* "SOS" label — Figma: Bold ~40px white */
     sosText: {
         fontFamily: Platform.select({ ios: 'Poppins-Bold', android: 'Poppins_700Bold', default: 'System' }),
         fontWeight: '700',

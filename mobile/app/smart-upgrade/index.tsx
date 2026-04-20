@@ -24,6 +24,7 @@ const imgChart = require('@/assets/images/45958abae6d20cd413b2ccd515807fab5af92f
 export default function SmartUpgradeScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    
     // Global Initialization
     const { isReady, cityId, serviceId, isLoading: isLoadingInit } = useServiceInitialization('smart-upgrade');
     const [isBooking, setIsBooking] = React.useState(false);
@@ -36,7 +37,6 @@ export default function SmartUpgradeScreen() {
 
         try {
             setIsBooking(true);
-            // Smart Upgrade is a plan subscription request — no Razorpay, goes to /service-confirmation.
             const payload = {
                 serviceId,
                 cityId,
@@ -70,39 +70,42 @@ export default function SmartUpgradeScreen() {
 
             {/* ─── Header ─── */}
             <View style={styles.headerContainer}>
-                {/* Back Button Overlay */}
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-
                 <Text style={styles.headerTitle}>Smart Upgrade</Text>
             </View>
 
-            <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
-
+            <KeyboardAwareScrollView 
+                contentContainerStyle={styles.scrollContent} 
+                showsVerticalScrollIndicator={false} 
+                keyboardShouldPersistTaps="handled"
+                enableOnAndroid
+            >
                 {/* ─── Main Content Box (Gradient) ─── */}
                 <LinearGradient
-                    // "linear-gradient(-39.5267deg, rgb(255, 255, 255) 27.139%, rgb(123, 251, 206) 101.39%)"
-                    colors={['#FFFFFF', '#7BFBCE']}
+                    colors={['#7BFBCE', '#FFFFFF']} // Reversing to match the mint-top visual
                     start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                    end={{ x: 0, y: 1 }}
                     style={styles.gradientCard}
                 >
-                    {/* Header Group */}
+                    {/* Title with Emoji */}
                     <View style={styles.titleGroup}>
                         <Text style={styles.cardTitle}>Smart Upgrade</Text>
-                        <Image source={imgLightning} style={styles.lightningIcon} resizeMode="contain" />
+                        <Text style={styles.lightningEmoji}>⚡</Text>
                     </View>
 
-                    <Text style={styles.cardSubtitleBold}>Stop Paying Booking Fees.</Text>
-                    <Text style={styles.cardSubtitleBold}>Get Total Home Managment.</Text>
+                    <Text style={styles.cardSubtitleMain}>Stop Paying Booking Fees.</Text>
+                    <Text style={styles.cardSubtitleMain}>Get Total Home Managment.</Text>
 
                     <Text style={styles.priceIntroText}>
-                        Join the oldful Homemaker Plan for Just <Text style={styles.priceAmount}>₹3,499/ </Text>month
+                        Join the oldful Homemaker Plan for Just <Text style={styles.priceBold}>₹3,499/ month</Text>
                     </Text>
 
                     {/* ─── Pricing Chart Image ─── */}
-                    <Image source={imgChart} style={styles.chartImage} resizeMode="contain" />
+                    <View style={styles.chartContainer}>
+                        <Image source={imgChart} style={styles.chartImage} resizeMode="contain" />
+                    </View>
 
                     {/* ─── Upgrade Button ─── */}
                     <TouchableOpacity
@@ -111,33 +114,40 @@ export default function SmartUpgradeScreen() {
                         disabled={isBooking || isLoadingInit}
                         onPress={handleUpgrade}
                     >
-                        <Text style={styles.upgradeButtonText}>{isLoadingInit ? 'Initializing...' : isBooking ? 'Processing...' : 'View Plan Details & Upgrade'}</Text>
+                        <Text style={styles.upgradeButtonText}>
+                            {isLoadingInit ? 'Initializing...' : isBooking ? 'Processing...' : 'View Plan Details & Upgrade'}
+                        </Text>
                     </TouchableOpacity>
 
                     {/* ─── Important Disclaimer ─── */}
                     <Text style={styles.disclaimerHeader}>
-                        Important Note<Text style={styles.disclaimerSubtitle}> (Disclaimer)</Text>
+                        Important Note <Text style={styles.disclaimerSubtitle}>(Disclaimer)</Text>
                     </Text>
 
                     <View style={styles.disclaimerBox}>
-                        <Text style={styles.disclaimerText}>
-                            <Text style={styles.disclaimerBold}>Booking Fee: </Text>
-                            This fee covers the admimisistrative cost of finding, verifying, and scheduling the professional.
-                        </Text>
+                        <View style={styles.disclaimerItem}>
+                           <Text style={styles.disclaimerText}>
+                                <Text style={styles.disclaimerBold}>Booking Fee: </Text>
+                                This fee covers the admimisistrative cost of finding, verifying, and scheduling the professional.
+                            </Text>
+                        </View>
                         <View style={styles.divider} />
 
-                        <Text style={styles.disclaimerText}>
-                            <Text style={styles.disclaimerBold}>Vendor Payments: </Text>
-                            The actual cost of repair (spare parts, labour charges, materials) or utility bill amounts must be paid directly to the vendor/provider upon completion.
-                        </Text>
+                        <View style={styles.disclaimerItem}>
+                            <Text style={styles.disclaimerText}>
+                                <Text style={styles.disclaimerBold}>Vendor Payments: </Text>
+                                The actual cost of repair (spare parts, labour charges, materials) or utility bill amounts must be paid directly to the vendor/provider upon completion.
+                            </Text>
+                        </View>
                         <View style={styles.divider} />
 
-                        <Text style={styles.disclaimerText}>
-                            <Text style={styles.disclaimerBold}>Supervision: </Text>
-                            “Pay-Per-Use” Bookings Include remote Coordination.for physical on-site supervision (having an Oldful staff member stand guard while work is done),you must have an active Oldful plan.
-                        </Text>
+                        <View style={styles.disclaimerItem}>
+                            <Text style={styles.disclaimerText}>
+                                <Text style={styles.disclaimerBold}>Supervision: </Text>
+                                “Pay-Per-Use” Bookings Include remote Coordination.for physical on-site supervision (having an Oldful staff member stand guard while work is done),you must have an active Oldful plan.
+                            </Text>
+                        </View>
                     </View>
-
                 </LinearGradient>
             </KeyboardAwareScrollView>
         </View>
@@ -147,135 +157,141 @@ export default function SmartUpgradeScreen() {
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: '#FDFDE8', // Light cream 
+        backgroundColor: '#FDFDE8', 
     },
 
     /* ─── Header ─── */
     headerContainer: {
         backgroundColor: '#048357',
+        flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 15,
+        paddingHorizontal: 16,
         paddingBottom: 25,
-        position: 'relative',
+        paddingTop: 15,
     },
     backButton: {
-        position: 'absolute',
-        top: 15,
-        left: 16,
-        padding: 5,
-        zIndex: 10,
+        marginRight: 12,
+        padding: 4,
     },
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 20,
+        fontSize: 22,
         color: '#FFFFFF',
         letterSpacing: -0.24,
     },
+
     scrollContent: {
-        paddingHorizontal: 15,
+        paddingHorizontal: 16,
         paddingVertical: 20,
-        paddingBottom: 60,
+        paddingBottom: 40,
     },
 
     /* ─── Gradient Card ─── */
     gradientCard: {
-        borderRadius: 27,
-        padding: 20,
-        paddingTop: 25,
+        borderRadius: 24,
+        padding: 24,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 20,
-        elevation: 5,
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 3,
     },
 
     titleGroup: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: 12,
     },
     cardTitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 20,
+        fontFamily: Platform.select({ ios: 'Poppins-Bold', android: 'Poppins_700Bold', default: 'System' }),
+        fontSize: 26,
         color: '#472323',
     },
-    lightningIcon: {
-        width: 18,
-        height: 19,
-        marginLeft: 5,
+    lightningEmoji: {
+        fontSize: 24,
+        marginLeft: 4,
     },
 
-    cardSubtitleBold: {
+    cardSubtitleMain: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 16,
+        fontSize: 18,
         color: '#2F2F2F',
-        lineHeight: 22,
+        lineHeight: 26,
+        fontWeight: '600',
     },
     priceIntroText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 10,
-        color: '#555',
-        marginTop: 10,
-        marginBottom: 15,
+        fontSize: 12,
+        color: '#555555',
+        marginTop: 8,
+        marginBottom: 20,
     },
-    priceAmount: {
+    priceBold: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 10,
+        color: '#2F2F2F',
+        fontWeight: '600',
     },
 
-    /* ─── Chart Image ─── */
+    /* ─── Chart ─── */
+    chartContainer: {
+        width: '100%',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
     chartImage: {
         width: '100%',
-        height: 191, // Based on Figma
-        marginBottom: 20,
+        height: 220,
     },
 
     /* ─── Upgrade Button ─── */
     upgradeButton: {
-        backgroundColor: '#02743F',
-        height: 45,
-        borderRadius: 22.5,
-        alignSelf: 'center',
+        backgroundColor: '#048357', // Changed to match Header
+        height: 52,
+        borderRadius: 26,
         justifyContent: 'center',
         alignItems: 'center',
         width: '100%',
-        marginBottom: 30,
-        paddingHorizontal: 20,
+        marginBottom: 32,
     },
     upgradeButtonText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         color: '#FFFFFF',
-        fontSize: 14,
+        fontSize: 16,
     },
 
     /* ─── Disclaimer Section ─── */
     disclaimerHeader: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 14,
+        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontSize: 17,
         color: '#2F2F2F',
-        marginBottom: 10,
+        marginBottom: 16,
     },
     disclaimerSubtitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontWeight: 'normal',
+        fontSize: 15,
+        color: '#777',
     },
     disclaimerBox: {
-        paddingHorizontal: 5,
+        gap: 2,
+    },
+    disclaimerItem: {
+        paddingVertical: 10,
     },
     disclaimerText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 10,
-        color: '#2F2F2F',
-        lineHeight: 16,
-        marginBottom: 10,
+        fontSize: 12,
+        color: '#444',
+        lineHeight: 18,
+        textAlign: 'center', // Matching the center alignment in screenshot
     },
     disclaimerBold: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         color: '#1E1E1E',
+        fontWeight: '600',
     },
     divider: {
         height: 1,
-        backgroundColor: '#D9D9D9',
-        marginVertical: 5,
+        backgroundColor: '#EEEEEE',
+        marginHorizontal: -10,
     }
 });

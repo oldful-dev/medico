@@ -10,7 +10,11 @@ import {
     TextInput,
     Alert,
     ActivityIndicator,
+    Image,
 } from 'react-native';
+
+// ─── Figma Assets ───
+const familyIcon = require('../../assets/images/cb86876504871abc5e6db19e5612175dae2b0479.png');
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -145,7 +149,6 @@ export default function InsuranceScreen() {
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Insurance Plan</Text>
-                <View style={{ width: 34 }} />
             </View>
 
             {/* ─── Content Card ─── */}
@@ -184,6 +187,13 @@ export default function InsuranceScreen() {
                                             size={15}
                                             color={item.selected ? '#048357' : '#AAAEAC'}
                                         />
+                                        {item.label === 'Parents' && (
+                                            <Image
+                                                source={familyIcon}
+                                                style={styles.familyIcon}
+                                                resizeMode="contain"
+                                            />
+                                        )}
                                         <Text style={[
                                             styles.recipientText,
                                             item.selected && styles.recipientTextSelected,
@@ -286,7 +296,7 @@ const styles = StyleSheet.create({
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
         color: '#FFFFFF',
-        textAlign: 'center',
+        textAlign: 'left', marginLeft: 12,
         letterSpacing: -0.24,
     },
 
@@ -324,7 +334,7 @@ const styles = StyleSheet.create({
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
         color: '#555555',
-        textAlign: 'center',
+        textAlign: 'left',
         marginBottom: 6,
         letterSpacing: -0.24,
     },
@@ -332,7 +342,7 @@ const styles = StyleSheet.create({
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 11,
         color: '#777777',
-        textAlign: 'center',
+        textAlign: 'left',
         lineHeight: 16,
         marginBottom: 20,
     },
@@ -369,7 +379,11 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         borderWidth: 1,
         borderColor: 'rgba(143,143,143,0.3)',
-        gap: 6,
+        gap: 4,
+    },
+    familyIcon: {
+        width: 18,
+        height: 18,
     },
     recipientButtonSelected: {
         borderColor: '#048357',
@@ -455,7 +469,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     submitButton: {
-        width: 281,
+        width: 230,
         height: 45,
         backgroundColor: '#02743F',
         borderRadius: 22,

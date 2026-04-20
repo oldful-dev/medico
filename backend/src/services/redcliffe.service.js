@@ -41,7 +41,7 @@ const sanitizePhone = (phone) => {
  */
 const transformToRedcliffePayload = (order, type) => {
     const sanitizedPhone = sanitizePhone(order.patient.phone);
-    
+
     if (type === 'HOME') {
         const payload = {
             booking_date: new Date().toISOString().split('T')[0],
@@ -61,10 +61,10 @@ const transformToRedcliffePayload = (order, type) => {
             client_refid: order.clientRefId,
             reference_data: order.clientRefId
         };
-        
+
         if (order.patient.email) payload.customer_email = order.patient.email;
         if (order.address.landmark) payload.customer_landmark = order.address.landmark;
-        
+
         if (order.additionalMembers && order.additionalMembers.length > 0) {
             payload.additional_member = order.additionalMembers.map(m => ({
                 customerName: m.name,
@@ -115,7 +115,7 @@ exports.fetchTimeSlots = async (date, lat, long) => {
         const res = await client.get(`/api/booking/v2/get-time-slot-list/`, {
             params: { collection_date: date, latitude: lat, longitude: long }
         });
-        
+
         if (res.data.status === 'success' && res.data.results) {
             // Map the nested format_12_hrs to our flat 'slot' string
             const mappedSlots = res.data.results.map((s) => ({
@@ -139,12 +139,12 @@ exports.getPackages = async (search = '') => {
         const response = await client.get(`/api/external/v2/center-package-data/`, {
             params: { search }
         });
-        
+
         // If API returns success but empty data, and it's an empty search, provide fallbacks
         if (response.data.status === 'success' && (!response.data.data || response.data.data.length === 0) && !search) {
             return { status: 'success', data: getFallbackPackages() };
         }
-        
+
         return response.data;
     } catch (error) {
         // Handle 400 "No package found" as a fallback trigger for empty search
@@ -168,12 +168,12 @@ exports.getPackageDetails = async (code) => {
     // Fallback for our demo codes
     if (FALLBACK_CODES.includes(code)) {
         const pkg = getFallbackPackages().find(p => p.code === code);
-        return { 
-            status: 'success', 
-            data: { 
-                ...pkg, 
-                parameters: [{ name: "Demo Parameter", unit: "mg/dL", reference_range: "70-100" }] 
-            } 
+        return {
+            status: 'success',
+            data: {
+                ...pkg,
+                parameters: [{ name: "Demo Parameter", unit: "mg/dL", reference_range: "70-100" }]
+            }
         };
     }
 
@@ -193,7 +193,7 @@ const FALLBACK_CODES = ['FB01', 'SU02', 'LP03', 'TH04'];
 exports.holdBooking = async (orderData, type = 'HOME') => {
     try {
         const payload = transformToRedcliffePayload(orderData, type);
-        
+
         // Demo Bypass: If we are using fallback tests, return a mock success
         const hasFallback = orderData.packages.some(p => FALLBACK_CODES.includes(p.code));
         if (hasFallback) {
@@ -205,19 +205,19 @@ exports.holdBooking = async (orderData, type = 'HOME') => {
             };
         }
 
-        const endpoint = type === 'DROP_OFF' 
-            ? '/api/external/v2/dropoff-create-booking/' 
+        const endpoint = type === 'DROP_OFF'
+            ? '/api/external/v2/dropoff-create-booking/'
             : '/api/external/v2/center-create-booking/';
-            
+
         const res = await client.post(endpoint, payload);
-        
+
         // Handle explicit lowercase 'success' or capitalized 'Success' based on docs
         const status = typeof res.data.status === 'string' ? res.data.status.toLowerCase() : '';
         if (status !== "success") {
             throw new Error(res.data.message || "Redcliffe hold format rejected");
         }
-        
-        return res.data; 
+
+        return res.data;
     } catch (error) {
         const errMessage = error.response?.data?.message || error.message;
         logger.error(`[Redcliffe] holdBooking error: ${errMessage}`);
@@ -231,12 +231,12 @@ exports.confirmBooking = async (bookingId) => {
             booking_id: String(bookingId),
             is_confirmed: "true"
         });
-        
+
         const status = typeof res.data.status === 'string' ? res.data.status.toLowerCase() : '';
         if (status !== "success") {
             throw new Error(res.data.message || "Failed to confirm at partner end");
         }
-        
+
         return res.data;
     } catch (error) {
         const errMessage = error.response?.data?.message || error.message;
@@ -248,7 +248,7 @@ exports.confirmBooking = async (bookingId) => {
 exports.getBookingStatus = async (params) => {
     // Identify the ID from any of the possible param names
     const bid = String(params.booking_id || params.client_ref_id || params.order_id || "");
-    
+
     if (bid.startsWith('DEMO-')) {
         logger.info(`🚨 [Redcliffe] DEMO MODE: Returning mock status for ${bid}`);
         return {

@@ -33,6 +33,7 @@ import { useUser } from '@/context/UserContext';
 import { useAppConfig } from '@/context/AppConfigContext';
 import { sduiService, HomeConfig, HomeSection } from '@/services/firebase/sduiService';
 import { getAssetUrl } from '@/utils/getAssetUrl';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // ─── Logo (only static asset — not content-driven) ───────────────────────────
 const logoSmall = require('@/assets/images/9d3e74b5e16af4e10bcec4b72af07a9d93ea14b8.png');
@@ -58,12 +59,12 @@ function QuickServicesStrip({ section }: QuickServicesProps) {
   const router = useRouter();
   return (
     <View style={styles.quickServiceCard}>
-      {section.services.map(item => {
+      {section.services.map((item, index) => {
         const [line1, line2] = item.label.split('\n');
         return (
           <TouchableOpacity
             key={item.id}
-            style={styles.quickServiceBox}
+            style={[styles.quickServiceBox, index === 0 && { backgroundColor: 'transparent' }]}
             onPress={() => router.push(item.route as any)}
           >
             <Image
@@ -300,18 +301,22 @@ export default function HomeScreen() {
             style={styles.locationPill}
             onPress={() => router.push('/(auth)/city-selection')}
           >
-            <Ionicons name="location-outline" size={14} color="#2F2F2F" />
+            <Ionicons name="location-sharp" size={16} color={Colors.primary} />
             <Text style={styles.locationText} numberOfLines={1}>{currentLocationStr}</Text>
           </TouchableOpacity>
           <View style={styles.headerRight}>
-            {/* <TouchableOpacity onPress={() => router.push('/search')}>
-              <Ionicons name="search-outline" size={22} color="#2F2F2F" />
-            </TouchableOpacity> */}
-            <TouchableOpacity style={styles.sosTag} onPress={() => router.push('/sos-emergency')}>
-              <Text style={styles.sosTagText}>SOS</Text>
+            <TouchableOpacity onPress={() => router.push('/sos-emergency')}>
+              <LinearGradient
+                colors={['#FF4B2B', '#FF416C']}
+                style={styles.sosCircle}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Text style={styles.sosCircleText}>SOS</Text>
+              </LinearGradient>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push('/notifications')}>
-              <Ionicons name="notifications-outline" size={22} color="#2F2F2F" />
+              <Ionicons name="notifications" size={24} color={Colors.primary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -391,11 +396,13 @@ export default function HomeScreen() {
                     {trust_badges.map((badge, i) => (
                       <React.Fragment key={badge.id}>
                         <View style={styles.trustItem}>
-                          <Image
-                            source={{ uri: getAssetUrl(badge.icon) }}
-                            style={styles.trustIcon}
-                            resizeMode="contain"
-                          />
+                          <View style={styles.trustIconCircle}>
+                            <Image
+                              source={{ uri: getAssetUrl(badge.icon) }}
+                              style={styles.trustIcon}
+                              resizeMode="contain"
+                            />
+                          </View>
                           <Text style={styles.trustLabel}>{badge.label}</Text>
                         </View>
                         {i < trust_badges.length - 1 && <View style={styles.trustDivider} />}
@@ -419,7 +426,7 @@ export default function HomeScreen() {
                           onPress={() => router.push(sos_banner.cta_route as any)}
                         >
                           <Text style={styles.sosButtonText}>{sos_banner.cta_text}</Text>
-                          <Ionicons name="arrow-forward" size={10} color="#FFFFFF" />
+                          <Ionicons name="call" size={12} color="#FFFFFF" />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -477,42 +484,48 @@ const styles = StyleSheet.create({
   locationPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     borderWidth: 1,
-    borderColor: Colors.primary,
+    borderColor: '#E8E8E8',
+    backgroundColor: '#F8F9FA',
     borderRadius: Radius.xl,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingVertical: 6,
     marginHorizontal: Spacing.sm,
     flex: 1,
-    gap: 6,
+    gap: 4,
   },
   locationText: {
-    fontFamily: Fonts.regular,
+    fontFamily: Fonts.medium,
     fontSize: FontSize.bodySmall,
     color: Colors.textBody,
-    textAlign: 'center',
+    flex: 1,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
-  sosTag: {
-    backgroundColor: Colors.sosRed,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.sm,
+  sosCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Shadow.card,
   },
-  sosTagText: {
+  sosCircleText: {
     fontFamily: Fonts.bold,
-    fontSize: FontSize.caption,
+    fontSize: 10,
     color: Colors.textWhite,
   },
 
   /* Scroll */
   scrollView: { flex: 1 },
-  scrollContent: { paddingBottom: 120 },
+  scrollContent: { 
+    paddingTop: 20, 
+    paddingBottom: 120 
+  },
 
   /* Hero Banner */
   greetingBannerWrapper: {
@@ -645,16 +658,25 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
-  trustIcon: {
-    width: 44,
-    height: 44,
+  trustIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#EDF2F7', 
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: Spacing.sm,
   },
+  trustIcon: {
+    width: 38,
+    height: 38,
+  },
   trustLabel: {
-    fontFamily: Fonts.medium,
-    fontSize: FontSize.caption,
-    color: Colors.primaryText,
+    fontFamily: Fonts.bold,
+    fontSize: 10,
+    color: '#034C2A', // Deep green from design
     textAlign: 'center',
+    paddingHorizontal: 4,
   },
   trustDivider: {
     width: 1,
@@ -751,6 +773,7 @@ const styles = StyleSheet.create({
     width: '60%',
     aspectRatio: 1,
     borderRadius: Radius.full,
+    backgroundColor: '#FEF9C3', // Light yellow circle fill
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',

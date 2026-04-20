@@ -85,7 +85,6 @@ export default function EditMedicalCardScreen() {
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>My Medical Card</Text>
-                    <View style={{ width: 24 }} />
                 </View>
             </SafeAreaView>
 
@@ -166,9 +165,9 @@ export default function EditMedicalCardScreen() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: Colors.primary },
     headerSafe: { backgroundColor: Colors.primary },
-    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-    backBtn: { padding: 4 },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: Colors.textWhite },
+    headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
+    backBtn: { padding: 4, marginRight: 8 },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: Colors.textWhite, flex: 1 },
     scrollView: { flex: 1, backgroundColor: '#FFFFE3', borderTopLeftRadius: 30, borderTopRightRadius: 30 },
     scrollContent: { padding: 20, paddingBottom: 60 },
     label: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: Colors.textDark, marginBottom: 8, marginTop: 18 },

@@ -58,7 +58,7 @@ export default function TabLayout() {
         options={{
           title: t('home.tab_title'),
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={21} color={color} />
+            <Ionicons name="home-outline" size={22} color={color} />
           ),
         }}
       />
@@ -76,7 +76,7 @@ export default function TabLayout() {
         options={{
           title: t('wellness.tab_title'),
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="heart-outline" size={21} color={color} />
+            <Ionicons name="medkit" size={22} color={color} />
           ),
         }}
       />
@@ -85,7 +85,7 @@ export default function TabLayout() {
         options={{
           title: t('account.tab_title'),
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={21} color={color} />
+            <Ionicons name="person-outline" size={22} color={color} />
           ),
         }}
       />
@@ -94,7 +94,7 @@ export default function TabLayout() {
         options={{
           title: 'Cart',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="cart-outline" size={21} color={color} />
+            <Ionicons name="cart-outline" size={22} color={color} />
           ),
         }}
       />
