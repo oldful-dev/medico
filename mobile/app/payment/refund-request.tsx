@@ -1,4 +1,4 @@
-// Refund Request - Submit refund request
+﻿// Refund Request - Submit refund request
 // PRD: SLA breach refunds, Compassionate Clause (demise/hospitalization)
 import React from 'react';
 import {
@@ -41,7 +41,6 @@ export default function RefundRequestScreen() {
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Refund Request</Text>
-                <View style={{ width: 34 }} />
             </View>
 
             {/* ─── Content Card ─── */}
@@ -185,7 +184,7 @@ const styles = StyleSheet.create({
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
         color: '#FFFFFF',
-        textAlign: 'center',
+        textAlign: 'left', marginLeft: 12,
         letterSpacing: -0.24,
     },
 

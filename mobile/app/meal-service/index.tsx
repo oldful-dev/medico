@@ -101,7 +101,6 @@ export default function MealServiceScreen() {
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Select Meal Plan</Text>
-                <View style={{ width: 40 }} />
             </View>
 
             <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
@@ -239,7 +238,7 @@ const styles = StyleSheet.create({
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
         color: '#FFFFFF',
-        textAlign: 'center',
+        textAlign: 'left', marginLeft: 12,
         letterSpacing: -0.24,
     },
     scrollContent: {
@@ -420,12 +419,13 @@ const styles = StyleSheet.create({
     /* ─── Submit Button ─── */
     submitButton: {
         backgroundColor: '#02743F',
-        height: 45,
-        borderRadius: 22.5,
-        width: 281,
+        borderRadius: 22,
+        height: 44,
+        width: 230,
         alignSelf: 'center',
         justifyContent: 'center',
         alignItems: 'center',
+        marginTop: 15,
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),

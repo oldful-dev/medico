@@ -129,7 +129,6 @@ export default function MyPrescriptionsScreen() {
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>My Prescriptions</Text>
-                    <View style={{ width: 24 }} />
                 </View>
             </SafeAreaView>
 
@@ -171,11 +170,12 @@ export default function MyPrescriptionsScreen() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#048357' },
     headerSafe: { backgroundColor: '#048357' },
-    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-    backBtn: { padding: 4 },
+    headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
+    backBtn: { padding: 4, marginRight: 8 },
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20, color: '#FFFFFF',
+        flex: 1,
     },
     body: { flex: 1, backgroundColor: '#FFFFE3', borderTopLeftRadius: 30, borderTopRightRadius: 30 },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },

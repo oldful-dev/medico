@@ -22,6 +22,7 @@ import FormInput from '@/components/common/FormInput';
 // ─── Figma Assets ───
 const familyIcon = require('@/assets/images/cb86876504871abc5e6db19e5612175dae2b0479.png');
 const nurseIcon = require('@/assets/images/ad2bd697d39bc0738ca19a09e58ce4677761ca47.png');
+const helpIcon = require('@/assets/images/idea_bulb_3d.png');
 
 export default function BookNursingCareScreen() {
     const { t } = useTranslation();
@@ -123,212 +124,223 @@ export default function BookNursingCareScreen() {
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{t('nurse_care.header')}</Text>
-                    <View style={styles.headerRight} />
                 </View>
 
-            {/* ─── Main Content Card (Cream Background with Top Radius) ─── */}
-            <View style={styles.contentCard}>
-                <KeyboardAwareScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                    enableOnAndroid
-                    extraScrollHeight={20}
-                >
-                    {/* Description Text */}
-                    <Text style={styles.descText}>
-                        {t('nurse_care.description')}
-                    </Text>
+                {/* ─── Main Content Card (Cream Background with Top Radius) ─── */}
+                <View style={styles.contentCard}>
+                    <KeyboardAwareScrollView
+                        style={styles.scrollView}
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        enableOnAndroid
+                        extraScrollHeight={20}
+                    >
+                        {/* Description Text */}
+                        <Text style={styles.descText}>
+                            {t('nurse_care.description')}
+                        </Text>
 
-                    {/* ─── Who is it for? ─── */}
-                    <View style={styles.sectionContainerBase}>
-                        <Text style={styles.sectionTitle}>{t('nurse_care.who_for')}</Text>
-                        <View style={styles.whoRow}>
-                            <TouchableOpacity
-                                style={[styles.whoButton, selectedWho === 'Self' && styles.whoButtonActive]}
-                                onPress={() => setSelectedWho('Self')}
-                            >
-                                {selectedWho === 'Self' && <Ionicons name="checkbox" size={16} color="#02743F" style={styles.whoIconCheck} />}
-                                <Text style={styles.whoButtonText}>Self</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.whoButton, selectedWho === 'Spouse' && styles.whoButtonActive]}
-                                onPress={() => setSelectedWho('Spouse')}
-                            >
-                                <Image source={familyIcon} style={styles.whoIcon} resizeMode="contain" />
-                                <Text style={styles.whoButtonText}>Spouse</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.whoButton, selectedWho === 'Parent' && styles.whoButtonActive]}
-                                onPress={() => setSelectedWho('Parent')}
-                            >
-                                <Image source={familyIcon} style={styles.whoIcon} resizeMode="contain" />
-                                <Text style={styles.whoButtonText}>Parent</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    {/* ─── Type of Staff Needed ─── */}
-                    <View style={styles.sectionContainer}>
-                        <Text style={styles.sectionTitle}>{t('nurse_care.staff_type')}</Text>
-
-                        {/* Option A: Qualified Nurse */}
-                        <TouchableOpacity
-                            style={[styles.staffCard, selectedStaff === 'Option A' && styles.staffCardActive]}
-                            onPress={() => setSelectedStaff('Option A')}
-                            activeOpacity={0.8}
-                        >
-                            <View style={styles.staffAvatarContainer}>
-                                <Image source={nurseIcon} style={styles.staffAvatar} resizeMode="contain" />
-                            </View>
-                            <View style={styles.staffInfo}>
-                                <Text style={[styles.staffTitle, selectedStaff === 'Option A' && styles.staffTitleActive]}>
-                                    {t('nurse_care.option_a_title')}
-                                </Text>
-                                <Text style={[styles.staffSubtitle, selectedStaff === 'Option A' && styles.staffSubtitleActive]}>
-                                    {t('nurse_care.option_a_subtitle')}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-
-                        {/* Option B: Bedside Attendant */}
-                        <TouchableOpacity
-                            style={[styles.staffCard, selectedStaff === 'Option B' && styles.staffCardActive]}
-                            onPress={() => setSelectedStaff('Option B')}
-                            activeOpacity={0.8}
-                        >
-                            <View style={styles.staffAvatarContainer}>
-                                <Image source={nurseIcon} style={styles.staffAvatar} resizeMode="contain" />
-                            </View>
-                            <View style={styles.staffInfo}>
-                                <Text style={[styles.staffTitle, selectedStaff === 'Option B' && styles.staffTitleActive]}>
-                                    {t('nurse_care.option_b_title')}
-                                </Text>
-                                <Text style={[styles.staffSubtitle, selectedStaff === 'Option B' && styles.staffSubtitleActive]}>
-                                    {t('nurse_care.option_b_subtitle')}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* ─── Preferred Duration ─── */}
-                    <View style={styles.sectionContainer}>
-                        <Text style={styles.sectionTitle}>{t('nurse_care.duration')}</Text>
-
-                        <View style={styles.verticalStack}>
-                            <TouchableOpacity style={styles.durationCardStacked} onPress={() => setSelectedDuration('Short Visit')}>
-                                <Ionicons name={selectedDuration === 'Short Visit' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedDuration === 'Short Visit' ? "#02743F" : "#AAAEAC"} />
-                                <View style={styles.durationTextCol}>
-                                    <Text style={styles.durationTitle}>{t('nurse_care.short_visit')}</Text>
-                                    <Text style={styles.durationSubtitle}>{t('nurse_care.short_visit_detail')}</Text>
-                                </View>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.durationCardStacked} onPress={() => setSelectedDuration('12 Hours (Night Shift)')}>
-                                <Ionicons name={selectedDuration === '12 Hours (Night Shift)' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedDuration === '12 Hours (Night Shift)' ? "#02743F" : "#AAAEAC"} />
-                                <View style={styles.durationTextCol}>
-                                    <Text style={styles.durationTitle}>{t('nurse_care.twelve_hr_night')}</Text>
-                                </View>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.durationCardStacked} onPress={() => setSelectedDuration('12 Hours (Day Shift)')}>
-                                <Ionicons name={selectedDuration === '12 Hours (Day Shift)' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedDuration === '12 Hours (Day Shift)' ? "#02743F" : "#AAAEAC"} />
-                                <View style={styles.durationTextCol}>
-                                    <Text style={styles.durationTitle}>{t('nurse_care.twelve_hr_day')}</Text>
-                                </View>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.durationCardStacked} onPress={() => setSelectedDuration('24 Hours (Live-in)')}>
-                                <Ionicons name={selectedDuration === '24 Hours (Live-in)' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedDuration === '24 Hours (Live-in)' ? "#02743F" : "#AAAEAC"} />
-                                <View style={styles.durationTextCol}>
-                                    <Text style={styles.durationTitle}>{t('nurse_care.twenty_four_hr')}</Text>
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    {/* ─── Patient Condition ─── */}
-                    <View style={styles.sectionContainer}>
-                        <Text style={styles.sectionTitle}>{t('nurse_care.condition')}</Text>
-
-                        <View style={styles.verticalStack}>
-                            <TouchableOpacity style={styles.radioCardStacked} onPress={() => setSelectedCondition('Walking/ Mobile')}>
-                                <Ionicons name={selectedCondition === 'Walking/ Mobile' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedCondition === 'Walking/ Mobile' ? "#02743F" : "#AAAEAC"} />
-                                <Text style={styles.radioLabelStacked}>{t('nurse_care.walking')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.radioCardStacked} onPress={() => setSelectedCondition('Bedridden')}>
-                                <Ionicons name={selectedCondition === 'Bedridden' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedCondition === 'Bedridden' ? "#02743F" : "#AAAEAC"} />
-                                <Text style={styles.radioLabelStacked}>{t('nurse_care.bedridden')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.radioCardStacked} onPress={() => setSelectedCondition('Post-Surgery')}>
-                                <Ionicons name={selectedCondition === 'Post-Surgery' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedCondition === 'Post-Surgery' ? "#02743F" : "#AAAEAC"} />
-                                <Text style={styles.radioLabelStacked}>{t('nurse_care.post_surgery')}</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    {/* ─── Gender preferences ─── */}
-                    <View style={styles.sectionContainer}>
-                        <Text style={styles.sectionTitle}>{t('nurse_care.gender_pref')}</Text>
-
-                        <View style={styles.verticalStack}>
-                            <TouchableOpacity style={styles.radioCardStacked} onPress={() => setSelectedGender('Male')}>
-                                <Ionicons name={selectedGender === 'Male' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedGender === 'Male' ? "#02743F" : "#AAAEAC"} />
-                                <Text style={styles.radioLabelStacked}>Male</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.radioCardStacked} onPress={() => setSelectedGender('Female')}>
-                                <Ionicons name={selectedGender === 'Female' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedGender === 'Female' ? "#02743F" : "#AAAEAC"} />
-                                <Text style={styles.radioLabelStacked}>Female</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.radioCardStacked} onPress={() => setSelectedGender('Any')}>
-                                <Ionicons name={selectedGender === 'Any' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedGender === 'Any' ? "#02743F" : "#AAAEAC"} />
-                                <Text style={styles.radioLabelStacked}>Any</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    {/* ─── Not Sure Banner ─── */}
-                    {/* ─── Confirm Address ─── */}
-                    <View style={styles.sectionContainer}>
-                        <Text style={styles.sectionTitle}>Confirm Address</Text>
-                        {locationDenied ? (
-                            <FormInput
-                                placeholder="Type your full address"
-                                value={address}
-                                onChangeText={setAddress}
-                                multiline
-                                style={{ elevation: 0, backgroundColor: '#FFF' }}
-                            />
-                        ) : (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(217,217,217,0.3)', padding: 12, borderRadius: 8 }}>
-                                <Ionicons name="location-outline" size={16} color="#2F2F2F" style={{ marginRight: 8 }} />
-                                <Text style={{ flex: 1, fontFamily: 'LexendDeca_400Regular', color: '#2F2F2F' }} numberOfLines={1}>{address}</Text>
-                                <TouchableOpacity onPress={() => router.push('/(auth)/city-selection')}>
-                                    <Text style={{ color: '#02743F', fontFamily: 'LexendDeca_500Medium', marginLeft: 8 }}>Edit</Text>
+                        {/* ─── Who is it for? ─── */}
+                        <View style={styles.sectionContainerBase}>
+                            <Text style={styles.sectionTitle}>{t('nurse_care.who_for')}</Text>
+                            <View style={styles.whoRow}>
+                                <TouchableOpacity
+                                    style={[styles.whoButton, selectedWho === 'Self' && styles.whoButtonActive]}
+                                    onPress={() => setSelectedWho('Self')}
+                                >
+                                    {selectedWho === 'Self' && <Ionicons name="checkbox" size={16} color="#02743F" style={styles.whoIconCheck} />}
+                                    <Text style={styles.whoButtonText}>Self</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.whoButton, selectedWho === 'Spouse' && styles.whoButtonActive]}
+                                    onPress={() => setSelectedWho('Spouse')}
+                                >
+                                    <Image source={familyIcon} style={styles.whoIcon} resizeMode="contain" />
+                                    <Text style={styles.whoButtonText}>Spouse</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.whoButton, selectedWho === 'Parent' && styles.whoButtonActive]}
+                                    onPress={() => setSelectedWho('Parent')}
+                                >
+                                    <Image source={familyIcon} style={styles.whoIcon} resizeMode="contain" />
+                                    <Text style={styles.whoButtonText}>Parent</Text>
                                 </TouchableOpacity>
                             </View>
-                        )}
-                    </View>
-                </KeyboardAwareScrollView>
+                        </View>
 
-                {/* ─── Fixed Normal Bottom Bar ─── */}
-                <View style={[styles.bottomBarContainer, { paddingBottom: insets.bottom || 20 }]}>
-                    <TouchableOpacity
-                        style={[styles.confirmButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
-                        activeOpacity={0.8}
-                        disabled={isBooking || isLoadingInit}
-                        onPress={handleBookService}
-                    >
-                        {isBooking ? (
-                            <ActivityIndicator color="#FFFFFF" />
-                        ) : (
-                            <Text style={styles.confirmButtonText}>
-                                {isLoadingInit ? t('common.initializing') : t('booking.request_staff')}
-                            </Text>
-                        )}
-                    </TouchableOpacity>
+                        {/* ─── Type of Staff Needed ─── */}
+                        <View style={styles.sectionContainer}>
+                            <Text style={styles.sectionTitle}>{t('nurse_care.staff_type')}</Text>
+
+                            {/* Option A: Qualified Nurse */}
+                            <TouchableOpacity
+                                style={[styles.staffCard, selectedStaff === 'Option A' && styles.staffCardActive]}
+                                onPress={() => setSelectedStaff('Option A')}
+                                activeOpacity={0.8}
+                            >
+                                <View style={styles.staffAvatarContainer}>
+                                    <Image source={nurseIcon} style={styles.staffAvatar} resizeMode="contain" />
+                                </View>
+                                <View style={styles.staffInfo}>
+                                    <Text style={[styles.staffTitle, selectedStaff === 'Option A' && styles.staffTitleActive]}>
+                                        {t('nurse_care.option_a_title')}
+                                    </Text>
+                                    <Text style={[styles.staffSubtitle, selectedStaff === 'Option A' && styles.staffSubtitleActive]}>
+                                        {t('nurse_care.option_a_subtitle')}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+
+                            {/* Option B: Bedside Attendant */}
+                            <TouchableOpacity
+                                style={[styles.staffCard, selectedStaff === 'Option B' && styles.staffCardActive]}
+                                onPress={() => setSelectedStaff('Option B')}
+                                activeOpacity={0.8}
+                            >
+                                <View style={styles.staffAvatarContainer}>
+                                    <Image source={nurseIcon} style={styles.staffAvatar} resizeMode="contain" />
+                                </View>
+                                <View style={styles.staffInfo}>
+                                    <Text style={[styles.staffTitle, selectedStaff === 'Option B' && styles.staffTitleActive]}>
+                                        {t('nurse_care.option_b_title')}
+                                    </Text>
+                                    <Text style={[styles.staffSubtitle, selectedStaff === 'Option B' && styles.staffSubtitleActive]}>
+                                        {t('nurse_care.option_b_subtitle')}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* ─── Preferred Duration ─── */}
+                        <View style={styles.sectionContainer}>
+                            <Text style={styles.sectionTitle}>{t('nurse_care.duration')}</Text>
+
+                            <View style={styles.gridRow}>
+                                <TouchableOpacity style={styles.durationCard} onPress={() => setSelectedDuration('Short Visit')}>
+                                    <Ionicons name={selectedDuration === 'Short Visit' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === 'Short Visit' ? "#02743F" : "#AAAEAC"} />
+                                    <View style={styles.durationTextCol}>
+                                        <Text style={styles.durationTitle}>{t('nurse_care.short_visit')}</Text>
+                                        <Text style={styles.durationSubtitle}>{t('nurse_care.short_visit_detail')}</Text>
+                                    </View>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.durationCard} onPress={() => setSelectedDuration('12 Hours (Night Shift)')}>
+                                    <Ionicons name={selectedDuration === '12 Hours (Night Shift)' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === '12 Hours (Night Shift)' ? "#02743F" : "#AAAEAC"} />
+                                    <View style={styles.durationTextCol}>
+                                        <Text style={styles.durationTitle}>{t('nurse_care.twelve_hr_night')}</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </View>
+                            <View style={styles.gridRow}>
+                                <TouchableOpacity style={styles.durationCard} onPress={() => setSelectedDuration('12 Hours (Day Shift)')}>
+                                    <Ionicons name={selectedDuration === '12 Hours (Day Shift)' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === '12 Hours (Day Shift)' ? "#02743F" : "#AAAEAC"} />
+                                    <View style={styles.durationTextCol}>
+                                        <Text style={styles.durationTitle}>{t('nurse_care.twelve_hr_day')}</Text>
+                                    </View>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.durationCard} onPress={() => setSelectedDuration('24 Hours (Live-in)')}>
+                                    <Ionicons name={selectedDuration === '24 Hours (Live-in)' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === '24 Hours (Live-in)' ? "#02743F" : "#AAAEAC"} />
+                                    <View style={styles.durationTextCol}>
+                                        <Text style={styles.durationTitle}>{t('nurse_care.twenty_four_hr')}</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        {/* ─── Patient Condition ─── */}
+                        <View style={styles.sectionContainer}>
+                            <Text style={styles.sectionTitle}>{t('nurse_care.condition')}</Text>
+
+                            <View style={styles.gridRow}>
+                                <TouchableOpacity style={styles.radioCard} onPress={() => setSelectedCondition('Walking/ Mobile')}>
+                                    <Ionicons name={selectedCondition === 'Walking/ Mobile' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedCondition === 'Walking/ Mobile' ? "#02743F" : "#AAAEAC"} />
+                                    <Text style={styles.radioLabel}>{t('nurse_care.walking')}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.radioCard} onPress={() => setSelectedCondition('Bedridden')}>
+                                    <Ionicons name={selectedCondition === 'Bedridden' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedCondition === 'Bedridden' ? "#02743F" : "#AAAEAC"} />
+                                    <Text style={styles.radioLabel}>{t('nurse_care.bedridden')}</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View style={styles.gridRow}>
+                                <TouchableOpacity style={styles.radioCard} onPress={() => setSelectedCondition('Post-Surgery')}>
+                                    <Ionicons name={selectedCondition === 'Post-Surgery' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedCondition === 'Post-Surgery' ? "#02743F" : "#AAAEAC"} />
+                                    <Text style={styles.radioLabel}>{t('nurse_care.post_surgery')}</Text>
+                                </TouchableOpacity>
+                                <View style={{ flex: 1, marginHorizontal: 4 }} />
+                            </View>
+                        </View>
+
+                        {/* ─── Gender preferences ─── */}
+                        <View style={styles.sectionContainer}>
+                            <Text style={styles.sectionTitle}>{t('nurse_care.gender_pref')}</Text>
+
+                            <View style={styles.gridRow}>
+                                <TouchableOpacity style={styles.radioCardSmall} onPress={() => setSelectedGender('Male')}>
+                                    <Ionicons name={selectedGender === 'Male' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Male' ? "#02743F" : "#AAAEAC"} />
+                                    <Text style={styles.radioLabel}>Male</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.radioCardSmall} onPress={() => setSelectedGender('Female')}>
+                                    <Ionicons name={selectedGender === 'Female' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Female' ? "#02743F" : "#AAAEAC"} />
+                                    <Text style={styles.radioLabel}>Female</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.radioCardSmall} onPress={() => setSelectedGender('Any')}>
+                                    <Ionicons name={selectedGender === 'Any' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Any' ? "#02743F" : "#AAAEAC"} />
+                                    <Text style={styles.radioLabel}>Any</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        {/* ─── Not Sure Banner (Informational Only) ─── */}
+                        <View style={styles.notSureBanner}>
+                            <Image source={helpIcon} style={styles.ideaIcon} resizeMode="contain" />
+                            <View style={styles.notSureTextGroup}>
+                                <Text style={styles.notSureTitle}>Not sure about your options?</Text>
+                                <Text style={styles.notSureSubtitle}>I’m not sure, let an Expert call me decide</Text>
+                            </View>
+                        </View>
+                        {/* ─── Confirm Address ─── */}
+                        <View style={styles.sectionContainer}>
+                            <Text style={styles.sectionTitle}>Confirm Address</Text>
+                            {locationDenied ? (
+                                <FormInput
+                                    placeholder="Type your full address"
+                                    value={address}
+                                    onChangeText={setAddress}
+                                    multiline
+                                    style={{ elevation: 0, backgroundColor: '#FFF' }}
+                                />
+                            ) : (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(217,217,217,0.3)', padding: 12, borderRadius: 8 }}>
+                                    <Ionicons name="location-outline" size={16} color="#2F2F2F" style={{ marginRight: 8 }} />
+                                    <Text style={{ flex: 1, fontFamily: 'LexendDeca_400Regular', color: '#2F2F2F' }} numberOfLines={1}>{address}</Text>
+                                    <TouchableOpacity onPress={() => router.push('/(auth)/city-selection')}>
+                                        <Text style={{ color: '#02743F', fontFamily: 'LexendDeca_500Medium', marginLeft: 8 }}>Edit</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        </View>
+                    </KeyboardAwareScrollView>
+
+                    {/* ─── Fixed Normal Bottom Bar ─── */}
+                    <View style={[styles.bottomBarContainer, { paddingBottom: insets.bottom || 20 }]}>
+                        <TouchableOpacity
+                            style={[styles.confirmButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                            activeOpacity={0.8}
+                            disabled={isBooking || isLoadingInit}
+                            onPress={handleBookService}
+                        >
+                            {isBooking ? (
+                                <ActivityIndicator color="#FFFFFF" />
+                            ) : (
+                                <Text style={styles.confirmButtonText}>
+                                    {isLoadingInit ? t('common.initializing') : t('booking.request_staff')}
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
         </View>
-    </View>
     );
 }
 
@@ -349,7 +361,7 @@ const styles = StyleSheet.create({
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-start',
         paddingHorizontal: 20,
         paddingBottom: 20,
         paddingTop: 10,
@@ -363,6 +375,7 @@ const styles = StyleSheet.create({
         fontSize: 20,
         color: '#FFFFFF',
         letterSpacing: -0.24,
+        marginLeft: 12,
     },
     headerRight: {
         width: 32, // to balance back button width
@@ -645,8 +658,7 @@ const styles = StyleSheet.create({
     },
     confirmButton: {
         backgroundColor: '#02743F',
-        width: '100%',
-        maxWidth: 281, // Keeps it from looking too wide on big screens
+        width: 230,
         height: 48, // Slightly taller for a nice thumb target
         borderRadius: 24, // Matches half of height
         justifyContent: 'center',

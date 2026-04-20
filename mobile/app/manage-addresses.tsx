@@ -103,78 +103,77 @@ export default function ManageAddressesScreen() {
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Manage Addresses</Text>
-                    <View style={{ width: 24 }} />
                 </View>
             </SafeAreaView>
 
             <KeyboardAwareScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} enableOnAndroid={true} extraScrollHeight={20} keyboardShouldPersistTaps="handled">
 
-                    {addresses.length === 0 && !showAddForm && (
-                        <View style={styles.emptyState}>
-                            <Ionicons name="location-outline" size={56} color="#AAAEAC" />
-                            <Text style={styles.emptyTitle}>No Addresses Yet</Text>
-                            <Text style={styles.emptyDesc}>Add your first address below.</Text>
-                        </View>
-                    )}
+                {addresses.length === 0 && !showAddForm && (
+                    <View style={styles.emptyState}>
+                        <Ionicons name="location-outline" size={56} color="#AAAEAC" />
+                        <Text style={styles.emptyTitle}>No Addresses Yet</Text>
+                        <Text style={styles.emptyDesc}>Add your first address below.</Text>
+                    </View>
+                )}
 
-                    {addresses.map((item) => (
-                        <View key={item.id} style={[styles.card, item.isDefault && styles.cardDefault]}>
-                            <View style={styles.cardHeader}>
-                                <View style={styles.labelBadge}>
-                                    <Ionicons
-                                        name={item.label === 'Home' ? 'home-outline' : item.label === 'Work' ? 'briefcase-outline' : 'location-outline'}
-                                        size={16} color="#048357"
-                                    />
-                                    <Text style={styles.labelText}>{item.label}</Text>
+                {addresses.map((item) => (
+                    <View key={item.id} style={[styles.card, item.isDefault && styles.cardDefault]}>
+                        <View style={styles.cardHeader}>
+                            <View style={styles.labelBadge}>
+                                <Ionicons
+                                    name={item.label === 'Home' ? 'home-outline' : item.label === 'Work' ? 'briefcase-outline' : 'location-outline'}
+                                    size={16} color="#048357"
+                                />
+                                <Text style={styles.labelText}>{item.label}</Text>
+                            </View>
+                            {item.isDefault && (
+                                <View style={styles.defaultBadge}>
+                                    <Text style={styles.defaultBadgeText}>Default</Text>
                                 </View>
-                                {item.isDefault && (
-                                    <View style={styles.defaultBadge}>
-                                        <Text style={styles.defaultBadgeText}>Default</Text>
-                                    </View>
-                                )}
-                            </View>
-
-                            <Text style={styles.addressText}>
-                                {[item.line1, item.line2, item.landmark].filter(Boolean).join(', ')}
-                            </Text>
-                            <Text style={styles.phoneText}>{item.cityName}, {item.state} — {item.pincode}</Text>
-
-                            <View style={styles.cardActions}>
-                                {!item.isDefault && (
-                                    <TouchableOpacity style={styles.actionBtn} onPress={() => setDefault(item)}>
-                                        <Ionicons name="checkmark-circle-outline" size={16} color="#048357" />
-                                        <Text style={styles.actionBtnText}>Set Default</Text>
-                                    </TouchableOpacity>
-                                )}
-                            </View>
+                            )}
                         </View>
-                    ))}
 
-                    {showAddForm && (
-                        <View style={styles.addForm}>
-                            <Text style={styles.formTitle}>Add New Address</Text>
-                            <TextInput style={styles.input} placeholder="Label (e.g. Home, Office)" placeholderTextColor="#898989" value={newLabel} onChangeText={setNewLabel} />
-                            <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: 'top' }]} placeholder="Address Line 1 *" placeholderTextColor="#898989" multiline value={newLine1} onChangeText={setNewLine1} />
-                            <TextInput style={styles.input} placeholder="Address Line 2 (optional)" placeholderTextColor="#898989" value={newLine2} onChangeText={setNewLine2} />
-                            <TextInput style={styles.input} placeholder="City *" placeholderTextColor="#898989" value={newCity} onChangeText={setNewCity} />
-                            <TextInput style={styles.input} placeholder="State *" placeholderTextColor="#898989" value={newState} onChangeText={setNewState} />
-                            <TextInput style={styles.input} placeholder="Pincode *" placeholderTextColor="#898989" keyboardType="numeric" value={newPincode} onChangeText={setNewPincode} />
-                            <TextInput style={styles.input} placeholder="Landmark (optional)" placeholderTextColor="#898989" value={newLandmark} onChangeText={setNewLandmark} />
-                            <View style={styles.formActions}>
-                                <TouchableOpacity style={styles.cancelFormBtn} onPress={resetForm}>
-                                    <Text style={styles.cancelFormText}>Cancel</Text>
+                        <Text style={styles.addressText}>
+                            {[item.line1, item.line2, item.landmark].filter(Boolean).join(', ')}
+                        </Text>
+                        <Text style={styles.phoneText}>{item.cityName}, {item.state} — {item.pincode}</Text>
+
+                        <View style={styles.cardActions}>
+                            {!item.isDefault && (
+                                <TouchableOpacity style={styles.actionBtn} onPress={() => setDefault(item)}>
+                                    <Ionicons name="checkmark-circle-outline" size={16} color="#048357" />
+                                    <Text style={styles.actionBtnText}>Set Default</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={styles.saveFormBtn} onPress={addAddress} disabled={saving}>
-                                    {saving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveFormText}>Save Address</Text>}
-                                </TouchableOpacity>
-                            </View>
+                            )}
                         </View>
-                    )}
+                    </View>
+                ))}
 
-                    <TouchableOpacity style={styles.addButton} onPress={() => setShowAddForm(!showAddForm)} activeOpacity={0.7}>
-                        <Ionicons name="add-circle-outline" size={22} color="#048357" />
-                        <Text style={styles.addButtonText}>Add New Address</Text>
-                    </TouchableOpacity>
+                {showAddForm && (
+                    <View style={styles.addForm}>
+                        <Text style={styles.formTitle}>Add New Address</Text>
+                        <TextInput style={styles.input} placeholder="Label (e.g. Home, Office)" placeholderTextColor="#898989" value={newLabel} onChangeText={setNewLabel} />
+                        <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: 'top' }]} placeholder="Address Line 1 *" placeholderTextColor="#898989" multiline value={newLine1} onChangeText={setNewLine1} />
+                        <TextInput style={styles.input} placeholder="Address Line 2 (optional)" placeholderTextColor="#898989" value={newLine2} onChangeText={setNewLine2} />
+                        <TextInput style={styles.input} placeholder="City *" placeholderTextColor="#898989" value={newCity} onChangeText={setNewCity} />
+                        <TextInput style={styles.input} placeholder="State *" placeholderTextColor="#898989" value={newState} onChangeText={setNewState} />
+                        <TextInput style={styles.input} placeholder="Pincode *" placeholderTextColor="#898989" keyboardType="numeric" value={newPincode} onChangeText={setNewPincode} />
+                        <TextInput style={styles.input} placeholder="Landmark (optional)" placeholderTextColor="#898989" value={newLandmark} onChangeText={setNewLandmark} />
+                        <View style={styles.formActions}>
+                            <TouchableOpacity style={styles.cancelFormBtn} onPress={resetForm}>
+                                <Text style={styles.cancelFormText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.saveFormBtn} onPress={addAddress} disabled={saving}>
+                                {saving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveFormText}>Save Address</Text>}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
+
+                <TouchableOpacity style={styles.addButton} onPress={() => setShowAddForm(!showAddForm)} activeOpacity={0.7}>
+                    <Ionicons name="add-circle-outline" size={22} color="#048357" />
+                    <Text style={styles.addButtonText}>Add New Address</Text>
+                </TouchableOpacity>
             </KeyboardAwareScrollView>
         </View>
     );
@@ -183,11 +182,12 @@ export default function ManageAddressesScreen() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#048357' },
     headerSafe: { backgroundColor: '#048357' },
-    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-    backBtn: { padding: 4 },
+    headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
+    backBtn: { padding: 4, marginRight: 8 },
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20, color: '#FFFFFF',
+        flex: 1,
     },
     scrollView: { flex: 1, backgroundColor: '#FFFFE3', borderTopLeftRadius: 30, borderTopRightRadius: 30 },
     scrollContent: { padding: 20, paddingBottom: 50 },

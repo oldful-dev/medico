@@ -78,12 +78,12 @@ export default function PaperLegalScreen() {
 
             {/* ─── Header ─── */}
             <View style={styles.headerContainer}>
-                {/* Back Button Overlay */}
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-
-                <Text style={styles.headerTitle}>Paper and Legal</Text>
+                <View style={styles.headerRow}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Paper and Legal</Text>
+                </View>
                 <Text style={styles.headerSubtitle}>Pension, Life Certificates, and{'\n'}Property work.</Text>
             </View>
 
@@ -191,21 +191,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 15,
         paddingBottom: 45,
-        position: 'relative',
+        paddingHorizontal: 16,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: '100%',
+        marginBottom: 8,
     },
     backButton: {
-        position: 'absolute',
-        top: 15,
-        left: 16,
         padding: 5,
-        zIndex: 10,
+        marginRight: 12,
     },
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 24,
         color: '#FFFFFF',
         letterSpacing: -0.24,
-        marginBottom: 8,
+        flex: 1,
     },
     headerSubtitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),

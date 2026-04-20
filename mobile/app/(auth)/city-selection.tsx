@@ -1,4 +1,4 @@
-// City Selection Screen — Server-Driven UI
+﻿// City Selection Screen — Server-Driven UI
 // City list (names, states, availability) comes from AppConfigContext.
 // Admin can add/activate cities without an app release.
 import React, { useState } from 'react';
@@ -48,7 +48,6 @@ export default function CitySelectionScreen() {
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{t('city_selection.header')}</Text>
-                <View style={{ width: 34 }} />
             </View>
 
             {/* ─── Content Card ─── */}
@@ -204,7 +203,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16, paddingBottom: 20, paddingTop: 10,
     },
     backButton: { padding: 5 },
-    headerTitle: { flex: 1, fontFamily: Fonts.semiBold, fontSize: 20, color: '#FFFFFF', textAlign: 'center' },
+    headerTitle: { flex: 1, fontFamily: Fonts.semiBold, fontSize: 20, color: '#FFFFFF', textAlign: "left", marginLeft: 12 },
     contentCard: { flex: 1, backgroundColor: '#FDFDE8', borderTopLeftRadius: 45, borderTopRightRadius: 45, overflow: 'hidden' },
     scrollView: { flex: 1 },
     scrollContent: { paddingHorizontal: 24, paddingTop: 30, paddingBottom: 120 },

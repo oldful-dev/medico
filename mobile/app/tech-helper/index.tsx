@@ -263,23 +263,22 @@ const styles = StyleSheet.create({
     /* ─── Header ─── */
     headerContainer: {
         backgroundColor: Colors.primary,
+        flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 15,
         paddingBottom: 25,
-        position: 'relative',
+        paddingHorizontal: 16,
     },
     backButton: {
-        position: 'absolute',
-        top: 15,
-        left: 16,
         padding: 5,
-        zIndex: 10,
+        marginRight: 12,
     },
     headerTitle: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.heading2,
         color: Colors.textWhite,
         letterSpacing: -0.24,
+        flex: 1,
     },
 
     /* ─── Content Area ─── */

@@ -122,98 +122,97 @@ export default function EmergencyContactsScreen() {
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Emergency Contacts</Text>
-                    <View style={{ width: 24 }} />
                 </View>
             </SafeAreaView>
 
             <KeyboardAwareScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} enableOnAndroid={true} extraScrollHeight={20} keyboardShouldPersistTaps="handled">
 
-                    {contacts.length === 0 && !showAddForm && (
-                        <View style={styles.emptyState}>
-                            <Ionicons name="people-outline" size={56} color="#AAAEAC" />
-                            <Text style={styles.emptyTitle}>No Emergency Contacts</Text>
-                            <Text style={styles.emptyDesc}>Add your son, daughter, or neighbour as an emergency contact.</Text>
-                        </View>
-                    )}
+                {contacts.length === 0 && !showAddForm && (
+                    <View style={styles.emptyState}>
+                        <Ionicons name="people-outline" size={56} color="#AAAEAC" />
+                        <Text style={styles.emptyTitle}>No Emergency Contacts</Text>
+                        <Text style={styles.emptyDesc}>Add your son, daughter, or neighbour as an emergency contact.</Text>
+                    </View>
+                )}
 
-                    {contacts.map((contact) => (
-                        <View key={contact.id} style={styles.card}>
-                            <View style={styles.cardTop}>
-                                <View style={styles.contactInfo}>
-                                    <View style={styles.relIconCircle}>
-                                        <Ionicons name={getRelIcon(contact.relationship)} size={20} color="#048357" />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={styles.contactName}>{contact.name}</Text>
-                                        <Text style={styles.contactRel}>{contact.relationship}</Text>
-                                    </View>
+                {contacts.map((contact) => (
+                    <View key={contact.id} style={styles.card}>
+                        <View style={styles.cardTop}>
+                            <View style={styles.contactInfo}>
+                                <View style={styles.relIconCircle}>
+                                    <Ionicons name={getRelIcon(contact.relationship)} size={20} color="#048357" />
                                 </View>
-                                <Text style={styles.contactPhone}>{contact.phone}</Text>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.contactName}>{contact.name}</Text>
+                                    <Text style={styles.contactRel}>{contact.relationship}</Text>
+                                </View>
                             </View>
-                            <TouchableOpacity
-                                style={styles.removeBtn}
-                                onPress={() => deleteContact(contact.id)}
-                                disabled={deletingId === contact.id}
-                            >
-                                {deletingId === contact.id ? (
-                                    <ActivityIndicator size="small" color="#FF3B30" />
-                                ) : (
-                                    <>
-                                        <Ionicons name="trash-outline" size={14} color="#FF3B30" />
-                                        <Text style={styles.removeBtnText}>Remove</Text>
-                                    </>
-                                )}
+                            <Text style={styles.contactPhone}>{contact.phone}</Text>
+                        </View>
+                        <TouchableOpacity
+                            style={styles.removeBtn}
+                            onPress={() => deleteContact(contact.id)}
+                            disabled={deletingId === contact.id}
+                        >
+                            {deletingId === contact.id ? (
+                                <ActivityIndicator size="small" color="#FF3B30" />
+                            ) : (
+                                <>
+                                    <Ionicons name="trash-outline" size={14} color="#FF3B30" />
+                                    <Text style={styles.removeBtnText}>Remove</Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                ))}
+
+                {/* Notify Toggle */}
+                {contacts.length > 0 && (
+                    <View style={styles.notifyCard}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.notifyTitle}>Notify them for every booking?</Text>
+                            <Text style={styles.notifyDesc}>Emergency contacts will receive a notification for each service booking.</Text>
+                        </View>
+                        <Switch
+                            trackColor={{ false: '#AAAEAC', true: '#048357' }}
+                            thumbColor="#FFFFFF"
+                            ios_backgroundColor="#AAAEAC"
+                            onValueChange={setNotifyEnabled}
+                            value={notifyEnabled}
+                        />
+                    </View>
+                )}
+
+                {showAddForm && (
+                    <View style={styles.addForm}>
+                        <Text style={styles.formTitle}>Add Emergency Contact</Text>
+                        <TextInput style={styles.input} placeholder="Full Name *" placeholderTextColor="#898989" value={newName} onChangeText={setNewName} />
+                        <TextInput style={styles.input} placeholder="Phone Number *" placeholderTextColor="#898989" keyboardType="phone-pad" value={newPhone} onChangeText={setNewPhone} />
+
+                        <Text style={styles.relLabel}>Relationship *</Text>
+                        <View style={styles.relRow}>
+                            {RELATIONSHIPS.map(rel => (
+                                <TouchableOpacity key={rel} style={[styles.relChip, newRelationship === rel && styles.relChipActive]} onPress={() => setNewRelationship(rel)}>
+                                    <Text style={[styles.relChipText, newRelationship === rel && styles.relChipTextActive]}>{rel}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <View style={styles.formActions}>
+                            <TouchableOpacity style={styles.cancelBtn} onPress={resetForm}>
+                                <Text style={styles.cancelBtnText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.saveBtn} onPress={addContact} disabled={saving}>
+                                {saving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveBtnText}>Save Contact</Text>}
                             </TouchableOpacity>
                         </View>
-                    ))}
+                    </View>
+                )}
 
-                    {/* Notify Toggle */}
-                    {contacts.length > 0 && (
-                        <View style={styles.notifyCard}>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.notifyTitle}>Notify them for every booking?</Text>
-                                <Text style={styles.notifyDesc}>Emergency contacts will receive a notification for each service booking.</Text>
-                            </View>
-                            <Switch
-                                trackColor={{ false: '#AAAEAC', true: '#048357' }}
-                                thumbColor="#FFFFFF"
-                                ios_backgroundColor="#AAAEAC"
-                                onValueChange={setNotifyEnabled}
-                                value={notifyEnabled}
-                            />
-                        </View>
-                    )}
-
-                    {showAddForm && (
-                        <View style={styles.addForm}>
-                            <Text style={styles.formTitle}>Add Emergency Contact</Text>
-                            <TextInput style={styles.input} placeholder="Full Name *" placeholderTextColor="#898989" value={newName} onChangeText={setNewName} />
-                            <TextInput style={styles.input} placeholder="Phone Number *" placeholderTextColor="#898989" keyboardType="phone-pad" value={newPhone} onChangeText={setNewPhone} />
-
-                            <Text style={styles.relLabel}>Relationship *</Text>
-                            <View style={styles.relRow}>
-                                {RELATIONSHIPS.map(rel => (
-                                    <TouchableOpacity key={rel} style={[styles.relChip, newRelationship === rel && styles.relChipActive]} onPress={() => setNewRelationship(rel)}>
-                                        <Text style={[styles.relChipText, newRelationship === rel && styles.relChipTextActive]}>{rel}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            <View style={styles.formActions}>
-                                <TouchableOpacity style={styles.cancelBtn} onPress={resetForm}>
-                                    <Text style={styles.cancelBtnText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.saveBtn} onPress={addContact} disabled={saving}>
-                                    {saving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveBtnText}>Save Contact</Text>}
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    )}
-
-                    <TouchableOpacity style={styles.addButton} onPress={() => setShowAddForm(!showAddForm)} activeOpacity={0.7}>
-                        <Ionicons name="add-circle-outline" size={22} color="#048357" />
-                        <Text style={styles.addButtonText}>Add Emergency Contact</Text>
-                    </TouchableOpacity>
+                <TouchableOpacity style={styles.addButton} onPress={() => setShowAddForm(!showAddForm)} activeOpacity={0.7}>
+                    <Ionicons name="add-circle-outline" size={22} color="#048357" />
+                    <Text style={styles.addButtonText}>Add Emergency Contact</Text>
+                </TouchableOpacity>
             </KeyboardAwareScrollView>
         </View>
     );
@@ -222,11 +221,12 @@ export default function EmergencyContactsScreen() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#048357' },
     headerSafe: { backgroundColor: '#048357' },
-    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-    backBtn: { padding: 4 },
+    headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
+    backBtn: { padding: 4, marginRight: 8 },
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20, color: '#FFFFFF',
+        flex: 1,
     },
     scrollView: { flex: 1, backgroundColor: '#FFFFE3', borderTopLeftRadius: 30, borderTopRightRadius: 30 },
     scrollContent: { padding: 20, paddingBottom: 50 },

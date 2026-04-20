@@ -171,6 +171,13 @@ export default function AccountScreen() {
                         <Text style={styles.profileDetail}>
                             <Text style={styles.boldKey}>Phone: </Text>{profile?.phone || '...'}
                         </Text>
+                        <Text style={styles.profileDetail} numberOfLines={1}>
+                            <Text style={styles.boldKey}>Address: </Text>
+                            {(() => {
+                                const defAddr = profile?.addresses?.find(a => a.isDefault) || profile?.addresses?.[0];
+                                return defAddr ? `${defAddr.line1}, ${defAddr.cityName}` : 'Not set';
+                            })()}
+                        </Text>
                     </View>
                     <View style={styles.avatarContainer}>
                         <View style={styles.avatarWrapper}>
@@ -248,14 +255,14 @@ export default function AccountScreen() {
                    ══════════════════════════════════════════════════ */}
                 <Text style={styles.sectionHeading}>{t('account.management')}</Text>
 
-                {/* Manage Addresses */}
+                {/* Management & Logistics */}
                 <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => router.push('/manage-addresses' as any)}>
                     <View style={styles.linkLeft}>
                         <View style={[styles.linkIcon, { backgroundColor: '#E3F2FD' }]}>
                             <Ionicons name="location-outline" size={20} color="#1E88E5" />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.linkTitle}>{t('account.manage_addresses')}</Text>
+                            <Text style={styles.linkTitle}>{t('account.management')}</Text>
                             <Text style={styles.linkSubtitle}>Home, Second Home, Clinic</Text>
                         </View>
                     </View>
@@ -465,7 +472,7 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#FDFDE8' },
     headerSafe: { backgroundColor: Colors.primary, borderBottomLeftRadius: Radius.xl, borderBottomRightRadius: Radius.xl, zIndex: 10 },
     headerRow: { height: 60, justifyContent: 'center', alignItems: 'center', paddingBottom: 10 },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: Colors.textWhite, letterSpacing: -0.24 },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: Colors.textWhite, letterSpacing: -0.24, textAlign: 'center' },
 
     scrollView: { flex: 1 },
     scrollContent: { paddingHorizontal: Spacing.md, paddingTop: Spacing.lg, paddingBottom: Spacing.xl },

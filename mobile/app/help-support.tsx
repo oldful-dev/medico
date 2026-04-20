@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
     TextInput, Modal, Alert, ActivityIndicator, Linking,
@@ -94,7 +94,6 @@ export default function HelpSupportScreen() {
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Help & Support</Text>
-                <View style={{ width: 34 }} />
             </View>
 
             <View style={styles.contentCard}>
@@ -317,7 +316,7 @@ const styles = StyleSheet.create({
     backButton:  { padding: Spacing.xs },
     headerTitle: {
         flex: 1, fontFamily: Fonts.semiBold, fontSize: FontSize.heading2,
-        color: Colors.textWhite, textAlign: 'center', letterSpacing: -0.24,
+        color: Colors.textWhite, textAlign: "left", marginLeft: 12, letterSpacing: -0.24,
     },
     contentCard: {
         flex: 1, backgroundColor: Colors.bgScreen,

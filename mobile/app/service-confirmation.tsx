@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
     View,
     Text,
@@ -185,7 +185,6 @@ export default function ServiceConfirmationScreen() {
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{loading ? 'Fetching Booking...' : 'Booking Confirmed'}</Text>
-                <View style={{ width: 34 }} />
             </View>
 
             {/* ─── Content Card ─── */}
@@ -383,7 +382,7 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.heading2,
         color: Colors.textWhite,
-        textAlign: 'center',
+        textAlign: "left", marginLeft: 12,
         letterSpacing: -0.24,
     },
 

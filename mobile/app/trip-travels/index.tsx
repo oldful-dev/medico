@@ -122,7 +122,6 @@ export default function TripTravelsScreen() {
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Trip & Travells</Text>
-                <View style={{ width: 40 }} />
             </View>
 
             <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
@@ -306,7 +305,7 @@ const styles = StyleSheet.create({
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
         color: '#FFFFFF',
-        textAlign: 'center',
+        textAlign: 'left', marginLeft: 12,
         letterSpacing: -0.24,
     },
 
@@ -562,7 +561,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#02743F',
         borderRadius: 22.5,
         height: 45,
-        width: 281,
+        width: 230,
         alignSelf: 'center',
         justifyContent: 'center',
         alignItems: 'center',

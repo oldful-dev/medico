@@ -68,39 +68,38 @@ export default function EditProfileScreen() {
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Edit Profile</Text>
-                    <View style={{ width: 24 }} />
                 </View>
             </SafeAreaView>
 
             <KeyboardAwareScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} enableOnAndroid={true} extraScrollHeight={20} keyboardShouldPersistTaps="handled">
 
-                    <Text style={styles.label}>Full Name *</Text>
-                    <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Enter your name" placeholderTextColor="#898989" />
+                <Text style={styles.label}>Full Name *</Text>
+                <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Enter your name" placeholderTextColor="#898989" />
 
-                    <Text style={styles.label}>Email</Text>
-                    <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="Enter your email" placeholderTextColor="#898989" keyboardType="email-address" autoCapitalize="none" />
+                <Text style={styles.label}>Email</Text>
+                <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="Enter your email" placeholderTextColor="#898989" keyboardType="email-address" autoCapitalize="none" />
 
-                    <Text style={styles.label}>Phone (Read Only)</Text>
-                    <TextInput style={[styles.input, styles.inputDisabled]} value={profile?.phone || ''} editable={false} />
+                <Text style={styles.label}>Phone (Read Only)</Text>
+                <TextInput style={[styles.input, styles.inputDisabled]} value={profile?.phone || ''} editable={false} />
 
-                    <Text style={styles.label}>Gender</Text>
-                    <View style={styles.genderRow}>
-                        {GENDER_OPTIONS.map(g => (
-                            <TouchableOpacity key={g} style={[styles.genderBtn, gender === g && styles.genderBtnActive]} onPress={() => setGender(g)}>
-                                <Text style={[styles.genderText, gender === g && styles.genderTextActive]}>{g}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
+                <Text style={styles.label}>Gender</Text>
+                <View style={styles.genderRow}>
+                    {GENDER_OPTIONS.map(g => (
+                        <TouchableOpacity key={g} style={[styles.genderBtn, gender === g && styles.genderBtnActive]} onPress={() => setGender(g)}>
+                            <Text style={[styles.genderText, gender === g && styles.genderTextActive]}>{g}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
 
-                    <Text style={styles.label}>Date of Birth (YYYY-MM-DD)</Text>
-                    <TextInput style={styles.input} value={dateOfBirth} onChangeText={setDateOfBirth} placeholder="e.g. 1960-05-15" placeholderTextColor="#898989" />
+                <Text style={styles.label}>Date of Birth (YYYY-MM-DD)</Text>
+                <TextInput style={styles.input} value={dateOfBirth} onChangeText={setDateOfBirth} placeholder="e.g. 1960-05-15" placeholderTextColor="#898989" />
 
-                    <Text style={styles.label}>Preferred Language</Text>
-                    <TextInput style={styles.input} value={preferredLanguage} onChangeText={setPreferredLanguage} placeholder="en, kn, hi, ta, te" placeholderTextColor="#898989" />
+                <Text style={styles.label}>Preferred Language</Text>
+                <TextInput style={styles.input} value={preferredLanguage} onChangeText={setPreferredLanguage} placeholder="en, kn, hi, ta, te" placeholderTextColor="#898989" />
 
-                    <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving} activeOpacity={0.7}>
-                        {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
-                    </TouchableOpacity>
+                <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving} activeOpacity={0.7}>
+                    {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
+                </TouchableOpacity>
             </KeyboardAwareScrollView>
         </View>
     );
@@ -109,9 +108,9 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: Colors.primary },
     headerSafe: { backgroundColor: Colors.primary },
-    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-    backBtn: { padding: 4 },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: Colors.textWhite },
+    headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
+    backBtn: { padding: 4, marginRight: 8 },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: Colors.textWhite, flex: 1 },
     scrollView: { flex: 1, backgroundColor: '#FFFFE3', borderTopLeftRadius: 30, borderTopRightRadius: 30 },
     scrollContent: { padding: 20, paddingBottom: 60 },
     label: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: Colors.textDark, marginBottom: 6, marginTop: 16 },

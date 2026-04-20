@@ -118,21 +118,21 @@ const bookLabTest = async (req, res, next) => {
 
         // Validate required fields
         const missing = [];
-        if (!booking_date)                                    missing.push('booking_date');
-        if (!collection_date)                                 missing.push('collection_date');
-        if (collection_slot === undefined)                    missing.push('collection_slot');
-        if (!package_code || !package_code.length)           missing.push('package_code');
-        if (!customer_name)                                   missing.push('customer_name');
-        if (!customer_age)                                    missing.push('customer_age');
-        if (!customer_gender)                                 missing.push('customer_gender');
-        if (!customer_phonenumber)                            missing.push('customer_phonenumber');
-        if (!customer_whatsapppnumber)                        missing.push('customer_whatsapppnumber');
-        if (!customer_address)                                missing.push('customer_address');
-        if (!customer_landmark)                               missing.push('customer_landmark');
-        if (!pincode)                                         missing.push('pincode');
-        if (is_credit === undefined || is_credit === null)    missing.push('is_credit');
-        if (!customer_latitude)                               missing.push('customer_latitude');
-        if (!customer_longitude)                              missing.push('customer_longitude');
+        if (!booking_date) missing.push('booking_date');
+        if (!collection_date) missing.push('collection_date');
+        if (collection_slot === undefined) missing.push('collection_slot');
+        if (!package_code || !package_code.length) missing.push('package_code');
+        if (!customer_name) missing.push('customer_name');
+        if (!customer_age) missing.push('customer_age');
+        if (!customer_gender) missing.push('customer_gender');
+        if (!customer_phonenumber) missing.push('customer_phonenumber');
+        if (!customer_whatsapppnumber) missing.push('customer_whatsapppnumber');
+        if (!customer_address) missing.push('customer_address');
+        if (!customer_landmark) missing.push('customer_landmark');
+        if (!pincode) missing.push('pincode');
+        if (is_credit === undefined || is_credit === null) missing.push('is_credit');
+        if (!customer_latitude) missing.push('customer_latitude');
+        if (!customer_longitude) missing.push('customer_longitude');
 
         if (missing.length) {
             return sendResponse(res, 400, null, `Missing required fields: ${missing.join(', ')}`);
@@ -195,7 +195,7 @@ const getLabBookingStatus = async (req, res, next) => {
         // If it starts with LAB-, it's our internal client reference
         if (id.startsWith('LAB-')) {
             params.client_ref_id = id;
-        } 
+        }
         // If it's pure numeric, it's the Redcliffe internal ID
         else if (/^\d+$/.test(id)) {
             params.booking_id = parseInt(id);

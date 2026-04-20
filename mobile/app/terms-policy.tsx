@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -35,7 +35,6 @@ export default function TermsPolicyScreen() {
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Policies & Legal</Text>
-                <View style={{ width: 34 }} />
             </View>
 
             <View style={styles.contentCard}>
@@ -189,7 +188,7 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.heading2,
         color: Colors.textWhite,
-        textAlign: 'center',
+        textAlign: "left", marginLeft: 12,
         letterSpacing: -0.24,
     },
     contentCard: {

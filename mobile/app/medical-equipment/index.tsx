@@ -74,18 +74,19 @@ export default function MedicalEquipmentScreen() {
             <StatusBar style="dark" />
 
             <View style={styles.container}>
-                {/* ─── Header ─── */}
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color="#02743F" />
-                    </TouchableOpacity>
+                <View style={styles.headerContainer}>
+                    <View style={styles.headerRow}>
+                        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                            <Ionicons name="arrow-back" size={24} color="#02743F" />
+                        </TouchableOpacity>
+                        <View style={styles.headerTextCol}>
+                            <Text style={styles.headerTitle}>Rent Medical Equipment</Text>
+                            <Text style={styles.headerSubtitle}>Wheelchairs, Beds, and Oxygen on rent.</Text>
+                        </View>
+                    </View>
                 </View>
 
                 <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
-
-                    {/* ─── Titles ─── */}
-                    <Text style={styles.title}>Rent Medical Equipment</Text>
-                    <Text style={styles.subtitle}>Wheelchairs, Hospital Beds, and Oxygen on rent.</Text>
 
                     {/* ─── Select Equipment Section ─── */}
                     <View style={styles.sectionCardTintedDark}>
@@ -201,33 +202,33 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
 
-    /* ─── Header ─── */
-    header: {
+    headerContainer: {
+        backgroundColor: '#FFFFE3', // Cream background for this one
+    },
+    headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingTop: 10,
-        marginBottom: 10,
+        paddingBottom: 20,
     },
     backButton: {
-        padding: 8,
+        padding: 4,
     },
-
-    /* ─── Typography ─── */
-    title: {
+    headerTextCol: {
+        flex: 1,
+        marginLeft: 12,
+    },
+    headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#02743F', // Dark green matching Figma
-        textAlign: 'center',
-        marginBottom: 8,
+        color: '#02743F',
         letterSpacing: -0.24,
     },
-    subtitle: {
+    headerSubtitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 12,
         color: '#2F2F2F',
-        textAlign: 'center',
-        marginBottom: 20,
         letterSpacing: -0.24,
     },
 
@@ -393,8 +394,7 @@ const styles = StyleSheet.create({
     },
     confirmButton: {
         backgroundColor: '#02743F',
-        width: '100%',
-        maxWidth: 320,
+        width: 230,
         height: 48,
         borderRadius: 24,
         justifyContent: 'center',

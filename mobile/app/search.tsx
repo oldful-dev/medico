@@ -1,4 +1,4 @@
-// Search Screen - Global search across all services
+﻿// Search Screen - Global search across all services
 import React from 'react';
 import {
     View,
@@ -93,7 +93,6 @@ export default function SearchScreen() {
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Search</Text>
-                <View style={{ width: 34 }} />
             </View>
 
             <View style={styles.contentCard}>
@@ -215,7 +214,7 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#048357' },
     header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 20, paddingTop: 10 },
     backButton: { padding: 5 },
-    headerTitle: { flex: 1, fontFamily: 'Poppins_600SemiBold', fontSize: 20, color: '#FFFFFF', textAlign: 'center' },
+    headerTitle: { flex: 1, fontFamily: 'Poppins_600SemiBold', fontSize: 20, color: '#FFFFFF', textAlign: 'left', marginLeft: 12 },
     contentCard: { flex: 1, backgroundColor: '#FDFDE8', borderTopLeftRadius: 45, borderTopRightRadius: 45, overflow: 'hidden' },
     searchBarContainer: { paddingHorizontal: 20, paddingTop: 28 },
     searchBar: {

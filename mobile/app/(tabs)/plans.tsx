@@ -53,7 +53,6 @@ export default function PlansScreen() {
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </View>
                 <Text style={styles.headerTitle}>{t('plans.tab_title')}</Text>
-                <View style={{ width: 40 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -78,7 +77,7 @@ export default function PlansScreen() {
                         const currentDuration = activeDuration[plan.id] ?? plan.active_duration_label;
                         return (
                             <View key={plan.id} style={styles.planCard}>
-                                <Text style={[styles.planCardTitle, { color: plan.accent_color }]}>
+                                <Text style={[styles.planCardTitle, { color: plan.accent_color }, plan.id === 'care_plan' && { color: '#000000' }]}>
                                     {plan.name}
                                 </Text>
 
@@ -121,8 +120,8 @@ export default function PlansScreen() {
                                 <View style={styles.planFeatures}>
                                     {plan.features.map((feature, i) => (
                                         <View key={i} style={styles.featureItem}>
-                                            <Ionicons name="checkmark-outline" size={14} color={plan.accent_color} style={styles.featureCheck} />
-                                            <Text style={[styles.featureText, { color: Colors.textBody }]}>{feature}</Text>
+                                            <Ionicons name="checkmark-outline" size={14} color={plan.id === 'care_plan' ? '#000000' : plan.accent_color} style={styles.featureCheck} />
+                                            <Text style={[styles.featureText, { color: Colors.textBody }, plan.id === 'care_plan' && { color: '#000000' }]}>{feature}</Text>
                                         </View>
                                     ))}
                                 </View>
@@ -169,13 +168,13 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: Colors.bgScreen },
 
     headerContainer: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.primary,
-        paddingHorizontal: Spacing.lg, paddingBottom: 25, paddingTop: 10,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.primary,
+        paddingHorizontal: Spacing.lg, paddingBottom: 25, paddingTop: 10, position: 'relative'
     },
-    backButtonPlaceholder: { padding: 5, opacity: 0 },
+    backButtonPlaceholder: { position: 'absolute', left: 20, padding: 5, opacity: 0 },
     headerTitle: {
-        flex: 1, fontFamily: Fonts.semiBold, fontSize: FontSize.heading2,
-        color: Colors.textWhite, textAlign: 'center', letterSpacing: -0.24,
+        fontFamily: Fonts.semiBold, fontSize: FontSize.heading2,
+        color: Colors.textWhite, textAlign: "center", letterSpacing: -0.24,
     },
     scrollContent: { paddingBottom: 110 },
 
@@ -185,10 +184,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center',
         paddingVertical: 10, paddingHorizontal: 12, marginTop: 15, marginBottom: 20,
     },
-    heartPulseIcon:     { width: 65, height: 48, marginRight: 10 },
-    bannerTextContainer:{ flex: 1, justifyContent: 'center' },
-    bannerTitle:        { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark },
-    bannerSubtitle:     { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textBody, marginTop: 2 },
+    heartPulseIcon: { width: 65, height: 48, marginRight: 10 },
+    bannerTextContainer: { flex: 1, justifyContent: 'center' },
+    bannerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark },
+    bannerSubtitle: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textBody, marginTop: 2 },
 
     plansScrollContainer: { paddingHorizontal: Spacing.lg, paddingBottom: 25, gap: Spacing.lg },
     planCard: {
@@ -210,13 +209,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.sm, marginBottom: Spacing.md, overflow: 'hidden',
     },
     priceBackground: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-    priceText:   { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: Colors.textWhite },
+    priceText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: Colors.textWhite },
     priceSuffix: { fontFamily: Fonts.regular, fontWeight: 'normal' },
 
     planFeatures: { marginBottom: 15 },
-    featureItem:  { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
+    featureItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
     featureCheck: { marginRight: 6, marginTop: 2 },
-    featureText:  { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, flex: 1, lineHeight: 14 },
+    featureText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, flex: 1, lineHeight: 14 },
 
     planActionButton: { borderRadius: 6, height: 25, justifyContent: 'center', alignItems: 'center', marginTop: 'auto' },
     planActionText: { fontFamily: Fonts.medium, fontSize: FontSize.caption, color: Colors.textWhite },
@@ -229,10 +228,10 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.bgCard, borderRadius: Radius.xl * 2,
         marginHorizontal: Spacing.lg, padding: Spacing.xl, ...Shadow.card,
     },
-    benefitRow:       { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 18 },
-    benefitIconBox:   { width: 35, height: 35, alignItems: 'center', marginRight: 10 },
-    benefitIcon:      { width: 25, height: 25 },
+    benefitRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 18 },
+    benefitIconBox: { width: 35, height: 35, alignItems: 'center', marginRight: 10 },
+    benefitIcon: { width: 25, height: 25 },
     benefitTextGroup: { flex: 1, justifyContent: 'center' },
-    benefitTitle:     { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textBody, marginBottom: 4 },
-    benefitDesc:      { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textMuted, lineHeight: 18 },
+    benefitTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textBody, marginBottom: 4 },
+    benefitDesc: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textMuted, lineHeight: 18 },
 });
