@@ -67,10 +67,10 @@ const transformToRedcliffePayload = (order, type) => {
 
         if (order.additionalMembers && order.additionalMembers.length > 0) {
             payload.additional_member = order.additionalMembers.map(m => ({
-                customerName: m.name,
-                customerAge: String(m.age),
-                customerGender: m.gender.toLowerCase(),
-                packageCode: m.packages.map(p => p.code)
+                customer_name: m.name,
+                customer_age: String(m.age),
+                customer_gender: m.gender.toLowerCase(),
+                packages: m.packages.map(p => p.code)
             }));
         } else {
             payload.additional_member = [];
@@ -158,28 +158,17 @@ exports.getPackages = async (search = '') => {
 };
 
 const getFallbackPackages = () => [
-    { code: "FB01", name: "Smart Full Body Checkup", cost: 1299, discounted_cost: 999, tests_count: 84, fasting: true },
-    { code: "SU02", name: "Sugar (Fasting)", cost: 249, discounted_cost: 199, tests_count: 1, fasting: true },
-    { code: "LP03", name: "Lipid Profile", cost: 799, discounted_cost: 599, tests_count: 7, fasting: true },
-    { code: "TH04", name: "Thyroid Profile", cost: 599, discounted_cost: 499, tests_count: 3, fasting: false }
+    { code: "PL70", name: "Smart Full Body + HbA1c", cost: 1299, discounted_cost: 999, tests_count: 85, fasting: true },
+    { code: "CAMP015", name: "HbA1C (Glycated Hemoglobin)", cost: 499, discounted_cost: 399, tests_count: 1, fasting: false },
+    { code: "BC035", name: "HBA1C Test", cost: 449, discounted_cost: 349, tests_count: 1, fasting: false },
+    { code: "CAMP180", name: "Aarogyam C", cost: 799, discounted_cost: 649, tests_count: 46, fasting: true },
+    { code: "CAMP059", name: "Aarogyam 1.3", cost: 999, discounted_cost: 799, tests_count: 72, fasting: true }
 ];
 
 exports.getPackageDetails = async (code) => {
-    // Fallback for our demo codes
-    if (FALLBACK_CODES.includes(code)) {
-        const pkg = getFallbackPackages().find(p => p.code === code);
-        return {
-            status: 'success',
-            data: {
-                ...pkg,
-                parameters: [{ name: "Demo Parameter", unit: "mg/dL", reference_range: "70-100" }]
-            }
-        };
-    }
-
     try {
         const response = await client.get(`/api/external/v2/package-parameter-data/`, {
-            params: { package_code: code }
+            params: { code }
         });
         return response.data;
     } catch (error) {
@@ -188,22 +177,9 @@ exports.getPackageDetails = async (code) => {
     }
 };
 
-const FALLBACK_CODES = ['FB01', 'SU02', 'LP03', 'TH04'];
-
 exports.holdBooking = async (orderData, type = 'HOME') => {
     try {
         const payload = transformToRedcliffePayload(orderData, type);
-
-        // Demo Bypass: If we are using fallback tests, return a mock success
-        const hasFallback = orderData.packages.some(p => FALLBACK_CODES.includes(p.code));
-        if (hasFallback) {
-            logger.info(`🚨 [Redcliffe] DEMO MODE: Bypassing real API call for fallback packages.`);
-            return {
-                status: 'success',
-                booking_id: `DEMO-${Math.floor(Math.random() * 1000000)}`,
-                message: 'Demo slot reserved successfully'
-            };
-        }
 
         const endpoint = type === 'DROP_OFF'
             ? '/api/external/v2/dropoff-create-booking/'
@@ -246,25 +222,8 @@ exports.confirmBooking = async (bookingId) => {
 };
 
 exports.getBookingStatus = async (params) => {
-    // Identify the ID from any of the possible param names
-    const bid = String(params.booking_id || params.client_ref_id || params.order_id || "");
-
-    if (bid.startsWith('DEMO-')) {
-        logger.info(`🚨 [Redcliffe] DEMO MODE: Returning mock status for ${bid}`);
-        return {
-            status: 'success',
-            data: [{
-                booking_id: bid,
-                booking_status: 'Scheduled',
-                phlebo_name: 'John Doe (Demo)',
-                phlebo_mobile: '9876543210',
-                message: 'Demo booking is active'
-            }]
-        };
-    }
-
     try {
-        const res = await client.get(`/api/external/v2/center-get-booking`, {
+        const res = await client.get(`/api/external/v2/center-get-booking/`, {
             params,
             headers: { 'key': API_KEY }
         });
@@ -287,11 +246,8 @@ exports.getBookingStatus = async (params) => {
 };
 
 exports.getDigitalReport = async (bookingId) => {
-    if (String(bookingId).startsWith('DEMO-')) {
-        return { status: 'success', data: { message: "Demo results: Hemoglobin 14.5, Sugar 90" } };
-    }
     try {
-        const res = await client.get(`/api/external/v2/get-digital-report/${bookingId}`);
+        const res = await client.get(`/api/external/v2/get-digital-report/${bookingId}/`);
         return res.data;
     } catch (error) {
         logger.error(`[Redcliffe] getDigitalReport error: ${error.message}`);
@@ -300,11 +256,8 @@ exports.getDigitalReport = async (bookingId) => {
 };
 
 exports.getConsolidatedReport = async (bookingId) => {
-    if (String(bookingId).startsWith('DEMO-')) {
-        throw new Error("Demo Report: Reports are usually available within 24 hours of collection.");
-    }
     try {
-        const res = await client.get(`/api/external/v2/get-consolidated-report/${bookingId}`);
+        const res = await client.get(`/api/external/v2/get-consolidated-report/${bookingId}/`);
         return res.data;
     } catch (error) {
         logger.error(`[Redcliffe] getConsolidatedReport error: ${error.message}`);

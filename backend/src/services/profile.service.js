@@ -34,17 +34,45 @@ const getProfiles = async ({ role, search, specialization, sortBy = 'createdAt',
     const skip = (page - 1) * limit;
     const isManagement = role === 'management';
     
-    const where = {};
-    if (search) {
-        where.OR = [
-            { name: { contains: search, mode: 'insensitive' } },
-            { phone: { contains: search } },
-            { email: { contains: search, mode: 'insensitive' } },
-        ];
+    // ── Build Structured Query ──
+    const where = { AND: [] };
+
+    // 1. Search Filter (Cross-field OR)
+    if (search && search.trim()) {
+        const term = search.trim();
+        where.AND.push({
+            OR: [
+                { name: { contains: term, mode: 'insensitive' } },
+                { phone: { contains: term } },
+                { email: { contains: term, mode: 'insensitive' } },
+            ]
+        });
     }
 
-    if (!isManagement && specialization) {
-        where.specialization = specialization;
+    // 2. Specialized Tab/Role Filters
+    if (isManagement) {
+        // No specific role filter for management tab yet, 
+        // as we query the Admin model directly below.
+    } else {
+        const roleFilters = [];
+        if (role === 'doctor') {
+            roleFilters.push({ specialization: { contains: 'Doctor', mode: 'insensitive' } });
+        } else if (role === 'nurse') {
+            roleFilters.push({ specialization: { contains: 'Nurse', mode: 'insensitive' } });
+        } else if (role === 'caregiver') {
+            // Exclude Doctors and Nurses
+            roleFilters.push({ specialization: { not: { contains: 'Doctor' }, mode: 'insensitive' } });
+            roleFilters.push({ specialization: { not: { contains: 'Nurse' }, mode: 'insensitive' } });
+        }
+
+        // 3. User-selected Specialization Filter (Dropdown)
+        if (specialization) {
+            roleFilters.push({ specialization: specialization });
+        }
+
+        if (roleFilters.length > 0) {
+            where.AND.push(...roleFilters);
+        }
     }
 
     const queryOptions = {
@@ -65,19 +93,6 @@ const getProfiles = async ({ role, search, specialization, sortBy = 'createdAt',
             prisma.admin.count({ where })
         ]);
     } else {
-        // Query Caregivers with strict role segregation
-        if (role === 'doctor') {
-            where.specialization = { contains: 'Doctor', mode: 'insensitive' };
-        } else if (role === 'nurse') {
-            where.specialization = { contains: 'Nurse', mode: 'insensitive' };
-        } else if (role === 'caregiver') {
-            // Exclude Doctors and Nurses from the Caregiver view
-            where.AND = [
-                { specialization: { not: { contains: 'Doctor' }, mode: 'insensitive' } },
-                { specialization: { not: { contains: 'Nurse' }, mode: 'insensitive' } }
-            ];
-        }
-        
         [items, total] = await Promise.all([
             prisma.caregiver.findMany(queryOptions),
             prisma.caregiver.count({ where })

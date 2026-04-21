@@ -38,8 +38,9 @@ export default function LabTestBooking() {
     const [selectedPackage, setSelectedPackage] = useState<LabPackage | null>(null);
     const [bookingDate, setBookingDate] = useState('');
     const [selectedSlot, setSelectedSlot] = useState<LabSlot | null>(null);
-    const [address, setAddress] = useState('Home: 12th Main, Indiranagar, Bangalore');
-    const [pincode, setPincode] = useState('560037');
+    const [address, setAddress] = useState('');
+    const [pincode, setPincode] = useState('');
+    const [serviceability, setServiceability] = useState<'unchecked' | 'checking' | 'serviceable' | 'non-serviceable'>('unchecked');
 
     const [showFastingAlert, setShowFastingAlert] = useState(false);
     const [fastingAcknowledged, setFastingAcknowledged] = useState(false);
@@ -48,17 +49,54 @@ export default function LabTestBooking() {
     const [showAddressPicker, setShowAddressPicker] = useState(false);
     const [patientPhone, setPatientPhone] = useState(user?.phone || '');
 
+    const reverseGeocode = async (lat: string, long: string) => {
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${long}`);
+            const data = await res.json();
+            if (data?.display_name) {
+                setAddress(data.display_name);
+                const postcode = data.address?.postcode;
+                if (postcode) setPincode(postcode);
+            }
+        } catch {
+            // silently fail — user can type manually
+        }
+    };
+
+    const checkServiceability = async (lat: string, long: string) => {
+        setServiceability('checking');
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://oldful.onrender.com/api'}/labs/serviceability?lat=${lat}&lng=${long}`);
+            const data = await res.json();
+            // Backend returns { success: true, data: { status: 'success'|'failure', message: '...' } }
+            const status = data?.data?.status;
+            setServiceability(status === 'success' ? 'serviceable' : 'non-serviceable');
+        } catch {
+            setServiceability('unchecked');
+        }
+    };
+
+    const updateAddressFromStored = (addr: { label?: string; line1: string; cityName?: string; pincode?: string; lat?: string; long?: string }) => {
+        const label = addr.label || 'Saved Address';
+        setAddress(`${label}: ${addr.line1}${addr.cityName ? ', ' + addr.cityName : ''}`);
+        setPincode(addr.pincode || '');
+        const newCoords = { lat: addr.lat || "12.9716", long: addr.long || "77.5946" };
+        setCoords(newCoords);
+        checkServiceability(newCoords.lat, newCoords.long);
+    };
+
     useEffect(() => {
         fetchPackages();
-        
-        // Initial Location logic
-        if (navigator.geolocation) {
+
+        // Initial Location logic — auto-fill address if user has no saved addresses
+        if (navigator.geolocation && !(user?.addresses?.length)) {
             navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    setCoords({ 
-                        lat: pos.coords.latitude.toString(), 
-                        long: pos.coords.longitude.toString() 
-                    });
+                async (pos) => {
+                    const lat = pos.coords.latitude.toString();
+                    const long = pos.coords.longitude.toString();
+                    setCoords({ lat, long });
+                    await reverseGeocode(lat, long);
+                    checkServiceability(lat, long);
                 },
                 (err) => {
                     console.log('Geolocation skipped:', err);
@@ -74,18 +112,32 @@ export default function LabTestBooking() {
         if (user?.phone) {
             setPatientPhone(user.phone.replace('+91', ''));
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
-
-    const updateAddressFromStored = (addr: { label?: string; line1: string; cityName?: string; pincode?: string }) => {
-        const label = addr.label || 'Saved Address';
-        setAddress(`${label}: ${addr.line1}${addr.cityName ? ', ' + addr.cityName : ''}`);
-        setPincode(addr.pincode || '');
-        setCoords({ lat: "12.9716", long: "77.5946" }); // Default to BLR center if addr has no coords
-    };
 
     useEffect(() => {
         if (bookingDate) fetchSlots();
     }, [bookingDate]);
+
+    useEffect(() => {
+        if (pincode.length !== 6) return;
+        const timer = setTimeout(async () => {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&postalcode=${pincode}&countrycodes=in&limit=1`);
+                const data = await res.json();
+                if (data?.[0]) {
+                    const lat = data[0].lat;
+                    const long = data[0].lon;
+                    setCoords({ lat, long });
+                    checkServiceability(lat, long);
+                }
+            } catch {
+                // silently fail
+            }
+        }, 600);
+        return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pincode]);
 
     const fetchPackages = async () => {
         setLoading(true);
@@ -120,6 +172,21 @@ export default function LabTestBooking() {
         }
 
         setBookingLoading(true);
+
+        // Re-check serviceability at booking time in case coords changed without a check
+        try {
+            const svcRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://oldful.onrender.com/api'}/labs/serviceability?lat=${coords.lat}&lng=${coords.long}`);
+            const svcData = await svcRes.json();
+            if (svcData?.data?.status !== 'success') {
+                toast.error('Home collection is not available at your location. Please update your address.');
+                setServiceability('non-serviceable');
+                setBookingLoading(false);
+                return;
+            }
+            setServiceability('serviceable');
+        } catch {
+            // Network error — let booking proceed rather than blocking
+        }
         try {
             const payload = {
                 bookingType: 'HOME' as const,
@@ -129,24 +196,24 @@ export default function LabTestBooking() {
                     gender: 'Male',
                     phone: patientPhone || user?.phone || '',
                 },
-                address: { lat: "12.9716", long: "77.5946", pincode, line1: address },
+                address: { lat: coords.lat, long: coords.long, pincode, line1: address },
                 packages: [{ code: selectedPackage.code, name: selectedPackage.name, cost: selectedPackage.discounted_cost || selectedPackage.cost }],
                 slot: { date: bookingDate, time: selectedSlot.slot || selectedSlot.slot_time || '', slotId: selectedSlot.slot_id }
             };
 
             const res = await labService.holdBooking(payload);
             if (res.success) {
-                // Prepare Cart Item for Razorpay Checkout
-                const totalPayable = (selectedPackage.discounted_cost || selectedPackage.cost || 0) * 1.18 + 50;
-                
+                // Store raw discounted price — checkout applies GST + service fee on top
+                const basePrice = selectedPackage.discounted_cost || selectedPackage.cost || 0;
+
                 // Clear existing items (since lab booking is single-item checkout for now)
                 clearCart();
-                
+
                 addItem({
                   type: 'service',
-                  serviceId: 'blood-test', // Slug used in backend to identify lab bookings
+                  serviceId: 'blood-test',
                   name: selectedPackage.name,
-                  price: totalPayable,
+                  price: basePrice,
                   redcliffeBookingId: res.data?.order?.redcliffeBookingId,
                   clientRefId: res.data?.order?.clientRefId,
                   slot: payload.slot,
@@ -325,12 +392,15 @@ export default function LabTestBooking() {
                                     if (navigator.geolocation) {
                                         toast.info("Detecting your location...");
                                         navigator.geolocation.getCurrentPosition(
-                                            (pos) => {
-                                                setCoords({ lat: pos.coords.latitude.toString(), long: pos.coords.longitude.toString() });
-                                                setAddress('Using My Current Location...');
+                                            async (pos) => {
+                                                const lat = pos.coords.latitude.toString();
+                                                const long = pos.coords.longitude.toString();
+                                                setCoords({ lat, long });
+                                                await reverseGeocode(lat, long);
+                                                checkServiceability(lat, long);
                                                 toast.success("Location detected!");
                                             },
-                                            (err) => toast.error("Could not detect location. Please enter manually."),
+                                            () => toast.error("Could not detect location. Please enter manually."),
                                             { enableHighAccuracy: true, timeout: 10000 }
                                         );
                                     }
@@ -375,10 +445,24 @@ export default function LabTestBooking() {
                             placeholder="Collection Contact"
                         />
                     </div>
-                    <div className="bg-emerald-50 text-emerald-600 px-4 h-14 rounded-xl flex items-center gap-2 border border-emerald-100 mt-4">
-                        <Zap className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Pin Serve-able</span>
-                    </div>
+                    {serviceability === 'checking' && (
+                        <div className="bg-gray-50 text-gray-500 px-4 h-14 rounded-xl flex items-center gap-2 border border-gray-100 mt-4">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Checking serviceability...</span>
+                        </div>
+                    )}
+                    {serviceability === 'serviceable' && (
+                        <div className="bg-emerald-50 text-emerald-600 px-4 h-14 rounded-xl flex items-center gap-2 border border-emerald-100 mt-4">
+                            <Zap className="w-4 h-4" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Location is serviceable</span>
+                        </div>
+                    )}
+                    {serviceability === 'non-serviceable' && (
+                        <div className="bg-red-50 text-red-600 px-4 h-14 rounded-xl flex items-center gap-2 border border-red-100 mt-4">
+                            <AlertCircle className="w-4 h-4" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Sorry, home collection not available at this location</span>
+                        </div>
+                    )}
                 </motion.div>
 
             </div>
@@ -407,7 +491,7 @@ export default function LabTestBooking() {
                     
                     <button 
                         onClick={handleHoldBooking}
-                        disabled={!selectedSlot || bookingLoading || loading}
+                        disabled={!selectedSlot || bookingLoading || loading || serviceability === 'non-serviceable' || serviceability === 'checking'}
                         className="flex-1 sm:flex-none sm:min-w-[300px] h-14 bg-[var(--color-primary-deep)] text-white rounded-2xl font-black shadow-xl shadow-emerald-900/20 active:scale-[0.98] transition-all disabled:opacity-30 disabled:scale-100 flex items-center justify-center gap-3"
                     >
                         {bookingLoading ? (
@@ -507,11 +591,14 @@ export default function LabTestBooking() {
                                 <button 
                                     onClick={() => {
                                         if (navigator.geolocation) {
-                                            navigator.geolocation.getCurrentPosition((pos) => {
-                                                setCoords({ lat: pos.coords.latitude.toString(), long: pos.coords.longitude.toString() });
-                                                setAddress('Using Precise Current Location...');
-                                                setPincode(''); // User should enter pincode or we could reverse geocode
-                                            }, (err) => {
+                                            navigator.geolocation.getCurrentPosition(async (pos) => {
+                                                const lat = pos.coords.latitude.toString();
+                                                const long = pos.coords.longitude.toString();
+                                                setCoords({ lat, long });
+                                                await reverseGeocode(lat, long);
+                                                checkServiceability(lat, long);
+                                                toast.success("Location detected!");
+                                            }, () => {
                                                 toast.error("Location access failed. Please enter manually.");
                                             }, { timeout: 10000 });
                                         }

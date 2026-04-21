@@ -60,12 +60,11 @@ function CheckoutContent() {
      };
   }, []);
 
-  // ─── Precision Rounding (Fixes .333333 to .33) ─────────────────────────
-  const subtotal = items.reduce((acc, item) => acc + item.price, 0);
-  const taxes = subtotal * 0.18;
-  const rawTotal = subtotal + taxes + (isSubscription ? 0 : 50);
-  // Ensure we round to exactly 2 decimals
-  const total = parseFloat(rawTotal.toFixed(2));
+  // ─── Price Breakdown ────────────────────────────────────────────────────
+  const subtotal = parseFloat(items.reduce((acc, item) => acc + item.price, 0).toFixed(2));
+  const gst = parseFloat((subtotal * 0.18).toFixed(2));
+  const serviceFee = isSubscription ? 0 : 50;
+  const total = parseFloat((subtotal + gst + serviceFee).toFixed(2));
 
   const handlePayment = async () => {
     if (!user) {
@@ -226,10 +225,42 @@ function CheckoutContent() {
 
       <div className="px-4 flex flex-col gap-6 max-w-xl mx-auto w-full text-center">
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-emerald-500/20">
-           <span className="text-sm text-gray-500 font-medium tracking-wide flex items-center justify-center gap-2">
-             <ShieldCheck className="w-4 h-4 text-emerald-500" /> Secure Payment Summary
-           </span>
-            <span className="text-4xl font-extrabold text-gray-900 mt-2 block">₹{formatPrice(total)}</span>
+          <span className="text-sm text-gray-500 font-medium tracking-wide flex items-center justify-center gap-2 mb-4">
+            <ShieldCheck className="w-4 h-4 text-emerald-500" /> Secure Payment Summary
+          </span>
+
+          {/* Line items */}
+          <div className="space-y-2 text-sm mb-4">
+            {items.map((item, i) => (
+              <div key={i} className="flex justify-between text-gray-700">
+                <span className="font-medium truncate pr-4">{item.name}</span>
+                <span className="font-semibold shrink-0">₹{formatPrice(item.price)}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Calculation breakdown */}
+          <div className="border-t border-dashed border-gray-100 pt-3 space-y-1.5">
+            <div className="flex justify-between text-xs text-gray-400">
+              <span>Subtotal</span>
+              <span>₹{formatPrice(subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-xs text-gray-400">
+              <span>GST (18%)</span>
+              <span>₹{formatPrice(gst)}</span>
+            </div>
+            {serviceFee > 0 && (
+              <div className="flex justify-between text-xs text-gray-400">
+                <span>Service Fee</span>
+                <span>₹{formatPrice(serviceFee)}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-gray-100 mt-3 pt-3 flex justify-between items-baseline">
+            <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total</span>
+            <span className="text-3xl font-extrabold text-gray-900">₹{formatPrice(total)}</span>
+          </div>
         </div>
 
         <div className="text-left">

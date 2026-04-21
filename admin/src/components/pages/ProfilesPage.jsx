@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { 
     Search, Filter, Plus, 
-    CheckCircle2, AlertCircle, Clock, Trash2, Edit2, X, Shield, HeartPulse, User, Download, Save, ChevronDown, ChevronUp, Users
+    CheckCircle2, AlertCircle, Clock, Trash2, Edit2, X, Shield, HeartPulse, User, Download, Save, ChevronDown, ChevronUp, Users,
+    Eye, EyeOff
 } from "lucide-react";
 import { profilesAPI, cityAPI } from "@/lib/api";
 import { showToast, formatDate } from "@/lib/hooks";
@@ -34,6 +35,7 @@ export default function ProfilesPage() {
 
     // ── Interaction State ──────────────────────────────
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [editingProfile, setEditingProfile] = useState(null);
     const [formData, setFormData] = useState({});
     const [isSaving, setIsSaving] = useState(false);
@@ -346,7 +348,21 @@ export default function ProfilesPage() {
                             {showAddModal && activeTab === 'management' && (
                                 <div className="form-group">
                                     <label>Password (Temporary)</label>
-                                    <input type="password" placeholder="Default: Medico@123" value={formData.password || ''} onChange={e => setFormData({...formData, password: e.target.value})} />
+                                    <div className="password-input-wrapper">
+                                        <input 
+                                            type={showPassword ? "text" : "password"} 
+                                            placeholder="Default: Medico@123" 
+                                            value={formData.password || ''} 
+                                            onChange={e => setFormData({...formData, password: e.target.value})} 
+                                        />
+                                        <button 
+                                            type="button" 
+                                            className="password-toggle"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                        >
+                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                             <div className="modal-footer">
@@ -443,6 +459,10 @@ export default function ProfilesPage() {
                 .form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em; }
                 .form-group input, .form-group select { width: 100%; padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); outline: none; transition: var(--transition-fast); font-family: var(--font-primary); }
                 .form-group input:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 2px var(--bg-glass-hover); }
+                .password-input-wrapper { position: relative; width: 100%; }
+                .password-input-wrapper input { padding-right: 48px; }
+                .password-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition-fast); padding: 4px; border-radius: 6px; }
+                .password-toggle:hover { color: var(--accent-primary); background: var(--bg-glass-hover); }
                 .form-row { display: flex; gap: 16px; }
                 .flex-1 { flex: 1; }
                 .modal-footer { display: flex; gap: 12px; padding: 0 24px 24px; position: sticky; bottom: 0; background: var(--bg-card); z-index: 10; }

@@ -2,11 +2,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import useAuthStore from "@/store/useAuthStore";
-import { LogIn, Key, Mail, AlertCircle } from "lucide-react";
+import { LogIn, Key, Mail, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
     const [loadingState, setLoadingState] = useState(false);
 
@@ -85,14 +86,35 @@ export default function LoginPage() {
                         <div style={{ position: "relative" }}>
                             <Key size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
                             <input
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 required
                                 className="form-input"
-                                style={{ paddingLeft: 40 }}
+                                style={{ paddingLeft: 40, paddingRight: 40 }}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="••••••••"
                             />
+                            <button 
+                                type="button" 
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{ 
+                                    position: "absolute", 
+                                    right: 12, 
+                                    top: "50%", 
+                                    transform: "translateY(-50%)", 
+                                    background: "none", 
+                                    border: "none", 
+                                    color: "var(--text-muted)", 
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    padding: 4,
+                                    borderRadius: 4
+                                }}
+                                onMouseEnter={(e) => e.target.style.color = 'var(--accent-primary)'}
+                                onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}
+                            >
+                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
                         </div>
                     </div>
 
