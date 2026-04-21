@@ -9,7 +9,8 @@ const confirmCtrl = require('../controllers/redcliffeConfirm.controller');
 router.get('/admin/orders', authenticateAdmin, ctrl.adminGetLabOrders);
 
 // ─── Location (public) ───────────────────────
-router.get('/location/search', ctrl.searchLocation);
+router.get('/serviceability',   ctrl.checkServiceability);
+router.get('/location/search',  ctrl.searchLocation);
 router.get('/location/latlng',  ctrl.getLatLng);
 
 // ─── Availability (public) ───────────────────

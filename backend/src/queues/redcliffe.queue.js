@@ -143,12 +143,14 @@ const webhookWorker = new Worker('redcliffe-webhook-queue', async job => {
             return;
     }
 
-    updates.processedEvents = { push: uniqueEventId };
-
     // Apply updates
     await prisma.labOrder.update({
         where: { id: order.id },
-        data: { status: nextStatus, ...updates }
+        data: {
+            status: nextStatus,
+            ...updates,
+            processedEvents: { push: uniqueEventId }
+        }
     });
     
     logger.info({ job: 'webhook-handler', event: event_type, booking_id, newStatus: nextStatus });

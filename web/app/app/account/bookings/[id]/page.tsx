@@ -114,7 +114,8 @@ export default function BookingDetailsPage() {
       if (!user || !booking) return;
       setIsProcessingPayment(true);
       try {
-         const total = (booking.amount || 0) + Math.round((booking.amount || 0) * 0.18) + 50;
+         const base = booking.amount || 0;
+      const total = parseFloat((base + base * 0.18 + (booking.service?.slug === 'blood-test' ? 50 : 0)).toFixed(2));
          const initiateRes = await paymentService.initiatePayment({
             amount: total,
             bookingId: booking.id,
@@ -424,25 +425,49 @@ export default function BookingDetailsPage() {
                );
             })()}
 
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
-               <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-emerald-500" /> Payment Summary
-               </h3>
-               <div className="space-y-3">
-                  <div className="flex justify-between text-sm text-gray-600"><span>Service Charges</span><span className="font-semibold text-gray-900">₹{booking.amount || 0}</span></div>
-                  <div className="flex justify-between text-sm text-gray-600"><span>GST & Taxes (18%)</span><span className="font-semibold text-gray-900">₹{Math.round((booking.amount || 0) * 0.18)}</span></div>
-                  <div className="flex justify-between text-sm text-gray-600"><span>Convenience Fee</span><span className="font-semibold text-gray-900">₹50</span></div>
-                  <div className="pt-3 border-t border-gray-50 flex justify-between items-center text-lg font-bold text-gray-900">
-                     <span>Total Amount</span><span className="text-emerald-700">₹{(booking.amount || 0) + Math.round((booking.amount || 0) * 0.18) + 50}</span>
+            {(() => {
+               const payment = booking.payments?.[0];
+               const invoice = payment?.invoice;
+               // Prefer invoice breakdown (most accurate), fall back to recomputing from amount
+               const subtotal = invoice?.subtotal ?? booking.amount ?? 0;
+               const gst = invoice?.gstAmount ?? parseFloat(((booking.amount ?? 0) * 0.18).toFixed(2));
+               const isLabBooking = booking.service?.slug === 'blood-test';
+               const serviceFee = isLabBooking ? 50 : 0;
+               const total = invoice?.totalAmount ?? parseFloat((subtotal + gst + serviceFee).toFixed(2));
+               return (
+                  <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                     <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-emerald-500" /> Payment Summary
+                     </h3>
+                     <div className="space-y-2.5">
+                        <div className="flex justify-between text-sm text-gray-600">
+                           <span>Service Charges</span>
+                           <span className="font-semibold text-gray-900">₹{subtotal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-gray-600">
+                           <span>GST (18%)</span>
+                           <span className="font-semibold text-gray-900">₹{gst.toFixed(2)}</span>
+                        </div>
+                        {isLabBooking && (
+                           <div className="flex justify-between text-sm text-gray-600">
+                              <span>Home Collection Fee</span>
+                              <span className="font-semibold text-gray-900">₹{serviceFee}</span>
+                           </div>
+                        )}
+                        <div className="pt-3 border-t border-gray-50 flex justify-between items-center text-lg font-bold text-gray-900">
+                           <span>Total Paid</span>
+                           <span className="text-emerald-700">₹{total.toFixed(2)}</span>
+                        </div>
+                     </div>
+                     {payment?.razorpayPaymentId && (
+                        <div className="mt-6 flex items-center justify-between p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                           <div className="text-[10px] font-bold text-gray-400">SECURE TRANSACTION</div>
+                           <span className="text-[10px] text-gray-400 font-mono">{payment.razorpayPaymentId}</span>
+                        </div>
+                     )}
                   </div>
-               </div>
-               {booking.payments?.[0]?.razorpayPaymentId && (
-                  <div className="mt-6 flex items-center justify-between p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                     <div className="text-[10px] font-bold text-gray-400">SECURE TRANSACTION</div>
-                     <span className="text-[10px] text-gray-400 font-mono">{booking.payments[0].razorpayPaymentId}</span>
-                  </div>
-               )}
-            </div>
+               );
+            })()}
 
             <div className={`grid ${['COMPLETED', 'CANCELLED'].includes(booking.status) ? 'grid-cols-2' : 'grid-cols-3'} gap-4`}>
                <button className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-transform">

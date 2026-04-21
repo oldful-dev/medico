@@ -7,6 +7,23 @@ const { sendResponse, paginate, sendPaginatedResponse } = require('../utils/help
 const { logger } = require('../config/logger');
 const rc = require('../services/redcliffe.service');
 
+// GET /api/labs/serviceability?lat=&lng=
+const checkServiceability = async (req, res, next) => {
+    try {
+        const { lat, lng } = req.query;
+        if (!lat || !lng) return sendResponse(res, 400, null, 'lat and lng are required');
+        const result = await rc.checkServiceability(lat, lng);
+        sendResponse(res, 200, result);
+    } catch (error) {
+        // Redcliffe returns 400 for non-serviceable locations
+        if (error.response?.status === 400) {
+            return sendResponse(res, 200, { status: 'failure', message: 'Location is non-serviceable' });
+        }
+        logger.error('checkServiceability error:', error.message);
+        next(error);
+    }
+};
+
 // GET /api/labs/location/search?q=
 const searchLocation = async (req, res, next) => {
     try {
@@ -61,10 +78,14 @@ const getPackages = async (req, res, next) => {
         const result = await rc.getPackages(search || '');
         // Redcliffe returns { status: 'success', data: [...] }
         // We only want to send the array [...] to the frontend
-        const packages = (result.data || []).map(pkg => ({
-            ...pkg,
-            // Normalize fasting flag from various possible Redcliffe API versions
-            fasting: pkg.fasting ?? pkg.is_fasting ?? pkg.fasting_required ?? false
+        const packages = (result.data || []).filter(pkg => pkg.code).map(pkg => ({
+            code: pkg.code,
+            name: pkg.name,
+            cost: pkg.package_center_prices?.package_price ?? pkg.cost ?? 0,
+            discounted_cost: pkg.package_center_prices?.offer_price ?? pkg.discounted_cost ?? null,
+            tests_count: pkg.parameter ?? pkg.tests_count ?? null,
+            fasting: !!(pkg.fasting_time ?? pkg.fasting ?? pkg.is_fasting),
+            type: pkg.type ?? null,
         }));
         sendResponse(res, 200, packages);
     } catch (error) {
@@ -341,6 +362,7 @@ const adminGetLabOrders = async (req, res, next) => {
 };
 
 module.exports = {
+    checkServiceability,
     searchLocation,
     getLatLng,
     getTimeSlots,
