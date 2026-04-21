@@ -76,6 +76,16 @@ export interface Subscription {
     expiryDate: string;
 }
 
+export interface PaymentInvoice {
+    id: string;
+    invoiceNumber: string;
+    subtotal: number;
+    gstRate: number;
+    gstAmount: number;
+    totalAmount: number;
+    pdfUrl?: string;
+}
+
 export interface Payment {
     id: string;
     amount: number;
@@ -83,6 +93,7 @@ export interface Payment {
     razorpayOrderId?: string;
     razorpayPaymentId?: string;
     createdAt: string;
+    invoice?: PaymentInvoice;
 }
 
 export interface Booking {
