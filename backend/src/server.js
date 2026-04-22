@@ -239,8 +239,18 @@ app.use('/api/waitlist', waitlistRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
+const http = require('http');
+const socketService = require('./services/socket.service');
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize Socket.io
+socketService.init(server);
+logger.info('🔌 Socket.io initialized');
+
 // ═══ START SERVER ═══════════════════════════════════════════
-app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
     logger.info(`🚀 Oldful Backend running on port ${PORT}`);
     logger.info(`📋 Environment: ${process.env.NODE_ENV}`);
     logger.info(`🔒 Trust proxy: enabled`);

@@ -4,6 +4,7 @@
 
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate, generateTicketCode } = require('../utils/helpers');
+const { emitToAdmins } = require('../services/socket.service');
 
 // GET /api/support/my-tickets  (App user — own tickets only)
 const getMyTickets = async (req, res, next) => {
@@ -118,6 +119,16 @@ const createTicket = async (req, res, next) => {
             });
         }
 
+        // Emit real-time event to admins
+        emitToAdmins('new_ticket', {
+            id: ticket.id,
+            ticketCode,
+            subject: ticket.subject,
+            priority: ticket.priority,
+            status: ticket.status,
+            createdAt: ticket.createdAt
+        });
+
         sendResponse(res, 201, ticket, 'Ticket created');
     } catch (error) {
         next(error);
@@ -131,6 +142,15 @@ const updateTicket = async (req, res, next) => {
             where: { id: req.params.id },
             data: req.body,
         });
+
+        // Emit real-time event to admins
+        if (req.body.status) {
+            emitToAdmins('ticket_status_changed', {
+                ticketId: ticket.id,
+                status: ticket.status
+            });
+        }
+
         sendResponse(res, 200, ticket, 'Ticket updated');
     } catch (error) {
         next(error);
@@ -148,6 +168,13 @@ const resolveTicket = async (req, res, next) => {
                 resolutionNote: req.body.resolutionNote,
             },
         });
+
+        // Emit real-time event to admins
+        emitToAdmins('ticket_status_changed', {
+            ticketId: ticket.id,
+            status: 'resolved'
+        });
+
         sendResponse(res, 200, ticket, 'Ticket resolved');
     } catch (error) {
         next(error);
@@ -168,6 +195,13 @@ const addMessage = async (req, res, next) => {
         });
 
         const ticket = await prisma.supportTicket.findUnique({ where: { id: req.params.id } });
+
+        // Emit real-time event to admins about new message
+        emitToAdmins('ticket_message_added', {
+            ticketId: ticket.id,
+            message: message,
+            senderName: req.user.type === 'admin' ? (req.user.name || 'Admin') : 'User'
+        });
 
         if (req.user.type === 'user') {
             // Notify Admin if message is from user

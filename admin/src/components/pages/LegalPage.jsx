@@ -1,81 +1,318 @@
 "use client";
 import { useState, useEffect } from "react";
-import { FileText, Edit2, Eye, Upload } from "lucide-react";
+import { FileText, Edit2, Eye, Upload, Plus, Trash2, Globe, Clock, ChevronLeft, AlertCircle } from "lucide-react";
 import { legalAPI } from "@/lib/api";
 import { showToast, formatDateTime } from "@/lib/hooks";
+
+const DOC_TYPES = {
+    TERMS_AND_CONDITIONS: 'Terms & Conditions',
+    PRIVACY_POLICY: 'Privacy Policy',
+    REFUND_POLICY: 'Refund Policy',
+    DISCLAIMER: 'Disclaimer',
+};
+
+const STATUS_BADGE = {
+    PUBLISHED: 'badge-success',
+    DRAFT: 'badge-warning',
+    ARCHIVED: 'badge-default',
+};
 
 export default function LegalPage() {
     const [docs, setDocs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [view, setView] = useState('list'); // 'list' | 'edit' | 'preview'
     const [editing, setEditing] = useState(null);
+    const [previewDoc, setPreviewDoc] = useState(null);
     const [form, setForm] = useState({ type: 'TERMS_AND_CONDITIONS', title: '', content: '', status: 'DRAFT' });
+    const [saving, setSaving] = useState(false);
+    const [publishing, setPublishing] = useState(false);
 
     useEffect(() => { loadDocs(); }, []);
 
-    async function loadDocs() { try { setLoading(true); const r = await legalAPI.getAll(); setDocs(r.data?.data || []); } catch (e) { } finally { setLoading(false); } }
+    async function loadDocs() {
+        try {
+            setLoading(true);
+            const r = await legalAPI.getAll();
+            setDocs(r.data?.data || []);
+        } catch (e) {
+            showToast('Failed to load documents', 'error');
+        } finally {
+            setLoading(false);
+        }
+    }
 
-    function openDoc(doc) { setEditing(doc); setForm({ type: doc.type, title: doc.title, content: doc.content, status: doc.status }); }
-    function openNew() { setEditing({}); setForm({ type: 'TERMS_AND_CONDITIONS', title: '', content: '', status: 'DRAFT' }); }
+    function openEdit(doc = null) {
+        if (doc) {
+            setEditing(doc);
+            setForm({ type: doc.type, title: doc.title, content: doc.content || '', status: doc.status });
+        } else {
+            setEditing({});
+            setForm({ type: 'TERMS_AND_CONDITIONS', title: '', content: '', status: 'DRAFT' });
+        }
+        setView('edit');
+    }
+
+    function openPreview(doc) {
+        setPreviewDoc(doc);
+        setView('preview');
+    }
 
     async function handleSave() {
+        if (!form.title.trim()) return showToast('Title is required', 'error');
+        setSaving(true);
         try {
-            if (editing.id) { await legalAPI.update(editing.id, form); showToast('Document updated'); }
-            else { await legalAPI.create(form); showToast('Document created'); }
-            setEditing(null); loadDocs();
-        } catch (e) { showToast(e.response?.data?.message || 'Failed', 'error'); }
+            if (editing?.id) {
+                await legalAPI.update(editing.id, form);
+                showToast('Document saved');
+            } else {
+                await legalAPI.create(form);
+                showToast('Document created');
+            }
+            setView('list');
+            loadDocs();
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Save failed', 'error');
+        } finally {
+            setSaving(false);
+        }
     }
 
-    async function publishDoc(id) {
-        try { await legalAPI.publish(id); showToast('Published'); loadDocs(); }
-        catch (e) { showToast('Publish failed', 'error'); }
+    async function handlePublish(id) {
+        setPublishing(true);
+        try {
+            await legalAPI.publish(id);
+            showToast('Published — website will update within 1 hour', 'success');
+            if (view === 'edit') setView('list');
+            loadDocs();
+        } catch (e) {
+            showToast('Publish failed', 'error');
+        } finally {
+            setPublishing(false);
+        }
     }
 
-    const typeLabels = { TERMS_AND_CONDITIONS: 'Terms & Conditions', PRIVACY_POLICY: 'Privacy Policy', REFUND_POLICY: 'Refund Policy', DISCLAIMER: 'Disclaimer' };
+    // Group docs by type, latest first per type
+    const grouped = Object.keys(DOC_TYPES).reduce((acc, type) => {
+        acc[type] = docs.filter(d => d.type === type).sort((a, b) => b.version - a.version);
+        return acc;
+    }, {});
 
-    if (editing) {
+    // ── PREVIEW ─────────────────────────────────────
+    if (view === 'preview' && previewDoc) {
         return (
             <div>
-                <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div><h2>{editing.id ? 'Edit' : 'New'} Legal Document</h2><p>{typeLabels[form.type] || form.type}</p></div>
+                <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <h2>{previewDoc.title}</h2>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Preview — {DOC_TYPES[previewDoc.type]}</p>
+                    </div>
                     <div className="flex gap-2">
-                        <button className="btn btn-secondary" onClick={() => setEditing(null)}>← Back</button>
-                        <button className="btn btn-primary" onClick={handleSave}>Save Draft</button>
-                        {editing.id && form.status !== 'PUBLISHED' && <button className="btn btn-success" onClick={() => publishDoc(editing.id)}><Upload size={14} /> Publish</button>}
+                        <button className="btn btn-secondary" onClick={() => setView('list')}><ChevronLeft size={16} /> Back</button>
+                        <button className="btn btn-primary" onClick={() => openEdit(previewDoc)}><Edit2 size={14} /> Edit</button>
                     </div>
                 </div>
                 <div className="card">
                     <div className="card-body">
-                        <div className="form-row">
-                            <div className="form-group"><label className="form-label">Title</label><input className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div>
-                            <div className="form-group"><label className="form-label">Type</label><select className="form-select" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>{Object.entries(typeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></div>
+                        <div
+                            style={{ lineHeight: 1.8, color: 'var(--text-primary)' }}
+                            className="legal-preview"
+                            dangerouslySetInnerHTML={{ __html: previewDoc.content || '<p style="color: var(--text-secondary)">No content yet.</p>' }}
+                        />
+                    </div>
+                </div>
+                <style>{`
+                    .legal-preview h1,.legal-preview h2,.legal-preview h3 { font-weight:700; margin:1.5rem 0 0.75rem; }
+                    .legal-preview h1 { font-size:1.8rem; }
+                    .legal-preview h2 { font-size:1.4rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem; }
+                    .legal-preview h3 { font-size:1.1rem; }
+                    .legal-preview p { margin-bottom:1rem; color:var(--text-secondary); }
+                    .legal-preview ul,.legal-preview ol { padding-left:1.5rem; margin-bottom:1rem; }
+                    .legal-preview ul { list-style:disc; }
+                    .legal-preview ol { list-style:decimal; }
+                    .legal-preview li { margin-bottom:0.4rem; color:var(--text-secondary); }
+                    .legal-preview strong { color:var(--text-primary); }
+                    .legal-preview a { color:var(--primary); }
+                `}</style>
+            </div>
+        );
+    }
+
+    // ── EDITOR ──────────────────────────────────────
+    if (view === 'edit') {
+        const isNew = !editing?.id;
+        const isPublished = form.status === 'PUBLISHED';
+        return (
+            <div>
+                <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <h2>{isNew ? 'New Legal Document' : 'Edit Document'}</h2>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+                            {isNew ? 'Create a draft — publish when ready to go live' : `v${editing?.version || 1} · ${DOC_TYPES[form.type]}`}
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        <button className="btn btn-secondary" onClick={() => setView('list')}><ChevronLeft size={16} /> Back</button>
+                        {!isNew && (
+                            <button className="btn btn-secondary" onClick={() => openPreview({ ...editing, ...form })}>
+                                <Eye size={14} /> Preview
+                            </button>
+                        )}
+                        <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                            {saving ? 'Saving…' : 'Save Draft'}
+                        </button>
+                        {!isNew && !isPublished && (
+                            <button className="btn btn-success" onClick={() => handlePublish(editing.id)} disabled={publishing}>
+                                <Globe size={14} /> {publishing ? 'Publishing…' : 'Publish'}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {!isNew && isPublished && (
+                    <div className="card" style={{ marginBottom: 16, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                        <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px' }}>
+                            <Globe size={16} style={{ color: '#22c55e' }} />
+                            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                                This document is <strong style={{ color: '#22c55e' }}>PUBLISHED</strong> and live on the website. Save creates a new draft; re-publish to push updates live.
+                            </span>
                         </div>
-                        <div className="form-group"><label className="form-label">Content (HTML/Markdown)</label><textarea className="form-input" rows={20} style={{ fontFamily: "monospace", fontSize: 13 }} value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} /></div>
+                    </div>
+                )}
+
+                <div className="card" style={{ marginBottom: 16 }}>
+                    <div className="card-body">
+                        <div className="form-row">
+                            <div className="form-group" style={{ flex: 2 }}>
+                                <label className="form-label">Title *</label>
+                                <input
+                                    className="form-input"
+                                    placeholder="e.g. Terms and Conditions"
+                                    value={form.title}
+                                    onChange={e => setForm({ ...form, title: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group" style={{ flex: 1 }}>
+                                <label className="form-label">Document Type</label>
+                                <select className="form-select" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
+                                    {Object.entries(DOC_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="card">
+                    <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3 style={{ margin: 0 }}>Content</h3>
+                        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>HTML supported — use &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;</span>
+                    </div>
+                    <div className="card-body">
+                        <textarea
+                            className="form-input"
+                            rows={28}
+                            style={{ fontFamily: 'monospace', fontSize: 13, resize: 'vertical', lineHeight: 1.6 }}
+                            placeholder={`<h2>Section Title</h2>\n<p>Your content here...</p>\n<ul>\n  <li>Point one</li>\n  <li>Point two</li>\n</ul>`}
+                            value={form.content}
+                            onChange={e => setForm({ ...form, content: e.target.value })}
+                        />
                     </div>
                 </div>
             </div>
         );
     }
 
+    // ── LIST ─────────────────────────────────────────
     return (
         <div>
-            <div className="page-header"><h2>Legal CMS</h2><p>Manage terms, privacy policy, refund policy, and disclaimers</p></div>
-            <div className="filter-bar"><button className="btn btn-primary" onClick={openNew}><FileText size={16} /> New Document</button></div>
-            {loading ? <p className="text-muted">Loading...</p> : (
-                <div className="stats-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
-                    {docs.map(doc => (
-                        <div key={doc.id} className="card">
-                            <div className="card-header"><h3 style={{ fontSize: 14 }}>{doc.title}</h3><span className={`badge ${doc.status === 'PUBLISHED' ? 'badge-success' : 'badge-warning'}`}>{doc.status}</span></div>
-                            <div className="card-body">
-                                <div className="text-sm text-muted mb-2">{typeLabels[doc.type] || doc.type}</div>
-                                <div className="text-sm text-muted mb-4">Version {doc.version} • Updated {formatDateTime(doc.updatedAt)}</div>
-                                <div className="flex gap-2">
-                                    <button className="btn btn-sm btn-primary" onClick={() => openDoc(doc)}><Edit2 size={14} /> Edit</button>
-                                    {doc.status !== 'PUBLISHED' && <button className="btn btn-sm btn-success" onClick={() => publishDoc(doc.id)}>Publish</button>}
+            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                    <h2>Legal CMS</h2>
+                    <p>Manage legal documents — publish to update the website</p>
+                </div>
+                <button className="btn btn-primary" onClick={() => openEdit()}>
+                    <Plus size={16} /> New Document
+                </button>
+            </div>
+
+            <div className="card" style={{ marginBottom: 24, background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)' }}>
+                <div className="card-body" style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 16px' }}>
+                    <AlertCircle size={16} style={{ color: '#3b82f6', marginTop: 2, flexShrink: 0 }} />
+                    <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                        <strong style={{ color: 'var(--text-primary)' }}>How it works:</strong> Write or edit a document → Save as Draft → Preview → <strong>Publish</strong> to push it live on the website. Only the latest PUBLISHED version of each type is shown to users. The website caches content for up to 1 hour.
+                    </p>
+                </div>
+            </div>
+
+            {loading ? <p className="text-muted">Loading…</p> : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
+                    {Object.entries(DOC_TYPES).map(([type, label]) => {
+                        const versions = grouped[type] || [];
+                        const published = versions.find(d => d.status === 'PUBLISHED');
+                        const latest = versions[0];
+
+                        return (
+                            <div key={type} className="card">
+                                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <FileText size={16} style={{ color: 'var(--primary)' }} />
+                                        <h3 style={{ margin: 0, fontSize: 14 }}>{label}</h3>
+                                    </div>
+                                    {published
+                                        ? <span className="badge badge-success"><Globe size={10} /> Live</span>
+                                        : <span className="badge badge-default">Not published</span>
+                                    }
+                                </div>
+                                <div className="card-body">
+                                    {versions.length === 0 ? (
+                                        <p className="text-muted" style={{ fontSize: 13 }}>No document yet</p>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                            {versions.slice(0, 3).map(doc => (
+                                                <div key={doc.id} style={{
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                    padding: '8px 12px', background: 'var(--bg-secondary)',
+                                                    borderRadius: 8, gap: 8
+                                                }}>
+                                                    <div style={{ minWidth: 0 }}>
+                                                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                            {doc.title}
+                                                        </div>
+                                                        <div style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                                                            <Clock size={10} /> v{doc.version} · {formatDateTime(doc.updatedAt)}
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                                                        <span className={`badge ${STATUS_BADGE[doc.status] || 'badge-default'}`} style={{ fontSize: 10 }}>
+                                                            {doc.status}
+                                                        </span>
+                                                        <button className="btn btn-sm btn-secondary" onClick={() => openPreview(doc)} title="Preview">
+                                                            <Eye size={12} />
+                                                        </button>
+                                                        <button className="btn btn-sm btn-primary" onClick={() => openEdit(doc)} title="Edit">
+                                                            <Edit2 size={12} />
+                                                        </button>
+                                                        {doc.status !== 'PUBLISHED' && (
+                                                            <button className="btn btn-sm btn-success" onClick={() => handlePublish(doc.id)} title="Publish">
+                                                                <Globe size={12} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {versions.length > 3 && (
+                                                <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: 0 }}>+{versions.length - 3} more versions</p>
+                                            )}
+                                        </div>
+                                    )}
+                                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-color)' }}>
+                                        <button className="btn btn-sm btn-primary" onClick={() => openEdit()} style={{ width: '100%', justifyContent: 'center' }}>
+                                            <Plus size={12} /> New Version
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                    {docs.length === 0 && <p className="text-muted">No legal documents yet</p>}
+                        );
+                    })}
                 </div>
             )}
         </div>

@@ -24,8 +24,6 @@ const getServices = async (req, res, next) => {
             orderBy: { sortOrder: 'asc' },
         });
 
-        // Cache for 1 hour at edge
-        res.set('Cache-Control', 'public, max-age=300, s-maxage=3600');
         sendResponse(res, 200, services);
     } catch (error) {
         next(error);

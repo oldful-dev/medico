@@ -141,7 +141,7 @@ export const caregiverAPI = {
 
 // ── Plans ────────────────────────────────────────────
 export const planAPI = {
-    getAll: () => api.get('/plans'),
+    getAll: () => api.get('/plans/admin/all'),
     getById: (id) => api.get(`/plans/${id}`),
     create: (data) => api.post('/plans', data),
     update: (id, data) => api.put(`/plans/${id}`, data),
@@ -163,6 +163,7 @@ export const subscriptionAPI = {
 // ── Payments ─────────────────────────────────────────
 export const paymentAPI = {
     getAll: (params) => api.get('/payments', { params }),
+    updateStatus: (id, data) => api.put(`/payments/${id}/status`, data),
     initiateRefund: (data) => api.post('/payments/refund', data),
     getRefundStatus: (id) => api.get(`/payments/${id}/refund-status`),
 };
@@ -236,6 +237,7 @@ export const reportAPI = {
     caregiverPerformance: () => api.get('/reports/caregiver-performance'),
     refundAnalysis: () => api.get('/reports/refund-analysis'),
     customerRetention: () => api.get('/reports/customer-retention'),
+    getAlerts: () => api.get('/reports/alerts'),
     exportCSV: (type) => api.get(`/reports/csv/${type}`, { responseType: 'blob' }),
 };
 

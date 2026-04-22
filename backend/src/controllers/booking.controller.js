@@ -5,6 +5,7 @@
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate, generateBookingCode } = require('../utils/helpers');
 const { sendPushToUser } = require('../utils/pushNotification.service');
+const { emitToAdmins } = require('../services/socket.service');
 
 // GET /api/bookings
 const getBookings = async (req, res, next) => {
@@ -91,7 +92,7 @@ const createBooking = async (req, res, next) => {
         if (!finalUserId) return res.status(400).json({ success: false, message: 'User ID is required' });
 
         // Find user to get their cityId if not provided
-        const userData = await prisma.user.findUnique({ where: { id: finalUserId }, select: { cityId: true } });
+        const userData = await prisma.user.findUnique({ where: { id: finalUserId }, select: { cityId: true, name: true } });
         const finalCityId = cityId || (userData && userData.cityId);
 
         if (!finalCityId) return res.status(400).json({ success: false, message: 'City ID is required' });
@@ -105,7 +106,7 @@ const createBooking = async (req, res, next) => {
                 ]
             }
         });
-        
+
         if (!service) return res.status(404).json({ success: false, message: 'Service not found' });
         const finalServiceId = service.id;
 
@@ -128,12 +129,12 @@ const createBooking = async (req, res, next) => {
                             paymentStatus: { in: ['PENDING', 'INITIATED'] }
                         }
                     });
-                    
+
                     // Note: if user already has 2 or more active COD bookings, restrict them.
                     if (activeCODBookings >= 2) {
-                        return res.status(403).json({ 
-                            success: false, 
-                            message: 'You have too many active cash-on-delivery bookings. Please complete your existing ones first.' 
+                        return res.status(403).json({
+                            success: false,
+                            message: 'You have too many active cash-on-delivery bookings. Please complete your existing ones first.'
                         });
                     }
                 }
@@ -176,6 +177,16 @@ const createBooking = async (req, res, next) => {
                         service: { select: { name: true, slug: true, icon: true } },
                     },
                 });
+                // 🟢 REAL-TIME: Notify Admins via Socket
+                const { emitToAdmins } = require('../services/socket.service');
+                emitToAdmins('new_booking', {
+                    id: booking.id,
+                    type: 'BOOKING',
+                    title: `New: ${booking.service?.name} by ${booking.user?.name}`,
+                    time: booking.createdAt,
+                    href: '/bookings'
+                });
+
                 break; // success
             } catch (err) {
                 const isUniqueViolation = err.code === 'P2002' && err.meta?.target?.includes('bookingCode');
@@ -198,15 +209,26 @@ const createBooking = async (req, res, next) => {
             // Send DLT SMS Booking Confirmation
             if (booking.user?.phone) {
                 const { sendBookingConfirmation } = require('../utils/notifications');
-                await sendBookingConfirmation({ 
-                    user: booking.user, 
-                    bookingCode, 
-                    booking: { serviceName: booking.service?.name } 
+                await sendBookingConfirmation({
+                    user: booking.user,
+                    bookingCode,
+                    booking: { serviceName: booking.service?.name }
                 });
             }
         } else {
             console.log(`[Booking] Deferring notifications for booking ${bookingCode} (Waiting for payment)`);
         }
+
+        // Emit real-time event to admins
+        emitToAdmins('new_booking', {
+            id: booking.id,
+            bookingCode,
+            serviceType: booking.service?.name,
+            userName: booking.user?.name,
+            status: booking.status,
+            scheduledDate: booking.scheduledDate,
+            createdAt: booking.createdAt
+        });
 
         sendResponse(res, 201, booking, 'Booking created successfully');
     } catch (error) {
@@ -229,6 +251,12 @@ const assignCaregiver = async (req, res, next) => {
             title: 'Caregiver Assigned',
             body: `${booking.caregiver.name} has been assigned to your booking.`,
             data: { type: 'caregiver_assigned', bookingId: booking.id },
+        });
+
+        // Emit real-time event to admins
+        emitToAdmins('booking_assigned', {
+            bookingId: booking.id,
+            caregiverName: booking.caregiver.name
         });
 
         sendResponse(res, 200, booking, 'Caregiver assigned');
@@ -263,6 +291,14 @@ const updateBookingStatus = async (req, res, next) => {
         const booking = await prisma.booking.update({
             where: { id: req.params.id },
             data,
+            include: { user: { select: { name: true } } }
+        });
+
+        // Emit real-time event to admins
+        emitToAdmins('booking_status_changed', {
+            bookingId: booking.id,
+            status: booking.status,
+            userName: booking.user?.name
         });
 
         // Notify user of status change via push
@@ -279,6 +315,9 @@ const updateBookingStatus = async (req, res, next) => {
                 data: { type: 'booking_status', bookingId: booking.id, status },
             });
         }
+
+        const { emitToAdmins } = require('../services/socket.service');
+        emitToAdmins('booking_updated', { id: booking.id, status: booking.status });
 
         sendResponse(res, 200, booking, 'Booking status updated');
     } catch (error) {

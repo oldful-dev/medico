@@ -3,7 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cartStore';
-import { ChevronLeft, Info, Calendar, MapPin, Stethoscope, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
+import { ChevronLeft, Info, Calendar, MapPin, Stethoscope, ArrowRight, ShieldCheck, Clock, Package } from 'lucide-react';
 import { SERVICES_CONFIG } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import { formatPrice } from '@/utils/formatPrice';
@@ -29,10 +29,11 @@ export default function CartPage() {
   }
 
   const isSubscriptionCheckout = items.some(i => i.type === 'plan');
+  const isProductCheckout = items.some(i => i.type === 'product');
   const subtotal = items.reduce((acc, item) => acc + item.price, 0);
   const taxes = Math.round(subtotal * 0.18);
-  // Plans don't have platform fee
-  const platformFee = isSubscriptionCheckout ? 0 : 50;
+  // Plans and products don't have platform fee
+  const platformFee = (isSubscriptionCheckout || isProductCheckout) ? 0 : 50;
   const total = subtotal + taxes + platformFee;
 
   return (
@@ -56,19 +57,24 @@ export default function CartPage() {
            <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Items ({items.length})</h2>
            {items.map((item) => {
              const isPlan = item.type === 'plan';
-             const config = !isPlan && item.serviceId ? SERVICES_CONFIG[item.serviceId] : null;
-             
+             const isProductItem = item.type === 'product';
+             const config = !isPlan && !isProductItem && item.serviceId ? SERVICES_CONFIG[item.serviceId] : null;
+
              return (
                <div key={item.id} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col gap-5 relative group">
                   <div className="flex justify-between items-start">
                     <div className="flex gap-4">
-                      <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center p-3">
+                      <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center p-3 overflow-hidden">
                         {isPlan ? (
                            <ShieldCheck className="w-8 h-8 text-emerald-600" />
+                        ) : isProductItem ? (
+                           item.imageUrl
+                             ? <img src={item.imageUrl as string} alt={item.name || 'Product'} className="w-full h-full object-cover rounded-xl" />
+                             : <Package className="w-8 h-8 text-emerald-600" />
                         ) : (
-                           <img 
-                              src={getAssetUrl(config?.icon || 'default-service.png')} 
-                              alt={config?.title || item.name || 'Service'} 
+                           <img
+                              src={getAssetUrl(config?.icon || 'default-service.png')}
+                              alt={config?.title || item.name || 'Service'}
                               className="w-full h-full object-contain"
                            />
                         )}
@@ -77,7 +83,7 @@ export default function CartPage() {
                         <h3 className="font-black text-gray-900 text-base leading-none mb-1">
                           {config?.title || item.name || (item.serviceId ? item.serviceId.replace('-', ' ') : 'Package')}
                         </h3>
-                        <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">{isPlan ? 'Care Subscription' : (config?.category || 'Service')}</p>
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">{isPlan ? 'Care Subscription' : isProductItem ? 'Wellness Product' : (config?.category || 'Service')}</p>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
@@ -101,6 +107,13 @@ export default function CartPage() {
                         <p className="text-xs text-emerald-900 font-black">
                            {item.billingCycle === 'MONTHLY' ? '30 Days Complete Coverage' : 'Active Subscription for ' + item.billingCycle}
                         </p>
+                     </div>
+                  ) : isProductItem ? (
+                     <div className="bg-emerald-50/50 rounded-2xl p-4 flex flex-col gap-1">
+                        <span className="text-[10px] font-bold text-emerald-600 uppercase flex items-center gap-2">
+                           <Package className="w-3 h-3" /> Wellness Store
+                        </span>
+                        <p className="text-xs text-emerald-900 font-black">1× {item.name}</p>
                      </div>
                   ) : (
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -127,7 +140,7 @@ export default function CartPage() {
                   )}
 
                   {/* Dynamic Fields Details */}
-                  {!isPlan && Object.entries(item).some(([k]) => !['id', 'serviceId', 'type', 'price', 'address', 'scheduleTime', 'problem', 'providerType', 'name', 'planId', 'billingCycle'].includes(k)) && (
+                  {!isPlan && !isProductItem && Object.entries(item).some(([k]) => !['id', 'serviceId', 'type', 'price', 'address', 'scheduleTime', 'problem', 'providerType', 'name', 'planId', 'billingCycle'].includes(k)) && (
                      <div className="bg-gray-50 rounded-2xl p-4 flex flex-col gap-2">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1">
                            <Info className="w-3 h-3" /> Additional Details

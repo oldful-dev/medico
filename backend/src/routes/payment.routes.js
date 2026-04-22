@@ -14,5 +14,7 @@ router.post('/apply-coupon', authenticate, ctrl.applyCoupon);
 router.get('/', authenticateAdmin, ctrl.getPayments);
 router.post('/refund', authenticateAdmin, ctrl.initiateRefund);
 router.get('/:id/refund-status', authenticateAdmin, ctrl.getRefundStatus);
+router.put('/:id/status', authenticateAdmin, ctrl.updatePaymentStatus);
+router.post('/manual-success', authenticateAdmin, ctrl.manualPaymentSuccess);
 
 module.exports = router;

@@ -13,6 +13,7 @@ export default function UsersPage() {
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [imageViewer, setImageViewer] = useState(null);
     const limit = 20;
 
     useEffect(() => {
@@ -44,6 +45,16 @@ export default function UsersPage() {
             const res = await userAPI.getById(id);
             setSelectedUser(res.data?.data);
         } catch (e) { showToast('Failed to load user', 'error'); }
+    }
+
+    function calculateAge(dateOfBirth) {
+        if (!dateOfBirth) return null;
+        const today = new Date();
+        const birthDate = new Date(dateOfBirth);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
+        return age;
     }
 
     async function blockUser(id) {
@@ -158,6 +169,10 @@ export default function UsersPage() {
                                 <div className="form-group"><label className="form-label">City</label><div className="text-sm">{selectedUser.city?.name || '—'}</div></div>
                             </div>
                             <div className="form-row">
+                                <div className="form-group"><label className="form-label">Age</label><div className="text-sm">{calculateAge(selectedUser.dateOfBirth) || '—'} {calculateAge(selectedUser.dateOfBirth) ? 'years' : ''}</div></div>
+                                <div className="form-group"><label className="form-label">Date of Birth</label><div className="text-sm">{selectedUser.dateOfBirth ? formatDate(selectedUser.dateOfBirth) : '—'}</div></div>
+                            </div>
+                            <div className="form-row">
                                 <div className="form-group"><label className="form-label">Health Tag</label><span className={`badge ${healthBadge[selectedUser.healthTag]}`}>{selectedUser.healthTag}</span></div>
                                 <div className="form-group"><label className="form-label">Status</label><span className={`badge ${statusBadge[selectedUser.status]}`}>{selectedUser.status}</span></div>
                             </div>
@@ -181,6 +196,49 @@ export default function UsersPage() {
                                     ))}
                                 </div>
                             )}
+                            {selectedUser.medicalCards?.length > 0 && selectedUser.medicalCards[0]?.currentMedications?.length > 0 && (
+                                <div className="form-group">
+                                    <label className="form-label">Current Medications</label>
+                                    <div style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
+                                        {selectedUser.medicalCards[0].currentMedications.map((med, i) => (
+                                            <div key={i} style={{ marginBottom: 8, paddingBottom: 8, borderBottom: i < selectedUser.medicalCards[0].currentMedications.length - 1 ? '1px solid var(--border-color)' : 'none' }}>
+                                                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{med}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {selectedUser.healthReports?.length > 0 && (
+                                <div className="form-group">
+                                    <label className="form-label">Prescriptions & Health Reports</label>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        {selectedUser.healthReports.map((hr, i) => {
+                                            const isPrescription = hr.title?.toLowerCase().includes('prescription') || hr.title?.toLowerCase().includes('rx') || hr.title?.toLowerCase().includes('drug');
+                                            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(hr.fileType?.toLowerCase());
+                                            return (
+                                                <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, borderLeft: `4px solid ${isPrescription ? 'var(--accent-danger)' : 'var(--accent-primary)'}`, fontSize: 13 }}>
+                                                    <div style={{ marginBottom: 8 }}>
+                                                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 3 }}>{hr.title}</div>
+                                                        <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Type: {hr.fileType?.toUpperCase()} • Uploaded: {formatDate(hr.createdAt)}</div>
+                                                        {isPrescription && <div style={{ fontSize: 11, background: 'var(--accent-danger)', color: 'white', padding: '2px 6px', borderRadius: 3, display: 'inline-block', marginTop: 4, fontWeight: 600 }}>💊 Prescription</div>}
+                                                    </div>
+                                                    {hr.flagSeverity && (
+                                                        <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--accent-danger)', padding: 8, borderRadius: 4, marginBottom: 8, fontSize: 12 }}>
+                                                            ⚠️ Severity: {hr.flagSeverity}
+                                                            {hr.flagNote && <div style={{ marginTop: 2, fontSize: 11 }}>{hr.flagNote}</div>}
+                                                        </div>
+                                                    )}
+                                                    {isImage && hr.fileUrl && (
+                                                        <a href={hr.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'white', textDecoration: 'none', fontWeight: 600, fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: 'var(--accent-primary)', borderRadius: 5, cursor: 'pointer' }}>
+                                                            📄 View Document
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         <div className="modal-footer">
                             {selectedUser.status === 'ACTIVE' && <>
@@ -189,6 +247,30 @@ export default function UsersPage() {
                             </>}
                             {selectedUser.status !== 'ACTIVE' && <button className="btn btn-success" onClick={() => activateUser(selectedUser.id)}>Activate</button>}
                             <button className="btn btn-secondary" onClick={() => setSelectedUser(null)}>Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {imageViewer && (
+                <div className="modal-overlay" onClick={() => setImageViewer(null)} style={{ background: 'rgba(0, 0, 0, 0.85)' }}>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', padding: 20 }} onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setImageViewer(null)} style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', fontSize: 28, width: 40, height: 40, borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>✕</button>
+                        <div style={{ maxWidth: '90vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', borderRadius: 12, overflow: 'hidden' }}>
+                            <div style={{ padding: 16, borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{imageViewer.title}</div>
+                            </div>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflowY: 'auto', padding: 20, background: 'rgba(0,0,0,0.1)' }}>
+                                <img src={imageViewer.url} alt={imageViewer.title} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                            </div>
+                            <div style={{ padding: 16, borderTop: '1px solid var(--border-color)', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                                <a href={imageViewer.url} download style={{ padding: '8px 16px', background: 'var(--accent-primary)', color: 'white', borderRadius: 6, textDecoration: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                    ⬇️ Download
+                                </a>
+                                <button onClick={() => setImageViewer(null)} style={{ padding: '8px 16px', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: 'none', borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                                    Close
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -2,67 +2,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import useAuthStore from "@/store/useAuthStore";
-import {
-    LayoutDashboard, Users, Shield, MapPin, UserCog, Settings, CalendarCheck,
-    HeartPulse, CreditCard, DollarSign, AlertTriangle, Bell, FileText,
-    ShoppingBag, Image as ImageIcon, BarChart3, ClipboardList, Sliders, LifeBuoy, Brain, ChevronRight, X, Clock
-} from "lucide-react";
-
-const navSections = [
-    {
-        title: "Overview",
-        items: [
-            { id: "dashboard", href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER', 'SUPPORT_AGENT', 'BILLING_EXECUTIVE'] },
-        ],
-    },
-    {
-        title: "Staff & Users",
-        items: [
-            { id: "profiles", href: "/profiles", label: "Staff Profiles", icon: Shield, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER', 'SUPPORT_AGENT'] },
-            { id: "staff-config", href: "/settings/profiles", label: "Staff Configuration", icon: Sliders, roles: ['SUPER_ADMIN'] },
-            { id: "users", href: "/users", label: "Clients / Patients", icon: Users, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER', 'SUPPORT_AGENT'] },
-        ],
-    },
-    {
-        title: "System Config",
-        items: [
-            { id: "roles", href: "/roles", label: "Roles & Access", icon: Shield, roles: ['SUPER_ADMIN'] },
-            { id: "cities", href: "/cities", label: "City Management", icon: MapPin, roles: ['SUPER_ADMIN'] },
-            { id: "services", href: "/services", label: "Service Management", icon: Settings, roles: ['SUPER_ADMIN'] },
-            { id: "home-essentials", href: "/home-essentials", label: "Home Essentials", icon: HeartPulse, roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },
-            { id: "bookings", href: "/bookings", label: "Booking Management", icon: CalendarCheck, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER'] },
-        ],
-    },
-    {
-        title: "Finance",
-        items: [
-            { id: "plans", href: "/plans", label: "Plans & Subscriptions", icon: CreditCard, roles: ['SUPER_ADMIN', 'BILLING_EXECUTIVE'] },
-            { id: "pricing", href: "/pricing", label: "Pricing Engine", icon: DollarSign, roles: ['SUPER_ADMIN'] },
-            { id: "payments", href: "/payments", label: "Payments & Invoices", icon: CreditCard, roles: ['SUPER_ADMIN', 'BILLING_EXECUTIVE', 'CITY_ADMIN'] },
-        ],
-    },
-    {
-        title: "Operations",
-        items: [
-            { id: "sos", href: "/sos", label: "SOS Emergency", icon: AlertTriangle, badge: "Live", roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER', 'SUPPORT_AGENT'] },
-            { id: "notifications", href: "/notifications", label: "Notifications", icon: Bell, roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },
-            { id: "legal", href: "/legal", label: "Legal CMS", icon: FileText, roles: ['SUPER_ADMIN'] },
-            { id: "store", href: "/store", label: "Wellness Store", icon: ShoppingBag, roles: ['SUPER_ADMIN'] },
-            { id: "media", href: "/media", label: "Media Library", icon: ImageIcon, roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },
-        ],
-    },
-    {
-        title: "Intelligence",
-        items: [
-            { id: "reports", href: "/reports", label: "Reports & Analytics", icon: BarChart3, roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },
-            { id: "audit", href: "/audit", label: "Audit Logs", icon: ClipboardList, roles: ['SUPER_ADMIN'] },
-            { id: "server-ui", href: "/server-ui", label: "Server Driven UI", icon: Sliders, roles: ['SUPER_ADMIN'] },
-            { id: "support", href: "/support", label: "Support & Tickets", icon: LifeBuoy, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'SUPPORT_AGENT'] },
-            { id: "smart", href: "/smart", label: "Smart Features", icon: Brain, roles: ['SUPER_ADMIN'] },
-            { id: "waitlist", href: "/waitlist", label: "Wellness Waitlist", icon: Clock, roles: ['SUPER_ADMIN'] },
-        ],
-    },
-];
+import { NAV_SECTIONS } from "@/lib/nav";
+import { X } from "lucide-react";
 
 export default function Sidebar({ collapsed, open, currentPath, onClose }) {
     const { user } = useAuthStore();
@@ -87,7 +28,7 @@ export default function Sidebar({ collapsed, open, currentPath, onClose }) {
                     </button>
                 </div>
                 <nav className="sidebar-nav">
-                    {navSections.map((section) => {
+                    {NAV_SECTIONS.map((section) => {
                         const filteredItems = section.items.filter(item => item.roles.includes(userRole));
                         if (filteredItems.length === 0) return null;
 

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { DollarSign, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { DollarSign, RefreshCw, ChevronLeft, ChevronRight, Edit2 } from "lucide-react";
 import { paymentAPI } from "@/lib/api";
 import { formatCurrency, formatDateTime, showToast } from "@/lib/hooks";
 
@@ -13,6 +13,8 @@ export default function PaymentsPage() {
     const [total, setTotal] = useState(0);
     const [refundModal, setRefundModal] = useState(null);
     const [refundData, setRefundData] = useState({ refundType: 'CANCELLATION', refundReason: '', refundAmount: 0 });
+    const [statusModal, setStatusModal] = useState(null);
+    const [newStatus, setNewStatus] = useState('');
     const limit = 20;
 
     const loadPayments = useCallback(async () => {
@@ -27,6 +29,13 @@ export default function PaymentsPage() {
             await paymentAPI.initiateRefund({ paymentId: refundModal.id, ...refundData });
             showToast('Refund initiated'); setRefundModal(null); loadPayments();
         } catch (e) { showToast(e.response?.data?.message || 'Refund failed', 'error'); }
+    }
+
+    async function handleStatusUpdate() {
+        try {
+            await paymentAPI.updateStatus(statusModal.id, { status: newStatus });
+            showToast('Payment status updated'); setStatusModal(null); loadPayments();
+        } catch (e) { showToast(e.response?.data?.message || 'Status update failed', 'error'); }
     }
 
     return (
@@ -49,9 +58,12 @@ export default function PaymentsPage() {
                                             <td className="text-sm"><code>{p.booking?.bookingCode || p.subscription?.plan?.name || '—'}</code></td>
                                             <td className="text-sm">{p.couponCode || '—'}</td>
                                             <td>
-                                                {p.status === 'SUCCESS' && !p.refundId && (
-                                                    <button className="btn btn-sm btn-warning" onClick={() => { setRefundModal(p); setRefundData({ refundType: 'CANCELLATION', refundReason: '', refundAmount: p.amount }); }}><RefreshCw size={14} /> Refund</button>
-                                                )}
+                                                <div className="flex gap-1">
+                                                    <button className="btn btn-sm btn-secondary" onClick={() => { setStatusModal(p); setNewStatus(p.status); }}><Edit2 size={14} /></button>
+                                                    {p.status === 'SUCCESS' && !p.refundId && (
+                                                        <button className="btn btn-sm btn-warning" onClick={() => { setRefundModal(p); setRefundData({ refundType: 'CANCELLATION', refundReason: '', refundAmount: p.amount }); }}><RefreshCw size={14} /></button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -71,6 +83,18 @@ export default function PaymentsPage() {
                         <div className="form-group"><label className="form-label">Reason</label><textarea className="form-input" rows={2} value={refundData.refundReason} onChange={e => setRefundData({ ...refundData, refundReason: e.target.value })} /></div>
                     </div>
                     <div className="modal-footer"><button className="btn btn-secondary" onClick={() => setRefundModal(null)}>Cancel</button><button className="btn btn-warning" onClick={handleRefund}>Process Refund</button></div>
+                </div></div>
+            )}
+
+            {statusModal && (
+                <div className="modal-overlay" onClick={() => setStatusModal(null)}><div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+                    <div className="modal-header"><h3>Update Payment Status</h3><button onClick={() => setStatusModal(null)} className="btn btn-sm btn-secondary">✕</button></div>
+                    <div className="modal-body">
+                        <p className="text-sm mb-4">Payment: {formatCurrency(statusModal.amount)} — {statusModal.user?.name}</p>
+                        <p className="text-xs text-muted mb-3">Current Status: <span className={`badge ${statusColors[statusModal.status] || 'badge-default'}`}>{statusModal.status}</span></p>
+                        <div className="form-group"><label className="form-label">New Status</label><select className="form-select" value={newStatus} onChange={e => setNewStatus(e.target.value)}><option value="">Select status...</option>{['INITIATED', 'SUCCESS', 'FAILED', 'REFUND_INITIATED', 'REFUNDED'].map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+                    </div>
+                    <div className="modal-footer"><button className="btn btn-secondary" onClick={() => setStatusModal(null)}>Cancel</button><button className="btn btn-primary" onClick={handleStatusUpdate} disabled={!newStatus || newStatus === statusModal.status}>Update Status</button></div>
                 </div></div>
             )}
         </div>

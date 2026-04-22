@@ -13,5 +13,6 @@ router.get('/caregiver-performance', ctrl.caregiverPerformance);
 router.get('/refund-analysis', ctrl.refundAnalysis);
 router.get('/customer-retention', ctrl.customerRetention);
 router.get('/csv/:type', ctrl.exportCSV);
+router.get('/alerts', ctrl.getAlertFeed);
 
 module.exports = router;

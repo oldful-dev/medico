@@ -13,6 +13,7 @@ const { createAuditLog } = require('../middleware/audit');
 const getPlans = async (req, res, next) => {
     try {
         const plans = await prisma.plan.findMany({
+            where: { isVisible: true },
             orderBy: { sortOrder: 'asc' },
             include: { _count: { select: { subscriptions: true } } },
         });
@@ -94,4 +95,16 @@ const deletePlan = async (req, res, next) => {
     }
 };
 
-module.exports = { getPlans, getPlanById, createPlan, updatePlan, deletePlan };
+const getAllPlansAdmin = async (req, res, next) => {
+    try {
+        const plans = await prisma.plan.findMany({
+            orderBy: { sortOrder: 'asc' },
+            include: { _count: { select: { subscriptions: true } } },
+        });
+        sendResponse(res, 200, plans);
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { getPlans, getPlanById, createPlan, updatePlan, deletePlan, getAllPlansAdmin };
