@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { MessageSquare, CheckCircle, Eye, Send, ChevronLeft, ChevronRight, RefreshCw, ArrowLeft, Clock, User, Headphones } from "lucide-react";
 import { supportAPI } from "@/lib/api";
 import { showToast, formatDateTime, timeAgo } from "@/lib/hooks";
+import { getSocket } from "@/lib/socket";
 
 const statusColors = { open: 'badge-warning', 'in-progress': 'badge-info', resolved: 'badge-success', closed: 'badge-default' };
 const priorityColors = { low: 'badge-default', medium: 'badge-info', high: 'badge-warning', critical: 'badge-danger' };
@@ -33,32 +34,77 @@ export default function SupportPage() {
 
     useEffect(() => { loadTickets(); }, [loadTickets]);
 
-    // Poll for new messages when a ticket is selected (every 5s)
+    // Real-time socket updates
     useEffect(() => {
-        if (pollRef.current) clearInterval(pollRef.current);
-        if (!selected) return;
+        const socket = getSocket();
 
-        pollRef.current = setInterval(async () => {
-            try {
-                const r = await supportAPI.getTicketById(selected.id);
-                const ticket = r.data?.data;
-                if (ticket) {
-                    setSelected(prev => {
-                        // Only update if message count changed (avoid flickering)
-                        if (prev && ticket.messages?.length !== prev.messages?.length) {
-                            return ticket;
-                        }
-                        // Update status even if messages haven't changed
-                        if (prev && ticket.status !== prev.status) {
-                            return ticket;
-                        }
-                        return prev;
-                    });
-                }
-            } catch { /* silent */ }
-        }, 5000);
+        // New ticket created
+        socket.on("new_ticket", (newTicket) => {
+            // Reload to get fresh list without duplicates
+            setPage(1);
+            loadTickets();
+            showToast(`🎫 New Support Ticket: ${newTicket.subject}`, 'success');
+        });
 
-        return () => { if (pollRef.current) clearInterval(pollRef.current); };
+        // New message in any ticket
+        socket.on("ticket_message_added", (data) => {
+            const { ticketId, message, senderName } = data;
+
+            // Update selected ticket if viewing it
+            if (selected?.id === ticketId) {
+                setSelected(prev => {
+                    if (prev) {
+                        return {
+                            ...prev,
+                            messages: [...(prev.messages || []), message]
+                        };
+                    }
+                    return prev;
+                });
+                showToast(`💬 New message from ${senderName}`, 'info');
+            }
+
+            // Update ticket in list
+            setTickets(prev =>
+                prev.map(t =>
+                    t.id === ticketId ? { ...t, lastMessageAt: new Date() } : t
+                )
+            );
+        });
+
+        // Ticket status changed
+        socket.on("ticket_status_changed", (data) => {
+            const { ticketId, status } = data;
+
+            if (selected?.id === ticketId) {
+                setSelected(prev => prev ? { ...prev, status } : prev);
+            }
+
+            setTickets(prev =>
+                prev.map(t => t.id === ticketId ? { ...t, status } : t)
+            );
+            showToast(`Ticket status: ${status}`, 'info');
+        });
+
+        // Ticket assigned to agent
+        socket.on("ticket_assigned", (data) => {
+            const { ticketId, agentName } = data;
+
+            if (selected?.id === ticketId) {
+                setSelected(prev => prev ? { ...prev, assignedAgent: agentName } : prev);
+            }
+
+            setTickets(prev =>
+                prev.map(t => t.id === ticketId ? { ...t, assignedAgent: agentName } : t)
+            );
+        });
+
+        return () => {
+            socket.off("new_ticket");
+            socket.off("ticket_message_added");
+            socket.off("ticket_status_changed");
+            socket.off("ticket_assigned");
+        };
     }, [selected?.id]);
 
     // Auto-scroll chat to bottom when messages change

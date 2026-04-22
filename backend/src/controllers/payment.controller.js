@@ -55,7 +55,7 @@ const getPayments = async (req, res, next) => {
 // POST /api/payments/initiate  (Create Razorpay order)
 const initiatePayment = async (req, res, next) => {
     try {
-        const { userId, bookingId, subscriptionId, amount, couponCode } = req.body;
+        const { userId, bookingId, subscriptionId, productOrderId, amount, couponCode } = req.body;
 
         let discountAmount = 0;
         let finalAmount = amount;
@@ -94,6 +94,7 @@ const initiatePayment = async (req, res, next) => {
                     userId: userId || req.user.id,
                     bookingId,
                     subscriptionId,
+                    productOrderId,
                     amount: finalAmount,
                     couponCode,
                     discountAmount,
@@ -174,9 +175,10 @@ const verifyPayment = async (req, res, next) => {
                 razorpaySignature: signature,
                 status: 'SUCCESS',
             },
-            include: { 
+            include: {
                 user: true,
-                booking: { include: { service: true } }
+                booking: { include: { service: true } },
+                productOrder: { include: { product: true } },
             },
         });
 
@@ -241,6 +243,14 @@ const verifyPayment = async (req, res, next) => {
                 title: 'Plan Activated!',
                 body: `Your ${subscription.plan.name} plan is now active. Welcome to Oldful Family!`,
                 data: { type: 'subscription_activated', subscriptionId: subscription.id },
+            });
+        }
+
+        // ─── Promote product order: PENDING → PAID ────────────────────────────
+        if (payment.productOrderId) {
+            await prisma.productOrder.update({
+                where: { id: payment.productOrderId },
+                data: { status: 'PAID' },
             });
         }
 
@@ -481,11 +491,32 @@ const getPaymentMethods = async (req, res, next) => {
     }
 };
 
+// PUT /api/payments/:id/status (Admin only)
+const updatePaymentStatus = async (req, res, next) => {
+    try {
+        const { status } = req.body;
+        if (!status) return res.status(400).json({ success: false, message: 'Status is required' });
+
+        const payment = await prisma.payment.update({
+            where: { id: req.params.id },
+            data: { status },
+            include: {
+                user: { select: { name: true } },
+                booking: { select: { bookingCode: true } },
+            },
+        });
+
+        sendResponse(res, 200, payment, `Payment status updated to ${status}`);
+    } catch (error) {
+        next(error);
+    }
+};
+
 // POST /api/payments/manual-success (Admin only)
 const manualPaymentSuccess = async (req, res, next) => {
     try {
         const { bookingId } = req.body;
-        
+
         await prisma.booking.update({
             where: { id: bookingId },
             data: { paymentStatus: 'SUCCESS' }
@@ -516,5 +547,5 @@ const manualPaymentSuccess = async (req, res, next) => {
 module.exports = {
     getPayments, initiatePayment, verifyPayment, cancelPayment,
     initiateRefund, getRefundStatus, applyCoupon, getPaymentMethods,
-    manualPaymentSuccess
+    updatePaymentStatus, manualPaymentSuccess
 };

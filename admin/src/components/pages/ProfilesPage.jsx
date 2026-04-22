@@ -1,19 +1,19 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { 
-    Search, Filter, Plus, 
+import {
+    Search, Filter, Plus,
     CheckCircle2, AlertCircle, Clock, Trash2, Edit2, X, Shield, HeartPulse, User, Download, Save, ChevronDown, ChevronUp, Users,
-    Eye, EyeOff
+    Eye, EyeOff, Info
 } from "lucide-react";
 import { profilesAPI, cityAPI } from "@/lib/api";
 import { showToast, formatDate } from "@/lib/hooks";
 import GCSUpload from "@/components/GCSUpload";
 
 const TABS = [
-    { id: 'management', label: 'Management', icon: Shield },
-    { id: 'doctor', label: 'Doctors', icon: HeartPulse },
-    { id: 'nurse', label: 'Nurses', icon: HeartPulse },
-    { id: 'caregiver', label: 'Caregivers', icon: User },
+    { id: 'management', label: 'Management', icon: Shield, description: 'Administrative staff (coordinators, supervisors)' },
+    { id: 'doctor', label: 'Doctors', icon: HeartPulse, description: 'Medical doctors and physicians' },
+    { id: 'nurse', label: 'Nurses', icon: HeartPulse, description: 'Registered and auxiliary nurses' },
+    { id: 'caregiver', label: 'Caregivers', icon: User, description: 'Healthcare caregivers and attendants' },
 ];
 
 export default function ProfilesPage() {
@@ -40,6 +40,7 @@ export default function ProfilesPage() {
     const [formData, setFormData] = useState({});
     const [isSaving, setIsSaving] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
+    const [showGuide, setShowGuide] = useState(false);
 
     // ── Search Debouncing ──────────────────────────────
     useEffect(() => {
@@ -187,6 +188,9 @@ export default function ProfilesPage() {
                     <p>Centralized directory for medical, nursing, and administrative personnel.</p>
                 </div>
                 <div className="header-actions">
+                    <button className="btn-secondary" onClick={() => setShowGuide(!showGuide)} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Info size={18} /> How to use
+                    </button>
                     <button className="btn-secondary" onClick={handleExport}>
                         <Download size={18} /> Export
                     </button>
@@ -196,16 +200,56 @@ export default function ProfilesPage() {
                 </div>
             </header>
 
+            {/* GUIDE SECTION */}
+            {showGuide && (
+                <div className="guide-card">
+                    <div className="guide-header">
+                        <h3>How to Use Staff Management</h3>
+                        <button className="close-btn" onClick={() => setShowGuide(false)}>✕</button>
+                    </div>
+                    <div className="guide-content">
+                        <div className="guide-section">
+                            <h4>1. Select a Staff Category</h4>
+                            <p>Choose which type of staff you want to manage: <strong>Management</strong>, <strong>Doctors</strong>, <strong>Nurses</strong>, or <strong>Caregivers</strong>.</p>
+                        </div>
+                        <div className="guide-section">
+                            <h4>2. Add New Staff</h4>
+                            <p>Click the <strong>[+ Add Staff]</strong> button to create a new profile. Fill in name, email, phone, city, and specialization.</p>
+                        </div>
+                        <div className="guide-section">
+                            <h4>3. Edit Staff</h4>
+                            <p>Click the <strong>edit icon (✏️)</strong> next to any staff member to update their information.</p>
+                        </div>
+                        <div className="guide-section">
+                            <h4>4. Remove Staff</h4>
+                            <p>Click the <strong>trash icon (🗑️)</strong> to delete a staff member from the system.</p>
+                        </div>
+                        <div className="guide-section">
+                            <h4>5. Search & Filter</h4>
+                            <p>Use the search box to find staff by name or contact info. For doctors/nurses, filter by specialization.</p>
+                        </div>
+                        <div className="guide-section">
+                            <h4>6. Export Data</h4>
+                            <p>Click <strong>[Export]</strong> to download staff records as CSV file for reporting or backup.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* TAB SELECTOR */}
             <div className="tabs-grid">
                 {TABS.map(tab => (
-                    <button 
+                    <button
                         key={tab.id}
                         className={`tab-card ${activeTab === tab.id ? 'active' : ''}`}
                         onClick={() => { setActiveTab(tab.id); setPage(1); setSpecialization(""); }}
+                        title={tab.description}
                     >
                         <div className="tab-icon"><tab.icon size={20} /></div>
-                        <span className="tab-label">{tab.label}</span>
+                        <div style={{ flex: 1 }}>
+                            <span className="tab-label">{tab.label}</span>
+                            <div className="tab-description">{tab.description}</div>
+                        </div>
                     </button>
                 ))}
             </div>
@@ -382,6 +426,15 @@ export default function ProfilesPage() {
                 .title-group h1 { font-size: 32px; font-weight: 800; margin: 0; color: var(--text-primary); }
                 .title-group p { color: var(--text-muted); margin: 4px 0 0; font-size: 14px; }
 
+                .guide-card { background: linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(59,130,246,0.1) 100%); border: 1px solid rgba(99,102,241,0.2); border-radius: 12px; margin-bottom: 32px; }
+                .guide-header { padding: 16px 20px; border-bottom: 1px solid rgba(99,102,241,0.2); display: flex; justify-content: space-between; align-items: center; }
+                .guide-header h3 { margin: 0; font-size: 16px; font-weight: 700; color: var(--text-primary); }
+                .guide-content { padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+                .guide-section { }
+                .guide-section h4 { margin: 0 0 8px 0; font-size: 13px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.5px; }
+                .guide-section p { margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+                .guide-section strong { color: var(--text-primary); }
+
                 .header-actions { display: flex; gap: 12px; }
                 .btn-primary, .btn-secondary { display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: var(--radius-md); font-weight: 600; border: none; cursor: pointer; transition: var(--transition-base); }
                 .btn-primary { background: var(--gradient-primary); color: white; box-shadow: var(--shadow-md); }
@@ -390,12 +443,13 @@ export default function ProfilesPage() {
                 .btn-secondary:hover { background: var(--bg-card-hover); border-color: var(--accent-primary); }
 
                 .tabs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
-                .tab-card { background: var(--bg-card); border: 1px solid var(--border-color); padding: 18px; border-radius: var(--radius-lg); display: flex; align-items: center; gap: 14px; cursor: pointer; transition: var(--transition-base); color: var(--text-muted); text-align: left; box-shadow: var(--shadow-sm); }
+                .tab-card { background: var(--bg-card); border: 1px solid var(--border-color); padding: 18px; border-radius: var(--radius-lg); display: flex; align-items: flex-start; gap: 14px; cursor: pointer; transition: var(--transition-base); color: var(--text-muted); text-align: left; box-shadow: var(--shadow-sm); }
                 .tab-card:hover { border-color: var(--accent-primary); background: var(--bg-card-hover); transform: translateY(-2px); }
                 .tab-card.active { border-color: var(--accent-primary); background: var(--bg-glass); color: var(--accent-primary); box-shadow: var(--shadow-md); border-width: 2px; }
-                .tab-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: center; transition: var(--transition-base); color: var(--text-muted); }
+                .tab-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: center; transition: var(--transition-base); color: var(--text-muted); flex-shrink: 0; margin-top: 2px; }
                 .active .tab-icon { background: var(--accent-primary); color: white; }
-                .tab-label { font-weight: 700; font-size: 16px; }
+                .tab-label { font-weight: 700; font-size: 16px; display: block; }
+                .tab-description { font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; font-weight: 400; }
 
                 .filter-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
                 .search-box { position: relative; width: 100%; max-width: 400px; }

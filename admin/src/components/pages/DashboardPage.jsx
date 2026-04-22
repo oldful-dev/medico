@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
     Users, CreditCard, CalendarCheck, AlertTriangle, DollarSign, TrendingUp,
     TrendingDown, Activity, Clock, UserCheck
@@ -21,6 +22,7 @@ const chartTooltipStyle = {
 };
 
 export default function DashboardPage() {
+    const router = useRouter();
     const [summary, setSummary] = useState(null);
     const [revByCity, setRevByCity] = useState([]);
     const [svcUsage, setSvcUsage] = useState([]);
@@ -86,12 +88,13 @@ export default function DashboardPage() {
                     <div className="stat-card-value">{(s.todayBookings || 0).toLocaleString()}</div>
                     <div className="stat-card-label">Today&apos;s Bookings</div>
                 </div>
-                <div className="stat-card">
+                <div className="stat-card" style={{ cursor: s.pendingBookings > 0 ? 'pointer' : 'default', transition: 'all 0.2s' }} onClick={() => s.pendingBookings > 0 && router.push('/bookings')} onMouseEnter={e => s.pendingBookings > 0 && (e.currentTarget.style.transform = 'translateY(-4px)', e.currentTarget.style.boxShadow = 'var(--shadow-lg)')} onMouseLeave={e => (e.currentTarget.style.transform = '', e.currentTarget.style.boxShadow = '')}>
                     <div className="stat-card-header">
-                        <div className="stat-card-icon yellow"><Clock size={22} /></div>
+                        <div className={`stat-card-icon ${s.pendingBookings > 0 ? 'red' : 'yellow'}`}><Clock size={22} /></div>
                     </div>
                     <div className="stat-card-value">{(s.pendingBookings || 0).toLocaleString()}</div>
                     <div className="stat-card-label">Pending Assignments</div>
+                    {s.pendingBookings > 0 && <div style={{ fontSize: 11, color: 'var(--color-warning)', marginTop: 8 }}>Click to assign →</div>}
                 </div>
                 <div className="stat-card">
                     <div className="stat-card-header">

@@ -1,32 +1,54 @@
 "use client";
-import { useState, useEffect } from "react";
-import { Upload, Trash2, Copy, Image, FileText, Film, Info } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Upload, Trash2, Copy, Image, FileText, Film, Info, X } from "lucide-react";
 import { mediaAPI } from "@/lib/api";
 import { showToast, formatDateTime } from "@/lib/hooks";
 
 export default function MediaPage() {
     const [assets, setAssets] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('');
+    const [folderFilter, setFolderFilter] = useState('');
+    const [typeFilter, setTypeFilter] = useState('');
+    const [searchFilter, setSearchFilter] = useState('');
     const [uploading, setUploading] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
 
-    useEffect(() => { loadAssets(); }, [filter]);
+    const loadAssets = useCallback(async () => {
+        try {
+            setLoading(true);
+            const params = {};
+            if (folderFilter) params.folder = folderFilter;
+            if (typeFilter) params.fileType = typeFilter;
+            if (searchFilter) params.search = searchFilter;
+            const r = await mediaAPI.getAll(params);
+            setAssets(r.data?.data || r.data?.pagination?.data || []);
+        } catch (e) {
+            console.error('Failed to load media:', e);
+            showToast('Failed to load media', 'error');
+        } finally {
+            setLoading(false);
+        }
+    }, [folderFilter, typeFilter, searchFilter]);
 
-    async function loadAssets() {
-        try { setLoading(true); const params = filter ? { folder: filter } : {}; const r = await mediaAPI.getAll(params); setAssets(r.data?.data || []); }
-        catch (e) { console.error(e); } finally { setLoading(false); }
-    }
+    useEffect(() => { loadAssets(); }, [loadAssets]);
 
     async function handleUpload(e) {
         const file = e.target.files[0];
         if (!file) return;
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('folder', filter || 'general');
-        try { setUploading(true); await mediaAPI.upload(formData); showToast('File uploaded'); loadAssets(); }
-        catch (er) { showToast(er.response?.data?.message || 'Upload failed', 'error'); }
-        finally { setUploading(false); e.target.value = ''; }
+        formData.append('folder', folderFilter || 'general');
+        try {
+            setUploading(true);
+            await mediaAPI.upload(formData);
+            showToast('File uploaded');
+            loadAssets();
+        } catch (er) {
+            showToast(er.response?.data?.message || 'Upload failed', 'error');
+        } finally {
+            setUploading(false);
+            e.target.value = '';
+        }
     }
 
     async function deleteAsset(id) {
@@ -43,15 +65,37 @@ export default function MediaPage() {
     return (
         <div>
             <div className="page-header"><h2>Content & Media Library</h2><p>Upload and manage media assets</p></div>
-            <div className="filter-bar">
+            <div className="filter-bar" style={{ gap: 8, flexWrap: 'wrap' }}>
                 <label className="btn btn-primary" style={{ cursor: 'pointer' }}>
                     <Upload size={16} /> {uploading ? 'Uploading...' : 'Upload File'}
                     <input type="file" hidden onChange={handleUpload} disabled={uploading} />
                 </label>
-                <select className="form-select" style={{ width: 180 }} value={filter} onChange={e => setFilter(e.target.value)}>
+                <select className="form-select" style={{ minWidth: 160 }} value={folderFilter} onChange={e => setFolderFilter(e.target.value)}>
                     <option value="">All Folders</option>
-                    <option value="general">General</option><option value="services">Services</option><option value="banners">Banners</option><option value="products">Products</option>
+                    <option value="general">General</option>
+                    <option value="services">Services</option>
+                    <option value="banners">Banners</option>
+                    <option value="products">Products</option>
                 </select>
+                <select className="form-select" style={{ minWidth: 140 }} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+                    <option value="">All Types</option>
+                    <option value="image">Images</option>
+                    <option value="video">Videos</option>
+                    <option value="application">Documents</option>
+                </select>
+                <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Search file name..."
+                    value={searchFilter}
+                    onChange={e => setSearchFilter(e.target.value)}
+                    style={{ minWidth: 200 }}
+                />
+                {(folderFilter || typeFilter || searchFilter) && (
+                    <button className="btn btn-sm btn-secondary" onClick={() => { setFolderFilter(''); setTypeFilter(''); setSearchFilter(''); }}>
+                        <X size={14} /> Clear Filters
+                    </button>
+                )}
             </div>
 
             <div className="card"><div className="card-body" style={{ padding: 0, overflowX: "auto" }}>

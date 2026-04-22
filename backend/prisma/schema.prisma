@@ -264,6 +264,7 @@ model User {
   insuranceApps     InsuranceApplication[]
   waitlistEntries   WaitlistEntry[]
   labOrders         LabOrder[]
+  productOrders     ProductOrder[]
 
   otpCode           String?
   otpExpiresAt      DateTime?
@@ -547,6 +548,8 @@ model Payment {
   booking             Booking?      @relation(fields: [bookingId], references: [id])
   subscriptionId      String?
   subscription        Subscription? @relation(fields: [subscriptionId], references: [id])
+  productOrderId      String?
+  productOrder        ProductOrder? @relation(fields: [productOrderId], references: [id])
 
   amount              Float
   currency            String        @default("INR")
@@ -707,6 +710,7 @@ model Product {
   category      Category  @relation(fields: [categoryId], references: [id])
 
   waitlist      WaitlistEntry[]
+  orders        ProductOrder[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -917,7 +921,27 @@ model WellnessWaitlist {
   @@map("wellness_waitlist")
 }
 
-// ─── 26. Lab Order (Redcliffe API specific) ─────────────────
+// ─── 26. Product Order (Wellness Store) ─────────────────────
+model ProductOrder {
+  id          String   @id @default(uuid())
+  orderCode   String   @unique
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  quantity    Int      @default(1)
+  amount      Float
+  status      String   @default("PENDING")  // PENDING | PAID | CANCELLED
+  address     String?
+  payments    Payment[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("product_orders")
+}
+
+// ─── 27. Lab Order (Redcliffe API specific) ─────────────────
 model LabOrder {
   id                 String         @id @default(uuid())
   userId             String

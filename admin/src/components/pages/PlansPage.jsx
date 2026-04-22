@@ -14,6 +14,7 @@ export default function PlansPage() {
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState(null);
     const [form, setForm] = useState({ name: '', description: '', benefits: '', quarterlyPrice: 0, biannualPrice: 0, yearlyPrice: 0, isVisible: true, sortOrder: 0 });
+    const [subFilter, setSubFilter] = useState('ALL');
 
     useEffect(() => { loadPlans(); }, []);
     useEffect(() => { if (activeTab === 'subscriptions') loadSubs(); }, [activeTab]);
@@ -27,6 +28,8 @@ export default function PlansPage() {
         try { const r = await subscriptionAPI.getAll(); setSubs(r.data?.data || []); }
         catch (e) { console.error(e); }
     }
+
+    const filteredSubs = subFilter === 'ALL' ? subs : subs.filter(s => s.status === subFilter);
 
     function openAdd() { setEditing(null); setForm({ name: '', description: '', benefits: '', quarterlyPrice: 0, biannualPrice: 0, yearlyPrice: 0, isVisible: true, sortOrder: plans.length }); setShowModal(true); }
     function openEdit(p) { setEditing(p); setForm({ name: p.name, description: p.description || '', benefits: p.benefits || '', quarterlyPrice: p.quarterlyPrice, biannualPrice: p.biannualPrice, yearlyPrice: p.yearlyPrice, isVisible: p.isVisible, sortOrder: p.sortOrder }); setShowModal(true); }
@@ -85,11 +88,16 @@ export default function PlansPage() {
             {activeTab === "subscriptions" && (
                 <div className="card">
                     <div className="card-header"><h3>All Subscriptions</h3></div>
+                    <div className="filter-bar" style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {['ALL', 'ACTIVE', 'PAUSED', 'EXPIRING', 'EXPIRED', 'CANCELLED'].map(status => (
+                            <button key={status} onClick={() => setSubFilter(status)} className={`btn btn-sm ${subFilter === status ? 'btn-primary' : 'btn-secondary'}`}>{status}</button>
+                        ))}
+                    </div>
                     <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
                         <table className="data-table">
                             <thead><tr><th>User</th><th>Plan</th><th>Cycle</th><th>Start</th><th>Expiry</th><th>Amount</th><th>Status</th><th>Auto-Renew</th><th>Actions</th></tr></thead>
                             <tbody>
-                                {subs.map(s => (
+                                {filteredSubs.map(s => (
                                     <tr key={s.id}>
                                         <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{s.user?.name || '—'}</td>
                                         <td className="text-sm">{s.plan?.name || '—'}</td>
@@ -108,7 +116,7 @@ export default function PlansPage() {
                                         </td>
                                     </tr>
                                 ))}
-                                {subs.length === 0 && <tr><td colSpan={9} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No subscriptions found</td></tr>}
+                                {filteredSubs.length === 0 && <tr><td colSpan={9} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No subscriptions found{subFilter !== 'ALL' && ` with status ${subFilter}`}</td></tr>}
                             </tbody>
                         </table>
                     </div>

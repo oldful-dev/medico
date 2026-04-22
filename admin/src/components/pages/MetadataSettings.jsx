@@ -19,18 +19,20 @@ export default function MetadataSettings() {
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [newValue, setNewValue] = useState("");
+    const [showGuide, setShowGuide] = useState(false);
 
     const loadMetadata = async () => {
         try {
             setLoading(true);
             const res = await profilesAPI.getMetadata();
-            const data = res.data; // Response helper returns data directly
+            const data = res.data.data || res.data;
             setMetadata({
-                specializations: data.specializations || [],
-                adminRoles: data.adminRoles || [],
+                specializations: Array.isArray(data.specializations) ? data.specializations : [],
+                adminRoles: Array.isArray(data.adminRoles) ? data.adminRoles : [],
                 staffRoles: data.staffRoles || ['doctor', 'nurse', 'caregiver', 'management']
             });
         } catch (error) {
+            console.error("Load metadata error:", error);
             showToast("Failed to load metadata", "error");
         } finally {
             setLoading(false);
@@ -40,16 +42,18 @@ export default function MetadataSettings() {
     const handleSave = async (explicitData) => {
         // Fallback to current state if no explicit data provided (or if called via onClick event)
         const payload = (explicitData && !explicitData.nativeEvent) ? explicitData : metadata;
-        
+
         try {
             setSaving(true);
-            await profilesAPI.updateMetadata(payload);
+            const response = await profilesAPI.updateMetadata(payload);
+            console.log("Update response:", response.data);
             showToast("System metadata updated successfully", "success");
             setShowAddModal(false);
             setNewValue("");
+            await loadMetadata(); // Reload from backend after save
         } catch (error) {
             console.error("Save error:", error);
-            showToast("Failed to save changes", "error");
+            showToast(error.response?.data?.message || "Failed to save changes", "error");
         } finally {
             setSaving(false);
         }
@@ -95,9 +99,12 @@ export default function MetadataSettings() {
             <header className="page-header">
                 <div className="title-group">
                     <h1>Staff Configuration</h1>
-                    <p>Manage the dynamic roles and specializations available across the platform.</p>
+                    <p>Manage the dropdown options for medical specializations and management roles.</p>
                 </div>
                 <div className="header-actions">
+                    <button className="btn-secondary" onClick={() => setShowGuide(!showGuide)} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Info size={18} /> What is this?
+                    </button>
                     <button className="btn-secondary" onClick={loadMetadata}><RotateCcw size={18} /> Revert</button>
                     <button className="btn-primary" onClick={handleSave} disabled={saving}>
                         {saving ? "Saving..." : <><Save size={18} /> Save Changes</>}
@@ -105,20 +112,57 @@ export default function MetadataSettings() {
                 </div>
             </header>
 
+            {/* HELP SECTION */}
+            {showGuide && (
+                <div className="guide-card">
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                        <Info size={20} style={{ color: 'var(--primary)', marginTop: 2, flexShrink: 0 }} />
+                        <div style={{ flex: 1 }}>
+                            <h3 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>What is Staff Configuration?</h3>
+                            <p style={{ margin: '0 0 12px 0', fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                                This page controls the <strong>dropdown options</strong> that appear when you create or edit staff members and admin accounts.
+                            </p>
+                            <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+                                <p style={{ margin: '8px 0 0 0', fontWeight: 600, color: 'var(--text-primary)' }}>The two sections are:</p>
+                                <ul style={{ margin: '8px 0 0 16px', paddingLeft: 0 }}>
+                                    <li><strong>Medical Specializations:</strong> Doctor types (Cardiologist, Neurologist, etc.) that appear when creating doctors</li>
+                                    <li><strong>Management Roles:</strong> Admin role types that appear when creating admin accounts</li>
+                                </ul>
+                                <p style={{ margin: '12px 0 0 0', fontWeight: 600, color: 'var(--text-primary)' }}>What happens when you make changes:</p>
+                                <ul style={{ margin: '8px 0 0 16px', paddingLeft: 0 }}>
+                                    <li>✅ New entries appear in dropdown menus immediately</li>
+                                    <li>✅ Existing staff assigned to removed entries are NOT affected</li>
+                                    <li>✅ Removed entries just disappear from selection dropdowns</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setShowGuide(false)}
+                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 20, padding: 0, marginTop: -4 }}
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="settings-layout">
                 {/* SIDEBAR */}
                 <aside className="settings-sidebar">
                     <nav>
-                        <button className={activeSection === 'specializations' ? 'active' : ''} onClick={() => setActiveSection('specializations')}>
-                            <HeartPulse size={18} /> <span>Medical Specializations</span>
-                        </button>
-                        <button className={activeSection === 'adminRoles' ? 'active' : ''} onClick={() => setActiveSection('adminRoles')}>
-                            <Shield size={18} /> <span>Management Roles</span>
-                        </button>
+                        <div className="sidebar-section">
+                            <div className="sidebar-section-title">Configuration Options</div>
+                            <button className={activeSection === 'specializations' ? 'active' : ''} onClick={() => setActiveSection('specializations')}>
+                                <HeartPulse size={18} /> <span>Medical Specializations</span>
+                            </button>
+                            <button className={activeSection === 'adminRoles' ? 'active' : ''} onClick={() => setActiveSection('adminRoles')}>
+                                <Shield size={18} /> <span>Management Roles</span>
+                            </button>
+                        </div>
                         <div className="sidebar-divider"></div>
                         <div className="sidebar-info">
                             <Info size={14} />
-                            <p>These options populate dropdowns in the Staff Creation & Profile Editor forms.</p>
+                            <p>These options appear in dropdown menus when you create staff or admin accounts in other sections.</p>
                         </div>
                     </nav>
                 </aside>
@@ -191,6 +235,8 @@ export default function MetadataSettings() {
             )}
 
             <style jsx>{`
+                .metadata-settings > header { margin-bottom: 32px; }
+
                 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
                 .modal-content { background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; max-width: 450px; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-xl); animation: slideUp 0.3s ease-out; }
                 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -210,7 +256,9 @@ export default function MetadataSettings() {
                 .modal-footer button { flex: 1; }
                 .metadata-settings { color: var(--text-primary); font-family: var(--font-primary); }
                 
-                .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
+                .guide-card { background: linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(59,130,246,0.1) 100%); border: 1px solid rgba(99,102,241,0.2); border-radius: 12px; padding: 20px; margin-bottom: 32px; }
+
+                .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0; }
                 .title-group h1 { font-size: 32px; font-weight: 800; margin: 0; color: var(--text-primary); }
                 .title-group p { color: var(--text-muted); margin: 4px 0 0; font-size: 14px; }
                 .header-actions { display: flex; gap: 12px; }
@@ -225,15 +273,17 @@ export default function MetadataSettings() {
                 .settings-layout { display: grid; grid-template-columns: 280px 1fr; gap: 32px; }
                 
                 .settings-sidebar nav { display: flex; flex-direction: column; gap: 8px; }
-                .settings-sidebar button { 
-                    display: flex; align-items: center; gap: 12px; padding: 14px 18px; 
-                    background: transparent; border: 1px solid transparent; border-radius: var(--radius-md); 
+                .sidebar-section { }
+                .sidebar-section-title { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 18px 4px; }
+                .settings-sidebar button {
+                    display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+                    background: transparent; border: 1px solid transparent; border-radius: var(--radius-md);
                     color: var(--text-muted); cursor: pointer; transition: var(--transition-fast); text-align: left;
                     font-weight: 500;
                 }
                 .settings-sidebar button:hover { background: var(--bg-glass-hover); color: var(--text-primary); }
                 .settings-sidebar button.active { background: var(--bg-glass); border-color: var(--accent-primary); color: var(--accent-primary); font-weight: 700; }
-                
+
                 .sidebar-divider { height: 1px; background: var(--border-color); margin: 16px 0; }
                 .sidebar-info { display: flex; gap: 10px; padding: 12px; background: var(--bg-glass); border-radius: var(--radius-md); color: var(--accent-info); font-size: 11px; line-height: 1.5; border: 1px solid var(--border-color); }
 

@@ -8,6 +8,7 @@ router.get('/', ctrl.getProducts);
 router.get('/:id', ctrl.getProductById);
 
 // User
+router.post('/:id/order', authenticate, ctrl.createProductOrder);
 router.post('/:id/waitlist', authenticate, ctrl.joinWaitlist);
 
 // Admin

@@ -3,12 +3,14 @@ import { persist } from 'zustand/middleware';
 
 export interface CartItem {
   id: string;
-  type?: 'service' | 'plan'; 
+  type?: 'service' | 'plan' | 'product';
   serviceId?: string;
   planId?: string;
+  productId?: string;
   billingCycle?: string;
   price: number;
-  name?: string; // Cache name for display
+  name?: string;
+  imageUrl?: string;
   // Dynamic fields for different services
   [key: string]: unknown;
 }

@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { bookingService } from '@/services/api/bookingService';
 import { subscriptionService } from '@/services/api/subscriptionService';
 import { paymentService } from '@/services/api/paymentService';
+import { apiClient } from '@/services/api/apiClient';
 import { toast } from 'sonner';
 
 declare global {
@@ -32,6 +33,7 @@ function CheckoutContent() {
   const [createdReferenceId, setCreatedReferenceId] = useState<string | null>(null);
 
   const isSubscription = items.some(i => i.type === 'plan');
+  const isProduct = items.some(i => i.type === 'product');
   const pendingOrderId = React.useRef<string | null>(null);
 
   useEffect(() => {
@@ -63,7 +65,7 @@ function CheckoutContent() {
   // ─── Price Breakdown ────────────────────────────────────────────────────
   const subtotal = parseFloat(items.reduce((acc, item) => acc + item.price, 0).toFixed(2));
   const gst = parseFloat((subtotal * 0.18).toFixed(2));
-  const serviceFee = isSubscription ? 0 : 50;
+  const serviceFee = (isSubscription || isProduct) ? 0 : 50;
   const total = parseFloat((subtotal + gst + serviceFee).toFixed(2));
 
   const handlePayment = async () => {
@@ -77,7 +79,12 @@ function CheckoutContent() {
        let referenceId = createdReferenceId;
 
        if (!referenceId) {
-          if (isSubscription) {
+          if (isProduct) {
+             const productItem = items.find(i => i.type === 'product')!;
+             const orderRes = await apiClient.post<{ id: string }>(`/products/${productItem.productId}/order`, { quantity: 1 });
+             if (!orderRes.success || !orderRes.data) throw new Error(orderRes.message || 'Order creation failed');
+             referenceId = orderRes.data.id;
+          } else if (isSubscription) {
              const planItem = items.find(i => i.type === 'plan')!;
              const subRes = await subscriptionService.initiateSubscription({
                 planId: planItem.planId!,
@@ -119,9 +126,10 @@ function CheckoutContent() {
           clearCart();
           router.push('/app/success');
        } else {
+          const paymentKey = isProduct ? 'productOrderId' : isSubscription ? 'subscriptionId' : 'bookingId';
           const initiateRes = await paymentService.initiatePayment({
              amount: total,
-             [isSubscription ? 'subscriptionId' : 'bookingId']: referenceId,
+             [paymentKey]: referenceId,
           });
 
           if (!initiateRes.success || !initiateRes.data) throw new Error('Payment initiation failed');
@@ -134,7 +142,7 @@ function CheckoutContent() {
              amount: Math.round(rzpAmount * 100), // paise
              currency,
              name: 'Oldful Healthcare',
-             description: isSubscription ? 'Care Plan Activation' : `Payment for ${items.length} service(s)`,
+             description: isSubscription ? 'Care Plan Activation' : isProduct ? `Wellness Store Order` : `Payment for ${items.length} service(s)`,
              order_id: orderId,
              // ─── UI Filtering: Standardized per Razorpay V1 ────────────────
              config: {
@@ -191,7 +199,7 @@ function CheckoutContent() {
                 ondismiss: async () => {
                    if (!isSubscription) await cancelPaymentOnBackend();
                    setIsProcessing(false);
-                }
+                },
              }
           };
 

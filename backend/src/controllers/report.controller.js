@@ -195,7 +195,8 @@ const dashboardSummary = async (req, res, next) => {
             prisma.subscription.count({ where: { status: 'ACTIVE' } }),
             prisma.payment.aggregate({ where: { status: 'SUCCESS' }, _sum: { amount: true } }),
             prisma.sOSAlert.count({ where: { status: { not: 'RESOLVED' } } }),
-            prisma.booking.count({ where: { status: 'PENDING' } }),
+            // Count bookings that need caregiver assignment: CONFIRMED status but no assigned caregiver
+            prisma.booking.count({ where: { status: 'CONFIRMED', caregiverId: null } }),
             prisma.booking.count({ where: { createdAt: { gte: todayStart } } }),
             prisma.service.count({ where: { isEnabled: true } }),
             prisma.subscription.count({ where: { status: 'ACTIVE', expiryDate: { lte: nextWeek, gte: new Date() } } }),
@@ -269,7 +270,50 @@ const exportCSV = async (req, res, next) => {
     }
 };
 
+// GET /api/reports/alerts
+const getAlertFeed = async (req, res, next) => {
+    try {
+        const [sos, bookings, payments, tickets] = await Promise.all([
+            prisma.sOSAlert.findMany({
+                where: { status: 'ACTIVE' },
+                take: 5,
+                orderBy: { createdAt: 'desc' },
+                include: { user: { select: { name: true } } }
+            }),
+            prisma.booking.findMany({
+                where: { status: { in: ['PENDING', 'SLA_BREACH'] } },
+                take: 5,
+                orderBy: { createdAt: 'desc' },
+                include: { user: { select: { name: true } }, service: { select: { name: true } } }
+            }),
+            prisma.payment.findMany({
+                where: { status: 'FAILED' },
+                take: 5,
+                orderBy: { createdAt: 'desc' },
+                include: { user: { select: { name: true } } }
+            }),
+            prisma.supportTicket.findMany({
+                where: { status: 'open' },
+                take: 5,
+                orderBy: { createdAt: 'desc' }
+            })
+        ]);
+
+        const feed = [
+            ...sos.map(a => ({ id: a.id, type: 'SOS', title: `Critical: SOS by ${a.user?.name || 'User'}`, time: a.createdAt, href: '/sos' })),
+            ...bookings.map(b => ({ id: b.id, type: 'BOOKING', title: `Pending: ${b.service?.name} for ${b.user?.name}`, time: b.createdAt, href: '/bookings' })),
+            ...payments.map(p => ({ id: p.id, type: 'PAYMENT', title: `Failed: ₹${p.amount} pmt by ${p.user?.name}`, time: p.createdAt, href: '/payments' })),
+            ...tickets.map(t => ({ id: t.id, type: 'TICKET', title: `Support: ${t.ticketCode} - ${t.subject}`, time: t.createdAt, href: '/support' }))
+        ].sort((a, b) => new Date(b.time) - new Date(a.time));
+
+        sendResponse(res, 200, feed.slice(0, 10)); // Top 10 most recent
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     revenueByCity, revenueByPlan, serviceUsage, caregiverPerformance,
     refundAnalysis, customerRetention, dashboardSummary, exportCSV,
+    getAlertFeed,
 };

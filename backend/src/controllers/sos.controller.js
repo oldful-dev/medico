@@ -42,7 +42,19 @@ const triggerSOS = async (req, res) => {
                 adminNotified: false,
                 familyNotified: false,
             },
+            include: { user: { select: { name: true, phone: true, uniqueUserId: true } } }
         });
+
+        // 🟢 REAL-TIME: Notify Admins via Socket
+        const { emitToAdmins } = require('../services/socket.service');
+        emitToAdmins('new_sos', {
+            id: sosAlert.id,
+            type: 'SOS',
+            title: `Critical: SOS by ${sosAlert.user?.name || 'User'}`,
+            time: sosAlert.createdAt,
+            href: '/sos'
+        });
+
     } catch (dbErr) {
         logger.error('SOS DB create failed:', dbErr);
         return res.status(500).json({ success: false, message: 'Failed to record SOS alert' });
@@ -189,6 +201,9 @@ const assignResponder = async (req, res) => {
             include: { responder: true, user: true }
         });
 
+        const { emitToAdmins } = require('../services/socket.service');
+        emitToAdmins('sos_updated', alert);
+
         res.json({ success: true, message: 'Responder assigned successfully', data: alert });
     } catch (err) {
         logger.error('Failed to assign SOS responder:', err);
@@ -213,6 +228,9 @@ const resolveSOS = async (req, res) => {
                 resolvedNotes: notes,
             }
         });
+
+        const { emitToAdmins } = require('../services/socket.service');
+        emitToAdmins('sos_updated', alert);
 
         res.json({ success: true, message: 'SOS alert resolved', data: alert });
     } catch (err) {

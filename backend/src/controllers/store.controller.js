@@ -24,7 +24,7 @@ const getProducts = async (req, res, next) => {
                 where,
                 skip,
                 take: limit,
-                include: { category: { select: { name: true } }, _count: { select: { waitlist: true } } },
+                include: { category: { select: { name: true } }, _count: { select: { waitlist: true, orders: true } } },
                 orderBy: { createdAt: 'desc' },
             }),
             prisma.product.count({ where }),
@@ -40,7 +40,11 @@ const getProductById = async (req, res, next) => {
     try {
         const product = await prisma.product.findUnique({
             where: { id: req.params.id },
-            include: { category: true, waitlist: { include: { user: { select: { name: true } } } } },
+            include: {
+                category: true,
+                waitlist: { include: { user: { select: { name: true } } } },
+                _count: { select: { orders: true, waitlist: true } },
+            },
         });
         if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
         sendResponse(res, 200, product);
@@ -71,6 +75,38 @@ const deleteProduct = async (req, res, next) => {
     try {
         await prisma.product.delete({ where: { id: req.params.id } });
         sendResponse(res, 200, null, 'Product deleted');
+    } catch (error) {
+        next(error);
+    }
+};
+
+// POST /api/products/:id/order  — creates a ProductOrder and returns it for payment
+const createProductOrder = async (req, res, next) => {
+    try {
+        const product = await prisma.product.findUnique({ where: { id: req.params.id } });
+        if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+        if (!product.isEnabled || product.stock < 1) {
+            return res.status(400).json({ success: false, message: 'Product is out of stock' });
+        }
+
+        const { quantity = 1, address } = req.body;
+        const amount = product.price * quantity;
+        const orderCode = `ORD-${Date.now()}`;
+
+        const order = await prisma.productOrder.create({
+            data: {
+                orderCode,
+                userId: req.user.id,
+                productId: product.id,
+                quantity,
+                amount,
+                address,
+                status: 'PENDING',
+            },
+            include: { product: { select: { name: true, imageUrl: true } } },
+        });
+
+        sendResponse(res, 201, order, 'Order created');
     } catch (error) {
         next(error);
     }
@@ -135,6 +171,7 @@ const deleteCategory = async (req, res, next) => {
 };
 
 module.exports = {
-    getProducts, getProductById, createProduct, updateProduct, deleteProduct, joinWaitlist,
+    getProducts, getProductById, createProduct, updateProduct, deleteProduct,
+    createProductOrder, joinWaitlist,
     getCategories, createCategory, updateCategory, deleteCategory,
 };

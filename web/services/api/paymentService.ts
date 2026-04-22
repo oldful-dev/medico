@@ -4,6 +4,7 @@ export interface InitiatePaymentData {
     amount: number;
     bookingId?: string;
     subscriptionId?: string;
+    productOrderId?: string;
     couponCode?: string;
 }
 

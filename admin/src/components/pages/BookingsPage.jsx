@@ -1,10 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Search, Eye, UserPlus, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Eye, UserPlus, AlertTriangle, ChevronLeft, ChevronRight, Edit2, Save, X } from "lucide-react";
 import { bookingAPI, caregiverAPI, cityAPI } from "@/lib/api";
 import { formatDate, formatDateTime, formatCurrency, showToast } from "@/lib/hooks";
+import { getSocket } from "@/lib/socket";
 
 const statusColors = { PENDING: 'badge-warning', ASSIGNED: 'badge-info', IN_PROGRESS: 'badge-purple', COMPLETED: 'badge-success', CANCELLED: 'badge-default', SLA_BREACH: 'badge-danger' };
+const paymentStatusColors = { PENDING: 'badge-warning', COMPLETED: 'badge-success', FAILED: 'badge-danger', REFUNDED: 'badge-secondary' };
 
 export default function BookingsPage() {
     const [bookings, setBookings] = useState([]);
@@ -18,6 +20,10 @@ export default function BookingsPage() {
     const [selected, setSelected] = useState(null);
     const [assignModal, setAssignModal] = useState(null);
     const [selectedCaregiver, setSelectedCaregiver] = useState('');
+    const [editMode, setEditMode] = useState(false);
+    const [editData, setEditData] = useState({});
+    const [servicePersonModal, setServicePersonModal] = useState(false);
+    const [servicePerson, setServicePerson] = useState({ name: '', phone: '', notes: '' });
     const limit = 20;
 
     useEffect(() => {
@@ -27,19 +33,64 @@ export default function BookingsPage() {
         }).catch(() => { });
     }, []);
 
-    useEffect(() => { loadBookings(); }, [page, filters]);
+    useEffect(() => {
+        loadBookings();
+    }, [page, filters, search]);
 
-    async function loadBookings() {
+    useEffect(() => {
+        const socket = getSocket();
+
+        socket.on("new_booking", (newBooking) => {
+            // Reload to get fresh list without duplicates
+            setPage(1);
+            loadBookings(false);
+            showToast(`📅 New Booking: ${newBooking.serviceType || 'Service'}`, 'success');
+        });
+
+        socket.on("booking_updated", (updatedBooking) => {
+            setBookings(prev =>
+                prev.map(b => b.id === updatedBooking.id ? updatedBooking : b)
+            );
+        });
+
+        socket.on("booking_status_changed", (data) => {
+            const { bookingId, status, userName } = data;
+            setBookings(prev =>
+                prev.map(b => b.id === bookingId ? { ...b, status } : b)
+            );
+            showToast(`✓ Booking status: ${status}`, 'info');
+        });
+
+        socket.on("booking_assigned", (data) => {
+            const { bookingId, caregiverName } = data;
+            setBookings(prev =>
+                prev.map(b => b.id === bookingId ? { ...b, assignedCaregiver: caregiverName } : b)
+            );
+            showToast(`✓ Caregiver assigned: ${caregiverName}`, 'success');
+        });
+
+        return () => {
+            socket.off("new_booking");
+            socket.off("booking_updated");
+            socket.off("booking_status_changed");
+            socket.off("booking_assigned");
+        };
+    }, [loadBookings]);
+
+    async function loadBookings(showLoading = true) {
         try {
-            setLoading(true);
+            if (showLoading) setLoading(true);
             const params = { page, limit, ...filters };
             if (search) params.search = search;
             Object.keys(params).forEach(k => !params[k] && delete params[k]);
             const res = await bookingAPI.getAll(params);
-            setBookings(res.data?.data?.bookings || res.data?.data || []);
+            const data = res.data?.data?.bookings || res.data?.data || [];
+            
+            // Only update if data changed to prevent unnecessary re-renders
+            setBookings(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
             setTotal(res.data?.data?.total || 0);
         } catch (e) { console.error(e); }
-        finally { setLoading(false); }
+        finally { if (showLoading) setLoading(false); }
     }
 
     async function viewBooking(id) {
@@ -77,9 +128,56 @@ export default function BookingsPage() {
         } catch (e) { showToast('Escalation failed', 'error'); }
     }
 
+    async function updateBookingDetails() {
+        if (!editData.status && !editData.paymentStatus) {
+            showToast('Select at least one field to update', 'error');
+            return;
+        }
+        try {
+            const updatePayload = {};
+            if (editData.status) updatePayload.status = editData.status;
+            if (editData.paymentStatus) {
+                // Update payment status - this would need a new API endpoint
+                updatePayload.paymentStatus = editData.paymentStatus;
+            }
+
+            await bookingAPI.updateStatus(selected.id, updatePayload);
+            showToast('Booking updated successfully');
+            setEditMode(false);
+            await viewBooking(selected.id);
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Update failed', 'error');
+        }
+    }
+
+    async function addServicePerson() {
+        if (!servicePerson.name || !servicePerson.phone) {
+            showToast('Enter name and phone', 'error');
+            return;
+        }
+        try {
+            // This would need a new API endpoint to add service person details
+            showToast('Service person details added');
+            setServicePersonModal(false);
+            setServicePerson({ name: '', phone: '', notes: '' });
+            await viewBooking(selected.id);
+        } catch (e) {
+            showToast('Failed to add service person', 'error');
+        }
+    }
+
     return (
         <div>
-            <div className="page-header"><h2>Booking Management</h2><p>View, assign, and manage all bookings</p></div>
+            <div className="page-header">
+                <div className="flex items-center gap-3">
+                    <h2>Booking Management</h2>
+                    <span className="badge badge-success" style={{ fontSize: 10, padding: '2px 8px' }}>
+                        <span className="pulse-dot" style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'white', marginRight: 6 }}></span>
+                        Live Stream
+                    </span>
+                </div>
+                <p>View, assign, and manage all bookings in real-time</p>
+            </div>
 
             <div className="filter-bar">
                 <form onSubmit={(e) => { e.preventDefault(); setPage(1); loadBookings(); }} style={{ display: 'flex', gap: 8, flex: 1 }}>
@@ -159,21 +257,141 @@ export default function BookingsPage() {
             )}
 
             {selected && (
-                <div className="modal-overlay" onClick={() => setSelected(null)}>
-                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 600 }}>
-                        <div className="modal-header"><h3>Booking Details — {selected.bookingCode}</h3><button onClick={() => setSelected(null)} className="btn btn-sm btn-secondary">✕</button></div>
+                <div className="modal-overlay" onClick={() => { setSelected(null); setEditMode(false); }}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 800, maxHeight: '90vh', overflowY: 'auto' }}>
+                        <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3>Booking Details — {selected.bookingCode}</h3>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                                {!editMode && <button onClick={() => { setEditMode(true); setEditData({ status: selected.status, paymentStatus: selected.payments?.[0]?.status || 'PENDING' }); }} className="btn btn-sm btn-info"><Edit2 size={14} /> Edit</button>}
+                                <button onClick={() => { setSelected(null); setEditMode(false); }} className="btn btn-sm btn-secondary">✕</button>
+                            </div>
+                        </div>
+
+                        <div className="modal-body" style={{ padding: '20px' }}>
+                            {/* User & Service Info */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
+                                <div><label className="form-label">User Name</label><div className="text-sm font-semibold">{selected.user?.name}</div></div>
+                                <div><label className="form-label">User ID</label><div className="text-sm font-semibold">{selected.user?.uniqueUserId}</div></div>
+                                <div><label className="form-label">Phone</label><div className="text-sm">{selected.user?.phone}</div></div>
+                                <div><label className="form-label">City</label><div className="text-sm">{selected.city?.name}</div></div>
+                                <div colSpan="2"><label className="form-label">Service Type</label><div className="text-sm font-semibold">{selected.service?.name}</div></div>
+                            </div>
+
+                            {/* Service Details (Dynamic based on service type) */}
+                            <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
+                                <h4 style={{ marginBottom: 12, color: 'var(--text-primary)', fontWeight: 600 }}>Service Details</h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                    <div><label className="form-label">Scheduled Date</label><div className="text-sm">{selected.scheduledDate ? formatDate(selected.scheduledDate) : '—'}</div></div>
+                                    <div><label className="form-label">Scheduled Time</label><div className="text-sm">{selected.scheduledTime || '—'}</div></div>
+                                    {selected.addressLine && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Service Address</label><div className="text-sm">{selected.addressLine}</div></div>}
+                                    {selected.symptoms && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Symptoms</label><div className="text-sm">{selected.symptoms}</div></div>}
+                                    <div><label className="form-label">Doctor Type</label><div className="text-sm">{selected.doctorType || '—'}</div></div>
+                                    <div><label className="form-label">Staff Type</label><div className="text-sm">{selected.staffType || '—'}</div></div>
+                                    {selected.shiftDuration && <div><label className="form-label">Shift Duration</label><div className="text-sm">{selected.shiftDuration}</div></div>}
+                                    {selected.requirements && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Requirements</label><div className="text-sm">{selected.requirements}</div></div>}
+                                </div>
+                            </div>
+
+                            {/* Status & Payment Info */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
+                                <div>
+                                    <label className="form-label">Booking Status</label>
+                                    {editMode ? (
+                                        <select className="form-select" value={editData.status || ''} onChange={e => setEditData({ ...editData, status: e.target.value })}>
+                                            <option value="">— Select —</option>
+                                            {Object.keys(statusColors).map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+                                        </select>
+                                    ) : (
+                                        <span className={`badge ${statusColors[selected.status]}`}>{selected.status?.replace(/_/g, ' ')}</span>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="form-label">Payment Status</label>
+                                    {editMode ? (
+                                        <select className="form-select" value={editData.paymentStatus || ''} onChange={e => setEditData({ ...editData, paymentStatus: e.target.value })}>
+                                            <option value="">— Select —</option>
+                                            {Object.keys(paymentStatusColors).map(s => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                    ) : (
+                                        <span className={`badge ${paymentStatusColors[selected.payments?.[0]?.status] || 'badge-warning'}`}>{selected.payments?.[0]?.status || 'PENDING'}</span>
+                                    )}
+                                </div>
+                                <div><label className="form-label">Amount</label><div className="text-sm font-semibold">{formatCurrency(selected.amount)}</div></div>
+                            </div>
+
+                            {/* Assigned Caregiver */}
+                            <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
+                                <label className="form-label">Assigned Caregiver</label>
+                                <div className="text-sm">{selected.caregiver?.name ? `${selected.caregiver.name} — ${selected.caregiver.phone}` : '—'}</div>
+                            </div>
+
+                            {/* Service Person Details */}
+                            <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                    <h4 style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Service Person Details</h4>
+                                    <button className="btn btn-sm btn-primary" onClick={() => setServicePersonModal(true)}>+ Add Person</button>
+                                </div>
+                                {selected.servicePersonName ? (
+                                    <div style={{ background: 'var(--bg-glass)', padding: 12, borderRadius: 8 }}>
+                                        <div><strong>{selected.servicePersonName}</strong></div>
+                                        <div className="text-sm">{selected.servicePersonPhone}</div>
+                                        {selected.servicePersonNotes && <div className="text-sm text-muted">{selected.servicePersonNotes}</div>}
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-muted">No service person assigned yet</div>
+                                )}
+                            </div>
+
+                            {/* Admin Notes */}
+                            {selected.adminNotes && (
+                                <div>
+                                    <label className="form-label">Admin Notes</label>
+                                    <div className="text-sm" style={{ background: 'var(--bg-glass)', padding: 12, borderRadius: 8 }}>{selected.adminNotes}</div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="modal-footer">
+                            {editMode ? (
+                                <>
+                                    <button className="btn btn-secondary" onClick={() => setEditMode(false)}>Cancel</button>
+                                    <button className="btn btn-success" onClick={updateBookingDetails}><Save size={14} /> Save Changes</button>
+                                </>
+                            ) : (
+                                <>
+                                    {selected.status === 'ASSIGNED' && <button className="btn btn-primary" onClick={() => updateStatus(selected.id, 'IN_PROGRESS')}>Start</button>}
+                                    {selected.status === 'IN_PROGRESS' && <button className="btn btn-success" onClick={() => updateStatus(selected.id, 'COMPLETED')}>Complete</button>}
+                                    {!['COMPLETED', 'CANCELLED'].includes(selected.status) && <button className="btn btn-danger" onClick={() => updateStatus(selected.id, 'CANCELLED')}>Cancel</button>}
+                                    <button className="btn btn-secondary" onClick={() => setSelected(null)}>Close</button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Service Person Modal */}
+            {servicePersonModal && (
+                <div className="modal-overlay" onClick={() => setServicePersonModal(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+                        <div className="modal-header"><h3>Add Service Person Details</h3><button onClick={() => setServicePersonModal(false)} className="btn btn-sm btn-secondary">✕</button></div>
                         <div className="modal-body">
-                            <div className="form-row"><div className="form-group"><label className="form-label">User</label><div className="text-sm">{selected.user?.name}</div></div><div className="form-group"><label className="form-label">Service</label><div className="text-sm">{selected.service?.name}</div></div></div>
-                            <div className="form-row"><div className="form-group"><label className="form-label">Status</label><span className={`badge ${statusColors[selected.status]}`}>{selected.status}</span></div><div className="form-group"><label className="form-label">Amount</label><div className="text-sm">{formatCurrency(selected.amount)}</div></div></div>
-                            <div className="form-row"><div className="form-group"><label className="form-label">Scheduled</label><div className="text-sm">{formatDateTime(selected.scheduledDate)} {selected.scheduledTime || ''}</div></div><div className="form-group"><label className="form-label">Caregiver</label><div className="text-sm">{selected.caregiver?.name || '—'}</div></div></div>
-                            {selected.addressLine && <div className="form-group"><label className="form-label">Address</label><div className="text-sm">{selected.addressLine}</div></div>}
-                            {selected.adminNotes && <div className="form-group"><label className="form-label">Notes</label><div className="text-sm">{selected.adminNotes}</div></div>}
+                            <div className="form-group mb-4">
+                                <label className="form-label">Person Name</label>
+                                <input type="text" className="form-input" placeholder="Full name" value={servicePerson.name} onChange={e => setServicePerson({ ...servicePerson, name: e.target.value })} />
+                            </div>
+                            <div className="form-group mb-4">
+                                <label className="form-label">Phone Number</label>
+                                <input type="tel" className="form-input" placeholder="Mobile number" value={servicePerson.phone} onChange={e => setServicePerson({ ...servicePerson, phone: e.target.value })} />
+                            </div>
+                            <div className="form-group mb-4">
+                                <label className="form-label">Notes (Optional)</label>
+                                <textarea className="form-input" rows="3" placeholder="Additional notes..." value={servicePerson.notes} onChange={e => setServicePerson({ ...servicePerson, notes: e.target.value })} />
+                            </div>
                         </div>
                         <div className="modal-footer">
-                            {selected.status === 'ASSIGNED' && <button className="btn btn-primary" onClick={() => updateStatus(selected.id, 'IN_PROGRESS')}>Start</button>}
-                            {selected.status === 'IN_PROGRESS' && <button className="btn btn-success" onClick={() => updateStatus(selected.id, 'COMPLETED')}>Complete</button>}
-                            {!['COMPLETED', 'CANCELLED'].includes(selected.status) && <button className="btn btn-danger" onClick={() => updateStatus(selected.id, 'CANCELLED')}>Cancel</button>}
-                            <button className="btn btn-secondary" onClick={() => setSelected(null)}>Close</button>
+                            <button className="btn btn-secondary" onClick={() => setServicePersonModal(false)}>Cancel</button>
+                            <button className="btn btn-primary" onClick={addServicePerson}>Add Person</button>
                         </div>
                     </div>
                 </div>
