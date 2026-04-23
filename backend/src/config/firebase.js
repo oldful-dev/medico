@@ -6,7 +6,7 @@ const admin = require('firebase-admin');
 const { logger } = require('./logger');
 const path = require('path');
 
-const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './firebase-service-account.json';
+const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './src/config/firebase_account_config.json';
 
 try {
     const serviceAccount = require(path.resolve(serviceAccountPath));

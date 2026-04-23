@@ -17,5 +17,6 @@ router.post('/templates', ctrl.createTemplate);
 router.put('/templates/:id', ctrl.updateTemplate);
 router.delete('/templates/:id', ctrl.deleteTemplate);
 router.post('/send-campaign', ctrl.sendCampaign);
+router.post('/test-push', ctrl.sendTestPush);
 
 module.exports = router;
