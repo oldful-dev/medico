@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-    Search, Filter, Eye, AlertTriangle, 
+import {
+    Search, Filter, Eye, AlertTriangle,
     CheckCircle, Truck, FileText, MoreVertical,
     Download, ExternalLink, RefreshCw
 } from 'lucide-react';
@@ -53,7 +53,7 @@ export default function LabOrdersPage() {
     };
 
     const getStatusColor = (status) => {
-        switch(status) {
+        switch (status) {
             case 'CONFIRMED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
             case 'SAMPLE_COLLECTED': return 'bg-blue-100 text-blue-700 border-blue-200';
             case 'REPORT_GENERATED': return 'bg-purple-100 text-purple-700 border-purple-200';
@@ -89,7 +89,7 @@ export default function LabOrdersPage() {
                 <div className="flex gap-3 w-full md:w-auto">
                     <div className="relative flex-1 md:w-64">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input 
+                        <input
                             type="text"
                             placeholder="Search orders..."
                             value={search}
@@ -97,7 +97,7 @@ export default function LabOrdersPage() {
                             className="w-full h-12 pl-11 pr-4 bg-white border border-gray-200 rounded-xl font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
                         />
                     </div>
-                    <select 
+                    <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
                         className="h-12 px-4 bg-white border border-gray-200 rounded-xl font-bold outline-none hover:bg-gray-50 transition-all"
@@ -173,9 +173,9 @@ export default function LabOrdersPage() {
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-2">
                                                 {order.trackingLink && (
-                                                    <a 
-                                                        href={order.trackingLink} 
-                                                        target="_blank" 
+                                                    <a
+                                                        href={order.trackingLink}
+                                                        target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                         title="Track Phlebo"
@@ -184,7 +184,7 @@ export default function LabOrdersPage() {
                                                     </a>
                                                 )}
                                                 {order.status === 'REPORT_GENERATED' && (
-                                                    <button 
+                                                    <button
                                                         onClick={() => handleDownloadReport(order.redcliffeBookingId || order.clientRefId)}
                                                         className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                                                         title="Download Report"
@@ -211,16 +211,16 @@ export default function LabOrdersPage() {
                             Showing {orders.length} of {pagination.total} orders
                         </span>
                         <div className="flex gap-2">
-                            <button 
+                            <button
                                 disabled={pagination.page === 1}
-                                onClick={() => setPagination(p => ({...p, page: p.page - 1}))}
+                                onClick={() => setPagination(p => ({ ...p, page: p.page - 1 }))}
                                 className="h-10 px-4 border border-gray-200 rounded-lg font-bold text-xs hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
                                 Previous
                             </button>
-                            <button 
+                            <button
                                 disabled={orders.length < pagination.limit}
-                                onClick={() => setPagination(p => ({...p, page: p.page + 1}))}
+                                onClick={() => setPagination(p => ({ ...p, page: p.page + 1 }))}
                                 className="h-10 px-4 border border-gray-200 rounded-lg font-bold text-xs hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
                                 Next

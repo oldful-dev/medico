@@ -390,7 +390,7 @@ export default function SOSPage() {
                                                         <span>{timeAgo(alert.createdAt)}</span>
                                                     </div>
                                                 </div>
-                                                
+
                                                 {alert.responder && (
                                                     <div className="responder-block">
                                                         <div className="responder-info">
@@ -512,8 +512,8 @@ export default function SOSPage() {
                         </div>
                         <div className="modal-footer g-3">
                             <button className="btn btn-secondary flex-1" onClick={() => setAssignModal(null)}>Cancel</button>
-                            <button 
-                                className="btn btn-primary flex-1 btn-glow" 
+                            <button
+                                className="btn btn-primary flex-1 btn-glow"
                                 onClick={handleAssign}
                                 disabled={!selectedCg}
                             >

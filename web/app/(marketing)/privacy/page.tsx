@@ -50,7 +50,7 @@ export default async function PrivacyPage() {
             <section className="flex flex-col gap-4">
               <h2 className="text-2xl font-bold text-gray-900 border-b pb-2">Introduction</h2>
               <p className="text-gray-600 leading-relaxed">
-                Oldful ("we," "our," or "us") is committed to protecting the privacy and dignity of our users, particularly the elders and families we serve. This Privacy Policy outlines how Oldful collects, uses, discloses, and safeguards your information when you visit <span className="text-gray-900 font-semibold underline decoration-emerald-200">www.oldful.com</span> or engage our elder care services.
+                Oldful (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting the privacy and dignity of our users, particularly the elders and families we serve. This Privacy Policy outlines how Oldful collects, uses, discloses, and safeguards your information when you visit <span className="text-gray-900 font-semibold underline decoration-emerald-200">www.oldful.com</span> or engage our elder care services.
               </p>
               <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 mt-2">
                 <p className="text-sm text-gray-900 font-bold mb-3">This Policy is published in compliance with:</p>
@@ -110,7 +110,7 @@ export default async function PrivacyPage() {
             <section className="flex flex-col gap-4 mb-16">
               <h2 className="text-2xl font-bold text-gray-900 border-b pb-2">Updates to This Policy</h2>
               <p className="text-gray-600 leading-relaxed">
-                We may update this Privacy Policy to reflect changes in our practices or legal requirements. The "Last Updated" date at the top will indicate the latest revision.
+                We may update this Privacy Policy to reflect changes in our practices or legal requirements. The &quot;Last Updated&quot; date at the top will indicate the latest revision.
               </p>
             </section>
           </>
