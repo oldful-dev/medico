@@ -38,26 +38,27 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    setLoading(true);
-    fetch(`${API_URL}/products/${id}`)
-      .then(r => r.json())
-      .then(json => {
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`${API_URL}/products/${id}`);
+        const json = await res.json();
         if (json.success && json.data) {
           setProduct(json.data);
           // Fetch related products from same category
           if (json.data.category?.id) {
-            fetch(`${API_URL}/products?isEnabled=true&categoryId=${json.data.category.id}&limit=5`)
-              .then(r => r.json())
-              .then(rel => {
-                const items: Product[] = rel.data || [];
-                setRelated(items.filter(p => p.id !== id && p.stock > 0).slice(0, 4));
-              })
-              .catch(() => {});
+            const relRes = await fetch(`${API_URL}/products?isEnabled=true&categoryId=${json.data.category.id}&limit=5`);
+            const rel = await relRes.json();
+            const items: Product[] = rel.data || [];
+            setRelated(items.filter(p => p.id !== id && p.stock > 0).slice(0, 4));
           }
         }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      } catch {
+        // Handle error silently
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [id]);
 
   const handleAddToCart = () => {

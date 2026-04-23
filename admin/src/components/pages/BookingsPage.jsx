@@ -85,7 +85,7 @@ export default function BookingsPage() {
             Object.keys(params).forEach(k => !params[k] && delete params[k]);
             const res = await bookingAPI.getAll(params);
             const data = res.data?.data?.bookings || res.data?.data || [];
-            
+
             // Only update if data changed to prevent unnecessary re-renders
             setBookings(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
             setTotal(res.data?.data?.total || 0);

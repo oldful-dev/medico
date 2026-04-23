@@ -121,12 +121,12 @@ export default function StorePage() {
 
                     <div className="card"><div className="card-body" style={{ padding: 0, overflowX: 'auto' }}>
                         <table className="data-table">
-                            <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>MRP</th><th>Discount</th><th>Stock</th><th>Enabled</th><th>Actions</th></tr></thead>
+                            <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>MRP</th><th>Discount</th><th>Stock</th><th>Orders</th><th>Enabled</th><th>Actions</th></tr></thead>
                             <tbody>
                                 {loading
-                                    ? <tr><td colSpan={8} style={{ textAlign: 'center', padding: 24 }}>Loading...</td></tr>
+                                    ? <tr><td colSpan={9} style={{ textAlign: 'center', padding: 24 }}>Loading...</td></tr>
                                     : products.length === 0
-                                        ? <tr><td colSpan={8} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No products yet</td></tr>
+                                        ? <tr><td colSpan={9} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No products yet</td></tr>
                                         : products.map(p => (
                                             <tr key={p.id}>
                                                 <td>
@@ -143,6 +143,7 @@ export default function StorePage() {
                                                 <td className="text-sm" style={{ color: '#999', textDecoration: 'line-through' }}>{formatCurrency(p.mrp)}</td>
                                                 <td>{discount(p) > 0 ? <span className="badge badge-success">{discount(p)}% off</span> : '—'}</td>
                                                 <td><span className={`badge ${p.stock > 5 ? 'badge-success' : p.stock > 0 ? 'badge-warning' : 'badge-danger'}`}>{p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}</span></td>
+                                                <td className="text-sm">{p._count?.orders ?? 0}</td>
                                                 <td><button className="btn btn-sm btn-secondary" onClick={() => toggleProduct(p)}>{p.isEnabled ? <ToggleRight size={18} color="#10b981" /> : <ToggleLeft size={18} />}</button></td>
                                                 <td>
                                                     <div className="flex gap-2">
@@ -239,11 +240,12 @@ export default function StorePage() {
                             </div>
 
                             {/* Stats row */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                                 {[
                                     { label: 'Stock', value: detail.stock > 0 ? `${detail.stock} units` : 'Out of stock', color: detail.stock > 5 ? '#10b981' : detail.stock > 0 ? '#f59e0b' : '#ef4444' },
+                                    { label: 'Orders Placed', value: `${detail._count?.orders ?? 0} orders`, color: '#6366f1' },
                                     { label: 'Status', value: detail.isEnabled ? 'Enabled' : 'Disabled', color: detail.isEnabled ? '#10b981' : '#6b7280' },
-                                    { label: 'Category', value: detail.category?.name || '—', color: '#6366f1' },
+                                    { label: 'Category', value: detail.category?.name || '—', color: '#f59e0b' },
                                 ].map(s => (
                                     <div key={s.label} style={{ background: '#f9fafb', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
                                         <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: '#aaa' }}>{s.label}</span>

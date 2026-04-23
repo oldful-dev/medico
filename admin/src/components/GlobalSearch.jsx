@@ -50,7 +50,7 @@ export default function GlobalSearch() {
             setLoading(true);
             try {
                 // Local navigation search
-                const filteredNav = ALL_PAGES.filter(item => 
+                const filteredNav = ALL_PAGES.filter(item =>
                     item.label.toLowerCase().includes(query.toLowerCase())
                 );
 
@@ -85,10 +85,10 @@ export default function GlobalSearch() {
         <div className="global-search-container" ref={containerRef}>
             <div className={`header-search ${isOpen ? "active" : ""}`} onClick={() => setIsOpen(true)}>
                 <Search size={16} />
-                <input 
+                <input
                     ref={inputRef}
-                    type="text" 
-                    placeholder="Search anything... (⌘K)" 
+                    type="text"
+                    placeholder="Search anything... (⌘K)"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => setIsOpen(true)}
@@ -104,7 +104,7 @@ export default function GlobalSearch() {
                 <div className="search-dropdown-overlay">
                     <div className="search-results">
                         {loading && <div className="search-status">Searching...</div>}
-                        
+
                         {!loading && results.navigation.length > 0 && (
                             <div className="result-section">
                                 <div className="section-title">Pages</div>
@@ -149,9 +149,9 @@ export default function GlobalSearch() {
                         )}
 
                         {!loading && query && results.staff.length === 0 && results.users.length === 0 && results.navigation.length === 0 && (
-                            <div className="search-status">No results found for "{query}"</div>
+                            <div className="search-status">No results found for &quot;{query}&quot;</div>
                         )}
-                        
+
                         <div className="search-footer">
                             <span><kbd>ESC</kbd> to close</span>
                             <span><kbd>↵</kbd> to select</span>

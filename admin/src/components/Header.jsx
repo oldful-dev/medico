@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
     Bell, Moon, Sun, Menu, User, LogOut, Settings,
@@ -21,9 +21,18 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
     const dropdownRef = useRef(null);
     const notifRef = useRef(null);
 
+    const fetchAlerts = useCallback(async () => {
+        try {
+            const res = await reportAPI.getAlerts();
+            setAlerts(res.data.data || []);
+        } catch (e) { console.error(e); }
+    }, []);
+
     useEffect(() => {
         // Initial fetch
-        fetchAlerts();
+        (async () => {
+            await fetchAlerts();
+        })();
 
         // Establish Real-time Connection
         const socket = getSocket();
@@ -140,13 +149,6 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, []);
-
-    const fetchAlerts = async () => {
-        try {
-            const res = await reportAPI.getAlerts();
-            setAlerts(res.data.data || []);
-        } catch (e) { console.error(e); }
-    };
 
     const handleLogout = async () => {
         setDropdownOpen(false);

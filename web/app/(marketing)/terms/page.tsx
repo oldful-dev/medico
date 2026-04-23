@@ -50,7 +50,7 @@ export default async function TermsPage() {
             <section className="flex flex-col gap-4">
               <h2 className="text-2xl font-bold text-gray-900 border-b pb-2">Acceptance of Terms</h2>
               <p className="text-gray-600 leading-relaxed">
-                By accessing the website <span className="text-gray-900 font-semibold">www.oldful.com</span> ("Website") or subscribing to the services provided by Oldful ("Company," "we," "us," or "our"), you ("User," "Client," or "Subscriber") agree to be bound by these Terms and Conditions. If you do not agree, please do not use our services.
+                By accessing the website <span className="text-gray-900 font-semibold">www.oldful.com</span> (&quot;Website&quot;) or subscribing to the services provided by Oldful (&quot;Company,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;), you (&quot;User,&quot; &quot;Client,&quot; or &quot;Subscriber&quot;) agree to be bound by these Terms and Conditions. If you do not agree, please do not use our services.
               </p>
             </section>
 
@@ -98,7 +98,7 @@ export default async function TermsPage() {
               <h2 className="text-2xl font-bold text-gray-900 border-b pb-2">Limitation of Liability</h2>
               <ul className="list-none flex flex-col gap-4 text-gray-600">
                 <li className="flex gap-2"><span className="text-gray-900 font-bold">•</span><div><strong>Third-Party Services:</strong> Oldful is not liable for the negligence or malpractice of independent third-party providers, though we will assist in dispute resolution.</div></li>
-                <li className="flex gap-2"><span className="text-gray-900 font-bold">•</span><div><strong>Cap on Liability:</strong> Oldful's total liability for any claim shall not exceed the total amount paid by the User in the three (3) months preceding the claim.</div></li>
+                <li className="flex gap-2"><span className="text-gray-900 font-bold">•</span><div><strong>Cap on Liability:</strong> Oldful&apos;s total liability for any claim shall not exceed the total amount paid by the User in the three (3) months preceding the claim.</div></li>
               </ul>
             </section>
 
