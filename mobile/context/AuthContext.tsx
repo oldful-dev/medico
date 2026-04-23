@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '@/services/api/apiClient';
 import { storageService, STORAGE_KEYS } from '@/services/device/storageService';
+import { notificationService } from '@/services/device/notificationService';
 import { Colors, Fonts, FontSize, Radius, Shadow } from '@/constants/theme';
 
 interface AuthState {
@@ -61,6 +62,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         userId,
                         token: accessToken,
                     });
+
+                    // Register push token on app boot
+                    (async () => {
+                        try {
+                            const pushToken = await notificationService.registerForPush();
+                            if (pushToken) {
+                                await apiClient.put('/users/profile/device-token', { fcmToken: pushToken });
+                            }
+                        } catch (error) {
+                            console.error('Failed to register push token on boot:', error);
+                        }
+                    })();
                 } else {
                     setState(prev => ({ ...prev, isLoading: false }));
                 }
@@ -99,6 +112,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             userId,
             token: accessToken,
         });
+
+        // Register push token with backend
+        try {
+            const pushToken = await notificationService.registerForPush();
+            if (pushToken) {
+                await apiClient.put('/users/profile/device-token', { fcmToken: pushToken });
+            }
+        } catch (error) {
+            console.error('Failed to register push token:', error);
+        }
     };
 
     // ─── Logout ───────────────────────────────────────

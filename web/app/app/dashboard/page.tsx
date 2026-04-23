@@ -13,8 +13,12 @@ import {
 import { useSDUIHooks } from '@/hooks/useSDUIHooks';
 import { useAuthStore } from '@/store/authStore';
 import { useUserHooks, USER_QUERY_KEYS } from '@/hooks/useUserHooks';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import { notificationService } from '@/services/api/notificationService';
+import { testPushNotification } from '@/services/firebase/testPushNotification';
+import { getFCMToken } from '@/services/firebase/getFCMToken';
+import { diagnosePushNotifications } from '@/services/firebase/diagnosePushNotifications';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { NotificationDropdown } from '@/components/dashboard/NotificationDropdown';
@@ -40,7 +44,19 @@ export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuthStore();
   const { useBookings, useNotifications, useProfile } = useUserHooks();
   const { useHomeConfig } = useSDUIHooks();
-  
+
+  // Setup push notifications
+  usePushNotifications();
+
+  // Make test scripts available in console
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).testPushNotification = testPushNotification;
+      (window as any).getFCMToken = getFCMToken;
+      (window as any).diagnosePushNotifications = diagnosePushNotifications;
+    }
+  }, []);
+
   const { data: config, isLoading: configLoading } = useHomeConfig();
   const { data: bookingsData, isLoading: bookingsLoading } = useBookings();
   const { data: notificationsData, isLoading: notificationsLoading } = useNotifications();

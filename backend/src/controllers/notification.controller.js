@@ -5,6 +5,7 @@
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/helpers');
 const { sendEmail, sendWhatsApp } = require('../utils/notifications');
+const { sendPushToUsers } = require('../utils/pushNotification.service');
 
 // GET /api/notifications/logs
 const getNotificationLogs = async (req, res, next) => {
@@ -94,20 +95,35 @@ const sendCampaign = async (req, res, next) => {
 
         const users = await prisma.user.findMany({
             where: { ...where, status: 'ACTIVE' },
-            select: { id: true, email: true, phone: true, name: true }, // Added id: true
+            select: { id: true, email: true, phone: true, name: true, fcmDeviceToken: true },
         });
 
         let sentCount = 0;
 
-        for (const user of users) {
-            if (channel === 'EMAIL' && user.email) {
-                const sent = await sendEmail({ to: user.email, subject, html: body, userId: user.id, isMarketing: true });
-                if (sent) sentCount++;
+        // EMAIL Channel
+        if (channel === 'EMAIL') {
+            for (const user of users) {
+                if (user.email) {
+                    const sent = await sendEmail({ to: user.email, subject, html: body, userId: user.id, isMarketing: true });
+                    if (sent) sentCount++;
+                }
             }
-            if (channel === 'WHATSAPP' && user.phone) {
-                const sent = await sendWhatsApp({ phoneNumber: user.phone, templateName: templateId || 'campaign', parameters: [user.name], userId: user.id });
-                if (sent) sentCount++;
+        }
+
+        // WHATSAPP Channel
+        if (channel === 'WHATSAPP') {
+            for (const user of users) {
+                if (user.phone) {
+                    const sent = await sendWhatsApp({ phoneNumber: user.phone, templateName: templateId || 'campaign', parameters: [user.name], userId: user.id });
+                    if (sent) sentCount++;
+                }
             }
+        }
+
+        // PUSH Channel (Mobile App + Web)
+        if (channel === 'PUSH') {
+            const userIds = users.map(u => u.id);
+            sentCount = await sendPushToUsers(userIds, { title: subject, body });
         }
 
         sendResponse(res, 200, { sentCount, totalUsers: users.length }, 'Campaign sent');
@@ -174,7 +190,21 @@ const markAllNotificationsRead = async (req, res, next) => {
     }
 };
 
+// POST /api/notifications/test-push (admin — send test push to current user)
+const sendTestPush = async (req, res, next) => {
+    try {
+        const { title = 'Test Notification', body = 'If you see this, push notifications work!' } = req.body;
+
+        const sent = await sendPushToUsers([req.user.id], { title, body });
+
+        sendResponse(res, 200, { sent }, `Test push sent (status: ${sent ? 'sent' : 'failed'})`);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getNotificationLogs, getTemplates, createTemplate, updateTemplate, deleteTemplate,
     sendCampaign, getMyNotifications, markNotificationRead, markAllNotificationsRead,
+    sendTestPush,
 };

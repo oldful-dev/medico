@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
 import { getRemoteConfig, fetchAndActivate, getValue } from "firebase/remote-config";
+import { getMessaging, Messaging, isSupported } from "firebase/messaging";
 
 // ─── Firebase App ─────────────────────────────────────────────────────────────
 
@@ -20,6 +21,11 @@ export const app: FirebaseApp | null = getApps().length > 0
 
 export const auth: Auth | null = app ? getAuth(app) : null;
 export const remoteConfig = (typeof window !== 'undefined' && app) ? getRemoteConfig(app) : null;
+
+export const messaging: Messaging | null =
+    typeof window !== 'undefined' && app
+        ? getMessaging(app)
+        : null;
 
 // ─── Remote Config ────────────────────────────────────────────────────────────
 
