@@ -404,7 +404,7 @@ export default function DashboardPage() {
                   <div className="text-center py-4 px-2">
                     <p className="text-[11px] text-gray-500 mb-2">No upcoming bookings scheduled</p>
                     <Link href="/app/services" className="text-xs font-bold text-[var(--color-primary)] hover:underline">
-                      Book a Service now.
+                      Book a Service now
                     </Link>
                   </div>
                 )}
