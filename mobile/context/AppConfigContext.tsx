@@ -1,4 +1,4 @@
-// ──────────────────────────────────────────────
+﻿// ──────────────────────────────────────────────
 //  App Config Context — SDUI (Server-Driven UI)
 //
 //  Strategy:
@@ -288,8 +288,8 @@ const FALLBACK_CONFIG: AppConfig = {
             ]
         },
         help_support: {
-            phone: '+919480198108',
-            whatsapp_url: 'https://wa.me/919480198108',
+            phone: '+918062180429',
+            whatsapp_url: 'https://wa.me/918062180429',
             page_description: 'Our support team is available to help with bookings, services, and payments.',
             contacts: [
                 { id: 'customer_support', label: 'Customer Support', phone: '+91 94801 98108', email: 'client@oldful.com', name: null },

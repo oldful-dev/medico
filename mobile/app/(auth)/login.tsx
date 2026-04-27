@@ -388,9 +388,11 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
+        flexGrow: 1,
+        justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 28,
-        paddingBottom: 40,
+        paddingVertical: 40,
     },
 
 

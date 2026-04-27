@@ -37,6 +37,22 @@ export default function MedicalEquipmentScreen() {
     const { cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('equipment-rental');
 
     const handleBookService = async () => {
+        if (!selectedEquipment) {
+            Alert.alert('Required', 'Please select the equipment you need.');
+            return;
+        }
+        if (!selectedDuration) {
+            Alert.alert('Required', 'Please select a rental duration.');
+            return;
+        }
+        if (!selectedDate) {
+            Alert.alert('Date Required', 'Please select a pickup/delivery date.');
+            return;
+        }
+        if (!address || address.trim().length < 5 || address === 'Fetching address...') {
+            Alert.alert('Address Required', 'Could not fetch your address. Please wait or try again.');
+            return;
+        }
         if (!cityId || !serviceId) {
             Alert.alert('Error', 'Service initialization incomplete. Please try again.');
             return;

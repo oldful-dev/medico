@@ -8,6 +8,7 @@ import {
     Platform,
     Alert,
     ActivityIndicator,
+    Linking,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -52,8 +53,22 @@ export default function BookNursingCareScreen() {
     const [isBooking, setIsBooking] = useState(false);
 
     const handleBookService = async () => {
-        if (locationDenied && (!address || address.trim().length < 5)) {
-            Alert.alert('Address Required', 'Please type your full address manually since location access is denied.');
+        if (!selectedWho) {
+            Alert.alert('Required', 'Please select who the nurse is for.');
+            return;
+        }
+        if (!selectedStaff) {
+            Alert.alert('Required', 'Please select a staff type (Qualified Nurse or Bedside Attendant).');
+            return;
+        }
+        if (!selectedDuration) {
+            Alert.alert('Required', 'Please select a shift duration.');
+            return;
+        }
+        if (!address || address.trim().length < 5) {
+            Alert.alert('Address Required', locationDenied
+                ? 'Please type your full address manually since location access is denied.'
+                : 'Could not fetch your address. Please try again or enter it manually.');
             return;
         }
         if (!isReady) {
@@ -290,14 +305,14 @@ export default function BookNursingCareScreen() {
                             </View>
                         </View>
 
-                        {/* ─── Not Sure Banner (Informational Only) ─── */}
-                        <View style={styles.notSureBanner}>
+                        {/* ─── Not Sure Banner ─── */}
+                        <TouchableOpacity style={styles.notSureBanner} onPress={() => Linking.openURL('tel:+918062180429')} activeOpacity={0.75}>
                             <Image source={helpIcon} style={styles.ideaIcon} resizeMode="contain" />
                             <View style={styles.notSureTextGroup}>
                                 <Text style={styles.notSureTitle}>Not sure about your options?</Text>
                                 <Text style={styles.notSureSubtitle}>I’m not sure, let an Expert call me decide</Text>
                             </View>
-                        </View>
+                        </TouchableOpacity>
                         {/* ─── Confirm Address ─── */}
                         <View style={styles.sectionContainer}>
                             <Text style={styles.sectionTitle}>Confirm Address</Text>

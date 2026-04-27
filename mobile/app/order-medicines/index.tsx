@@ -92,6 +92,18 @@ export default function OrderMedicinesScreen() {
 
 
     const handleBookService = async () => {
+        if (!isManualEntry && selectedImages.length === 0) {
+            Alert.alert('Prescription Required', 'Please upload a photo of your prescription or switch to manual entry.');
+            return;
+        }
+        if (isManualEntry && !manualText.trim()) {
+            Alert.alert('Prescription Required', 'Please type your medicine details in the text field.');
+            return;
+        }
+        if (!address || address.trim().length < 5 || address === 'Fetching address...') {
+            Alert.alert('Address Required', 'Could not fetch your address. Please wait or try again.');
+            return;
+        }
         if (!isReady) {
             Alert.alert('Error', 'Service initialization incomplete. Please try again.');
             return;

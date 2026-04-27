@@ -6,10 +6,11 @@
 //    - authService (backend OTP + token refresh)
 // ──────────────────────────────────────────────
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Notifications from 'expo-notifications';
 import { apiClient } from '@/services/api/apiClient';
 import { storageService, STORAGE_KEYS } from '@/services/device/storageService';
 import { notificationService } from '@/services/device/notificationService';
@@ -39,6 +40,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token: null,
     });
     const [showSessionDialog, setShowSessionDialog] = useState(false);
+    const notificationListenerRef = useRef<Notifications.Subscription | null>(null);
+    const responseListenerRef = useRef<Notifications.Subscription | null>(null);
 
     // ─── Boot: Restore tokens from AsyncStorage ──────
     useEffect(() => {
@@ -82,6 +85,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         })();
     }, []);
+
+    // ─── Push notification listeners ──────────────────────
+    useEffect(() => {
+        // Foreground: notification received while app is open
+        notificationListenerRef.current = notificationService.addNotificationListener(
+            (notification) => {
+                // expo-notifications already shows the alert (setNotificationHandler handles it)
+                // Nothing extra needed — the notification inbox auto-refreshes on next open
+                console.log('Push received:', notification.request.content.title);
+            }
+        );
+
+        // Tap: user tapped a notification (foreground or background)
+        responseListenerRef.current = notificationService.addResponseListener(
+            (response) => {
+                const data = response.notification.request.content.data as Record<string, any>;
+                // Route based on data payload set by backend
+                if (data?.screen) {
+                    router.push(data.screen as any);
+                } else if (data?.bookingId) {
+                    router.push('/order-history' as any);
+                } else {
+                    router.push('/notifications' as any);
+                }
+            }
+        );
+
+        return () => {
+            notificationListenerRef.current?.remove();
+            responseListenerRef.current?.remove();
+        };
+    }, [router]);
 
     // ─── Register callback: when apiClient refreshes the token, persist it ──
     useEffect(() => {

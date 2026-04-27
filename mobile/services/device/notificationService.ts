@@ -50,29 +50,30 @@ export const notificationService = {
 
     /**
      * Register device for push notifications
-     * Returns the Expo push token
+     * Returns the native FCM token (required by Firebase Admin SDK on backend)
      */
     registerForPush: async (): Promise<string | null> => {
         const hasPermission = await notificationService.requestPermission();
         if (!hasPermission) return null;
 
         try {
-            const tokenData = await Notifications.getExpoPushTokenAsync();
-            const token = tokenData.data;
-
-            // Persist push token locally
-            await storageService.setItem(STORAGE_KEYS.PUSH_TOKEN, token);
-
-            // Configure Android notification channel
+            // Set up Android notification channel first
             if (Platform.OS === 'android') {
-                await Notifications.setNotificationChannelAsync('default', {
-                    name: 'Default',
+                await Notifications.setNotificationChannelAsync('oldful-default', {
+                    name: 'Oldful Notifications',
                     importance: Notifications.AndroidImportance.HIGH,
                     vibrationPattern: [0, 250, 250, 250],
                     lightColor: '#048357',
+                    sound: 'default',
                 });
             }
 
+            // Use native device token (FCM on Android, APNs on iOS)
+            // This is what Firebase Admin SDK expects — NOT the Expo push token
+            const tokenData = await Notifications.getDevicePushTokenAsync();
+            const token = tokenData.data as string;
+
+            await storageService.setItem(STORAGE_KEYS.PUSH_TOKEN, token);
             return token;
         } catch (error) {
             console.error('Failed to get push token:', error);

@@ -17,6 +17,10 @@ export default function ApplianceRepairScreen() {
         useServiceInitialization('appliance-repair');
 
     const handleBook = async () => {
+        if (!address || address.trim().length < 5 || address === 'Fetching address...') {
+            Alert.alert('Address Required', 'Could not fetch your address. Please wait or try again.');
+            return;
+        }
         if (!isReady) {
             Alert.alert('Error', 'Service initialization incomplete. Please try again.');
             return;

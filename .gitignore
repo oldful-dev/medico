@@ -142,3 +142,5 @@ mobile/GOOGLE_AUTH_FIX.md
 !mobile/i18n/i18n.ts
 "google-services.json" 
 redcliffe-api-tests
+
+*.md

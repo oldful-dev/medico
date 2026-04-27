@@ -77,13 +77,17 @@ export default function InsuranceScreen() {
     }, []);
 
     const handleBookService = async () => {
+        const activeRecipient = recipients.find(r => r.selected);
+        if (!activeRecipient) {
+            Alert.alert('Required', 'Please select who the insurance is for.');
+            return;
+        }
         if (!cityId || !serviceId) {
             Alert.alert('Error', 'Service initialization incomplete. Please try again.');
             return;
         }
         // Insurance is a consultation request — no Razorpay payment.
         // Booking is created immediately and goes to /service-confirmation.
-        const activeRecipient = recipients.find(r => r.selected)?.label || 'Unknown';
         const activeConditions = conditions.filter(c => c.selected).map(c => c.label).join(', ') || 'None';
         try {
             setIsBooking(true);
@@ -93,7 +97,7 @@ export default function InsuranceScreen() {
                 scheduledDate: new Date().toISOString(),
                 addressLine: address || 'Online Consultation',
                 formDataJson: {
-                    recipient: activeRecipient,
+                    recipient: activeRecipient.label,
                     preExistingConditions: activeConditions,
                     requirements: requirements || undefined,
                 },

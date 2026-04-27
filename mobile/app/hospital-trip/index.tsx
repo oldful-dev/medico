@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -49,12 +49,13 @@ export default function HospitalTripScreen() {
     const insets = useSafeAreaInsets();
 
     const [selectedSpecialist, setSelectedSpecialist] = useState<string | null>(null);
+    const [hospitalPreference, setHospitalPreference] = useState<'preferred' | 'recommend' | null>(null);
     const [hospitalQuery, setHospitalQuery] = useState('');
     const [selectedDoctorType, setSelectedDoctorType] = useState<'preferred' | 'recommend'>('preferred');
     const [preferredDoctor, setPreferredDoctor] = useState('');
     const [transportAddon, setTransportAddon] = useState(false);
     const [supportAddon, setSupportAddon] = useState(true);
-    const [selectedDate] = useState<Date | undefined>(undefined);
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
     // API state (Refactored to Hook)
     const {
@@ -76,8 +77,26 @@ export default function HospitalTripScreen() {
             Alert.alert('Select Specialist', 'Please select a specialist category first.');
             return;
         }
-        if (locationDenied && (!address || address.trim().length < 5)) {
-            Alert.alert('Address Required', 'Since location access is denied, please type your pickup address manually.');
+        if (!hospitalPreference) {
+            Alert.alert('Select Hospital', 'Please select a hospital preference.');
+            return;
+        }
+        if (hospitalPreference === 'preferred' && !hospitalQuery.trim()) {
+            Alert.alert('Hospital Required', 'Please enter your preferred hospital name.');
+            return;
+        }
+        if (selectedDoctorType === 'preferred' && !preferredDoctor.trim()) {
+            Alert.alert('Doctor Name Required', "Please enter your preferred doctor's name.");
+            return;
+        }
+        if (!selectedDate) {
+            Alert.alert('Date Required', 'Please select an appointment date.');
+            return;
+        }
+        if (!address || address.trim().length < 5 || address === 'Fetching address...') {
+            Alert.alert('Address Required', locationDenied
+                ? 'Please type your pickup address manually since location access is denied.'
+                : 'Could not fetch your address. Please wait or try again.');
             return;
         }
         if (!isReady) {
@@ -91,11 +110,12 @@ export default function HospitalTripScreen() {
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
-                scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
+                scheduledDate: selectedDate!.toISOString(),
                 addressLine: address || undefined,
                 formDataJson: {
                     specialist: selectedSpecialist || 'General',
-                    hospital: hospitalQuery,
+                    hospitalPreference,
+                    hospital: hospitalPreference === 'preferred' ? hospitalQuery : undefined,
                     doctorPreference: selectedDoctorType,
                     preferredDoctor: selectedDoctorType === 'preferred' ? preferredDoctor : undefined,
                     transport: transportAddon,
@@ -164,29 +184,37 @@ export default function HospitalTripScreen() {
                         <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Destination Details</Text>
                     </View>
 
-                    {/* Input: Preferred Hospital */}
-                    <View style={styles.inputCard}>
-                        <Image source={imgHospitalIcon} style={styles.hospitalIcon} resizeMode="contain" />
-                        <View style={styles.inputStack}>
+                    {/* Option: Preferred Hospital */}
+                    <TouchableOpacity
+                        style={styles.doctorOptionRow}
+                        activeOpacity={0.7}
+                        onPress={() => setHospitalPreference('preferred')}
+                    >
+                        <View style={[styles.radioCircle, hospitalPreference === 'preferred' && styles.radioCircleSelected]} />
+                        <Text style={styles.doctorOptionText}>I have a preferred Hospital</Text>
+                    </TouchableOpacity>
+
+                    {hospitalPreference === 'preferred' && (
+                        <View style={styles.doctorNameInput}>
                             <TextInput
-                                style={styles.hospitalInput}
-                                placeholder="Type preferred Hospital"
+                                style={styles.doctorTextInput}
+                                placeholder="Type Hospital Name"
                                 placeholderTextColor="#2F2F2F"
                                 value={hospitalQuery}
                                 onChangeText={setHospitalQuery}
                             />
-                            <Text style={styles.hospitalInputHint}>Tags request as “Need Advice”</Text>
                         </View>
-                    </View>
+                    )}
 
-                    {/* Selected Hospital Option */}
-                    <View style={[styles.inputCard, { borderColor: '#777', borderWidth: 1, backgroundColor: 'transparent' }]}>
-                        <View style={styles.checkedBox}>
-                            <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-                        </View>
-                        <Text style={styles.selectedHospitalText}>St.John&apos;s Hospital</Text>
-                        <Ionicons name="search" size={20} color="#555" style={{ marginLeft: 'auto' }} />
-                    </View>
+                    {/* Option: Recommend Hospital */}
+                    <TouchableOpacity
+                        style={styles.doctorOptionRow}
+                        activeOpacity={0.7}
+                        onPress={() => setHospitalPreference('recommend')}
+                    >
+                        <View style={[styles.radioCircle, hospitalPreference === 'recommend' && styles.radioCircleSelected]} />
+                        <Text style={styles.doctorOptionText}>Recommend a hospital for me</Text>
+                    </TouchableOpacity>
 
                     <View style={styles.divider} />
 
@@ -231,7 +259,7 @@ export default function HospitalTripScreen() {
                     {/* ─── Schedule ─── */}
                     <DateTimePickerInput
                         label="Schedule"
-                        onDateChange={() => { }}
+                        onDateChange={(date) => setSelectedDate(date)}
                     />
 
                     {/* ─── Service Add-ons ─── */}

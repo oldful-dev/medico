@@ -56,6 +56,18 @@ export default function MealServiceScreen() {
     const [isBooking, setIsBooking] = useState(false);
 
     const handleBookService = async () => {
+        if (!mealType) {
+            Alert.alert('Required', 'Please select a meal type.');
+            return;
+        }
+        if (!subMode) {
+            Alert.alert('Required', 'Please select a subscription mode.');
+            return;
+        }
+        if (!address || address.trim().length < 5 || address === 'Fetching address...') {
+            Alert.alert('Address Required', 'Could not fetch your address. Please wait or try again.');
+            return;
+        }
         if (!cityId || !serviceId) {
             Alert.alert('Error', 'Service initialization incomplete. Please try again.');
             return;
