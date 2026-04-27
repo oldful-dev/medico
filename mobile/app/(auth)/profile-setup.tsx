@@ -209,17 +209,36 @@ export default function ProfileSetupScreen() {
     };
 
     const handleSaveAndContinue = async () => {
-        if (!agreed) {
-            Alert.alert("Permission Denied", "Please agree to the Policies and Terms to continue.");
-            return;
-        }
         if (!name || name.trim().length < 3) {
-            Alert.alert("Validation", "Please enter a valid full name (at least 3 characters).");
+            Alert.alert("Full Name Required", "Please enter your full name (at least 3 characters).");
             return;
         }
-        // Google flow: phone wasn't verified via OTP — must be entered manually
+        if (!gender) {
+            Alert.alert("Gender Required", "Please select your gender.");
+            return;
+        }
+        if (!dateOfBirth) {
+            Alert.alert("Date of Birth Required", "Please enter your date of birth.");
+            return;
+        }
+        if (!email || !email.trim().includes('@') || !email.trim().includes('.')) {
+            Alert.alert("Email Required", "Please enter a valid email address.");
+            return;
+        }
         if (isGoogleFlow && !isPhoneVerified) {
-            Alert.alert("Validation", "Please verify your mobile number via OTP first.");
+            Alert.alert("Phone Verification Required", "Please verify your mobile number via OTP first.");
+            return;
+        }
+        if (!line1 || line1.trim().length < 3) {
+            Alert.alert("House Number Required", "Please enter your flat / house number.");
+            return;
+        }
+        if (!line2 || GPS_ERROR_STATES.includes(line2) || line2.trim().length < 5) {
+            Alert.alert("Address Required", "Please enter or fetch your full address.");
+            return;
+        }
+        if (!agreed) {
+            Alert.alert("Terms Required", "Please read and agree to the Policies and Terms to continue.");
             return;
         }
         if (!cityId) {

@@ -11,6 +11,7 @@ import {
     useWindowDimensions,
     Alert,
     ActivityIndicator,
+    TextInput,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StatusBar } from 'expo-status-bar';
@@ -24,6 +25,12 @@ import { locationService } from '@/services/device/locationService';
 import FormInput from '@/components/common/FormInput';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
+import { bookingService, Booking } from '@/services/api/bookingService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+
+// Problems that auto-trigger Physiotherapist selection
+const PHYSIO_PROBLEMS = new Set(['Poster-surgery Rehab', 'Frozen shoulder', 'Stroke Recovery']);
 
 // ─── Figma-exported Assets ───
 // Problem Icons (images from disk)
@@ -62,21 +69,92 @@ export default function DoctorVisitScreen() {
 
     // ─── State ───
     const [selectedProblem, setSelectedProblem] = React.useState<string | null>(null);
+    const [otherProblemText, setOtherProblemText] = React.useState('');
     const [selectedDoctorType, setSelectedDoctorType] = React.useState<'GP' | 'Physio'>('GP');
     const [selectedWhen, setSelectedWhen] = React.useState<'ASAP' | 'Later'>('ASAP');
+    const [scheduledDate, setScheduledDate] = React.useState<Date>(new Date());
+    const [showDatePicker, setShowDatePicker] = React.useState(false);
+    const [pickerMode, setPickerMode] = React.useState<'date' | 'time'>('date');
     const [visitType, setVisitType] = React.useState<'Home' | 'Clinic'>('Home');
+
+    // ─── Repeat Order State ───
+    const [lastPhysioBooking, setLastPhysioBooking] = React.useState<Booking | null>(null);
 
     // ─── API State ───
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const [isBooking, setIsBooking] = React.useState(false);
+
+    // ─── Smart Logic: Auto-select doctor type based on problem ───
+    const handleProblemSelect = (label: string) => {
+        setSelectedProblem(label);
+        if (PHYSIO_PROBLEMS.has(label)) {
+            setSelectedDoctorType('Physio');
+        } else if (label !== 'Other') {
+            setSelectedDoctorType('GP');
+        }
+    };
+
+    // ─── Repeat Order: Load last physio booking on mount ───
+    React.useEffect(() => {
+        (async () => {
+            try {
+                // Check cache first for instant display
+                const cached = await AsyncStorage.getItem('lastPhysioBooking');
+                if (cached) {
+                    setLastPhysioBooking(JSON.parse(cached));
+                    return;
+                }
+                // Fetch history — look for any doctor visit with physiotherapist
+                const res = await bookingService.getMyBookings();
+                if (res.success && res.data && res.data.length > 0) {
+                    // Prefer physio, fall back to any doctor visit booking
+                    const physio = res.data.find(b => b.doctorType === 'physiotherapist') ||
+                                   res.data.find(b => b.service?.slug?.includes('doctor'));
+                    if (physio) {
+                        setLastPhysioBooking(physio);
+                        await AsyncStorage.setItem('lastPhysioBooking', JSON.stringify(physio));
+                    }
+                }
+            } catch {
+                // silently ignore — repeat order is a convenience feature
+            }
+        })();
+    }, []);
+
+    // ─── Repeat Order: Apply last booking settings ───
+    const applyRepeatOrder = () => {
+        if (!lastPhysioBooking) return;
+        const symptom = lastPhysioBooking.symptoms?.[0] || null;
+        if (symptom) setSelectedProblem(symptom);
+        const isPhysio = lastPhysioBooking.doctorType === 'physiotherapist';
+        setSelectedDoctorType(isPhysio ? 'Physio' : 'GP');
+        setVisitType(lastPhysioBooking.formDataJson?.visitType || 'Home');
+        setSelectedWhen('ASAP');
+    };
+
+    // ─── Date formatting helper ───
+    const formatScheduledDate = (d: Date) =>
+        d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) +
+        ' at ' +
+        d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
     const handleBookService = async () => {
         if (!selectedProblem) {
             Alert.alert('Select Problem', 'Please select a health problem first.');
             return;
         }
-        if (locationDenied && (!address || address.trim().length < 5)) {
-            Alert.alert('Address Required', 'Since location access is denied, please type your full address manually so the doctor can reach you.');
+        if (selectedProblem === 'Other' && !otherProblemText.trim()) {
+            Alert.alert('Describe Problem', 'Please describe your health problem in the text field.');
+            return;
+        }
+        if (selectedWhen === 'Later' && scheduledDate <= new Date()) {
+            Alert.alert('Invalid Time', 'Please select a future date and time for the visit.');
+            return;
+        }
+        if (!address || address.trim().length < 5 || address === 'Fetching address...') {
+            Alert.alert('Address Required', locationDenied
+                ? 'Please type your full address manually so the doctor can reach you.'
+                : 'Could not fetch your address. Please wait or try again.');
             return;
         }
         if (!isReady) {
@@ -92,16 +170,18 @@ export default function DoctorVisitScreen() {
                 uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'doctor-visits');
             }
 
+            const symptomLabel = selectedProblem === 'Other' ? otherProblemText.trim() : selectedProblem;
+
             // Navigate to checkout — booking is created INSIDE checkout after payment succeeds
             const gps = await locationService.getCurrentLocation().catch(() => null);
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
-                scheduledDate: new Date().toISOString(),
+                scheduledDate: (selectedWhen === 'Later' ? scheduledDate : new Date()).toISOString(),
                 addressLine: address || undefined,
                 latitude: gps?.latitude,
                 longitude: gps?.longitude,
-                symptoms: [selectedProblem],
+                symptoms: [symptomLabel],
                 doctorType: selectedDoctorType === 'GP' ? 'general-physician' : 'physiotherapist',
                 formDataJson: {
                     visitType,
@@ -167,6 +247,20 @@ export default function DoctorVisitScreen() {
                     enableOnAndroid
                     extraScrollHeight={20}
                 >
+                    {/* ─── Repeat Order Banner (only shown if last physio booking exists) ─── */}
+                    {lastPhysioBooking && (
+                        <TouchableOpacity style={styles.repeatBanner} onPress={applyRepeatOrder} activeOpacity={0.85}>
+                            <Ionicons name="refresh-circle-outline" size={22} color={Colors.primary} />
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.repeatBannerTitle}>Book Same as Last Time</Text>
+                                <Text style={styles.repeatBannerSub}>
+                                    {lastPhysioBooking.symptoms?.[0] || 'Last visit'} · {lastPhysioBooking.doctorType === 'physiotherapist' ? 'Physiotherapist' : 'General Physician'}
+                                </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={Colors.primary} />
+                        </TouchableOpacity>
+                    )}
+
                     {/* Description Card */}
                     <View style={styles.descCard}>
                         <Text style={styles.descText}>
@@ -195,7 +289,7 @@ export default function DoctorVisitScreen() {
                                             { width: exactProblemWidth },
                                             selectedProblem === item.label && styles.problemItemActive
                                         ]}
-                                        onPress={() => setSelectedProblem(item.label)}
+                                        onPress={() => handleProblemSelect(item.label)}
                                     >
                                         <View style={[styles.problemIconContainer, { height: exactIconHeight }]}>
                                             <Image source={item.icon} style={styles.problemIcon} resizeMode="cover" />
@@ -205,6 +299,19 @@ export default function DoctorVisitScreen() {
                                 );
                             })}
                         </View>
+
+                        {/* "Other" free-text input — only shown when Other is selected */}
+                        {selectedProblem === 'Other' && (
+                            <TextInput
+                                style={styles.otherInput}
+                                placeholder="Describe your health problem..."
+                                placeholderTextColor={Colors.textMuted}
+                                value={otherProblemText}
+                                onChangeText={setOtherProblemText}
+                                multiline
+                                maxLength={200}
+                            />
+                        )}
 
                         {/* Smart Banner */}
                         <View style={styles.smartBanner}>
@@ -277,11 +384,52 @@ export default function DoctorVisitScreen() {
 
                         <TouchableOpacity
                             style={styles.radioOption}
-                            onPress={() => setSelectedWhen('Later')}
+                            onPress={() => { setSelectedWhen('Later'); setPickerMode('date'); setShowDatePicker(true); }}
                         >
                             <Ionicons name={selectedWhen === 'Later' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedWhen === 'Later' ? Colors.primary : Colors.textLight} />
                             <Text style={styles.radioLabelMainGreen}>{t('booking.schedule_later')} <Text style={styles.radioLabelSub}>{t('booking.date_time_picker')}</Text></Text>
                         </TouchableOpacity>
+
+                        {/* Selected date display — tap to reopen picker */}
+                        {selectedWhen === 'Later' && (
+                            <TouchableOpacity style={styles.datePickerBox} onPress={() => { setPickerMode('date'); setShowDatePicker(true); }} activeOpacity={0.8}>
+                                <Ionicons name="calendar-outline" size={18} color={Colors.primary} />
+                                <Text style={styles.datePickerText}>{formatScheduledDate(scheduledDate)}</Text>
+                                <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+                            </TouchableOpacity>
+                        )}
+
+                        {showDatePicker && (
+                            <DateTimePicker
+                                value={scheduledDate}
+                                mode={pickerMode}
+                                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                minimumDate={pickerMode === 'date' ? new Date() : undefined}
+                                onChange={(_event: any, picked?: Date) => {
+                                    if (!picked) {
+                                        // User cancelled — close picker, keep previous value
+                                        setShowDatePicker(false);
+                                        return;
+                                    }
+                                    if (pickerMode === 'date') {
+                                        // Merge picked date with existing time
+                                        const merged = new Date(scheduledDate);
+                                        merged.setFullYear(picked.getFullYear(), picked.getMonth(), picked.getDate());
+                                        setScheduledDate(merged);
+                                        if (Platform.OS === 'android') {
+                                            // On Android: close date picker, open time picker next
+                                            setPickerMode('time');
+                                        }
+                                    } else {
+                                        // Merge picked time with existing date
+                                        const merged = new Date(scheduledDate);
+                                        merged.setHours(picked.getHours(), picked.getMinutes(), 0, 0);
+                                        setScheduledDate(merged);
+                                        setShowDatePicker(false);
+                                    }
+                                }}
+                            />
+                        )}
                     </View>
 
                     {/* ─── Upload Documents ─── */}
@@ -694,4 +842,66 @@ const styles = StyleSheet.create({
         fontSize: FontSize.button,
         color: Colors.textWhite,
     },
+
+    /* ─── Repeat Order Banner ─── */
+    repeatBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        backgroundColor: 'rgba(4,131,87,0.07)',
+        borderWidth: 1,
+        borderColor: 'rgba(4,131,87,0.25)',
+        borderRadius: Radius.md,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: 12,
+        marginBottom: Spacing.md,
+    },
+    repeatBannerTitle: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.bodySmall,
+        color: Colors.primary,
+    },
+    repeatBannerSub: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.caption,
+        color: Colors.textMuted,
+        marginTop: 1,
+    },
+
+    /* ─── Other Problem Input ─── */
+    otherInput: {
+        borderWidth: 1,
+        borderColor: Colors.borderLight,
+        borderRadius: Radius.md,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: 10,
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textBody,
+        backgroundColor: '#fff',
+        marginBottom: Spacing.sm,
+        minHeight: 72,
+        textAlignVertical: 'top',
+    },
+
+    /* ─── Date Picker Box ─── */
+    datePickerBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        borderWidth: 1,
+        borderColor: Colors.primary,
+        borderRadius: Radius.md,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: 10,
+        backgroundColor: 'rgba(4,131,87,0.04)',
+        marginTop: 4,
+    },
+    datePickerText: {
+        flex: 1,
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.bodySmall,
+        color: Colors.primary,
+    },
+
 });

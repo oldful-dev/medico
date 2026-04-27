@@ -56,6 +56,9 @@ export default function RootLayout() {
                   <Stack.Screen name="insurance" options={{ headerShown: false }} />
                   <Stack.Screen name="payment" options={{ headerShown: false }} />
 
+                  {/* Wellness Store */}
+                  <Stack.Screen name="wellness-product" options={{ headerShown: false }} />
+
                   {/* Standalone Screens */}
                   <Stack.Screen name="sos-emergency" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
                   <Stack.Screen name="notifications" options={{ headerShown: false }} />

@@ -15,6 +15,39 @@ export interface LabSlot {
     slot_time?: string;
 }
 
+export interface LabBookingPayload {
+    bookingType: 'HOME';
+    patient: {
+        name: string;
+        age: number;
+        gender: string;
+        phone: string;
+    };
+    address: {
+        lat: string;
+        long: string;
+        pincode: string;
+        line1: string;
+    };
+    packages: Array<{
+        code: string;
+        name: string;
+        cost: number;
+    }>;
+    slot: {
+        date: string;
+        time: string;
+        slotId: number;
+    };
+}
+
+export interface LabBookingResponse {
+    order?: {
+        redcliffeBookingId: string;
+        clientRefId: string;
+    };
+}
+
 export const labService = {
     getPackages: async (search = '') => {
         const response = await apiClient.get<LabPackage[]>(`/labs/packages?search=${search}`);
@@ -23,6 +56,11 @@ export const labService = {
 
     getTimeSlots: async (date: string, lat?: string, lng?: string) => {
         const response = await apiClient.get<LabSlot[]>(`/labs/time-slots?date=${date}&lat=${lat}&lng=${lng}`);
+        return response.data;
+    },
+
+    holdBooking: async (payload: LabBookingPayload) => {
+        const response = await apiClient.post<LabBookingResponse>('/labs/book/hold', payload);
         return response.data;
     },
 

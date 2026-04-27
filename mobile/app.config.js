@@ -40,12 +40,21 @@ export default {
     "plugins": [
       "expo-router",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/icons/android/mipmap-xxxhdpi/logo_foreground.png",
+          "color": "#048357",
+          "defaultChannel": "oldful-default",
+          "sounds": []
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 280,
           "resizeMode": "contain",
-          "backgroundColor": "#FFFFF0"
+          "backgroundColor": "#FFFFFF"
         }
       ],
       "@react-native-community/datetimepicker",

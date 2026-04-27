@@ -1,4 +1,4 @@
-// SOS Emergency Screen — Figma frame id: 200:413
+﻿// SOS Emergency Screen — Figma frame id: 200:413
 // Design: Warm cream background, centered title, concentric ring button, slide-to-call
 // NO close button per Figma design
 
@@ -47,9 +47,9 @@ export default function SOSEmergencyScreen() {
         try {
             const result = await sosService.triggerSOS(prefetchedLocation);
             if (result.success) {
-                await sosService.callEmergencyHotline('+919480198108');
+                await sosService.callEmergencyHotline('+918062180429');
             } else {
-                await sosService.callEmergencyHotline('+919480198108');
+                await sosService.callEmergencyHotline('+918062180429');
                 Alert.alert(
                     'Partial Alert',
                     'Phone call initiated. Backend alert may not have been sent. Please try again if needed.'

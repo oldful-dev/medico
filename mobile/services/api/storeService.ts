@@ -37,9 +37,16 @@ export interface ProductCategory {
 export const storeService = {
     /**
      * GET /api/products
+     * Optional params: isEnabled, categoryId, limit, search
      */
-    getProducts: async (): Promise<ApiResponse<Product[]>> => {
-        return apiClient.get<Product[]>('/products');
+    getProducts: async (params?: { isEnabled?: boolean; categoryId?: string; limit?: number; search?: string }): Promise<ApiResponse<Product[]>> => {
+        const qs = new URLSearchParams();
+        if (params?.isEnabled !== undefined) qs.set('isEnabled', String(params.isEnabled));
+        if (params?.categoryId) qs.set('categoryId', params.categoryId);
+        if (params?.limit) qs.set('limit', String(params.limit));
+        if (params?.search) qs.set('search', params.search);
+        const query = qs.toString();
+        return apiClient.get<Product[]>(query ? `/products?${query}` : '/products');
     },
 
     /**

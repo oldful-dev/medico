@@ -43,6 +43,14 @@ export default function PhysioFitnessScreen() {
 
 
     const handleBookService = async () => {
+        if (!selectedDate) {
+            Alert.alert('Date Required', 'Please select an appointment date and time.');
+            return;
+        }
+        if (!address || address.trim().length < 5 || address === 'Fetching address...') {
+            Alert.alert('Address Required', 'Could not fetch your address. Please wait or try again.');
+            return;
+        }
         if (!cityId || !serviceId) {
             Alert.alert('Error', 'Service initialization incomplete. Please try again.');
             return;

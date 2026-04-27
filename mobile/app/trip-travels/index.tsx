@@ -81,7 +81,10 @@ export default function TripTravelsScreen() {
             Alert.alert('Missing Info', 'Please select an event.');
             return;
         }
-
+        if (eventPeopleCount < 1) {
+            Alert.alert('Required', 'Please select at least 1 person.');
+            return;
+        }
         if (!cityId || !serviceId) {
             Alert.alert('Error', 'Service initialization incomplete. Please try again.');
             return;

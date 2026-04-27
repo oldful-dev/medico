@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    ActivityIndicator, RefreshControl, Platform
+    ActivityIndicator, RefreshControl, Platform, Alert
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -51,6 +51,38 @@ export default function OrderHistoryScreen() {
     const onRefresh = () => {
         setRefreshing(true);
         fetchBookings();
+    };
+
+    const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+    const handleCancel = (booking: Booking) => {
+        Alert.alert(
+            'Cancel Booking',
+            `Cancel booking #${booking.bookingCode}? This cannot be undone.`,
+            [
+                { text: 'Keep', style: 'cancel' },
+                {
+                    text: 'Cancel Booking', style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            setCancellingId(booking.id);
+                            const res = await bookingService.cancelBooking(booking.id);
+                            if (res.success) {
+                                setBookings(prev => prev.map(b =>
+                                    b.id === booking.id ? { ...b, status: 'CANCELLED' } : b
+                                ));
+                            } else {
+                                Alert.alert('Error', 'Could not cancel booking. Please contact support.');
+                            }
+                        } catch {
+                            Alert.alert('Error', 'Could not cancel booking. Please contact support.');
+                        } finally {
+                            setCancellingId(null);
+                        }
+                    }
+                },
+            ]
+        );
     };
 
     // ─── Filtering Logic ───
@@ -155,22 +187,36 @@ export default function OrderHistoryScreen() {
 
                             <View style={styles.cardFooter}>
                                 <Text style={styles.priceText}>₹{booking.amount}</Text>
-                                {activeTab === 'Payment' && (
-                                    <TouchableOpacity
-                                        style={styles.payBtn}
-                                        onPress={() => router.push({
-                                            pathname: '/payment/checkout',
-                                            params: { bookingId: booking.id, amount: String(booking.amount), label: booking.service?.name }
-                                        })}
-                                    >
-                                        <Text style={styles.payBtnText}>Pay Now</Text>
-                                    </TouchableOpacity>
-                                )}
-                                {activeTab === 'History' && (
-                                    <TouchableOpacity style={styles.rebookBtn}>
-                                        <Text style={styles.rebookBtnText}>Rebook</Text>
-                                    </TouchableOpacity>
-                                )}
+                                <View style={styles.footerActions}>
+                                    {activeTab === 'Payment' && (
+                                        <TouchableOpacity
+                                            style={styles.payBtn}
+                                            onPress={() => router.push({
+                                                pathname: '/payment/checkout',
+                                                params: { bookingId: booking.id, amount: String(booking.amount), label: booking.service?.name }
+                                            })}
+                                        >
+                                            <Text style={styles.payBtnText}>Pay Now</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    {activeTab === 'History' && booking.status === 'COMPLETED' && (
+                                        <TouchableOpacity style={styles.rebookBtn}>
+                                            <Text style={styles.rebookBtnText}>Rebook</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    {(activeTab === 'Active' || activeTab === 'Payment') && (
+                                        <TouchableOpacity
+                                            style={styles.cancelBtn}
+                                            onPress={() => handleCancel(booking)}
+                                            disabled={cancellingId === booking.id}
+                                        >
+                                            {cancellingId === booking.id
+                                                ? <ActivityIndicator size="small" color="#E53935" />
+                                                : <Text style={styles.cancelBtnText}>Cancel</Text>
+                                            }
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
                             </View>
                         </TouchableOpacity>
                     ))
@@ -217,11 +263,14 @@ const styles = StyleSheet.create({
     detailText: { fontFamily: Fonts.medium, fontSize: 12, color: Colors.textLight, flex: 1 },
 
     cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15 },
+    footerActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
     priceText: { fontFamily: Fonts.bold, fontSize: 18, color: Colors.textDark },
     payBtn: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 10 },
     payBtnText: { color: '#FFF', fontFamily: Fonts.bold, fontSize: 13 },
     rebookBtn: { borderWidth: 1, borderColor: Colors.primary, paddingHorizontal: 15, paddingVertical: 6, borderRadius: 10 },
     rebookBtnText: { color: Colors.primary, fontFamily: Fonts.bold, fontSize: 12 },
+    cancelBtn: { borderWidth: 1, borderColor: '#E53935', paddingHorizontal: 15, paddingVertical: 6, borderRadius: 10, minWidth: 70, alignItems: 'center' },
+    cancelBtnText: { color: '#E53935', fontFamily: Fonts.bold, fontSize: 12 },
 
     /* Empty State */
     emptyContainer: { alignItems: 'center', paddingVertical: 60 },

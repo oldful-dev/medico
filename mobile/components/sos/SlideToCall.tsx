@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+﻿import React, { useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -21,7 +21,7 @@ const THUMB_WIDTH = 59;
 const PADDING = 6;
 const SLIDE_THRESHOLD = TRACK_WIDTH - THUMB_WIDTH - PADDING * 2 - 20;
 
-const HOTLINE_NUMBER = 'tel:+919480198108'; // Oldful emergency hotline
+const HOTLINE_NUMBER = 'tel:+918062180429'; // Oldful emergency hotline
 
 interface SlideToCallProps {
     onSlideComplete?: () => void;
