@@ -55,10 +55,21 @@ export default function OrderHistoryScreen() {
 
     const [cancellingId, setCancellingId] = useState<string | null>(null);
 
+    const isPastBooking = (booking: Booking) => {
+        const scheduledDate = new Date(booking.scheduledDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return scheduledDate < today;
+    };
+
     const handleCancel = (booking: Booking) => {
+        const isStale = isPastBooking(booking);
+        const message = isStale
+            ? `Cancel booking #${booking.bookingCode}? The service date has passed. If you paid online, a refund will be initiated.`
+            : `Cancel booking #${booking.bookingCode}? This cannot be undone.`;
         Alert.alert(
             'Cancel Booking',
-            `Cancel booking #${booking.bookingCode}? This cannot be undone.`,
+            message,
             [
                 { text: 'Keep', style: 'cancel' },
                 {
@@ -71,6 +82,7 @@ export default function OrderHistoryScreen() {
                                 setBookings(prev => prev.map(b =>
                                     b.id === booking.id ? { ...b, status: 'CANCELLED' } : b
                                 ));
+                                Alert.alert('Booking Cancelled', 'Your booking has been cancelled successfully.' + (isStale ? '\n\nIf a payment was made, a refund will be processed.' : ''));
                             } else {
                                 Alert.alert('Error', 'Could not cancel booking. Please contact support.');
                             }
@@ -88,9 +100,17 @@ export default function OrderHistoryScreen() {
     // ─── Filtering Logic ───
     const filteredBookings = useMemo(() => {
         return bookings.filter(b => {
-            if (activeTab === 'Active') return ['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS', 'PENDING'].includes(b.status);
+            if (activeTab === 'Active') {
+                // Active: upcoming bookings with active statuses
+                return ['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS', 'PENDING'].includes(b.status) && !isPastBooking(b);
+            }
             if (activeTab === 'Payment') return ['PAYMENT_PENDING', 'PAYMENT_FAILED'].includes(b.status);
-            if (activeTab === 'History') return ['COMPLETED', 'CANCELLED'].includes(b.status);
+            if (activeTab === 'History') {
+                // History: completed, cancelled, OR past-date confirmed/assigned (stale)
+                if (['COMPLETED', 'CANCELLED'].includes(b.status)) return true;
+                if (['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'].includes(b.status) && isPastBooking(b)) return true;
+                return false;
+            }
             return false;
         }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }, [bookings, activeTab]);
@@ -165,11 +185,23 @@ export default function OrderHistoryScreen() {
                                         <Text style={styles.bookingCode}>#{booking.bookingCode}</Text>
                                     </View>
                                 </View>
-                                <View style={[styles.statusBadge, { backgroundColor: booking.status === 'COMPLETED' ? '#E8F5E9' : '#FFF3E0' }]}>
-                                    <Text style={[styles.statusText, { color: booking.status === 'COMPLETED' ? '#2E7D32' : '#EF6C00' }]}>
-                                        {booking.status}
-                                    </Text>
-                                </View>
+                                {(() => {
+                                    const isStale = isPastBooking(booking) && ['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'].includes(booking.status);
+                                    const badgeBg = booking.status === 'COMPLETED' ? '#E8F5E9'
+                                        : booking.status === 'CANCELLED' ? '#FFEBEE'
+                                        : isStale ? '#FFF8E1'
+                                        : '#FFF3E0';
+                                    const badgeColor = booking.status === 'COMPLETED' ? '#2E7D32'
+                                        : booking.status === 'CANCELLED' ? '#C62828'
+                                        : isStale ? '#F57F17'
+                                        : '#EF6C00';
+                                    const badgeLabel = isStale ? 'AWAITING CLOSE' : booking.status.replace('_', ' ');
+                                    return (
+                                        <View style={[styles.statusBadge, { backgroundColor: badgeBg }]}>
+                                            <Text style={[styles.statusText, { color: badgeColor }]}>{badgeLabel}</Text>
+                                        </View>
+                                    );
+                                })()}
                             </View>
 
                             <View style={styles.cardDetails}>
@@ -204,7 +236,10 @@ export default function OrderHistoryScreen() {
                                             <Text style={styles.rebookBtnText}>Rebook</Text>
                                         </TouchableOpacity>
                                     )}
-                                    {(activeTab === 'Active' || activeTab === 'Payment') && (
+                                    {/* Cancel button: show for Active/Payment tabs, OR for stale past-date bookings in History */}
+                                    {(activeTab === 'Active' || activeTab === 'Payment' ||
+                                        (activeTab === 'History' && !['COMPLETED', 'CANCELLED'].includes(booking.status))
+                                    ) && (
                                         <TouchableOpacity
                                             style={styles.cancelBtn}
                                             onPress={() => handleCancel(booking)}
