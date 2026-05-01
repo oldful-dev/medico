@@ -1,26 +1,27 @@
 'use client';
 
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
-import { Loader2 } from 'lucide-react';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 
-/**
- * AppGuard — Prevents authenticated routes from rendering until
- * the session has been hydrated. This prevents "Thundering Herd"
- * network calls where multiple queries fire 401s before the
- * initial refresh has completed.
- */
+const PUBLIC_APP_ROUTES = ['/app/plans'];
+
 export function AppGuard({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, isLoading } = useAuthStore();
+    const pathname = usePathname();
+
+    const isPublic = React.useMemo(() => {
+        return PUBLIC_APP_ROUTES.some((r) => pathname === r || pathname?.startsWith(r + '/'));
+    }, [pathname]);
 
     React.useEffect(() => {
-        if (!isLoading && !isAuthenticated) {
+        if (!isPublic && !isLoading && !isAuthenticated) {
             window.location.href = '/auth?reason=unauthorized';
         }
-    }, [isLoading, isAuthenticated]);
+    }, [isPublic, isLoading, isAuthenticated]);
 
-    if (isLoading || !isAuthenticated) {
+    if (!isPublic && (isLoading || !isAuthenticated)) {
         return <DashboardShell />;
     }
 

@@ -521,3 +521,16 @@ export const SERVICES_CONFIG: Record<string, ServiceConfig> = {
     ]
   }
 };
+
+// ─── Slug aliases (mobile app uses different slugs than the config keys) ───
+const SLUG_ALIASES: Record<string, string> = {
+  'nurse-care': 'home-nurse',
+  'doctor-visit': 'doctor-home-visit',
+  'meal-service': 'tiffin',
+  'order-medicines': 'medicines',
+  'medical-equipment': 'equipment-rental',
+};
+
+export function getServiceConfig(id: string): ServiceConfig | undefined {
+  return SERVICES_CONFIG[id] ?? SERVICES_CONFIG[SLUG_ALIASES[id] ?? ''];
+}

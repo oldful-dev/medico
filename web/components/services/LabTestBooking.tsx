@@ -6,7 +6,7 @@ import { useCartStore } from '@/store/cartStore';
 import { formatPrice } from '@/utils/formatPrice';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Activity, AlertCircle, ArrowLeft, ArrowRight, CalendarDays, 
+    Activity, AlertCircle, ArrowLeft, ArrowRight, 
     ChevronDown, Clock, Loader2, MapPin, Search, Zap
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -345,7 +345,7 @@ export default function LabTestBooking() {
                                 className="w-full h-16 px-6 bg-gray-50 border-2 border-transparent focus:border-emerald-500 focus:bg-emerald-50/20 rounded-2xl outline-none font-bold text-gray-900 transition-all cursor-pointer"
                             />
                             <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
-                                <CalendarDays className="w-5 h-5 text-gray-400" />
+                                
                             </div>
                         </div>
                     </motion.div>

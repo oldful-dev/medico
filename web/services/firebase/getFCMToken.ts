@@ -47,5 +47,5 @@ export const getFCMToken = async () => {
 
 // Auto-register in window
 if (typeof window !== "undefined") {
-    (window as any).getFCMToken = getFCMToken;
+    (window as unknown as { getFCMToken: typeof getFCMToken }).getFCMToken = getFCMToken;
 }

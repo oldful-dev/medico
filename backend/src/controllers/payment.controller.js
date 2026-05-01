@@ -173,6 +173,15 @@ const verifyPayment = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Payment verification failed' });
         }
 
+        // Fetch payment details from Razorpay to get payment method
+        let paymentMethod = 'CARD'; // default
+        try {
+            const razorpayPayment = await razorpay.razorpay.payments.fetch(paymentId);
+            paymentMethod = razorpayPayment.method ? razorpayPayment.method.toUpperCase() : 'CARD';
+        } catch (fetchErr) {
+            logger.warn('Could not fetch Razorpay payment details:', fetchErr.message);
+        }
+
         // Update payment
         const payment = await prisma.payment.update({
             where: { razorpayOrderId: orderId },
@@ -180,6 +189,7 @@ const verifyPayment = async (req, res, next) => {
                 razorpayPaymentId: paymentId,
                 razorpaySignature: signature,
                 status: 'SUCCESS',
+                paymentMethod: paymentMethod,
             },
             include: {
                 user: true,
@@ -385,12 +395,14 @@ const cancelPayment = async (req, res, next) => {
 // POST /api/payments/refund
 const initiateRefund = async (req, res, next) => {
     try {
-        const { paymentId, reason, type, amount } = req.body;
+        const { paymentId, reason, refundReason, type, refundType, amount, refundAmount: bodyRefundAmount } = req.body;
 
         const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
         if (!payment) return res.status(404).json({ success: false, message: 'Payment not found' });
 
-        const refundAmount = amount || payment.amount;
+        const finalReason = reason || refundReason;
+        const finalType = type || refundType;
+        const refundAmount = amount || bodyRefundAmount || payment.amount;
 
         // Razorpay refund
         let refund;
@@ -408,8 +420,8 @@ const initiateRefund = async (req, res, next) => {
             data: {
                 status: 'REFUND_INITIATED',
                 refundId: refund.id,
-                refundType: type,
-                refundReason: reason,
+                refundType: finalType,
+                refundReason: finalReason,
                 refundAmount,
             },
         });

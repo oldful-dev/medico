@@ -4,7 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cartStore';
 import { ChevronLeft, Info, Calendar, MapPin, Stethoscope, ArrowRight, ShieldCheck, Clock, Package } from 'lucide-react';
-import { SERVICES_CONFIG } from '@/lib/services-config';
+import { getServiceConfig } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import { formatPrice } from '@/utils/formatPrice';
 
@@ -58,7 +58,7 @@ export default function CartPage() {
            {items.map((item) => {
              const isPlan = item.type === 'plan';
              const isProductItem = item.type === 'product';
-             const config = !isPlan && !isProductItem && item.serviceId ? SERVICES_CONFIG[item.serviceId] : null;
+             const config = !isPlan && !isProductItem && item.serviceId ? getServiceConfig(item.serviceId) : null;
 
              return (
                <div key={item.id} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col gap-5 relative group">

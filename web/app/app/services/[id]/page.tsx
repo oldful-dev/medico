@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { getAssetUrl } from '@/utils/getAssetUrl';
-import { SERVICES_CONFIG } from '@/lib/services-config';
+import { getServiceConfig } from '@/lib/services-config';
 import HomeEssentialsBooking from '@/components/services/HomeEssentialsBooking';
 import LabTestBooking from '@/components/services/LabTestBooking';
 import { motion } from 'framer-motion';
@@ -36,7 +36,7 @@ export default function ServiceDetailPage() {
   const router = useRouter();
   const addItem = useCartStore(state => state.addItem);
   
-  const config = SERVICES_CONFIG[id];
+  const config = getServiceConfig(id);
 
   // Booking state for specialized forms
   const [selectedProblem, setSelectedProblem] = useState<string | null>(null);

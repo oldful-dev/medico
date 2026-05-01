@@ -125,6 +125,8 @@ export const bookingAPI = {
     assignCaregiver: (id, data) => api.put(`/bookings/${id}/assign`, data),
     reassignCaregiver: (id, data) => api.put(`/bookings/${id}/reassign`, data),
     updateStatus: (id, data) => api.put(`/bookings/${id}/status`, data),
+    updatePaymentStatus: (id, data) => api.put(`/bookings/${id}/payment-status`, data),
+    updateServicePerson: (id, data) => api.put(`/bookings/${id}/service-person`, data),
     escalate: (id) => api.put(`/bookings/${id}/escalate`),
 };
 
@@ -193,6 +195,7 @@ export const legalAPI = {
     create: (data) => api.post('/legal', data),
     update: (id, data) => api.put(`/legal/${id}`, data),
     publish: (id) => api.put(`/legal/${id}/publish`),
+    delete: (id) => api.delete(`/legal/${id}`),
 };
 
 // ── Products (Wellness Store) ────────────────────────

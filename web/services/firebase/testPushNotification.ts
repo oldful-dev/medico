@@ -125,7 +125,7 @@ export const testPushNotification = async () => {
 
 // Auto-run if in browser console
 if (typeof window !== "undefined") {
-    (window as any).testPushNotification = testPushNotification;
+    (window as unknown as { testPushNotification: typeof testPushNotification }).testPushNotification = testPushNotification;
     console.log("📝 Push Notification Test Script loaded!");
     console.log("Run: testPushNotification() to test your setup");
 }

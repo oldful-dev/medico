@@ -7,13 +7,13 @@ export const metadata: Metadata = {
   description: "Official Refund and Cancellation Policy for Oldful Elder Care Subscription Plans and Services.",
 };
 
-const API_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://oldful.onrender.com/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://oldful.onrender.com/api';
 
 async function getLegalDoc() {
   try {
     const res = await fetch(
       `${API_URL}/legal/published/REFUND_POLICY`,
-      { next: { revalidate: 3600 } }
+      { cache: 'no-store' }
     );
     if (!res.ok) return null;
     const json = await res.json();

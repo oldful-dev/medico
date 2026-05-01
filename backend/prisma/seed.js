@@ -54,19 +54,19 @@ async function main() {
 
     // ─── 3. Services ──────────────────────────
     const serviceData = [
+        { name: 'Doctor Home Visit', slug: 'doctor-visit', icon: '🩺', tagline: 'Expert doctors at your doorstep', pricingText: '₹799 / visit', route: '/doctor-visit', sortOrder: 1, serviceType: 'DOCTOR_HOME_VISIT' },
         { name: 'Doctor Home Visit', slug: 'doctor-home-visit', icon: '🩺', tagline: 'Expert doctors at your doorstep', pricingText: '₹799 / visit', route: '/services/doctor-visit', sortOrder: 1, serviceType: 'DOCTOR_HOME_VISIT' },
-        { name: 'Hospital Trip', slug: 'hospital-trip', icon: '🏥', tagline: 'Safe & comfortable hospital trips', pricingText: '₹499 / trip', route: '/services/hospital-trip', sortOrder: 2, serviceType: 'HOSPITAL_TRIP' },
-        { name: 'Home Nurse', slug: 'home-nurse', icon: '👩‍⚕️', tagline: 'Professional nursing care at home', pricingText: '₹1,299 / day', route: '/services/home-nurse', sortOrder: 3, serviceType: 'HOME_NURSE' },
-        { name: 'Insurance', slug: 'insurance', icon: '🛡️', tagline: 'Comprehensive health insurance plans', pricingText: 'From ₹199/mo', route: '/services/insurance', sortOrder: 4, serviceType: 'INSURANCE' },
-        { name: 'Blood Test', slug: 'blood-test', icon: '🩸', tagline: 'Lab tests at home, reports online', pricingText: '₹299 / test', route: '/services/blood-test', sortOrder: 5, serviceType: 'BLOOD_TEST' },
-        { name: 'Medicines', slug: 'medicines', icon: '💊', tagline: 'Doorstep medicine delivery', pricingText: 'As per MRP', route: '/services/medicines', sortOrder: 6, serviceType: 'MEDICINES' },
-        { name: 'Physio & Fitness', slug: 'physio-fitness', icon: '🏋️', tagline: 'Personalized physiotherapy sessions', pricingText: '₹699 / session', route: '/services/physio', sortOrder: 7, serviceType: 'PHYSIO_FITNESS' },
-        { name: 'Equipment Rental', slug: 'equipment-rental', icon: '🦽', tagline: 'Medical equipment on rent', pricingText: 'From ₹99/day', route: '/services/equipment', sortOrder: 8, serviceType: 'EQUIPMENT_RENTAL' },
-        { name: 'Home Essentials', slug: 'home-essentials', icon: '🏠', tagline: 'Daily essentials delivered', pricingText: 'Varies', route: '/services/essentials', sortOrder: 9, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
-        { name: 'Club & Events', slug: 'club-events', icon: '🎭', tagline: 'Social clubs & wellness events', pricingText: '₹199 / event', route: '/services/events', sortOrder: 10, serviceType: 'CLUB_EVENTS' },
-        { name: 'Tiffin', slug: 'tiffin', icon: '🍱', tagline: 'Healthy meals for seniors', pricingText: '₹149 / meal', route: '/services/tiffin', sortOrder: 11, serviceType: 'TIFFIN' },
-        { name: 'Tech Helper', slug: 'tech-helper', icon: '💻', tagline: 'Technology assistance for seniors', pricingText: '₹399 / visit', route: '/services/tech-helper', sortOrder: 12, serviceType: 'TECH_HELPER' },
-        { name: 'Paperwork & Legal', slug: 'paperwork-legal', icon: '📋', tagline: 'Legal & paperwork assistance', pricingText: 'From ₹999', route: '/services/legal-help', sortOrder: 13, serviceType: 'PAPERWORK_LEGAL', isEnabled: true },
+        { name: 'Hospital Trip', slug: 'hospital-trip', icon: '🏥', tagline: 'Safe & comfortable hospital trips', pricingText: '₹499 / trip', route: '/hospital-trip', sortOrder: 2, serviceType: 'HOSPITAL_TRIP' },
+        { name: 'Nurse Care', slug: 'nurse-care', icon: '👩‍⚕️', tagline: 'Professional nursing care at home', pricingText: '₹1,299 / day', route: '/nurse-care', sortOrder: 3, serviceType: 'HOME_NURSE' },
+        { name: 'Insurance', slug: 'insurance', icon: '🛡️', tagline: 'Comprehensive health insurance plans', pricingText: 'From ₹199/mo', route: '/insurance', sortOrder: 4, serviceType: 'INSURANCE' },
+        { name: 'Blood Test', slug: 'blood-test', icon: '🩸', tagline: 'Lab tests at home, reports online', pricingText: '₹299 / test', route: '/blood-test', sortOrder: 5, serviceType: 'BLOOD_TEST' },
+        { name: 'Medicines', slug: 'order-medicines', icon: '💊', tagline: 'Doorstep medicine delivery', pricingText: 'As per MRP', route: '/order-medicines', sortOrder: 6, serviceType: 'MEDICINES' },
+        { name: 'Physio & Fitness', slug: 'physio-fitness', icon: '🏋️', tagline: 'Personalized physiotherapy sessions', pricingText: '₹699 / session', route: '/physio-fitness', sortOrder: 7, serviceType: 'PHYSIO_FITNESS' },
+        { name: 'Medical Equipment', slug: 'medical-equipment', icon: '🦽', tagline: 'Medical equipment on rent', pricingText: 'From ₹99/day', route: '/medical-equipment', sortOrder: 8, serviceType: 'EQUIPMENT_RENTAL' },
+        { name: 'Meal Service', slug: 'meal-service', icon: '🍱', tagline: 'Healthy meals for seniors', pricingText: '₹149 / meal', route: '/meal-service', sortOrder: 9, serviceType: 'TIFFIN' },
+        { name: 'Tech Helper', slug: 'tech-helper', icon: '💻', tagline: 'Technology assistance for seniors', pricingText: '₹399 / visit', route: '/tech-helper', sortOrder: 10, serviceType: 'TECH_HELPER' },
+        { name: 'Home Essentials', slug: 'home-essentials', icon: '🏠', tagline: 'Daily essentials delivered', pricingText: 'Varies', route: '/all-home-essentials', sortOrder: 11, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Club & Events', slug: 'club-events', icon: '🎭', tagline: 'Social clubs & wellness events', pricingText: '₹199 / event', route: '/services/events', sortOrder: 12, serviceType: 'CLUB_EVENTS' },
     ];
 
     const homeEssentialsSubServices = [
@@ -78,10 +78,9 @@ async function main() {
         { name: 'Bank Paperwork', slug: 'bank-paperwork', icon: '🏦', tagline: 'KYC, forms & bank assistance', pricingText: '₹199 / visit', route: '/bank-paperwork', sortOrder: 106, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
         { name: 'Grocery Run', slug: 'grocery-run', icon: '🛒', tagline: 'Fresh groceries at your door', pricingText: '₹99 / run', route: '/grocery-run', sortOrder: 107, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
         { name: 'Anything Else', slug: 'anything-else', icon: '❓', tagline: 'Need help with something else?', pricingText: 'Contact Us', route: '/anything-else', sortOrder: 108, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
-        { name: 'Paperwork & Legal (Essentials)', slug: 'paper-legal', icon: '📋', tagline: 'Legal & paperwork assistance', pricingText: 'From ₹999', route: '/paper-legal', sortOrder: 109, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Paperwork & Legal', slug: 'paper-legal', icon: '📋', tagline: 'Legal & paperwork assistance', pricingText: 'From ₹999', route: '/paper-legal', sortOrder: 109, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
         { name: 'Trip & Travels', slug: 'trip-travels', icon: '✈️', tagline: 'Travel planning & assistance', pricingText: 'Custom', route: '/trip-travels', sortOrder: 110, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
-        { name: 'Tech Helper (Essentials)', slug: 'tech-helper-essentials', icon: '💻', tagline: 'Technology assistance for seniors', pricingText: '₹399 / visit', route: '/tech-helper', sortOrder: 111, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
-        { name: 'Smart Upgrade', slug: 'smart-upgrade', icon: '✨', tagline: 'Make your home elderly-friendly', pricingText: 'Custom Quote', route: '/smart-upgrade', sortOrder: 112, serviceType: 'HOME_ESSENTIALS', isEnabled: true }
+        { name: 'Smart Upgrade', slug: 'smart-upgrade', icon: '✨', tagline: 'Make your home elderly-friendly', pricingText: 'Custom Quote', route: '/smart-upgrade', sortOrder: 111, serviceType: 'HOME_ESSENTIALS', isEnabled: true }
     ];
 
     for (const s of serviceData) {

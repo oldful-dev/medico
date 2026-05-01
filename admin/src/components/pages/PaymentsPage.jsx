@@ -1,10 +1,29 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { DollarSign, RefreshCw, ChevronLeft, ChevronRight, Edit2 } from "lucide-react";
+import { RefreshCw, ChevronLeft, ChevronRight, Edit2, CreditCard, Smartphone, Banknote, Building2 } from "lucide-react";
 import { paymentAPI } from "@/lib/api";
 import { formatCurrency, formatDateTime, showToast } from "@/lib/hooks";
 
 const statusColors = { INITIATED: 'badge-default', SUCCESS: 'badge-success', FAILED: 'badge-danger', REFUND_INITIATED: 'badge-warning', REFUNDED: 'badge-info' };
+
+const METHOD_LABELS = {
+    CARD: { label: 'Card', icon: CreditCard, color: '#6366f1' },
+    UPI: { label: 'UPI', icon: Smartphone, color: '#10b981' },
+    NETBANKING: { label: 'Net Banking', icon: Building2, color: '#3b82f6' },
+    WALLET: { label: 'Wallet', icon: Smartphone, color: '#f59e0b' },
+    CASH: { label: 'COD / Cash', icon: Banknote, color: '#64748b' },
+};
+
+function PaymentMethodBadge({ method }) {
+    if (!method) return <span className="text-muted text-sm">—</span>;
+    const m = METHOD_LABELS[method.toUpperCase()] || { label: method, icon: CreditCard, color: '#64748b' };
+    const Icon = m.icon;
+    return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: m.color }}>
+            <Icon size={13} /> {m.label}
+        </span>
+    );
+}
 
 export default function PaymentsPage() {
     const [payments, setPayments] = useState([]);
@@ -15,11 +34,20 @@ export default function PaymentsPage() {
     const [refundData, setRefundData] = useState({ refundType: 'CANCELLATION', refundReason: '', refundAmount: 0 });
     const [statusModal, setStatusModal] = useState(null);
     const [newStatus, setNewStatus] = useState('');
+    const [updatingStatus, setUpdatingStatus] = useState(false);
     const limit = 20;
 
     const loadPayments = useCallback(async () => {
-        try { setLoading(true); const r = await paymentAPI.getAll({ page, limit }); setPayments(r.data?.data?.payments || r.data?.data || []); setTotal(r.data?.data?.total || 0); }
-        catch (e) { console.error(e); } finally { setLoading(false); }
+        try {
+            setLoading(true);
+            const r = await paymentAPI.getAll({ page, limit });
+            const data = r.data?.data;
+            setPayments(data?.payments || (Array.isArray(data) ? data : []));
+            setTotal(data?.total || 0);
+        } catch (e) {
+            console.error('Load payments error:', e);
+            showToast('Failed to load payments', 'error');
+        } finally { setLoading(false); }
     }, [page, limit]);
 
     useEffect(() => { loadPayments(); }, [loadPayments]);
@@ -32,10 +60,17 @@ export default function PaymentsPage() {
     }
 
     async function handleStatusUpdate() {
+        if (!newStatus || newStatus === statusModal.status) return;
+        setUpdatingStatus(true);
         try {
             await paymentAPI.updateStatus(statusModal.id, { status: newStatus });
-            showToast('Payment status updated'); setStatusModal(null); loadPayments();
-        } catch (e) { showToast(e.response?.data?.message || 'Status update failed', 'error'); }
+            showToast('Payment status updated');
+            setStatusModal(null);
+            loadPayments();
+        } catch (e) {
+            console.error('Status update error:', e.response?.data || e.message);
+            showToast(e.response?.data?.message || 'Status update failed', 'error');
+        } finally { setUpdatingStatus(false); }
     }
 
     return (
@@ -53,15 +88,15 @@ export default function PaymentsPage() {
                                             <td className="text-sm">{formatDateTime(p.createdAt)}</td>
                                             <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{p.user?.name || '—'}</td>
                                             <td>{formatCurrency(p.amount)}</td>
-                                            <td className="text-sm">{p.paymentMethod || '—'}</td>
+                                            <td><PaymentMethodBadge method={p.paymentMethod} /></td>
                                             <td><span className={`badge ${statusColors[p.status] || 'badge-default'}`}>{p.status}</span></td>
                                             <td className="text-sm"><code>{p.booking?.bookingCode || p.subscription?.plan?.name || '—'}</code></td>
                                             <td className="text-sm">{p.couponCode || '—'}</td>
                                             <td>
                                                 <div className="flex gap-1">
-                                                    <button className="btn btn-sm btn-secondary" onClick={() => { setStatusModal(p); setNewStatus(p.status); }}><Edit2 size={14} /></button>
-                                                    {p.status === 'SUCCESS' && !p.refundId && (
-                                                        <button className="btn btn-sm btn-warning" onClick={() => { setRefundModal(p); setRefundData({ refundType: 'CANCELLATION', refundReason: '', refundAmount: p.amount }); }}><RefreshCw size={14} /></button>
+                                                    <button className="btn btn-sm btn-secondary" title="Update status" onClick={() => { setStatusModal(p); setNewStatus(p.status); }}><Edit2 size={14} /></button>
+                                                    {p.status === 'SUCCESS' && p.paymentMethod !== 'CASH' && !p.refundId && (
+                                                        <button className="btn btn-sm btn-warning" title="Refund" onClick={() => { setRefundModal(p); setRefundData({ refundType: 'CANCELLATION', refundReason: '', refundAmount: p.amount }); }}><RefreshCw size={14} /></button>
                                                     )}
                                                 </div>
                                             </td>
@@ -87,14 +122,38 @@ export default function PaymentsPage() {
             )}
 
             {statusModal && (
-                <div className="modal-overlay" onClick={() => setStatusModal(null)}><div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+                <div className="modal-overlay" onClick={() => setStatusModal(null)}><div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
                     <div className="modal-header"><h3>Update Payment Status</h3><button onClick={() => setStatusModal(null)} className="btn btn-sm btn-secondary">✕</button></div>
                     <div className="modal-body">
-                        <p className="text-sm mb-4">Payment: {formatCurrency(statusModal.amount)} — {statusModal.user?.name}</p>
-                        <p className="text-xs text-muted mb-3">Current Status: <span className={`badge ${statusColors[statusModal.status] || 'badge-default'}`}>{statusModal.status}</span></p>
-                        <div className="form-group"><label className="form-label">New Status</label><select className="form-select" value={newStatus} onChange={e => setNewStatus(e.target.value)}><option value="">Select status...</option>{['INITIATED', 'SUCCESS', 'FAILED', 'REFUND_INITIATED', 'REFUNDED'].map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+                        <div className="flex items-center gap-3 p-3 rounded-lg mb-4" style={{ background: 'var(--bg-secondary)' }}>
+                            <div>
+                                <p className="text-sm font-medium">{statusModal.user?.name}</p>
+                                <p className="text-xs text-muted">{formatCurrency(statusModal.amount)} · <PaymentMethodBadge method={statusModal.paymentMethod} /></p>
+                            </div>
+                        </div>
+                        <p className="text-xs text-muted mb-3">Current: <span className={`badge ${statusColors[statusModal.status] || 'badge-default'}`}>{statusModal.status}</span></p>
+                        <div className="form-group">
+                            <label className="form-label">New Status</label>
+                            <select className="form-select" value={newStatus} onChange={e => setNewStatus(e.target.value)}>
+                                <option value="">Select status...</option>
+                                {statusModal.paymentMethod === 'CASH'
+                                    ? ['INITIATED', 'SUCCESS', 'FAILED'].map(s => <option key={s} value={s}>{s === 'SUCCESS' ? 'COLLECTED (Success)' : s}</option>)
+                                    : ['INITIATED', 'SUCCESS', 'FAILED', 'REFUND_INITIATED', 'REFUNDED'].map(s => <option key={s} value={s}>{s}</option>)
+                                }
+                            </select>
+                        </div>
+                        {statusModal.paymentMethod === 'CASH' && (
+                            <p className="text-xs text-muted mt-2" style={{ background: '#fff7ed', padding: '8px 12px', borderRadius: 8, border: '1px solid #fed7aa' }}>
+                                💵 COD payment — select <strong>COLLECTED (Success)</strong> once cash is received from customer.
+                            </p>
+                        )}
                     </div>
-                    <div className="modal-footer"><button className="btn btn-secondary" onClick={() => setStatusModal(null)}>Cancel</button><button className="btn btn-primary" onClick={handleStatusUpdate} disabled={!newStatus || newStatus === statusModal.status}>Update Status</button></div>
+                    <div className="modal-footer">
+                        <button className="btn btn-secondary" onClick={() => setStatusModal(null)}>Cancel</button>
+                        <button className="btn btn-primary" onClick={handleStatusUpdate} disabled={!newStatus || newStatus === statusModal.status || updatingStatus}>
+                            {updatingStatus ? 'Updating...' : 'Update Status'}
+                        </button>
+                    </div>
                 </div></div>
             )}
         </div>

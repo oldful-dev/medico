@@ -9,7 +9,7 @@ export const diagnosePushNotifications = async () => {
     console.log('='.repeat(60) + '\n');
 
     const results = {
-        checks: [] as any[],
+        checks: [] as { name: string; passed: boolean; details: string }[],
         passed: 0,
         failed: 0,
     };
@@ -141,6 +141,6 @@ export const diagnosePushNotifications = async () => {
 
 // Auto-register in window
 if (typeof window !== 'undefined') {
-    (window as any).diagnosePushNotifications = diagnosePushNotifications;
+    (window as unknown as { diagnosePushNotifications: typeof diagnosePushNotifications }).diagnosePushNotifications = diagnosePushNotifications;
     console.log('📝 Diagnostic script loaded! Run: await diagnosePushNotifications()');
 }
