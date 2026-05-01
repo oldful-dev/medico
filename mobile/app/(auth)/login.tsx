@@ -206,20 +206,20 @@ export default function LoginScreen() {
             } else if (error.code === statusCodes.IN_PROGRESS) {
                 // already in progress — silent
             } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-                Alert.alert('Error', 'Google Play Services not available.');
+                Alert.alert('Error', 'Google Play Services not available or outdated.');
             } else {
-                console.error('Google sign-in error:', error);
-                
+                console.error('Google sign-in error:', JSON.stringify(error, null, 2));
+
+                let errorMessage = 'Google sign-in failed. Please try again.';
+
                 // DEVELOPER_ERROR common instructions
-                if (error.message?.includes('DEVELOPER_ERROR') || String(error).includes('DEVELOPER_ERROR')) {
-                    Alert.alert(
-                        'Configuration Error',
-                        'Google Sign-In failed with DEVELOPER_ERROR. This usually means the SHA-1 fingerprint of your development machine is not registered in the Google Cloud Console.\n\nPlease check the troubleshooting guide in the project root if this persists.',
-                        [{ text: 'OK' }]
-                    );
-                } else {
-                    Alert.alert('Error', 'Google sign-in failed. Please try again.');
+                if (error.code === statusCodes.DEVELOPER_ERROR || error.message?.includes('DEVELOPER_ERROR')) {
+                    errorMessage = 'Configuration Error (DEVELOPER_ERROR).\n\nThis usually means:\n1. Your SHA-1 fingerprint is not registered in Google Cloud/Firebase console.\n2. The package name (com.oldfuldev.oldful) mismatch.\n3. The Web Client ID is incorrect.';
+                } else if (error.message?.includes('NETWORK_ERROR')) {
+                    errorMessage = 'Network error. Please check your internet connection.';
                 }
+
+                Alert.alert('Login Failed', errorMessage);
             }
         } finally {
             setIsGoogleLoading(false);

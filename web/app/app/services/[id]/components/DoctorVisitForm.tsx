@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { mediaService } from '@/services/api/mediaService';
 import { PhoneInput } from '@/components/common/PhoneInput';
+import { useServicePrice } from '@/hooks/useServicesHooks';
 
 // Icon Registry (Simulated from SDUI)
 const problemIcons: Record<string, string> = {
@@ -44,11 +45,16 @@ export default function DoctorVisitForm() {
   const [doctorType, setDoctorType] = useState<'GP' | 'Physio'>('GP');
   const [timeMode, setTimeMode] = useState<'ASAP' | 'SCHEDULE'>('ASAP');
   const [scheduleDate, setScheduleDate] = useState('');
-  const [address, setAddress] = useState('Home: 12th Main, Indiranagar, Bangalore');
+  const [address, setAddress] = useState('');
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [contactPhone, setContactPhone] = useState('');
+
+  // Live prices from backend DB — shared React Query cache, zero duplicate requests
+  const { price: gpLivePrice } = useServicePrice(['doctor-home-visit', 'doctor-visit']);
+  const gpPrice = gpLivePrice ?? 499;  // config fallback
+  const physioPrice = gpLivePrice != null ? Math.round(gpLivePrice * 1.4) : 699;
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -81,6 +87,10 @@ export default function DoctorVisitForm() {
   }, []);
 
   const handleFinish = async () => {
+    if (!address || address.trim().length < 5) {
+      alert('Please enter your full service address before continuing.');
+      return;
+    }
     setIsUploading(true);
     let uploadedUrls: string[] = [];
     
@@ -89,29 +99,27 @@ export default function DoctorVisitForm() {
         uploadedUrls = await mediaService.uploadMultipleMedia(images, 'doctor-visits');
       }
 
-      const bookingPayload = {
-        serviceId: 'doctor-home-visit',
-        scheduledDate: timeMode === 'ASAP' ? new Date().toISOString() : scheduleDate,
-        addressLine: address,
-        amount: doctorType === 'GP' ? 499 : 699,
-        paymentMethod: 'cod', // Services default to request/COD mode
-        formDataJson: {
-          problem: selectedProblem || 'Checkup',
-          providerType: doctorType,
-          scheduleTime: timeMode === 'ASAP' ? 'ASAP (Next 60 mins)' : scheduleDate,
-          phone: contactPhone || undefined,
-          attachments: uploadedUrls
-        }
-      };
+      const finalPrice = doctorType === 'GP' ? gpPrice : physioPrice;
 
-      // Import is injected at top of file, using any generic path since we are in components
-      const { bookingService } = await import('@/services/api/bookingService');
-      await bookingService.createBooking(bookingPayload);
-      
-      router.push('/app/success');
+      addItem({
+        serviceId: 'doctor-home-visit',
+        name: doctorType === 'GP' ? 'Doctor Home Visit (GP)' : 'Doctor Home Visit (Physio)',
+        price: finalPrice,
+        image: doctorType === 'GP'
+          ? '9bbd0539ddfd504d8362c951cb07d107b0df9fdf.png'
+          : 'ad2bd697d39bc0738ca19a09e58ce4677761ca47.png',
+        address,
+        scheduleTime: timeMode === 'ASAP' ? 'ASAP (Next 60 mins)' : scheduleDate,
+        providerType: doctorType,
+        problem: selectedProblem || 'Checkup',
+        attachments: uploadedUrls,
+        contactPhone: contactPhone || undefined,
+      });
+
+      router.push('/app/checkout');
     } catch (error) {
       console.error('Booking failed:', error);
-      alert('Failed to submit booking request. Please try again.');
+      alert('Failed to prepare booking. Please try again.');
     } finally {
       setIsUploading(false);
     }

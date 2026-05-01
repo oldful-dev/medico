@@ -213,28 +213,8 @@ export default function ProfileSetupScreen() {
             Alert.alert("Full Name Required", "Please enter your full name (at least 3 characters).");
             return;
         }
-        if (!gender) {
-            Alert.alert("Gender Required", "Please select your gender.");
-            return;
-        }
-        if (!dateOfBirth) {
-            Alert.alert("Date of Birth Required", "Please enter your date of birth.");
-            return;
-        }
-        if (!email || !email.trim().includes('@') || !email.trim().includes('.')) {
-            Alert.alert("Email Required", "Please enter a valid email address.");
-            return;
-        }
-        if (isGoogleFlow && !isPhoneVerified) {
-            Alert.alert("Phone Verification Required", "Please verify your mobile number via OTP first.");
-            return;
-        }
-        if (!line1 || line1.trim().length < 3) {
-            Alert.alert("House Number Required", "Please enter your flat / house number.");
-            return;
-        }
-        if (!line2 || GPS_ERROR_STATES.includes(line2) || line2.trim().length < 5) {
-            Alert.alert("Address Required", "Please enter or fetch your full address.");
+        if (isGoogleFlow && phoneInput.length !== 10) {
+            Alert.alert("Phone Number Required", "Please enter your 10-digit mobile number to complete registration.");
             return;
         }
         if (!agreed) {
@@ -242,6 +222,7 @@ export default function ProfileSetupScreen() {
             return;
         }
         if (!cityId) {
+            // Fallback to first city if still not loaded, though useEffect should handle this
             Alert.alert("City Loading", "Still fetching city data. Please wait a second and try again.");
             return;
         }
@@ -536,7 +517,7 @@ export default function ProfileSetupScreen() {
                     style={[styles.saveButton, (!agreed || isLoading) && { opacity: 0.7 }]}
                     activeOpacity={0.8}
                     onPress={handleSaveAndContinue}
-                    disabled={isLoading}
+                    disabled={!agreed || isLoading}
                 >
                     <Text style={styles.saveButtonText}>
                         {isLoading ? t('profile_setup.completing') : t('profile_setup.complete_profile')}

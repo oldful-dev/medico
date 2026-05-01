@@ -57,7 +57,7 @@ export default function PlumbingElectricalScreen() {
             heroSubtitle="Concierge Services"
             description="Book a certified plumber or electrician for pipe leaks, wiring faults, and all home repairs."
             heroImage={imgHero}
-            pricingLabel="₹349 Booking Fee + Vendor's Bill"
+            pricingLabel={servicePrice > 0 ? `₹${servicePrice} Booking Fee + Vendor's Bill` : 'Fetching price...'}
             pricingNote="*The vendor's bill depends on the actual work needed."
             bulletItems={[
                 'Pipe Leakage & Repair',

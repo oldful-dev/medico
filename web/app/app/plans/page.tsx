@@ -16,7 +16,7 @@ export default function PlansPage() {
   const { addItem, clearCart } = useCartStore();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>('MONTHLY');
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('QUARTERLY');
   const { useProfile } = useUserHooks();
   const { data: profile } = useProfile();
 
@@ -46,7 +46,6 @@ export default function PlansPage() {
     // 1. Calculate price
     let price = 0;
     switch (billingCycle) {
-      case 'MONTHLY': price = plan.quarterlyPrice / 3; break; 
       case 'QUARTERLY': price = plan.quarterlyPrice; break;
       case 'BIANNUAL': price = plan.biannualPrice; break;
       case 'YEARLY': price = plan.yearlyPrice; break;
@@ -68,7 +67,6 @@ export default function PlansPage() {
 
   const getPrice = (plan: Plan) => {
     switch (billingCycle) {
-      case 'MONTHLY': return plan.quarterlyPrice / 3;
       case 'QUARTERLY': return plan.quarterlyPrice;
       case 'BIANNUAL': return plan.biannualPrice;
       case 'YEARLY': return plan.yearlyPrice;
@@ -77,7 +75,6 @@ export default function PlansPage() {
 
   const getPriceLabel = () => {
     switch (billingCycle) {
-      case 'MONTHLY': return '/ month';
       case 'QUARTERLY': return '/ quarter';
       case 'BIANNUAL': return '/ 6 months';
       case 'YEARLY': return '/ year';
@@ -96,16 +93,16 @@ export default function PlansPage() {
     <div className="min-h-screen bg-gray-50 pt-8 pb-20 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight">Choose Your Care Plan</h1>
+          <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight">Oldful Care Plans</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Experience premium healthcare with personalized monitoring and priority support.
+            Choose the perfect plan for your health & wellness needs. Flexible billing cycles to fit your budget.
           </p>
         </div>
 
         {/* Billing Cycle Switcher */}
         <div className="flex justify-center mb-12">
-          <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 grid grid-cols-2 sm:flex gap-1 w-full max-w-md sm:max-w-max">
-             {(['MONTHLY', 'QUARTERLY', 'BIANNUAL', 'YEARLY'] as BillingCycle[]).map((cycle) => (
+          <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 grid grid-cols-3 sm:flex gap-1 w-full max-w-md sm:max-w-max">
+             {(['QUARTERLY', 'BIANNUAL', 'YEARLY'] as BillingCycle[]).map((cycle) => (
                 <button
                   key={cycle}
                   onClick={() => setBillingCycle(cycle)}
@@ -146,9 +143,9 @@ export default function PlansPage() {
            </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
            {plans.map((plan, idx) => {
-             const isPro = plan.name === 'Care Plus' || plan.name.toLowerCase().includes('pro') || idx === 1;
+             const isPro = plan.name === 'HomeMaker Plan';
              const isActive = profile?.subscriptions?.some(s => s.status === 'ACTIVE' && s.plan.name === plan.name);
              
              return (
@@ -170,12 +167,12 @@ export default function PlansPage() {
                  <p className={`text-sm h-10 ${isPro ? 'text-emerald-100' : 'text-gray-500'}`}>{plan.description}</p>
                  
                  <div className="my-6">
-                    <span className={`text-4xl font-extrabold ${isPro ? 'text-white' : 'text-gray-900'}`}>₹{getPrice(plan).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
+                    <span className={`text-4xl font-extrabold ${isPro ? 'text-white' : 'text-gray-900'}`}>₹{(getPrice(plan) ?? 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
                     <span className={`font-semibold text-sm ml-1 ${isPro ? 'text-emerald-200' : 'text-gray-400'}`}> {getPriceLabel()}</span>
                     
                     <div className={`mt-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider ${isPro ? 'text-emerald-300' : 'text-emerald-600'}`}>
                        <Clock className="w-3 h-3" />
-                       Valid for {billingCycle === 'MONTHLY' ? '30 days' : billingCycle === 'QUARTERLY' ? '90 days' : '365 days'}
+                       Valid for {billingCycle === 'QUARTERLY' ? '90 days' : billingCycle === 'BIANNUAL' ? '180 days' : '365 days'}
                     </div>
                  </div>
 

@@ -57,7 +57,7 @@ export default function AnythingElseScreen() {
             heroSubtitle="Concierge Services"
             description="Need help with something not on our list? Tell us what you need — our team will handle it."
             heroImage={imgHero}
-            pricingLabel="₹299 Concierge Fee (varies by task)"
+            pricingLabel={servicePrice > 0 ? `₹${servicePrice} Concierge Fee (varies by task)` : 'Fetching price...'}
             pricingNote="*Final price depends on the complexity of the request."
             bulletItems={[
                 'Personal Errands & Pickups',

@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import ServiceDetailScreen from '@/components/services/ServiceDetailScreen';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { mediaService } from '@/services/api/mediaService';
 import { useRouter } from 'expo-router';
 
 const imgHero = require('@/assets/images/056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png');
@@ -26,6 +27,9 @@ export default function BankPaperworkScreen() {
         }
         try {
             setIsBooking(true);
+            const uploadedImageUrls = selectedImages.length > 0
+                ? await mediaService.uploadMultipleMedia(selectedImages, 'bank-paperwork')
+                : [];
             router.push({
                 pathname: '/payment/checkout',
                 params: {
@@ -33,7 +37,7 @@ export default function BankPaperworkScreen() {
                         serviceId, cityId,
                         scheduledDate: new Date().toISOString(),
                         addressLine: address,
-                        formDataJson: {},
+                        formDataJson: { attachments: uploadedImageUrls },
                     }),
                     amount: String(servicePrice),
                     label: serviceName || 'Bank Paperwork',
@@ -53,7 +57,7 @@ export default function BankPaperworkScreen() {
             heroSubtitle="Concierge Services"
             description="Get professional help with bank visits, passbook updates, KYC, and other paperwork — all at your doorstep."
             heroImage={imgHero}
-            pricingLabel="₹249 Per Visit (Concierge Fee)"
+            pricingLabel={servicePrice > 0 ? `₹${servicePrice} Per Visit (Concierge Fee)` : 'Fetching price...'}
             pricingNote="*Charges cover the assistant's visit + travel. Bank charges are separate."
             bulletItems={[
                 'Passbook Update & KYC',

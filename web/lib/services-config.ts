@@ -346,7 +346,7 @@ export const SERVICES_CONFIG: Record<string, ServiceConfig> = {
     formFields: [
       { id: 'issueType', label: 'What is the issue?', type: 'select', options: ['Phone Help (WhatsApp/Zoom)', 'TV & Wi-Fi', 'Banking/UPI Help', 'Smart Device Setup', 'Other'], required: true },
       { id: 'details', label: 'Problem Details', type: 'textarea', placeholder: 'Describe what you need help with...' },
-      { id: 'mode', label: 'Support Mode', type: 'select', options: ['Home Visit (₹599)', 'Phone Call (₹399)'], required: true }
+      { id: 'mode', label: 'Support Mode', type: 'select', options: ['Home Visit', 'Phone Call'], required: true }
     ]
   },
 

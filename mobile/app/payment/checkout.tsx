@@ -15,6 +15,7 @@ import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { paymentService, PaymentMethod } from '@/services/api/paymentService';
 import { bookingService } from '@/services/api/bookingService';
 import { storageService, STORAGE_KEYS } from '@/services/device/storageService';
+import { useUser } from '@/context/UserContext';
 
 // ─── Payment Flow States (for debugging & recovery) ──────
 type PaymentFlowState = 'idle' | 'creating_booking' | 'initiating_order' | 'checkout_opened' | 'verifying' | 'success' | 'failed' | 'cancelled';
@@ -29,6 +30,7 @@ const PAYMENT_METHODS: MethodOption[] = [
 
 export default function CheckoutScreen() {
     const router = useRouter();
+    const { refreshData } = useUser();
     const params = useLocalSearchParams<{
         // ─── Existing booking ID (legacy: service screens pre-created the booking)
         bookingId?: string;
@@ -40,6 +42,8 @@ export default function CheckoutScreen() {
         email?: string;
         phone?: string;
         userName?: string;
+        // ─── Plans screen: trigger profile refresh after payment success ──────
+        refreshProfileOnSuccess?: string;
     }>();
 
     // ─── COD Restriction: Hide CASH if it's a subscription ──────────────────
@@ -300,6 +304,14 @@ export default function CheckoutScreen() {
 
             if (verifyRes.success) {
                 setFlowState('success');
+
+                // ─── Globally refresh user profile if requested ─────────────
+                // Used by Plans screen so the active subscription badge updates
+                // instantly across the whole app without requiring a restart.
+                if (params.refreshProfileOnSuccess === '1') {
+                    try { await refreshData(); } catch { /* non-blocking */ }
+                }
+
                 // Route to dedicated success screen (clear UX for elderly users)
                 router.replace({
                     pathname: '/payment/payment-success',

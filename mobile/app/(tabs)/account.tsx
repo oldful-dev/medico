@@ -329,7 +329,7 @@ export default function AccountScreen() {
                         thumbColor="#FFFFFF"
                         ios_backgroundColor="#AAAEAC" 
                         onValueChange={(val) => handleToggle('pushEnabled', val)} 
-                        value={!!profile.pushEnabled} 
+                        value={!!profile?.pushEnabled} 
                     />
                 </View>
 
@@ -346,7 +346,7 @@ export default function AccountScreen() {
                         thumbColor="#FFFFFF"
                         ios_backgroundColor="#AAAEAC" 
                         onValueChange={(val) => handleToggle('smsEnabled', val)} 
-                        value={!!profile.smsEnabled} 
+                        value={!!profile?.smsEnabled} 
                     />
                 </View>
 
@@ -363,7 +363,7 @@ export default function AccountScreen() {
                         thumbColor="#FFFFFF"
                         ios_backgroundColor="#AAAEAC" 
                         onValueChange={(val) => handleToggle('whatsappEnabled', val)} 
-                        value={!!profile.whatsappEnabled} 
+                        value={!!profile?.whatsappEnabled} 
                     />
                 </View>
 
@@ -380,7 +380,7 @@ export default function AccountScreen() {
                         thumbColor="#FFFFFF"
                         ios_backgroundColor="#AAAEAC" 
                         onValueChange={(val) => handleToggle('emailMarketingEnabled', val)} 
-                        value={!!profile.emailMarketingEnabled} 
+                        value={!!profile?.emailMarketingEnabled} 
                     />
                 </View>
 

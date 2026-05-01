@@ -11,7 +11,7 @@ const ctrl = require('../controllers/auth.controller');
 // 3 requests per 10 minutes, keyed by phone number (fallback to IP)
 const otpLimiter = rateLimit({
     windowMs: 10 * 60 * 1000, // 10 minutes
-    max: 3,
+    max: 10, // Increased from 3 to 10
     keyGenerator: (req) => req.body.phoneNumber || req.ip,
     message: { success: false, message: 'Too many OTP requests. Try again in 10 minutes.' },
     standardHeaders: true,

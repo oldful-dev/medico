@@ -94,11 +94,11 @@ app.use(cors({
     origin: (origin, callback) => {
         // Allow requests with no origin (mobile apps, server-to-server, health checks)
         if (!origin) return callback(null, true);
-        
-        const isAllowed = ALLOWED_ORIGINS.includes(origin) || 
-                         origin.includes('localhost') || 
-                         origin.includes('127.0.0.1') ||
-                         /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin); // Local network IP
+
+        const isAllowed = ALLOWED_ORIGINS.includes(origin) ||
+            origin.includes('localhost') ||
+            origin.includes('127.0.0.1') ||
+            /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin); // Local network IP
 
         if (isAllowed) {
             callback(null, true);
@@ -127,7 +127,7 @@ app.use('/api/', globalLimiter);
 // Auth endpoints: 10 requests per 15 minutes (OTP has its own stricter limiter in auth.routes.js)
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 10,
+    max: 30, // Increased from 10 to 30
     standardHeaders: true,
     legacyHeaders: false,
     message: { success: false, message: 'Too many auth attempts. Please try again later.' },

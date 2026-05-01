@@ -61,6 +61,24 @@ const initiatePayment = async (req, res, next) => {
         let discountAmount = 0;
         let finalAmount = amount;
 
+        // ─── Security: Validate payment amount against DB service price ────────────────
+        // Prevent a client from sending amount: 1 and completing a payment for ₹1.
+        // The client sends total (base + GST + optional service fee), so we check
+        // that it is at least 90% of the service basePrice (no GST floor).
+        if (bookingId && finalAmount > 0) {
+            const linkedBooking = await prisma.booking.findUnique({
+                where: { id: bookingId },
+                include: { service: { select: { basePrice: true } } }
+            });
+            const dbBasePrice = linkedBooking?.service?.basePrice;
+            if (dbBasePrice && dbBasePrice > 0 && finalAmount < dbBasePrice * 0.9) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Payment amount does not match service price. Please refresh and try again.'
+                });
+            }
+        }
+
         // Apply coupon if provided
         if (couponCode) {
             const coupon = await prisma.coupon.findUnique({ where: { code: couponCode } });

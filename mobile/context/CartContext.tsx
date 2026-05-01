@@ -1,6 +1,7 @@
 // Cart Context - Shopping cart for services with persistence
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiClient } from '@/services/api/apiClient';
 
 const CART_STORAGE_KEY = '@oldful_cart_items';
 
@@ -36,7 +37,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
             try {
                 const saved = await AsyncStorage.getItem(CART_STORAGE_KEY);
                 if (saved) {
-                    setItems(JSON.parse(saved));
+                    let loadedItems: CartItem[] = JSON.parse(saved);
+
+                    // ─── Background Price Reconciliation ───────────────────────────────
+                    // Silently update any cart item whose stored price has drifted
+                    // from the current DB price (e.g. admin changed service price).
+                    try {
+                        const res = await apiClient.get<any[]>('/services');
+                        if (res.success && res.data) {
+                            const priceMap: Record<string, number> = {};
+                            res.data.forEach((s: any) => {
+                                if (s.slug) priceMap[s.slug] = s.basePrice ?? 0;
+                            });
+                            loadedItems = loadedItems.map(item => {
+                                const livePrice = priceMap[item.serviceType];
+                                if (livePrice > 0 && Math.abs(item.price - livePrice) > 5) {
+                                    return { ...item, price: livePrice };
+                                }
+                                return item;
+                            });
+                        }
+                    } catch {
+                        // Fail silently — keep existing prices if API unavailable
+                    }
+
+                    setItems(loadedItems);
                 }
             } catch (error) {
                 console.error('Failed to load cart from storage:', error);

@@ -319,7 +319,7 @@ function ProfileSetupForm() {
            
            <div className="space-y-4">
               <input 
-                 {...register('line1', { required: true })}
+                 {...register('line1')}
                  placeholder="Flat / House / Office Number"
                  className="w-full h-14 bg-gray-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white rounded-2xl px-5 text-sm font-semibold outline-none transition-all"
               />

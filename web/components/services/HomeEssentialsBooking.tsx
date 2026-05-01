@@ -14,14 +14,18 @@ interface Props {
    config: ServiceConfig;
    onBook: (data: Record<string, unknown>) => void;
    isLoading?: boolean;
+   livePrice?: number; // API-sourced price — overrides hardcoded config pricing
 }
 
-export default function HomeEssentialsBooking({ config, onBook, isLoading = false }: Props) {
+export default function HomeEssentialsBooking({ config, onBook, isLoading = false, livePrice }: Props) {
    const { user } = useAuthStore();
    const [formData, setFormData] = useState<Record<string, unknown>>({});
    const [selectedDate, setSelectedDate] = useState('');
    const [address, setAddress] = useState(user?.addresses?.[0]?.line1 || '');
    const [images, setImages] = useState<File[]>([]);
+
+   // Effective price: prefer live API price, fall back to config
+   const displayPrice = livePrice ?? config.pricing[0]?.price ?? 0;
 
    const handleFieldChange = (id: string, value: unknown) => {
       setFormData(prev => ({ ...prev, [id]: value }));
@@ -126,7 +130,7 @@ export default function HomeEssentialsBooking({ config, onBook, isLoading = fals
                   <div className="flex items-center justify-between">
                      <div>
                         <h3 className="text-xl font-bold text-white">Book Now</h3>
-                        <p className="text-emerald-200 text-xs mt-1">Starting from ₹{formatPrice(config.pricing[0]?.price)}</p>
+                        <p className="text-emerald-200 text-xs mt-1">Starting from ₹{formatPrice(displayPrice)}</p>
                      </div>
                      <div className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-lg text-white text-[10px] font-bold uppercase tracking-widest border border-white/10">
                         Available
@@ -212,7 +216,7 @@ export default function HomeEssentialsBooking({ config, onBook, isLoading = fals
                   <div className="mt-3 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
                      <div className="flex items-center justify-between mb-0.5">
                         <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">Total Payable</span>
-                        <span className="text-xl font-black text-emerald-800">₹{formatPrice(config.pricing[0]?.price)}</span>
+                        <span className="text-xl font-black text-emerald-800">₹{formatPrice(displayPrice)}</span>
                      </div>
                      <p className="text-[9px] text-emerald-600 font-medium">Inclusive of taxes & visit charges</p>
                   </div>

@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import ServiceDetailScreen from '@/components/services/ServiceDetailScreen';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { mediaService } from '@/services/api/mediaService';
 import { useRouter } from 'expo-router';
 
 const imgHero = require('@/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png');
@@ -26,6 +27,9 @@ export default function DrivingCabScreen() {
         }
         try {
             setIsBooking(true);
+            const uploadedImageUrls = selectedImages.length > 0
+                ? await mediaService.uploadMultipleMedia(selectedImages, 'driving-cab')
+                : [];
             router.push({
                 pathname: '/payment/checkout',
                 params: {
@@ -33,7 +37,7 @@ export default function DrivingCabScreen() {
                         serviceId, cityId,
                         scheduledDate: new Date().toISOString(),
                         addressLine: address,
-                        formDataJson: {},
+                        formDataJson: { attachments: uploadedImageUrls },
                     }),
                     amount: String(servicePrice),
                     label: serviceName || 'Driver / Cab Booking',
@@ -53,7 +57,7 @@ export default function DrivingCabScreen() {
             heroSubtitle="Concierge Services"
             description="Book a reliable driver or cab for hospital visits, errands, or any destination — safe and comfortable."
             heroImage={imgHero}
-            pricingLabel="₹199 Booking Fee + Distance Fare"
+            pricingLabel={servicePrice > 0 ? `₹${servicePrice} Booking Fee + Distance Fare` : 'Fetching price...'}
             pricingNote="*Distance fare depends on pickup to drop distance."
             bulletItems={[
                 'Door-to-Door Cab Booking',
