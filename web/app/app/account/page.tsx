@@ -15,7 +15,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
 import { userService, UserProfile, Address, EmergencyContact, MedicalCard, Booking, HealthReport } from '@/services/api/userService';
 import { useUserHooks, USER_QUERY_KEYS } from '@/hooks/useUserHooks';
-import { SERVICES_CONFIG } from '@/lib/services-config';
+import { getServiceConfig } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import { formatPrice } from '@/utils/formatPrice';
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
@@ -262,9 +262,9 @@ function BookingsTab() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-4">
                     <div className="w-11 h-11 bg-[var(--color-bg-screen)] rounded-xl flex items-center justify-center shrink-0">
-                      {booking.service?.slug && SERVICES_CONFIG[booking.service.slug] ? (
+                      {booking.service?.slug && getServiceConfig(booking.service.slug) ? (
                         <Image 
-                          src={getAssetUrl(SERVICES_CONFIG[booking.service.slug].icon)} 
+                          src={getAssetUrl(getServiceConfig(booking.service.slug)!.icon)}
                           alt={booking.service.name} 
                           width={24} height={24} className="object-contain" 
                         />

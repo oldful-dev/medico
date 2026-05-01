@@ -51,9 +51,14 @@ export default function DashboardPage() {
   // Make test scripts available in console
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
-      (window as any).testPushNotification = testPushNotification;
-      (window as any).getFCMToken = getFCMToken;
-      (window as any).diagnosePushNotifications = diagnosePushNotifications;
+      const w = window as unknown as {
+        testPushNotification: typeof testPushNotification;
+        getFCMToken: typeof getFCMToken;
+        diagnosePushNotifications: typeof diagnosePushNotifications;
+      };
+      w.testPushNotification = testPushNotification;
+      w.getFCMToken = getFCMToken;
+      w.diagnosePushNotifications = diagnosePushNotifications;
     }
   }, []);
 
@@ -390,8 +395,12 @@ export default function DashboardPage() {
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-semibold text-gray-800 truncate">{booking.service?.name}</div>
                           <div className="text-[10px] text-gray-500">
-                            {new Date(booking.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, 
-                            {booking.scheduledTime || 'TBD'}
+                            {new Date(booking.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {booking.scheduledTime
+                              ? booking.scheduledTime === 'ASAP'
+                                ? ' · ASAP'
+                                : (() => { const d = new Date(booking.scheduledTime); return ` · ${!isNaN(d.getTime()) ? d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : booking.scheduledTime}`; })()
+                              : ''}
                           </div>
                         </div>
                         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full capitalize shrink-0 ${getStatusStyles(booking.status)}`}>

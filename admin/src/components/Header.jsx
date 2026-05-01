@@ -102,6 +102,24 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
             });
         });
 
+        socket.on("booking_payment_updated", (data) => {
+            handleNewAlert({
+                id: Date.now() + Math.random(),
+                type: data.paymentStatus === 'SUCCESS' ? 'booking' : 'warning',
+                title: data.paymentStatus === 'SUCCESS'
+                    ? `💳 Payment Confirmed: ${data.bookingCode || ''}`
+                    : `❌ Payment Failed: ${data.bookingCode || ''}`,
+                description: `${data.userName || ''} · ${data.serviceName || ''}`,
+                href: '/bookings',
+                time: new Date()
+            });
+            if (data.paymentStatus === 'SUCCESS') {
+                showToast(`💳 Payment confirmed: ${data.bookingCode || ''}`, 'success');
+            } else {
+                showToast(`❌ Payment failed for ${data.userName || 'booking'}`, 'danger');
+            }
+        });
+
         socket.on("low_responder_availability", (data) => {
             handleNewAlert({
                 id: Date.now() + Math.random(),
@@ -134,6 +152,7 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
             socket.off("new_ticket");
             socket.off("ticket_message_added");
             socket.off("booking_status_changed");
+            socket.off("booking_payment_updated");
             socket.off("low_responder_availability");
             socket.off("response_time_breach");
             socket.off("booking_updated");

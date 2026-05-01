@@ -11,7 +11,7 @@ import {
 import { motion } from 'framer-motion';
 import { bookingService } from '@/services/api/bookingService';
 import { labService } from '@/services/api/labService';
-import { SERVICES_CONFIG } from '@/lib/services-config';
+import { getServiceConfig } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import Image from 'next/image';
 import { toast } from 'sonner';
@@ -86,7 +86,7 @@ export default function BookingDetailsPage() {
    });
 
    const labStatusData = labRes?.data?.data?.[0]; // Redcliffe returns array of matches
-   const serviceConfig = booking?.service?.slug ? SERVICES_CONFIG[booking.service.slug] : null;
+   const serviceConfig = booking?.service?.slug ? getServiceConfig(booking.service.slug) : null;
 
    const handleDownload = async () => {
       if (isDownloading) return;
@@ -347,7 +347,17 @@ export default function BookingDetailsPage() {
                      <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400"><Clock className="w-5 h-5" /></div>
                      <div>
                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Time Slot</p>
-                        <p className="text-sm font-bold text-gray-800">{booking.scheduledTime || 'TBD'}</p>
+                        <p className="text-sm font-bold text-gray-800">
+                           {!booking.scheduledTime
+                              ? 'TBD'
+                              : booking.scheduledTime === 'ASAP'
+                              ? 'ASAP (Next 60 mins)'
+                              : (() => {
+                                  const d = new Date(booking.scheduledTime);
+                                  if (!isNaN(d.getTime())) return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+                                  return booking.scheduledTime; // raw slot string like "07:00 AM - 08:00 AM"
+                                })()}
+                        </p>
                      </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -475,7 +485,8 @@ export default function BookingDetailsPage() {
                   <span className="text-[10px] font-bold text-gray-800 uppercase tracking-tight">Support</span>
                </button>
 
-               {!['COMPLETED', 'CANCELLED', 'PAYMENT_FAILED'].includes(booking.status) && (
+               {!['COMPLETED', 'CANCELLED', 'PAYMENT_FAILED'].includes(booking.status) &&
+                !(booking.scheduledDate && new Date(booking.scheduledDate) < new Date()) && (
                   <button onClick={() => setShowCancelModal(true)} className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-transform text-red-500">
                      <X className="w-5 h-5 mb-2" />
                      <span className="text-[10px] font-bold uppercase tracking-tight">Cancel</span>

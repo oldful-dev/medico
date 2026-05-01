@@ -9,6 +9,9 @@ import {
     TouchableOpacity,
     ScrollView,
     Alert,
+    TextInput,
+    Modal,
+    ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -18,6 +21,7 @@ import { Fonts } from '@/constants/theme';
 import { useUser } from '@/context/UserContext';
 import { useAppConfig } from '@/context/AppConfigContext';
 import { useTranslation } from 'react-i18next';
+import { apiClient } from '@/services/api/apiClient';
 
 export default function CitySelectionScreen() {
     const { t } = useTranslation();
@@ -30,6 +34,40 @@ export default function CitySelectionScreen() {
     const comingSoonCities = cities.filter(c => !c.available);
 
     const [selectedId, setSelectedId] = useState(availableCities[0]?.id ?? '');
+
+    // Notify me modal state
+    const [showNotifyModal, setShowNotifyModal] = useState(false);
+    const [notifyCity, setNotifyCity] = useState('');
+    const [notifyName, setNotifyName] = useState('');
+    const [notifyEmail, setNotifyEmail] = useState('');
+    const [notifyLoading, setNotifyLoading] = useState(false);
+
+    const handleNotifyMe = async () => {
+        if (!notifyName.trim()) { Alert.alert('Required', 'Please enter your name.'); return; }
+        if (!notifyEmail.trim() || !notifyEmail.includes('@')) { Alert.alert('Required', 'Please enter a valid email address.'); return; }
+        try {
+            setNotifyLoading(true);
+            await apiClient.post('/waitlist', {
+                name: notifyName.trim(),
+                email: notifyEmail.trim().toLowerCase(),
+                city: notifyCity || undefined,
+                source: 'city_selection',
+            });
+            setShowNotifyModal(false);
+            setNotifyName(''); setNotifyEmail(''); setNotifyCity('');
+            Alert.alert("You're on the list! 🎉", `We'll email you as soon as Oldful launches${notifyCity ? ` in ${notifyCity}` : ''}.`);
+        } catch (e: any) {
+            const msg = e?.message?.toLowerCase() || '';
+            if (msg.includes('unique') || msg.includes('already')) {
+                Alert.alert('Already registered', 'You are already on our waitlist. We will notify you soon!');
+                setShowNotifyModal(false);
+            } else {
+                Alert.alert('Error', 'Something went wrong. Please try again.');
+            }
+        } finally {
+            setNotifyLoading(false);
+        }
+    };
 
     const handleContinue = () => {
         const city = availableCities.find(c => c.id === selectedId);
@@ -177,12 +215,13 @@ export default function CitySelectionScreen() {
                     )}
 
                     {/* Notify Banner */}
-                    <View style={styles.notifyBanner}>
+                    <TouchableOpacity style={styles.notifyBanner} activeOpacity={0.8} onPress={() => setShowNotifyModal(true)}>
                         <Ionicons name="notifications-outline" size={20} color="#02743F" />
                         <Text style={styles.notifyText}>
-                            We&apos;ll notify you when we launch in your city!
+                            Don&apos;t see your city? Tap to get notified when we launch near you!
                         </Text>
-                    </View>
+                        <Ionicons name="chevron-forward" size={16} color="#02743F" />
+                    </TouchableOpacity>
                 </ScrollView>
 
                 {/* ─── Continue Button ─── */}
@@ -192,6 +231,62 @@ export default function CitySelectionScreen() {
                     </TouchableOpacity>
                 </View>
             </View>
+
+            {/* ─── Notify Me Modal ─── */}
+            <Modal visible={showNotifyModal} transparent animationType="slide">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalSheet}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Notify Me When You Launch</Text>
+                            <TouchableOpacity onPress={() => setShowNotifyModal(false)}>
+                                <Ionicons name="close" size={22} color="#2F2F2F" />
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={styles.modalSubtitle}>
+                            We&apos;ll send you an email the moment Oldful goes live in your city.
+                        </Text>
+                        <View style={styles.modalBody}>
+                            <Text style={styles.inputLabel}>Your Name *</Text>
+                            <TextInput
+                                style={styles.modalInput}
+                                placeholder="Enter your name"
+                                placeholderTextColor="#AAAEAC"
+                                value={notifyName}
+                                onChangeText={setNotifyName}
+                            />
+                            <Text style={styles.inputLabel}>Email Address *</Text>
+                            <TextInput
+                                style={styles.modalInput}
+                                placeholder="Enter your email"
+                                placeholderTextColor="#AAAEAC"
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                value={notifyEmail}
+                                onChangeText={setNotifyEmail}
+                            />
+                            <Text style={styles.inputLabel}>Your City (optional)</Text>
+                            <TextInput
+                                style={styles.modalInput}
+                                placeholder="e.g. Pune, Chennai, Kolkata"
+                                placeholderTextColor="#AAAEAC"
+                                value={notifyCity}
+                                onChangeText={setNotifyCity}
+                            />
+                            <TouchableOpacity
+                                style={[styles.notifySubmitBtn, notifyLoading && { opacity: 0.6 }]}
+                                activeOpacity={0.85}
+                                onPress={handleNotifyMe}
+                                disabled={notifyLoading}
+                            >
+                                {notifyLoading
+                                    ? <ActivityIndicator color="#FFFFFF" />
+                                    : <Text style={styles.notifySubmitText}>Notify Me</Text>
+                                }
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -262,4 +357,34 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#048357',
     },
+    modalOverlay: {
+        flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end',
+    },
+    modalSheet: {
+        backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28,
+        paddingBottom: 40,
+    },
+    modalHeader: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingHorizontal: 24, paddingVertical: 20,
+        borderBottomWidth: 1, borderBottomColor: '#F0F0F0',
+    },
+    modalTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: '#2F2F2F' },
+    modalSubtitle: {
+        fontFamily: Fonts.regular, fontSize: 13, color: '#777777',
+        paddingHorizontal: 24, paddingTop: 14, lineHeight: 18,
+    },
+    modalBody: { paddingHorizontal: 24, paddingTop: 16, gap: 4 },
+    inputLabel: { fontFamily: Fonts.medium, fontSize: 12, color: '#555555', marginBottom: 4, marginTop: 10 },
+    modalInput: {
+        borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 10,
+        paddingHorizontal: 14, paddingVertical: 12,
+        fontFamily: Fonts.regular, fontSize: 14, color: '#2F2F2F',
+        backgroundColor: '#FAFAFA',
+    },
+    notifySubmitBtn: {
+        backgroundColor: '#02743F', borderRadius: 24, height: 48,
+        justifyContent: 'center', alignItems: 'center', marginTop: 20,
+    },
+    notifySubmitText: { fontFamily: Fonts.semiBold, fontSize: 15, color: '#FFFFFF' },
 });

@@ -143,7 +143,7 @@ export default function RolesPage() {
                                 </div>
                                 <div className="form-row">
                                     <div className="form-group"><label className="form-label">Password *</label><input className="form-input" type="password" required minLength={8} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
-                                    <div className="form-group"><label className="form-label">Phone</label><input className="form-input" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
+                                    <div className="form-group"><label className="form-label">Phone</label><input className="form-input" type="tel" maxLength={10} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })} /></div>
                                 </div>
                                 <div className="form-row">
                                     <div className="form-group"><label className="form-label">Role *</label>

@@ -80,10 +80,10 @@ export const HOME_CONFIG_FALLBACK: HomeConfig = {
             enabled: true,
             sort_order: 1,
             services: [
-                { id: 'doctor',    label: 'Oldful\nDoctor',     icon: '98e939543c86f26f5f26210bb160eb927b5ff057.png', route: '/app/services/doctor-home-visit',  enabled: true,  sort_order: 1 },
-                { id: 'nursing',   label: 'Nursing\nCare',      icon: '21e5a8a8650cf8eda36be3744c70099580173129.png', route: '/app/services/home-nurse',    enabled: true,  sort_order: 2 },
-                { id: 'caregiver', label: 'Caregiver\nSupport', icon: '2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png', route: '/app/services/home-nurse',    enabled: true,  sort_order: 3 },
-                { id: 'emergency', label: 'Emergency\nAssist',  icon: 'e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/app/sos', enabled: true,  sort_order: 4 },
+                { id: 'doctor',    label: 'Oldful\nDoctor',     icon: '98e939543c86f26f5f26210bb160eb927b5ff057.png', route: '/app/services/doctor-visit',  enabled: true,  sort_order: 1 },
+                { id: 'nursing',   label: 'Nursing\nCare',      icon: '21e5a8a8650cf8eda36be3744c70099580173129.png', route: '/app/services/nurse-care',    enabled: true,  sort_order: 2 },
+                { id: 'caregiver', label: 'Caregiver\nSupport', icon: '2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png', route: '/app/services/nurse-care',    enabled: true,  sort_order: 3 },
+                { id: 'emergency', label: 'Emergency\nAssist',  icon: 'e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/app/sos',                    enabled: true,  sort_order: 4 },
             ],
         },
         {
@@ -95,13 +95,13 @@ export const HOME_CONFIG_FALLBACK: HomeConfig = {
             max_items: 6,
             view_all_route: '/app/services',
             services: [
-                { id: 'doctor_visit',   label: 'Doctor\nVisit',           icon: '32a4661f97e2fa2dd2c85c403a7c530b7214e7f7.png', route: '/app/services/doctor-home-visit',     enabled: true, sort_order: 1 },
-                { id: 'homing_nursing', label: 'Homing\nNursing',         icon: 'afd8e2afab202de7ddce09bf8add378c861b9347.png', route: '/app/services/home-nurse',        enabled: true, sort_order: 2 },
+                { id: 'doctor_visit',   label: 'Doctor\nVisit',           icon: '32a4661f97e2fa2dd2c85c403a7c530b7214e7f7.png', route: '/app/services/doctor-visit',     enabled: true, sort_order: 1 },
+                { id: 'homing_nursing', label: 'Homing\nNursing',         icon: 'afd8e2afab202de7ddce09bf8add378c861b9347.png', route: '/app/services/nurse-care',        enabled: true, sort_order: 2 },
                 { id: 'blood_test',     label: 'Home\nBlood Test',        icon: 'f74321d18a86a9e77628058ed35a50d284752eb2.png', route: '/app/services/blood-test',        enabled: true, sort_order: 3 },
                 { id: 'fitness',        label: 'Fitness &\nTherapy',      icon: '54f5c849cf75e776592dec8236f221da3694ca53.png', route: '/app/services/physio-fitness',    enabled: true, sort_order: 4 },
-                { id: 'equipment',      label: 'Rent Medical\nEquipment', icon: 'd3906f517597b2ef10369d92c422b16bf20e879e.png', route: '/app/services/equipment-rental', enabled: true, sort_order: 5 },
-                { id: 'medicines',      label: 'Order\nMedicines',        icon: '79c15725f6f1a73658b615886f1289634cef9408.png', route: '/app/services/medicines',   enabled: true, sort_order: 6 },
-                { id: 'meal',           label: 'Meal\nService',           icon: '8f136eff1200bb21c080348f6cdb7ad1c2831bdf.png', route: '/app/services/tiffin',      enabled: true, sort_order: 7 },
+                { id: 'equipment',      label: 'Rent Medical\nEquipment', icon: 'd3906f517597b2ef10369d92c422b16bf20e879e.png', route: '/app/services/medical-equipment', enabled: true, sort_order: 5 },
+                { id: 'medicines',      label: 'Order\nMedicines',        icon: '79c15725f6f1a73658b615886f1289634cef9408.png', route: '/app/services/order-medicines',   enabled: true, sort_order: 6 },
+                { id: 'meal',           label: 'Meal\nService',           icon: '8f136eff1200bb21c080348f6cdb7ad1c2831bdf.png', route: '/app/services/meal-service',      enabled: true, sort_order: 7 },
                 { id: 'physio',         label: 'Physio\nFitness',         icon: '4ea419052803769fad63ff4292316ce7f8f77dbc.png', route: '/app/services/physio-fitness',    enabled: true, sort_order: 8 },
                 { id: 'hospital_trip',  label: 'Hospital\nTrip',          icon: 'e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/app/services/hospital-trip',     enabled: true, sort_order: 9 },
                 { id: 'insurance',      label: 'Insurance\n& Claims',     icon: 'e453f94c7e87531b0da0b6712f8dc4b3bc7084a9.png', route: '/app/services/insurance',         enabled: true, sort_order: 10 },
@@ -161,6 +161,18 @@ const parseJSON = <T>(raw: string, fallback: T): T => {
     }
 };
 
+// Normalise service routes to always use the /app/services/[slug] pattern.
+// Firebase Remote Config may store bare slugs like "/blood-test" — fix those.
+// Special routes like /app/sos are left untouched.
+const normaliseRoute = (route: string): string => {
+    if (!route) return route;
+    // Already a correct /app/ route (e.g. /app/sos, /app/services/blood-test)
+    if (route.startsWith('/app/')) return route;
+    // Strip leading slash then wrap in /app/services/
+    const slug = route.replace(/^\/+/, '');
+    return `/app/services/${slug}`;
+};
+
 // ─── SDUI Service ─────────────────────────────────────────────────────────────
 
 export const sduiService = {
@@ -178,7 +190,10 @@ export const sduiService = {
                     .filter(s => s.enabled)
                     .map(section => ({
                         ...section,
-                        services: sortByOrder(section.services?.filter(sv => sv.enabled) ?? []),
+                        services: sortByOrder(
+                            (section.services?.filter(sv => sv.enabled) ?? [])
+                                .map(sv => ({ ...sv, route: normaliseRoute(sv.route) }))
+                        ),
                     }))
             ),
             trust_badges: sortByOrder(

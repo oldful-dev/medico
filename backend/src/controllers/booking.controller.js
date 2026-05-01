@@ -30,8 +30,8 @@ const getBookings = async (req, res, next) => {
         }
         if (dateFrom || dateTo) {
             where.scheduledDate = {};
-            if (dateFrom) where.scheduledDate.gte = new Date(dateFrom);
-            if (dateTo) where.scheduledDate.lte = new Date(dateTo);
+            if (dateFrom) where.scheduledDate.gte = new Date(dateFrom.includes('T') ? dateFrom : `${dateFrom}T00:00:00.000+05:30`);
+            if (dateTo) where.scheduledDate.lte = new Date(dateTo.includes('T') ? dateTo : `${dateTo}T23:59:59.999+05:30`);
         }
 
         const [bookings, total] = await Promise.all([
@@ -150,7 +150,9 @@ const createBooking = async (req, res, next) => {
                         userId: finalUserId,
                         serviceId: finalServiceId,
                         cityId: finalCityId,
-                        scheduledDate: new Date(scheduledDate),
+                        scheduledDate: scheduledDate.includes('T')
+                            ? new Date(scheduledDate)
+                            : new Date(`${scheduledDate}T12:00:00.000Z`),
                         scheduledTime,
                         addressLine,
                         latitude,
@@ -177,6 +179,19 @@ const createBooking = async (req, res, next) => {
                         service: { select: { name: true, slug: true, icon: true } },
                     },
                 });
+                // Create CASH payment record for COD bookings so admin can track & mark collected
+                if (isCOD && amount > 0) {
+                    await prisma.payment.create({
+                        data: {
+                            userId: finalUserId,
+                            bookingId: booking.id,
+                            amount: amount,
+                            status: 'INITIATED',
+                            paymentMethod: 'CASH',
+                        },
+                    });
+                }
+
                 // 🟢 REAL-TIME: Notify Admins via Socket
                 emitToAdmins('new_booking', {
                     id: booking.id,

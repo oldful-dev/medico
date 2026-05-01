@@ -380,7 +380,7 @@ export default function BloodTestScreen() {
                         onPress={() => setShowDatePicker(true)}
                         activeOpacity={0.8}
                     >
-                        <Image source={calendarIcon} style={[styles.scheduleIcon, { width: 25, height: 25 }]} resizeMode="contain" />
+                        <Image source={calendarIcon} style={styles.scheduleIcon} resizeMode="contain" />
                         <Text style={styles.scheduleTileMain}>
                             {selectedDate ? formatDisplayDate(selectedDate) : 'Select Date'}
                         </Text>
@@ -393,7 +393,7 @@ export default function BloodTestScreen() {
                         onPress={() => setShowTimePicker(true)}
                         activeOpacity={0.8}
                     >
-                        <Image source={clockIcon} style={[styles.scheduleIcon, { width: 35, height: 35 }]} resizeMode="contain" />
+                        <Image source={clockIcon} style={styles.scheduleIcon} resizeMode="contain" />
                         <Text style={[styles.scheduleTileMain, styles.scheduleTileMainActive]}>
                             {selectedTime || 'Select Time'}
                         </Text>
@@ -766,8 +766,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
     },
     scheduleIcon: {
-        width: 28,
-        height: 28,
+        width: 44,
+        height: 44,
         marginBottom: 6,
     },
     scheduleTileMain: {

@@ -6,13 +6,13 @@ export const metadata: Metadata = {
   description: "Privacy Policy for Oldful explaining data collection and usage.",
 };
 
-const API_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://oldful.onrender.com/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://oldful.onrender.com/api';
 
 async function getLegalDoc() {
   try {
     const res = await fetch(
       `${API_URL}/legal/published/PRIVACY_POLICY`,
-      { next: { revalidate: 3600 } }
+      { cache: 'no-store' }
     );
     if (!res.ok) return null;
     const json = await res.json();

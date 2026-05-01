@@ -1,4 +1,4 @@
-import { onMessage, getToken } from "firebase/messaging";
+import { onMessage, getToken, type MessagePayload } from "firebase/messaging";
 import { messaging } from "./firebaseConfig";
 import { apiClient } from "../api/apiClient";
 
@@ -151,7 +151,7 @@ export const registerFCMToken = async () => {
  * Setup push notification listener for foreground messages
  * Listens for incoming FCM messages and refreshes notifications
  */
-export const setupPushNotificationListener = (onNotification?: (notification: any) => void) => {
+export const setupPushNotificationListener = (onNotification?: (notification: MessagePayload) => void) => {
     if (!messaging) {
         console.warn("Firebase Messaging not supported on this browser");
         return;

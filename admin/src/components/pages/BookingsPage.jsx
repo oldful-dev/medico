@@ -1,12 +1,12 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, Eye, UserPlus, AlertTriangle, ChevronLeft, ChevronRight, Edit2, Save, X } from "lucide-react";
 import { bookingAPI, caregiverAPI, cityAPI } from "@/lib/api";
 import { formatDate, formatDateTime, formatCurrency, showToast } from "@/lib/hooks";
 import { getSocket } from "@/lib/socket";
 
-const statusColors = { PENDING: 'badge-warning', ASSIGNED: 'badge-info', IN_PROGRESS: 'badge-purple', COMPLETED: 'badge-success', CANCELLED: 'badge-default', SLA_BREACH: 'badge-danger' };
-const paymentStatusColors = { PENDING: 'badge-warning', COMPLETED: 'badge-success', FAILED: 'badge-danger', REFUNDED: 'badge-secondary' };
+const statusColors = { PENDING: 'badge-warning', CONFIRMED: 'badge-info', ASSIGNED: 'badge-info', IN_PROGRESS: 'badge-purple', COMPLETED: 'badge-success', CANCELLED: 'badge-default', SLA_BREACH: 'badge-danger', PAYMENT_FAILED: 'badge-danger' };
+const paymentStatusColors = { PENDING: 'badge-warning', INITIATED: 'badge-info', SUCCESS: 'badge-success', FAILED: 'badge-danger', REFUNDED: 'badge-secondary', REFUND_INITIATED: 'badge-purple', PAYMENT_FAILED: 'badge-danger' };
 
 export default function BookingsPage() {
     const [bookings, setBookings] = useState([]);
@@ -33,6 +33,10 @@ export default function BookingsPage() {
         }).catch(() => { });
     }, []);
 
+    // Keep a ref to latest loadBookings so socket handlers never go stale
+    const loadBookingsRef = useRef(loadBookings);
+    useEffect(() => { loadBookingsRef.current = loadBookings; });
+
     useEffect(() => {
         loadBookings();
     }, [page, filters, search]);
@@ -41,32 +45,39 @@ export default function BookingsPage() {
         const socket = getSocket();
 
         socket.on("new_booking", (newBooking) => {
-            // Reload to get fresh list without duplicates
-            setPage(1);
-            loadBookings(false);
+            loadBookingsRef.current(false);
             showToast(`📅 New Booking: ${newBooking.serviceType || 'Service'}`, 'success');
         });
 
         socket.on("booking_updated", (updatedBooking) => {
-            setBookings(prev =>
-                prev.map(b => b.id === updatedBooking.id ? updatedBooking : b)
-            );
+            setBookings(prev => prev.map(b => b.id === updatedBooking.id ? { ...b, ...updatedBooking } : b));
+            setSelected(prev => prev?.id === updatedBooking.id ? { ...prev, ...updatedBooking } : prev);
         });
 
         socket.on("booking_status_changed", (data) => {
-            const { bookingId, status, userName } = data;
-            setBookings(prev =>
-                prev.map(b => b.id === bookingId ? { ...b, status } : b)
-            );
-            showToast(`✓ Booking status: ${status}`, 'info');
+            setBookings(prev => prev.map(b => b.id === data.bookingId ? { ...b, status: data.status } : b));
+            setSelected(prev => prev?.id === data.bookingId ? { ...prev, status: data.status } : prev);
         });
 
         socket.on("booking_assigned", (data) => {
-            const { bookingId, caregiverName } = data;
-            setBookings(prev =>
-                prev.map(b => b.id === bookingId ? { ...b, assignedCaregiver: caregiverName } : b)
-            );
-            showToast(`✓ Caregiver assigned: ${caregiverName}`, 'success');
+            setBookings(prev => prev.map(b => b.id === data.bookingId ? { ...b, caregiver: { name: data.caregiverName } } : b));
+            setSelected(prev => prev?.id === data.bookingId ? { ...prev, caregiver: { name: data.caregiverName } } : prev);
+            showToast(`✓ Caregiver assigned: ${data.caregiverName}`, 'success');
+        });
+
+        socket.on("booking_payment_updated", (data) => {
+            const applyPaymentUpdate = (b) => ({
+                ...b,
+                ...(data.bookingStatus ? { status: data.bookingStatus } : {}),
+                paymentStatus: data.paymentStatus,
+            });
+            setBookings(prev => prev.map(b => b.id === data.bookingId ? applyPaymentUpdate(b) : b));
+            setSelected(prev => prev?.id === data.bookingId ? applyPaymentUpdate(prev) : prev);
+            if (data.paymentStatus === 'SUCCESS') {
+                showToast(`💳 Payment confirmed: ${data.bookingCode || ''}`, 'success');
+            } else if (data.paymentStatus === 'FAILED') {
+                showToast(`❌ Payment failed: ${data.bookingCode || ''}`, 'danger');
+            }
         });
 
         return () => {
@@ -74,8 +85,9 @@ export default function BookingsPage() {
             socket.off("booking_updated");
             socket.off("booking_status_changed");
             socket.off("booking_assigned");
+            socket.off("booking_payment_updated");
         };
-    }, [loadBookings]);
+    }, []);
 
     async function loadBookings(showLoading = true) {
         try {
@@ -129,20 +141,22 @@ export default function BookingsPage() {
     }
 
     async function updateBookingDetails() {
-        if (!editData.status && !editData.paymentStatus) {
-            showToast('Select at least one field to update', 'error');
-            return;
-        }
         try {
-            const updatePayload = {};
-            if (editData.status) updatePayload.status = editData.status;
-            if (editData.paymentStatus) {
-                // Update payment status - this would need a new API endpoint
-                updatePayload.paymentStatus = editData.paymentStatus;
+            const calls = [];
+            if (editData.status && editData.status !== selected.status) {
+                calls.push(bookingAPI.updateStatus(selected.id, { status: editData.status }));
             }
-
-            await bookingAPI.updateStatus(selected.id, updatePayload);
-            showToast('Booking updated successfully');
+            const currentPaymentStatus = selected.paymentStatus || 'PENDING';
+            if (editData.paymentStatus && editData.paymentStatus !== currentPaymentStatus) {
+                calls.push(bookingAPI.updatePaymentStatus(selected.id, { paymentStatus: editData.paymentStatus }));
+            }
+            if (calls.length === 0) {
+                showToast('No changes to save', 'info');
+                setEditMode(false);
+                return;
+            }
+            await Promise.all(calls);
+            showToast('Booking updated successfully', 'success');
             setEditMode(false);
             await viewBooking(selected.id);
         } catch (e) {
@@ -156,7 +170,11 @@ export default function BookingsPage() {
             return;
         }
         try {
-            // This would need a new API endpoint to add service person details
+            await bookingAPI.updateServicePerson(selected.id, {
+                servicePersonName: servicePerson.name,
+                servicePersonPhone: servicePerson.phone,
+                servicePersonNotes: servicePerson.notes || null,
+            });
             showToast('Service person details added');
             setServicePersonModal(false);
             setServicePerson({ name: '', phone: '', notes: '' });
@@ -261,10 +279,7 @@ export default function BookingsPage() {
                     <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 800, maxHeight: '90vh', overflowY: 'auto' }}>
                         <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h3>Booking Details — {selected.bookingCode}</h3>
-                            <div style={{ display: 'flex', gap: 8 }}>
-                                {!editMode && <button onClick={() => { setEditMode(true); setEditData({ status: selected.status, paymentStatus: selected.payments?.[0]?.status || 'PENDING' }); }} className="btn btn-sm btn-info"><Edit2 size={14} /> Edit</button>}
-                                <button onClick={() => { setSelected(null); setEditMode(false); }} className="btn btn-sm btn-secondary">✕</button>
-                            </div>
+                            <button onClick={() => { setSelected(null); setEditMode(false); }} className="btn btn-sm btn-secondary">✕</button>
                         </div>
 
                         <div className="modal-body" style={{ padding: '20px' }}>
@@ -281,14 +296,36 @@ export default function BookingsPage() {
                             <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
                                 <h4 style={{ marginBottom: 12, color: 'var(--text-primary)', fontWeight: 600 }}>Service Details</h4>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                    <div><label className="form-label">Service Type</label><div className="text-sm font-semibold">{selected.service?.name || '—'}</div></div>
                                     <div><label className="form-label">Scheduled Date</label><div className="text-sm">{selected.scheduledDate ? formatDate(selected.scheduledDate) : '—'}</div></div>
                                     <div><label className="form-label">Scheduled Time</label><div className="text-sm">{selected.scheduledTime || '—'}</div></div>
                                     {selected.addressLine && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Service Address</label><div className="text-sm">{selected.addressLine}</div></div>}
-                                    {selected.symptoms && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Symptoms</label><div className="text-sm">{selected.symptoms}</div></div>}
-                                    <div><label className="form-label">Doctor Type</label><div className="text-sm">{selected.doctorType || '—'}</div></div>
-                                    <div><label className="form-label">Staff Type</label><div className="text-sm">{selected.staffType || '—'}</div></div>
-                                    {selected.shiftDuration && <div><label className="form-label">Shift Duration</label><div className="text-sm">{selected.shiftDuration}</div></div>}
-                                    {selected.requirements && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Requirements</label><div className="text-sm">{selected.requirements}</div></div>}
+
+                                    {/* Doctor Visit Fields */}
+                                    {selected.doctorType && <>
+                                        <div><label className="form-label">Doctor Type</label><div className="text-sm">{selected.doctorType}</div></div>
+                                        {selected.symptoms && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Symptoms</label><div className="text-sm">{Array.isArray(selected.symptoms) ? selected.symptoms.join(', ') : selected.symptoms}</div></div>}
+                                        {selected.prescriptionUrl && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Prescription</label><a href={selected.prescriptionUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600">View Prescription</a></div>}
+                                    </>}
+
+                                    {/* Nurse Care Fields */}
+                                    {selected.staffType && <>
+                                        <div><label className="form-label">Staff Type</label><div className="text-sm">{selected.staffType}</div></div>
+                                        {selected.shiftDuration && <div><label className="form-label">Shift Duration</label><div className="text-sm">{selected.shiftDuration}</div></div>}
+                                        {selected.startDate && <div><label className="form-label">Start Date</label><div className="text-sm">{formatDate(selected.startDate)}</div></div>}
+                                        {selected.endDate && <div><label className="form-label">End Date</label><div className="text-sm">{formatDate(selected.endDate)}</div></div>}
+                                        {selected.requirements && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Requirements</label><div className="text-sm">{Array.isArray(selected.requirements) ? selected.requirements.join(', ') : selected.requirements}</div></div>}
+                                    </>}
+
+                                    {/* Transportation Fields */}
+                                    {selected.vehicleType && <>
+                                        <div><label className="form-label">Vehicle Type</label><div className="text-sm">{selected.vehicleType}</div></div>
+                                        {selected.pickupAddress && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Pickup Address</label><div className="text-sm">{selected.pickupAddress}</div></div>}
+                                        {selected.dropAddress && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Drop Address</label><div className="text-sm">{selected.dropAddress}</div></div>}
+                                    </>}
+
+                                    {/* Location Info */}
+                                    {(selected.latitude || selected.longitude) && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Location</label><div className="text-sm">{selected.latitude}, {selected.longitude}</div></div>}
                                 </div>
                             </div>
 
@@ -313,7 +350,7 @@ export default function BookingsPage() {
                                             {Object.keys(paymentStatusColors).map(s => <option key={s} value={s}>{s}</option>)}
                                         </select>
                                     ) : (
-                                        <span className={`badge ${paymentStatusColors[selected.payments?.[0]?.status] || 'badge-warning'}`}>{selected.payments?.[0]?.status || 'PENDING'}</span>
+                                        <span className={`badge ${paymentStatusColors[selected.paymentStatus] || 'badge-warning'}`}>{selected.paymentStatus || 'PENDING'}</span>
                                     )}
                                 </div>
                                 <div><label className="form-label">Amount</label><div className="text-sm font-semibold">{formatCurrency(selected.amount)}</div></div>
@@ -359,9 +396,11 @@ export default function BookingsPage() {
                                 </>
                             ) : (
                                 <>
+                                    <div style={{ flex: 1 }}></div>
                                     {selected.status === 'ASSIGNED' && <button className="btn btn-primary" onClick={() => updateStatus(selected.id, 'IN_PROGRESS')}>Start</button>}
                                     {selected.status === 'IN_PROGRESS' && <button className="btn btn-success" onClick={() => updateStatus(selected.id, 'COMPLETED')}>Complete</button>}
                                     {!['COMPLETED', 'CANCELLED'].includes(selected.status) && <button className="btn btn-danger" onClick={() => updateStatus(selected.id, 'CANCELLED')}>Cancel</button>}
+                                    <button className="btn btn-primary" onClick={() => { setEditMode(true); setEditData({ status: selected.status, paymentStatus: selected.paymentStatus || 'PENDING' }); }}><Edit2 size={14} /> Edit Details</button>
                                     <button className="btn btn-secondary" onClick={() => setSelected(null)}>Close</button>
                                 </>
                             )}
@@ -382,7 +421,7 @@ export default function BookingsPage() {
                             </div>
                             <div className="form-group mb-4">
                                 <label className="form-label">Phone Number</label>
-                                <input type="tel" className="form-input" placeholder="Mobile number" value={servicePerson.phone} onChange={e => setServicePerson({ ...servicePerson, phone: e.target.value })} />
+                                <input type="tel" className="form-input" placeholder="Mobile number" maxLength={10} value={servicePerson.phone} onChange={e => setServicePerson({ ...servicePerson, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })} />
                             </div>
                             <div className="form-group mb-4">
                                 <label className="form-label">Notes (Optional)</label>

@@ -21,7 +21,9 @@ export function middleware(request: NextRequest) {
   // (authStore.initialize() handles it client-side on mount).
   const hasSession = !!request.cookies.get('refresh-token')?.value;
 
-  const isProtected   = PROTECTED_PATHS.some(p => pathname.startsWith(p));
+  const PUBLIC_APP_ROUTES = ['/app/plans'];
+  const isPublicAppRoute = PUBLIC_APP_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
+  const isProtected   = !isPublicAppRoute && PROTECTED_PATHS.some(p => pathname.startsWith(p));
   const isAuthRoute   = pathname === '/auth';
   const isMarketing   = MARKETING_PATHS.includes(pathname);
 
