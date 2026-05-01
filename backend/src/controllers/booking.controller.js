@@ -178,7 +178,6 @@ const createBooking = async (req, res, next) => {
                     },
                 });
                 // 🟢 REAL-TIME: Notify Admins via Socket
-                const { emitToAdmins } = require('../services/socket.service');
                 emitToAdmins('new_booking', {
                     id: booking.id,
                     type: 'BOOKING',
@@ -316,10 +315,53 @@ const updateBookingStatus = async (req, res, next) => {
             });
         }
 
-        const { emitToAdmins } = require('../services/socket.service');
-        emitToAdmins('booking_updated', { id: booking.id, status: booking.status });
+        emitToAdmins('booking_status_changed', {
+            bookingId: booking.id,
+            status: booking.status,
+            userName: booking.user?.name
+        });
 
         sendResponse(res, 200, booking, 'Booking status updated');
+    } catch (error) {
+        next(error);
+    }
+};
+
+// PUT /api/bookings/:id/payment-status
+const updatePaymentStatus = async (req, res, next) => {
+    try {
+        const { paymentStatus } = req.body;
+        const validStatuses = ['PENDING', 'INITIATED', 'SUCCESS', 'FAILED', 'REFUNDED'];
+        if (!validStatuses.includes(paymentStatus)) {
+            return res.status(400).json({ success: false, message: 'Invalid payment status' });
+        }
+
+        // Always update the booking's paymentStatus field
+        const booking = await prisma.booking.update({
+            where: { id: req.params.id },
+            data: { paymentStatus },
+        });
+
+        // Also update payment record if one exists
+        const payment = await prisma.payment.findFirst({
+            where: { bookingId: req.params.id },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        if (payment) {
+            await prisma.payment.update({
+                where: { id: payment.id },
+                data: { status: paymentStatus },
+            });
+        }
+
+        emitToAdmins('booking_payment_updated', {
+            bookingId: req.params.id,
+            paymentStatus,
+            bookingStatus: null,
+        });
+
+        sendResponse(res, 200, booking, 'Payment status updated');
     } catch (error) {
         next(error);
     }
@@ -462,9 +504,35 @@ const downloadInvoice = async (req, res, next) => {
     }
 };
 
+// PUT /api/bookings/:id/service-person
+const updateServicePerson = async (req, res, next) => {
+    try {
+        const { servicePersonName, servicePersonPhone, servicePersonNotes } = req.body;
+        const booking = await prisma.booking.update({
+            where: { id: req.params.id },
+            data: {
+                servicePersonName: servicePersonName || null,
+                servicePersonPhone: servicePersonPhone || null,
+                servicePersonNotes: servicePersonNotes || null,
+            },
+            include: {
+                user: { select: { id: true, name: true, uniqueUserId: true, phone: true, email: true } },
+                service: true,
+                city: true,
+                caregiver: true,
+                payments: true,
+            },
+        });
+        emitToAdmins('booking_updated', booking);
+        sendResponse(res, 200, booking, 'Service person details updated');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getBookings, getBookingById, createBooking,
-    assignCaregiver, reassignCaregiver, updateBookingStatus, escalateBooking,
-    getMyBookings, getMyBookingById, cancelBooking, downloadInvoice,
+    assignCaregiver, reassignCaregiver, updateBookingStatus, updatePaymentStatus, escalateBooking,
+    getMyBookings, getMyBookingById, cancelBooking, downloadInvoice, updateServicePerson,
 };
 

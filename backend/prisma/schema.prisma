@@ -145,6 +145,8 @@ enum LegalDocType {
   PRIVACY_POLICY
   REFUND_POLICY
   DISCLAIMER
+  SERVICE_POLICY
+  STATUTORY_DISCLOSURES
 }
 
 enum LegalDocStatus {
@@ -440,6 +442,11 @@ model Booking {
   isSLABreached   Boolean       @default(false)
   slaDeadline     DateTime?
   formDataJson    Json?                          // dynamic form field responses
+
+  // Service Person Details
+  servicePersonName   String?
+  servicePersonPhone  String?
+  servicePersonNotes  String?
 
   payments        Payment[]
   labOrders       LabOrder[]

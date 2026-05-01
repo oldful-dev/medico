@@ -125,7 +125,22 @@ const publishLegalDocument = async (req, res, next) => {
     }
 };
 
+// DELETE /api/legal/:id  (drafts only)
+const deleteLegalDocument = async (req, res, next) => {
+    try {
+        const doc = await prisma.legalDocument.findUnique({ where: { id: req.params.id } });
+        if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
+        if (doc.status === 'PUBLISHED') {
+            return res.status(400).json({ success: false, message: 'Cannot delete a published document. Archive it first by publishing a newer version.' });
+        }
+        await prisma.legalDocument.delete({ where: { id: req.params.id } });
+        sendResponse(res, 200, null, 'Document deleted');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getLegalDocuments, getLegalDocumentById, getPublishedDocument,
-    createLegalDocument, updateLegalDocument, publishLegalDocument,
+    createLegalDocument, updateLegalDocument, publishLegalDocument, deleteLegalDocument,
 };

@@ -10,6 +10,7 @@ const { sendResponse, sendPaginatedResponse, paginate, generateInvoiceNumber } =
 const { generateInvoicePDF } = require('../utils/pdfGenerator');
 const { uploadFile } = require('../utils/storage.service');
 const { sendEmail, sendWhatsApp } = require('../utils/notifications');
+const { emitToAdmins } = require('../services/socket.service');
 const crypto = require('crypto');
 
 // GET /api/payments
@@ -160,6 +161,11 @@ const verifyPayment = async (req, res, next) => {
                         where: { id: failedPayment.bookingId },
                         data:  { status: 'PAYMENT_FAILED' },
                     });
+                    emitToAdmins('booking_payment_updated', {
+                        bookingId: failedPayment.bookingId,
+                        paymentStatus: 'FAILED',
+                        bookingStatus: 'PAYMENT_FAILED',
+                    });
                 }
             } catch (updateErr) {
                 logger.warn('Could not mark failed payment/booking:', updateErr.message);
@@ -191,6 +197,16 @@ const verifyPayment = async (req, res, next) => {
                     paymentStatus: 'SUCCESS', // Integrity: mark operational record as paid
                     slaDeadline: new Date(Date.now() + 4 * 60 * 60 * 1000), // SLA starts NOW
                 }
+            });
+
+            // Emit real-time update to admin
+            emitToAdmins('booking_payment_updated', {
+                bookingId: payment.booking.id,
+                bookingCode: payment.booking.bookingCode,
+                paymentStatus: 'SUCCESS',
+                bookingStatus: 'CONFIRMED',
+                userName: payment.user?.name,
+                serviceName: payment.booking.service?.name,
             });
 
             // ─── PARTNER INTEGRATION: Redcliffe Labs ────────────────────────
