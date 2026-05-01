@@ -18,6 +18,8 @@ router.post('/', authenticateUser, ctrl.createBooking);
 router.put('/:id/assign', authenticateAdmin, auditMiddleware('Booking'), ctrl.assignCaregiver);
 router.put('/:id/reassign', authenticateAdmin, auditMiddleware('Booking'), ctrl.reassignCaregiver);
 router.put('/:id/status', authenticateAdmin, auditMiddleware('Booking'), ctrl.updateBookingStatus);
+router.put('/:id/payment-status', authenticateAdmin, auditMiddleware('Booking'), ctrl.updatePaymentStatus);
+router.put('/:id/service-person', authenticateAdmin, auditMiddleware('Booking'), ctrl.updateServicePerson);
 router.put('/:id/escalate', authenticateAdmin, auditMiddleware('Booking'), ctrl.escalateBooking);
 
 module.exports = router;
