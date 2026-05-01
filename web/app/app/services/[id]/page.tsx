@@ -19,6 +19,7 @@ import { mediaService } from '@/services/api/mediaService';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { formatPrice } from '@/utils/formatPrice';
+import { useServicePrice } from '@/hooks/useServicesHooks';
 
 const PROBLEMS = [
   { id: 'fever', label: 'Fever / Flu', icon: '85703338762dce300aaacb9a05f302adc3d527f4.png', provider: 'GP' },
@@ -37,6 +38,23 @@ export default function ServiceDetailPage() {
   const addItem = useCartStore(state => state.addItem);
   
   const config = getServiceConfig(id);
+
+  // ── Live price from backend DB via shared React Query cache (1 request for all consumers) ──
+  const slugVariants = Array.from(new Set([
+    id,
+    config?.slug,
+    id?.replace('-visit', '-home-visit'),
+    id?.replace('-home-visit', '-visit'),
+  ].filter(Boolean))) as string[];
+
+  const { price: livePrice } = useServicePrice(slugVariants);
+
+  // Effective prices — live if available, config fallback
+  const effectivePrice = livePrice ?? config?.pricing?.[0]?.price ?? 0;
+  const effectivePhysioPrice = livePrice != null
+    ? Math.round(livePrice * 1.4)
+    : (config?.pricing?.[1]?.price ?? effectivePrice);
+  const effectiveHospitalPrice = livePrice ?? 500;
 
   // Booking state for specialized forms
   const [selectedProblem, setSelectedProblem] = useState<string | null>(null);
@@ -61,7 +79,6 @@ export default function ServiceDetailPage() {
        );
      }
 
-     // ... (standard layout)
      return (
        <div className="min-h-screen bg-[var(--color-bg-screen)]">
          <div className="max-w-7xl mx-auto px-6 py-10">
@@ -73,7 +90,8 @@ export default function ServiceDetailPage() {
                <span className="text-[var(--color-primary)]">{config.title}</span>
             </div>
             <HomeEssentialsBooking 
-              config={config} 
+              config={config}
+              livePrice={effectivePrice}
               isLoading={isBooking}
               onBook={async (data) => {
                 setIsBooking(true);
@@ -90,11 +108,11 @@ export default function ServiceDetailPage() {
                   addItem({
                     serviceId: config.slug,
                     name: config.title,
-                    price: config.pricing[0].price,
+                    price: effectivePrice,
                     image: config.icon, 
                     address: (data.address as string) || '',
                     scheduleTime: (data.selectedDate as string) || new Date().toLocaleDateString(),
-                    attachments: photoUrls, // Add the uploaded URLs to the cart item
+                    attachments: photoUrls,
                   });
                   router.push('/app/checkout');
                 } catch (err) {
@@ -129,7 +147,10 @@ export default function ServiceDetailPage() {
         toast.success('Documents uploaded', { id: 'upload' });
       }
 
-      const finalPrice = isDoctorVisit ? (selectedProvider === 'Physio' ? 699 : 499) : 500;
+      // Use live API price; for doctor visit apply provider tier
+      const finalPrice = isDoctorVisit
+        ? (selectedProvider === 'Physio' ? effectivePhysioPrice : effectivePrice)
+        : effectiveHospitalPrice;
       
       addItem({
         serviceId: config?.slug || id,
@@ -346,7 +367,12 @@ export default function ServiceDetailPage() {
          <div className="max-w-4xl w-full flex items-center justify-between gap-6">
             <div className="hidden sm:block">
                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Amount</p>
-               <p className="text-2xl font-black text-gray-900">₹{formatPrice(isDoctorVisit ? (selectedProvider === 'Physio' ? 699 : 499) : 500)}</p>
+               <p className="text-2xl font-black text-gray-900">
+                  ₹{formatPrice(isDoctorVisit
+                    ? (selectedProvider === 'Physio' ? effectivePhysioPrice : effectivePrice)
+                    : effectiveHospitalPrice
+                  )}
+               </p>
             </div>
             <button 
                onClick={handleBookQuickService}

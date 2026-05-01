@@ -110,6 +110,19 @@ const createBooking = async (req, res, next) => {
         if (!service) return res.status(404).json({ success: false, message: 'Service not found' });
         const finalServiceId = service.id;
 
+        // ─── Security: Server-Side Price Floor Enforcement ─────────────────────
+        // Prevent amount manipulation. Use DB basePrice as the authority.
+        // 80% tolerance allows legitimate variable-priced services (e.g. nurse shifts).
+        const serverBasePrice = service.basePrice;
+        const clientAmount = parseFloat(amount) || 0;
+        if (serverBasePrice > 0 && clientAmount > 0 && clientAmount < serverBasePrice * 0.8) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid booking amount. Please refresh and try again.'
+            });
+        }
+        const safeAmount = clientAmount;
+
         // Note: BLOOD_TEST bookings go through /api/labs/book (2-step Redcliffe flow).
         // The generic booking controller handles all other service types.
 
@@ -142,7 +155,7 @@ const createBooking = async (req, res, next) => {
                 // ─── Status logic ─────────────────────────────────────────
                 // COD / free services → CONFIRMED + paymentStatus=PENDING
                 // Prepaid (UPI/CARD)  → PAYMENT_PENDING (awaiting verify)
-                const isCOD = paymentMethod === 'CASH' || paymentMethod === 'cash' || !amount || amount === 0;
+                const isCOD = paymentMethod === 'CASH' || paymentMethod === 'cash' || !safeAmount || safeAmount === 0;
 
                 booking = await prisma.booking.create({
                     data: {
@@ -167,7 +180,7 @@ const createBooking = async (req, res, next) => {
                         pickupAddress,
                         dropAddress,
                         vehicleType,
-                        amount: amount || 0,
+                        amount: safeAmount,
                         formDataJson: formDataJson || null,
                         status: isCOD ? 'CONFIRMED' : 'PAYMENT_PENDING',
                         paymentStatus: isCOD ? 'PENDING' : 'INITIATED',
@@ -180,12 +193,12 @@ const createBooking = async (req, res, next) => {
                     },
                 });
                 // Create CASH payment record for COD bookings so admin can track & mark collected
-                if (isCOD && amount > 0) {
+                if (isCOD && safeAmount > 0) {
                     await prisma.payment.create({
                         data: {
                             userId: finalUserId,
                             bookingId: booking.id,
-                            amount: amount,
+                            amount: safeAmount,
                             status: 'INITIATED',
                             paymentMethod: 'CASH',
                         },
@@ -211,7 +224,7 @@ const createBooking = async (req, res, next) => {
         const bookingCode = booking.bookingCode;
 
         // Send push notification for booking confirmation
-        const shouldNotify = (paymentMethod === 'cash') || (amount === 0);
+        const shouldNotify = (paymentMethod === 'cash') || (safeAmount === 0);
 
         if (shouldNotify) {
             await sendPushToUser(finalUserId, {

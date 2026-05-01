@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import ServiceDetailScreen from '@/components/services/ServiceDetailScreen';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { mediaService } from '@/services/api/mediaService';
 import { useRouter } from 'expo-router';
 
 const imgHero = require('@/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png');
@@ -26,6 +27,9 @@ export default function DeepCleaningScreen() {
         }
         try {
             setIsBooking(true);
+            const uploadedImageUrls = selectedImages.length > 0
+                ? await mediaService.uploadMultipleMedia(selectedImages, 'deep-cleaning')
+                : [];
             router.push({
                 pathname: '/payment/checkout',
                 params: {
@@ -33,7 +37,7 @@ export default function DeepCleaningScreen() {
                         serviceId, cityId,
                         scheduledDate: new Date().toISOString(),
                         addressLine: address,
-                        formDataJson: {},
+                        formDataJson: { attachments: uploadedImageUrls },
                     }),
                     amount: String(servicePrice),
                     label: serviceName || 'Deep Cleaning',
@@ -53,7 +57,7 @@ export default function DeepCleaningScreen() {
             heroSubtitle="Concierge Services"
             description="Book professional deep cleaning or pest control for your home — thorough, safe, and certified."
             heroImage={imgHero}
-            pricingLabel="₹799 Onwards (based on area)"
+            pricingLabel={servicePrice > 0 ? `₹${servicePrice} Onwards (based on area)` : 'Fetching price...'}
             pricingNote="*Pricing depends on the number of rooms and type of cleaning."
             bulletItems={[
                 'Full Home Deep Cleaning',

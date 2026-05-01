@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import ServiceDetailScreen from '@/components/services/ServiceDetailScreen';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { mediaService } from '@/services/api/mediaService';
 import { useRouter } from 'expo-router';
 
 const imgHero = require('@/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png');
@@ -26,6 +27,9 @@ export default function GroceryRunScreen() {
         }
         try {
             setIsBooking(true);
+            const uploadedImageUrls = selectedImages.length > 0
+                ? await mediaService.uploadMultipleMedia(selectedImages, 'grocery-run')
+                : [];
             router.push({
                 pathname: '/payment/checkout',
                 params: {
@@ -33,7 +37,7 @@ export default function GroceryRunScreen() {
                         serviceId, cityId,
                         scheduledDate: new Date().toISOString(),
                         addressLine: address,
-                        formDataJson: {},
+                        formDataJson: { groceryListAttachments: uploadedImageUrls },
                     }),
                     amount: String(servicePrice),
                     label: serviceName || 'Grocery Run',
@@ -53,7 +57,7 @@ export default function GroceryRunScreen() {
             heroSubtitle="Concierge Services"
             description="Share your grocery list and our concierge will shop from your nearest store and deliver to your doorstep."
             heroImage={imgHero}
-            pricingLabel="₹99 Delivery Fee + Grocery Bill"
+            pricingLabel={servicePrice > 0 ? `₹${servicePrice} Delivery Fee + Grocery Bill` : 'Fetching price...'}
             pricingNote="*Grocery bill is charged separately based on actual market price."
             bulletItems={[
                 'Fruits, Vegetables & Dairy',

@@ -103,10 +103,8 @@ async function main() {
 
     // ─── 4. Plans ─────────────────────────────
     const planData = [
-        { name: 'Basic Care', description: 'Essential healthcare services', benefits: 'Doctor Visit (2/mo), Blood Test (1/mo), 24/7 SOS', quarterlyPrice: 2999, biannualPrice: 5499, yearlyPrice: 9999, sortOrder: 1 },
-        { name: 'Care Plus', description: 'Enhanced healthcare coverage', benefits: 'All Basic + Home Nurse (2/mo), Insurance, Physio', quarterlyPrice: 4999, biannualPrice: 9499, yearlyPrice: 16999, sortOrder: 2 },
-        { name: 'Premium Care', description: 'Complete healthcare package', benefits: 'Unlimited services, Priority booking, Dedicated manager', quarterlyPrice: 7999, biannualPrice: 14999, yearlyPrice: 27999, sortOrder: 3 },
-        { name: 'Family Plan', description: 'Healthcare for the whole family', benefits: 'Premium for 2 members + Tiffin + Tech Helper', quarterlyPrice: 11999, biannualPrice: 22999, yearlyPrice: 42999, sortOrder: 4, isVisible: false },
+        { name: 'Care Plan', description: 'Oldful Care Plan - Comprehensive healthcare coverage', benefits: 'Doctor Visit (4/mo), Blood Test (2/mo), Home Nurse (2/mo), Physio (2/mo), 24/7 SOS Call, Priority Booking', quarterlyPrice: 599, biannualPrice: 999, yearlyPrice: 1999, sortOrder: 1 },
+        { name: 'HomeMaker Plan', description: 'Oldful HomeMaker Plan - Complete home care solution', benefits: 'All Care Plan services + Meal Service (20/mo), Home Essentials (4/mo), Tech Helper (4/mo), Unlimited SOS', quarterlyPrice: 1499, biannualPrice: 2499, yearlyPrice: 4799, sortOrder: 2 },
     ];
 
     for (const p of planData) {

@@ -1,7 +1,8 @@
 // ──────────────────────────────────────────────
 //  Plan Service — Wired to backend plan routes
-//  GET /api/plans           (list all plans)
-//  GET /api/plans/:id       (get plan details)
+//  GET  /api/plans                  (list all plans)
+//  GET  /api/plans/:id              (get plan details)
+//  POST /api/subscriptions/initiate (start a subscription, returns subscriptionId)
 // ──────────────────────────────────────────────
 
 import { apiClient, ApiResponse } from './apiClient';
@@ -18,6 +19,23 @@ export interface Plan {
     yearlyPrice: number;
     isVisible: boolean;
     sortOrder: number;
+}
+
+export type BillingCycle = 'QUARTERLY' | 'BIANNUAL' | 'YEARLY';
+
+export interface InitiateSubscriptionPayload {
+    planId: string;
+    billingCycle: BillingCycle;
+    amount: number;
+}
+
+export interface InitiateSubscriptionResponse {
+    id: string;         // subscriptionId to pass to payment/checkout
+    planId: string;
+    billingCycle: BillingCycle;
+    amount: number;
+    status: string;     // PAYMENT_PENDING
+    expiryDate: string;
 }
 
 // ─── Service ──────────────────────────────────
@@ -37,5 +55,16 @@ export const planService = {
      */
     getPlanById: async (planId: string): Promise<ApiResponse<Plan>> => {
         return apiClient.get<Plan>(`/plans/${planId}`);
+    },
+
+    /**
+     * POST /api/subscriptions/initiate
+     * Creates a PAYMENT_PENDING subscription record and returns its ID.
+     * Pass the returned subscriptionId to payment/checkout to open Razorpay.
+     */
+    initiateSubscription: async (
+        data: InitiateSubscriptionPayload
+    ): Promise<ApiResponse<InitiateSubscriptionResponse>> => {
+        return apiClient.post<InitiateSubscriptionResponse>('/subscriptions/initiate', data);
     },
 };

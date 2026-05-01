@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { mediaService } from '@/services/api/mediaService';
 
 // ─── Figma Assets ───
 const imgOldfulIllustration = require('@/assets/images/49fa5256c84b3ee062131d88f5ae26383f5d5257.png'); // The lawyer/assistant illustration
@@ -30,6 +31,7 @@ export default function PaperLegalScreen() {
     const { cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('paper-legal');
     
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+    const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const [isBooking, setIsBooking] = React.useState(false);
 
     const handleBookService = async () => {
@@ -46,7 +48,11 @@ export default function PaperLegalScreen() {
         try {
             setIsBooking(true);
 
-            // Navigate to checkout — booking created inside checkout after payment succeeds
+            // Upload documents before navigating to checkout
+            const uploadedImageUrls = selectedImages.length > 0
+                ? await mediaService.uploadMultipleMedia(selectedImages, 'paper-legal')
+                : [];
+
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
@@ -55,6 +61,7 @@ export default function PaperLegalScreen() {
                 formDataJson: {
                     selectedService,
                     details,
+                    attachments: uploadedImageUrls,
                 },
             });
 
@@ -149,6 +156,8 @@ export default function PaperLegalScreen() {
                     <ImageUploadBox
                         title="Upload Relevant Documents"
                         subtitle="Upload IDs, previous certificates, or legal paperwork (JPG, PNG or PDF)"
+                        onImagesChange={setSelectedImages}
+                        maxImages={5}
                     />
 
                     {/* ─── Schedule Visit ─── */}

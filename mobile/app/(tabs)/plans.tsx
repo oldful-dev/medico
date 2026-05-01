@@ -1,7 +1,8 @@
-// Plans Screen — Server-Driven UI
-// Plan cards, pricing, features and benefits come from AppConfigContext.
-// Admin can update plan names, prices, features, and CTA without an app release.
-import React, { useState } from 'react';
+// Plans Screen — API-Driven (mirrors web plans page)
+// Fetches plan data from GET /api/plans (same DB as web).
+// On CTA press: initiates subscription → navigates to checkout with subscriptionId.
+// After payment verify: refreshData() updates global profile with active plan.
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -9,6 +10,8 @@ import {
     TouchableOpacity,
     Image,
     ScrollView,
+    ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -17,30 +20,130 @@ import { useRouter } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useAppConfig } from '@/context/AppConfigContext';
 import { getIcon } from '@/components/sdui/SDUIRenderer';
-import { PlanConfig } from '@/services/api/appConfigService';
+import { planService, Plan, BillingCycle } from '@/services/api/planService';
+import { useUser } from '@/context/UserContext';
 import { useTranslation } from 'react-i18next';
 
 // ─── Static Layout Assets ─────────────────────────────────────────────────────
 const imgHeartOutline = require('@/assets/images/37d35bff48c57182eb08ca96ee07ef22d24fd2db.png');
 
+// ─── Billing cycle helpers ─────────────────────────────────────────────────────
+const BILLING_CYCLES: { key: BillingCycle; label: string; suffix: string; days: string }[] = [
+    { key: 'QUARTERLY', label: 'Quarterly',  suffix: '/ quarter',  days: '90 days' },
+    { key: 'BIANNUAL',  label: 'Biannually', suffix: '/ 6 months', days: '180 days' },
+    { key: 'YEARLY',    label: 'Yearly',     suffix: '/ year',     days: '365 days' },
+];
+
+function getPriceForCycle(plan: Plan, cycle: BillingCycle): number {
+    switch (cycle) {
+        case 'QUARTERLY': return plan.quarterlyPrice;
+        case 'BIANNUAL':  return plan.biannualPrice;
+        case 'YEARLY':    return plan.yearlyPrice;
+    }
+}
+
+// ─── Plan accent colours (index-based, matching SDUI palette) ─────────────────
+const PLAN_ACCENTS = [
+    { card: '#FFFFFF', title: Colors.primary, tab_bg: '#F0FFF8', tab_active: Colors.primary, tab_text: '#FFFFFF', price_bg: Colors.primary },
+    { card: Colors.primary, title: '#0EDD94', tab_bg: 'rgba(255,255,255,0.15)', tab_active: '#0EDD94', tab_text: Colors.primary, price_bg: '#0EDD94' },
+];
+
 export default function PlansScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { plansBanner, plans, benefits } = useAppConfig();
+    const { plansBanner, benefits } = useAppConfig();
+    const { profile, refreshData } = useUser();
 
-    // Track active duration tab per plan (keyed by plan id)
-    const [activeDuration, setActiveDuration] = useState<Record<string, string>>(() => {
-        const initial: Record<string, string> = {};
-        plans.forEach(p => { initial[p.id] = p.active_duration_label; });
-        return initial;
-    });
+    const [plans, setPlans] = useState<Plan[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [activeCycle, setActiveCycle] = useState<BillingCycle>('QUARTERLY');
+    const [initiating, setInitiating] = useState<string | null>(null); // planId being initiated
 
-    const getActivePrice = (plan: PlanConfig): { price: string; suffix: string } => {
-        const label = activeDuration[plan.id] ?? plan.active_duration_label;
-        const dur = plan.durations.find(d => d.label === label) ?? plan.durations[plan.durations.length - 1];
-        return { price: dur.price, suffix: dur.suffix };
-    };
+    // ─── Fetch plans from API (same as web) ───────────────────────────────────
+    const loadPlans = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            const res = await planService.getPlans();
+            if (res.success && res.data) {
+                setPlans(res.data);
+            }
+        } catch (err) {
+            console.error('Failed to load plans:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { loadPlans(); }, [loadPlans]);
+
+    // ─── CTA handler — mirrors web handleChoosePlan ───────────────────────────
+    const handleChoosePlan = useCallback(async (plan: Plan) => {
+        if (!profile) {
+            Alert.alert('Login Required', 'Please login to subscribe to a plan.');
+            return;
+        }
+
+        const price = getPriceForCycle(plan, activeCycle);
+        if (!price || price <= 0) {
+            Alert.alert('Unavailable', 'This plan is not available for the selected period.');
+            return;
+        }
+
+        setInitiating(plan.id);
+        try {
+            // Step 1: Create PAYMENT_PENDING subscription on backend
+            const subRes = await planService.initiateSubscription({
+                planId: plan.id,
+                billingCycle: activeCycle,
+                amount: price,
+            });
+
+            if (!subRes.success || !subRes.data) {
+                Alert.alert('Error', subRes.message ?? 'Could not initiate plan. Please try again.');
+                return;
+            }
+
+            const subscriptionId = subRes.data.id;
+
+            // Step 2: Navigate to existing checkout screen with subscriptionId
+            // Checkout handles: Razorpay open → verify → payment-success screen
+            // On success, verify updates subscription → ACTIVE on backend.
+            // We then call refreshData() via payment-success screen to sync profile.
+            router.push({
+                pathname: '/payment/checkout',
+                params: {
+                    subscriptionId,
+                    amount: String(price),
+                    label: `${plan.name} — ${BILLING_CYCLES.find(c => c.key === activeCycle)?.label ?? activeCycle}`,
+                    userName: profile.name ?? '',
+                    phone: profile.phone ?? '',
+                    email: profile.email ?? '',
+                    // Signal checkout to call refreshData on success
+                    refreshProfileOnSuccess: '1',
+                },
+            });
+        } catch (err) {
+            Alert.alert('Error', 'Something went wrong. Please try again.');
+        } finally {
+            setInitiating(null);
+        }
+    }, [profile, activeCycle, router]);
+
+    // ─── Active subscription check ────────────────────────────────────────────
+    const getActiveSub = () =>
+        profile?.subscriptions?.find((s: any) => s.status === 'ACTIVE');
+
+    if (isLoading) {
+        return (
+            <View style={[styles.screen, { alignItems: 'center', justifyContent: 'center' }]}>
+                <ActivityIndicator size="large" color={Colors.primary} />
+            </View>
+        );
+    }
+
+    const activeSub = getActiveSub();
+    const cycleInfo = BILLING_CYCLES.find(c => c.key === activeCycle)!;
 
     return (
         <View style={styles.screen}>
@@ -66,73 +169,125 @@ export default function PlansScreen() {
                     </View>
                 </View>
 
-                {/* ─── Plans Horizontal Scroll (SDUI cards) ─── */}
+                {/* ─── Active Subscription Banner ─── */}
+                {activeSub && (
+                    <View style={styles.activeSubBanner}>
+                        <View style={styles.activeSubIconBox}>
+                            <Ionicons name="shield-checkmark" size={20} color={Colors.textWhite} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.activeSubLabel}>Your Active Plan</Text>
+                            <Text style={styles.activeSubName}>{activeSub.plan?.name ?? 'Care Plan'}</Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                            <Text style={styles.activeSubExpLabel}>Expires</Text>
+                            <Text style={styles.activeSubExpDate}>
+                                {activeSub.expiryDate
+                                    ? new Date(activeSub.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                                    : 'N/A'}
+                            </Text>
+                        </View>
+                    </View>
+                )}
+
+                {/* ─── Billing Cycle Tabs ─── */}
+                <View style={styles.cycleTabsRow}>
+                    {BILLING_CYCLES.map(cycle => {
+                        const isActive = cycle.key === activeCycle;
+                        return (
+                            <TouchableOpacity
+                                key={cycle.key}
+                                style={[styles.cycleTab, isActive && styles.cycleTabActive]}
+                                onPress={() => setActiveCycle(cycle.key)}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={[styles.cycleTabText, isActive && styles.cycleTabTextActive]}>
+                                    {cycle.label}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+
+                {/* ─── Plans Horizontal Scroll (API-driven) ─── */}
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.plansScrollContainer}
                 >
-                    {plans.map(plan => {
-                        const { price, suffix } = getActivePrice(plan);
-                        const currentDuration = activeDuration[plan.id] ?? plan.active_duration_label;
+                    {plans.map((plan, idx) => {
+                        const accent = PLAN_ACCENTS[idx % PLAN_ACCENTS.length];
+                        const price = getPriceForCycle(plan, activeCycle);
+                        const isPro = idx === 1;
+                        const isActivePlan = activeSub?.plan?.name === plan.name;
+                        const isInitiating = initiating === plan.id;
+
                         return (
-                            <View key={plan.id} style={styles.planCard}>
-                                <Text style={[styles.planCardTitle, { color: plan.accent_color }, plan.id === 'care_plan' && { color: '#000000' }]}>
+                            <View
+                                key={plan.id}
+                                style={[
+                                    styles.planCard,
+                                    { backgroundColor: accent.card },
+                                    isPro && styles.planCardPro,
+                                ]}
+                            >
+                                <Text style={[styles.planCardTitle, { color: accent.title }]}>
                                     {plan.name}
                                 </Text>
 
-                                {/* Duration Tabs */}
-                                <View style={[styles.planCardDurationTabs, { backgroundColor: plan.tab_bg }]}>
-                                    {plan.durations.map(dur => {
-                                        const isActive = dur.label === currentDuration;
-                                        return isActive ? (
-                                            <View
-                                                key={dur.label}
-                                                style={[styles.durationTabActive, { backgroundColor: plan.tab_active_bg }]}
-                                            >
-                                                <Text style={[styles.durationTabTextActive, { color: plan.tab_text_color }]}>
-                                                    {dur.label}
-                                                </Text>
-                                            </View>
-                                        ) : (
-                                            <TouchableOpacity
-                                                key={dur.label}
-                                                onPress={() => setActiveDuration(prev => ({ ...prev, [plan.id]: dur.label }))}
-                                            >
-                                                <Text style={[styles.durationTabInactive, { color: plan.accent_color }]}>
-                                                    {dur.label}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        );
-                                    })}
-                                </View>
+                                {plan.description ? (
+                                    <Text style={[styles.planCardDesc, isPro && { color: 'rgba(255,255,255,0.7)' }]}>
+                                        {plan.description}
+                                    </Text>
+                                ) : null}
 
                                 {/* Price */}
-                                <View style={styles.priceContainer}>
-                                    <View style={[styles.priceBackground, { backgroundColor: plan.price_bg_color }]} />
+                                <View style={[styles.priceContainer, { backgroundColor: accent.price_bg }]}>
                                     <Text style={styles.priceText}>
-                                        {price}{' '}
-                                        <Text style={styles.priceSuffix}>{suffix}</Text>
+                                        ₹{price.toLocaleString('en-IN')}{' '}
+                                        <Text style={styles.priceSuffix}>{cycleInfo.suffix}</Text>
                                     </Text>
                                 </View>
 
-                                {/* Features */}
+                                <Text style={[styles.validityText, isPro && { color: 'rgba(255,255,255,0.6)' }]}>
+                                    Valid for {cycleInfo.days}
+                                </Text>
+
+                                {/* Benefits / Features */}
                                 <View style={styles.planFeatures}>
-                                    {plan.features.map((feature, i) => (
-                                        <View key={i} style={styles.featureItem}>
-                                            <Ionicons name="checkmark-outline" size={14} color={plan.id === 'care_plan' ? '#000000' : plan.accent_color} style={styles.featureCheck} />
-                                            <Text style={[styles.featureText, { color: Colors.textBody }, plan.id === 'care_plan' && { color: '#000000' }]}>{feature}</Text>
+                                    {plan.benefits?.split(',').map((benefit, bIdx) => (
+                                        <View key={bIdx} style={styles.featureItem}>
+                                            <Ionicons
+                                                name="checkmark-circle"
+                                                size={14}
+                                                color={isPro ? '#0EDD94' : Colors.primary}
+                                                style={styles.featureCheck}
+                                            />
+                                            <Text style={[styles.featureText, isPro && { color: 'rgba(255,255,255,0.9)' }]}>
+                                                {benefit.trim()}
+                                            </Text>
                                         </View>
                                     ))}
                                 </View>
 
                                 {/* CTA Button */}
                                 <TouchableOpacity
-                                    style={[styles.planActionButton, { backgroundColor: plan.cta_color }]}
+                                    style={[
+                                        styles.planActionButton,
+                                        { backgroundColor: isPro ? '#0EDD94' : Colors.primary },
+                                        isActivePlan && styles.planActionButtonDisabled,
+                                    ]}
                                     activeOpacity={0.8}
-                                    onPress={() => router.push(plan.cta_route as any)}
+                                    onPress={() => handleChoosePlan(plan)}
+                                    disabled={isActivePlan || isInitiating}
                                 >
-                                    <Text style={styles.planActionText}>{plan.cta_text}</Text>
+                                    {isInitiating ? (
+                                        <ActivityIndicator size="small" color={isPro ? Colors.primary : Colors.textWhite} />
+                                    ) : (
+                                        <Text style={[styles.planActionText, isPro && { color: Colors.primary }]}>
+                                            {isActivePlan ? 'Active Plan' : 'Choose Plan'}
+                                        </Text>
+                                    )}
                                 </TouchableOpacity>
                             </View>
                         );
@@ -168,13 +323,14 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: Colors.bgScreen },
 
     headerContainer: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.primary,
-        paddingHorizontal: Spacing.lg, paddingBottom: 25, paddingTop: 10, position: 'relative'
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        backgroundColor: Colors.primary,
+        paddingHorizontal: Spacing.lg, paddingBottom: 25, paddingTop: 10, position: 'relative',
     },
     backButtonPlaceholder: { position: 'absolute', left: 20, padding: 5, opacity: 0 },
     headerTitle: {
         fontFamily: Fonts.semiBold, fontSize: FontSize.heading2,
-        color: Colors.textWhite, textAlign: "center", letterSpacing: -0.24,
+        color: Colors.textWhite, textAlign: 'center', letterSpacing: -0.24,
     },
     scrollContent: { paddingBottom: 110 },
 
@@ -182,47 +338,81 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(128, 249, 231, 0.38)', borderWidth: 1, borderColor: '#80F9E7',
         borderRadius: Radius.md, marginHorizontal: Spacing.lg,
         flexDirection: 'row', alignItems: 'center',
-        paddingVertical: 10, paddingHorizontal: 12, marginTop: 15, marginBottom: 20,
+        paddingVertical: 10, paddingHorizontal: 12, marginTop: 15, marginBottom: 16,
     },
     heartPulseIcon: { width: 65, height: 48, marginRight: 10 },
     bannerTextContainer: { flex: 1, justifyContent: 'center' },
     bannerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark },
     bannerSubtitle: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textBody, marginTop: 2 },
 
+    // Active subscription banner
+    activeSubBanner: {
+        flexDirection: 'row', alignItems: 'center', gap: 12,
+        backgroundColor: '#E8F9F2', borderWidth: 1, borderColor: Colors.primary,
+        borderRadius: Radius.md, marginHorizontal: Spacing.lg, padding: Spacing.md, marginBottom: 16,
+    },
+    activeSubIconBox: {
+        width: 36, height: 36, borderRadius: 10,
+        backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center',
+    },
+    activeSubLabel: { fontFamily: Fonts.medium, fontSize: FontSize.caption, color: Colors.primary },
+    activeSubName: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark },
+    activeSubExpLabel: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textMuted },
+    activeSubExpDate: { fontFamily: Fonts.semiBold, fontSize: FontSize.caption, color: Colors.textBody },
+
+    // Billing cycle tabs
+    cycleTabsRow: {
+        flexDirection: 'row', marginHorizontal: Spacing.lg, marginBottom: 16,
+        backgroundColor: '#F0FFF8', borderRadius: 12, padding: 4, gap: 4,
+    },
+    cycleTab: { flex: 1, paddingVertical: 8, borderRadius: 9, alignItems: 'center' },
+    cycleTabActive: { backgroundColor: Colors.primary },
+    cycleTabText: { fontFamily: Fonts.medium, fontSize: FontSize.caption, color: Colors.textMuted },
+    cycleTabTextActive: { color: Colors.textWhite },
+
     plansScrollContainer: { paddingHorizontal: Spacing.lg, paddingBottom: 25, gap: Spacing.lg },
     planCard: {
-        backgroundColor: Colors.bgCard, borderRadius: Radius.xl,
-        width: 205, padding: Spacing.lg, ...Shadow.card,
+        borderRadius: Radius.xl, width: 215, padding: Spacing.lg,
+        ...Shadow.card, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)',
     },
-    planCardTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, marginBottom: Spacing.sm },
-
-    planCardDurationTabs: {
-        flexDirection: 'row', borderRadius: 8, padding: 3,
-        marginBottom: 10, justifyContent: 'space-between', alignItems: 'center',
+    planCardPro: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+    planCardTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, marginBottom: 4 },
+    planCardDesc: {
+        fontFamily: Fonts.regular, fontSize: FontSize.caption,
+        color: Colors.textMuted, marginBottom: Spacing.sm, lineHeight: 16,
     },
-    durationTabInactive: { fontFamily: Fonts.medium, fontSize: FontSize.caption, paddingHorizontal: 4 },
-    durationTabActive: { borderRadius: 6, paddingVertical: 4, paddingHorizontal: 8 },
-    durationTabTextActive: { fontFamily: Fonts.medium, fontSize: FontSize.caption },
 
     priceContainer: {
-        height: 28, borderRadius: 8, justifyContent: 'center', alignItems: 'flex-start',
-        paddingHorizontal: Spacing.sm, marginBottom: Spacing.md, overflow: 'hidden',
+        borderRadius: 8, paddingVertical: 6, paddingHorizontal: Spacing.sm,
+        marginBottom: 4, alignSelf: 'flex-start',
     },
-    priceBackground: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
     priceText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: Colors.textWhite },
     priceSuffix: { fontFamily: Fonts.regular, fontWeight: 'normal' },
+    validityText: {
+        fontFamily: Fonts.regular, fontSize: FontSize.caption,
+        color: Colors.textMuted, marginBottom: Spacing.md,
+    },
 
-    planFeatures: { marginBottom: 15 },
+    planFeatures: { marginBottom: 15, flex: 1 },
     featureItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
-    featureCheck: { marginRight: 6, marginTop: 2 },
-    featureText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, flex: 1, lineHeight: 14 },
+    featureCheck: { marginRight: 6, marginTop: 1 },
+    featureText: {
+        fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall,
+        color: Colors.textBody, flex: 1, lineHeight: 14,
+    },
 
-    planActionButton: { borderRadius: 6, height: 25, justifyContent: 'center', alignItems: 'center', marginTop: 'auto' },
-    planActionText: { fontFamily: Fonts.medium, fontSize: FontSize.caption, color: Colors.textWhite },
+    planActionButton: {
+        borderRadius: 8, height: 36, justifyContent: 'center',
+        alignItems: 'center', marginTop: 'auto',
+    },
+    planActionButtonDisabled: { backgroundColor: '#E5E7EB' },
+    planActionText: {
+        fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: Colors.textWhite,
+    },
 
     sectionTitle: {
         fontFamily: Fonts.semiBold, fontSize: FontSize.heading1,
-        color: Colors.textDark, paddingHorizontal: 18, marginBottom: Spacing.lg,
+        color: Colors.textDark, paddingHorizontal: 18, marginBottom: Spacing.lg, marginTop: 4,
     },
     whySubscribeContainer: {
         backgroundColor: Colors.bgCard, borderRadius: Radius.xl * 2,

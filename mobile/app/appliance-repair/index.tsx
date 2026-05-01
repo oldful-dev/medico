@@ -57,7 +57,7 @@ export default function ApplianceRepairScreen() {
             heroSubtitle="Concierge Services"
             description="Book a reliable technician for AC, refrigerator, washing machine, and other household appliance repairs."
             heroImage={imgHero}
-            pricingLabel="₹499 Booking Fee + Vendor's Bill"
+            pricingLabel={servicePrice > 0 ? `₹${servicePrice} Booking Fee + Vendor's Bill` : 'Fetching price...'}
             pricingNote="*The vendor's bill depends on the actual work needed."
             bulletItems={[
                 'AC Servicing & Repair (Split & Window ACs)',

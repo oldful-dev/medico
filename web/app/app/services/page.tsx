@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, SlidersHorizontal, ArrowRight, Clock, Star } from 'lucide-react';
+import { Search, ArrowRight, Clock, Star } from 'lucide-react';
 import { useSDUIHooks } from '@/hooks/useSDUIHooks';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 
@@ -13,10 +13,6 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string; dot: string }>
   therapy: { bg: 'bg-violet-50', text: 'text-violet-700', dot: 'bg-violet-500' },
   diagnostic: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
   emergency: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
-};
-
-const SERVICE_META: Record<string, { price: string; duration: string; rating: string }> = {
-  default: { price: '₹299', duration: '60 min', rating: '4.8' },
 };
 
 export default function ServicesPage() {
@@ -128,7 +124,8 @@ export default function ServicesPage() {
                   {/* Services grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {section.services.map(service => {
-                      const meta = SERVICE_META[service.id] || SERVICE_META.default;
+                      const meta = { duration: '60 min', rating: '4.8' };
+                      const priceDisplay = 'Book Now';
                       return (
                         <Link
                           key={service.id}
@@ -164,7 +161,7 @@ export default function ServicesPage() {
                               <span className="flex items-center gap-1">
                                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {meta.rating}
                               </span>
-                              <span className="font-bold text-[var(--color-primary)]">from {meta.price}</span>
+                              <span className="font-bold text-[var(--color-primary)]">{priceDisplay}</span>
                             </div>
 
                             {/* CTA */}

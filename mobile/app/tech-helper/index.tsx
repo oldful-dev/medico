@@ -18,6 +18,7 @@ import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/th
 import { userService } from '@/services/api/userService';
 import { apiClient } from '@/services/api/apiClient';
 import { locationService } from '@/services/device/locationService';
+import { mediaService } from '@/services/api/mediaService';
 
 // Feature items array according to PRD
 const ISSUES = [
@@ -37,6 +38,7 @@ export default function TechHelperScreen() {
     // State for mode selection (radio button)
     const [selectedMode, setSelectedMode] = useState<'home' | 'phone'>('home');
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+    const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
     const [serviceName, setServiceName] = React.useState('Tech Helper');
@@ -91,10 +93,19 @@ export default function TechHelperScreen() {
             return;
         }
 
+        // Derive mode-specific price: home = servicePrice, phone = 66% (rounded)
+        const modePrice = selectedMode === 'home'
+            ? servicePrice
+            : Math.round(servicePrice * 0.66);
+
         try {
             setIsBooking(true);
 
-            // Navigate to checkout — booking created inside checkout after payment succeeds
+            // Upload photos before navigating to checkout
+            const uploadedImageUrls = selectedImages.length > 0
+                ? await mediaService.uploadMultipleMedia(selectedImages, 'tech-helper')
+                : [];
+
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
@@ -105,13 +116,14 @@ export default function TechHelperScreen() {
                     otherIssue,
                     mode: selectedMode,
                     description: desc,
-                    fee: selectedMode === 'home' ? 599 : 399,
+                    attachments: uploadedImageUrls,
+                    fee: modePrice,
                 },
             });
 
             router.push({
                 pathname: '/payment/checkout',
-                params: { bookingPayload, amount: String(servicePrice), label: serviceName },
+                params: { bookingPayload, amount: String(modePrice), label: serviceName },
             });
         } catch (error) {
             console.error('Tech-helper error:', error);
@@ -196,11 +208,11 @@ export default function TechHelperScreen() {
                         />
                     </View>
 
-                    {/* ─── Upload Photos ─── */}
                     <View style={{ marginTop: 20 }}>
                         <ImageUploadBox
                             title="Upload Photos (Optional)"
                             subtitle="Show us the error message or broken device"
+                            onImagesChange={setSelectedImages}
                         />
                     </View>
 
@@ -220,7 +232,9 @@ export default function TechHelperScreen() {
                             <Text style={styles.radioTitle}>Home Visit</Text>
                             <Text style={styles.radioSubTitle}>A buddy comes to teach</Text>
                         </View>
-                        <Text style={styles.radioPrice}>₹599</Text>
+                        <Text style={styles.radioPrice}>
+                                {servicePrice > 0 ? `₹${servicePrice}` : '...'}
+                            </Text>
                     </TouchableOpacity>
 
                     {/* Mode: Phone Call */}
@@ -234,7 +248,9 @@ export default function TechHelperScreen() {
                             <Text style={styles.radioTitle}>Phone Call</Text>
                             <Text style={styles.radioSubTitle}>Remote help</Text>
                         </View>
-                        <Text style={styles.radioPrice}>₹399</Text>
+                        <Text style={styles.radioPrice}>
+                                {servicePrice > 0 ? `₹${Math.round(servicePrice * 0.66)}` : '...'}
+                            </Text>
                     </TouchableOpacity>
 
                     {/* ─── Book Support Button ─── */}
