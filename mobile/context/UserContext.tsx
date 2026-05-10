@@ -18,6 +18,8 @@ interface UserContextType {
 
     selectedCity: string;
     setSelectedCity: (city: string) => void;
+    selectedCityId: string | null;
+    setSelectedCityId: (id: string | null) => void;
     preferredLanguage: string;
     setPreferredLanguage: (language: string) => void;
 }
@@ -31,6 +33,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(false);
 
     const [selectedCity, setSelectedCity] = useState('');
+    const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
     const [preferredLanguage, setPreferredLanguage] = useState('en');
 
     // Load persisted language on mount
@@ -97,6 +100,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             refreshData: loadData,
             getServiceBySlug,
             selectedCity, setSelectedCity,
+            selectedCityId, setSelectedCityId,
             preferredLanguage, setPreferredLanguage: saveLanguage,
         }}>
             {children}

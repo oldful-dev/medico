@@ -23,6 +23,7 @@ import { userService, cityService, ApiError, authService } from '@/services/api'
 import { mediaService } from '@/services/api/mediaService';
 import { OTPInput } from '@/components/common';
 import { useAuth } from '@/context/AuthContext';
+import { useUser } from '@/context/UserContext';
 import { useTranslation } from 'react-i18next';
 import { locationService } from '@/services/device/locationService';
 
@@ -51,6 +52,7 @@ export default function ProfileSetupScreen() {
     const googleName = typeof params.googleName === 'string' ? params.googleName : '';
     const googlePhoto = typeof params.googlePhoto === 'string' ? params.googlePhoto : '';
     const { login } = useAuth();
+    const { selectedCityId: contextCityId } = useUser();
 
     // isGoogleFlow: user came from Google Sign-In with no OTP-verified phone
     const isGoogleFlow = !passedPhone && !!googleEmail;
@@ -99,7 +101,8 @@ export default function ProfileSetupScreen() {
             const parts = address.split(',');
             const city = parts[parts.length - 2]?.trim() || ''; 
             
-            if (city) {
+            // Only GPS-match city if user didn't explicitly select one
+            if (city && !contextCityId) {
                 try {
                     const response = await cityService.getCities();
                     if (response.data) {
@@ -127,9 +130,15 @@ export default function ProfileSetupScreen() {
     };
 
     useEffect(() => {
+        // If user explicitly selected a city in city-selection, use it immediately
+        if (contextCityId) {
+            setCityId(contextCityId);
+        } else {
+            fetchDefaultCity();
+        }
+        // Always try GPS for address autofill (independent of city matching)
         fetchGPSLocation();
-        fetchDefaultCity();
-    }, []);
+    }, [contextCityId]);
 
     const handleReqOTP = async () => {
         if (phoneInput.length !== 10) {
