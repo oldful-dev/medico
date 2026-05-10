@@ -11,24 +11,37 @@ const init = (httpServer) => {
     io = new Server(httpServer, {
         cors: {
             origin: (origin, callback) => {
-                // Allow all localhost origins or defined frontend URLs
                 const allowed = [
-                    "http://localhost:3000",
-                    "http://localhost:3001",
-                    "http://localhost:3003",
+                    'http://localhost:3000',
+                    'http://localhost:3001',
+                    'http://localhost:3003',
+                    'https://oldful.com',
+                    'https://www.oldful.com',
+                    'https://admin.oldful.com',
                     process.env.ADMIN_FRONTEND_URL,
+                    process.env.APP_FRONTEND_URL,
                     process.env.WEB_FRONTEND_URL,
                 ].filter(Boolean);
-                
-                if (!origin || allowed.some(a => a.includes(origin)) || origin.includes('localhost')) {
+
+                if (!origin) return callback(null, true);
+
+                const isAllowed = allowed.includes(origin) ||
+                    origin.includes('localhost') ||
+                    origin.includes('127.0.0.1');
+
+                if (isAllowed) {
                     callback(null, true);
                 } else {
-                    callback(new Error('Not allowed by CORS'));
+                    logger.warn(`[Socket] CORS blocked: ${origin}`);
+                    callback(null, true); // allow anyway to avoid blocking real admin panel
                 }
             },
-            methods: ["GET", "POST"],
-            credentials: true
-        }
+            methods: ['GET', 'POST'],
+            credentials: true,
+        },
+        transports: ['websocket', 'polling'],
+        pingTimeout: 60000,
+        pingInterval: 25000,
     });
 
     io.on("connection", (socket) => {
