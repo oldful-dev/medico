@@ -231,9 +231,45 @@ export default function OrderHistoryScreen() {
                                             <Text style={styles.payBtnText}>Pay Now</Text>
                                         </TouchableOpacity>
                                     )}
-                                    {activeTab === 'History' && booking.status === 'COMPLETED' && (
-                                        <TouchableOpacity style={styles.rebookBtn}>
-                                            <Text style={styles.rebookBtnText}>Rebook</Text>
+                                    {activeTab === 'History' && ['COMPLETED', 'CANCELLED'].includes(booking.status) && (
+                                        <TouchableOpacity 
+                                            style={styles.rebookBtn}
+                                            onPress={() => {
+                                                let route = booking.service?.slug;
+                                                if (!route) {
+                                                    router.push('/' as any);
+                                                    return;
+                                                }
+
+                                                // Normalize path (leading slash and brand cleaning)
+                                                let path = route.startsWith('/') ? route : `/${route}`;
+                                                const clean = path.toLowerCase();
+
+                                                if (clean.includes('doctor')) {
+                                                    router.push('/doctor-visit' as any);
+                                                } else if (clean.includes('nurse')) {
+                                                    router.push('/nurse-care' as any);
+                                                } else if (clean.includes('medicine')) {
+                                                    router.push('/order-medicines' as any);
+                                                } else if (clean.includes('all-ayuxa') || clean.includes('all-ayuxacare') || clean.includes('all-oldful')) {
+                                                    router.push('/all-ayuxa-services' as any);
+                                                } else if (clean.includes('home-essentials') || clean.includes('home essentials')) {
+                                                    router.push('/all-home-essentials' as any);
+                                                } else {
+                                                    // General brand name cleaning for other routes (stripping suffixes)
+                                                    const finalPath = path
+                                                        .replace(/-oldful/gi, '')
+                                                        .replace(/-ayuxacare/gi, '')
+                                                        .replace(/-ayuxa/gi, '')
+                                                        .replace(/oldful/gi, 'ayuxa')
+                                                        .replace(/ayuxacare/gi, 'ayuxa');
+                                                    router.push(finalPath as any);
+                                                }
+                                            }}
+                                        >
+                                            <Text style={styles.rebookBtnText}>
+                                                Re-order
+                                            </Text>
                                         </TouchableOpacity>
                                     )}
                                     {/* Cancel button: show for Active/Payment tabs, OR for stale past-date bookings in History */}

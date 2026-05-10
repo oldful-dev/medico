@@ -43,16 +43,29 @@ export const sosService = {
     },
 
     /**
-     * Get current GPS coordinates (Balanced accuracy for speed)
+     * Get current GPS coordinates — tries High accuracy with 8s timeout,
+     * falls back to last-known position if that fails.
      */
-    getCurrentLocation: async (): Promise<LocationCoordinates> => {
-        const location = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-        });
-        return {
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-        };
+    getCurrentLocation: async (): Promise<LocationCoordinates | null> => {
+        // Try last-known first (instant, no GPS warmup needed)
+        try {
+            const last = await Location.getLastKnownPositionAsync({ maxAge: 60000 });
+            if (last) {
+                return { latitude: last.coords.latitude, longitude: last.coords.longitude };
+            }
+        } catch { }
+
+        // Fresh fix with timeout
+        try {
+            const location = await Promise.race([
+                Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
+                new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
+            ]) as Awaited<ReturnType<typeof Location.getCurrentPositionAsync>>;
+            return { latitude: location.coords.latitude, longitude: location.coords.longitude };
+        } catch (e) {
+            console.warn('SOS getCurrentLocation failed:', e);
+            return null;
+        }
     },
 
     /**
@@ -61,8 +74,8 @@ export const sosService = {
      * 2. POST /api/sos with location data
      * 3. Backend notifies admin + family via WhatsApp/SMS
      */
-    triggerSOS: async (prefetchedLocation?: LocationCoordinates): Promise<ApiResponse<SOSAlert>> => {
-        let location = prefetchedLocation;
+    triggerSOS: async (prefetchedLocation?: LocationCoordinates | null): Promise<ApiResponse<SOSAlert>> => {
+        let location: LocationCoordinates | null = prefetchedLocation ?? null;
 
         if (!location) {
             try {
@@ -73,6 +86,10 @@ export const sosService = {
             } catch (e) {
                 console.warn('SOS Location fetch failed', e);
             }
+        }
+
+        if (!location) {
+            console.warn('SOS: sending without coordinates — GPS unavailable');
         }
 
         // Send to backend (with location if available, otherwise fallback to profile city)

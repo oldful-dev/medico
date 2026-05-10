@@ -1,19 +1,19 @@
 export default {
   "expo": {
-    "name": "oldful",
-    "slug": "medico",
-    "owner": "oldful-dev",
+    "name": "Ayuxa Care",
+    "slug": "ayuxacare",
+    "owner": "ayuxacare",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icons/ios/iTunesArtwork@3x.png",
-    "scheme": "oldful",
+    "scheme": "ayuxacare",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "package": "com.oldfuldev.oldful",
+      "package": "com.ayuxacare.app",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -44,7 +44,7 @@ export default {
         {
           "icon": "./assets/icons/android/mipmap-xxxhdpi/logo_foreground.png",
           "color": "#048357",
-          "defaultChannel": "oldful-default",
+          "defaultChannel": "ayuxacare-default",
           "sounds": []
         }
       ],
@@ -61,8 +61,8 @@ export default {
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Oldful to access your location for emergency SOS alerts and address auto-fill.",
-          "locationWhenInUsePermission": "Allow Oldful to access your location for emergency SOS alerts and address auto-fill."
+          "locationAlwaysAndWhenInUsePermission": "Allow ayuxacare to access your location for emergency SOS alerts and address auto-fill.",
+          "locationWhenInUsePermission": "Allow ayuxacare to access your location for emergency SOS alerts and address auto-fill."
         }
       ]
     ],

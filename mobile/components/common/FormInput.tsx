@@ -17,6 +17,8 @@ interface FormInputProps {
     value?: string;
     onChangeText?: (text: string) => void;
     multiline?: boolean;
+    maxLength?: number;
+    autoFocus?: boolean;
 }
 
 export default function FormInput({
@@ -31,6 +33,8 @@ export default function FormInput({
     value,
     onChangeText,
     multiline = false,
+    maxLength,
+    autoFocus = false,
 }: FormInputProps) {
     return (
         <View style={[styles.container, style]}>
@@ -46,6 +50,8 @@ export default function FormInput({
                 value={value}
                 onChangeText={onChangeText}
                 multiline={multiline}
+                maxLength={maxLength}
+                autoFocus={autoFocus}
             />
             {showChevron ? (
                 <Ionicons name="chevron-down" size={14} color="rgba(2, 116, 63, 0.49)" style={styles.chevron} />

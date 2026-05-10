@@ -39,7 +39,7 @@
   },
   "auth": {
     "splash_tagline": "ISO 9001:2015 ಪ್ರಮಾಣೀಕೃತ",
-    "login_title": "Oldful ಗೆ ಲಾಗಿನ್ ಮಾಡಿ",
+    "login_title": "Ayuxa Care ಗೆ ಲಾಗಿನ್ ಮಾಡಿ",
     "login_subtitle": "ಮುಂದುವರಿಯಲು ನಿಮ್ಮ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ",
     "phone_placeholder": "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ",
     "send_otp": "OTP ಕಳುಹಿಸಿ",
@@ -172,7 +172,7 @@
     "whatsapp_updates": "WhatsApp ಅಪ್ಡೇಟ್‌ಗಳು",
     "promotional_offers": "ಪ್ರಚಾರ ಕೊಡುಗೆಗಳು",
     "help_support": "ಸಹಾಯ ಮತ್ತು ಬೆಂಬಲ",
-    "rate_us": "Oldful ಅನ್ನು ರೇಟ್ ಮಾಡಿ",
+    "rate_us": "Ayuxa Care ಅನ್ನು ರೇಟ್ ಮಾಡಿ",
     "terms_privacy": "ನಿಯಮಗಳು ಮತ್ತು ಗೌಪ್ಯತಾ ನೀತಿ",
     "logout": "ಲಾಗ್ ಔಟ್",
     "update_photo": "ಪ್ರೊಫೈಲ್ ಫೋಟೋ ಅಪ್ಡೇಟ್ ಮಾಡಿ",
@@ -247,7 +247,7 @@
     "header": "ಅಧಿಸೂಚನೆಗಳು",
     "empty": "ಇನ್ನೂ ಯಾವುದೇ ಅಧಿಸೂಚನೆ ಇಲ್ಲ",
     "your_otp": "ನಿಮ್ಮ OTP ಕೋಡ್",
-    "verification_code": "ನಿಮ್ಮ Oldful ಪರಿಶೀಲನ ಕೋಡ್: {{code}}"
+    "verification_code": "ನಿಮ್ಮ Ayuxa Care ಪರಿಶೀಲನ ಕೋಡ್: {{code}}"
   },
   "help_support": {
     "header": "ಸಹಾಯ ಮತ್ತು ಬೆಂಬಲ",
@@ -401,7 +401,7 @@
     "doctor_name_placeholder": "ಡಾ. ಅನಿಲ್ ಮೆಹ್ತಾ",
     "service_addons": "ಸೇವಾ ಆಡ್-ಆನ್‌ಗಳು",
     "transport_addon": "ಸಾರಿಗೆ: ನನಗಾಗಿ ಕ್ಯಾಬ್ ವ್ಯವಸ್ಥೆ ಮಾಡಿ?",
-    "support_addon": "ಬೆಂಬಲ: ಆಸ್ಪತ್ರೆಯಲ್ಲಿ\nನನಗೆ ಸಹಾಯ ಮಾಡಲು Oldful ಬಡ್ಡಿ ಕಳುಹಿಸಿ?",
+    "support_addon": "ಬೆಂಬಲ: ಆಸ್ಪತ್ರೆಯಲ್ಲಿ\nನನಗೆ ಸಹಾಯ ಮಾಡಲು Ayuxa Care ಬಡ್ಡಿ ಕಳುಹಿಸಿ?",
     "booking_fee": "ಬುಕ್ಕಿಂಗ್",
     "fee_actuals": "ಶುಲ್ಕ + ವಾಸ್ತವ"
   }

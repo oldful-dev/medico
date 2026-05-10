@@ -403,7 +403,7 @@ export default function AccountScreen() {
                     <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
                 </TouchableOpacity>
 
-                {/* Rate Oldful */}
+                {/* Rate Ayuxa Care */}
                 <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => router.push('/rate-us' as any)}>
                     <View style={styles.linkLeft}>
                         <View style={[styles.linkIcon, { backgroundColor: '#FFF9C4' }]}>

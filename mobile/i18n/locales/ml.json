@@ -40,7 +40,7 @@
 
   "auth": {
     "splash_tagline": "ISO 9001:2015 സർട്ടിഫൈഡ്",
-    "login_title": "Oldful-ൽ ലോഗിൻ ചെയ്യുക",
+    "login_title": "Ayuxa Care-ൽ ലോഗിൻ ചെയ്യുക",
     "login_subtitle": "തുടരാൻ നിങ്ങളുടെ മൊബൈൽ നമ്പർ നൽകുക",
     "phone_placeholder": "മൊബൈൽ നമ്പർ നൽകുക",
     "send_otp": "OTP അയയ്ക്കുക",
@@ -223,7 +223,7 @@
     "doctor_name_placeholder": "ഡോ. അനിൽ മേഹ്ത",
     "service_addons": "സേവന ആഡ്-ഓണുകൾ",
     "transport_addon": "ഗതാഗതം: എനിക്ക് ക്യാബ് ക്രമീകരിക്കണോ?",
-    "support_addon": "പിന്തുണ: ആശുപത്രിയിൽ സഹായിക്കാൻ Oldful ബഡ്ഡിയെ അയയ്ക്കണോ?",
+    "support_addon": "പിന്തുണ: ആശുപത്രിയിൽ സഹായിക്കാൻ Ayuxa Care ബഡ്ഡിയെ അയയ്ക്കണോ?",
     "booking_fee": "ബുക്കിംഗ്",
     "fee_actuals": "ഫീ + യഥാർത്ഥ ചെലവ്"
   },
@@ -304,7 +304,7 @@
     "whatsapp_updates": "WhatsApp അപ്ഡേറ്റുകൾ",
     "promotional_offers": "പ്രൊമോഷണൽ ഓഫറുകൾ",
     "help_support": "സഹായം & പിന്തുണ",
-    "rate_us": "Oldful-ഇനെ റേറ്റ് ചെയ്യുക",
+    "rate_us": "Ayuxa Care-ഇനെ റേറ്റ് ചെയ്യുക",
     "terms_privacy": "നിബന്ധനകൾ & സ്വകാര്യതാ നയം",
     "logout": "ലോഗൗട്ട്",
     "update_photo": "പ്രൊഫൈൽ ഫോട്ടോ അപ്ഡേറ്റ് ചെയ്യുക",
@@ -386,7 +386,7 @@
     "header": "അറിയിപ്പുകൾ",
     "empty": "ഇനിയും അറിയിപ്പുകൾ ഇല്ല",
     "your_otp": "നിങ്ങളുടെ OTP കോഡ്",
-    "verification_code": "നിങ്ങളുടെ Oldful സ്ഥിരീകരണ കോഡ്: {{code}}"
+    "verification_code": "നിങ്ങളുടെ Ayuxa Care സ്ഥിരീകരണ കോഡ്: {{code}}"
   },
 
   "help_support": {

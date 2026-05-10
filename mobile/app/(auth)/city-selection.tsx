@@ -55,7 +55,7 @@ export default function CitySelectionScreen() {
             });
             setShowNotifyModal(false);
             setNotifyName(''); setNotifyEmail(''); setNotifyCity('');
-            Alert.alert("You're on the list! 🎉", `We'll email you as soon as Oldful launches${notifyCity ? ` in ${notifyCity}` : ''}.`);
+            Alert.alert("You're on the list! 🎉", `We'll email you as soon as Ayuxa Care launches${notifyCity ? ` in ${notifyCity}` : ''}.`);
         } catch (e: any) {
             const msg = e?.message?.toLowerCase() || '';
             if (msg.includes('unique') || msg.includes('already')) {
@@ -243,7 +243,7 @@ export default function CitySelectionScreen() {
                             </TouchableOpacity>
                         </View>
                         <Text style={styles.modalSubtitle}>
-                            We&apos;ll send you an email the moment Oldful goes live in your city.
+                            We&apos;ll send you an email the moment Ayuxa Care goes live in your city.
                         </Text>
                         <View style={styles.modalBody}>
                             <Text style={styles.inputLabel}>Your Name *</Text>

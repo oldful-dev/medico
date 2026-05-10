@@ -40,7 +40,7 @@
 
   "auth": {
     "splash_tagline": "ISO 9001:2015 సర్టిఫైడ్",
-    "login_title": "Oldful లో లాగిన్ చేయండి",
+    "login_title": "Ayuxa Care లో లాగిన్ చేయండి",
     "login_subtitle": "కొనసాగించడానికి మీ మొబైల్ నంబర్ నమోదు చేయండి",
     "phone_placeholder": "మొబైల్ నంబర్ నమోదు చేయండి",
     "send_otp": "OTP పంపు",
@@ -223,7 +223,7 @@
     "doctor_name_placeholder": "డా. అనిల్ మెహతా",
     "service_addons": "సేవ యాడ్-ఆన్‌లు",
     "transport_addon": "రవాణా: నాకు క్యాబ్ ఏర్పాటు చేయాలా?",
-    "support_addon": "సహాయం: హాస్పిటల్‌లో సహాయానికి Oldful బడ్డీని పంపాలా?",
+    "support_addon": "సహాయం: హాస్పిటల్‌లో సహాయానికి Ayuxa Care బడ్డీని పంపాలా?",
     "booking_fee": "బుకింగ్",
     "fee_actuals": "రుసుము + వాస్తవ ఖర్చులు"
   },
@@ -304,7 +304,7 @@
     "whatsapp_updates": "WhatsApp అప్‌డేట్లు",
     "promotional_offers": "ప్రమోషనల్ ఆఫర్లు",
     "help_support": "సహాయం & మద్దతు",
-    "rate_us": "Oldful ను రేట్ చేయి",
+    "rate_us": "Ayuxa Care ను రేట్ చేయి",
     "terms_privacy": "నిబంధనలు & గోప్యతా విధానం",
     "logout": "లాగ్‌అవుట్",
     "update_photo": "ప్రొఫైల్ ఫోటో అప్‌డేట్ చేయి",
@@ -386,7 +386,7 @@
     "header": "నోటిఫికేషన్లు",
     "empty": "ఇంకా నోటిఫికేషన్లు లేవు",
     "your_otp": "మీ OTP కోడ్",
-    "verification_code": "మీ Oldful వెరిఫికేషన్ కోడ్: {{code}}"
+    "verification_code": "మీ Ayuxa Care వెరిఫికేషన్ కోడ్: {{code}}"
   },
 
   "help_support": {

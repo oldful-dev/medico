@@ -9,10 +9,10 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const FID_CACHE_KEY   = '@oldful_firebase_fid';
-const FID_TOKEN_KEY   = '@oldful_firebase_fid_token';
-const RC_CACHE_KEY    = '@oldful_rc_cache';
-const RC_CACHE_TS_KEY = '@oldful_rc_cache_ts';
+const FID_CACHE_KEY   = '@ayuxacare_firebase_fid';
+const FID_TOKEN_KEY   = '@ayuxacare_firebase_fid_token';
+const RC_CACHE_KEY    = '@ayuxacare_rc_cache';
+const RC_CACHE_TS_KEY = '@ayuxacare_rc_cache_ts';
 
 // ── Messaging & Analytics — not available in managed Expo ────────────────────
 export const getWebMessaging    = () => null;
@@ -129,7 +129,7 @@ export const fetchRC = async (rc: RCInstance): Promise<boolean> => {
     const body = {
         appId:           rc.appId,
         appInstanceId:   fid,
-        packageName:     'com.oldfuldev.oldful',
+        packageName:     'com.ayuxacare.app',
         platformVersion: '1.0.0',
         sdkVersion:      '11.0.0',
         appVersion:      '1.0.0',

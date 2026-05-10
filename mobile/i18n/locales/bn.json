@@ -40,7 +40,7 @@
 
   "auth": {
     "splash_tagline": "ISO 9001:2015 সার্টিফাইড",
-    "login_title": "Oldful-এ লগইন করুন",
+    "login_title": "Ayuxa Care-এ লগইন করুন",
     "login_subtitle": "চালিয়ে যেতে আপনার মোবাইল নম্বর দিন",
     "phone_placeholder": "মোবাইল নম্বর দিন",
     "send_otp": "OTP পাঠান",
@@ -223,7 +223,7 @@
     "doctor_name_placeholder": "ডাঃ অনিল মেহতা",
     "service_addons": "সেবা অ্যাড-অন",
     "transport_addon": "পরিবহন: আমার জন্য ক্যাব ব্যবস্থা করবেন?",
-    "support_addon": "সাপোর্ট: হাসপাতালে সাহায্যের জন্য Oldful বাডি পাঠাবেন?",
+    "support_addon": "সাপোর্ট: হাসপাতালে সাহায্যের জন্য Ayuxa Care বাডি পাঠাবেন?",
     "booking_fee": "বুকিং",
     "fee_actuals": "ফি + প্রকৃত খরচ"
   },
@@ -304,7 +304,7 @@
     "whatsapp_updates": "WhatsApp আপডেট",
     "promotional_offers": "প্রচারমূলক অফার",
     "help_support": "সাহায্য & সাপোর্ট",
-    "rate_us": "Oldful রেট করুন",
+    "rate_us": "Ayuxa Care রেট করুন",
     "terms_privacy": "শর্তাবলী & গোপনীয়তা নীতি",
     "logout": "লগআউট",
     "update_photo": "প্রোফাইল ছবি আপডেট করুন",
@@ -386,7 +386,7 @@
     "header": "বিজ্ঞপ্তি",
     "empty": "এখনো কোনো বিজ্ঞপ্তি নেই",
     "your_otp": "আপনার OTP কোড",
-    "verification_code": "আপনার Oldful যাচাইকরণ কোড হলো: {{code}}"
+    "verification_code": "আপনার Ayuxa Care যাচাইকরণ কোড হলো: {{code}}"
   },
 
   "help_support": {

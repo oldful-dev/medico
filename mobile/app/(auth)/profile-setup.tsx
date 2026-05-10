@@ -71,7 +71,7 @@ export default function ProfileSetupScreen() {
 
     const [cityId, setCityId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [isPhoneVerified, setIsPhoneVerified] = useState(!isGoogleFlow);
+    const [isPhoneVerified, setIsPhoneVerified] = useState(!!passedPhone);
     const [otpSent, setOtpSent] = useState(false);
     const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
     const otpRef = useRef<{ clear: () => void }>(null);
@@ -213,8 +213,8 @@ export default function ProfileSetupScreen() {
             Alert.alert("Full Name Required", "Please enter your full name (at least 3 characters).");
             return;
         }
-        if (isGoogleFlow && phoneInput.length !== 10) {
-            Alert.alert("Phone Number Required", "Please enter your 10-digit mobile number to complete registration.");
+        if (!isPhoneVerified) {
+            Alert.alert("Phone Verification Required", "Please enter and verify your mobile number to complete registration.");
             return;
         }
         if (!agreed) {
@@ -410,32 +410,32 @@ export default function ProfileSetupScreen() {
                     onChangeText={setEmail}
                 />
 
-                {/* ─── Row 4: Mobile Number (read-only if OTP-verified; editable in Google flow) ─── */}
+                {/* ─── Row 4: Mobile Number (read-only if verified; editable if not) ─── */}
                 <FormInput
                     placeholder="Mobile Number"
-                    value={isGoogleFlow ? phoneInput : passedPhone.replace('+91', '')}
+                    value={isPhoneVerified ? (passedPhone ? passedPhone.replace('+91', '') : phoneInput) : phoneInput}
                     prefix="+91"
                     keyboardType="phone-pad"
                     maxLength={10}
                     style={styles.fullWidthInput}
-                    editable={isGoogleFlow && !isPhoneVerified}
-                    onChangeText={isGoogleFlow ? setPhoneInput : undefined}
+                    editable={!isPhoneVerified}
+                    onChangeText={!isPhoneVerified ? setPhoneInput : undefined}
                     fontSize={13}
                     suffix={
-                        isGoogleFlow && !isPhoneVerified ? (
+                        !isPhoneVerified ? (
                             <TouchableOpacity onPress={handleReqOTP} disabled={phoneInput.length !== 10 || isVerifyingOtp}>
                                 <Text style={[styles.verifyBtnText, phoneInput.length === 10 ? { color: '#048357' } : { color: '#CCC' }]}>
                                     {otpSent ? 'RESEND' : 'VERIFY'}
                                 </Text>
                             </TouchableOpacity>
-                        ) : isPhoneVerified && isGoogleFlow ? (
+                        ) : (
                             <Ionicons name="checkmark-circle" size={20} color="#048357" />
-                        ) : null
+                        )
                     }
                 />
 
-                {/* ─── OTP Input for Google Flow ─── */}
-                {isGoogleFlow && otpSent && !isPhoneVerified && (
+                {/* ─── OTP Input for Unverified Flow ─── */}
+                {!isPhoneVerified && otpSent && (
                     <View style={styles.otpVerifyContainer}>
                         <Text style={styles.otpHint}>Enter 4-digit code sent to +91 {phoneInput}</Text>
                         <OTPInput otpRef={otpRef} length={4} onComplete={handleVerifyOTP} />
@@ -481,6 +481,7 @@ export default function ProfileSetupScreen() {
                         fontSize={12}
                         value={emergencyNumber}
                         onChangeText={setEmergencyNumber}
+                        maxLength={10}
                     />
                     <FormInput
                         placeholder="Unique ID"

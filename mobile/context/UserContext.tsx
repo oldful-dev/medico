@@ -6,7 +6,7 @@ import { ServiceItem } from '@/services/api/serviceCatalogService';
 import { useAuth } from './AuthContext';
 import i18n from '@/i18n/i18n';
 
-const LANG_KEY = '@oldful_language';
+const LANG_KEY = '@ayuxacare_language';
 
 interface UserContextType {
     profile: UserProfile | null;

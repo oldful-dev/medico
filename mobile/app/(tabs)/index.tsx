@@ -41,10 +41,14 @@ const logoSmall = require('@/assets/images/9d3e74b5e16af4e10bcec4b72af07a9d93ea1
 // ─── Route Resolver ──────────────────────────────────────────────────────────
 const resolveRoute = (route?: string) => {
   if (!route) return '/';
-  const clean = route.toLowerCase().trim();
-  if (clean.includes('home essentials')) return '/all-home-essentials';
-  if (clean.includes('oldful services')) return '/all-oldful-services';
-  return route;
+  let clean = route.toLowerCase().trim();
+  
+  // Specific catch for the "All Services" grid
+  if (clean.includes('home-essentials') || clean.includes('home essentials')) return '/all-home-essentials';
+  if (clean.includes('all-ayuxa') || clean.includes('all-ayuxacare') || clean.includes('all-oldful')) return '/all-ayuxa-services';
+  
+  // General brand name replacement for other routes
+  return route.replace(/oldful/gi, 'ayuxa').replace(/ayuxacare/gi, 'ayuxa');
 };
 
 // ─── Section Renderers ────────────────────────────────────────────────────────
@@ -65,7 +69,7 @@ function QuickServicesStrip({ section }: QuickServicesProps) {
           <TouchableOpacity
             key={item.id}
             style={[styles.quickServiceBox, index === 0 && { backgroundColor: 'transparent' }]}
-            onPress={() => router.push(item.route as any)}
+            onPress={() => router.push(resolveRoute(item.route) as any)}
           >
             <Image
               source={{ uri: getAssetUrl(item.icon) }}
@@ -110,7 +114,7 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight }: ServiceGri
             <TouchableOpacity
               key={item.id}
               style={[styles.serviceGridItem, { width: itemWidth, height: cardHeight }]}
-              onPress={() => router.push(item.route as any)}
+              onPress={() => router.push(resolveRoute(item.route) as any)}
             >
               <Image
                 source={{ uri: getAssetUrl(item.icon) }}
@@ -163,7 +167,7 @@ function EssentialsGrid({ section, itemWidth, cardHeight }: EssentialsGridProps)
               <TouchableOpacity
                 key={item.id}
                 style={[styles.essentialItem, { width: itemWidth, height: cardHeight }]}
-                onPress={() => router.push(item.route as any)}
+                onPress={() => router.push(resolveRoute(item.route) as any)}
               >
                 <View style={styles.essentialIconCircle}>
                   <Image
@@ -264,9 +268,9 @@ export default function HomeScreen() {
 
   // ── Pixel math (prevents sub-pixel wrapping) ────────────────────────────
   const availableWidth = width - 60;
-  const exactOldfulItemWidth = Math.floor(availableWidth * 0.315);
-  const exactOldfulImageHeight = exactOldfulItemWidth * 0.85;
-  const exactOldfulCardHeight = exactOldfulImageHeight + 56;
+  const exactAyuxaItemWidth = Math.floor(availableWidth * 0.315);
+  const exactAyuxaImageHeight = exactAyuxaItemWidth * 0.85;
+  const exactAyuxaCardHeight = exactAyuxaImageHeight + 56;
   const exactEssentialItemWidth = Math.floor(availableWidth * 0.23);
   const exactEssentialCardHeight = exactEssentialItemWidth * 1.35;
 
@@ -350,7 +354,7 @@ export default function HomeScreen() {
         {activeBanner && (
           <TouchableOpacity
             activeOpacity={activeBanner.cta_route ? 0.85 : 1}
-            onPress={() => activeBanner.cta_route && router.push(activeBanner.cta_route as any)}
+            onPress={() => activeBanner.cta_route && router.push(resolveRoute(activeBanner.cta_route) as any)}
             style={styles.greetingBannerWrapper}
           >
             <Image
@@ -381,9 +385,9 @@ export default function HomeScreen() {
               <ServiceGrid
                 key={section.id}
                 section={section}
-                itemWidth={exactOldfulItemWidth}
-                imageHeight={exactOldfulImageHeight}
-                cardHeight={exactOldfulCardHeight}
+                itemWidth={exactAyuxaItemWidth}
+                imageHeight={exactAyuxaImageHeight}
+                cardHeight={exactAyuxaCardHeight}
               />
             );
           }
@@ -423,7 +427,7 @@ export default function HomeScreen() {
                         <Text style={styles.sosTitle}>{sos_banner.title_line2}</Text>
                         <TouchableOpacity
                           style={styles.sosButton}
-                          onPress={() => router.push(sos_banner.cta_route as any)}
+                          onPress={() => router.push(resolveRoute(sos_banner.cta_route) as any)}
                         >
                           <Text style={styles.sosButtonText}>{sos_banner.cta_text}</Text>
                           <Ionicons name="call" size={12} color="#FFFFFF" />
@@ -587,7 +591,7 @@ const styles = StyleSheet.create({
     lineHeight: 12,
   },
 
-  /* Oldful Services Grid */
+  /* Ayuxa Services Grid */
   servicesCard: {
     marginHorizontal: Spacing.cardMargin,
     marginTop: Spacing.sectionGap,

@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="./assets/images/icon.png" alt="Oldful Logo" width="120" />
+  <img src="./assets/images/icon.png" alt="Ayuxa Care Logo" width="120" />
 </p>
 
-<h1 align="center">Oldful — Elder Care, Simplified</h1>
+<h1 align="center">Ayuxa Care — Elder Care, Simplified</h1>
 
 <p align="center">
   A cross-platform mobile application providing on-demand home healthcare, transportation, and insurance services tailored for senior citizens.
@@ -42,9 +42,9 @@
 
 ## Overview
 
-**Oldful** is an elder care management platform that connects senior citizens with home healthcare professionals, transportation services, and insurance plans — all from a single mobile app. Currently launching in **Bangalore**, with planned expansion to **Chennai** and **Hyderabad**.
+**Ayuxa Care** is an elder care management platform that connects senior citizens with home healthcare professionals, transportation services, and insurance plans — all from a single mobile app. Currently launching in **Bangalore**, with planned expansion to **Chennai** and **Hyderabad**.
 
-> **Note:** Oldful acts as a care management company, not a medical facility. It uses both internal staff and independent third-party vendors (physiotherapists, labs, etc.).
+> **Note:** Ayuxa Care acts as a care management company, not a medical facility. It uses both internal staff and independent third-party vendors (physiotherapists, labs, etc.).
 
 ---
 
@@ -578,7 +578,7 @@ import { Colors } from '@/constants/theme';
 ## Business Logic & Policies
 
 ### Service Model
-- Oldful is a **care management company**, not a medical facility
+- Ayuxa Care is a **care management company**, not a medical facility
 - Uses a mix of internal staff and **independent third-party vendors**
 - All medical decisions are made by qualified professionals, not the app
 

@@ -13,8 +13,8 @@ import { AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { appConfigService, AppConfig, FeatureFlags, HomeSection, PlanConfig, PlanBenefit, CityConfig, LanguageConfig, DoctorVisitConfig, HelpSupportConfig } from '@/services/api/appConfigService';
 
-const CACHE_KEY = '@oldful_app_config';
-const CACHE_VERSION_KEY = '@oldful_app_config_version';
+const CACHE_KEY = '@ayuxacare_app_config';
+const CACHE_VERSION_KEY = '@ayuxacare_app_config_version';
 
 // ─── Embedded fallback (identical to backend DEFAULT_CONFIG) ─────────────────
 // Ensures the app works fully offline on first install, before any API call.
@@ -38,64 +38,64 @@ const FALLBACK_CONFIG: AppConfig = {
                 {
                     id: 'quick_services', type: 'quick_services', visible: true, sort_order: 1,
                     items: [
-                        { id: 'doctor', label: 'Oldful\nDoctor', icon_key: 'quick_doctor', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/98e939543c86f26f5f26210bb160eb927b5ff057.png', route: '/doctor-visit', visible: true, sort_order: 1 },
-                        { id: 'nursing', label: 'Nursing\nCare', icon_key: 'quick_nursing', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/21e5a8a8650cf8eda36be3744c70099580173129.png', route: '/nurse-care', visible: true, sort_order: 2 },
-                        { id: 'caregiver', label: 'Caregiver\nSupport', icon_key: 'quick_caregiver', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png', route: '/nurse-care', visible: true, sort_order: 3 },
-                        { id: 'emergency', label: 'Emergency\nAssist', icon_key: 'quick_emergency', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/sos-emergency', visible: true, sort_order: 4 },
+                        { id: 'doctor', label: 'ayuxacare\nDoctor', icon_key: 'quick_doctor', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/98e939543c86f26f5f26210bb160eb927b5ff057.png', route: '/doctor-visit', visible: true, sort_order: 1 },
+                        { id: 'nursing', label: 'Nursing\nCare', icon_key: 'quick_nursing', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/21e5a8a8650cf8eda36be3744c70099580173129.png', route: '/nurse-care', visible: true, sort_order: 2 },
+                        { id: 'caregiver', label: 'Caregiver\nSupport', icon_key: 'quick_caregiver', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png', route: '/nurse-care', visible: true, sort_order: 3 },
+                        { id: 'emergency', label: 'Emergency\nAssist', icon_key: 'quick_emergency', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/sos-emergency', visible: true, sort_order: 4 },
                     ],
                 },
                 {
-                    id: 'oldful_services', type: 'service_grid', title: 'Oldful Services', visible: true, sort_order: 2,
-                    view_all_route: '/all-oldful-services',
+                    id: 'ayuxacare_services', type: 'service_grid', title: 'ayuxacare Services', visible: true, sort_order: 2,
+                    view_all_route: '/all-ayuxacare-services',
                     config: { max_items: 6, columns: 3 },
                     items: [
-                        { id: 'doctor_visit', label: 'Doctor\nVisit', icon_key: 'svc_doctor_visit', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/32a4661f97e2fa2dd2c85c403a7c530b7214e7f7.png', route: '/doctor-visit', visible: true, sort_order: 1 },
-                        { id: 'homing_nursing', label: 'Homing\nNursing', icon_key: 'svc_homing_nursing', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/afd8e2afab202de7ddce09bf8add378c861b9347.png', route: '/nurse-care', visible: true, sort_order: 2 },
-                        { id: 'blood_test', label: 'Home\nBlood Test', icon_key: 'svc_blood_test', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/f74321d18a86a9e77628058ed35a50d284752eb2.png', route: '/blood-test', visible: true, sort_order: 3 },
-                        { id: 'fitness', label: 'Fitness &\nTherapy', icon_key: 'svc_fitness', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/54f5c849cf75e776592dec8236f221da3694ca53.png', route: '/physio-fitness', visible: true, sort_order: 4 },
-                        { id: 'equipment', label: 'Rent Medical\nEquipment', icon_key: 'svc_equipment', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/d3906f517597b2ef10369d92c422b16bf20e879e.png', route: '/medical-equipment', visible: true, sort_order: 5 },
-                        { id: 'medicines', label: 'Order\nMedicines', icon_key: 'svc_medicines', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/79c15725f6f1a73658b615886f1289634cef9408.png', route: '/order-medicines', visible: true, sort_order: 6 },
-                        { id: 'meal', label: 'Meal\nService', icon_key: 'svc_meal', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/8f136eff1200bb21c080348f6cdb7ad1c2831bdf.png', route: '/meal-service', visible: true, sort_order: 7 },
-                        { id: 'physio', label: 'Physio\nFitness', icon_key: 'svc_physio', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/4ea419052803769fad63ff4292316ce7f8f77dbc.png', route: '/physio-fitness', visible: true, sort_order: 8 },
-                        { id: 'hospital_trip', label: 'Hospital\nTrip', icon_key: 'svc_hospital_trip', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/hospital-trip', visible: true, sort_order: 9 },
-                        { id: 'insurance', label: 'Insurance\n& Claims', icon_key: 'svc_insurance', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/e453f94c7e87531b0da0b6712f8dc4b3bc7084a9.png', route: '/insurance', visible: true, sort_order: 10 },
+                        { id: 'doctor_visit', label: 'Doctor\nVisit', icon_key: 'svc_doctor_visit', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/32a4661f97e2fa2dd2c85c403a7c530b7214e7f7.png', route: '/doctor-visit', visible: true, sort_order: 1 },
+                        { id: 'homing_nursing', label: 'Homing\nNursing', icon_key: 'svc_homing_nursing', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/afd8e2afab202de7ddce09bf8add378c861b9347.png', route: '/nurse-care', visible: true, sort_order: 2 },
+                        { id: 'blood_test', label: 'Home\nBlood Test', icon_key: 'svc_blood_test', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/f74321d18a86a9e77628058ed35a50d284752eb2.png', route: '/blood-test', visible: true, sort_order: 3 },
+                        { id: 'fitness', label: 'Fitness &\nTherapy', icon_key: 'svc_fitness', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/54f5c849cf75e776592dec8236f221da3694ca53.png', route: '/physio-fitness', visible: true, sort_order: 4 },
+                        { id: 'equipment', label: 'Rent Medical\nEquipment', icon_key: 'svc_equipment', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/d3906f517597b2ef10369d92c422b16bf20e879e.png', route: '/medical-equipment', visible: true, sort_order: 5 },
+                        { id: 'medicines', label: 'Order\nMedicines', icon_key: 'svc_medicines', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/79c15725f6f1a73658b615886f1289634cef9408.png', route: '/order-medicines', visible: true, sort_order: 6 },
+                        { id: 'meal', label: 'Meal\nService', icon_key: 'svc_meal', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/8f136eff1200bb21c080348f6cdb7ad1c2831bdf.png', route: '/meal-service', visible: true, sort_order: 7 },
+                        { id: 'physio', label: 'Physio\nFitness', icon_key: 'svc_physio', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/4ea419052803769fad63ff4292316ce7f8f77dbc.png', route: '/physio-fitness', visible: true, sort_order: 8 },
+                        { id: 'hospital_trip', label: 'Hospital\nTrip', icon_key: 'svc_hospital_trip', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/hospital-trip', visible: true, sort_order: 9 },
+                        { id: 'insurance', label: 'Insurance\n& Claims', icon_key: 'svc_insurance', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/e453f94c7e87531b0da0b6712f8dc4b3bc7084a9.png', route: '/insurance', visible: true, sort_order: 10 },
                     ],
                 },
                 {
                     id: 'trust_badges', type: 'trust_badges', visible: true, sort_order: 3,
                     items: [
-                        { id: 'support', label: '24/7 Support', icon_key: 'badge_support', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/cea3b8dc2ce488942e83a8a4cd0dbe1e6173764b.png', visible: true, sort_order: 1 },
-                        { id: 'caregivers', label: 'Verified Caregivers', icon_key: 'badge_caregivers', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/4dcdffbd537a1de53d947d7f0c7c548318bc85a7.png', visible: true, sort_order: 2 },
-                        { id: 'family', label: 'Family-first Care', icon_key: 'badge_family', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/f90ea6c9d084318475183b0a2f11175f0f34640e.png', visible: true, sort_order: 3 },
+                        { id: 'support', label: '24/7 Support', icon_key: 'badge_support', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/cea3b8dc2ce488942e83a8a4cd0dbe1e6173764b.png', visible: true, sort_order: 1 },
+                        { id: 'caregivers', label: 'Verified Caregivers', icon_key: 'badge_caregivers', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/4dcdffbd537a1de53d947d7f0c7c548318bc85a7.png', visible: true, sort_order: 2 },
+                        { id: 'family', label: 'Family-first Care', icon_key: 'badge_family', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/f90ea6c9d084318475183b0a2f11175f0f34640e.png', visible: true, sort_order: 3 },
                     ],
                 },
                 {
                     id: 'sos_banner', type: 'sos_banner', visible: true, sort_order: 4,
-                    config: { title_line1: 'Need Immediate', title_line2: 'Medical Support?', cta_text: 'Click here', cta_route: '/sos-emergency', icon_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/5eedb2a89f68f0fea90ef304401e7d38d0fc1790.png', illustration_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/e453f94c7e87531b0da0b6712f8dc4b3bc7084a9.png' },
+                    config: { title_line1: 'Need Immediate', title_line2: 'Medical Support?', cta_text: 'Click here', cta_route: '/sos-emergency', icon_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/5eedb2a89f68f0fea90ef304401e7d38d0fc1790.png', illustration_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/e453f94c7e87531b0da0b6712f8dc4b3bc7084a9.png' },
                 },
                 {
                     id: 'essentials', type: 'essentials_grid', title: 'Home Essentials Services', visible: true, sort_order: 5,
                     view_all_route: '/all-home-essentials',
                     config: { columns: 4, max_visible_rows: 2 },
                     items: [
-                        { id: 'ac_repair', label: 'AC\nRepair', icon_key: 'ess_ac_repair', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png', route: '/appliance-repair', visible: true, sort_order: 1 },
-                        { id: 'plumbing', label: 'Plumbing', icon_key: 'ess_plumbing', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png', route: '/plumbing-electrical', visible: true, sort_order: 2 },
-                        { id: 'cleaning', label: 'Cleaning', icon_key: 'ess_cleaning', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png', route: '/deep-cleaning', visible: true, sort_order: 3 },
-                        { id: 'driver', label: 'Driver', icon_key: 'ess_driver', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png', route: '/driving-cab', visible: true, sort_order: 4 },
-                        { id: 'bills', label: 'Bills', icon_key: 'ess_bills', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png', route: '/bill-payment', visible: true, sort_order: 5 },
-                        { id: 'bank', label: 'Bank\nWork', icon_key: 'ess_bank', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png', route: '/bank-paperwork', visible: true, sort_order: 6 },
-                        { id: 'grocery', label: 'Gro-\ncery', icon_key: 'ess_grocery', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png', route: '/grocery-run', visible: true, sort_order: 7 },
-                        { id: 'anything', label: 'Anything\nElse', icon_key: 'ess_anything', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/6c8ed456023258e8b4095af93909c6cbc6c4b909.png', route: '/anything-else', visible: true, sort_order: 8 },
-                        { id: 'paper_legal', label: 'Paper &\nLegal', icon_key: 'ess_bank', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png', route: '/paper-legal', visible: true, sort_order: 9 },
-                        { id: 'trip_travel', label: 'Trip &\nTravel', icon_key: 'ess_driver', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png', route: '/trip-travels', visible: true, sort_order: 10 },
-                        { id: 'tech_helper', label: 'Tech\nHelper', icon_key: 'ess_ac_repair', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png', route: '/tech-helper', visible: true, sort_order: 11 },
-                        { id: 'smart_upgrade', label: 'Smart\nUpgrade', icon_key: 'ess_cleaning', image_url: 'https://storage.googleapis.com/oldful-assets/mobile/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png', route: '/smart-upgrade', visible: true, sort_order: 12 },
+                        { id: 'ac_repair', label: 'AC\nRepair', icon_key: 'ess_ac_repair', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png', route: '/appliance-repair', visible: true, sort_order: 1 },
+                        { id: 'plumbing', label: 'Plumbing', icon_key: 'ess_plumbing', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png', route: '/plumbing-electrical', visible: true, sort_order: 2 },
+                        { id: 'cleaning', label: 'Cleaning', icon_key: 'ess_cleaning', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png', route: '/deep-cleaning', visible: true, sort_order: 3 },
+                        { id: 'driver', label: 'Driver', icon_key: 'ess_driver', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png', route: '/driving-cab', visible: true, sort_order: 4 },
+                        { id: 'bills', label: 'Bills', icon_key: 'ess_bills', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png', route: '/bill-payment', visible: true, sort_order: 5 },
+                        { id: 'bank', label: 'Bank\nWork', icon_key: 'ess_bank', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png', route: '/bank-paperwork', visible: true, sort_order: 6 },
+                        { id: 'grocery', label: 'Gro-\ncery', icon_key: 'ess_grocery', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png', route: '/grocery-run', visible: true, sort_order: 7 },
+                        { id: 'anything', label: 'Anything\nElse', icon_key: 'ess_anything', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/6c8ed456023258e8b4095af93909c6cbc6c4b909.png', route: '/anything-else', visible: true, sort_order: 8 },
+                        { id: 'paper_legal', label: 'Paper &\nLegal', icon_key: 'ess_bank', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png', route: '/paper-legal', visible: true, sort_order: 9 },
+                        { id: 'trip_travel', label: 'Trip &\nTravel', icon_key: 'ess_driver', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png', route: '/trip-travels', visible: true, sort_order: 10 },
+                        { id: 'tech_helper', label: 'Tech\nHelper', icon_key: 'ess_ac_repair', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png', route: '/tech-helper', visible: true, sort_order: 11 },
+                        { id: 'smart_upgrade', label: 'Smart\nUpgrade', icon_key: 'ess_cleaning', image_url: 'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png', route: '/smart-upgrade', visible: true, sort_order: 12 },
                     ],
                 },
             ],
         },
         plans: {
-            banner: { title: 'Value Plans for Your Peace of Mind', subtitle: 'Subscribe and save with our exclusive Oldful plans.' },
+            banner: { title: 'Value Plans for Your Peace of Mind', subtitle: 'Subscribe and save with our exclusive ayuxacare plans.' },
             plans: [
                 {
                     id: 'care_plan', name: 'Care Plan', accent_color: '#4B78D8', price_bg_color: '#56BDB7',
@@ -175,14 +175,14 @@ const FALLBACK_CONFIG: AppConfig = {
                             type: "grid",
                             layout: { columns: 3 },
                             items: [
-                                { id: "fever_flu", label: "Fever/Flu", icon: "https://storage.googleapis.com/oldful-assets/mobile/assets/images/85703338762dce300aaacb9a05f302adc3d527f4.png", tagline: "", action: { type: "navigate", route: "select_problem" } },
-                                { id: "bp_sugar", label: "BP/Sugar check", icon: "https://storage.googleapis.com/oldful-assets/mobile/assets/images/a094df3aff84fca10f86363d2a72a2a9a16cb8b9.png", tagline: "", action: { type: "navigate", route: "select_problem" } },
-                                { id: "general_weakness", label: "General Weakness", icon: "https://storage.googleapis.com/oldful-assets/mobile/assets/images/a4cc4e445884c7ec5ea2ea73c3cf8315b9a5fd4b.png", tagline: "", action: { type: "navigate", route: "select_problem" } },
-                                { id: "body_pain", label: "Body pain/joint pain", icon: "https://storage.googleapis.com/oldful-assets/mobile/assets/images/3a3fbbfc074010919d54378e2349e7a3ecdea262.png", tagline: "", action: { type: "navigate", route: "select_problem" } },
-                                { id: "post_surgery", label: "Post-surgery Rehab", icon: "https://storage.googleapis.com/oldful-assets/mobile/assets/images/cc303b4d8fc2cc0ba55dc7a7b0eaaee1385183f1.png", tagline: "", action: { type: "navigate", route: "select_problem" } },
-                                { id: "stroke_recovery", label: "Stroke Recovery", icon: "https://storage.googleapis.com/oldful-assets/mobile/assets/images/9c25016906e38b6b999adf0f9fb6cb2adb589322.png", tagline: "", action: { type: "navigate", route: "select_problem" } },
-                                { id: "frozen_shoulder", label: "Frozen shoulder", icon: "https://storage.googleapis.com/oldful-assets/mobile/assets/images/05879295a9b69201cfab443f22bf9218402f1522.png", tagline: "", action: { type: "navigate", route: "select_problem" } },
-                                { id: "other", label: "Other", icon: "https://storage.googleapis.com/oldful-assets/mobile/assets/images/34a78d011624199a5541b871a68bb218b41e5aba.png", tagline: "", action: { type: "navigate", route: "select_problem" } }
+                                { id: "fever_flu", label: "Fever/Flu", icon: "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/85703338762dce300aaacb9a05f302adc3d527f4.png", tagline: "", action: { type: "navigate", route: "select_problem" } },
+                                { id: "bp_sugar", label: "BP/Sugar check", icon: "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/a094df3aff84fca10f86363d2a72a2a9a16cb8b9.png", tagline: "", action: { type: "navigate", route: "select_problem" } },
+                                { id: "general_weakness", label: "General Weakness", icon: "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/a4cc4e445884c7ec5ea2ea73c3cf8315b9a5fd4b.png", tagline: "", action: { type: "navigate", route: "select_problem" } },
+                                { id: "body_pain", label: "Body pain/joint pain", icon: "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/3a3fbbfc074010919d54378e2349e7a3ecdea262.png", tagline: "", action: { type: "navigate", route: "select_problem" } },
+                                { id: "post_surgery", label: "Post-surgery Rehab", icon: "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/cc303b4d8fc2cc0ba55dc7a7b0eaaee1385183f1.png", tagline: "", action: { type: "navigate", route: "select_problem" } },
+                                { id: "stroke_recovery", label: "Stroke Recovery", icon: "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/9c25016906e38b6b999adf0f9fb6cb2adb589322.png", tagline: "", action: { type: "navigate", route: "select_problem" } },
+                                { id: "frozen_shoulder", label: "Frozen shoulder", icon: "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/05879295a9b69201cfab443f22bf9218402f1522.png", tagline: "", action: { type: "navigate", route: "select_problem" } },
+                                { id: "other", label: "Other", icon: "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/34a78d011624199a5541b871a68bb218b41e5aba.png", tagline: "", action: { type: "navigate", route: "select_problem" } }
                             ]
                         },
                         {
@@ -202,8 +202,8 @@ const FALLBACK_CONFIG: AppConfig = {
                             type: "grid",
                             layout: { columns: 2 },
                             items: [
-                                { id: "GP", label: "General Physician (MBBS)", icon: "https://storage.googleapis.com/oldful-assets/mobile/assets/images/9bbd0539ddfd504d8362c951cb07d107b0df9fdf.png", tagline: "", action: { type: "navigate", route: "select_doctor_type" } },
-                                { id: "Physio", label: "Physiotherapist", icon: "https://storage.googleapis.com/oldful-assets/mobile/assets/images/ad2bd697d39bc0738ca19a09e58ce4677761ca47.png", tagline: "", action: { type: "navigate", route: "select_doctor_type" } }
+                                { id: "GP", label: "General Physician (MBBS)", icon: "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/9bbd0539ddfd504d8362c951cb07d107b0df9fdf.png", tagline: "", action: { type: "navigate", route: "select_doctor_type" } },
+                                { id: "Physio", label: "Physiotherapist", icon: "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/ad2bd697d39bc0738ca19a09e58ce4677761ca47.png", tagline: "", action: { type: "navigate", route: "select_doctor_type" } }
                             ]
                         }
                     ]
@@ -292,8 +292,8 @@ const FALLBACK_CONFIG: AppConfig = {
             whatsapp_url: 'https://wa.me/918062180429',
             page_description: 'Our support team is available to help with bookings, services, and payments.',
             contacts: [
-                { id: 'customer_support', label: 'Customer Support', phone: '+91 94801 98108', email: 'client@oldful.com', name: null },
-                { id: 'grievance', label: 'Grievance Officer', phone: null, email: 'compliance@oldful.com', name: 'SK Murgan' },
+                { id: 'customer_support', label: 'Customer Support', phone: '+91 94801 98108', email: 'client@ayuxacare.com', name: null },
+                { id: 'grievance', label: 'Grievance Officer', phone: null, email: 'compliance@ayuxacare.com', name: 'SK Murgan' },
             ],
             ticket_categories: [
                 { id: 'billing', label: 'Billing', sort_order: 1 },

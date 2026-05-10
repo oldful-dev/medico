@@ -98,12 +98,14 @@ export default function DoctorVisitScreen() {
     React.useEffect(() => {
         (async () => {
             try {
-                // Check cache first for instant display
+                // Check cache first for instant display, but don't return so we fetch fresh data!
                 const cached = await AsyncStorage.getItem('lastPhysioBooking');
                 if (cached) {
-                    setLastPhysioBooking(JSON.parse(cached));
-                    return;
+                    try {
+                        setLastPhysioBooking(JSON.parse(cached));
+                    } catch {}
                 }
+                
                 // Fetch history — look for any doctor visit with physiotherapist
                 const res = await bookingService.getMyBookings();
                 if (res.success && res.data && res.data.length > 0) {
@@ -124,12 +126,51 @@ export default function DoctorVisitScreen() {
     // ─── Repeat Order: Apply last booking settings ───
     const applyRepeatOrder = () => {
         if (!lastPhysioBooking) return;
-        const symptom = lastPhysioBooking.symptoms?.[0] || null;
-        if (symptom) setSelectedProblem(symptom);
+        
+        let symptomStr = '';
+        
+        // 1. Try root level symptoms array
+        if (Array.isArray(lastPhysioBooking.symptoms) && lastPhysioBooking.symptoms.length > 0) {
+            symptomStr = lastPhysioBooking.symptoms[0];
+        } else if (typeof lastPhysioBooking.symptoms === 'string') {
+            try {
+                const parsed = JSON.parse(lastPhysioBooking.symptoms);
+                if (Array.isArray(parsed) && parsed.length > 0) symptomStr = parsed[0];
+            } catch {
+                symptomStr = lastPhysioBooking.symptoms;
+            }
+        }
+
+        // 2. Try nested formDataJson
+        if (!symptomStr && lastPhysioBooking.formDataJson) {
+            const fd = lastPhysioBooking.formDataJson;
+            if (Array.isArray(fd.symptoms) && fd.symptoms.length > 0) symptomStr = fd.symptoms[0];
+            else if (typeof fd.symptoms === 'string') symptomStr = fd.symptoms;
+            else if (fd.reason) symptomStr = fd.reason;
+        }
+
+        if (symptomStr) {
+            const normalizedSymptom = symptomStr.trim().toLowerCase();
+            const matchedProblem = PROBLEMS.find(p => p.label.toLowerCase() === normalizedSymptom);
+            
+            if (matchedProblem) {
+                setSelectedProblem(matchedProblem.label);
+                setOtherProblemText('');
+            } else {
+                setSelectedProblem('Other');
+                setOtherProblemText(symptomStr);
+            }
+        } else {
+            // Fallback if backend returned no symptoms, so the UI still visibly changes
+            setSelectedProblem(PROBLEMS[0].label);
+        }
+
         const isPhysio = lastPhysioBooking.doctorType === 'physiotherapist';
         setSelectedDoctorType(isPhysio ? 'Physio' : 'GP');
         setVisitType(lastPhysioBooking.formDataJson?.visitType || 'Home');
         setSelectedWhen('ASAP');
+        
+        Alert.alert('Applied', 'Your previous booking details have been auto-selected.');
     };
 
     // ─── Date formatting helper ───
@@ -254,7 +295,8 @@ export default function DoctorVisitScreen() {
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.repeatBannerTitle}>Book Same as Last Time</Text>
                                 <Text style={styles.repeatBannerSub}>
-                                    {lastPhysioBooking.symptoms?.[0] || 'Last visit'} · {lastPhysioBooking.doctorType === 'physiotherapist' ? 'Physiotherapist' : 'General Physician'}
+                                    {(Array.isArray(lastPhysioBooking.symptoms) ? lastPhysioBooking.symptoms[0] : 
+                                      (lastPhysioBooking.formDataJson?.symptoms?.[0] || lastPhysioBooking.formDataJson?.reason || lastPhysioBooking.symptoms)) || 'Last visit'} · {lastPhysioBooking.doctorType === 'physiotherapist' ? 'Physiotherapist' : 'General Physician'}
                                 </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={Colors.primary} />
@@ -580,6 +622,30 @@ const styles = StyleSheet.create({
         fontWeight: '400',
         fontSize: 14,
         color: '#777777',
+    },
+
+    /* ─── Repeat Order Banner ─── */
+    repeatBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#E8F9F2',
+        borderWidth: 1,
+        borderColor: Colors.primary,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 20,
+        gap: 12,
+    },
+    repeatBannerTitle: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
+        marginBottom: 2,
+    },
+    repeatBannerSub: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.caption,
+        color: Colors.textBody,
     },
 
     /* ─── Generic Section Styling ─── */

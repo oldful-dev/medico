@@ -67,7 +67,7 @@ export default function RootLayout() {
 
                   {/* Service Listing Screens */}
                   <Stack.Screen name="all-home-essentials/index" options={{ headerShown: false }} />
-                  <Stack.Screen name="all-oldful-services/index" options={{ headerShown: false }} />
+                  <Stack.Screen name="all-ayuxa-services/index" options={{ headerShown: false }} />
 
                   {/* Unmapped Screens */}
                   <Stack.Screen name="smart-upgrade/index" options={{ headerShown: false }} />

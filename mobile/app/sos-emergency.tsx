@@ -18,16 +18,16 @@ export default function SOSEmergencyScreen() {
     const router = useRouter();
     const [showCountdown, setShowCountdown] = useState(false);
     const [isTriggering, setIsTriggering] = useState(false);
-    const [prefetchedLocation, setPrefetchedLocation] = useState<any>(null);
+    const [prefetchedLocation, setPrefetchedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
-    // ─── Pre-fetch Location on Mount (PRD line 41) ───
+    // ─── Pre-fetch Location on Mount ───
     useEffect(() => {
         (async () => {
             try {
                 const hasPermission = await sosService.requestLocationPermission();
                 if (hasPermission) {
                     const loc = await sosService.getCurrentLocation();
-                    setPrefetchedLocation(loc);
+                    if (loc) setPrefetchedLocation(loc);
                 }
             } catch (e) {
                 console.log('Location pre-fetch failed', e);

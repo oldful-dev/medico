@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: oldful-backend
+    name: ayuxa-backend
     runtime: node
     region: singapore  # closest to India (ap-south)
     plan: free         # change to "starter" for production
@@ -37,7 +37,7 @@ services:
       - key: SENDGRID_FROM_EMAIL
         sync: false
       - key: SENDGRID_FROM_NAME
-        value: "Oldful Healthcare"
+        value: "Ayuxa Care"
       - key: RAZORPAY_KEY_ID
         sync: false
       - key: RAZORPAY_KEY_SECRET

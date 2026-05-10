@@ -29,59 +29,59 @@ import { useTranslation } from 'react-i18next';
 
 export const ICON_REGISTRY: Record<string, ImageSourcePropType> = {
     // Quick service strip
-    quick_doctor:    require('@/assets/images/98e939543c86f26f5f26210bb160eb927b5ff057.png'),
-    quick_nursing:   require('@/assets/images/21e5a8a8650cf8eda36be3744c70099580173129.png'),
+    quick_doctor: require('@/assets/images/98e939543c86f26f5f26210bb160eb927b5ff057.png'),
+    quick_nursing: require('@/assets/images/21e5a8a8650cf8eda36be3744c70099580173129.png'),
     quick_caregiver: require('@/assets/images/2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png'),
     quick_emergency: require('@/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png'),
 
-    // Oldful services grid
-    svc_doctor_visit:   require('@/assets/images/32a4661f97e2fa2dd2c85c403a7c530b7214e7f7.png'),
+    // ayuxacare services grid
+    svc_doctor_visit: require('@/assets/images/32a4661f97e2fa2dd2c85c403a7c530b7214e7f7.png'),
     svc_homing_nursing: require('@/assets/images/afd8e2afab202de7ddce09bf8add378c861b9347.png'),
-    svc_blood_test:     require('@/assets/images/f74321d18a86a9e77628058ed35a50d284752eb2.png'),
-    svc_fitness:        require('@/assets/images/54f5c849cf75e776592dec8236f221da3694ca53.png'),
-    svc_equipment:      require('@/assets/images/d3906f517597b2ef10369d92c422b16bf20e879e.png'),
-    svc_medicines:      require('@/assets/images/79c15725f6f1a73658b615886f1289634cef9408.png'),
-    svc_meal:           require('@/assets/images/8f136eff1200bb21c080348f6cdb7ad1c2831bdf.png'),
-    svc_physio:         require('@/assets/images/4ea419052803769fad63ff4292316ce7f8f77dbc.png'),
-    svc_hospital_trip:  require('@/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png'),
-    svc_insurance:      require('@/assets/images/e453f94c7e87531b0da0b6712f8dc4b3bc7084a9.png'),
+    svc_blood_test: require('@/assets/images/f74321d18a86a9e77628058ed35a50d284752eb2.png'),
+    svc_fitness: require('@/assets/images/54f5c849cf75e776592dec8236f221da3694ca53.png'),
+    svc_equipment: require('@/assets/images/d3906f517597b2ef10369d92c422b16bf20e879e.png'),
+    svc_medicines: require('@/assets/images/79c15725f6f1a73658b615886f1289634cef9408.png'),
+    svc_meal: require('@/assets/images/8f136eff1200bb21c080348f6cdb7ad1c2831bdf.png'),
+    svc_physio: require('@/assets/images/4ea419052803769fad63ff4292316ce7f8f77dbc.png'),
+    svc_hospital_trip: require('@/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png'),
+    svc_insurance: require('@/assets/images/e453f94c7e87531b0da0b6712f8dc4b3bc7084a9.png'),
 
     // Trust badges
-    badge_support:    require('@/assets/images/cea3b8dc2ce488942e83a8a4cd0dbe1e6173764b.png'),
+    badge_support: require('@/assets/images/cea3b8dc2ce488942e83a8a4cd0dbe1e6173764b.png'),
     badge_caregivers: require('@/assets/images/4dcdffbd537a1de53d947d7f0c7c548318bc85a7.png'),
-    badge_family:     require('@/assets/images/f90ea6c9d084318475183b0a2f11175f0f34640e.png'),
+    badge_family: require('@/assets/images/f90ea6c9d084318475183b0a2f11175f0f34640e.png'),
 
     // SOS banner
-    sos_icon:         require('@/assets/images/5eedb2a89f68f0fea90ef304401e7d38d0fc1790.png'),
+    sos_icon: require('@/assets/images/5eedb2a89f68f0fea90ef304401e7d38d0fc1790.png'),
     sos_illustration: require('@/assets/images/e453f94c7e87531b0da0b6712f8dc4b3bc7084a9.png'),
 
     // Home essentials grid
     ess_ac_repair: require('@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png'),
-    ess_plumbing:  require('@/assets/images/8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png'),
-    ess_cleaning:  require('@/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png'),
-    ess_driver:    require('@/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png'),
-    ess_bills:     require('@/assets/images/056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png'),
-    ess_bank:      require('@/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png'),
-    ess_grocery:   require('@/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png'),
-    ess_anything:  require('@/assets/images/6c8ed456023258e8b4095af93909c6cbc6c4b909.png'),
+    ess_plumbing: require('@/assets/images/8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png'),
+    ess_cleaning: require('@/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png'),
+    ess_driver: require('@/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png'),
+    ess_bills: require('@/assets/images/056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png'),
+    ess_bank: require('@/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png'),
+    ess_grocery: require('@/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png'),
+    ess_anything: require('@/assets/images/6c8ed456023258e8b4095af93909c6cbc6c4b909.png'),
 
     // Plans benefits
     benefit_money_bag: require('@/assets/images/26948a93a4bbaa57b96ff130f4425886b3c5d292.png'),
     benefit_checkmark: require('@/assets/images/019640d27de157c119b045c46aae6a6559dd3a79.png'),
-    benefit_family:    require('@/assets/images/26945e6abc1b678cf3cb29a1a66c0cf290cc7cfd.png'),
+    benefit_family: require('@/assets/images/26945e6abc1b678cf3cb29a1a66c0cf290cc7cfd.png'),
 
     // Doctor visit — problem icons
-    prob_fever:            require('@/assets/images/85703338762dce300aaacb9a05f302adc3d527f4.png'),
-    prob_bp_sugar:         require('@/assets/images/a094df3aff84fca10f86363d2a72a2a9a16cb8b9.png'),
+    prob_fever: require('@/assets/images/85703338762dce300aaacb9a05f302adc3d527f4.png'),
+    prob_bp_sugar: require('@/assets/images/a094df3aff84fca10f86363d2a72a2a9a16cb8b9.png'),
     prob_general_weakness: require('@/assets/images/a4cc4e445884c7ec5ea2ea73c3cf8315b9a5fd4b.png'),
-    prob_body_pain:        require('@/assets/images/3a3fbbfc074010919d54378e2349e7a3ecdea262.png'),
-    prob_post_surgery:     require('@/assets/images/cc303b4d8fc2cc0ba55dc7a7b0eaaee1385183f1.png'),
-    prob_stroke:           require('@/assets/images/9c25016906e38b6b999adf0f9fb6cb2adb589322.png'),
-    prob_frozen_shoulder:  require('@/assets/images/05879295a9b69201cfab443f22bf9218402f1522.png'),
-    prob_other:            require('@/assets/images/34a78d011624199a5541b871a68bb218b41e5aba.png'),
+    prob_body_pain: require('@/assets/images/3a3fbbfc074010919d54378e2349e7a3ecdea262.png'),
+    prob_post_surgery: require('@/assets/images/cc303b4d8fc2cc0ba55dc7a7b0eaaee1385183f1.png'),
+    prob_stroke: require('@/assets/images/9c25016906e38b6b999adf0f9fb6cb2adb589322.png'),
+    prob_frozen_shoulder: require('@/assets/images/05879295a9b69201cfab443f22bf9218402f1522.png'),
+    prob_other: require('@/assets/images/34a78d011624199a5541b871a68bb218b41e5aba.png'),
 
     // Doctor visit — doctor type icons
-    doc_gp:     require('@/assets/images/9bbd0539ddfd504d8362c951cb07d107b0df9fdf.png'),
+    doc_gp: require('@/assets/images/9bbd0539ddfd504d8362c951cb07d107b0df9fdf.png'),
     doc_physio: require('@/assets/images/ad2bd697d39bc0738ca19a09e58ce4677761ca47.png'),
 };
 
@@ -338,8 +338,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.lg,
     },
     sectionTitle: { fontFamily: Fonts.bold, fontSize: FontSize.heading2, color: Colors.primaryDeep },
-    viewAllText:  { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: Colors.textLight },
-    serviceGrid:  { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+    viewAllText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: Colors.textLight },
+    serviceGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
     serviceGridItem: {
         marginBottom: Spacing.md, borderRadius: Radius.md,
         backgroundColor: Colors.bgCardMuted, overflow: 'hidden', alignItems: 'center',
@@ -359,9 +359,9 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.bgCard, borderRadius: Radius.lg,
         flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.lg, ...Shadow.card,
     },
-    trustItem:    { flex: 1, alignItems: 'center' },
-    trustIcon:    { width: 44, height: 44, marginBottom: Spacing.sm },
-    trustLabel:   { fontFamily: Fonts.medium, fontSize: FontSize.caption, color: Colors.primaryText, textAlign: 'center' },
+    trustItem: { flex: 1, alignItems: 'center' },
+    trustIcon: { width: 44, height: 44, marginBottom: Spacing.sm },
+    trustLabel: { fontFamily: Fonts.medium, fontSize: FontSize.caption, color: Colors.primaryText, textAlign: 'center' },
     trustDivider: { width: 1, height: '70%', backgroundColor: Colors.textLight, opacity: 0.3 },
 
     // SOS banner
@@ -371,16 +371,16 @@ const styles = StyleSheet.create({
         borderRadius: Radius.lg, flexDirection: 'row', alignItems: 'center',
         justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingVertical: Spacing.lg,
     },
-    sosContent:      { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-    sosIcon:         { width: 44, height: 44 },
-    sosTextGroup:    { gap: 2 },
-    sosTitle:        { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: Colors.textDark },
+    sosContent: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    sosIcon: { width: 44, height: 44 },
+    sosTextGroup: { gap: 2 },
+    sosTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: Colors.textDark },
     sosButton: {
         flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.primary,
         borderRadius: Radius.sm, paddingHorizontal: Spacing.md, paddingVertical: 6,
         gap: Spacing.xs, marginTop: 6, alignSelf: 'flex-start',
     },
-    sosButtonText:   { fontFamily: Fonts.semiBold, fontSize: FontSize.caption, color: Colors.textWhite },
+    sosButtonText: { fontFamily: Fonts.semiBold, fontSize: FontSize.caption, color: Colors.textWhite },
     sosIllustration: { width: 60, height: 60 },
 
     // Essentials grid
@@ -389,8 +389,8 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.bgCard, borderRadius: Radius.lg, padding: Spacing.lg, ...Shadow.card,
     },
     essentialsTitle: { fontFamily: Fonts.bold, fontSize: FontSize.heading3, color: Colors.primaryDeep },
-    viewAllSmall:    { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: Colors.textLight },
-    essentialsRow:   { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.md },
+    viewAllSmall: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: Colors.textLight },
+    essentialsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.md },
     essentialItem: {
         borderWidth: 1, borderColor: Colors.accent, borderRadius: Radius.sm,
         alignItems: 'center', justifyContent: 'center', paddingVertical: 6,
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
         width: '60%', aspectRatio: 1, borderRadius: Radius.full, overflow: 'hidden',
         alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs,
     },
-    essentialIcon:  { width: '80%', height: '80%' },
+    essentialIcon: { width: '80%', height: '80%' },
     essentialLabel: {
         fontFamily: Fonts.medium, fontSize: FontSize.caption,
         color: Colors.textMuted, textAlign: 'center', lineHeight: 12,

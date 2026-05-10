@@ -299,7 +299,7 @@ export default function HospitalTripScreen() {
                                 <View style={styles.uncheckedCircle} />
                             )}
                             <Text style={styles.addonText}>
-                                <Text style={styles.addonBold}>Support: </Text>Send an Oldful Buddy to{'\n'}assist me at the hospital?
+                                <Text style={styles.addonBold}>Support: </Text>Send an Ayuxa Care Buddy to{'\n'}assist me at the hospital?
                             </Text>
                         </TouchableOpacity>
 

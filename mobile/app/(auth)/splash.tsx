@@ -1,5 +1,5 @@
 // Splash Screen — Pixel-matched to Figma frame "Splashify" (140:392)
-// Layout: Cream background, centered Oldful logo, ISO badge below, mandala bottom-left
+// Layout: Cream background, centered Ayuxa Care logo, ISO badge below, mandala bottom-left
 // No business logic — pure presentation
 import React, { useEffect, useState } from 'react';
 import { View, Image, StyleSheet, Animated } from 'react-native';
