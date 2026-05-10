@@ -20,7 +20,7 @@ import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
 
 // ─── Figma Assets ───
-const imgOldfulIllustration = require('@/assets/images/49fa5256c84b3ee062131d88f5ae26383f5d5257.png'); // The lawyer/assistant illustration
+const imllustration = require('@/assets/images/49fa5256c84b3ee062131d88f5ae26383f5d5257.png'); // The lawyer/assistant illustration
 
 export default function PaperLegalScreen() {
     const router = useRouter();
@@ -177,9 +177,9 @@ export default function PaperLegalScreen() {
                         <Text style={styles.submitButtonText}>{isLoadingInit ? 'Initializing...' : isBooking ? 'Processing...' : 'Book Assistant'}</Text>
                     </TouchableOpacity>
 
-                    {/* ─── Oldful Illustration Bottom ─── */}
+                    {/* ─── Ayuxa Care Illustration Bottom ─── */}
                     <View style={styles.illustrationContainer}>
-                        <Image source={imgOldfulIllustration} style={styles.illustration} resizeMode="contain" />
+                        <Image source={imllustration} style={styles.illustration} resizeMode="contain" />
                     </View>
 
                 </KeyboardAwareScrollView>

@@ -12,7 +12,7 @@ try {
     const serviceAccount = require(path.resolve(serviceAccountPath));
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
-        storageBucket: process.env.GOOGLE_STORAGE_BUCKET_NAME || 'oldful-assets.appspot.com',
+        storageBucket: process.env.GOOGLE_STORAGE_BUCKET_NAME || 'ayuxa-platforms.firebasestorage.app',
     });
     logger.info('🔥 Firebase Admin initialized successfully');
 } catch (error) {

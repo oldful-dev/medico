@@ -1,10 +1,10 @@
 // App Constants - Application-wide configuration values
 
 export const APP_CONFIG = {
-  name: 'Oldful',
+  name: 'ayuxacare',
   tagline: 'Elder Care, Simplified',
   version: '1.0.0',
-  supportEmail: 'support@oldful.com',
+  supportEmail: 'support@ayuxacare.com',
   supportPhone: '+91-XXXXXXXXXX',
   emergencyHotline: '+91-XXXXXXXXXX',
 };

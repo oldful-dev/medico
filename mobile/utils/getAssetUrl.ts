@@ -1,13 +1,13 @@
 // ─── CDN Asset URL Builder ────────────────────────────────────────────────────
 //  All home screen assets are stored in GCS:
-//    gs://oldful-assets/mobile/assets/images/<filename>
+//    gs://ayuxa-assets/mobile/assets/images/<filename>
 //  And served via Cloudflare CDN:
-//    https://assets.oldful.com/mobile/assets/images/<filename>
+//    https://assets.ayuxacare.com/<filename>
 //
 //  NEVER use local require() assets for SDUI — always use this helper.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CDN_BASE = 'https://assets.oldful.com/mobile/assets/images';
+const CDN_BASE = 'https://assets.ayuxacare.com';
 
 /**
  * Build a Cloudflare CDN URL for a GCS-backed asset.

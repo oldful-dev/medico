@@ -12,7 +12,7 @@
 //      └─► sduiService.getHomeConfig()
 //            └─► index.tsx renders banners + sections + services
 //
-//  Assets: Cloudflare CDN  →  https://assets.oldful.com/mobile/assets/images/<file>
+//  Assets: Cloudflare CDN  →  https://assets.ayuxacare.com/<file>
 //  Use getAssetUrl(fileName) helper — never hardcode full URLs here.
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -46,7 +46,7 @@ export interface HomeService {
     sort_order?: number;
 }
 
-/** A named group of services (e.g. "Oldful Services", "Home Essentials"). */
+/** A named group of services (e.g. "Ayuxa Services", "Home Essentials"). */
 export interface HomeSection {
     id: string;
     title: string;
@@ -93,7 +93,7 @@ export interface HomeConfig {
 
 // ─── Fallback config ──────────────────────────────────────────────────────────
 //  Used when Firebase Remote Config is unavailable (offline, first install, etc.)
-//  Image filenames must exist in gs://oldful-assets/mobile/assets/images/
+//  Image filenames must exist in gs://ayuxa-assets/mobile/assets/images/
 
 export const HOME_CONFIG_FALLBACK: HomeConfig = {
     version: '1.0.0',
@@ -115,20 +115,20 @@ export const HOME_CONFIG_FALLBACK: HomeConfig = {
             enabled: true,
             sort_order: 1,
             services: [
-                { id: 'doctor',    label: 'Oldful\nDoctor',     icon: '98e939543c86f26f5f26210bb160eb927b5ff057.png', route: '/doctor-visit',  enabled: true,  sort_order: 1 },
+                { id: 'doctor',    label: 'Ayuxa\nDoctor',     icon: '98e939543c86f26f5f26210bb160eb927b5ff057.png', route: '/doctor-visit',  enabled: true,  sort_order: 1 },
                 { id: 'nursing',   label: 'Nursing\nCare',      icon: '21e5a8a8650cf8eda36be3744c70099580173129.png', route: '/nurse-care',    enabled: true,  sort_order: 2 },
                 { id: 'caregiver', label: 'Caregiver\nSupport', icon: '2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png', route: '/nurse-care',    enabled: true,  sort_order: 3 },
                 { id: 'emergency', label: 'Emergency\nAssist',  icon: 'e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/sos-emergency', enabled: true,  sort_order: 4 },
             ],
         },
         {
-            id: 'oldful_services',
-            title: 'Oldful Services',
+            id: 'ayuxa_services',
+            title: 'Ayuxa Services',
             type: 'service_grid',
             enabled: true,
             sort_order: 2,
             max_items: 6,
-            view_all_route: '/all-oldful-services',
+            view_all_route: '/all-ayuxa-services',
             services: [
                 { id: 'doctor_visit',   label: 'Doctor\nVisit',           icon: '32a4661f97e2fa2dd2c85c403a7c530b7214e7f7.png', route: '/doctor-visit',     enabled: true, sort_order: 1 },
                 { id: 'homing_nursing', label: 'Homing\nNursing',         icon: 'afd8e2afab202de7ddce09bf8add378c861b9347.png', route: '/nurse-care',        enabled: true, sort_order: 2 },

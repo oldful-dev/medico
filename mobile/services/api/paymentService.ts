@@ -4,6 +4,10 @@
 //  POST   /api/payments/initiate
 //  POST   /api/payments/verify
 //  POST   /api/payments/apply-coupon
+//  GET    /api/payments/saved-cards
+//  POST   /api/payments/saved-cards
+//  DELETE /api/payments/saved-cards/:id
+//  PUT    /api/payments/saved-cards/:id/set-default
 // ──────────────────────────────────────────────
 
 import { apiClient, ApiResponse } from './apiClient';
@@ -72,6 +76,34 @@ export interface ApplyCouponResponse {
     };
 }
 
+export interface SavedCard {
+    id: string;
+    cardLast4: string;
+    cardBrand: string;
+    cardType: 'CARD' | 'UPI';
+    cardholderName?: string;
+    expiryMonth?: string;
+    expiryYear?: string;
+    upiId?: string;
+    razorpayToken?: string;
+    isDefault: boolean;
+    createdAt: string;
+}
+
+export interface AddCardPayload {
+    cardType: 'CARD' | 'UPI';
+    // CARD fields
+    cardLast4?: string;
+    cardBrand?: string;
+    cardholderName?: string;
+    expiryMonth?: string;
+    expiryYear?: string;
+    razorpayToken?: string;
+    // UPI fields
+    upiId?: string;
+    setDefault?: boolean;
+}
+
 // ─── Service ──────────────────────────────────
 
 export const paymentService = {
@@ -117,10 +149,26 @@ export const paymentService = {
     /**
      * POST /api/payments/cancel
      * Called when user dismisses Razorpay (ondismiss) or payment fails.
-     * Marks the payment + booking as PAYMENT_FAILED on the backend.
-     * This prevents the booking from appearing in Cart/Active views.
      */
     cancelPayment: async (orderId: string): Promise<ApiResponse<{ orderId: string; bookingId: string | null }>> => {
         return apiClient.post('/payments/cancel', { orderId });
+    },
+
+    // ─── Saved Cards ────────────────────────────────────────────────────
+
+    getSavedCards: async (): Promise<ApiResponse<SavedCard[]>> => {
+        return apiClient.get<SavedCard[]>('/payments/saved-cards');
+    },
+
+    addSavedCard: async (data: AddCardPayload): Promise<ApiResponse<SavedCard>> => {
+        return apiClient.post<SavedCard>('/payments/saved-cards', data);
+    },
+
+    deleteSavedCard: async (id: string): Promise<ApiResponse<null>> => {
+        return apiClient.delete<null>(`/payments/saved-cards/${id}`);
+    },
+
+    setDefaultCard: async (id: string): Promise<ApiResponse<null>> => {
+        return apiClient.put<null>(`/payments/saved-cards/${id}/set-default`, {});
     },
 };

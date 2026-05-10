@@ -152,9 +152,12 @@ export default function PlansScreen() {
 
             {/* ─── Header ─── */}
             <View style={styles.headerContainer}>
-                <View style={styles.backButtonPlaceholder}>
+                <TouchableOpacity 
+                    style={styles.backButton} 
+                    onPress={() => router.replace('/(tabs)')}
+                >
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
-                </View>
+                </TouchableOpacity>
                 <Text style={styles.headerTitle}>{t('plans.tab_title')}</Text>
             </View>
 
@@ -327,7 +330,7 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.primary,
         paddingHorizontal: Spacing.lg, paddingBottom: 25, paddingTop: 10, position: 'relative',
     },
-    backButtonPlaceholder: { position: 'absolute', left: 20, padding: 5, opacity: 0 },
+    backButton: { position: 'absolute', left: 20, padding: 5, zIndex: 10 },
     headerTitle: {
         fontFamily: Fonts.semiBold, fontSize: FontSize.heading2,
         color: Colors.textWhite, textAlign: 'center', letterSpacing: -0.24,

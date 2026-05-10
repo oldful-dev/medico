@@ -40,7 +40,7 @@
 
   "auth": {
     "splash_tagline": "ISO 9001:2015 Certified",
-    "login_title": "Login to Oldful",
+    "login_title": "Login to Ayuxa Care",
     "login_subtitle": "Enter your mobile number to continue",
     "phone_placeholder": "Enter mobile number",
     "send_otp": "Send OTP",
@@ -223,7 +223,7 @@
     "doctor_name_placeholder": "Dr. Anil Mehta",
     "service_addons": "Service Add-ons",
     "transport_addon": "Transport: Arrange Cab for me?",
-    "support_addon": "Support: Send an Oldful Buddy to\nassist me at the hospital?",
+    "support_addon": "Support: Send an Ayuxa Care Buddy to\nassist me at the hospital?",
     "booking_fee": "Booking",
     "fee_actuals": "Fee + Actuals"
   },
@@ -304,7 +304,7 @@
     "whatsapp_updates": "WhatsApp Updates",
     "promotional_offers": "Promotional Offers",
     "help_support": "Help & Support",
-    "rate_us": "Rate Oldful",
+    "rate_us": "Rate Ayuxa Care",
     "terms_privacy": "Terms & Privacy Policy",
     "logout": "Logout",
     "update_photo": "Update Profile Photo",
@@ -386,7 +386,7 @@
     "header": "Notifications",
     "empty": "No notifications yet",
     "your_otp": "Your OTP Code",
-    "verification_code": "Your Oldful verification code is: {{code}}"
+    "verification_code": "Your Ayuxa Care verification code is: {{code}}"
   },
 
   "help_support": {

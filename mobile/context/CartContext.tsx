@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '@/services/api/apiClient';
 
-const CART_STORAGE_KEY = '@oldful_cart_items';
+const CART_STORAGE_KEY = '@ayuxacare_cart_items';
 
 export interface CartItem {
     id: string;

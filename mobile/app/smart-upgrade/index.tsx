@@ -43,7 +43,7 @@ export default function SmartUpgradeScreen() {
         // Check if already on an active plan
         const hasActivePlan = profile.subscriptions?.some((s: any) => s.status === 'ACTIVE');
         if (hasActivePlan) {
-            Alert.alert('Already Subscribed', 'You already have an active Oldful plan. Manage it from the Plans tab.');
+            Alert.alert('Already Subscribed', 'You already have an active Ayuxa Care plan. Manage it from the Plans tab.');
             return;
         }
 
@@ -135,7 +135,7 @@ export default function SmartUpgradeScreen() {
                     <Text style={styles.cardSubtitleMain}>Get Total Home Managment.</Text>
 
                     <Text style={styles.priceIntroText}>
-                        Join the oldful Homemaker Plan for Just <Text style={styles.priceBold}>₹3,499/ month</Text>
+                        Join the ayuxacare Homemaker Plan for Just <Text style={styles.priceBold}>₹3,499/ month</Text>
                     </Text>
 
                     {/* ─── Pricing Chart Image ─── */}
@@ -180,7 +180,7 @@ export default function SmartUpgradeScreen() {
                         <View style={styles.disclaimerItem}>
                             <Text style={styles.disclaimerText}>
                                 <Text style={styles.disclaimerBold}>Supervision: </Text>
-                                “Pay-Per-Use” Bookings Include remote Coordination.for physical on-site supervision (having an Oldful staff member stand guard while work is done),you must have an active Oldful plan.
+                                “Pay-Per-Use” Bookings Include remote Coordination.for physical on-site supervision (having an Ayuxa Care staff member stand guard while work is done),you must have an active Ayuxa Care plan.
                             </Text>
                         </View>
                     </View>

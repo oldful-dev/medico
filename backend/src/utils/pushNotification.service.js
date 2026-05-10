@@ -43,7 +43,7 @@ const sendPushToUser = async (userId, { title, body, data = {} }) => {
             ),
             android: {
                 priority: 'high',
-                notification: { channelId: 'oldful-default', sound: 'default' },
+                notification: { channelId: 'ayuxacare-default', sound: 'default' },
             },
             apns: {
                 payload: { aps: { sound: 'default', badge: 1 } },

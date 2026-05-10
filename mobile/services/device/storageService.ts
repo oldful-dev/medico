@@ -8,17 +8,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // ─── Storage Keys ─────────────────────────────
 
 export const STORAGE_KEYS = {
-    AUTH_TOKEN: 'oldful_auth_token',
-    REFRESH_TOKEN: 'oldful_refresh_token',
-    USER_PROFILE: 'oldful_user_profile',
-    USER_ID: 'oldful_user_id',
-    ONBOARDING_COMPLETED: 'oldful_onboarding_completed',
-    SELECTED_CITY: 'oldful_selected_city',
-    PREFERRED_LANGUAGE: 'oldful_preferred_language',
-    PUSH_TOKEN: 'oldful_push_token',
+    AUTH_TOKEN: 'ayuxacare_auth_token',
+    REFRESH_TOKEN: 'ayuxacare_refresh_token',
+    USER_PROFILE: 'ayuxacare_user_profile',
+    USER_ID: 'ayuxacare_user_id',
+    ONBOARDING_COMPLETED: 'ayuxacare_onboarding_completed',
+    SELECTED_CITY: 'ayuxacare_selected_city',
+    PREFERRED_LANGUAGE: 'ayuxacare_preferred_language',
+    PUSH_TOKEN: 'ayuxacare_push_token',
     // Payment recovery — persisted before Razorpay opens, cleared on success/failure
-    PENDING_ORDER_ID: 'oldful_pending_order_id',
-    PENDING_BOOKING_ID: 'oldful_pending_booking_id',
+    PENDING_ORDER_ID: 'ayuxacare_pending_order_id',
+    PENDING_BOOKING_ID: 'ayuxacare_pending_booking_id',
 } as const;
 
 // ─── Service ──────────────────────────────────

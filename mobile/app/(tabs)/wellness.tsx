@@ -22,7 +22,7 @@ import { storeService, Product } from '@/services/api/storeService';
 import { useCart } from '@/context/CartContext';
 
 // Using local images or placeholder for Hero if a specific illustration isn't explicitly supplied
-// For this teaser, we'll build a vibrant Hero with a prominent 'Oldful' logo or generic medical icon
+// For this teaser, we'll build a vibrant Hero with a prominent 'Ayuxa Care' logo or generic medical icon
 const imgPlaceholderHero = require('@/assets/images/8f136eff1200bb21c080348f6cdb7ad1c2831bdf.png');
 
 const CATEGORIES = [
@@ -96,7 +96,7 @@ export default function WellnessScreen() {
                 <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
                 <StatusBar style="light" backgroundColor={Colors.primary} />
                 <View style={styles.headerContainer}>
-                    <Text style={styles.headerTitle}>Oldful Wellness</Text>
+                    <Text style={styles.headerTitle}>Ayuxa Care Wellness</Text>
                 </View>
                 <View style={[styles.contentContainer, { justifyContent: 'center', alignItems: 'center' }]}>
                     <ActivityIndicator size="large" color={Colors.primary} />
@@ -215,7 +215,7 @@ export default function WellnessScreen() {
 
             {/* ─── Header ─── */}
             <View style={styles.headerContainer}>
-                <Text style={styles.headerTitle}>Oldful Wellness</Text>
+                <Text style={styles.headerTitle}>Ayuxa Care Wellness</Text>
             </View>
 
             <View style={styles.contentContainer}>
@@ -231,7 +231,7 @@ export default function WellnessScreen() {
                             </View>
                         </View>
 
-                        <Text style={styles.heroHeadline}>The Oldful Wellness Store is Opening Soon!</Text>
+                        <Text style={styles.heroHeadline}>The Ayuxa Care Wellness Store is Opening Soon!</Text>
                         <Text style={styles.heroSubHeadline}>
                             Genuine Medicines, Senior Care Products, and Daily Essentials delivered to your door.
                         </Text>

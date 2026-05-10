@@ -27,7 +27,7 @@ import { authService, ApiError } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 
-const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '604340037909-fdhnci4koamsb4g7sb55l7rbpjg57js7.apps.googleusercontent.com';
+const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '351969749690-lgbb5emsvvjsmtegnf44vvebd7lcna1k.apps.googleusercontent.com';
 
 GoogleSignin.configure({
     webClientId: WEB_CLIENT_ID,
@@ -214,7 +214,7 @@ export default function LoginScreen() {
 
                 // DEVELOPER_ERROR common instructions
                 if (error.code === statusCodes.DEVELOPER_ERROR || error.message?.includes('DEVELOPER_ERROR')) {
-                    errorMessage = 'Configuration Error (DEVELOPER_ERROR).\n\nThis usually means:\n1. Your SHA-1 fingerprint is not registered in Google Cloud/Firebase console.\n2. The package name (com.oldfuldev.oldful) mismatch.\n3. The Web Client ID is incorrect.';
+                    errorMessage = 'Configuration Error (DEVELOPER_ERROR).\n\nThis usually means:\n1. Your SHA-1 fingerprint is not registered in Google Cloud/Firebase console.\n2. The package name (com.ayuxacare.app) mismatch.\n3. The Web Client ID is incorrect.';
                 } else if (error.message?.includes('NETWORK_ERROR')) {
                     errorMessage = 'Network error. Please check your internet connection.';
                 }
@@ -248,7 +248,7 @@ export default function LoginScreen() {
                 >
 
 
-                    {/* ─── Oldful Logo ─── */}
+                    {/* ─── Ayuxa Care Logo ─── */}
                     <View style={styles.logoContainer}>
                         <Image source={logoImage} style={styles.logo} resizeMode="contain" />
                     </View>

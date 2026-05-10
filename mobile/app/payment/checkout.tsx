@@ -254,11 +254,11 @@ export default function CheckoutScreen() {
             setFlowState('checkout_opened');
             const options: any = {
                 description:  label,
-                image:        'https://storage.googleapis.com/oldful-assets/mobile/assets/images/oldful-logo.png',
+                image:        'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/ayuxacare-logo.png',
                 currency:     'INR',
                 key:          backendKey || process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || '',
                 amount:       String(Math.round(orderAmount * 100)), // paise
-                name:         'Oldful Healthcare',
+                name:         'Ayuxa Care Healthcare',
                 order_id:     orderId,
                 prefill: {
                     name:    params.userName || '',

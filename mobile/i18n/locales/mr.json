@@ -40,7 +40,7 @@
 
   "auth": {
     "splash_tagline": "ISO 9001:2015 प्रमाणित",
-    "login_title": "Oldful मध्ये लॉगिन करा",
+    "login_title": "Ayuxa Care मध्ये लॉगिन करा",
     "login_subtitle": "पुढे जाण्यासाठी आपला मोबाइल नंबर प्रविष्ट करा",
     "phone_placeholder": "मोबाइल नंबर प्रविष्ट करा",
     "send_otp": "OTP पाठवा",
@@ -223,7 +223,7 @@
     "doctor_name_placeholder": "डॉ. अनिल मेहता",
     "service_addons": "सेवा ऐड-ऑन",
     "transport_addon": "वाहतूक: माझ्यासाठी कॅब व्यवस्था करायची?",
-    "support_addon": "समर्थन: रुग्णालयात मदत करण्यासाठी Oldful बडी पाठवायचा?",
+    "support_addon": "समर्थन: रुग्णालयात मदत करण्यासाठी Ayuxa Care बडी पाठवायचा?",
     "booking_fee": "बुकिंग",
     "fee_actuals": "शुल्क + वास्तविक खर्च"
   },
@@ -304,7 +304,7 @@
     "whatsapp_updates": "WhatsApp अपडेट",
     "promotional_offers": "प्रचारात्मक ऑफर",
     "help_support": "मदत & समर्थन",
-    "rate_us": "Oldful ला रेट करा",
+    "rate_us": "Ayuxa Care ला रेट करा",
     "terms_privacy": "अटी & गोपनीयता धोरण",
     "logout": "लॉगआउट",
     "update_photo": "प्रोफाइल फोटो अपडेट करा",
@@ -386,7 +386,7 @@
     "header": "सूचना",
     "empty": "अजून कोणत्याही सूचना नाहीत",
     "your_otp": "आपला OTP कोड",
-    "verification_code": "आपला Oldful सत्यापन कोड आहे: {{code}}"
+    "verification_code": "आपला Ayuxa Care सत्यापन कोड आहे: {{code}}"
   },
 
   "help_support": {

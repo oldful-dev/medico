@@ -38,7 +38,7 @@ const SERVICE_GRID = [
     { image: medicalReportIcon, label1: 'Insurance', label2: '& Claims', route: '/insurance' },
 ];
 
-export default function AllOldfulServicesScreen() {
+export default function AllAyuxaServicesScreen() {
     const router = useRouter();
     const { width } = useWindowDimensions();
 
@@ -63,7 +63,7 @@ export default function AllOldfulServicesScreen() {
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="#2F2F2F" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>All Oldful Services</Text>
+                <Text style={styles.headerTitle}>All Ayuxa Services</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
