@@ -380,10 +380,17 @@ export default function SOSPage() {
                                                         <Phone size={14} />
                                                         <span>{alert.user?.phone || 'No phone'}</span>
                                                     </div>
-                                                    <div className="info-chip location" onClick={() => window.open(`https://www.google.com/maps?q=${alert.latitude},${alert.longitude}`, '_blank')}>
+                                                    <div
+                                                        className="info-chip location"
+                                                        onClick={() => alert.latitude && alert.longitude
+                                                            ? window.open(`https://www.google.com/maps?q=${alert.latitude},${alert.longitude}`, '_blank')
+                                                            : null
+                                                        }
+                                                        style={!(alert.latitude && alert.longitude) ? { cursor: 'default', opacity: 0.6 } : {}}
+                                                    >
                                                         <Navigation size={14} />
-                                                        <span className="truncate">{alert.addressSnapshot || 'Locating...'}</span>
-                                                        <ExternalLink size={12} className="ml-1" />
+                                                        <span className="truncate">{alert.addressSnapshot || (alert.latitude && alert.longitude ? 'View on map' : 'Location unavailable')}</span>
+                                                        {alert.latitude && alert.longitude && <ExternalLink size={12} className="ml-1" />}
                                                     </div>
                                                     <div className="info-chip">
                                                         <Clock size={14} />
@@ -602,7 +609,19 @@ export default function SOSPage() {
                                 </div>
                                 <div className="detail-group">
                                     <label className="detail-label">Address</label>
-                                    <div className="detail-value">{detailsModal.addressSnapshot || 'Locating...'}</div>
+                                    <div className="detail-value">
+                                        {detailsModal.addressSnapshot || 'Not available'}
+                                        {detailsModal.latitude && detailsModal.longitude && (
+                                            <a
+                                                href={`https://www.google.com/maps?q=${detailsModal.latitude},${detailsModal.longitude}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                style={{ marginLeft: 8, color: 'var(--accent-primary)', fontSize: 12 }}
+                                            >
+                                                Open map ↗
+                                            </a>
+                                        )}
+                                    </div>
                                 </div>
                                 {detailsModal.responder && (
                                     <>

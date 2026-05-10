@@ -267,6 +267,7 @@ model User {
   waitlistEntries   WaitlistEntry[]
   labOrders         LabOrder[]
   productOrders     ProductOrder[]
+  savedCards        SavedCard[]
 
   otpCode           String?
   otpExpiresAt      DateTime?
@@ -743,7 +744,33 @@ model Category {
   @@map("categories")
 }
 
-// ─── 17. Waitlist Entry ─────────────────────────────────
+// ─── 17. Saved Card (Razorpay tokenised) ────────────────
+
+model SavedCard {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Display info (never full PAN — only masked last4 + brand)
+  cardLast4       String                        // "4532"
+  cardBrand       String                        // "Visa", "Mastercard", "Rupay", "UPI"
+  cardType        String   @default("CARD")     // "CARD" | "UPI"
+  cardholderName  String?
+  expiryMonth     String?                       // "12"
+  expiryYear      String?                       // "2027"
+  upiId           String?                       // for UPI type
+
+  // Razorpay token for one-click checkout
+  razorpayToken   String?
+  isDefault       Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@map("saved_cards")
+}
+
+// ─── 17b. Waitlist Entry ────────────────────────────────
 
 model WaitlistEntry {
   id          String   @id @default(uuid())

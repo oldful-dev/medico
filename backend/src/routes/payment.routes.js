@@ -5,6 +5,10 @@ const ctrl = require('../controllers/payment.controller');
 
 // App User routes
 router.get('/methods', ctrl.getPaymentMethods);
+router.get('/saved-cards', authenticate, ctrl.getSavedCards);
+router.post('/saved-cards', authenticate, ctrl.addSavedCard);
+router.delete('/saved-cards/:id', authenticate, ctrl.deleteSavedCard);
+router.put('/saved-cards/:id/set-default', authenticate, ctrl.setDefaultCard);
 router.post('/initiate', authenticate, ctrl.initiatePayment);
 router.post('/verify', authenticate, ctrl.verifyPayment);
 router.post('/cancel', authenticate, ctrl.cancelPayment);   // Called on dismiss / failure
