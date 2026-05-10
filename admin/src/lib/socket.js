@@ -2,34 +2,39 @@ import { io } from "socket.io-client";
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "https://api.oldful.com";
 
-let socket;
+let socket = null;
 
 export const initSocket = () => {
-    if (!socket) {
-        socket = io(SOCKET_URL, {
-            withCredentials: true,
-            autoConnect: true,
-            transports: ['websocket', 'polling'],
-            reconnection: true,
-            reconnectionAttempts: Infinity,
-            reconnectionDelay: 1000,
-            reconnectionDelayMax: 5000,
-            timeout: 20000,
-        });
+    // Never run on server — socket.io-client requires browser APIs
+    if (typeof window === "undefined") return null;
+    if (socket) return socket;
 
-        socket.on("connect", () => {
-            console.log("✅ Socket connected:", socket.id);
-            socket.emit("join_admin_room");
-        });
+    socket = io(SOCKET_URL, {
+        withCredentials: true,
+        autoConnect: false,           // connect explicitly below
+        transports: ["websocket", "polling"],
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 20000,
+    });
 
-        socket.on("connect_error", (err) => {
-            console.warn("❌ Socket connect error:", err.message);
-        });
+    socket.on("connect", () => {
+        console.log("✅ Socket connected:", socket.id);
+        socket.emit("join_admin_room");
+    });
 
-        socket.on("disconnect", (reason) => {
-            console.log("⚡ Socket disconnected:", reason);
-        });
-    }
+    socket.on("connect_error", (err) => {
+        console.warn("❌ Socket connect error:", err.message);
+    });
+
+    socket.on("disconnect", (reason) => {
+        console.log("⚡ Socket disconnected:", reason);
+    });
+
+    socket.connect();
+
     return socket;
 };
 

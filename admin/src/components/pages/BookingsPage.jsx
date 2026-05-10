@@ -43,6 +43,7 @@ export default function BookingsPage() {
 
     useEffect(() => {
         const socket = getSocket();
+        if (!socket) return;
 
         socket.on("new_booking", (newBooking) => {
             loadBookingsRef.current(false);
