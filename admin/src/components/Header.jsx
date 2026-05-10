@@ -3,7 +3,7 @@ import Link from "next/link";
 import {
     Bell, Moon, Sun, Menu, User, LogOut, Settings,
     AlertTriangle, Calendar, CreditCard, LifeBuoy, Clock, ChevronRight,
-    CheckCircle2, MessageSquare, AlertCircle
+    CheckCircle2, MessageSquare, AlertCircle, X, LayoutList, Trash2
 } from "lucide-react";
 import useThemeStore from "@/store/useThemeStore";
 import useAuthStore from "@/store/useAuthStore";
@@ -24,7 +24,19 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
     const fetchAlerts = useCallback(async () => {
         try {
             const res = await reportAPI.getAlerts();
-            setAlerts(res.data.data || []);
+            const allAlerts = res.data.data || [];
+            
+            // Apply persistent filters
+            const dismissedIds = JSON.parse(localStorage.getItem('dismissedAlerts') || '[]');
+            const lastCleared = parseInt(localStorage.getItem('lastClearedAlerts') || '0');
+            
+            const filtered = allAlerts.filter(alert => {
+                const isDismissed = dismissedIds.includes(alert.id);
+                const isOld = new Date(alert.time).getTime() <= lastCleared;
+                return !isDismissed && !isOld;
+            });
+            
+            setAlerts(filtered);
         } catch (e) { console.error(e); }
     }, []);
 
@@ -36,9 +48,17 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
 
         // Establish Real-time Connection
         const socket = getSocket();
+        if (!socket) return;
 
         const handleNewAlert = (data) => {
-            setAlerts(prev => [data, ...prev].slice(0, 10));
+            const lastCleared = parseInt(localStorage.getItem('lastClearedAlerts') || '0');
+            if (new Date(data.time).getTime() <= lastCleared) return;
+            
+            setAlerts(prev => {
+                const dismissedIds = JSON.parse(localStorage.getItem('dismissedAlerts') || '[]');
+                if (dismissedIds.includes(data.id)) return prev;
+                return [data, ...prev].slice(0, 10);
+            });
         };
 
         // SOS & Booking alerts
@@ -159,6 +179,33 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
         };
     }, []);
 
+    const dismissAlert = (id, e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        // Persist dismissal
+        const dismissedIds = JSON.parse(localStorage.getItem('dismissedAlerts') || '[]');
+        if (!dismissedIds.includes(id)) {
+            dismissedIds.push(id);
+            localStorage.setItem('dismissedAlerts', JSON.stringify(dismissedIds));
+        }
+        
+        setAlerts(prev => prev.filter(a => a.id !== id));
+    };
+
+    const clearAllAlerts = (e) => {
+        if (e) e.stopPropagation();
+        
+        // Persist "Clear All" by setting a timestamp
+        localStorage.setItem('lastClearedAlerts', Date.now().toString());
+        // Also clear specific dismissed IDs to save space
+        localStorage.setItem('dismissedAlerts', '[]');
+        
+        setAlerts([]);
+    };
+
     // Close on outside click
     useEffect(() => {
         const handler = (e) => {
@@ -232,8 +279,22 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                                     <h3>Operational Alerts</h3>
                                     <span className="text-2xs font-bold text-muted uppercase tracking-wider">Real-time Command Centre</span>
                                 </div>
-                                <div className="header-badges">
-                                    <span className="count-badge">{alerts.length} New</span>
+                                <div className="flex items-center gap-3">
+                                    {alerts.length > 0 && (
+                                        <button className="clear-all-btn" onClick={clearAllAlerts}>
+                                            <Trash2 size={12} />
+                                            <span>Clear All</span>
+                                        </button>
+                                    )}
+                                    <Link 
+                                        href="/notifications" 
+                                        className="header-icon-btn" 
+                                        title="Access Command Logs"
+                                        onClick={() => setNotifOpen(false)}
+                                    >
+                                        <LayoutList size={16} />
+                                    </Link>
+                                    <span className="count-badge">{alerts.length}</span>
                                 </div>
                             </div>
                             <div className="dropdown-body custom-scrollbar">
@@ -250,31 +311,39 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                                             <Link
                                                 key={alert.id}
                                                 href={alert.href}
-                                                className={`notif-item ${ui.color}`}
+                                                className="notif-link"
                                                 onClick={() => setNotifOpen(false)}
                                             >
-                                                <div className={`notif-icon-box ${ui.color}`}>
-                                                    {ui.icon}
-                                                </div>
-                                                <div className="notif-content">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className={`type-tag ${ui.color}`}>{ui.label}</span>
-                                                        <span className="notif-time">
-                                                            <Clock size={10} /> {timeAgo(alert.time)}
-                                                        </span>
+                                                <div className={`notif-card ${ui.color}`}>
+                                                    <div className={`notif-icon-box ${ui.color}`}>
+                                                        {ui.icon}
                                                     </div>
-                                                    <p className="notif-title">{alert.title}</p>
+                                                    <div className="notif-content">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className={`type-tag ${ui.color}`}>{ui.label}</span>
+                                                            <span className="notif-time">
+                                                                <Clock size={10} /> {timeAgo(alert.time)}
+                                                            </span>
+                                                        </div>
+                                                        <p className="notif-title">{alert.title}</p>
+                                                        {alert.description && <p className="notif-desc">{alert.description}</p>}
+                                                    </div>
+                                                    <div className="notif-actions">
+                                                        <button
+                                                            className="dismiss-btn"
+                                                            onClick={(e) => dismissAlert(alert.id, e)}
+                                                            title="Dismiss"
+                                                        >
+                                                            <X size={12} />
+                                                        </button>
+                                                        <ChevronRight size={14} className="notif-arrow" />
+                                                    </div>
                                                 </div>
-                                                <ChevronRight size={14} className="notif-arrow" />
                                             </Link>
                                         );
                                     })
                                 )}
                             </div>
-                            <Link href="/notifications" className="dropdown-footer" onClick={() => setNotifOpen(false)}>
-                                <span>Access Command Logs</span>
-                                <ChevronRight size={14} />
-                            </Link>
                         </div>
                     )}
                 </div>
@@ -291,28 +360,36 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                     {dropdownOpen && (
                         <div className="profile-dropdown premium-dropdown shadow-xl">
                             <div className="dropdown-user-info user-hero">
-                                <div className="hero-avatar">{user?.name?.charAt(0)}</div>
+                                <div className="hero-avatar">
+                                    {user?.name?.charAt(0) || 'A'}
+                                </div>
                                 <div className="hero-meta">
                                     <strong>{user?.name || 'Administrator'}</strong>
-                                    <span>{user?.role?.replace('_', ' ') || 'Admin Account'}</span>
+                                    <span className="badge-role">{user?.role?.replace('_', ' ') || 'SUPER ADMIN'}</span>
                                 </div>
                             </div>
                             <div className="dropdown-divider" />
-                            <div className="p-2 flex flex-col gap-1">
-                                <Link href="/profile" className="dropdown-item-new" onClick={() => setDropdownOpen(false)}>
-                                    <div className="item-icon-bg"><User size={16} /></div>
-                                    <span>My Profile</span>
+                            <div className="p-3 flex flex-col gap-2">
+                                <Link href="/profile" className="menu-link" onClick={() => setDropdownOpen(false)}>
+                                    <div className="dropdown-item-new">
+                                        <div className="item-icon-bg"><User size={16} /></div>
+                                        <span>My Profile</span>
+                                    </div>
                                 </Link>
-                                <Link href="/dashboard" className="dropdown-item-new" onClick={() => setDropdownOpen(false)}>
-                                    <div className="item-icon-bg"><Settings size={16} /></div>
-                                    <span>System Settings</span>
+                                <Link href="/dashboard" className="menu-link" onClick={() => setDropdownOpen(false)}>
+                                    <div className="dropdown-item-new">
+                                        <div className="item-icon-bg"><Settings size={16} /></div>
+                                        <span>System Settings</span>
+                                    </div>
                                 </Link>
                             </div>
                             <div className="dropdown-divider" />
-                            <div className="p-2">
-                                <button className="dropdown-item-new logout" onClick={handleLogout}>
-                                    <div className="item-icon-bg"><LogOut size={16} /></div>
-                                    <span>Terminate Session</span>
+                            <div className="p-3">
+                                <button className="menu-link-btn" onClick={handleLogout}>
+                                    <div className="dropdown-item-new logout">
+                                        <div className="item-icon-bg"><LogOut size={16} /></div>
+                                        <span>Terminate Session</span>
+                                    </div>
                                 </button>
                             </div>
                         </div>
@@ -358,26 +435,34 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                 .glass-header span { font-size: 11px; }
                 .count-badge { background: linear-gradient(135deg, var(--accent-danger), #dc2626); color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; }
 
-                .dropdown-body { max-height: 500px; overflow-y: auto; padding: 8px 0; }
+                .dropdown-body { max-height: 400px; overflow-y: auto; padding: 8px 0; }
                 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-                .notif-item {
+                .notif-link {
+                    text-decoration: none;
+                    display: block;
+                    margin: 0 10px 8px;
+                }
+                .notif-card {
                     display: flex;
                     align-items: flex-start;
-                    gap: 12px;
-                    padding: 14px 16px;
+                    gap: 16px;
+                    padding: 18px 20px;
+                    background: var(--bg-card);
+                    border: 1px solid var(--border-color);
+                    border-radius: 12px;
                     transition: all 0.2s ease;
-                    text-decoration: none;
-                    border-bottom: 1px solid var(--border-color);
-                    margin: 0 8px;
-                    border-radius: 8px;
-                    margin-bottom: 4px;
+                    position: relative;
                 }
-                .notif-item:hover { background: var(--bg-glass-hover); transform: translateX(3px); }
-                .notif-item:last-child { border-bottom: none; margin-bottom: 0; }
+                .notif-link:hover .notif-card { 
+                    background: var(--bg-glass-hover); 
+                    border-color: var(--accent-primary);
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                }
 
                 .notif-icon-box {
                     width: 38px; height: 38px; border-radius: 10px;
@@ -386,37 +471,80 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
                     font-size: 18px;
                 }
-                .notif-icon-box.critical { background: rgba(239, 68, 68, 0.15); color: var(--accent-danger); }
-                .notif-icon-box.primary { background: rgba(4, 131, 87, 0.15); color: var(--accent-primary); }
-                .notif-icon-box.warning { background: rgba(245, 158, 11, 0.15); color: #F59E0B; }
-                .notif-icon-box.info { background: rgba(59, 130, 246, 0.15); color: #3B82F6; }
-                .notif-icon-box.secondary { background: rgba(107, 114, 128, 0.15); color: #6B7280; }
+                .notif-icon-box.critical { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+                .notif-icon-box.primary { background: rgba(99, 102, 241, 0.15); color: #6366f1; }
+                .notif-icon-box.warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+                .notif-icon-box.info { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+                .notif-icon-box.secondary { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
 
                 .notif-content { flex: 1; min-width: 0; }
-                .type-tag { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; padding: 3px 7px; border-radius: 5px; display: inline-block; }
-                .type-tag.critical { background: rgba(239, 68, 68, 0.12); color: var(--accent-danger); }
-                .type-tag.primary { background: rgba(4, 131, 87, 0.12); color: var(--accent-primary); }
-                .type-tag.warning { background: rgba(245, 158, 11, 0.12); color: #F59E0B; }
-                .type-tag.info { background: rgba(59, 130, 246, 0.12); color: #3B82F6; }
+                .type-tag { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+                .type-tag.critical { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+                .type-tag.primary { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+                .type-tag.warning { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+                .type-tag.info { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
 
-                .notif-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin: 3px 0 4px; line-height: 1.3; }
-                .notif-time { font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 3px; font-weight: 600; opacity: 0.7; }
+                .notif-title { font-size: 13.5px; font-weight: 700; color: var(--text-primary); margin: 4px 0 2px; line-height: 1.4; }
+                .notif-desc { font-size: 12px; color: var(--text-muted); margin: 0; line-height: 1.4; opacity: 0.8; }
+                .notif-time { font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; font-weight: 600; opacity: 0.6; }
 
+                .notif-actions { display: flex; flex-direction: column; align-items: center; gap: 12px; }
                 .notif-arrow { color: var(--text-muted); opacity: 0.3; transition: all 0.2s ease; }
-                .notif-item:hover .notif-arrow { opacity: 0.6; transform: translateX(2px); }
+                
+                .dismiss-btn {
+                    width: 22px; height: 22px; border-radius: 50%;
+                    display: flex; align-items: center; justify-content: center;
+                    color: var(--text-muted); opacity: 0; transition: all 0.2s;
+                    background: var(--bg-secondary);
+                    border: 1px solid var(--border-color);
+                }
+                .notif-link:hover .dismiss-btn { opacity: 0.8; }
+                .dismiss-btn:hover { opacity: 1 !important; scale: 1.1; color: var(--accent-danger); border-color: var(--accent-danger); }
+
+                .notif-link:hover .notif-arrow { opacity: 0.6; transform: translateX(2px); }
 
                 .empty-notif { padding: 56px 24px; text-align: center; }
                 .empty-icon-box { color: var(--accent-success); margin-bottom: 16px; opacity: 0.4; font-size: 40px; }
                 .empty-notif h4 { font-size: 17px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
                 .empty-notif p { font-size: 13px; color: var(--text-muted); margin: 0; }
 
-                .dropdown-footer {
-                    padding: 16px 24px; text-align: center; border-top: 1px solid var(--border-color);
-                    display: flex; align-items: center; justify-content: center; gap: 8px;
-                    font-size: 13px; font-weight: 700; color: var(--text-primary); background: var(--bg-secondary);
-                    transition: all 0.2s; text-decoration: none; cursor: pointer;
+                .header-avatar {
+                    width: 38px; height: 38px; border-radius: 50%;
+                    background: var(--gradient-primary);
+                    color: white; display: flex; align-items: center; justify-content: center;
+                    font-size: 13px; font-weight: 800; cursor: pointer;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    border: 2px solid var(--bg-card);
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
                 }
-                .dropdown-footer:hover { background: linear-gradient(135deg, var(--bg-secondary), rgba(99, 102, 241, 0.02)); }
+                .header-avatar:hover { transform: scale(1.08); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); }
+
+                .clear-all-btn {
+                    display: flex; align-items: center; gap: 6px;
+                    padding: 6px 12px; border-radius: 6px;
+                    font-size: 10px; font-weight: 800; text-transform: uppercase;
+                    color: var(--text-muted); background: var(--bg-secondary);
+                    border: 1px solid var(--border-color);
+                    transition: all 0.2s; cursor: pointer;
+                }
+                .clear-all-btn:hover {
+                    color: #ef4444; background: rgba(239, 68, 68, 0.05);
+                    border-color: rgba(239, 68, 68, 0.2);
+                }
+
+                .header-icon-btn {
+                    width: 28px; height: 28px; border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                    color: var(--text-muted); background: rgba(99, 102, 241, 0.05);
+                    transition: all 0.2s ease;
+                    border: 1px solid var(--border-color);
+                }
+                .header-icon-btn:hover {
+                    color: var(--accent-primary);
+                    background: rgba(99, 102, 241, 0.15);
+                    border-color: var(--accent-primary);
+                    transform: translateY(-1px);
+                }
 
                 /* Profile Dropdown */
                 .profile-dropdown {
@@ -425,53 +553,72 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
 
                 /* Profile Hero Section */
                 .user-hero {
-                    padding: 20px 24px;
+                    padding: 24px;
                     display: flex;
+                    flex-direction: column;
                     align-items: center;
-                    gap: 14px;
-                    background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(99, 102, 241, 0.03) 100%);
+                    text-align: center;
+                    gap: 16px;
+                    background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
+                    border-bottom: 1px solid var(--border-color);
                 }
                 .hero-avatar {
-                    width: 48px; height: 48px; border-radius: 12px;
+                    width: 64px; height: 64px; border-radius: 50%;
                     background: var(--gradient-primary);
                     color: white;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     font-weight: 800;
-                    font-size: 20px;
+                    font-size: 26px;
                     flex-shrink: 0;
-                    box-shadow: 0 6px 12px rgba(99, 102, 241, 0.25);
+                    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+                    border: 4px solid var(--bg-card);
                 }
-                .hero-meta { display: flex; flex-direction: column; gap: 2px; }
-                .hero-meta strong { font-size: 15px; display: block; color: var(--text-primary); font-weight: 700; }
-                .hero-meta span { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+                .hero-meta { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+                .hero-meta strong { font-size: 17px; color: var(--text-primary); font-weight: 800; }
+                .badge-role { 
+                    font-size: 9px; font-weight: 800; text-transform: uppercase; 
+                    letter-spacing: 1px; padding: 4px 10px; border-radius: 20px;
+                    background: rgba(99, 102, 241, 0.1); color: var(--accent-primary);
+                    border: 1px solid rgba(99, 102, 241, 0.2);
+                }
 
                 .dropdown-divider { height: 1px; background: var(--border-color); margin: 0; }
+
+                .menu-link, .menu-link-btn {
+                    text-decoration: none;
+                    display: block;
+                    width: 100%;
+                    background: transparent;
+                    border: none;
+                    padding: 0;
+                    cursor: pointer;
+                }
 
                 .dropdown-item-new {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
-                    padding: 11px 12px;
-                    margin: 4px 8px;
-                    border-radius: 10px;
+                    gap: 16px;
+                    padding: 14px 18px;
+                    border-radius: 14px;
                     color: var(--text-secondary);
-                    font-size: 13px;
+                    font-size: 15px;
                     font-weight: 600;
-                    transition: all 0.2s ease;
-                    text-decoration: none;
-                    cursor: pointer;
+                    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    border: 1px solid transparent;
                 }
-                .dropdown-item-new:hover {
-                    background: var(--bg-glass);
+                .menu-link:hover .dropdown-item-new, .menu-link-btn:hover .dropdown-item-new {
+                    background: var(--bg-secondary);
                     color: var(--text-primary);
-                    transform: translateX(3px);
+                    transform: translateX(5px);
+                    border-color: var(--border-color);
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.04);
                 }
                 .item-icon-bg {
-                    width: 32px;
-                    height: 32px;
-                    border-radius: 8px;
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 10px;
                     background: var(--bg-secondary);
                     display: flex;
                     align-items: center;
@@ -479,14 +626,18 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                     transition: all 0.2s ease;
                     flex-shrink: 0;
                     color: var(--text-muted);
+                    border: 1px solid var(--border-color);
                 }
-                .dropdown-item-new:hover .item-icon-bg {
-                    background: rgba(99, 102, 241, 0.15);
+                .menu-link:hover .item-icon-bg, .menu-link-btn:hover .item-icon-bg {
+                    background: white;
                     color: var(--accent-primary);
+                    border-color: var(--accent-primary);
+                    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
                 }
-                .logout { color: var(--text-secondary); }
-                .logout:hover { background: rgba(239, 68, 68, 0.08); color: var(--accent-danger); }
-                .logout:hover .item-icon-bg { background: rgba(239, 68, 68, 0.12); color: var(--accent-danger); }
+                .dropdown-item-new.logout { color: #ef4444; }
+                .menu-link-btn:hover .dropdown-item-new.logout { background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2); }
+                .logout .item-icon-bg { background: rgba(239, 68, 68, 0.05); border-color: transparent; }
+                .menu-link-btn:hover .logout .item-icon-bg { background: white; color: #ef4444; border-color: #ef4444; }
 
                 /* Mobile Responsiveness */
                 @media (max-width: 768px) {

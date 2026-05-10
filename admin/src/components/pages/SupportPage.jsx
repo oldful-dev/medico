@@ -37,6 +37,7 @@ export default function SupportPage() {
     // Real-time socket updates
     useEffect(() => {
         const socket = getSocket();
+        if (!socket) return;
 
         // New ticket created
         socket.on("new_ticket", (newTicket) => {

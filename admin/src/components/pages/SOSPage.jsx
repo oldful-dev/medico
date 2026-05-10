@@ -34,6 +34,7 @@ export default function SOSPage() {
         loadData();
 
         const socket = getSocket();
+        if (!socket) return;
 
         socket.on("connect", () => {
             setSocketConnected(true);
