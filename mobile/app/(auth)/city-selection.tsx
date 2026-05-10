@@ -27,7 +27,7 @@ export default function CitySelectionScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { setSelectedCity } = useUser();
+    const { setSelectedCity, setSelectedCityId } = useUser();
     const { cities } = useAppConfig();
 
     const availableCities = cities.filter(c => c.available);
@@ -71,7 +71,10 @@ export default function CitySelectionScreen() {
 
     const handleContinue = () => {
         const city = availableCities.find(c => c.id === selectedId);
-        if (city) setSelectedCity(city.name);
+        if (city) {
+            setSelectedCity(city.name);
+            setSelectedCityId(city.id);
+        }
         router.back();
     };
 
@@ -136,6 +139,7 @@ export default function CitySelectionScreen() {
 
                                         if (match) {
                                             setSelectedCity(match.name);
+                                            setSelectedCityId(match.id);
                                             router.back();
                                         } else if (detectedCity) {
                                             setSelectedCity(results[0].city || results[0].subregion || 'Unknown');
