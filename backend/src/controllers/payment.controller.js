@@ -590,8 +590,92 @@ const manualPaymentSuccess = async (req, res, next) => {
     }
 };
 
+// ─── Saved Cards ──────────────────────────────────────────────────────────────
+
+// GET /api/payments/saved-cards
+const getSavedCards = async (req, res, next) => {
+    try {
+        const cards = await prisma.savedCard.findMany({
+            where: { userId: req.user.id },
+            orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+        });
+        sendResponse(res, 200, cards);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// POST /api/payments/saved-cards
+const addSavedCard = async (req, res, next) => {
+    try {
+        const { cardLast4, cardBrand, cardType, cardholderName, expiryMonth, expiryYear, upiId, razorpayToken, setDefault } = req.body;
+
+        if (cardType === 'UPI') {
+            if (!upiId) return res.status(400).json({ success: false, message: 'UPI ID is required' });
+        } else {
+            if (!cardLast4 || !cardBrand) return res.status(400).json({ success: false, message: 'Card details are required' });
+        }
+
+        if (setDefault) {
+            await prisma.savedCard.updateMany({ where: { userId: req.user.id }, data: { isDefault: false } });
+        }
+
+        const card = await prisma.savedCard.create({
+            data: {
+                userId: req.user.id,
+                cardLast4: cardLast4 || '0000',
+                cardBrand: cardBrand || 'UPI',
+                cardType: cardType || 'CARD',
+                cardholderName,
+                expiryMonth,
+                expiryYear,
+                upiId,
+                razorpayToken,
+                isDefault: !!setDefault,
+            },
+        });
+
+        sendResponse(res, 201, card, 'Card saved successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
+// DELETE /api/payments/saved-cards/:id
+const deleteSavedCard = async (req, res, next) => {
+    try {
+        const card = await prisma.savedCard.findFirst({
+            where: { id: req.params.id, userId: req.user.id },
+        });
+        if (!card) return res.status(404).json({ success: false, message: 'Card not found' });
+
+        await prisma.savedCard.delete({ where: { id: req.params.id } });
+        sendResponse(res, 200, null, 'Card removed');
+    } catch (error) {
+        next(error);
+    }
+};
+
+// PUT /api/payments/saved-cards/:id/set-default
+const setDefaultCard = async (req, res, next) => {
+    try {
+        const card = await prisma.savedCard.findFirst({
+            where: { id: req.params.id, userId: req.user.id },
+        });
+        if (!card) return res.status(404).json({ success: false, message: 'Card not found' });
+
+        await prisma.savedCard.updateMany({ where: { userId: req.user.id }, data: { isDefault: false } });
+        await prisma.savedCard.update({ where: { id: req.params.id }, data: { isDefault: true } });
+
+        sendResponse(res, 200, null, 'Default card updated');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getPayments, initiatePayment, verifyPayment, cancelPayment,
     initiateRefund, getRefundStatus, applyCoupon, getPaymentMethods,
-    updatePaymentStatus, manualPaymentSuccess
+    updatePaymentStatus, manualPaymentSuccess,
+    getSavedCards, addSavedCard, deleteSavedCard, setDefaultCard,
 };

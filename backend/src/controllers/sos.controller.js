@@ -7,6 +7,18 @@ const { logger } = require('../config/logger');
 const { sendWhatsApp, sendEmail, sendPushToUser } = require('../utils/notifications');
 const { reverseGeocode } = require('../utils/geocoding.service');
 
+// City-centre coords used when device GPS is unavailable (emulator / permission denied)
+const CITY_COORDS = {
+    'bangalore': { lat: 12.9716, lng: 77.5946 },
+    'bengaluru': { lat: 12.9716, lng: 77.5946 },
+    'mumbai':    { lat: 19.0760, lng: 72.8777 },
+    'delhi':     { lat: 28.6139, lng: 77.2090 },
+    'hyderabad': { lat: 17.3850, lng: 78.4867 },
+    'chennai':   { lat: 13.0827, lng: 80.2707 },
+    'pune':      { lat: 18.5204, lng: 73.8567 },
+    'kolkata':   { lat: 22.5726, lng: 88.3639 },
+};
+
 /**
  * POST /api/sos
  * Handle incoming SOS alert from Mobile App.
@@ -17,26 +29,66 @@ const triggerSOS = async (req, res) => {
     // authenticateUser middleware loads full user into req.appUser
     const user = req.appUser;
 
-    // 1. Reverse geocode — non-fatal
-    let addressSnapshot = null;
-    if (location?.latitude && location?.longitude) {
+    // 1. Resolve coordinates: GPS → registered address → city centroid
+    let resolvedLat = location?.latitude ?? null;
+    let resolvedLng = location?.longitude ?? null;
+    let locationSource = resolvedLat ? 'gps' : null;
+
+    if (!resolvedLat || !resolvedLng) {
         try {
-            const geo = await reverseGeocode(location.latitude, location.longitude);
+            const defaultAddr = await prisma.address.findFirst({
+                where: { userId: user.id, isDefault: true },
+                select: { latitude: true, longitude: true },
+            });
+            if (defaultAddr?.latitude && defaultAddr?.longitude) {
+                resolvedLat = defaultAddr.latitude;
+                resolvedLng = defaultAddr.longitude;
+                locationSource = 'registered_address';
+            }
+        } catch (addrErr) {
+            logger.warn('SOS address fallback failed (non-fatal):', addrErr.message);
+        }
+    }
+
+    if (!resolvedLat || !resolvedLng) {
+        try {
+            const cityRecord = await prisma.city.findUnique({
+                where: { id: user.cityId },
+                select: { name: true },
+            });
+            const cityKey = (cityRecord?.name || '').toLowerCase().trim();
+            const cityCoords = CITY_COORDS[cityKey];
+            if (cityCoords) {
+                resolvedLat = cityCoords.lat;
+                resolvedLng = cityCoords.lng;
+                locationSource = 'city_centroid';
+                logger.info(`SOS: using city centroid for ${cityRecord.name}`);
+            }
+        } catch (cityErr) {
+            logger.warn('SOS city fallback failed (non-fatal):', cityErr.message);
+        }
+    }
+
+    // 2. Reverse geocode — non-fatal
+    let addressSnapshot = null;
+    if (resolvedLat && resolvedLng) {
+        try {
+            const geo = await reverseGeocode(resolvedLat, resolvedLng);
             if (geo) addressSnapshot = geo.formattedAddress;
         } catch (geoErr) {
             logger.warn('SOS reverse geocode failed (non-fatal):', geoErr.message);
         }
     }
 
-    // 2. Save SOS record to DB
+    // 3. Save SOS record to DB
     let sosAlert;
     try {
         sosAlert = await prisma.sOSAlert.create({
             data: {
                 userId: user.id,
                 cityId: user.cityId,
-                latitude: location?.latitude ?? null,
-                longitude: location?.longitude ?? null,
+                latitude: resolvedLat,
+                longitude: resolvedLng,
                 addressSnapshot,
                 status: 'ACTIVE',
                 adminNotified: false,
@@ -60,13 +112,13 @@ const triggerSOS = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Failed to record SOS alert' });
     }
 
-    // 3. Build location link
-    const locationLink = (location?.latitude && location?.longitude)
-        ? `https://www.google.com/maps?q=${location.latitude},${location.longitude}`
+    // 4. Build location link
+    const locationLink = (resolvedLat && resolvedLng)
+        ? `https://www.google.com/maps?q=${resolvedLat},${resolvedLng}`
         : 'Location unavailable';
     const addressDisplay = addressSnapshot || locationLink;
 
-    // 4. Notify admin via WhatsApp — non-fatal
+    // 5. Notify admin via WhatsApp — non-fatal
     let adminNotified = false;
     try {
         await sendWhatsApp({
@@ -79,7 +131,7 @@ const triggerSOS = async (req, res) => {
         logger.warn('SOS admin WhatsApp failed (non-fatal):', err.message);
     }
 
-    // 5. Notify admin via email — non-fatal
+    // 6. Notify admin via email — non-fatal
     try {
         await sendEmail({
             to: process.env.ADMIN_EMAIL || 'admin@oldful.com',
@@ -98,7 +150,7 @@ const triggerSOS = async (req, res) => {
         logger.warn('SOS admin email failed (non-fatal):', err.message);
     }
 
-    // 6. Notify family contacts via WhatsApp — non-fatal
+    // 7. Notify family contacts via WhatsApp — non-fatal
     let familyNotified = false;
     try {
         const contacts = await prisma.emergencyContact.findMany({ where: { userId: user.id } });
@@ -118,7 +170,7 @@ const triggerSOS = async (req, res) => {
         logger.warn('SOS family contacts fetch failed (non-fatal):', err.message);
     }
 
-    // 7. Send push confirmation to user — non-fatal
+    // 8. Send push confirmation to user — non-fatal
     try {
         await sendPushToUser(user.id, {
             title: 'SOS Alert Sent',
@@ -129,7 +181,7 @@ const triggerSOS = async (req, res) => {
         logger.warn('SOS push to user failed (non-fatal):', err.message);
     }
 
-    // 8. Update notification flags
+    // 9. Update notification flags
     try {
         await prisma.sOSAlert.update({
             where: { id: sosAlert.id },
