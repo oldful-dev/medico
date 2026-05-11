@@ -362,7 +362,7 @@ export default function ContactPage() {
                                             <MapPin className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <h4 className="text-sm font-bold text-gray-900 mb-1 leading-tight">Oldful Gentlora Esteem LLP</h4>
+                                            <h4 className="text-sm font-bold text-gray-900 mb-1 leading-tight">ayuxacare Gentlora Esteem LLP</h4>
                                             <p className="text-[13px] text-gray-500 leading-relaxed font-medium">
                                                 No 402-B 1TF, ITI HBCS Layout, Phase 3,<br />
                                                 Mysore Road, Rajarajeshwari Nagar,<br />

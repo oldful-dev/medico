@@ -69,11 +69,11 @@ export function Navbar() {
       >
         {/* Logo */}
         <Link href={isAuthenticated ? '/app/dashboard' : '/'} className="flex items-center gap-1.5 sm:gap-2 group">
-          <div className={`relative transition-all duration-300 ${isScrolled ? 'w-8 h-8' : 'w-11 h-11'}`}>
-            <Image src="/olfful-logo.png" alt="Oldful Logo" fill className="object-contain" priority />
+          <div className={`relative transition-all duration-300 ${isScrolled ? 'w-9 h-9' : 'w-12 h-12'}`}>
+            <Image src="/onlylogo.png" alt="ayuxacare Logo" fill className="object-contain" priority />
           </div>
           <span className={`text-[var(--color-primary-deep)] font-bold tracking-tight transition-all duration-300 ${isScrolled ? 'text-base sm:text-lg' : 'text-lg sm:text-xl'}`}>
-            Oldful
+            ayuxacare
           </span>
         </Link>
 

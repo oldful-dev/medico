@@ -2,8 +2,8 @@ import React from 'react';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Oldful",
-  description: "Privacy Policy for Oldful explaining data collection and usage.",
+  title: "Privacy Policy | ayuxacare",
+  description: "Privacy Policy for ayuxacare explaining data collection and usage.",
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://oldful.onrender.com/api';
@@ -50,7 +50,7 @@ export default async function PrivacyPage() {
             <section className="flex flex-col gap-4">
               <h2 className="text-2xl font-bold text-gray-900 border-b pb-2">Introduction</h2>
               <p className="text-gray-600 leading-relaxed">
-                Oldful (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting the privacy and dignity of our users, particularly the elders and families we serve. This Privacy Policy outlines how Oldful collects, uses, discloses, and safeguards your information when you visit <span className="text-gray-900 font-semibold underline decoration-emerald-200">www.oldful.com</span> or engage our elder care services.
+                ayuxacare (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting the privacy and dignity of our users, particularly the elders and families we serve. This Privacy Policy outlines how ayuxacare collects, uses, discloses, and safeguards your information when you visit <span className="text-gray-900 font-semibold underline decoration-emerald-200">www.ayuxacare.com</span> or engage our elder care services.
               </p>
               <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 mt-2">
                 <p className="text-sm text-gray-900 font-bold mb-3">This Policy is published in compliance with:</p>

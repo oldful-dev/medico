@@ -134,7 +134,7 @@ function AuthForm() {
           />
         </div>
         <h1 className="text-3xl font-bold text-[var(--color-primary-deep)]">
-          {step === 'PHONE' ? 'Welcome to Oldful' : 'Enter OTP'}
+          {step === 'PHONE' ? 'Welcome to ayuxacare' : 'Enter OTP'}
         </h1>
         <p className="text-gray-500 text-sm mt-1">
           {step === 'PHONE'

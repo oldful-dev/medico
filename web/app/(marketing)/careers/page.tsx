@@ -204,7 +204,7 @@ export default function CareersPage() {
                   />
                 </div>
                 <div className="md:col-span-2 space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Cover Letter / Why Oldful?</label>
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Cover Letter / Why ayuxacare?</label>
                   <textarea
                     required
                     rows={4}

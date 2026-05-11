@@ -16,7 +16,7 @@ const lexendDeca = Lexend_Deca({
 });
 
 export const metadata: Metadata = {
-  title: "Oldful - Senior Care that feels like family",
+  title: "ayuxacare - Senior Care that feels like family",
   description: "Comprehensive elder care management platform delivering healthcare to your door.",
   icons: {
     icon: [

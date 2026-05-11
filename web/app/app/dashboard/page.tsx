@@ -361,7 +361,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <div className="font-bold text-white">{user?.name || 'Member'}</div>
-                  <div className="text-emerald-300 text-xs">{user?.uniqueUserId || 'Oldful Member'}</div>
+                  <div className="text-emerald-300 text-xs">{user?.uniqueUserId || 'ayuxacare Member'}</div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 mb-4">
@@ -433,7 +433,7 @@ export default function DashboardPage() {
                 <span className="text-xs font-bold text-blue-700 uppercase tracking-wide">Health Tip</span>
               </div>
               <p className="text-sm text-gray-700 leading-relaxed">
-                Stay active with Oldful! Regular walking for 30 minutes daily strengthens heart health and mobility. Need a walking partner? Contact us!
+                Stay active with ayuxacare! Regular walking for 30 minutes daily strengthens heart health and mobility. Need a walking partner? Contact us!
               </p>
             </div>
 

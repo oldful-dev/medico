@@ -1,5 +1,5 @@
-const CDN_BASE = 'https://assets.oldful.com';
-const GCS_BASE_URL = 'https://storage.googleapis.com/oldful-assets';
+const CDN_BASE = 'https://assets.ayuxacare.com/';
+const GCS_BASE_URL = 'https://storage.googleapis.com/ayuxa-assets';
 const ASSETS_PATH = 'mobile/assets/images';
 
 export function getAssetUrl(fileName: string): string {
