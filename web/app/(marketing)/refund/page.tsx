@@ -3,8 +3,8 @@ import { Metadata } from 'next';
 import { Heart, Activity, AlertCircle, ShieldCheck, Clock, Receipt, CreditCard } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: "Refund Policy | Oldful",
-  description: "Official Refund and Cancellation Policy for Oldful Elder Care Subscription Plans and Services.",
+  title: "Refund Policy | ayuxacare",
+  description: "Official Refund and Cancellation Policy for ayuxacare Elder Care Subscription Plans and Services.",
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://oldful.onrender.com/api';
@@ -50,7 +50,7 @@ export default async function RefundPage() {
           <>
             <section className="flex flex-col gap-4">
               <p className="text-gray-600 leading-relaxed text-lg">
-                At Oldful, we strive to provide the highest quality of care for your loved ones. This policy outlines how cancellations, refunds, and adjustments are handled for our subscription plans and one-time services.
+                At ayuxacare, we strive to provide the highest quality of care for your loved ones. This policy outlines how cancellations, refunds, and adjustments are handled for our subscription plans and one-time services.
               </p>
             </section>
 

@@ -2,8 +2,8 @@ import React from 'react';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "Statutory Disclosures | Oldful",
-  description: "Statutory and compliance disclosures for Oldful Gentlora Esteem LLP.",
+  title: "Statutory Disclosures | ayuxacare",
+  description: "Statutory and compliance disclosures for ayuxacare Gentlora Esteem LLP.",
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://oldful.onrender.com/api';

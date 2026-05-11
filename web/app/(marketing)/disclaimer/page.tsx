@@ -3,8 +3,8 @@ import { Metadata } from 'next';
 import { AlertTriangle, Info, Scale, ShieldAlert } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: "Disclaimer | Oldful",
-  description: "General Legal Disclaimer for the Oldful platform and its services.",
+  title: "Disclaimer | ayuxacare",
+  description: "General Legal Disclaimer for the ayuxacare platform and its services.",
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://oldful.onrender.com/api';
@@ -58,13 +58,13 @@ export default async function DisclaimerPage() {
 
               <div className="flex flex-col gap-4 text-gray-600 leading-relaxed">
                 <p>
-                  The content provided on the Oldful website, including blogs, health tips, and care plans, is for informational purposes only.
+                  The content provided on the ayuxacare website, including blogs, health tips, and care plans, is for informational purposes only.
                 </p>
                 <ul className="list-none flex flex-col gap-4">
                   <li className="flex gap-4 p-5 bg-white rounded-3xl border border-gray-100 shadow-sm transition-all hover:bg-red-50/10">
                      <div className="shrink-0 w-1.5 h-full bg-red-400 rounded-full" />
                      <div>
-                        <strong className="text-gray-900">Not a doctor:</strong> Oldful is a care management company, not a hospital or a medical doctor. Our caregivers are trained for assistance, not for performing invasive medical procedures unless explicitly stated and performed by a qualified nurse/doctor.
+                        <strong className="text-gray-900">Not a doctor:</strong> ayuxacare is a care management company, not a hospital or a medical doctor. Our caregivers are trained for assistance, not for performing invasive medical procedures unless explicitly stated and performed by a qualified nurse/doctor.
                      </div>
                   </li>
                   <li className="flex gap-4 p-5 bg-white rounded-3xl border border-gray-100 shadow-sm transition-all hover:bg-emerald-50/10">
@@ -86,11 +86,11 @@ export default async function DisclaimerPage() {
               </div>
               <div className="p-8 bg-blue-50/50 rounded-[2.5rem] border border-blue-100 flex flex-col gap-4">
                 <p className="text-gray-600 leading-relaxed">
-                  Oldful may facilitate services provided by third-party vendors (such as physiotherapists, urban maintenance services, or diagnostic labs).
+                  ayuxacare may facilitate services provided by third-party vendors (such as physiotherapists, urban maintenance services, or diagnostic labs).
                 </p>
                 <ul className="list-disc pl-6 text-sm text-blue-900 flex flex-col gap-2 font-medium">
-                  <li><strong>Independent Contractors:</strong> These vendors are independent contractors and not employees of Oldful.</li>
-                  <li><strong>Liability:</strong> While we exercise due diligence in selecting partners, Oldful assumes no responsibility or liability for any act, error, omission, or negligence committed by third-party providers.</li>
+                  <li><strong>Independent Contractors:</strong> These vendors are independent contractors and not employees of ayuxacare.</li>
+                  <li><strong>Liability:</strong> While we exercise due diligence in selecting partners, ayuxacare assumes no responsibility or liability for any act, error, omission, or negligence committed by third-party providers.</li>
                 </ul>
               </div>
             </section>
