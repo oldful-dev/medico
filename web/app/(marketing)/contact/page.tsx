@@ -362,7 +362,7 @@ export default function ContactPage() {
                                             <MapPin className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <h4 className="text-sm font-bold text-gray-900 mb-1 leading-tight">ayuxacare Gentlora Esteem LLP</h4>
+                                            <h4 className="text-sm font-bold text-gray-900 mb-1 leading-tight">Ayuxacare Gentlora Esteem LLP</h4>
                                             <p className="text-[13px] text-gray-500 leading-relaxed font-medium">
                                                 No 402-B 1TF, ITI HBCS Layout, Phase 3,<br />
                                                 Mysore Road, Rajarajeshwari Nagar,<br />
@@ -386,7 +386,7 @@ export default function ContactPage() {
                                             <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center shrink-0">
                                                 <Mail className="w-5 h-5" />
                                             </div>
-                                            client@oldful.com
+                                            client@Ayuxacare.com
                                         </div>
                                     </div>
                                 </div>
@@ -405,7 +405,7 @@ export default function ContactPage() {
                                             <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center shrink-0 transition-colors">
                                                 <Mail className="w-5 h-5" />
                                             </div>
-                                            compliance@oldful.com
+                                            compliance@Ayuxacare.com
                                         </div>
                                     </div>
                                 </div>

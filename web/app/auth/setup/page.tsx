@@ -360,7 +360,7 @@ function ProfileSetupForm() {
               <Link href="/privacy" className="text-[var(--color-primary-deep)] font-black underline decoration-emerald-200/50 underline-offset-2">Privacy Policy</Link>
               {' and '}
               <Link href="/service-policy" className="text-[var(--color-primary-deep)] font-black underline decoration-emerald-200/50 underline-offset-2">Service Policy</Link>
-              {' for the ayuxacare platform.'}
+              {' for the Ayuxacare platform.'}
            </div>
         </label>
 

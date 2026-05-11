@@ -166,11 +166,11 @@ export const setupPushNotificationListener = (onNotification?: (notification: Me
 
             // Show browser notification
             if ("Notification" in window && Notification.permission === "granted") {
-                new Notification(title || "Oldful", {
+                new Notification(title || "Ayuxacare", {
                     body: body || "You have a new notification",
                     icon: "/olfful-logo.png",
                     badge: "/olfful-logo.png",
-                    tag: "oldful-notification",
+                    tag: "Ayuxacare-notification",
                 });
             }
 

@@ -41,12 +41,12 @@ self.addEventListener('message', (event) => {
                 messaging.onBackgroundMessage((payload) => {
                     console.log('[SW] 🎉 MESSAGE RECEIVED:', JSON.stringify(payload, null, 2));
 
-                    const title = payload.notification?.title || 'Oldful';
+                    const title = payload.notification?.title || 'Ayuxacare';
                     const options = {
                         body: payload.notification?.body || 'New notification',
                         icon: '/olfful-logo.png',
                         badge: '/olfful-logo.png',
-                        tag: 'oldful-push',
+                        tag: 'ayuxacare-push',
                         data: payload.data || {},
                     };
 

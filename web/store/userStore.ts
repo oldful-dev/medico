@@ -52,7 +52,7 @@ export const useUserStore = create<UserState>()(
       },
     }),
     {
-      name: '@oldful_user_store',
+      name: '@ayuxacare_user_store',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         preferredLanguage: state.preferredLanguage,

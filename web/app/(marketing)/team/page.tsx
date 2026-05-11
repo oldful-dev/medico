@@ -24,9 +24,9 @@ const team: TeamMember[] = [
   {
     name: 'Dhemaan G. Aditya',
     role: 'Founder & CEO',
-    email: 'dhemaan@oldful.com',
+    email: 'dhemaan@ayuxacare.com',
     linkedin: 'linkedin.com/in/dhemaan',
-    image: 'https://www.oldful.com/wp-content/uploads/2026/03/IMG_0207-e1774297139859.jpg',
+    image: 'https://www.ayuxacare.com/wp-content/uploads/2026/03/IMG_0207-e1774297139859.jpg',
     shortBio: 'Business leader with 15+ years experience in Marketing Leadership, AI-driven systems, and Emotionally Intelligent strategy.',
     fullBio: [
       'Professional Summary: Dhemaan G. Aditya is a business leader with over 15 years of combined experience in marketing leadership, artificial intelligence, and emotionally intelligent business strategy. He is known for building trust-driven brands and scalable service systems, particularly in people-centric industries.',
@@ -41,9 +41,9 @@ const team: TeamMember[] = [
   {
     name: 'Dr. Satish Babu H. V.',
     role: 'Head of the Medical Division',
-    email: 'satish@oldful.com',
+    email: 'satish@ayuxacare.com',
     linkedin: 'https://www.linkedin.com/in/dr-h-v-satish-babu-65553437/',
-    image: 'https://www.oldful.com/wp-content/uploads/2026/01/Satish-Babu-1.avif',
+    image: 'https://www.ayuxacare.com/wp-content/uploads/2026/01/Satish-Babu-1.avif',
     shortBio: 'Senior Neurosurgeon with 40+ years experience. Medical Director & Professor dedicated to Senior Citizen well-being.',
     fullBio: [
       'Dr. Satish Babu H. V. is a highly distinguished Senior Neurosurgeon with over 40 years of experience in Health care. He is currently serving as Medical Director and Head of the Neuroscience Department at Columbia Multi-Specialty Hospital, and has a distinguished academic leadership as a Professor of Neurosurgery at Bangalore.',
@@ -53,17 +53,17 @@ const team: TeamMember[] = [
     ]
   },
   {
-    name: 'Adv. Manjunatha V. Rayappa',
-    role: 'Legal Adviser',
-    email: 'rayappa@oldful.com',
-    linkedin: 'https://www.linkedin.com/feed/',
-    image: 'https://www.oldful.com/wp-content/uploads/2026/01/Advocate-Manjunatha-V.-Rayappa.avif',
-    shortBio: 'Legal Adviser specializing in Corporate Law, Regulatory Compliance, and Strategic Governance for ayuxacare.',
+    name: "Adv. Manjunatha V. Rayappa",
+    role: "Legal Adviser",
+    email: "rayappa@ayuxacare.com",
+    linkedin: "https://www.linkedin.com/feed/",
+    image: "https://www.ayuxacare.com/wp-content/uploads/2026/01/Advocate-Manjunatha-V.-Rayappa.avif",
+    shortBio: "Legal Adviser specializing in Corporate Law, Regulatory Compliance, and Strategic Governance for ayuxacare.",
     fullBio: [
-      ‘Advocate Manjunatha V. Rayappa serves as the Legal Adviser to ayuxacare, providing strategic legal guidance and compliance oversight across the organization\’s operations. With strong expertise in corporate law, regulatory compliance, and advisory services, he plays a critical role in ensuring that ayuxacare operates within a robust and ethical legal framework.’,
-      'He advises the management on matters relating to company law, LLP and corporate structuring, contracts, vendor agreements, employment and labor laws, consumer protection, and statutory compliances relevant to elder care services. His counsel supports risk mitigation, operational clarity, and long-term legal sustainability for the organization.',
-      'Adv. Rayappa is known for his practical, business-aligned legal approach balancing regulatory requirements with operational realities. His ability to translate complex legal provisions into clear, actionable guidance enables leadership teams to make informed decisions without unnecessary legal friction.',
-      ‘As Legal Adviser to ayuxacare, he contributes not only as a legal professional but also as a trusted advisor, ensuring that governance, transparency, and accountability remain central to the company\’s growth and reputation.’
+      "Advocate Manjunatha V. Rayappa serves as the Legal Adviser to ayuxacare, providing strategic legal guidance and compliance oversight across the organization’s operations. With strong expertise in corporate law, regulatory compliance, and advisory services, he plays a critical role in ensuring that ayuxacare operates within a robust and ethical legal framework.",
+      "He advises the management on matters relating to company law, LLP and corporate structuring, contracts, vendor agreements, employment and labor laws, consumer protection, and statutory compliances relevant to elder care services. His counsel supports risk mitigation, operational clarity, and long-term legal sustainability for the organization.",
+      "Adv. Rayappa is known for his practical, business-aligned legal approach balancing regulatory requirements with operational realities. His ability to translate complex legal provisions into clear, actionable guidance enables leadership teams to make informed decisions without unnecessary legal friction.",
+      "As Legal Adviser to ayuxacare, he contributes not only as a legal professional but also as a trusted advisor, ensuring that governance, transparency, and accountability remain central to the company’s growth and reputation."
     ]
   },
 ];

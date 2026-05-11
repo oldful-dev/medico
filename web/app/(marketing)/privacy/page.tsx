@@ -2,11 +2,11 @@ import React from 'react';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | ayuxacare",
-  description: "Privacy Policy for ayuxacare explaining data collection and usage.",
+  title: "Privacy Policy | Ayuxacare",
+  description: "Privacy Policy for Ayuxacare explaining data collection and usage.",
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://oldful.onrender.com/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://Ayuxacare.onrender.com/api';
 
 async function getLegalDoc() {
   try {
@@ -50,7 +50,7 @@ export default async function PrivacyPage() {
             <section className="flex flex-col gap-4">
               <h2 className="text-2xl font-bold text-gray-900 border-b pb-2">Introduction</h2>
               <p className="text-gray-600 leading-relaxed">
-                ayuxacare (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting the privacy and dignity of our users, particularly the elders and families we serve. This Privacy Policy outlines how ayuxacare collects, uses, discloses, and safeguards your information when you visit <span className="text-gray-900 font-semibold underline decoration-emerald-200">www.ayuxacare.com</span> or engage our elder care services.
+                Ayuxacare (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting the privacy and dignity of our users, particularly the elders and families we serve. This Privacy Policy outlines how Ayuxacare collects, uses, discloses, and safeguards your information when you visit <span className="text-gray-900 font-semibold underline decoration-emerald-200">www.Ayuxacare.com</span> or engage our elder care services.
               </p>
               <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 mt-2">
                 <p className="text-sm text-gray-900 font-bold mb-3">This Policy is published in compliance with:</p>
@@ -102,7 +102,7 @@ export default async function PrivacyPage() {
               <ul className="list-none bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 flex flex-col gap-2 text-gray-700">
                 <li><strong>Name:</strong> Mr. SK. Murgan</li>
                 <li><strong>Designation:</strong> Grievance Officer</li>
-                <li><strong>Email:</strong> <a href="mailto:privacy@oldful.com" className="text-emerald-700 underline underline-offset-4">privacy@oldful.com</a></li>
+                <li><strong>Email:</strong> <a href="mailto:privacy@Ayuxacare.com" className="text-emerald-700 underline underline-offset-4">privacy@Ayuxacare.com</a></li>
                 <li><strong>Address:</strong> OLDFUL GENTLORA ESTEEM LLP, No 402-B 1TF, ITI HBCS Layout, Phase 3, Mysore Road, Rajarajeshwari Nagar, Bangalore 560039</li>
               </ul>
             </section>

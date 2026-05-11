@@ -93,7 +93,7 @@ export default function PlansPage() {
     <div className="min-h-screen bg-gray-50 pt-8 pb-20 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight">Oldful Care Plans</h1>
+          <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight">Ayuxacare Care Plans</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Choose the perfect plan for your health & wellness needs. Flexible billing cycles to fit your budget.
           </p>

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://oldful.onrender.com/api';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://Ayuxacare.onrender.com/api';
 
 // Logout — best-effort backend invalidation + clear all session cookies.
 export async function POST() {

@@ -35,7 +35,7 @@ export const useCartStore = create<CartState>()(
       clearCart: () => set({ items: [] }),
     }),
     {
-      name: 'oldful-cart-storage',
+      name: 'ayuxacare-cart-storage',
     }
   )
 );

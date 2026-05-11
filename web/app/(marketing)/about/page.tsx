@@ -2,8 +2,8 @@ import React from 'react';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "About Us | ayuxacare",
-  description: "Learn about ayuxacare Gentlora Esteem LLP and our mission to provide the best elder care management.",
+  title: "About Us | Ayuxacare",
+  description: "Learn about Ayuxacare Gentlora Esteem LLP and our mission to provide the best elder care management.",
 };
 
 export default function AboutPage() {
@@ -11,9 +11,9 @@ export default function AboutPage() {
     <div className="bg-[#FFFCF6] min-h-screen pt-12 md:pt-16 pb-16 px-6 md:px-12 lg:px-24 font-[var(--font-poppins)]">
       <div className="max-w-4xl mx-auto flex flex-col gap-12">
         <section>
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">About ayuxacare</h1>
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">About Ayuxacare</h1>
           <p className="text-lg text-gray-600 leading-relaxed mb-6">
-            ayuxacare provides comprehensive elder care management services, including care coordination, health monitoring, and assistance with daily living activities. We act as a dedicated care management platform, blending technology with deep human empathy to keep your loved ones safe.
+            Ayuxacare provides comprehensive elder care management services, including care coordination, health monitoring, and assistance with daily living activities. We act as a dedicated care management platform, blending technology with deep human empathy to keep your loved ones safe.
           </p>
         </section>
 
@@ -27,9 +27,9 @@ export default function AboutPage() {
               <ul className="list-none flex flex-col gap-2 text-gray-600">
                 <li><strong className="text-gray-800">Legal Name:</strong> OLDFUL GENTLORA ESTEEM LLP</li>
                 <li><strong className="text-gray-800">Headquarters Address:</strong> No 402-B 1TF, ITI HBCS Layout, Phase 3, Mysore Road Rajarajeshwari Nagar Bangalore 560039</li>
-                <li><strong className="text-gray-800">Email:</strong> <a href="mailto:compliance@oldful.com" className="text-[var(--color-primary)] hover:underline">compliance@oldful.com</a></li>
+                <li><strong className="text-gray-800">Email:</strong> <a href="mailto:compliance@Ayuxacare.com" className="text-[var(--color-primary)] hover:underline">compliance@Ayuxacare.com</a></li>
                 <li><strong className="text-gray-800">Mobile:</strong> +91 80621 80429</li>
-                <li><strong className="text-gray-800">Website:</strong> www.oldful.com</li>
+                <li><strong className="text-gray-800">Website:</strong> www.Ayuxacare.com</li>
               </ul>
             </div>
 
@@ -38,7 +38,7 @@ export default function AboutPage() {
               <p className="text-gray-600 mb-3">If you have a complaint regarding our services, privacy, or usage, please contact our designated officer:</p>
               <ul className="list-none flex flex-col gap-2 text-gray-600 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <li><strong className="text-gray-800">Grievance Officer:</strong> SK Murgan</li>
-                <li><strong className="text-gray-800">Email:</strong> <a href="mailto:compliance@oldful.com" className="text-[var(--color-primary)] hover:underline">compliance@oldful.com</a></li>
+                <li><strong className="text-gray-800">Email:</strong> <a href="mailto:compliance@Ayuxacare.com" className="text-[var(--color-primary)] hover:underline">compliance@Ayuxacare.com</a></li>
                 <li><strong className="text-gray-800">Phone:</strong> +91 80621 80429</li>
                 <li><strong className="text-gray-800">Address:</strong> No 402-B 1TF, ITI HBCS Layout, Phase 3, Mysore Road Rajarajeshwari Nagar Bangalore 560039</li>
               </ul>
@@ -52,7 +52,7 @@ export default function AboutPage() {
               <p className="text-gray-600 mb-3">For Law Enforcement Coordination.</p>
               <ul className="list-none flex flex-col gap-2 text-gray-600">
                 <li><strong className="text-gray-800">Name:</strong> SK Murgan</li>
-                <li><strong className="text-gray-800">Email:</strong> compliance@oldful.com</li>
+                <li><strong className="text-gray-800">Email:</strong> compliance@Ayuxacare.com</li>
               </ul>
             </div>
           </div>
@@ -62,7 +62,7 @@ export default function AboutPage() {
           <h2 className="text-2xl font-bold text-red-900 mb-4">Refund Policy Overview</h2>
           <p className="text-red-800 leading-relaxed">
             <strong>Cancellations:</strong> Refunds for mid-cycle cancellations are calculated on a pro-rata basis, subject to a distinct cancellation fee.<br /><br />
-            <strong>Service Failure:</strong> Full refunds are issued only if ayuxacare fails to deploy a caregiver/service as per the agreed Service Level Agreement (SLA).
+            <strong>Service Failure:</strong> Full refunds are issued only if Ayuxacare fails to deploy a caregiver/service as per the agreed Service Level Agreement (SLA).
           </p>
         </section>
 

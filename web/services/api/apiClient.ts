@@ -8,7 +8,7 @@
 //    - Authorization: Bearer <token> on every request (same as mobile)
 // ──────────────────────────────────────────────
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://oldful.onrender.com/api';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://Ayuxacare.onrender.com/api';
 
 export interface ApiResponse<T = unknown> {
     success: boolean;
