@@ -68,12 +68,12 @@ export function Navbar() {
           }`}
       >
         {/* Logo */}
-        <Link href={isAuthenticated ? '/app/dashboard' : '/'} className="flex items-center gap-1.5 sm:gap-2 group">
-          <div className={`relative transition-all duration-300 ${isScrolled ? 'w-9 h-9' : 'w-12 h-12'}`}>
-            <Image src="/onlylogo.png" alt="ayuxacare Logo" fill className="object-contain" priority />
+        <Link href={isAuthenticated ? '/app/dashboard' : '/'} className="flex items-center gap-1 sm:gap-1 group">
+          <div className={`relative transition-all duration-300 ${isScrolled ? 'w-10 h-10' : 'w-14 h-14'}`}>
+            <Image src="/onlylogo.png" alt="Ayuxacare Logo" fill className="object-contain" priority />
           </div>
           <span className={`text-[var(--color-primary-deep)] font-bold tracking-tight transition-all duration-300 ${isScrolled ? 'text-base sm:text-lg' : 'text-lg sm:text-xl'}`}>
-            ayuxacare
+            Ayuxacare
           </span>
         </Link>
 

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://oldful.onrender.com/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://Ayuxacare.onrender.com/api';
 
 interface Product {
   id: string;

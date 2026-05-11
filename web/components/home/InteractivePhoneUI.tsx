@@ -89,10 +89,10 @@ export function InteractivePhoneUI() {
           </motion.div>
         </div>
 
-        {/* ayuxacare Services Grid */}
+        {/* Ayuxacare Services Grid */}
         <motion.div variants={itemVariants} className="px-4 mt-6">
             <div className="flex justify-between items-end mb-3">
-               <h3 className="text-[#035E3E] font-extrabold text-[15px] tracking-tight">ayuxacare Services</h3>
+               <h3 className="text-[#035E3E] font-extrabold text-[15px] tracking-tight">Ayuxacare Services</h3>
                <span className="text-[9px] font-bold text-gray-400 cursor-pointer">View All</span>
             </div>
             

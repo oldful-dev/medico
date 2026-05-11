@@ -80,14 +80,14 @@ export const HOME_CONFIG_FALLBACK: HomeConfig = {
             enabled: true,
             sort_order: 1,
             services: [
-                { id: 'doctor',    label: 'ayuxacare\nDoctor',     icon: '98e939543c86f26f5f26210bb160eb927b5ff057.png', route: '/app/services/doctor-visit',  enabled: true,  sort_order: 1 },
+                { id: 'doctor',    label: 'ayuxacare\nDoctor',     icon: 'onlylogo.png', route: '/app/services/doctor-visit',  enabled: true,  sort_order: 1 },
                 { id: 'nursing',   label: 'Nursing\nCare',      icon: '21e5a8a8650cf8eda36be3744c70099580173129.png', route: '/app/services/nurse-care',    enabled: true,  sort_order: 2 },
                 { id: 'caregiver', label: 'Caregiver\nSupport', icon: '2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png', route: '/app/services/nurse-care',    enabled: true,  sort_order: 3 },
                 { id: 'emergency', label: 'Emergency\nAssist',  icon: 'e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/app/sos',                    enabled: true,  sort_order: 4 },
             ],
         },
         {
-            id: 'oldful_services',
+            id: 'ayuxacare_services',
             title: 'ayuxacare Services',
             type: 'service_grid',
             enabled: true,

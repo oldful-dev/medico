@@ -124,17 +124,17 @@ function AuthForm() {
       <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl relative z-10">
       {/* Logo */}
       <div className="mb-10 flex flex-col items-center text-center">
-        <div className="w-24 h-24 relative mb-4">
+        <div className="w-28 h-28 relative mb-4">
           <Image
-            src="/olfful-logo.png"
-            alt="Oldful Logo"
+            src="/onlylogo.png"
+            alt="Ayuxacare Logo"
             fill
             className="object-contain"
             priority
           />
         </div>
         <h1 className="text-3xl font-bold text-[var(--color-primary-deep)]">
-          {step === 'PHONE' ? 'Welcome to ayuxacare' : 'Enter OTP'}
+          {step === 'PHONE' ? 'Welcome to Ayuxacare' : 'Enter OTP'}
         </h1>
         <p className="text-gray-500 text-sm mt-1">
           {step === 'PHONE'
