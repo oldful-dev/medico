@@ -32,8 +32,8 @@ export const messaging: Messaging | null =
 let _initPromise: Promise<void> | null = null;
 
 async function _doInit(): Promise<void> {
-    if (!remoteConfig) return;
-    
+    if (!remoteConfig || !firebaseConfig.apiKey) return;
+
     try {
         remoteConfig.settings.minimumFetchIntervalMillis = process.env.NODE_ENV === 'development' ? 0 : 3600000;
         await fetchAndActivate(remoteConfig);
