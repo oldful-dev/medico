@@ -10,7 +10,11 @@ export const useSDUIHooks = () => {
         return useQuery({
             queryKey: SDUI_QUERY_KEYS.homeConfig,
             queryFn: async (): Promise<HomeConfig | null> => {
-                await sduiService.init();
+                try {
+                    await sduiService.init();
+                } catch (error) {
+                    console.debug("Firebase remote config not available, using fallback");
+                }
                 return sduiService.getHomeConfig();
             },
             // SDUI Config rarely changes during a single user session

@@ -20,10 +20,10 @@ export const app: FirebaseApp | null = getApps().length > 0
     : (firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null);
 
 export const auth: Auth | null = app ? getAuth(app) : null;
-export const remoteConfig = (typeof window !== 'undefined' && app) ? getRemoteConfig(app) : null;
+export const remoteConfig = (typeof window !== 'undefined' && app && firebaseConfig.apiKey) ? getRemoteConfig(app) : null;
 
 export const messaging: Messaging | null =
-    typeof window !== 'undefined' && app
+    typeof window !== 'undefined' && app && firebaseConfig.apiKey
         ? getMessaging(app)
         : null;
 
@@ -32,7 +32,10 @@ export const messaging: Messaging | null =
 let _initPromise: Promise<void> | null = null;
 
 async function _doInit(): Promise<void> {
-    if (!remoteConfig || !firebaseConfig.apiKey) return;
+    // Skip if running on server or if Firebase is not configured
+    if (typeof window === 'undefined' || !remoteConfig || !app || !firebaseConfig.apiKey) {
+        return;
+    }
 
     try {
         remoteConfig.settings.minimumFetchIntervalMillis = process.env.NODE_ENV === 'development' ? 0 : 3600000;
