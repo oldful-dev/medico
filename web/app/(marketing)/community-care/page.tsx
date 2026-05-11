@@ -3,8 +3,8 @@ import { Metadata } from 'next';
 import { Heart, Globe, Users, Gift } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: "Community Care & Charity | Oldful",
-  description: "Oldful's commitment to providing elderly care to the underprivileged and giving back to the community.",
+  title: "Community Care & Charity | ayuxacare",
+  description: "ayuxacare's commitment to providing elderly care to the underprivileged and giving back to the community.",
 };
 
 export default function CommunityCarePage() {
@@ -18,7 +18,7 @@ export default function CommunityCarePage() {
           </div>
           <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight">Community Care</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            At Oldful, we believe that quality elder care is a basic human right, not just a luxury. Our Community Care initiative is dedicated to reaching those who need us most but can afford us least.
+            At ayuxacare, we believe that quality elder care is a basic human right, not just a luxury. Our Community Care initiative is dedicated to reaching those who need us most but can afford us least.
           </p>
         </header>
 
@@ -51,7 +51,7 @@ export default function CommunityCarePage() {
               If you represent an NGO, a community shelter, or wish to contribute to our mission of making healthcare accessible to every elder in India, we&apos;d love to hear from you.
             </p>
             <a 
-              href="https://wa.me/918062180429?text=Hi%20Team%20Oldful,%20I'd%20love%20to%20know%20more%20about%20your%20Community%20Care%20and%20Charity%20initiatives!" 
+              href="https://wa.me/918062180429?text=Hi%20Team%20ayuxacare,%20I'd%20love%20to%20know%20more%20about%20your%20Community%20Care%20and%20Charity%20initiatives!" 
               target="_blank"
               rel="noreferrer"
               className="inline-block bg-white text-[var(--color-primary-deep)] px-8 py-4 rounded-2xl font-bold hover:shadow-2xl transition-all"
