@@ -97,7 +97,7 @@ export const SERVICES_CONFIG: Record<string, ServiceConfig> = {
     title: 'Hospital Trip & Support',
     tagline: 'A buddy to accompany you to the hospital',
     category: 'medical',
-    description: 'Don\'t go to the hospital alone. Our Oldful buddies will accompany you, help with paperwork, and stay with you throughout your appointment.',
+    description: 'Don\'t go to the hospital alone. Our ayuxacare buddies will accompany you, help with paperwork, and stay with you throughout your appointment.',
     icon: 'e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png',
     heroImage: 'escort-hero.jpg',
     inclusions: [
@@ -517,7 +517,7 @@ export const SERVICES_CONFIG: Record<string, ServiceConfig> = {
     pricing: [{ label: 'Subscription', price: 3499 }],
     faqs: [],
     formFields: [
-      { id: 'plan', label: 'Selected Plan', type: 'select', options: ['Oldful Homemaker Plan'], required: true }
+      { id: 'plan', label: 'Selected Plan', type: 'select', options: ['ayuxacare Homemaker Plan'], required: true }
     ]
   }
 };
