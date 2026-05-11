@@ -60,10 +60,10 @@ const team: TeamMember[] = [
     image: 'https://www.oldful.com/wp-content/uploads/2026/01/Advocate-Manjunatha-V.-Rayappa.avif',
     shortBio: 'Legal Adviser specializing in Corporate Law, Regulatory Compliance, and Strategic Governance for ayuxacare.',
     fullBio: [
-      ‘Advocate Manjunatha V. Rayappa serves as the Legal Adviser to ayuxacare, providing strategic legal guidance and compliance oversight across the organization’s operations. With strong expertise in corporate law, regulatory compliance, and advisory services, he plays a critical role in ensuring that ayuxacare operates within a robust and ethical legal framework.',
+      ‘Advocate Manjunatha V. Rayappa serves as the Legal Adviser to ayuxacare, providing strategic legal guidance and compliance oversight across the organization\’s operations. With strong expertise in corporate law, regulatory compliance, and advisory services, he plays a critical role in ensuring that ayuxacare operates within a robust and ethical legal framework.’,
       'He advises the management on matters relating to company law, LLP and corporate structuring, contracts, vendor agreements, employment and labor laws, consumer protection, and statutory compliances relevant to elder care services. His counsel supports risk mitigation, operational clarity, and long-term legal sustainability for the organization.',
       'Adv. Rayappa is known for his practical, business-aligned legal approach balancing regulatory requirements with operational realities. His ability to translate complex legal provisions into clear, actionable guidance enables leadership teams to make informed decisions without unnecessary legal friction.',
-      ‘As Legal Adviser to ayuxacare, he contributes not only as a legal professional but also as a trusted advisor, ensuring that governance, transparency, and accountability remain central to the company’s growth and reputation.’
+      ‘As Legal Adviser to ayuxacare, he contributes not only as a legal professional but also as a trusted advisor, ensuring that governance, transparency, and accountability remain central to the company\’s growth and reputation.’
     ]
   },
 ];
