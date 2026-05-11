@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'assets.oldful.com',
+        hostname: 'assets.ayuxacare.com',
         port: '',
         pathname: '/**',
       },
