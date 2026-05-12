@@ -193,21 +193,21 @@ const sendSOSNotifications = async ({ user, location, familyContacts }) => {
     });
 
     // Admin — SMS fallback
-    if (process.env.FAST2SMS_SOS_ADMIN_TEMPLATE_ID) {
+    if (process.env.FAST2SMS_SOS_TEMPLATE_ID) {
         await fast2sms.sendDLTSMS(
             process.env.ADMIN_EMERGENCY_PHONE || '9999999999',
-            process.env.FAST2SMS_SOS_ADMIN_TEMPLATE_ID,
-            [user.name, user.phone, location || 'Unknown']
+            process.env.FAST2SMS_SOS_TEMPLATE_ID,
+            [user.name, user.name]
         );
     }
 
     // Family contacts — SMS fallback
     for (const contact of familyContacts) {
-        if (process.env.FAST2SMS_SOS_FAMILY_TEMPLATE_ID) {
+        if (process.env.FAST2SMS_SOS_TEMPLATE_ID) {
             await fast2sms.sendDLTSMS(
                 contact.phone,
-                process.env.FAST2SMS_SOS_FAMILY_TEMPLATE_ID,
-                [user.name, contact.name, location || 'Unknown']
+                process.env.FAST2SMS_SOS_TEMPLATE_ID,
+                [contact.name, user.name]
             );
         }
     }

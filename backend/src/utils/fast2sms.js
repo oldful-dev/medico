@@ -30,13 +30,16 @@ const sendSMS = async (phoneNumber, message) => {
         logger.info(`Fast2SMS: sending to ${cleanNumber}, otpCode=${otpCode ? 'yes' : 'no'}, keyLen=${apiKey.length}`);
 
         if (otpCode && process.env.FAST2SMS_OTP_TEMPLATE_ID) {
+            // OTP format: pipe-separated with trailing pipe
+            const variablesValues = otpCode + '|';
+
             const payload = {
                 route: 'dlt',
-                sender_id: process.env.FAST2SMS_SENDER_ID || 'OLDFUL',
+                sender_id: process.env.FAST2SMS_SENDER_ID || 'AYUXA',
                 message: process.env.FAST2SMS_OTP_TEMPLATE_ID,
-                variables_values: otpCode,
+                variables_values: variablesValues,
                 numbers: cleanNumber,
-                flash: 0,
+                flash: 1,
             };
 
             if (process.env.FAST2SMS_ENTITY_ID) {
@@ -46,16 +49,15 @@ const sendSMS = async (phoneNumber, message) => {
             const response = await axios.post(FAST2SMS_URL, payload, {
                 headers: {
                     authorization: apiKey,
-                    'Content-Type': 'application/json',
-                    'cache-control': 'no-cache'
+                    'Content-Type': 'application/json'
                 }
             });
 
             const resData = response.data;
             logger.info(`Fast2SMS [dlt] response: ${JSON.stringify(resData)}`);
 
-            if (resData.return) {
-                logger.info(`💬 SMS sent to ${cleanNumber} via dlt route (id: ${resData.request_id || 'n/a'})`);
+            if (resData.return === true) {
+                logger.info(`💬 SMS sent to ${cleanNumber} via dlt route (request_id: ${resData.request_id || 'n/a'})`);
                 return true;
             } else {
                 logger.error(`Fast2SMS rejected [dlt]: ${JSON.stringify(resData)}`);
@@ -76,9 +78,11 @@ const sendSMS = async (phoneNumber, message) => {
 
 /**
  * Send an explicit DLT Route SMS passing custom template ID and variables.
- * @param {string} phoneNumber 
- * @param {string} templateId - The Fast2SMS DLT Template ID (e.g. 211671)
+ * @param {string} phoneNumber
+ * @param {string} templateId - The Fast2SMS DLT Template ID (e.g. 215237, 215240, 215239)
  * @param {string[]} variablesArray - Array of dynamic values matching the {#var#} count
+ *
+ * Example: sendDLTSMS('9876543210', '215237', ['8473'])
  */
 const sendDLTSMS = async (phoneNumber, templateId, variablesArray = []) => {
     try {
@@ -88,34 +92,41 @@ const sendDLTSMS = async (phoneNumber, templateId, variablesArray = []) => {
         }
 
         const cleanNumber = phoneNumber.replace(/\D/g, '').slice(-10);
-        const variablesString = variablesArray.join('|'); // Fast2SMS expects pipe-separated values
+        // Fast2SMS expects pipe-separated values with trailing pipe
+        const variablesString = variablesArray.length > 0
+            ? variablesArray.join('|') + '|'
+            : '';
         const apiKey = process.env.FAST2SMS_API_KEY;
+
+        logger.info(`Fast2SMS DLT: sending to ${cleanNumber}, templateId=${templateId}, variables=${variablesString}`);
 
         const response = await axios.post(FAST2SMS_URL, {
             route: 'dlt',
-            sender_id: process.env.FAST2SMS_SENDER_ID || 'OLDFUL',
+            sender_id: process.env.FAST2SMS_SENDER_ID || 'AYUXA',
             message: templateId,
-            variables_values: variablesString || "",
+            variables_values: variablesString,
             numbers: cleanNumber,
-            flash: 0,
+            flash: 1,
         }, {
             headers: {
                 authorization: apiKey,
-                'Content-Type': 'application/json',
-                'cache-control': 'no-cache'
+                'Content-Type': 'application/json'
             }
         });
 
         const resData = response.data;
-        if (resData.return) {
-            logger.info(`💬 DLT SMS sent to ${cleanNumber} [Template: ${templateId}]`);
+        if (resData.return === true) {
+            logger.info(`💬 DLT SMS sent to ${cleanNumber} [Template: ${templateId}, Request ID: ${resData.request_id || 'n/a'}]`);
             return true;
         } else {
             logger.error(`Fast2SMS DLT rejected: ${JSON.stringify(resData)}`);
             return false;
         }
     } catch (error) {
-        logger.error(`Fast2SMS DLT Error: ${error.response?.data || error.message}`);
+        const errData = error.response?.data;
+        const errStatus = error.response?.status;
+        const errMsg = typeof errData === 'string' ? errData.substring(0, 500) : JSON.stringify(errData);
+        logger.error(`Fast2SMS DLT Error [${errStatus || 'network'}]: ${errMsg || error.message}`);
         return false;
     }
 };
