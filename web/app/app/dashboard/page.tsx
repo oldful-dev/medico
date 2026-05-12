@@ -235,7 +235,7 @@ export default function DashboardPage() {
                 className="relative min-h-[185px] h-auto rounded-2xl overflow-hidden shadow-lg group cursor-pointer"
             >
                 <Image
-                  src="https://storage.googleapis.com/Ayuxacare-assets/mobile/assets/images/welcome_banner.png"
+                  src="https://storage.googleapis.com/Ayuxa-assets/mobile/assets/images/welcome_banner.png"
                   alt={banner.title}
                   fill
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
@@ -361,7 +361,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <div className="font-bold text-white">{user?.name || 'Member'}</div>
-                  <div className="text-emerald-300 text-xs">{user?.uniqueUserId || 'Ayuxacare Member'}</div>
+                  <div className="text-emerald-300 text-xs">{user?.uniqueUserId || 'Ayuxa Member'}</div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 mb-4">
@@ -433,7 +433,7 @@ export default function DashboardPage() {
                 <span className="text-xs font-bold text-blue-700 uppercase tracking-wide">Health Tip</span>
               </div>
               <p className="text-sm text-gray-700 leading-relaxed">
-                Stay active with Ayuxacare! Regular walking for 30 minutes daily strengthens heart health and mobility. Need a walking partner? Contact us!
+                Stay active with Ayuxa! Regular walking for 30 minutes daily strengthens heart health and mobility. Need a walking partner? Contact us!
               </p>
             </div>
 

@@ -5,10 +5,10 @@ import { Testimonials } from '@/components/home/Testimonials';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "Ayuxacare - Senior Care that feels like family",
+  title: "Ayuxa",
   description: "Comprehensive elder care management platform delivering healthcare to your door.",
   openGraph: {
-    title: "Ayuxacare - Senior Care that feels like family",
+    title: "Ayuxa",
     description: "Technology meets human empathy to keep your loved ones safe.",
     type: "website",
   }

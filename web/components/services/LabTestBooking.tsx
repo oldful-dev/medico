@@ -66,7 +66,7 @@ export default function LabTestBooking() {
     const checkServiceability = async (lat: string, long: string) => {
         setServiceability('checking');
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://Ayuxacare.onrender.com/api'}/labs/serviceability?lat=${lat}&lng=${long}`);
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://Ayuxa.onrender.com/api'}/labs/serviceability?lat=${lat}&lng=${long}`);
             const data = await res.json();
             // Backend returns { success: true, data: { status: 'success'|'failure', message: '...' } }
             const status = data?.data?.status;
@@ -175,7 +175,7 @@ export default function LabTestBooking() {
 
         // Re-check serviceability at booking time in case coords changed without a check
         try {
-            const svcRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://Ayuxacare.onrender.com/api'}/labs/serviceability?lat=${coords.lat}&lng=${coords.long}`);
+            const svcRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://Ayuxa.onrender.com/api'}/labs/serviceability?lat=${coords.lat}&lng=${coords.long}`);
             const svcData = await svcRes.json();
             if (svcData?.data?.status !== 'success') {
                 toast.error('Home collection is not available at your location. Please update your address.');

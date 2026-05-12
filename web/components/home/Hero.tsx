@@ -50,7 +50,7 @@ export function Hero() {
                 src="/apple-logo.png"
                 alt="Apple Store"
                 fill
-                className="object-contain"
+                className="object-contain mix-blend-screen"
               />
             </div>
             <div className="flex flex-col items-start leading-none">

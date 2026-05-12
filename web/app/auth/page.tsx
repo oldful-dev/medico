@@ -127,14 +127,14 @@ function AuthForm() {
         <div className="w-28 h-28 relative mb-4">
           <Image
             src="/onlylogo.png"
-            alt="Ayuxacare Logo"
+            alt="Ayuxa Logo"
             fill
             className="object-contain"
             priority
           />
         </div>
         <h1 className="text-3xl font-bold text-[var(--color-primary-deep)]">
-          {step === 'PHONE' ? 'Welcome to Ayuxacare' : 'Enter OTP'}
+          {step === 'PHONE' ? 'Welcome to Ayuxa' : 'Enter OTP'}
         </h1>
         <p className="text-gray-500 text-sm mt-1">
           {step === 'PHONE'

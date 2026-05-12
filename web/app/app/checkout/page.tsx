@@ -141,7 +141,7 @@ function CheckoutContent() {
              key,
              amount: Math.round(rzpAmount * 100), // paise
              currency,
-             name: 'Ayuxacare Healthcare',
+             name: 'Ayuxa Healthcare',
              description: isSubscription ? 'Care Plan Activation' : isProduct ? `Wellness Store Order` : `Payment for ${items.length} service(s)`,
              order_id: orderId,
              // ─── UI Filtering: Standardized per Razorpay V1 ────────────────

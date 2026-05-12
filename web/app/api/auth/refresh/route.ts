@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://Ayuxacare.onrender.com/api';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://Ayuxa.onrender.com/api';
 
 // Silent token refresh — reads the httpOnly refresh-token cookie,
 // calls the backend refresh endpoint, and issues a new auth-token cookie.

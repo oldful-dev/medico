@@ -2,11 +2,11 @@ import React from 'react';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "Service Policy | Ayuxacare",
-  description: "Operational manual and service scope for Ayuxacare care associates and managers.",
+  title: "Service Policy | Ayuxa",
+  description: "Operational manual and service scope for Ayuxa care associates and managers.",
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://Ayuxacare.onrender.com/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://Ayuxa.onrender.com/api';
 
 async function getLegalDoc() {
   try {

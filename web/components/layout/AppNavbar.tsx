@@ -52,13 +52,10 @@ export function AppNavbar() {
         }`}
       >
         {/* Logo */}
-        <Link href="/app/dashboard" className="flex items-center gap-1.5 sm:gap-2 shrink-0 group">
-          <div className={`relative transition-all duration-300 ${isScrolled ? 'w-10 h-10' : 'w-14 h-14'}`}>
-            <Image src="/onlylogo.png" alt="Ayuxacare" fill className="object-contain" priority />
+        <Link href="/app/dashboard" className="flex items-center shrink-0 group">
+          <div className={`relative transition-all duration-300 ${isScrolled ? 'h-10 w-28' : 'h-14 w-36'}`}>
+            <Image src="/PNG TRANS.png" alt="Ayuxa" fill className="object-contain" priority />
           </div>
-          <span className={`text-[var(--color-primary-deep)] font-bold tracking-tight transition-all duration-300 ${isScrolled ? 'text-base sm:text-lg' : 'text-lg sm:text-xl'}`}>
-            Ayuxacare
-          </span>
         </Link>
 
         {/* Desktop nav links */}

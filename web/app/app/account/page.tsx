@@ -715,7 +715,7 @@ function MedicalTab({ profile }: { profile: UserProfile }) {
       <div className="bg-gradient-to-br from-[var(--color-primary-deep)] to-[#026b47] rounded-2xl p-6 text-white shadow-lg">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <div className="text-emerald-300 text-xs font-bold uppercase tracking-widest mb-1">Ayuxacare Health ID</div>
+            <div className="text-emerald-300 text-xs font-bold uppercase tracking-widest mb-1">Ayuxa Health ID</div>
             <div className="text-xl font-bold">Medical Card</div>
             <div className="text-white/50 text-xs">{profile.uniqueUserId}</div>
           </div>
@@ -994,7 +994,7 @@ function SupportTab() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {[
           { label: 'Call Us', sub: '+91 80621 80429', icon: Phone, color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-          { label: 'Email Support', sub: 'client@Ayuxacare.com', icon: Mail, color: 'text-blue-700 bg-blue-50 border-blue-200' },
+          { label: 'Email Support', sub: 'client@Ayuxa.com', icon: Mail, color: 'text-blue-700 bg-blue-50 border-blue-200' },
         ].map(item => (
           <div key={item.label} className={`${item.color} border rounded-2xl p-5`}>
             <item.icon className="w-6 h-6 mb-3" />
