@@ -24,9 +24,9 @@ const team: TeamMember[] = [
   {
     name: 'Dhemaan G. Aditya',
     role: 'Founder & CEO',
-    email: 'dhemaan@ayuxacare.com',
+    email: 'dhemaan@Ayuxa.com',
     linkedin: 'linkedin.com/in/dhemaan',
-    image: 'https://www.ayuxacare.com/wp-content/uploads/2026/03/IMG_0207-e1774297139859.jpg',
+    image: 'https://www.Ayuxa.com/wp-content/uploads/2026/03/IMG_0207-e1774297139859.jpg',
     shortBio: 'Business leader with 15+ years experience in Marketing Leadership, AI-driven systems, and Emotionally Intelligent strategy.',
     fullBio: [
       'Professional Summary: Dhemaan G. Aditya is a business leader with over 15 years of combined experience in marketing leadership, artificial intelligence, and emotionally intelligent business strategy. He is known for building trust-driven brands and scalable service systems, particularly in people-centric industries.',
@@ -35,35 +35,35 @@ const team: TeamMember[] = [
       'Expertise in: Brand strategy and positioning, Revenue-driven marketing systems, Digital and offline campaign leadership, Emotional and trust-based marketing frameworks, Consumer psychology and behavior analysis.',
       'Technology & Artificial Intelligence Expertise: AI, Machine Learning & Deep Learning. 5 years of hands-on experience in: Artificial Intelligence systems, Machine Learning models, Deep Learning applications, AI-powered customer interaction and automation. Applied Use Cases: AI-based customer support and call intelligence, Sales automation and CRM intelligence, Data-driven operational decision systems, Emotion-aware engagement models.',
       'Emotional Intelligence & Human-Centered Design: Strong practitioner of Emotional Intelligence (EI) in business operations. Application of EI in: Leadership and team management, Customer experience and relationship handling, Caregiver and workforce engagement, Conflict resolution and service recovery.',
-      'Founder & Entrepreneurial Role: ayuxacare – Elder Care Brand Founder & CEO. Focus areas: Professional elder care services, Structured caregiver training and quality systems, Technology-enabled yet human-first service delivery, Building trust, dignity, and long-term family relationships.'
+      'Founder & Entrepreneurial Role: Ayuxa – Elder Care Brand Founder & CEO. Focus areas: Professional elder care services, Structured caregiver training and quality systems, Technology-enabled yet human-first service delivery, Building trust, dignity, and long-term family relationships.'
     ]
   },
   {
     name: 'Dr. Satish Babu H. V.',
     role: 'Head of the Medical Division',
-    email: 'satish@ayuxacare.com',
+    email: 'satish@Ayuxa.com',
     linkedin: 'https://www.linkedin.com/in/dr-h-v-satish-babu-65553437/',
-    image: 'https://www.ayuxacare.com/wp-content/uploads/2026/01/Satish-Babu-1.avif',
+    image: 'https://www.Ayuxa.com/wp-content/uploads/2026/01/Satish-Babu-1.avif',
     shortBio: 'Senior Neurosurgeon with 40+ years experience. Medical Director & Professor dedicated to Senior Citizen well-being.',
     fullBio: [
       'Dr. Satish Babu H. V. is a highly distinguished Senior Neurosurgeon with over 40 years of experience in Health care. He is currently serving as Medical Director and Head of the Neuroscience Department at Columbia Multi-Specialty Hospital, and has a distinguished academic leadership as a Professor of Neurosurgery at Bangalore.',
-      'He is the Head of the Medical Division at ayuxacare, a Specialized Healthcare Organization dedicated to the well-being of Senior Citizens. Throughout his illustrious career, he has excelled as a clinician, teacher, and administrator, earning a reputation for blending surgical precision with deep empathy.',
+      'He is the Head of the Medical Division at Ayuxa, a Specialized Healthcare Organization dedicated to the well-being of Senior Citizens. Throughout his illustrious career, he has excelled as a clinician, teacher, and administrator, earning a reputation for blending surgical precision with deep empathy.',
       'His professional journey includes significant roles such as Medical Director and Head of the Neuroscience Department at Columbia Multi-Specialty Hospital, Professor of Neurosurgery at various medical colleges. He was Trained at the prestigious Christian Medical College (CMC), Vellore and his clinical expertise spans complex cranial surgeries, minimally invasive spine procedures, and Neuro-trauma care.',
-      'As an administrator, Dr. Satish Babu has been instrumental in establishing neurosurgical centers and postgraduate residency programs, demonstrating a commitment to nurturing the next generation of medical professionals. At ayuxacare, he leverages this multifaceted experience to lead the medical division, ensuring that senior patients receive advanced, compassionate, and holistic care tailored to their unique neurological needs.'
+      'As an administrator, Dr. Satish Babu has been instrumental in establishing neurosurgical centers and postgraduate residency programs, demonstrating a commitment to nurturing the next generation of medical professionals. At Ayuxa, he leverages this multifaceted experience to lead the medical division, ensuring that senior patients receive advanced, compassionate, and holistic care tailored to their unique neurological needs.'
     ]
   },
   {
     name: "Adv. Manjunatha V. Rayappa",
     role: "Legal Adviser",
-    email: "rayappa@ayuxacare.com",
+    email: "rayappa@Ayuxa.com",
     linkedin: "https://www.linkedin.com/feed/",
-    image: "https://www.ayuxacare.com/wp-content/uploads/2026/01/Advocate-Manjunatha-V.-Rayappa.avif",
-    shortBio: "Legal Adviser specializing in Corporate Law, Regulatory Compliance, and Strategic Governance for ayuxacare.",
+    image: "https://www.Ayuxa.com/wp-content/uploads/2026/01/Advocate-Manjunatha-V.-Rayappa.avif",
+    shortBio: "Legal Adviser specializing in Corporate Law, Regulatory Compliance, and Strategic Governance for Ayuxa.",
     fullBio: [
-      "Advocate Manjunatha V. Rayappa serves as the Legal Adviser to ayuxacare, providing strategic legal guidance and compliance oversight across the organization’s operations. With strong expertise in corporate law, regulatory compliance, and advisory services, he plays a critical role in ensuring that ayuxacare operates within a robust and ethical legal framework.",
+      "Advocate Manjunatha V. Rayappa serves as the Legal Adviser to Ayuxa, providing strategic legal guidance and compliance oversight across the organization’s operations. With strong expertise in corporate law, regulatory compliance, and advisory services, he plays a critical role in ensuring that Ayuxa operates within a robust and ethical legal framework.",
       "He advises the management on matters relating to company law, LLP and corporate structuring, contracts, vendor agreements, employment and labor laws, consumer protection, and statutory compliances relevant to elder care services. His counsel supports risk mitigation, operational clarity, and long-term legal sustainability for the organization.",
       "Adv. Rayappa is known for his practical, business-aligned legal approach balancing regulatory requirements with operational realities. His ability to translate complex legal provisions into clear, actionable guidance enables leadership teams to make informed decisions without unnecessary legal friction.",
-      "As Legal Adviser to ayuxacare, he contributes not only as a legal professional but also as a trusted advisor, ensuring that governance, transparency, and accountability remain central to the company’s growth and reputation."
+      "As Legal Adviser to Ayuxa, he contributes not only as a legal professional but also as a trusted advisor, ensuring that governance, transparency, and accountability remain central to the company’s growth and reputation."
     ]
   },
 ];

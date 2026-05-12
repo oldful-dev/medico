@@ -2,11 +2,11 @@ import React from 'react';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "Terms and Conditions | Ayuxacare",
-  description: "Terms and Conditions for using the Ayuxacare elder care platform.",
+  title: "Terms and Conditions | Ayuxa",
+  description: "Terms and Conditions for using the Ayuxa elder care platform.",
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://Ayuxacare.onrender.com/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://Ayuxa.onrender.com/api';
 
 async function getLegalDoc() {
   try {
@@ -50,20 +50,20 @@ export default async function TermsPage() {
             <section className="flex flex-col gap-4">
               <h2 className="text-2xl font-bold text-gray-900 border-b pb-2">Acceptance of Terms</h2>
               <p className="text-gray-600 leading-relaxed">
-                By accessing the website <span className="text-gray-900 font-semibold">www.Ayuxacare.com</span> (&quot;Website&quot;) or subscribing to the services provided by Ayuxacare (&quot;Company,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;), you (&quot;User,&quot; &quot;Client,&quot; or &quot;Subscriber&quot;) agree to be bound by these Terms and Conditions. If you do not agree, please do not use our services.
+                By accessing the website <span className="text-gray-900 font-semibold">www.Ayuxa.com</span> (&quot;Website&quot;) or subscribing to the services provided by Ayuxa (&quot;Company,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;), you (&quot;User,&quot; &quot;Client,&quot; or &quot;Subscriber&quot;) agree to be bound by these Terms and Conditions. If you do not agree, please do not use our services.
               </p>
             </section>
 
             <section className="flex flex-col gap-4">
               <h2 className="text-2xl font-bold text-gray-900 border-b pb-2">Service Description</h2>
-              <p className="text-gray-600 leading-relaxed mb-2">Ayuxacare provides comprehensive elder care management services, including but not limited to:</p>
+              <p className="text-gray-600 leading-relaxed mb-2">Ayuxa provides comprehensive elder care management services, including but not limited to:</p>
               <ul className="list-disc pl-6 text-gray-600 flex flex-col gap-2">
                 <li>Care coordination and health monitoring.</li>
                 <li>Assistance with daily living activities via deployed caregivers.</li>
                 <li>Facilitation of third-party services (e.g., physiotherapy, home maintenance).</li>
               </ul>
               <div className="p-4 bg-yellow-50 text-yellow-800 rounded-xl text-sm border border-yellow-100 mt-2 italic">
-                <strong>Note:</strong> Ayuxacare acts as a care management platform. While we vet our partners, specific medical or maintenance services may be executed by independent third-party professionals.
+                <strong>Note:</strong> Ayuxa acts as a care management platform. While we vet our partners, specific medical or maintenance services may be executed by independent third-party professionals.
               </div>
             </section>
 
@@ -72,7 +72,7 @@ export default async function TermsPage() {
               <ul className="list-none flex flex-col gap-4 text-gray-600">
                 <li className="flex gap-2">
                   <span className="text-emerald-500 font-bold">•</span>
-                  <div><strong className="text-gray-900">Accuracy of Information:</strong> You agree to provide accurate, current, and complete medical and personal information regarding the elder. Ayuxacare is not liable for adverse outcomes resulting from withheld or inaccurate medical history.</div>
+                  <div><strong className="text-gray-900">Accuracy of Information:</strong> You agree to provide accurate, current, and complete medical and personal information regarding the elder. Ayuxa is not liable for adverse outcomes resulting from withheld or inaccurate medical history.</div>
                 </li>
                 <li className="flex gap-2">
                   <span className="text-emerald-500 font-bold">•</span>
@@ -97,8 +97,8 @@ export default async function TermsPage() {
             <section className="flex flex-col gap-4">
               <h2 className="text-2xl font-bold text-gray-900 border-b pb-2">Limitation of Liability</h2>
               <ul className="list-none flex flex-col gap-4 text-gray-600">
-                <li className="flex gap-2"><span className="text-gray-900 font-bold">•</span><div><strong>Third-Party Services:</strong> Ayuxacare is not liable for the negligence or malpractice of independent third-party providers, though we will assist in dispute resolution.</div></li>
-                <li className="flex gap-2"><span className="text-gray-900 font-bold">•</span><div><strong>Cap on Liability:</strong> Ayuxacare&apos;s total liability for any claim shall not exceed the total amount paid by the User in the three (3) months preceding the claim.</div></li>
+                <li className="flex gap-2"><span className="text-gray-900 font-bold">•</span><div><strong>Third-Party Services:</strong> Ayuxa is not liable for the negligence or malpractice of independent third-party providers, though we will assist in dispute resolution.</div></li>
+                <li className="flex gap-2"><span className="text-gray-900 font-bold">•</span><div><strong>Cap on Liability:</strong> Ayuxa&apos;s total liability for any claim shall not exceed the total amount paid by the User in the three (3) months preceding the claim.</div></li>
               </ul>
             </section>
 

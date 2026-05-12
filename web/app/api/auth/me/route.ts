@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://Ayuxacare.onrender.com/api';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://Ayuxa.onrender.com/api';
 
 // Fetch the authenticated user's profile using the httpOnly auth-token cookie.
 // Used during session hydration on page load/refresh.

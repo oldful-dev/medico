@@ -2,11 +2,11 @@ import React from 'react';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "Statutory Disclosures | Ayuxacare",
-  description: "Statutory and compliance disclosures for Ayuxacare Gentlora Esteem LLP.",
+  title: "Statutory Disclosures | Ayuxa",
+  description: "Statutory and compliance disclosures for Ayuxa Gentlora Esteem LLP.",
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://Ayuxacare.onrender.com/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://Ayuxa.onrender.com/api';
 
 async function getLegalDoc() {
   try {

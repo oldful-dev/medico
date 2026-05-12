@@ -16,7 +16,7 @@ const lexendDeca = Lexend_Deca({
 });
 
 export const metadata: Metadata = {
-  title: "Ayuxacare",
+  title: "Ayuxa",
   description: "Comprehensive elder care management platform delivering healthcare to your door.",
   icons: {
     icon: [

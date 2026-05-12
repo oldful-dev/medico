@@ -132,7 +132,7 @@ export default function BookingDetailsPage() {
             key: key,
             amount: amount * 100,
             currency: currency,
-            name: 'Ayuxacare Healthcare',
+            name: 'Ayuxa Healthcare',
             description: `Payment for Booking #${booking.bookingCode || booking.id.slice(0, 8)}`,
             order_id: orderId,
             handler: async function (response: Record<string, string>) {

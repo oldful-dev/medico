@@ -3,11 +3,11 @@ import { Metadata } from 'next';
 import { Heart, Activity, AlertCircle, ShieldCheck, Clock, Receipt, CreditCard } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: "Refund Policy | Ayuxacare",
-  description: "Official Refund and Cancellation Policy for Ayuxacare Elder Care Subscription Plans and Services.",
+  title: "Refund Policy | Ayuxa",
+  description: "Official Refund and Cancellation Policy for Ayuxa Elder Care Subscription Plans and Services.",
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://Ayuxacare.onrender.com/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 'https://Ayuxa.onrender.com/api';
 
 async function getLegalDoc() {
   try {
@@ -50,7 +50,7 @@ export default async function RefundPage() {
           <>
             <section className="flex flex-col gap-4">
               <p className="text-gray-600 leading-relaxed text-lg">
-                At Ayuxacare, we strive to provide the highest quality of care for your loved ones. This policy outlines how cancellations, refunds, and adjustments are handled for our subscription plans and one-time services.
+                At Ayuxa, we strive to provide the highest quality of care for your loved ones. This policy outlines how cancellations, refunds, and adjustments are handled for our subscription plans and one-time services.
               </p>
             </section>
 
@@ -144,7 +144,7 @@ export default async function RefundPage() {
                     </div>
                     <div>
                       <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Send Email</div>
-                      <a href="mailto:client@Ayuxacare.com" className="text-sm font-bold text-gray-900 hover:text-emerald-500 transition-colors">client@Ayuxacare.com</a>
+                      <a href="mailto:client@Ayuxa.com" className="text-sm font-bold text-gray-900 hover:text-emerald-500 transition-colors">client@Ayuxa.com</a>
                       <div className="text-[10px] text-gray-400 font-medium mt-0.5">Subject: Cancellation Request – (Customer ID)</div>
                     </div>
                   </div>
