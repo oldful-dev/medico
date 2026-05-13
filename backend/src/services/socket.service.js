@@ -52,6 +52,13 @@ const init = (httpServer) => {
             logger.info(`Socket ${socket.id} joined admin_feed`);
         });
 
+        socket.on("join_user_room", (userId) => {
+            if (userId) {
+                socket.join(`user_${userId}`);
+                logger.info(`Socket ${socket.id} joined user_${userId}`);
+            }
+        });
+
         socket.on("disconnect", () => {
             logger.info(`Client Disconnected: ${socket.id}`);
         });
@@ -75,8 +82,25 @@ const emitToAdmins = (event, data) => {
     }
 };
 
+/**
+ * Emit event to a specific user's room
+ * @param {string} userId
+ * @param {string} event
+ * @param {any} data
+ */
+const emitToUser = (userId, event, data) => {
+    if (io && userId) {
+        try {
+            io.to(`user_${userId}`).emit(event, data);
+        } catch (err) {
+            console.warn(`[Socket] Failed to emit ${event} to user ${userId}:`, err.message);
+        }
+    }
+};
+
 module.exports = {
     init,
     emitToAdmins,
+    emitToUser,
     getIO: () => io
 };

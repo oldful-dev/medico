@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Phone, Mail, MessageSquare, Search, Plus, 
+import {
+  Phone, Mail, MessageSquare, Search, Plus,
   CheckCircle, Info, ArrowRight, X, Clock,
   Loader2, BadgeHelp, CheckCircle2, MapPin, User
 } from 'lucide-react';
@@ -11,6 +11,7 @@ import { supportService, SupportTicket, TicketCategory, TicketMessage } from '@/
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
 import { PhoneInput } from '@/components/common/PhoneInput';
+import { initSocket, disconnectSocket } from '@/lib/socket';
 
 // Data from backend DEFAULT_CONFIG
 const FAQ_DATA = [
@@ -75,6 +76,7 @@ export default function ContactPage() {
     const [chatLoading, setChatLoading] = useState(false);
     const [replyText, setReplyText] = useState('');
     const [replying, setReplying] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -82,16 +84,38 @@ export default function ContactPage() {
         }
     }, [isAuthenticated]);
 
-    // Poll for new messages when a ticket is open
+    // Real-time socket — join user room + listen for admin replies
     useEffect(() => {
-        let interval: NodeJS.Timeout;
-        if (selectedTicketId) {
-            interval = setInterval(() => {
-                refreshMessages();
-            }, 10000);
-        }
-        return () => clearInterval(interval);
-    }, [selectedTicketId]);
+        if (!user?.id) return;
+
+        const socket = initSocket(user.id);
+        if (!socket) return;
+
+        const handleMessageAdded = (data: { ticketId: string; message: TicketMessage; senderName: string }) => {
+            console.log('📨 Socket message received:', { receivedTicketId: data.ticketId, currentTicketId: selectedTicketId });
+
+            // Append message if user is viewing that ticket
+            if (data.ticketId === selectedTicketId) {
+                console.log('✅ Message is for current ticket, adding to conversation');
+                setMessages(prev => {
+                    const exists = prev.some(m => m.id === data.message.id);
+                    return exists ? prev : [...prev, data.message];
+                });
+            } else {
+                // Show toast only if viewing a different ticket or no ticket open
+                console.log('🔔 Message is for different ticket, showing toast');
+                toast.info(`New reply from ${data.senderName} on your support ticket.`);
+            }
+            // Always refresh ticket list to update unread counts
+            fetchTickets();
+        };
+
+        socket.on('ticket_message_added', handleMessageAdded);
+
+        return () => {
+            socket.off('ticket_message_added', handleMessageAdded);
+        };
+    }, [user?.id, selectedTicketId]);
 
     const fetchTickets = async () => {
         setLoadingTickets(true);
@@ -132,6 +156,14 @@ export default function ContactPage() {
             }
         } catch (err) { /* silent */ }
     };
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
     const handleSendReply = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -504,6 +536,7 @@ export default function ContactPage() {
                                                 })
                                             )}
                                         </div>
+                                        <div ref={messagesEndRef} />
                                     </>
                                 )}
                             </div>

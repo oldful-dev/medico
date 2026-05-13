@@ -235,7 +235,7 @@ export default function DashboardPage() {
                 className="relative min-h-[185px] h-auto rounded-2xl overflow-hidden shadow-lg group cursor-pointer"
             >
                 <Image
-                  src="https://storage.googleapis.com/Ayuxa-assets/mobile/assets/images/welcome_banner.png"
+                  src="https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/banner.png"
                   alt={banner.title}
                   fill
                   className="object-cover transition-transform duration-700 group-hover:scale-105"

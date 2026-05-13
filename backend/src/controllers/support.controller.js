@@ -4,7 +4,7 @@
 
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate, generateTicketCode } = require('../utils/helpers');
-const { emitToAdmins } = require('../services/socket.service');
+const { emitToAdmins, emitToUser } = require('../services/socket.service');
 
 // GET /api/support/my-tickets  (App user — own tickets only)
 const getMyTickets = async (req, res, next) => {
@@ -214,7 +214,13 @@ const addMessage = async (req, res, next) => {
                 `,
             });
         } else if (req.user.type === 'admin' && ticket.userId) {
-            // Notify User via push when admin replies
+            // Emit real-time to user when admin replies
+            emitToUser(ticket.userId, 'ticket_message_added', {
+                ticketId: ticket.id,
+                message,
+                senderName: req.user.name || 'Support Team',
+            });
+            // Also notify via push
             await sendPushToUser(ticket.userId, {
                 title: 'Support Reply',
                 body: `New reply on your ticket ${ticket.ticketCode}.`,
