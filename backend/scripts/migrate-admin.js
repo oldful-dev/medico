@@ -3,35 +3,39 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log('Updating Admin Email to superadmin@oldful.com...');
+    console.log('Seeding superadmin@ayuxa.com...');
 
-    // First try to find the old one
-    const oldAdmin = await prisma.admin.findUnique({
-        where: { email: 'superadmin@medico.care' }
+    const passwordHash = await bcrypt.hash('admin123', 12);
+
+    // Upsert new admin, also migrate any old emails
+    const oldEmails = ['superadmin@medico.care', 'superadmin@oldful.com'];
+
+    for (const oldEmail of oldEmails) {
+        const existing = await prisma.admin.findUnique({ where: { email: oldEmail } });
+        if (existing) {
+            await prisma.admin.update({
+                where: { id: existing.id },
+                data: { email: 'superadmin@ayuxa.com', passwordHash, isActive: true }
+            });
+            console.log(`✅ Migrated ${oldEmail} → superadmin@ayuxa.com`);
+            return;
+        }
+    }
+
+    // No old admin found — upsert fresh
+    await prisma.admin.upsert({
+        where: { email: 'superadmin@ayuxa.com' },
+        update: { passwordHash, isActive: true },
+        create: {
+            name: 'Super Admin',
+            email: 'superadmin@ayuxa.com',
+            passwordHash,
+            role: 'SUPER_ADMIN',
+            isActive: true
+        }
     });
 
-    if (oldAdmin) {
-        await prisma.admin.update({
-            where: { id: oldAdmin.id },
-            data: { email: 'superadmin@oldful.com' }
-        });
-        console.log('✅ Successfully migrated superadmin@medico.care to superadmin@oldful.com');
-    } else {
-        // Just create it if it doesn't exist
-        const passwordHash = await bcrypt.hash('admin123', 12);
-        await prisma.admin.upsert({
-            where: { email: 'superadmin@oldful.com' },
-            update: { passwordHash, isActive: true },
-            create: {
-                name: 'Super Admin',
-                email: 'superadmin@oldful.com',
-                passwordHash,
-                role: 'SUPER_ADMIN',
-                isActive: true
-            }
-        });
-        console.log('✅ superadmin@oldful.com is now ready in the database.');
-    }
+    console.log('✅ superadmin@ayuxa.com is ready with password: admin123');
 }
 
 main()

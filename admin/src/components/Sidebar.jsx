@@ -15,11 +15,11 @@ export default function Sidebar({ collapsed, open, currentPath, onClose }) {
             <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${open ? 'open' : ''}`}>
                 <div className="sidebar-header">
                     <div className="sidebar-logo">
-                        <Image src="/icon.png" alt="O" width={40} height={40} style={{ objectFit: 'contain' }} priority />
+                        <Image src="/onlylogo.png" alt="Ayuxa Logo" width={40} height={40} style={{ objectFit: 'contain' }} priority />
                     </div>
                     {(!collapsed || open) && (
                         <div className="sidebar-brand">
-                            <h1>Oldful</h1>
+                            <h1>Ayuxa</h1>
                             <span>Admin Panel</span>
                         </div>
                     )}

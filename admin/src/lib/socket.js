@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "https://api.oldful.com";
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "https://api.ayuxa.com";
 
 let socket = null;
 

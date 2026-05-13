@@ -70,7 +70,7 @@ export default function CitiesPage() {
 
     return (
         <div>
-            <div className="page-header"><h2>City Management</h2><p>Manage operational cities for Oldful services</p></div>
+            <div className="page-header"><h2>City Management</h2><p>Manage operational cities for Ayuxa services</p></div>
             <div className="filter-bar"><button className="btn btn-primary" onClick={openAdd}><Plus size={16} /> Add City</button></div>
 
             <div className="stats-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>

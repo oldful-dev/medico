@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import useAuthStore from "@/store/useAuthStore";
 import { LogIn, Key, Mail, AlertCircle, Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -51,10 +52,10 @@ export default function LoginPage() {
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "var(--bg-primary)" }}>
             <div className="card" style={{ width: 400, maxWidth: "90%", padding: "2rem" }}>
                 <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-                    <div style={{ width: 48, height: 48, background: "var(--gradient-primary)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem" }}>
-                        <span style={{ fontSize: 24, fontWeight: "bold", color: "white" }}>O</span>
+                    <div style={{ width: 64, height: 64, margin: "0 auto 1rem", position: "relative" }}>
+                        <Image src="/onlylogo.png" alt="Ayuxa Logo" fill style={{ objectFit: "contain" }} priority />
                     </div>
-                    <h2>Oldful Admin</h2>
+                    <h2>Ayuxa Admin</h2>
                     <p className="text-muted text-sm mt-1">Sign in to manage operations</p>
                 </div>
 
@@ -76,7 +77,7 @@ export default function LoginPage() {
                                 style={{ paddingLeft: 40 }}
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="admin@oldful.com"
+                                placeholder="admin@ayuxa.com"
                             />
                         </div>
                     </div>
@@ -123,7 +124,7 @@ export default function LoginPage() {
                     </button>
 
                     <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
-                        <p className="text-muted text-sm">Super Admin: superadmin@oldful.com / admin123</p>
+                        <p className="text-muted text-sm">Super Admin: superadmin@ayuxa.com / admin123</p>
                     </div>
                 </form>
             </div>

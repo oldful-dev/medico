@@ -8,8 +8,8 @@ const poppins = Poppins({
 });
 
 export const metadata = {
-  title: "Oldful Admin Panel",
-  description: "Comprehensive elder care management admin dashboard for Oldful",
+  title: "Ayuxa Admin Panel",
+  description: "Comprehensive elder care management admin dashboard for Ayuxa",
 };
 
 export default function RootLayout({ children }) {

@@ -45,7 +45,7 @@ export default function WaitlistPage() {
         <div>
             <div className="page-header">
                 <h2>Waitlist & City Demand</h2>
-                <p>Users who requested to be notified when Oldful launches in their city or wellness feature goes live.</p>
+                <p>Users who requested to be notified when Ayuxa launches in their city or wellness feature goes live.</p>
             </div>
 
             {/* Stats row */}
