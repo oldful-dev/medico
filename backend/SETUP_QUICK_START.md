@@ -1,184 +1,316 @@
-# Quick Setup - Commands Only
+# Quick Setup - Hostinger VPS Terminal Only
 
-## VPS Setup
+## Step 1: SSH into Hostinger VPS Terminal
 
 ```bash
-ssh root@your_vps_ip
+# Open Hostinger terminal or SSH from your computer
+ssh root@YOUR_VPS_IP
+```
 
-cd /tmp && git clone --depth 1 --branch main https://github.com/oldful-dev/medico.git medico-temp
+**Everything below runs INSIDE your VPS terminal**
+
+## Step 2: Download & Run Setup Script
+
+```bash
+# Download setup script from GitHub (inside VPS)
+cd /tmp
+git clone --depth 1 --branch main https://github.com/oldful-dev/medico.git medico-temp
 cd medico-temp/backend
+
+# Run setup script (inside VPS)
 sudo bash setup.sh
 ```
 
-## Configure Environment
+**This automatically:**
+- Creates `/var/www/medico-backend`
+- Installs Node, npm, Nginx, Redis, Certbot
+- Clones your backend code
+- Sets up PM2
+- Configures Nginx reverse proxy
+- Gets SSL certificate from Let's Encrypt
+- Starts webhook receiver
+
+## Step 3: Configure Environment (Inside VPS)
 
 ```bash
+# Inside VPS terminal
 cp /var/www/medico-backend/.env.example /var/www/medico-backend/.env
+
+# Edit environment variables
 nano /var/www/medico-backend/.env
 ```
 
-Update these:
-- `DATABASE_URL`
-- `REDIS_URL`
-- `JWT_SECRET`
-- `GITHUB_WEBHOOK_SECRET` (32+ chars, strong random)
-- `FIREBASE_*` (your Firebase credentials)
-- `RAZORPAY_KEY_*`
-- `ZEPTOMAIL_API_KEY`
-- `GOOGLE_CLOUD_*`
+Update these variables:
+- `DATABASE_URL` → Your database connection string
+- `REDIS_URL` → Your Redis URL
+- `JWT_SECRET` → Strong random secret
+- `GITHUB_WEBHOOK_SECRET` → Strong random secret (32+ chars)
+- `FIREBASE_*` → Your Firebase credentials
+- `RAZORPAY_KEY_*` → Your payment keys
+- `ZEPTOMAIL_API_KEY` → Your email service key
+- `GOOGLE_CLOUD_*` → Your GCS credentials
 
-Generate strong secrets:
+Generate strong secrets in VPS terminal:
 ```bash
+# Run inside VPS to generate random secret
 openssl rand -base64 32
 ```
 
-## Database Setup
+## Step 4: Setup Database (Inside VPS)
 
 ```bash
+# Inside VPS terminal
 cd /var/www/medico-backend
+
+# Generate Prisma client
 npm run prisma:generate
+
+# Run migrations
 npm run prisma:migrate
 ```
 
-## Start Services
+## Step 5: Start Services (Inside VPS)
 
 ```bash
-pm2 start ecosystem.config.js
-pm2 save
-pm2 startup
+# Inside VPS terminal
+# Services should already be running from setup.sh
+# Verify they're running:
+
+pm2 status
 ```
 
-## GitHub Webhook
+You should see:
+- `medico-api` (online)
+- `medico-webhook` (online)
 
-1. Go to: GitHub Repo → Settings → Webhooks → Add webhook
-2. **Payload URL**: `https://api.ayuxacare.com/deploy`
-3. **Content type**: `application/json`
-4. **Secret**: Your `GITHUB_WEBHOOK_SECRET` from .env
-5. **Events**: Select "Just the push event"
-6. Click: Add webhook
+## Step 6: Configure GitHub Webhook (From Your Computer)
 
-## Verify
+1. Go to your local computer browser
+2. Open GitHub: https://github.com/oldful-dev/medico
+3. Click: Settings → Webhooks → Add webhook
+4. Fill in:
+   - **Payload URL**: `https://api.ayuxacare.com/deploy`
+   - **Content type**: `application/json`
+   - **Secret**: Copy your `GITHUB_WEBHOOK_SECRET` from `.env` in VPS
+   - **Events**: Select "Just the push event"
+5. Click: Add webhook
+
+## Step 7: Verify Everything (Inside VPS Terminal)
 
 ```bash
-# Check API
+# Test API is running
 curl https://api.ayuxacare.com/health
 
-# Check services
+# Check PM2 services
 pm2 status
 
-# View logs
+# View API logs
 pm2 logs medico-api
-pm2 logs medico-webhook
 
-# Monitor
-pm2 monit
+# View webhook logs
+pm2 logs medico-webhook
 ```
 
-## Test Deployment
+## Step 8: Test Deployment (From Your Computer)
 
 ```bash
-# Push code to main
-git push origin main
+# From your local computer (NOT VPS)
+cd ~/path/to/your/medico/repo
 
-# Watch deployment
+# Make a small change and push to main
+git push origin main
+```
+
+## Monitor Deployment (Inside VPS Terminal)
+
+```bash
+# Inside VPS terminal
+# Watch the deployment happen in real-time
 pm2 logs medico-api -f
 ```
 
-## Useful Commands
+When you see "✓ Deployment completed successfully", your API is live!
 
+---
+
+## All Commands Summary (VPS Terminal)
+
+### View Logs
 ```bash
-# View logs
-pm2 logs medico-api              # App logs
-pm2 logs medico-webhook          # Webhook logs
+pm2 logs medico-api              # Watch API logs
+pm2 logs medico-webhook          # Watch webhook logs
+pm2 logs medico-api -f           # Follow API logs (real-time)
+```
 
-# Restart services
+### Check Status
+```bash
+pm2 status                       # Check all services
+pm2 monit                        # Monitor resources
+systemctl status nginx           # Check Nginx
+```
+
+### Restart Services
+```bash
 pm2 restart medico-api           # Restart API
 pm2 restart medico-webhook       # Restart webhook
 systemctl restart nginx          # Restart Nginx
-
-# Manual deployment
-cd /var/www/medico-backend && bash deploy.sh
-
-# Check status
-pm2 status
-pm2 monit
-systemctl status nginx
-certbot certificates
-
-# System info
-df -h                            # Disk space
-free -h                          # Memory
 ```
 
-## Troubleshooting
-
+### Manual Deployment
 ```bash
-# API not responding
-pm2 logs medico-api --err
-curl http://localhost:3000/health
+# Inside VPS terminal
+cd /var/www/medico-backend
+bash deploy.sh
+```
 
-# Database error
-cat /var/www/medico-backend/.env | grep DATABASE_URL
+### Check Configuration
+```bash
+# View your .env variables
+cat /var/www/medico-backend/.env
+
+# Check database connection
+echo $DATABASE_URL
+
+# Check webhook secret
+grep GITHUB_WEBHOOK_SECRET /var/www/medico-backend/.env
+```
+
+### System Info
+```bash
+df -h                            # Disk space
+free -h                          # Memory usage
+ps aux | grep node               # Node processes
+```
+
+### Nginx & SSL
+```bash
+nginx -t                         # Test Nginx config
+systemctl status nginx           # Check Nginx
+certbot certificates             # Check SSL cert
+certbot renew                    # Renew SSL cert
+```
+
+### Troubleshooting
+```bash
+# API errors
+pm2 logs medico-api --err
+
+# Database issues
 npm run prisma:migrate
 
-# Webhook not triggering
-pm2 logs medico-webhook
-cat /var/www/medico-backend/.env | grep GITHUB_WEBHOOK_SECRET
+# Webhook issues
+pm2 logs medico-webhook --err
 
-# Nginx error
-nginx -t
-systemctl status nginx
+# Nginx errors
 tail -f /var/log/nginx/error.log
-
-# SSL certificate
-certbot certificates
-certbot renew
 ```
 
-## Directory Structure
+---
+
+## Directory Structure (On VPS)
 
 ```
 /var/www/medico-backend/
-├── src/
-├── prisma/
-├── node_modules/
-├── logs/
-├── .env                    (production secrets)
-├── .env.example           (template in git)
-├── deploy.sh              (deployment script)
-├── webhook.js             (webhook receiver)
-├── ecosystem.config.js    (PM2 config)
+├── src/                        Source code
+├── prisma/                     Database schema
+├── node_modules/               Dependencies
+├── logs/                       Application logs
+├── .env                        Your production secrets (NOT in git)
+├── .env.example                Template (in git)
+├── deploy.sh                   Deployment script
+├── webhook.js                  Webhook receiver
+├── ecosystem.config.js         PM2 configuration
 ├── package.json
-└── src/server.js
+└── src/server.js               Entry point
 ```
 
-## Ports
+---
+
+## Port Reference (VPS)
 
 ```
-80    → Nginx (redirects to 443)
-443   → Nginx HTTPS (proxies to 3000)
-3000  → Node.js API
-3001  → Webhook receiver
-6379  → Redis
-5432  → PostgreSQL
+Port 80   → Nginx (HTTP, redirects to HTTPS)
+Port 443  → Nginx (HTTPS, proxies to your API)
+Port 3000 → Node.js API (internal, proxied by Nginx)
+Port 3001 → Webhook receiver (internal, receives GitHub webhooks)
+Port 6379 → Redis (local cache)
+Port 5432 → PostgreSQL (external database)
 ```
 
-## Deployment Workflow
+---
+
+## Deployment Flow (Automated)
 
 ```
-git push origin main
-    ↓
-GitHub webhook
-    ↓
-webhook.js (port 3001)
-    ↓
-deploy.sh runs:
-  - git pull
-  - npm install
-  - npm run prisma:migrate
-  - pm2 restart medico-api
-    ↓
-API live ✓
+You (local computer):
+$ git push origin main
+
+GitHub:
+→ Sends webhook to https://api.ayuxacare.com/deploy
+
+VPS webhook.js (port 3001):
+→ Verifies GitHub signature
+→ Checks if backend/ files changed
+→ Triggers deploy.sh
+
+VPS deploy.sh:
+→ git pull origin main
+→ npm install --production
+→ npm run prisma:migrate
+→ pm2 restart medico-api
+
+Result:
+→ Your API updated and restarted ✓
 ```
 
-Monitor: `pm2 logs medico-api -f`
+Monitor from VPS terminal:
+```bash
+pm2 logs medico-api -f
+```
+
+---
+
+## Important Notes
+
+⚠️ **All setup happens in VPS terminal**
+- Connect to Hostinger VPS via SSH or terminal
+- Run `setup.sh` in VPS
+- Edit `.env` in VPS
+- Run migrations in VPS
+- Check logs in VPS
+
+✅ **GitHub webhook setup happens from your computer**
+- Add webhook URL in GitHub settings (from your browser)
+- Push code from your local computer
+
+🔒 **Never commit .env to GitHub**
+- `.env` stays on VPS only
+- `.gitignore` already blocks it
+
+---
+
+## Quick Help
+
+**Something not working?**
+
+```bash
+# Check these in VPS terminal:
+
+# 1. Check if services are running
+pm2 status
+
+# 2. Check error logs
+pm2 logs medico-api --err
+pm2 logs medico-webhook --err
+
+# 3. Check environment is set
+cat /var/www/medico-backend/.env
+
+# 4. Check database connection
+npm run prisma:migrate
+
+# 5. Check webhook receiver
+pm2 logs medico-webhook
+```
+
+Need help? Ask in VPS terminal: `pm2 help`
