@@ -7,7 +7,7 @@ set -e
 
 DOMAIN="${1:-api.ayuxacare.com}"
 REPO_URL="https://github.com/oldful-dev/medico.git"
-DEPLOY_DIR="/var/www/medico-backend"
+DEPLOY_DIR="/home/api.ayuxacare.com"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -47,7 +47,7 @@ echo -e "${GREEN}✓ Node $(node -v), npm $(npm -v)${NC}"
 
 # Create directories
 echo -e "${YELLOW}[3/8] Creating directories...${NC}"
-mkdir -p $DEPLOY_DIR /var/log/medico
+mkdir -p $DEPLOY_DIR /var/log/medico-api
 echo -e "${GREEN}✓${NC}"
 
 # Clone repo
@@ -76,7 +76,6 @@ echo -e "${YELLOW}[6/8] Setting up PM2...${NC}"
 npm install -g pm2 > /dev/null 2>&1
 cd $DEPLOY_DIR
 pm2 start ecosystem.config.js
-pm2 start webhook.js --name medico-webhook --env "WEBHOOK_PORT=3001"
 pm2 save
 pm2 startup -u root --hp /root > /dev/null 2>&1
 echo -e "${GREEN}✓${NC}"
@@ -163,6 +162,7 @@ echo "4. Test API:"
 echo "   curl https://$DOMAIN/health"
 echo ""
 echo -e "${YELLOW}Useful commands:${NC}"
+echo "   cd $DEPLOY_DIR"
 echo "   pm2 status              - Check services"
 echo "   pm2 logs medico-api     - View API logs"
 echo "   pm2 logs medico-webhook - View webhook logs"

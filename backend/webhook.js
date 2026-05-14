@@ -6,7 +6,7 @@ const path = require('path');
 
 const SECRET = process.env.GITHUB_WEBHOOK_SECRET || '';
 const PORT = process.env.WEBHOOK_PORT || 3001;
-const DEPLOY_SCRIPT = '/var/www/medico-backend/deploy.sh';
+const DEPLOY_SCRIPT = '/home/api.ayuxacare.com/deploy.sh';
 
 let deploymentInProgress = false;
 
