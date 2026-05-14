@@ -5,8 +5,8 @@
 
 set -e
 
-DEPLOY_DIR="/var/www/medico-backend"
-LOG_FILE="/var/log/medico-deploy.log"
+DEPLOY_DIR="/home/api.ayuxacare.com"
+LOG_FILE="$DEPLOY_DIR/logs/deploy.log"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'

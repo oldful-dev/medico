@@ -22,22 +22,25 @@ sudo bash setup.sh
 ```
 
 **This automatically:**
-- Creates `/var/www/medico-backend`
+- Creates `/home/api.ayuxacare.com` (your API folder)
 - Installs Node, npm, Nginx, Redis, Certbot
-- Clones your backend code
-- Sets up PM2
+- Clones your backend code to that folder
+- Sets up PM2 in that folder
 - Configures Nginx reverse proxy
 - Gets SSL certificate from Let's Encrypt
-- Starts webhook receiver
+- Starts API and webhook receiver
 
 ## Step 3: Configure Environment (Inside VPS)
 
 ```bash
 # Inside VPS terminal
-cp /var/www/medico-backend/.env.example /var/www/medico-backend/.env
+cd /home/api.ayuxacare.com
+
+# Copy example to .env
+cp .env.example .env
 
 # Edit environment variables
-nano /var/www/medico-backend/.env
+nano .env
 ```
 
 Update these variables:
@@ -60,7 +63,7 @@ openssl rand -base64 32
 
 ```bash
 # Inside VPS terminal
-cd /var/www/medico-backend
+cd /home/api.ayuxacare.com
 
 # Generate Prisma client
 npm run prisma:generate
@@ -126,6 +129,7 @@ git push origin main
 ```bash
 # Inside VPS terminal
 # Watch the deployment happen in real-time
+cd /home/api.ayuxacare.com
 pm2 logs medico-api -f
 ```
 
@@ -133,13 +137,47 @@ When you see "✓ Deployment completed successfully", your API is live!
 
 ---
 
-## All Commands Summary (VPS Terminal)
+## Directory Structure (On VPS)
+
+All backend files are in ONE folder:
+
+```
+/home/api.ayuxacare.com/
+├── src/                        Source code
+├── prisma/                     Database schema
+├── node_modules/               Dependencies
+├── logs/                       Application logs
+│   ├── error.log
+│   ├── out.log
+│   └── deploy.log
+├── .env                        Your production secrets (NOT in git)
+├── .env.example                Template (in git)
+├── deploy.sh                   Deployment automation
+├── webhook.js                  Webhook receiver
+├── ecosystem.config.js         PM2 configuration
+├── package.json
+└── src/server.js               Entry point
+```
+
+---
+
+## All Commands Summary (Inside VPS Terminal)
+
+### Working Directory
+```bash
+# Always work from your API folder
+cd /home/api.ayuxacare.com
+```
 
 ### View Logs
 ```bash
 pm2 logs medico-api              # Watch API logs
 pm2 logs medico-webhook          # Watch webhook logs
 pm2 logs medico-api -f           # Follow API logs (real-time)
+
+# Or view log files directly
+tail -f logs/error.log
+tail -f logs/deploy.log
 ```
 
 ### Check Status
@@ -158,21 +196,23 @@ systemctl restart nginx          # Restart Nginx
 
 ### Manual Deployment
 ```bash
-# Inside VPS terminal
-cd /var/www/medico-backend
+# Inside VPS terminal, in your API folder
+cd /home/api.ayuxacare.com
 bash deploy.sh
 ```
 
 ### Check Configuration
 ```bash
+cd /home/api.ayuxacare.com
+
 # View your .env variables
-cat /var/www/medico-backend/.env
+cat .env
 
 # Check database connection
-echo $DATABASE_URL
+grep DATABASE_URL .env
 
 # Check webhook secret
-grep GITHUB_WEBHOOK_SECRET /var/www/medico-backend/.env
+grep GITHUB_WEBHOOK_SECRET .env
 ```
 
 ### System Info
@@ -192,6 +232,8 @@ certbot renew                    # Renew SSL cert
 
 ### Troubleshooting
 ```bash
+cd /home/api.ayuxacare.com
+
 # API errors
 pm2 logs medico-api --err
 
@@ -203,25 +245,9 @@ pm2 logs medico-webhook --err
 
 # Nginx errors
 tail -f /var/log/nginx/error.log
-```
 
----
-
-## Directory Structure (On VPS)
-
-```
-/var/www/medico-backend/
-├── src/                        Source code
-├── prisma/                     Database schema
-├── node_modules/               Dependencies
-├── logs/                       Application logs
-├── .env                        Your production secrets (NOT in git)
-├── .env.example                Template (in git)
-├── deploy.sh                   Deployment script
-├── webhook.js                  Webhook receiver
-├── ecosystem.config.js         PM2 configuration
-├── package.json
-└── src/server.js               Entry point
+# View deployment logs
+tail -f logs/deploy.log
 ```
 
 ---
@@ -253,7 +279,7 @@ VPS webhook.js (port 3001):
 → Checks if backend/ files changed
 → Triggers deploy.sh
 
-VPS deploy.sh:
+VPS deploy.sh (in /home/api.ayuxacare.com/):
 → git pull origin main
 → npm install --production
 → npm run prisma:migrate
@@ -265,6 +291,7 @@ Result:
 
 Monitor from VPS terminal:
 ```bash
+cd /home/api.ayuxacare.com
 pm2 logs medico-api -f
 ```
 
@@ -274,17 +301,18 @@ pm2 logs medico-api -f
 
 ⚠️ **All setup happens in VPS terminal**
 - Connect to Hostinger VPS via SSH or terminal
-- Run `setup.sh` in VPS
-- Edit `.env` in VPS
-- Run migrations in VPS
-- Check logs in VPS
+- All backend files in: `/home/api.ayuxacare.com/`
+- Run `setup.sh` from VPS terminal
+- Edit `.env` in `/home/api.ayuxacare.com/.env`
+- Run migrations in that folder
+- Check logs in that folder
 
 ✅ **GitHub webhook setup happens from your computer**
 - Add webhook URL in GitHub settings (from your browser)
 - Push code from your local computer
 
 🔒 **Never commit .env to GitHub**
-- `.env` stays on VPS only
+- `.env` stays in `/home/api.ayuxacare.com/` only
 - `.gitignore` already blocks it
 
 ---
@@ -295,6 +323,7 @@ pm2 logs medico-api -f
 
 ```bash
 # Check these in VPS terminal:
+cd /home/api.ayuxacare.com
 
 # 1. Check if services are running
 pm2 status
@@ -304,7 +333,7 @@ pm2 logs medico-api --err
 pm2 logs medico-webhook --err
 
 # 3. Check environment is set
-cat /var/www/medico-backend/.env
+cat .env
 
 # 4. Check database connection
 npm run prisma:migrate
