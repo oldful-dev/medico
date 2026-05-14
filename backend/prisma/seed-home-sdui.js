@@ -36,7 +36,7 @@ async function main() {
   console.log(`     version: ${DEFAULT_CONFIG.version}`);
   console.log(`     home sections: ${DEFAULT_CONFIG.screens.home.sections.length}`);
   console.log(`     essentials max_visible_rows: ${DEFAULT_CONFIG.screens.home.sections.find(s => s.id === 'essentials')?.config?.max_visible_rows ?? 'none'}`);
-  console.log(`     welcome_banner: GCS URL (oldful-assets/mobile/assets/images/welcome_banner.png)`);
+  console.log(`     welcome_banner: GCS URL (ayuxa-assets/mobile/assets/images/welcome_banner.png)`);
   console.log('\n🎉 Done!');
 }
 

@@ -148,20 +148,20 @@ const sendWelcomeNotifications = async (user) => {
     // Welcome Email
     await sendEmail({
         to: user.email,
-        subject: `Welcome to Oldful, ${user.name}! 🎉`,
+        subject: `Welcome to Ayuxa, ${user.name}! 🎉`,
         userId: user.id,
         html: `
-      <h1>Welcome to Oldful Healthcare!</h1>
+      <h1>Welcome to Ayuxa Healthcare!</h1>
       <p>Dear ${user.name},</p>
-      <p>Your Oldful ID is: <strong>${user.uniqueUserId}</strong></p>
+      <p>Your Ayuxa ID is: <strong>${user.uniqueUserId}</strong></p>
       <p>You now have access to premium healthcare services at your doorstep.</p>
-      <p>Download the Oldful app and start booking services today!</p>
-      <p>Best regards,<br>Team Oldful</p>
+      <p>Download the Ayuxa app and start booking services today!</p>
+      <p>Best regards,<br>Team Ayuxa</p>
     `,
     });
 
     // Welcome WhatsApp (Interakt)
-    // Template: oldful_welcome — {{1}}=name (DOCUMENT header)
+    // Template: ayuxa_welcome — {{1}}=name (DOCUMENT header)
     await sendWhatsApp({
         phoneNumber: user.phone,
         templateName: 'welcome_message',
@@ -181,7 +181,7 @@ const sendSOSNotifications = async ({ user, location, familyContacts }) => {
 
     // Admin — Email alert with location
     await sendEmail({
-        to: process.env.ADMIN_EMERGENCY_EMAIL || 'sos@oldful.com',
+        to: process.env.ADMIN_EMERGENCY_EMAIL || 'sos@ayuxa.com',
         subject: `🚨 SOS ALERT — ${user.name} (${user.uniqueUserId})`,
         html: `
       <h1 style="color:red">🚨 SOS Emergency Alert</h1>
@@ -234,7 +234,7 @@ const sendBookingConfirmation = async ({ user, bookingCode, booking = null }) =>
             booking?.serviceName || 'your requested service',
             bookingCode || '-',
             '+91 94801 98108',
-            'client@oldful.com',
+            'client@ayuxa.com',
         ],
         userId: fullUser.id,
     });
@@ -270,7 +270,7 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
       <p>Dear ${fullUser.name},</p>
       <p>Your <strong>${plan.name}</strong> plan expires on <strong>${new Date(expiryDate).toLocaleDateString('en-IN')}</strong> (${daysLeft} days remaining).</p>
       <p>Renew now to continue enjoying uninterrupted healthcare services.</p>
-      <p>Best regards,<br>Team Oldful</p>
+      <p>Best regards,<br>Team Ayuxa</p>
     `,
     });
 
@@ -280,9 +280,9 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
         templateName: 'plan_expiry_reminder',
         parameters: [
             fullUser.name,
-            plan.name || 'Oldful Plan',
+            plan.name || 'Ayuxa Plan',
             '+91 94801 98108',
-            'client@oldful.com',
+            'client@ayuxa.com',
         ],
         userId: fullUser.id,
     });
@@ -293,7 +293,7 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
 
 const requestFast2SMSOTP = async (phoneNumber) => {
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
-    const success = await fast2sms.sendSMS(phoneNumber, `Your Oldful verification code is: ${otp}`);
+    const success = await fast2sms.sendSMS(phoneNumber, `Your Ayuxa verification code is: ${otp}`);
 
     if (success) {
         await prisma.otpLog.create({

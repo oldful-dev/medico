@@ -12,6 +12,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { appConfigService, AppConfig, FeatureFlags, HomeSection, PlanConfig, PlanBenefit, CityConfig, LanguageConfig, DoctorVisitConfig, HelpSupportConfig } from '@/services/api/appConfigService';
+import { getAssetUrl } from '@/utils/getAssetUrl';
 
 const CACHE_KEY = '@ayuxacare_app_config';
 const CACHE_VERSION_KEY = '@ayuxacare_app_config_version';
@@ -341,10 +342,47 @@ interface AppConfigContextType {
 
 const AppConfigContext = createContext<AppConfigContextType | undefined>(undefined);
 
-// ─── Helper ───────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const sortByOrder = <T extends { sort_order: number }>(arr: T[]): T[] =>
     [...arr].sort((a, b) => a.sort_order - b.sort_order);
+
+/**
+ * Transform all image_url fields in a section through CDN.
+ * Converts GCS URLs to Cloudflare CDN for caching and performance.
+ */
+const transformSectionURLs = (section: HomeSection): HomeSection => {
+    if (!section.items) return section;
+
+    return {
+        ...section,
+        items: section.items.map(item => ({
+            ...item,
+            image_url: item.image_url ? getAssetUrl(item.image_url) : item.image_url,
+        })),
+        // Also transform config URLs (sos_banner, etc)
+        config: section.config ? transformConfigURLs(section.config) : section.config,
+    };
+};
+
+/**
+ * Recursively transform URLs in config objects.
+ */
+const transformConfigURLs = (config: Record<string, any>): Record<string, any> => {
+    const transformed: Record<string, any> = {};
+
+    for (const [key, value] of Object.entries(config)) {
+        if (typeof value === 'string' &&
+            (key.includes('url') || key.includes('icon') || key.includes('image')) &&
+            (value.startsWith('http') || value.includes('storage.googleapis') || value.match(/^[a-f0-9]{40}\./))) {
+            transformed[key] = getAssetUrl(value);
+        } else {
+            transformed[key] = value;
+        }
+    }
+
+    return transformed;
+};
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
@@ -410,7 +448,10 @@ export function AppConfigProvider({ children }: { children: ReactNode }) {
     const homeScreen = config.screens.home;
     const plansScreen = config.screens.plans;
 
-    const homeSections = sortByOrder(homeScreen.sections).filter(s => s.visible);
+    // Transform all image URLs through CDN for caching and performance
+    const homeSections = sortByOrder(homeScreen.sections)
+        .filter(s => s.visible)
+        .map(s => transformSectionURLs(s));
     const plans = sortByOrder(plansScreen.plans.filter(p => p.visible));
     const benefits = sortByOrder(plansScreen.benefits);
     const cities = sortByOrder(config.screens.city_selection.cities);

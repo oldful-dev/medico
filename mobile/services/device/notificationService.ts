@@ -60,7 +60,7 @@ export const notificationService = {
             // Set up Android notification channel first
             if (Platform.OS === 'android') {
                 await Notifications.setNotificationChannelAsync('ayuxacare-default', {
-                    name: 'Ayuxa Care Notifications',
+                    name: 'Ayuxa Notifications',
                     importance: Notifications.AndroidImportance.HIGH,
                     vibrationPattern: [0, 250, 250, 250],
                     lightColor: '#048357',

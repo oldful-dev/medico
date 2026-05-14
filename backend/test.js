@@ -10,7 +10,7 @@ const sendSMS = async () => {
             "https://www.fast2sms.com/dev/bulkV2",
             {
                 route: "q", // q = quick (transactional/auth)
-                message: "Your Oldful OTP is 123456",
+                message: "Your Ayuxa OTP is 123456",
                 language: "english",
                 flash: 0,
                 numbers: "7362973003", // comma-separated for multiple

@@ -35,7 +35,7 @@ GoogleSignin.configure({
 });
 
 // Figma-exported assets
-const logoImage = require('@/assets/images/2549b5ede370bbb67a088920cac9a8719fec5968.png');
+const logoImage = require('@/assets/images/nameandlogo.png');
 
 export default function LoginScreen() {
     const { t } = useTranslation();
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     logo: {
-        width: 200,
+        width: 260,
         height: 84,
     },
 

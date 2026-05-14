@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Configuration from .env context
-const bucketName = 'oldful-assets';
+const bucketName = 'ayuxa-assets';
 const keyFile = path.join(__dirname, '..', 'src', 'config', 'google-vision-key.json');
 const destinationDir = 'mobile/assets/images/';
 

@@ -167,7 +167,7 @@ const requestOTP = async (req, res, next) => {
                 const { sendPushToUser } = require('../utils/pushNotification.service');
                 await sendPushToUser(user.id, {
                     title: 'Your OTP Code',
-                    body: `Your Oldful verification code is: ${code}`,
+                    body: `Your Ayuxa verification code is: ${code}`,
                     data: { type: 'OTP', code: String(code) }
                 });
             }

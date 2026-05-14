@@ -40,7 +40,7 @@
 
   "auth": {
     "splash_tagline": "ISO 9001:2015 সার্টিফাইড",
-    "login_title": "Ayuxa Care-এ লগইন করুন",
+    "login_title": "Ayuxa-এ লগইন করুন",
     "login_subtitle": "চালিয়ে যেতে আপনার মোবাইল নম্বর দিন",
     "phone_placeholder": "মোবাইল নম্বর দিন",
     "send_otp": "OTP পাঠান",
@@ -304,7 +304,7 @@
     "whatsapp_updates": "WhatsApp আপডেট",
     "promotional_offers": "প্রচারমূলক অফার",
     "help_support": "সাহায্য & সাপোর্ট",
-    "rate_us": "Ayuxa Care রেট করুন",
+    "rate_us": "Ayuxa রেট করুন",
     "terms_privacy": "শর্তাবলী & গোপনীয়তা নীতি",
     "logout": "লগআউট",
     "update_photo": "প্রোফাইল ছবি আপডেট করুন",

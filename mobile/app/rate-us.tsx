@@ -26,7 +26,7 @@ export default function RateUsScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Rate Ayuxa Care</Text>
+                <Text style={styles.headerTitle}>Rate Ayuxa</Text>
             </View>
 
             <View style={styles.contentCard}>
@@ -39,10 +39,10 @@ export default function RateUsScreen() {
                         ))}
                     </View>
 
-                    <Text style={styles.pageTitle}>Enjoying Ayuxa Care?</Text>
+                    <Text style={styles.pageTitle}>Enjoying Ayuxa?</Text>
 
                     <Text style={styles.pageDescription}>
-                        Your feedback helps us improve our services and support more families. If you enjoyed using Ayuxa Care, please take a moment to rate us on the Play Store.
+                        Your feedback helps us improve our services and support more families. If you enjoyed using Ayuxa, please take a moment to rate us on the Play Store.
                     </Text>
 
                     {/* Why it matters */}
@@ -73,7 +73,7 @@ export default function RateUsScreen() {
                         onPress={handleRateApp}
                     >
                         <Ionicons name="logo-google-playstore" size={20} color={Colors.textWhite} style={{ marginRight: 8 }} />
-                        <Text style={styles.rateButtonText}>Rate Ayuxa Care on Play Store</Text>
+                        <Text style={styles.rateButtonText}>Rate Ayuxa on Play Store</Text>
                     </TouchableOpacity>
 
                 </ScrollView>

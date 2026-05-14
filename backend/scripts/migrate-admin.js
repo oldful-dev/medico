@@ -8,7 +8,7 @@ async function main() {
     const passwordHash = await bcrypt.hash('admin123', 12);
 
     // Upsert new admin, also migrate any old emails
-    const oldEmails = ['superadmin@medico.care', 'superadmin@oldful.com'];
+    const oldEmails = ['superadmin@medico.care', 'superadmin@ayuxa.com'];
 
     for (const oldEmail of oldEmails) {
         const existing = await prisma.admin.findUnique({ where: { email: oldEmail } });

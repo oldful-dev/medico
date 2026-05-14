@@ -11,9 +11,9 @@ const getInsurancePlans = async (req, res, next) => {
         // For now, return from plans table or static data
         // This could be a separate InsurancePlan model in future
         sendResponse(res, 200, [
-            { id: 'ins-basic', name: 'Oldful Shield Basic', coverage: '₹5L', premium: 199, features: ['Hospitalization', 'OPD Cover'], eligibility: ['Age 55-75'], exclusions: ['Pre-existing (2yr wait)'] },
-            { id: 'ins-plus', name: 'Oldful Shield Plus', coverage: '₹10L', premium: 399, features: ['Hospitalization', 'OPD', 'Critical Illness'], eligibility: ['Age 55-80'], exclusions: ['Pre-existing (1yr wait)'] },
-            { id: 'ins-premium', name: 'Oldful Shield Premium', coverage: '₹25L', premium: 799, features: ['All Cover', 'Ayush', 'Home Treatment'], eligibility: ['Age 55-85'], exclusions: ['None after 6mo'] },
+            { id: 'ins-basic', name: 'Ayuxa Shield Basic', coverage: '₹5L', premium: 199, features: ['Hospitalization', 'OPD Cover'], eligibility: ['Age 55-75'], exclusions: ['Pre-existing (2yr wait)'] },
+            { id: 'ins-plus', name: 'Ayuxa Shield Plus', coverage: '₹10L', premium: 399, features: ['Hospitalization', 'OPD', 'Critical Illness'], eligibility: ['Age 55-80'], exclusions: ['Pre-existing (1yr wait)'] },
+            { id: 'ins-premium', name: 'Ayuxa Shield Premium', coverage: '₹25L', premium: 799, features: ['All Cover', 'Ayush', 'Home Treatment'], eligibility: ['Age 55-85'], exclusions: ['None after 6mo'] },
         ]);
     } catch (error) {
         next(error);

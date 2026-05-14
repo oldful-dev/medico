@@ -21,10 +21,10 @@ const RETRY_DELAY_MS = 1000;
 // Template reference (approved as of 2026-04-01):
 //
 //  otp_template               AUTHENTICATION  {{1}}=code
-//  oldful_welcome             MARKETING       {{1}}=name                       (DOCUMENT header)
+//  ayuxa_welcome             MARKETING       {{1}}=name                       (DOCUMENT header)
 //  service_request_           UTILITY         {{1}}=name {{2}}=service {{3}}=orderId {{4}}=phone {{5}}=email
 //  payment_link               UTILITY         {{1}}=name {{2}}=amount {{3}}=service {{4}}=paymentUrl
-//  oldful_receipt             UTILITY         {{1}}=name {{2}}=amount {{3}}=phone {{4}}=email  (DOCUMENT header)
+//  ayuxa_receipt             UTILITY         {{1}}=name {{2}}=amount {{3}}=phone {{4}}=email  (DOCUMENT header)
 //  prescription_flow          UTILITY         {{1}}=name {{2}}=orderRef
 //  lab_report_delivery        UTILITY         {{1}}=name                       (DOCUMENT header)
 //  medication_reminder_daily  UTILITY         (no body vars)
@@ -36,11 +36,11 @@ const TEMPLATES = {
     otp:                     'otp_template',
 
     // ── Core transactional ──
-    welcome_message:         'oldful_welcome',
+    welcome_message:         'ayuxa_welcome',
     booking_confirmation:    'service_request_',
     payment_link:            'payment_link',
-    payment_confirmation:    'oldful_receipt',
-    invoice_confirmation:    'oldful_receipt',
+    payment_confirmation:    'ayuxa_receipt',
+    invoice_confirmation:    'ayuxa_receipt',
 
     // ── Medical flows ──
     prescription_received:   'prescription_flow',
@@ -155,7 +155,7 @@ const sendWhatsAppMessage = async ({ phone, templateName, variables = [], callTo
 // Variable counts match the approved templates exactly.
 
 const SUPPORT_PHONE = '+91 94801 98108';
-const SUPPORT_EMAIL = 'client@oldful.com';
+const SUPPORT_EMAIL = 'client@ayuxa.com';
 
 /**
  * OTP verification via WhatsApp
@@ -170,7 +170,7 @@ const sendOTP = ({ phone, code }) =>
 
 /**
  * Welcome after signup (DOCUMENT header — welcome brochure PDF)
- * Template: oldful_welcome — {{1}}=name
+ * Template: ayuxa_welcome — {{1}}=name
  */
 const sendWelcome = ({ phone, name }) =>
     sendWhatsAppMessage({
@@ -198,12 +198,12 @@ const sendPaymentLink = ({ phone, name, amount, service, paymentUrl }) =>
     sendWhatsAppMessage({
         phone,
         templateName: 'payment_link',
-        variables: [name, String(amount), service || 'Oldful services', paymentUrl || 'www.oldful.com/payment'],
+        variables: [name, String(amount), service || 'Ayuxa services', paymentUrl || 'www.ayuxa.com/payment'],
     });
 
 /**
  * Payment receipt / invoice (DOCUMENT header — receipt PDF)
- * Template: oldful_receipt — {{1}}=name {{2}}=amount {{3}}=phone {{4}}=email
+ * Template: ayuxa_receipt — {{1}}=name {{2}}=amount {{3}}=phone {{4}}=email
  */
 const sendPaymentConfirmation = ({ phone, name, amount, headerUrl }) =>
     sendWhatsAppMessage({
@@ -254,7 +254,7 @@ const sendPlanExpiryReminder = ({ phone, name, planName }) =>
     sendWhatsAppMessage({
         phone,
         templateName: 'plan_expiry_reminder',
-        variables: [name, planName || 'Oldful Plan', SUPPORT_PHONE, SUPPORT_EMAIL],
+        variables: [name, planName || 'Ayuxa Plan', SUPPORT_PHONE, SUPPORT_EMAIL],
     });
 
 /**

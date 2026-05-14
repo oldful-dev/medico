@@ -1,11 +1,17 @@
 // ──────────────────────────────────────────────
-//  Media Service
+//  Media Service — GCS + Cloudflare CDN
 //  Preferred flow: Signed URL (file bytes go direct to GCS, not through Node.js)
 //  Fallback flow:  Proxy upload via /api/media/upload
+//  CDN Layer: Cloudflare caches all images from GCS at assets.ayuxacare.com
 // ──────────────────────────────────────────────
 
 import { Platform } from 'react-native';
 import { apiClient, ApiResponse } from './apiClient';
+
+// ─── CDN Configuration ─────────────────────────────────────────────────────
+const CDN_BASE = 'https://assets.ayuxacare.com/';
+const GCS_BUCKET = 'ayuxa-assets';
+const GCS_BASE_URL = `https://storage.googleapis.com/${GCS_BUCKET}/`;
 
 export interface MediaAsset {
     id: string;
@@ -42,6 +48,23 @@ const getMimeType = (uri: string): string => {
 };
 
 const getFileName = (uri: string): string => uri.split('/').pop() ?? 'upload.jpg';
+
+// ─── URL Transformation (GCS → CDN) ────────────────────────────────────────
+/**
+ * Transform a GCS URL to CDN URL for faster delivery.
+ * GCS: https://storage.googleapis.com/ayuxa-assets/folder/file.png
+ * CDN: https://assets.ayuxacare.com/folder/file.png
+ * The Cloudflare Worker caches responses from GCS at the CDN URL.
+ */
+const transformToCDN = (url: string): string => {
+    if (!url) return url;
+    if (url.startsWith(CDN_BASE)) return url; // Already CDN
+    if (url.startsWith(GCS_BASE_URL)) {
+        const path = url.substring(GCS_BASE_URL.length);
+        return `${CDN_BASE}${path}`;
+    }
+    return url;
+};
 
 // ─── PUT file to GCS via XMLHttpRequest ─────────────────
 // React Native's fetch() has issues with blob uploads to GCS signed URLs.
@@ -126,6 +149,11 @@ const uploadViaSignedUrl = async (
         folder,
     });
 
+    // Step 4: Transform URL through CDN for faster delivery
+    if (confirmResponse.success && confirmResponse.data) {
+        confirmResponse.data.fileUrl = transformToCDN(confirmResponse.data.fileUrl);
+    }
+
     return confirmResponse;
 };
 
@@ -144,6 +172,9 @@ const uploadViaProxy = async (
 
     return apiClient.upload<MediaAsset>('/media/upload', formData);
 };
+
+// ─── Public Exports ──────────────────────────────────────
+export { transformToCDN };
 
 // ─── Public Service ──────────────────────────────────────
 export const mediaService = {
@@ -178,7 +209,8 @@ export const mediaService = {
         const urls: string[] = [];
         results.forEach((result, i) => {
             if (result.status === 'fulfilled' && result.value.success && result.value.data) {
-                urls.push(result.value.data.fileUrl);
+                // Transform each URL through CDN
+                urls.push(transformToCDN(result.value.data.fileUrl));
             } else {
                 console.warn(`Upload failed for URI index ${i}:`,
                     result.status === 'rejected' ? result.reason : result.value.message

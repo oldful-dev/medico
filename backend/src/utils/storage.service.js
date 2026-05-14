@@ -6,7 +6,7 @@
 //  layer. Do NOT add fallback storage providers (R2, S3, etc.).
 //
 //  Architecture:
-//    User → Cloudflare CDN (assets.oldful.com) → GCS (oldful-assets)
+//    User → Cloudflare CDN (assets.ayuxa.com) → GCS (ayuxa-assets)
 //
 //  Bucket structure (Uniform Bucket-Level Access):
 //    /users/profile-avatars/{uuid}.jpg       ← public (IAM)
@@ -21,7 +21,7 @@
 //    /bookings/{service-slug}/{uuid}.jpg     ← public (IAM)
 //
 //  CDN delivery:
-//    ASSETS_CDN_URL (assets.oldful.com) → Cloudflare Transform Rule → GCS
+//    ASSETS_CDN_URL (assets.ayuxa.com) → Cloudflare Transform Rule → GCS
 //
 //  Security:
 //    - Uniform Bucket-Level Access (no per-object ACLs)
@@ -85,7 +85,8 @@ const buildFilePath = (folder, originalName, userId = null) => {
 
     // Beautiful Hierarchy Logic
     if (folder === 'profile-avatars' || folder === 'avatar') {
-        return `users/${userId}/profile/avatar${ext}`; // Overwrite user avatar
+        // Always use .jpg extension for profile avatars to ensure overwrites work
+        return `users/${userId}/profile/avatar.jpg`;
     }
 
     if (folder === 'health-reports' || folder === 'records' || folder === 'medical-records') {
@@ -127,7 +128,7 @@ try {
 // ══════════════════════════════════════════════════════════════
 //  CDN URL BUILDER (sanitized, safe)
 //
-//  Generates: https://assets.oldful.com/{storagePath}
+//  Generates: https://assets.ayuxa.com/{storagePath}
 //  Sanitizes double slashes, leading slashes, and empty paths.
 //  For private folders → returns null (use signed download URL)
 // ══════════════════════════════════════════════════════════════
@@ -208,6 +209,13 @@ const uploadFile = async (buffer, folder = 'general', originalName = 'file', fil
     try {
         const gcsFile = gcsBucket.file(storagePath);
 
+        // For profile avatars, delete old file first to ensure fresh upload (async, don't wait)
+        if ((folder === 'profile-avatars' || folder === 'avatar') && userId && userId !== 'anonymous') {
+            setImmediate(() => {
+                gcsFile.delete().catch(() => {}); // Fire and forget
+            });
+        }
+
         // Set appropriate cache headers based on folder type
         const metadata = {
             cacheControl: isPrivate
@@ -215,8 +223,11 @@ const uploadFile = async (buffer, folder = 'general', originalName = 'file', fil
                 : 'public, max-age=31536000, immutable',
         };
 
+        // Use non-resumable upload for smaller files to speed up
+        const useResumable = buffer.length > 10 * 1024 * 1024; // Only resumable for >10MB
+
         await gcsFile.save(buffer, {
-            resumable: buffer.length > 5 * 1024 * 1024, // Resumable for >5MB
+            resumable: useResumable,
             contentType,
             metadata,
             // Uniform Bucket-Level Access — no predefinedAcl
