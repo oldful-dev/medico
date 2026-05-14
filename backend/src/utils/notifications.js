@@ -51,24 +51,23 @@ const sendEmail = async ({ to, subject, html, attachments = [], userId = null, i
     }
 };
 
-// ─── WhatsApp (Interakt) ───────────────────
-// Fast2SMS WhatsApp has been replaced.
+// ─── WhatsApp (Fast2SMS WABA) ───────────────
+// WhatsApp is now handled via Fast2SMS WABA templates.
 // SMS/OTP from Fast2SMS is untouched below.
 
-const interakt = require('../services/interakt.service');
-const fast2sms = require('./fast2sms');
+const fast2sms = require('../services/interakt.service'); // Now uses Fast2SMS internally
+const fast2smsUtils = require('./fast2sms');
 
 /**
- * Send a WhatsApp template message via Interakt.
+ * Send a WhatsApp template message via Fast2SMS WABA.
  */
-const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [], userId = null }) => {
+const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [], userId = null, mediaUrl = null, documentFilename = null }) => {
     try {
         if (userId) {
             const user = await prisma.user.findUnique({ where: { id: userId }, select: { whatsappEnabled: true, smsEnabled: true } });
             if (user && !user.whatsappEnabled) {
                 logger.info(`🚫 Skipping WhatsApp to ${phoneNumber} (User disabled WhatsApp)`);
-                
-                // If SMS is enabled, attempt SMS fallback immediately or just return
+
                 if (user.smsEnabled) {
                     logger.info(`🔄 Attempting SMS fallback for ${phoneNumber} instead...`);
                 } else {
@@ -91,35 +90,37 @@ const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [], userId
 
     try {
         const userPrefs = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
-        
+
         // Only send WhatsApp if enabled
         if (!userPrefs || userPrefs.whatsappEnabled) {
-            success = await interakt.sendWhatsAppMessage({
+            success = await fast2sms.sendWhatsAppMessage({
                 phone: phoneNumber,
                 templateName,
                 variables,
+                mediaUrl,
+                documentFilename,
             });
         }
 
         if (!success) {
-            // Fallback to Fast2SMS SMS if Interakt fails (or is disabled) and SMS is enabled
+            // Fallback to Fast2SMS SMS if WABA fails (or is disabled) and SMS is enabled
             if (!userPrefs || userPrefs.smsEnabled) {
                 logger.warn(`[Notifications] WhatsApp failed or disabled for ${templateName} — attempting SMS`);
                 const fallbackTemplateId = process.env[`FAST2SMS_${templateName.toUpperCase()}_TEMPLATE_ID`];
                 if (fallbackTemplateId) {
-                    const smsSent = await fast2sms.sendDLTSMS(phoneNumber, fallbackTemplateId, variables);
+                    const smsSent = await fast2smsUtils.sendDLTSMS(phoneNumber, fallbackTemplateId, variables);
                     if (smsSent) {
                         logger.info(`[Notifications] SMS delivered for ${templateName}`);
                         success = true;
                         errorMessage = 'Delivered via SMS';
                     } else {
-                        errorMessage = 'Interakt failed; SMS fallback also failed';
+                        errorMessage = 'WhatsApp failed; SMS fallback also failed';
                     }
                 } else {
-                    errorMessage = 'Interakt failed; no SMS fallback configured';
+                    errorMessage = 'WhatsApp failed; no SMS fallback configured';
                 }
             } else {
-                errorMessage = 'Interakt failed; user has SMS disabled';
+                errorMessage = 'WhatsApp failed; user has SMS disabled';
             }
         }
     } catch (error) {
