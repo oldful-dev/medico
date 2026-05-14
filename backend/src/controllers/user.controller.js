@@ -2,9 +2,26 @@ const prisma = require('../config/database');
 const { paginate, sendResponse, sendPaginatedResponse, generateUserId } = require('../utils/helpers');
 const { sendWelcomeNotifications } = require('../utils/notifications');
 const { generateWelcomeSLAPDF } = require('../utils/pdfGenerator');
-const { uploadFile, purgeCDNCache } = require('../utils/storage.service');
+const { uploadFile, toCDNUrl } = require('../utils/storage.service');
 const { analyzeMedicalReportFromGCS, analyzeMedicalReportFromBuffer } = require('../utils/ocr.service');
 const { createAuditLog } = require('../middleware/audit');
+const { logger } = require('../config/logger');
+
+// Transform GCS URL to CDN URL for profile images
+const transformProfileImageToCDN = (url) => {
+    if (!url) return url;
+    const gcsBase = `https://storage.googleapis.com/${process.env.GOOGLE_STORAGE_BUCKET_NAME || 'ayuxa-assets'}/`;
+    if (url.startsWith(gcsBase)) {
+        const storagePath = url.split('?')[0].replace(gcsBase, ''); // Remove base URL and query params
+        const cdnUrl = toCDNUrl(storagePath, 'profile-avatars');
+        if (cdnUrl) {
+            // Add back query params (like ?v=timestamp for cache busting)
+            const queryPart = url.includes('?') ? url.substring(url.indexOf('?')) : '';
+            return cdnUrl + queryPart;
+        }
+    }
+    return url;
+};
 
 // GET /api/users
 const getUsers = async (req, res, next) => {
@@ -501,6 +518,12 @@ const getMyProfile = async (req, res, next) => {
         });
 
         const { otpCode, otpExpiresAt, refreshToken, ...safeUser } = user;
+
+        // Transform profile image URL from GCS to CDN
+        if (safeUser.profileImageUrl) {
+            safeUser.profileImageUrl = transformProfileImageToCDN(safeUser.profileImageUrl);
+        }
+
         sendResponse(res, 200, safeUser);
     } catch (error) {
         next(error);
@@ -529,6 +552,12 @@ const updateMyProfile = async (req, res, next) => {
         });
 
         const { otpCode, otpExpiresAt, refreshToken, ...safeUser } = user;
+
+        // Transform profile image URL from GCS to CDN in response
+        if (safeUser.profileImageUrl) {
+            safeUser.profileImageUrl = transformProfileImageToCDN(safeUser.profileImageUrl);
+        }
+
         sendResponse(res, 200, safeUser, 'Profile updated');
     } catch (error) {
         next(error);
@@ -570,20 +599,17 @@ const uploadProfileAvatar = async (req, res, next) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: 'Image file required' });
 
-        // Delete old avatar from CDN cache if exists
-        const existingUser = await prisma.user.findUnique({ where: { id: req.user.id }, select: { profileImageUrl: true } });
-        if (existingUser?.profileImageUrl) {
-            await purgeCDNCache(existingUser.profileImageUrl).catch(() => {});
-        }
-
         const { url } = await uploadFile(req.file.buffer, 'profile-avatars', req.file.originalname, null, req.user.id);
 
-        // Purge CDN cache for the new URL so it's immediately accessible
-        await purgeCDNCache(url).catch(() => {});
+        // Add cache-busting timestamp so new uploads appear instantly
+        // This creates a unique URL each upload: avatar.jpg?v=1715698600
+        // CDN treats this as new content, bypasses cache
+        const versionedUrl = `${url}?v=${Date.now()}`;
+        logger.info(`Avatar versioned URL: ${versionedUrl}`);
 
         const user = await prisma.user.update({
             where: { id: req.user.id },
-            data: { profileImageUrl: url },
+            data: { profileImageUrl: versionedUrl },
             include: {
                 city: { select: { name: true, code: true } },
                 addresses: true,
@@ -598,6 +624,12 @@ const uploadProfileAvatar = async (req, res, next) => {
         });
 
         const { otpCode, otpExpiresAt, refreshToken: rt, ...safeUser } = user;
+
+        // Transform profile image URL from GCS to CDN in response
+        if (safeUser.profileImageUrl) {
+            safeUser.profileImageUrl = transformProfileImageToCDN(safeUser.profileImageUrl);
+        }
+
         sendResponse(res, 200, safeUser, 'Profile image updated');
     } catch (error) {
         next(error);

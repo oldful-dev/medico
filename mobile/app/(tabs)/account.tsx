@@ -186,9 +186,10 @@ export default function AccountScreen() {
                                 <ActivityIndicator size="large" color={Colors.primary} />
                             ) : (
                                 <Image
-                                    source={profile?.profileImageUrl ? { uri: getAssetUrl(profile.profileImageUrl) } : avatarImg}
+                                    source={profile?.profileImageUrl ? { uri: `${getAssetUrl(profile.profileImageUrl)}&_=${Math.random()}` } : avatarImg}
                                     style={profile?.profileImageUrl ? styles.avatarFull : styles.avatarDefault}
                                     resizeMode="cover"
+                                    key={`${profile?.profileImageUrl}-${Math.random()}`}
                                 />
                             )}
                         </View>

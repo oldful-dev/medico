@@ -14,6 +14,7 @@ const prisma = require('../config/database');
 const crypto = require('crypto');
 const { logger } = require('../config/logger');
 const { sendWhatsApp } = require('../utils/notifications');
+const { sendDLTSMS } = require('../utils/fast2sms');
 
 // POST /api/webhooks/razorpay
 const razorpayWebhook = async (req, res) => {
@@ -96,6 +97,7 @@ async function processEvent(event, payload) {
 
                 // Send WhatsApp receipt if app flow didn't already send it
                 if (payment.user?.phone) {
+                    // Send WhatsApp
                     await sendWhatsApp({
                         phoneNumber: payment.user.phone,
                         templateName: 'invoice_confirmation',
@@ -106,6 +108,20 @@ async function processEvent(event, payload) {
                             'client@ayuxa.com',
                         ],
                     }).catch(() => {});
+
+                    // Send SMS (if enabled and SMS template configured)
+                    if (payment.user.smsEnabled !== false && process.env.FAST2SMS_PAYMENT_TEMPLATE_ID) {
+                        await sendDLTSMS(
+                            payment.user.phone,
+                            process.env.FAST2SMS_PAYMENT_TEMPLATE_ID,
+                            [
+                                payment.user.name || 'Customer',
+                                `₹${payment.amount}`,
+                            ]
+                        ).catch(err => {
+                            logger.warn(`[Webhook] Payment SMS failed: ${err.message}`);
+                        });
+                    }
                 }
             }
             break;

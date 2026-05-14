@@ -6,14 +6,19 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 import { Colors, Fonts, Radius, Shadow } from '@/constants/theme';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useUser } from '@/context/UserContext';
+import { useAuth } from '@/context/AuthContext';
 import { userService } from '@/services/api/userService';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router';
 
 export default function TabLayout() {
   const { t } = useTranslation();
   const { setProfile } = useUser();
+  const { logout } = useAuth();
+  const router = useRouter();
+  const hasHandledError = useRef(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -22,12 +27,28 @@ export default function TabLayout() {
         if (response.success && response.data) {
           setProfile(response.data);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to fetch user profile in global layout:", error);
+
+        // Check if it's a timeout error
+        if (error?.message?.includes("timed out") || error?.message?.includes("timeout")) {
+          if (!hasHandledError.current) {
+            hasHandledError.current = true;
+            try {
+              await logout();
+              setTimeout(() => {
+                router.replace('/(auth)/login' as any);
+              }, 100);
+            } catch (logoutErr) {
+              console.error("Error during logout/redirect:", logoutErr);
+              router.replace('/(auth)/login' as any);
+            }
+          }
+        }
       }
     };
     fetchProfile();
-  }, [setProfile]);
+  }, [setProfile, logout, router]);
 
   return (
     <Tabs
@@ -98,9 +119,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* Hide non-tab screens from the tab bar */}
-      <Tabs.Screen name="homepage" options={{ href: null }} />
-      <Tabs.Screen name="explore" options={{ href: null }} />
     </Tabs>
   );
 }
