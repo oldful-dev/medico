@@ -24,7 +24,7 @@ fi
 DOMAIN="${1:-api.ayuxacare.com}"
 DEPLOY_DIR="/var/www/medico-backend"
 WEBHOOK_DIR="/opt/webhook-receiver"
-REPO_URL="${2:-https://github.com/your-username/medico.git}"
+REPO_URL="${2:-https://github.com/oldful-dev/medico.git}"
 
 echo -e "\n${YELLOW}Configuration:${NC}"
 echo "Domain: $DOMAIN"
