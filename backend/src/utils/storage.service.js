@@ -85,8 +85,10 @@ const buildFilePath = (folder, originalName, userId = null) => {
 
     // Beautiful Hierarchy Logic
     if (folder === 'profile-avatars' || folder === 'avatar') {
-        // Always use .jpg extension for profile avatars to ensure overwrites work
-        return `users/${userId}/profile/avatar.jpg`;
+        // Use avatar-{hash}.jpg to create unique filename each upload (better cache busting)
+        // This forces CDN to fetch fresh content instead of relying on query params
+        const hash = Math.random().toString(36).substring(2, 8);
+        return `users/${userId}/profile/avatar-${hash}.jpg`;
     }
 
     if (folder === 'health-reports' || folder === 'records' || folder === 'medical-records') {
@@ -206,14 +208,23 @@ const uploadFile = async (buffer, folder = 'general', originalName = 'file', fil
     const contentType = detectMimeType(originalName, file);
     const isPrivate = isPrivateFolder(folder);
 
+    logger.info(`📤 buildFilePath called: folder="${folder}", originalName="${originalName}", userId="${userId}" → storagePath="${storagePath}"`);
+
     try {
         const gcsFile = gcsBucket.file(storagePath);
 
-        // For profile avatars, delete old file first to ensure fresh upload (async, don't wait)
+        // For profile avatars, delete old file BEFORE saving new one
         if ((folder === 'profile-avatars' || folder === 'avatar') && userId && userId !== 'anonymous') {
-            setImmediate(() => {
-                gcsFile.delete().catch(() => {}); // Fire and forget
-            });
+            try {
+                const [exists] = await gcsFile.exists();
+                if (exists) {
+                    await gcsFile.delete();
+                    logger.info(`🗑️ Deleted old avatar for user ${userId}`);
+                }
+            } catch (deleteErr) {
+                // Don't block upload if delete fails
+                logger.warn(`⚠️ Failed to delete old avatar: ${deleteErr.message}`);
+            }
         }
 
         // Set appropriate cache headers based on folder type
