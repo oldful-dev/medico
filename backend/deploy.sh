@@ -1,72 +1,57 @@
 #!/bin/bash
 
-# Medico Backend Deployment Script
-# Run this on your VPS when webhook triggers deployment
-
 set -e
 
-DEPLOY_DIR="/home/api.ayuxacare.com"
+DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_FILE="$DEPLOY_DIR/logs/deploy.log"
 
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m'
-
 log() {
-  echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')]${NC} $1" | tee -a $LOG_FILE
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a $LOG_FILE
 }
 
-log_success() {
-  echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] ✓ $1${NC}" | tee -a $LOG_FILE
-}
-
-log_error() {
-  echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] ✗ $1${NC}" | tee -a $LOG_FILE
-}
-
-trap 'log_error "Deployment failed at line $LINENO"; exit 1' ERR
+trap 'log "Deployment failed at line $LINENO"; exit 1' ERR
 
 log "=== Starting Deployment ==="
-
-if [ ! -d "$DEPLOY_DIR" ]; then
-  log_error "Deploy directory not found: $DEPLOY_DIR"
-  exit 1
-fi
-
 cd $DEPLOY_DIR
 
-# Fetch and pull latest
-log "Fetching latest changes..."
+log "Fetching backend files from GitHub..."
 git fetch origin main
-git reset --hard HEAD
-git checkout main
-git pull origin main
+git checkout origin/main -- backend/
 
-# Install dependencies
+log "Syncing files (keeping local scripts)..."
+# Backup local scripts
+cp deploy.sh /tmp/deploy.sh.bak
+cp webhook.js /tmp/webhook.js.bak
+cp ecosystem.config.js /tmp/ecosystem.config.js.bak
+
+# Copy backend files
+cp -rf backend/* .
+rm -rf backend
+
+# Restore local scripts
+cp /tmp/deploy.sh.bak deploy.sh
+cp /tmp/webhook.js.bak webhook.js
+cp /tmp/ecosystem.config.js.bak ecosystem.config.js
+
 log "Installing dependencies..."
 npm ci --production || npm install --production
 
-# Generate Prisma
 log "Generating Prisma client..."
-npm run prisma:generate
+npx prisma generate
 
-# Run migrations
-log "Running database migrations..."
-npm run prisma:migrate -- --skip-generate 2>/dev/null || true
+log "Running migrations..."
+npx prisma migrate deploy 2>/dev/null || true
 
-# Restart PM2
 log "Restarting application..."
-pm2 restart medico-api --wait-ready --listen-timeout 5000
+pm2 restart ayuxacare-api --wait-ready --listen-timeout 5000
 
 sleep 2
 
-if pm2 describe medico-api | grep -q "online"; then
-  log_success "Deployment completed successfully"
+if pm2 describe ayuxacare-api | grep -q "online"; then
+  log "Deployment completed successfully"
   pm2 save
   exit 0
 else
-  log_error "Application failed to start"
-  pm2 logs medico-api --lines 50
+  log "Application failed to start"
   exit 1
 fi
