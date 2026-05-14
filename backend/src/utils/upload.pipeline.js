@@ -6,7 +6,7 @@
 //
 //  Full flow:
 //    1. Validate file (type, size)
-//    2. Upload raw file → GCS (oldful-assets)
+//    2. Upload raw file → GCS (ayuxa-assets)
 //    3. Process: OCR / compression (if applicable)
 //    4. Return { gcsUrl, cdnUrl, processedData }
 //

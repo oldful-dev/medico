@@ -12,11 +12,11 @@ const { logger } = require('../config/logger');
  * @param {string} resourceType - 'image', 'raw', 'video'
  * @returns {Promise<{url: string, publicId: string}>}
  */
-const uploadToCloudinary = (buffer, folder = 'oldful', resourceType = 'auto') => {
+const uploadToCloudinary = (buffer, folder = 'ayuxa', resourceType = 'auto') => {
     return new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
             {
-                folder: `oldful/${folder}`,
+                folder: `ayuxa/${folder}`,
                 resource_type: resourceType,
             },
             (error, result) => {

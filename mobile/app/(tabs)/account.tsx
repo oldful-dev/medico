@@ -16,6 +16,7 @@ import { useUser } from '@/context/UserContext';
 import { useAuth } from '@/context/AuthContext';
 import { useAppConfig } from '@/context/AppConfigContext';
 import { userService } from '@/services/api/userService';
+import { getAssetUrl } from '@/utils/getAssetUrl';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 
@@ -185,7 +186,7 @@ export default function AccountScreen() {
                                 <ActivityIndicator size="large" color={Colors.primary} />
                             ) : (
                                 <Image
-                                    source={profile?.profileImageUrl ? { uri: profile.profileImageUrl } : avatarImg}
+                                    source={profile?.profileImageUrl ? { uri: getAssetUrl(profile.profileImageUrl) } : avatarImg}
                                     style={profile?.profileImageUrl ? styles.avatarFull : styles.avatarDefault}
                                     resizeMode="cover"
                                 />

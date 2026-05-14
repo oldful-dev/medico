@@ -27,8 +27,8 @@ const sendEmail = async ({ to, subject, html, templateId, variables }) => {
 
         const emailData = {
             "from": {
-                "address": process.env.ZEPTOMAIL_SENDER_EMAIL || "notifications@oldful.com",
-                "name": process.env.ZEPTOMAIL_SENDER_NAME || "Oldful Healthcare"
+                "address": process.env.ZEPTOMAIL_SENDER_EMAIL || "notifications@ayuxa.com",
+                "name": process.env.ZEPTOMAIL_SENDER_NAME || "Ayuxa Healthcare"
             },
             "to": [
                 {

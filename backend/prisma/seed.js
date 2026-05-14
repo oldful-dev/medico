@@ -26,11 +26,11 @@ async function main() {
     // ─── 2. Super Admin ───────────────────────
     const passwordHash = await bcrypt.hash('admin123', 12);
     const superAdmin = await prisma.admin.upsert({
-        where: { email: 'superadmin@oldful.com' },
+        where: { email: 'superadmin@ayuxa.com' },
         update: {},
         create: {
             name: 'Super Admin',
-            email: 'superadmin@oldful.com',
+            email: 'superadmin@ayuxa.com',
             phone: '+919999999999',
             passwordHash,
             role: 'SUPER_ADMIN',
@@ -39,11 +39,11 @@ async function main() {
 
     // City admins
     await prisma.admin.upsert({
-        where: { email: 'blr.admin@oldful.com' },
+        where: { email: 'blr.admin@ayuxa.com' },
         update: {},
         create: {
             name: 'Bangalore Admin',
-            email: 'blr.admin@oldful.com',
+            email: 'blr.admin@ayuxa.com',
             passwordHash,
             role: 'CITY_ADMIN',
             cityId: cities[0].id,
@@ -103,8 +103,8 @@ async function main() {
 
     // ─── 4. Plans ─────────────────────────────
     const planData = [
-        { name: 'Care Plan', description: 'Oldful Care Plan - Comprehensive healthcare coverage', benefits: 'Doctor Visit (4/mo), Blood Test (2/mo), Home Nurse (2/mo), Physio (2/mo), 24/7 SOS Call, Priority Booking', quarterlyPrice: 599, biannualPrice: 999, yearlyPrice: 1999, sortOrder: 1 },
-        { name: 'HomeMaker Plan', description: 'Oldful HomeMaker Plan - Complete home care solution', benefits: 'All Care Plan services + Meal Service (20/mo), Home Essentials (4/mo), Tech Helper (4/mo), Unlimited SOS', quarterlyPrice: 1499, biannualPrice: 2499, yearlyPrice: 4799, sortOrder: 2 },
+        { name: 'Care Plan', description: 'Ayuxa Care Plan - Comprehensive healthcare coverage', benefits: 'Doctor Visit (4/mo), Blood Test (2/mo), Home Nurse (2/mo), Physio (2/mo), 24/7 SOS Call, Priority Booking', quarterlyPrice: 599, biannualPrice: 999, yearlyPrice: 1999, sortOrder: 1 },
+        { name: 'HomeMaker Plan', description: 'Ayuxa HomeMaker Plan - Complete home care solution', benefits: 'All Care Plan services + Meal Service (20/mo), Home Essentials (4/mo), Tech Helper (4/mo), Unlimited SOS', quarterlyPrice: 1499, biannualPrice: 2499, yearlyPrice: 4799, sortOrder: 2 },
     ];
 
     for (const p of planData) {

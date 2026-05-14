@@ -285,7 +285,7 @@ const verifyPayment = async (req, res, next) => {
             const { sendPushToUser } = require('../utils/pushNotification.service');
             await sendPushToUser(payment.userId, {
                 title: 'Plan Activated!',
-                body: `Your ${subscription.plan.name} plan is now active. Welcome to Oldful Family!`,
+                body: `Your ${subscription.plan.name} plan is now active. Welcome to Ayuxa Family!`,
                 data: { type: 'subscription_activated', subscriptionId: subscription.id },
             });
         }
@@ -326,7 +326,7 @@ const verifyPayment = async (req, res, next) => {
                 gstAmount,
                 totalAmount: payment.amount,
                 billingName: payment.user.name,
-                description: 'Oldful Healthcare Services',
+                description: 'Ayuxa Healthcare Services',
             });
 
             const { url } = await uploadFile(pdfBuffer, 'invoices', `invoice-${invoiceNumber}.pdf`);
@@ -340,18 +340,18 @@ const verifyPayment = async (req, res, next) => {
             if (payment.user.email) {
                 await sendEmail({
                     to: payment.user.email,
-                    subject: `Invoice ${invoiceNumber} - Oldful Healthcare`,
+                    subject: `Invoice ${invoiceNumber} - Ayuxa Healthcare`,
                     html: `
                         <p>Dear ${payment.user.name},</p>
                         <p>Your payment of ₹${payment.amount} was successful.</p>
                         <p>You can download your GST invoice here: <a href="${url}">Download Invoice</a></p>
-                        <p>Best regards,<br/>Oldful Team</p>
+                        <p>Best regards,<br/>Ayuxa Team</p>
                     `,
                 });
             }
 
             // Send payment confirmation via WhatsApp (Interakt)
-            // Template: oldful_receipt — {{1}}=name {{2}}=amount {{3}}=phone {{4}}=email
+            // Template: ayuxa_receipt — {{1}}=name {{2}}=amount {{3}}=phone {{4}}=email
             await sendWhatsApp({
                 phoneNumber: payment.user.phone,
                 templateName: 'invoice_confirmation',
@@ -359,7 +359,7 @@ const verifyPayment = async (req, res, next) => {
                     payment.user.name, 
                     `₹${payment.amount}`,
                     '+91 94801 98108',
-                    'client@oldful.com'
+                    'client@ayuxa.com'
                 ],
                 headerUrl: url,
             });

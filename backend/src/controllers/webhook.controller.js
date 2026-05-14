@@ -103,7 +103,7 @@ async function processEvent(event, payload) {
                             payment.user.name || 'Customer',
                             `₹${payment.amount}`,
                             '+91 94801 98108',
-                            'client@oldful.com',
+                            'client@ayuxa.com',
                         ],
                     }).catch(() => {});
                 }

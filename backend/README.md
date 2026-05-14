@@ -1,6 +1,6 @@
-# Oldful Backend — REST API
+# Ayuxa Backend — REST API
 
-**Production monolithic REST API for the Oldful elder-care platform.**
+**Production monolithic REST API for the Ayuxa elder-care platform.**
 
 Built with **Node.js + Express + Prisma + PostgreSQL (Supabase)**.
 
@@ -426,7 +426,7 @@ InsuranceApplication, Coupon, MediaAsset, SupportTicket, TicketMessage
 | Auth | JWT + bcrypt |
 | Payments | Razorpay |
 | File Storage | Google Cloud Storage (GCS) |
-| CDN | Cloudflare (assets.oldful.com → GCS) |
+| CDN | Cloudflare (assets.ayuxa.com → GCS) |
 | PDF Engine | PDFKit |
 | Cron | node-cron |
 | Email | ZeptoMail |

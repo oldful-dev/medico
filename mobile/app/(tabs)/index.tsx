@@ -36,7 +36,7 @@ import { getAssetUrl } from '@/utils/getAssetUrl';
 import { LinearGradient } from 'expo-linear-gradient';
 
 // ─── Logo (only static asset — not content-driven) ───────────────────────────
-const logoSmall = require('@/assets/images/9d3e74b5e16af4e10bcec4b72af07a9d93ea14b8.png');
+const logoSmall = require('@/assets/images/onlylogo.png');
 
 // ─── Route Resolver ──────────────────────────────────────────────────────────
 const resolveRoute = (route?: string) => {

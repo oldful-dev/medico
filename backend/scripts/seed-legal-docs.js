@@ -11,12 +11,12 @@ async function seedLegalDocs() {
   <section class="space-y-4">
     <h2 class="text-2xl font-bold text-gray-900">No Medical Advice Disclaimer</h2>
     <p class="text-gray-700 leading-relaxed">
-      The content provided on the Oldful website, including blogs, health tips, and care plans, is for informational purposes only.
+      The content provided on the Ayuxa website, including blogs, health tips, and care plans, is for informational purposes only.
     </p>
     <div class="space-y-3 pl-6 border-l-4 border-blue-400">
       <div>
         <h3 class="font-semibold text-gray-900">Not a doctor</h3>
-        <p class="text-gray-700">Oldful is a care management company, not a hospital or a medical doctor. Our caregivers are trained for assistance, not for performing invasive medical procedures unless explicitly stated and performed by a qualified nurse/doctor.</p>
+        <p class="text-gray-700">Ayuxa is a care management company, not a hospital or a medical doctor. Our caregivers are trained for assistance, not for performing invasive medical procedures unless explicitly stated and performed by a qualified nurse/doctor.</p>
       </div>
       <div>
         <h3 class="font-semibold text-gray-900">Consult Professionals</h3>
@@ -28,16 +28,16 @@ async function seedLegalDocs() {
   <section class="space-y-4">
     <h2 class="text-2xl font-bold text-gray-900">Third-Party Service Disclaimer</h2>
     <p class="text-gray-700 leading-relaxed">
-      Oldful may facilitate services provided by third-party vendors (such as physiotherapists, urban maintenance services, or diagnostic labs).
+      Ayuxa may facilitate services provided by third-party vendors (such as physiotherapists, urban maintenance services, or diagnostic labs).
     </p>
     <div class="space-y-3 pl-6 border-l-4 border-blue-400">
       <div>
         <h3 class="font-semibold text-gray-900">Independent Contractors</h3>
-        <p class="text-gray-700">These vendors are independent contractors and not employees of Oldful.</p>
+        <p class="text-gray-700">These vendors are independent contractors and not employees of Ayuxa.</p>
       </div>
       <div>
         <h3 class="font-semibold text-gray-900">Liability</h3>
-        <p class="text-gray-700">While we exercise due diligence in selecting partners, Oldful assumes no responsibility or liability for any act, error, omission, or negligence committed by third-party providers.</p>
+        <p class="text-gray-700">While we exercise due diligence in selecting partners, Ayuxa assumes no responsibility or liability for any act, error, omission, or negligence committed by third-party providers.</p>
       </div>
     </div>
   </section>
@@ -45,14 +45,14 @@ async function seedLegalDocs() {
   <section class="space-y-4">
     <h2 class="text-2xl font-bold text-gray-900">"As Is" Warranty</h2>
     <p class="text-gray-700 leading-relaxed">
-      The services and the website are provided on an "as is" and "as available" basis. Oldful makes no representations or warranties of any kind, express or implied, regarding the operation of the services or the information, content, or materials included.
+      The services and the website are provided on an "as is" and "as available" basis. Ayuxa makes no representations or warranties of any kind, express or implied, regarding the operation of the services or the information, content, or materials included.
     </p>
   </section>
 
   <section class="space-y-4">
     <h2 class="text-2xl font-bold text-gray-900">Outcome Disclaimer</h2>
     <p class="text-gray-700 leading-relaxed">
-      While Oldful strives to improve the quality of life for elders, we cannot guarantee specific health outcomes. Health conditions are complex and variable; deterioration due to natural causes or pre-existing conditions is not the liability of Oldful.
+      While Ayuxa strives to improve the quality of life for elders, we cannot guarantee specific health outcomes. Health conditions are complex and variable; deterioration due to natural causes or pre-existing conditions is not the liability of Ayuxa.
     </p>
     <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
       <p class="text-sm text-gray-700 italic">
@@ -71,7 +71,7 @@ async function seedLegalDocs() {
       <p><strong>Legal Name of Entity:</strong> OLDFUL GENTLORA ESTEEM LLP</p>
       <p><strong>Headquarters Address:</strong> No 402-B 1TF, ITI HBCS Layout, Phase 3, Mysore Road Rajarajeshwari Nagar Bangalore 560039</p>
       <p><strong>Branch Office(s):</strong> None</p>
-      <p><strong>Contact:</strong> <a href="mailto:compliance@oldful.com" class="text-blue-600 hover:underline">compliance@oldful.com</a> | +91 80621 80429</p>
+      <p><strong>Contact:</strong> <a href="mailto:compliance@ayuxa.com" class="text-blue-600 hover:underline">compliance@ayuxa.com</a> | +91 80621 80429</p>
     </div>
   </section>
 
@@ -85,7 +85,7 @@ async function seedLegalDocs() {
       </div>
       <div>
         <p class="font-semibold text-gray-900">Email</p>
-        <p class="text-gray-700"><a href="mailto:compliance@oldful.com" class="text-blue-600 hover:underline">compliance@oldful.com</a></p>
+        <p class="text-gray-700"><a href="mailto:compliance@ayuxa.com" class="text-blue-600 hover:underline">compliance@ayuxa.com</a></p>
       </div>
       <div>
         <p class="font-semibold text-gray-900">Direct Phone</p>
@@ -107,7 +107,7 @@ async function seedLegalDocs() {
     <p class="text-sm text-gray-600 italic mb-4">(For Law Enforcement Coordination)</p>
     <div class="space-y-2 text-gray-700">
       <p><strong>Name:</strong> SK Murgan</p>
-      <p><strong>Email:</strong> <a href="mailto:compliance@oldful.com" class="text-blue-600 hover:underline">compliance@oldful.com</a></p>
+      <p><strong>Email:</strong> <a href="mailto:compliance@ayuxa.com" class="text-blue-600 hover:underline">compliance@ayuxa.com</a></p>
       <p><strong>Role:</strong> Responsible for compliance and coordination with government agencies/Police/Cyber Cells.</p>
     </div>
   </section>
@@ -115,7 +115,7 @@ async function seedLegalDocs() {
   <section class="space-y-4">
     <h2 class="text-2xl font-bold text-gray-900">Service Provider Details</h2>
     <p class="text-gray-700 leading-relaxed">
-      Oldful acts as a Marketplace / Facilitator for specific medical and home maintenance services. The specific service provider (Seller) details, including their legal name and contact, will be provided to the User upon confirmation of booking.
+      Ayuxa acts as a Marketplace / Facilitator for specific medical and home maintenance services. The specific service provider (Seller) details, including their legal name and contact, will be provided to the User upon confirmation of booking.
     </p>
     <p class="text-gray-700"><strong>Country of Origin:</strong> All services and goods supplied are of Indian Origin.</p>
   </section>
@@ -141,7 +141,7 @@ async function seedLegalDocs() {
   <section class="space-y-4">
     <h2 class="text-2xl font-bold text-gray-900">Quality Standards</h2>
     <p class="text-gray-700 leading-relaxed">
-      Oldful maintains ISO 9001-2015 Certification, ensuring precision and excellence in our geriatric care management processes.
+      Ayuxa maintains ISO 9001-2015 Certification, ensuring precision and excellence in our geriatric care management processes.
     </p>
   </section>
 </div>
@@ -152,7 +152,7 @@ async function seedLegalDocs() {
   <section class="space-y-4">
     <h2 class="text-2xl font-bold text-gray-900">Purpose</h2>
     <p class="text-gray-700 leading-relaxed">
-      To clearly define the duties, limitations, and operational protocols for Oldful Care Associates (Caregivers) and Care Managers to ensure professional, safe, and dignified care.
+      To clearly define the duties, limitations, and operational protocols for Ayuxa Care Associates (Caregivers) and Care Managers to ensure professional, safe, and dignified care.
     </p>
   </section>
 
@@ -217,7 +217,7 @@ async function seedLegalDocs() {
   <section class="space-y-4">
     <h2 class="text-2xl font-bold text-gray-900">Service Exclusions (What We DO NOT Do)</h2>
     <p class="text-gray-700 leading-relaxed mb-4">
-      To protect our staff and liability, Oldful Care Associates are strictly prohibited from performing these tasks:
+      To protect our staff and liability, Ayuxa Care Associates are strictly prohibited from performing these tasks:
     </p>
     <div class="space-y-3 p-4 bg-red-50 border border-red-200 rounded-lg">
       <div>
@@ -288,7 +288,7 @@ async function seedLegalDocs() {
   <section class="space-y-4">
     <h2 class="text-2xl font-bold text-gray-900">Medical Disclaimer</h2>
     <p class="text-gray-700 leading-relaxed">
-      Oldful Care Associates are caregivers, not doctors. They will never make medical decisions (e.g. insulin adjustment). They will contact the Family or Care Manager who will consult the treating physician.
+      Ayuxa Care Associates are caregivers, not doctors. They will never make medical decisions (e.g. insulin adjustment). They will contact the Family or Care Manager who will consult the treating physician.
     </p>
   </section>
 </div>

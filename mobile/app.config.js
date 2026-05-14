@@ -1,6 +1,6 @@
 export default {
   "expo": {
-    "name": "Ayuxa Care",
+    "name": "Ayuxa",
     "slug": "ayuxacare",
     "owner": "ayuxacare",
     "version": "1.0.0",

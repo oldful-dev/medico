@@ -311,7 +311,7 @@ export default function ServiceConfirmationScreen() {
                                  if (lower.includes('nurse') || lower.includes('physio') || lower.includes('fitness') || lower.includes('doctor'))
                                      return 'A healthcare professional or therapist will be assigned to you shortly.';
                                  if (lower.includes('paper') || lower.includes('legal') || lower.includes('bank') || lower.includes('bill') || lower.includes('upgrade'))
-                                     return 'An Ayuxa Care concierge assistant will be assigned to handle your request.';
+                                     return 'An Ayuxa concierge assistant will be assigned to handle your request.';
                                  if (lower.includes('cleaning') || lower.includes('repair') || lower.includes('plumbing') || lower.includes('electrical') || lower.includes('tech'))
                                      return 'A certified technician is being prepared for your home visit.';
                                  return 'A dedicated partner will be assigned to your request shortly. You can track their status.';

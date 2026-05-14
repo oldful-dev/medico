@@ -134,7 +134,7 @@ const triggerSOS = async (req, res) => {
     // 6. Notify admin via email — non-fatal
     try {
         await sendEmail({
-            to: process.env.ADMIN_EMAIL || 'admin@oldful.com',
+            to: process.env.ADMIN_EMAIL || 'admin@ayuxa.com',
             subject: `🚨 EMERGENCY: SOS triggered by ${user.name}`,
             html: `
                 <h2>SOS Alert Triggered</h2>
@@ -174,7 +174,7 @@ const triggerSOS = async (req, res) => {
     try {
         await sendPushToUser(user.id, {
             title: 'SOS Alert Sent',
-            body: 'Your emergency alert has been sent to the Oldful team and your emergency contacts.',
+            body: 'Your emergency alert has been sent to the Ayuxa team and your emergency contacts.',
             data: { type: 'sos_confirmation', sosId: sosAlert.id },
         });
     } catch (err) {

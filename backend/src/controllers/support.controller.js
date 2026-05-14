@@ -97,7 +97,7 @@ const createTicket = async (req, res, next) => {
         // Notify Admin instantly
         const user = await prisma.user.findUnique({ where: { id: ticket.userId } });
         await sendEmail({
-            to: process.env.SUPPORT_EMAIL || process.env.ADMIN_EMAIL || 'client@oldful.com',
+            to: process.env.SUPPORT_EMAIL || process.env.ADMIN_EMAIL || 'client@ayuxa.com',
             subject: `[Support Ticket ${ticketCode}] ${ticket.subject}`,
             html: `
                 <h3>New Support Ticket Created</h3>
@@ -206,7 +206,7 @@ const addMessage = async (req, res, next) => {
         if (req.user.type === 'user') {
             // Notify Admin if message is from user
             await sendEmail({
-                to: process.env.ADMIN_EMAIL || 'admin@oldful.com',
+                to: process.env.ADMIN_EMAIL || 'admin@ayuxa.com',
                 subject: `[Support Msg] ${ticket.ticketCode}: New message from user`,
                 html: `
                     <p>New reply for ticket <strong>${ticket.ticketCode}</strong>:</p>
@@ -289,12 +289,12 @@ const submitCareers = async (req, res, next) => {
         
         // 1. Notify Internal Team
         await sendEmail({
-            to: 'business@oldful.com',
+            to: 'business@ayuxa.com',
             subject: `[Job Application] ${role} - ${name}`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
                     <h2 style="color: #048357;">New Job Application Received</h2>
-                    <p>A new candidate has applied for a position at Oldful via the Careers page.</p>
+                    <p>A new candidate has applied for a position at Ayuxa via the Careers page.</p>
                     
                     <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                         <p><strong>Candidate Name:</strong> ${name}</p>
@@ -319,12 +319,12 @@ const submitCareers = async (req, res, next) => {
         // 2. Send Confirmation to Candidate
         await sendEmail({
             to: email,
-            subject: `Application Received: ${role} at Oldful`,
+            subject: `Application Received: ${role} at Ayuxa`,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6; border: 1px solid #eee; padding: 30px; border-radius: 20px;">
                     <div style="text-align: center; margin-bottom: 30px;">
                         <h2 style="color: #048357; margin-bottom: 10px;">Application Received!</h2>
-                        <p style="font-size: 16px; color: #666;">Hi ${name}, thank you for your interest in joining Oldful.</p>
+                        <p style="font-size: 16px; color: #666;">Hi ${name}, thank you for your interest in joining Ayuxa.</p>
                     </div>
                     
                     <p style="text-align: center;">We've received your application for the <strong>${role}</strong> position. Our talent acquisition team is currently reviewing your profile and will get back to you if your qualifications match our current needs.</p>
@@ -345,7 +345,7 @@ const submitCareers = async (req, res, next) => {
                     <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;"/>
                     
                     <div style="text-align: center;">
-                        <p style="font-size: 14px; font-weight: bold; color: #048357; margin-bottom: 5px;">Team Oldful</p>
+                        <p style="font-size: 14px; font-weight: bold; color: #048357; margin-bottom: 5px;">Team Ayuxa</p>
                         <p style="font-size: 12px; color: #aaa;">Making Elder Care Better, Together.</p>
                     </div>
                 </div>
@@ -369,12 +369,12 @@ const subscribeNewsletter = async (req, res, next) => {
 
         await sendEmail({
             to: email,
-            subject: 'Welcome to the Oldful Journal!',
+            subject: 'Welcome to the Ayuxa Journal!',
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6; border: 1px solid #eee; padding: 40px; border-radius: 24px; text-align: center;">
                     <div style="margin-bottom: 30px;">
                         <h1 style="color: #048357; margin-bottom: 10px; font-size: 28px;">You're In!</h1>
-                        <p style="font-size: 16px; color: #666;">Thank you for subscribing to the Oldful Journal.</p>
+                        <p style="font-size: 16px; color: #666;">Thank you for subscribing to the Ayuxa Journal.</p>
                     </div>
                     
                     <div style="background: #f8fbf9; border: 1px solid #e0f2e9; padding: 30px; border-radius: 20px; margin: 30px 0;">
@@ -387,13 +387,13 @@ const subscribeNewsletter = async (req, res, next) => {
 
                     <p style="font-size: 14px; color: #888; margin-top: 30px;">
                         Stay tuned for our next issue. To ensure our emails reach you, 
-                        please add <b>care@oldful.com</b> to your contacts.
+                        please add <b>care@ayuxa.com</b> to your contacts.
                     </p>
                     
                     <hr style="border: none; border-top: 1px solid #eee; margin: 40px 0;"/>
                     
                     <div>
-                        <p style="font-size: 16px; font-weight: bold; color: #048357; margin-bottom: 5px;">Team Oldful</p>
+                        <p style="font-size: 16px; font-weight: bold; color: #048357; margin-bottom: 5px;">Team Ayuxa</p>
                         <p style="font-size: 12px; color: #aaa;">Digital Health & Elder Care Management</p>
                     </div>
                 </div>
@@ -402,7 +402,7 @@ const subscribeNewsletter = async (req, res, next) => {
 
         // Also notify business team of new sub
         await sendEmail({
-            to: 'business@oldful.com',
+            to: 'business@ayuxa.com',
             subject: `[New Subscriber] ${email}`,
             html: `<p>New newsletter subscription from: <b>${email}</b></p>`
         });

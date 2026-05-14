@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import { useAuth } from '@/context/AuthContext';
 // Figma-exported assets
-const logoImage = require('@/assets/images/2549b5ede370bbb67a088920cac9a8719fec5968.png');
+const logoImage = require('@/assets/images/nameandlogo.png');
 const isoBadgeImage = require('@/assets/images/727280010474dfd5bcb5f19d227968488ebee634.png');
 const mandalaImage = require('@/assets/images/0b96a399f500dd9db46b7a473a511a23fa2abc2b.png');
 

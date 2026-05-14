@@ -28,7 +28,7 @@ import { useTranslation } from 'react-i18next';
 import { locationService } from '@/services/device/locationService';
 
 // Figma-exported assets
-const logoImage = require('@/assets/images/2549b5ede370bbb67a088920cac9a8719fec5968.png');
+const logoImage = require('@/assets/images/nameandlogo.png');
 const defaultProfilePhoto = require('@/assets/images/5ee16de31c7d04e701fcca78f59c060b6f999c60.png');
 const checkmarkImage = require('@/assets/images/5a8dfb52053e366f8cbd3f09d8e940ff289c61af.png');
 

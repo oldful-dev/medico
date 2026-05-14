@@ -2,8 +2,8 @@
  * Migration Script: Normalize all asset URLs in the database
  *
  * Replaces:
- *   - https://storage.googleapis.com/oldful-assets/...  → https://assets.oldful.com/...
- *   - https://pub-bedeea30b7b14e2bb224501a5e1260c8.r2.dev/...  → https://assets.oldful.com/...
+ *   - https://storage.googleapis.com/ayuxa-assets/...  → https://assets.ayuxa.com/...
+ *   - https://pub-bedeea30b7b14e2bb224501a5e1260c8.r2.dev/...  → https://assets.ayuxa.com/...
  *   - Any other R2 / GCS direct URLs
  *
  * Usage:
@@ -17,12 +17,12 @@ require('dotenv').config();
 const prisma = require('../src/config/database');
 const { logger } = require('../src/config/logger');
 
-const CDN_BASE = 'https://assets.oldful.com';
+const CDN_BASE = 'https://assets.ayuxa.com';
 
 // Patterns to replace — order matters (most specific first)
 const URL_PATTERNS = [
     { find: 'https://pub-bedeea30b7b14e2bb224501a5e1260c8.r2.dev/', replace: `${CDN_BASE}/` },
-    { find: 'https://storage.googleapis.com/oldful-assets/', replace: `${CDN_BASE}/` },
+    { find: 'https://storage.googleapis.com/ayuxa-assets/', replace: `${CDN_BASE}/` },
 ];
 
 // Tables and columns that may contain asset URLs

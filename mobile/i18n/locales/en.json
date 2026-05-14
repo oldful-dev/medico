@@ -40,7 +40,7 @@
 
   "auth": {
     "splash_tagline": "ISO 9001:2015 Certified",
-    "login_title": "Login to Ayuxa Care",
+    "login_title": "Login to Ayuxa",
     "login_subtitle": "Enter your mobile number to continue",
     "phone_placeholder": "Enter mobile number",
     "send_otp": "Send OTP",
@@ -304,7 +304,7 @@
     "whatsapp_updates": "WhatsApp Updates",
     "promotional_offers": "Promotional Offers",
     "help_support": "Help & Support",
-    "rate_us": "Rate Ayuxa Care",
+    "rate_us": "Rate Ayuxa",
     "terms_privacy": "Terms & Privacy Policy",
     "logout": "Logout",
     "update_photo": "Update Profile Photo",

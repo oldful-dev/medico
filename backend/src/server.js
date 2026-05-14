@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════
-//  Oldful Backend — Production Server
+//  Ayuxa Backend — Production Server
 //
 //  Security layers:
 //    1. Helmet (HTTP headers)
@@ -81,9 +81,9 @@ const ALLOWED_ORIGINS = [
     process.env.ADMIN_FRONTEND_URL,
     process.env.APP_FRONTEND_URL,
     process.env.WEB_FRONTEND_URL,
-    'https://assets.oldful.com',
-    'https://oldful.com',
-    'https://www.oldful.com',
+    'https://assets.ayuxa.com',
+    'https://ayuxa.com',
+    'https://www.ayuxa.com',
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3003',
@@ -170,7 +170,7 @@ app.get('/api/health', async (req, res) => {
     // Basic health — always fast
     const health = {
         success: true,
-        message: 'Oldful API is running',
+        message: 'Ayuxa API is running',
         version: '2.0.0',
         timestamp: new Date().toISOString(),
         uptime: Math.floor(process.uptime()),
@@ -251,7 +251,7 @@ logger.info('🔌 Socket.io initialized');
 
 // ═══ START SERVER ═══════════════════════════════════════════
 server.listen(PORT, '0.0.0.0', () => {
-    logger.info(`🚀 Oldful Backend running on port ${PORT}`);
+    logger.info(`🚀 Ayuxa Backend running on port ${PORT}`);
     logger.info(`📋 Environment: ${process.env.NODE_ENV}`);
     logger.info(`🔒 Trust proxy: enabled`);
 

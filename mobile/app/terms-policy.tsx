@@ -49,21 +49,21 @@ export default function TermsPolicyScreen() {
                     
                     <Section 
                         title="Acceptance of Terms" 
-                        body="By accessing the website www.ayuxacare.com (“Website”) or subscribing to the services provided by Ayuxa Care (“Company,” “we,” “us,” or “our”), you (“User,” “Client,” or “Subscriber”) agree to be bound by these Terms and Conditions. If you do not agree, please do not use our services." 
+                        body="By accessing the website www.ayuxacare.com (“Website”) or subscribing to the services provided by Ayuxa (“Company,” “we,” “us,” or “our”), you (“User,” “Client,” or “Subscriber”) agree to be bound by these Terms and Conditions. If you do not agree, please do not use our services." 
                     />
 
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Service Description</Text>
-                        <Text style={styles.bodyText}>Ayuxa Care provides comprehensive elder care management services, including but not limited to:</Text>
+                        <Text style={styles.bodyText}>Ayuxa provides comprehensive elder care management services, including but not limited to:</Text>
                         <BulletPoint text="Care coordination and health monitoring." />
                         <BulletPoint text="Assistance with daily living activities via deployed caregivers." />
                         <BulletPoint text="Facilitation of third-party services (e.g., physiotherapy, home maintenance)." />
-                        <Text style={[styles.bodyText, { marginTop: 10 }]}>Note: Ayuxa Care acts as a care management platform. While we vet our partners, specific medical or maintenance services may be executed by independent third-party professionals.</Text>
+                        <Text style={[styles.bodyText, { marginTop: 10 }]}>Note: Ayuxa acts as a care management platform. While we vet our partners, specific medical or maintenance services may be executed by independent third-party professionals.</Text>
                     </View>
 
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>User Obligations & Eligibility</Text>
-                        <BulletPoint text="Accuracy of Information: You agree to provide accurate, current, and complete medical and personal information regarding the elder. Ayuxa Care is not liable for adverse outcomes resulting from withheld or inaccurate medical history." />
+                        <BulletPoint text="Accuracy of Information: You agree to provide accurate, current, and complete medical and personal information regarding the elder. Ayuxa is not liable for adverse outcomes resulting from withheld or inaccurate medical history." />
                         <BulletPoint text="Safe Environment: You agree to provide a safe and respectful environment for our caregivers and service partners. We have a zero-tolerance policy for abuse, harassment, or misconduct towards our staff." />
                         <BulletPoint text="Authority: If you are subscribing on behalf of an elder, you represent that you have the legal authority/consent to make decisions regarding their care." />
                     </View>
@@ -73,7 +73,7 @@ export default function TermsPolicyScreen() {
                         <BulletPoint text="Subscription Model: Services are offered on a subscription basis (e.g., Monthly, Quarterly, Annual)." />
                         <BulletPoint text="Auto-Renewal: Subscriptions will automatically renew at the end of the billing cycle unless cancelled in writing 7 days prior to the renewal date." />
                         <BulletPoint text="Payment Terms: Fees must be paid in advance. We reserve the right to suspend services immediately if payment is not received by the due date." />
-                        <BulletPoint text="Refund Policy: Cancellations for mid-cycle cancellations are calculated on a pro-rata basis. Full refunds are issued only if Ayuxa Care fails to deploy a caregiver/service as per the SLA." />
+                        <BulletPoint text="Refund Policy: Cancellations for mid-cycle cancellations are calculated on a pro-rata basis. Full refunds are issued only if Ayuxa fails to deploy a caregiver/service as per the SLA." />
                     </View>
 
                     <View style={styles.alertBox}>
@@ -81,14 +81,14 @@ export default function TermsPolicyScreen() {
                         <View style={{ flex: 1, marginLeft: 10 }}>
                             <Text style={styles.alertTitle}>Medical Emergency Protocol</Text>
                             <Text style={styles.alertText}>
-                                Ayuxa Care is NOT an Emergency Service: In the event of a life-threatening medical emergency (heart attack, stroke, etc.), the User must contact emergency services (Ambulance/Hospital) immediately.
+                                Ayuxa is NOT an Emergency Service: In the event of a life-threatening medical emergency (heart attack, stroke, etc.), the User must contact emergency services (Ambulance/Hospital) immediately.
                             </Text>
                         </View>
                     </View>
 
                     <Section 
                         title="Limitation of Liability" 
-                        body="Ayuxa Care integrates services from third-party vendors. We are not liable for the negligence or malpractice of these independent providers, though we will assist in dispute resolution. Total liability shall not exceed the amount paid by the User in the three months preceding the claim." 
+                        body="Ayuxa integrates services from third-party vendors. We are not liable for the negligence or malpractice of these independent providers, though we will assist in dispute resolution. Total liability shall not exceed the amount paid by the User in the three months preceding the claim." 
                     />
 
                     <View style={styles.divider} />
@@ -141,7 +141,7 @@ export default function TermsPolicyScreen() {
                                PRIVACY POLICY
                     ────────────────────────────────────────────────────────────────── */}
                     <Text style={styles.majorHeading}>PRIVACY POLICY</Text>
-                    <Text style={styles.bodyText}>Ayuxa Care is committed to protecting the privacy and dignity of our users. This policy is in compliance with the IT Act 2000 and the Digital Personal Data Protection Act 2023.</Text>
+                    <Text style={styles.bodyText}>Ayuxa is committed to protecting the privacy and dignity of our users. This policy is in compliance with the IT Act 2000 and the Digital Personal Data Protection Act 2023.</Text>
 
                     <View style={[styles.section, { marginTop: 15 }]}>
                         <Text style={styles.sectionTitle}>Information We Collect</Text>
