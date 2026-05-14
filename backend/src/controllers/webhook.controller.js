@@ -116,7 +116,7 @@ async function processEvent(event, payload) {
                             process.env.FAST2SMS_PAYMENT_TEMPLATE_ID,
                             [
                                 payment.user.name || 'Customer',
-                                `₹${payment.amount}`,
+                                payment.amount.toString(), // Just the amount, template adds ₹
                             ]
                         ).catch(err => {
                             logger.warn(`[Webhook] Payment SMS failed: ${err.message}`);
