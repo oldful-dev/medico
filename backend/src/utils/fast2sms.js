@@ -132,32 +132,107 @@ const sendDLTSMS = async (phoneNumber, templateId, variablesArray = []) => {
 };
 
 /**
- * Send WhatsApp via Fast2SMS
+ * Send WhatsApp via Fast2SMS WABA Templates
+ * Maps logical template names → Fast2SMS WABA template IDs
+ *
+ * Reference: https://docs.fast2sms.com/reference/get-waba-template-details
  */
-const sendWhatsAppMessage = async (phoneNumber, templateName, parameters = []) => {
+
+// Template mapping: logical name → Fast2SMS WABA template ID
+const WABA_TEMPLATES = {
+    // Authentication
+    verification_code: 20515,
+
+    // Marketing
+    ayuxa_remember: 20510,
+    birthday_wishes: 20511,
+    plan_expiry_reminder: 20523,
+    feedback: 20525,
+
+    // Utility
+    lab_test: 20512,
+    urgent_alert: 20513,
+    order_status: 20519,
+    payment_successful: 20520,
+    booking_confirmation: 20521,
+    prescription_received: 20522,
+
+    // Onboarding
+    welcome_flow: 20514,
+};
+
+/**
+ * Send WhatsApp via Fast2SMS WABA Templates
+ * @param {string} phoneNumber - Recipient phone (10 digits, any format)
+ * @param {string} templateName - Key from WABA_TEMPLATES
+ * @param {string[]} variableValues - Ordered variable values for {Var1}, {Var2}, etc.
+ * @param {string} [mediaUrl] - Optional: URL for media (image/document)
+ * @param {string} [documentFilename] - Optional: filename for document
+ * @returns {Promise<boolean>}
+ */
+const sendWhatsAppMessage = async (phoneNumber, templateName, variableValues = [], mediaUrl = null, documentFilename = null) => {
     try {
-        if (!process.env.FAST2SMS_WHATSAPP_API_KEY) {
-            logger.warn('FAST2SMS_WHATSAPP_API_KEY not set. Simulating WhatsApp send.');
+        if (!process.env.FAST2SMS_API_KEY) {
+            logger.warn('FAST2SMS_API_KEY not set. Simulating WhatsApp WABA send.');
             return true;
         }
 
+        // Normalize phone to 10 digits
         const cleanNumber = phoneNumber.replace(/\D/g, '').slice(-10);
 
-        const response = await axios.post(`${WHATSAPP_URL}/send`, {
-            phone: cleanNumber,
-            template_name: templateName,
-            body: parameters,
-        }, {
-            headers: {
-                'authorization': process.env.FAST2SMS_WHATSAPP_API_KEY,
-                'Content-Type': 'application/json'
-            }
+        // Get template ID
+        const templateId = WABA_TEMPLATES[templateName];
+        if (!templateId) {
+            logger.warn(`[Fast2SMS WABA] Unknown template: ${templateName}. Skipping send.`);
+            return false;
+        }
+
+        const apiKey = process.env.FAST2SMS_API_KEY;
+
+        // Build query params
+        const params = new URLSearchParams({
+            authorization: apiKey,
+            message_id: templateId,
+            phone_number_id: process.env.FAST2SMS_WABA_PHONE_NUMBER_ID || '1137788802753379',
+            numbers: cleanNumber,
         });
 
-        logger.info(`📱 WhatsApp sent to ${cleanNumber}`);
-        return true;
+        // Add variables if provided
+        if (variableValues.length > 0) {
+            params.append('variables_values', variableValues.map(String).join('|'));
+        }
+
+        // Add media URL if provided
+        if (mediaUrl) {
+            params.append('media_url', mediaUrl);
+        }
+
+        // Add document filename if provided
+        if (documentFilename) {
+            params.append('document_filename', documentFilename);
+        }
+
+        const url = `${WHATSAPP_URL}?${params.toString()}`;
+
+        const response = await axios.get(url, {
+            timeout: 10000,
+        });
+
+        const resData = response.data;
+
+        if (resData.return === true || resData.status === 'sent') {
+            logger.info(`[Fast2SMS WABA] ✅ WhatsApp → +91${cleanNumber} [${templateName} / ID:${templateId}]`);
+            return true;
+        }
+
+        logger.warn(`[Fast2SMS WABA] Rejected: ${JSON.stringify(resData)}`);
+        return false;
+
     } catch (error) {
-        logger.error('Fast2SMS WhatsApp Error:', error.response?.data || error.message);
+        const errData = error.response?.data;
+        const errStatus = error.response?.status;
+        const errMsg = typeof errData === 'string' ? errData.substring(0, 200) : JSON.stringify(errData);
+        logger.error(`[Fast2SMS WABA] Error [${errStatus || 'network'}]: ${errMsg || error.message}`);
         return false;
     }
 };
@@ -166,4 +241,5 @@ module.exports = {
     sendSMS,
     sendDLTSMS,
     sendWhatsAppMessage,
+    WABA_TEMPLATES,
 };

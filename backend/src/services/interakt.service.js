@@ -1,154 +1,150 @@
 // ──────────────────────────────────────────────
-//  Interakt Service — WhatsApp Business API
-//  Replaces Fast2SMS for all WhatsApp messaging.
-//  Fast2SMS is kept solely for SMS/OTP delivery.
+//  Fast2SMS WABA Service — WhatsApp Business API
+//  Replaces Interakt for all WhatsApp messaging.
+//  SMS/OTP delivery remains on Fast2SMS.
 //
-//  Interakt API docs: https://developers.interakt.ai
-//  Auth: Basic (API key is pre-encoded by Interakt)
+//  Fast2SMS WABA API docs: https://docs.fast2sms.com/reference/get-waba-template-details
+//  Auth: API key in query params
 // ──────────────────────────────────────────────
 
 const axios = require('axios');
 const { logger } = require('../config/logger');
 
-const BASE_URL = 'https://api.interakt.ai/v1/public/message/';
-const MAX_RETRIES = 2;
-const RETRY_DELAY_MS = 1000;
+const WHATSAPP_URL = 'https://www.fast2sms.com/dev/whatsapp';
 
-// ─── Approved template registry ───────────────
-// Maps logical event names → actual Meta-approved
-// template names on the Interakt dashboard.
+// ─── WABA Template Registry ───────────────────
+// Maps logical event names → Fast2SMS WABA template IDs
+// Each template is pre-approved on Meta with specific variables
 //
-// Template reference (approved as of 2026-04-01):
+// Template reference (approved as of 2026-05):
 //
-//  otp_template               AUTHENTICATION  {{1}}=code
-//  ayuxa_welcome             MARKETING       {{1}}=name                       (DOCUMENT header)
-//  service_request_           UTILITY         {{1}}=name {{2}}=service {{3}}=orderId {{4}}=phone {{5}}=email
-//  payment_link               UTILITY         {{1}}=name {{2}}=amount {{3}}=service {{4}}=paymentUrl
-//  ayuxa_receipt             UTILITY         {{1}}=name {{2}}=amount {{3}}=phone {{4}}=email  (DOCUMENT header)
-//  prescription_flow          UTILITY         {{1}}=name {{2}}=orderRef
-//  lab_report_delivery        UTILITY         {{1}}=name                       (DOCUMENT header)
-//  medication_reminder_daily  UTILITY         (no body vars)
-//  renewal_reminder           MARKETING       {{1}}=name {{2}}=planName {{3}}=phone {{4}}=email
-//  feedback_survey_form       UTILITY         {{1}}=name
+//  20515 verification_code      AUTHENTICATION {{1}}=code {{2}}=support_contact (Expires in 5 minutes)
+//  20510 ayuxa_remember         MARKETING {{1}}=name (Header: Friendly Remember!)
+//  20511 birthday_wishes        MARKETING {{1}}=name (Header: Image Media Required)
+//  20512 lab_test              UTILITY {{1}}=name (Header: Lab Test Report Available)
+//  20513 urgent_alert          UTILITY {{1}}=alert_type {{2}}=ayuxa_id (URGENT ALERT SOS)
+//  20514 welcome_flow          MARKETING (Header: Document Media Required)
+//  20519 order_status          UTILITY {{1}}=name {{2}}=order_id (Header: Order Cancelled)
+//  20520 payment_successful    UTILITY {{1}}=name {{2}}=amount (Header: Payment successful!)
+//  20521 booking_confirmation  UTILITY {{1}}=name {{2}}=order_id (Header: Booking Confirmed)
+//  20522 prescription_received UTILITY {{1}}=name (Header: Doctor Prescription Uploaded)
+//  20523 plan_expiry_reminder  MARKETING {{1}}=name (Header: Plan expiry reminder!)
+//  20525 feedback              MARKETING {{1}}=name (Header: Feedback Request)
 //
 const TEMPLATES = {
     // ── Authentication ──
-    otp:                     'otp_template',
+    otp:                     20515,  // verification_code
 
     // ── Core transactional ──
-    welcome_message:         'ayuxa_welcome',
-    booking_confirmation:    'service_request_',
-    payment_link:            'payment_link',
-    payment_confirmation:    'ayuxa_receipt',
-    invoice_confirmation:    'ayuxa_receipt',
+    welcome_message:         20514,  // welcome_flow
+    booking_confirmation:    20521,  // booking_confirmation
+    payment_confirmation:    20520,  // payment_successful
+    invoice_confirmation:    20520,  // payment_successful
+    payment_link:            20520,  // payment_successful (no dedicated template)
 
     // ── Medical flows ──
-    prescription_received:   'prescription_flow',
-    lab_report:              'lab_report_delivery',
-    prescription_reminder:   'medication_reminder_daily',
+    prescription_received:   20522,  // prescription_received
+    lab_report:              20512,  // lab_test
+    prescription_reminder:   20523,  // plan_expiry_reminder (no medication reminder template)
 
     // ── Plan / subscription ──
-    plan_expiry_reminder:    'renewal_reminder',
+    plan_expiry_reminder:    20523,  // plan_expiry_reminder
 
     // ── Support & feedback ──
-    followup_feedback:       'feedback_survey_form',
+    followup_feedback:       20525,  // feedback
+
+    // ── SOS ──
+    sos_alert_admin:         20513,  // urgent_alert
+    sos_alert_family:        20513,  // urgent_alert
 };
 
 // ─── Phone normaliser ─────────────────────────
-// Interakt phoneNumber field expects 10 digits (no country code).
-// countryCode is sent separately as '+91'.
+// Fast2SMS WABA expects 10 digits (no country code)
 const normalisePhone = (phone) => {
     const digits = phone.replace(/\D/g, '');
     if (digits.length === 12 && digits.startsWith('91')) return digits.slice(2);
     if (digits.length === 10) return digits;
-    // Longer strings — take last 10
     return digits.slice(-10);
 };
 
 // ─── Core send function ───────────────────────
 
 /**
- * Send a WhatsApp template message via Interakt.
+ * Send a WhatsApp template message via Fast2SMS WABA.
  *
  * @param {object}   opts
  * @param {string}   opts.phone          - Recipient phone (any format)
  * @param {string}   opts.templateName   - Key from TEMPLATES map above
  * @param {string[]} opts.variables      - Ordered body variable values
- * @param {string}   [opts.callToActionUrl] - Optional URL for URL-button templates
+ * @param {string}   [opts.mediaUrl]     - Optional media URL (image/document)
+ * @param {string}   [opts.documentFilename] - Optional document filename
  * @returns {Promise<boolean>}
  */
-const sendWhatsAppMessage = async ({ phone, templateName, variables = [], callToActionUrl, headerUrl }) => {
-    let apiKey = process.env.INTERAKT_API_KEY;
+const sendWhatsAppMessage = async ({ phone, templateName, variables = [], mediaUrl, documentFilename }) => {
+    let apiKey = process.env.FAST2SMS_API_KEY;
 
     if (!apiKey) {
-        logger.warn('[Interakt] INTERAKT_API_KEY not set — skipping WhatsApp send');
+        logger.warn('[Fast2SMS WABA] FAST2SMS_API_KEY not set — skipping WhatsApp send');
         return false;
     }
 
-    // Handle case where apiKey might already contain "Basic "
-    const authHeader = apiKey.startsWith('Basic ') ? apiKey : `Basic ${apiKey}`;
-
-    const resolvedTemplate = TEMPLATES[templateName] || templateName;
-    const phoneNumber = normalisePhone(phone);
-
-    const payload = {
-        fullPhoneNumber: `+91${phoneNumber}`,
-        callbackData: `event:${templateName}`,
-        type: 'Template',
-        template: {
-            name: resolvedTemplate,
-            languageCode: ['renewal_reminder', 'feedback_survey_form'].includes(resolvedTemplate) ? 'en_US' : 'en',
-            ...(variables.length > 0 && {
-                bodyValues: variables.map(String),
-            }),
-            ...(headerUrl && {
-                headerValues: [headerUrl]
-            }),
-            ...(callToActionUrl && {
-                buttonValues: { 0: [callToActionUrl] },
-            }),
-        },
-    };
-
-    let lastError = null;
-
-    for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
-        try {
-            const response = await axios.post(BASE_URL, payload, {
-                headers: {
-                    Authorization: authHeader,
-                    'Content-Type': 'application/json',
-                },
-                timeout: 10000,
-            });
-
-            const resData = response.data;
-
-            if (resData.result === true || resData.message === 'Request Accepted.') {
-                logger.info(`[Interakt] ✅ WhatsApp → +91${phoneNumber} [${resolvedTemplate}]`);
-                return true;
-            }
-
-            logger.warn(`[Interakt] Rejected (attempt ${attempt}): ${JSON.stringify(resData)}`);
-            lastError = resData.message || JSON.stringify(resData);
-
-        } catch (err) {
-            const status = err.response?.status;
-            const errBody = err.response?.data;
-            lastError = `HTTP ${status}: ${errBody?.message || JSON.stringify(errBody) || err.message}`;
-            logger.warn(`[Interakt] Request failed (attempt ${attempt}): ${lastError}`);
-
-            // Don't retry on 4xx client errors
-            if (status && status >= 400 && status < 500) break;
-        }
-
-        if (attempt <= MAX_RETRIES) {
-            await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt));
-        }
+    const resolvedTemplateId = TEMPLATES[templateName] || null;
+    if (!resolvedTemplateId) {
+        logger.warn(`[Fast2SMS WABA] Unknown template: ${templateName} — skipping send`);
+        return false;
     }
 
-    logger.error(`[Interakt] ❌ Failed → +91${phoneNumber} [${resolvedTemplate}]: ${lastError}`);
-    return false;
+    const phoneNumber = normalisePhone(phone);
+    const phoneNumberId = process.env.FAST2SMS_WABA_PHONE_NUMBER_ID || '1137788802753379';
+
+    try {
+        // Build query parameters
+        const params = new URLSearchParams({
+            authorization: apiKey,
+            message_id: String(resolvedTemplateId),
+            phone_number_id: phoneNumberId,
+            numbers: phoneNumber,
+        });
+
+        // Add variables if provided (pipe-separated)
+        if (variables.length > 0) {
+            params.append('variables_values', variables.map(String).join('|'));
+        }
+
+        // Add media URL if provided
+        if (mediaUrl) {
+            params.append('media_url', mediaUrl);
+        }
+
+        // Add document filename if provided
+        if (documentFilename) {
+            params.append('document_filename', documentFilename);
+        }
+
+        const url = `${WHATSAPP_URL}?${params.toString()}`;
+
+        const response = await axios.get(url, {
+            timeout: 10000,
+        });
+
+        const resData = response.data;
+
+        // Fast2SMS WABA returns { return: true } or { status: 'sent' } on success
+        if (resData.return === true || resData.status === 'sent') {
+            logger.info(`[Fast2SMS WABA] ✅ WhatsApp → +91${phoneNumber} [${templateName} / ID:${resolvedTemplateId}]`);
+            return true;
+        }
+
+        logger.warn(`[Fast2SMS WABA] Rejected (${templateName}): ${JSON.stringify(resData)}`);
+        return false;
+
+    } catch (error) {
+        const status = error.response?.status;
+        const errBody = error.response?.data;
+        const errMsg = typeof errBody === 'string' ? errBody : JSON.stringify(errBody) || error.message;
+        logger.error(`[Fast2SMS WABA] Request failed (${templateName}): HTTP ${status || 'network'}: ${errMsg}`);
+        return false;
+    }
 };
 
 // ─── High-level event helpers ─────────────────
@@ -159,85 +155,86 @@ const SUPPORT_EMAIL = 'client@ayuxa.com';
 
 /**
  * OTP verification via WhatsApp
- * Template: otp_template — {{1}}=code
+ * Template: verification_code — {{1}}=code {{2}}=support_contact
  */
 const sendOTP = ({ phone, code }) =>
     sendWhatsAppMessage({
         phone,
         templateName: 'otp',
-        variables: [String(code)],
+        variables: [String(code), SUPPORT_PHONE],
     });
 
 /**
- * Welcome after signup (DOCUMENT header — welcome brochure PDF)
- * Template: ayuxa_welcome — {{1}}=name
+ * Welcome after signup
+ * Template: welcome_flow (no body variables)
  */
 const sendWelcome = ({ phone, name }) =>
     sendWhatsAppMessage({
         phone,
         templateName: 'welcome_message',
-        variables: [name],
+        variables: [],
     });
 
 /**
  * Booking / appointment confirmed
- * Template: service_request_ — {{1}}=name {{2}}=service {{3}}=orderId {{4}}=phone {{5}}=email
+ * Template: booking_confirmation — {{1}}=name {{2}}=order_id
  */
 const sendBookingConfirmation = ({ phone, name, service, orderId }) =>
     sendWhatsAppMessage({
         phone,
         templateName: 'booking_confirmation',
-        variables: [name, service || 'your requested service', orderId || '-', SUPPORT_PHONE, SUPPORT_EMAIL],
+        variables: [name || 'Customer', orderId || '-'],
     });
 
 /**
  * Send payment link to user
- * Template: payment_link — {{1}}=name {{2}}=amount {{3}}=service {{4}}=paymentUrl
+ * Template: payment_successful — {{1}}=name {{2}}=amount
  */
 const sendPaymentLink = ({ phone, name, amount, service, paymentUrl }) =>
     sendWhatsAppMessage({
         phone,
         templateName: 'payment_link',
-        variables: [name, String(amount), service || 'Ayuxa services', paymentUrl || 'www.ayuxa.com/payment'],
+        variables: [name || 'Customer', String(amount)],
     });
 
 /**
- * Payment receipt / invoice (DOCUMENT header — receipt PDF)
- * Template: ayuxa_receipt — {{1}}=name {{2}}=amount {{3}}=phone {{4}}=email
+ * Payment receipt / invoice
+ * Template: payment_successful — {{1}}=name {{2}}=amount
+ * With optional document header (invoice PDF)
  */
 const sendPaymentConfirmation = ({ phone, name, amount, headerUrl }) =>
     sendWhatsAppMessage({
         phone,
         templateName: 'payment_confirmation',
-        variables: [name, String(amount), SUPPORT_PHONE, SUPPORT_EMAIL],
-        headerUrl,
+        variables: [name || 'Customer', String(amount)],
+        mediaUrl: headerUrl,
     });
 
 /**
  * Prescription received acknowledgement
- * Template: prescription_flow — {{1}}=name {{2}}=orderRef
+ * Template: prescription_received — {{1}}=name
  */
 const sendPrescriptionReceived = ({ phone, name, orderRef }) =>
     sendWhatsAppMessage({
         phone,
         templateName: 'prescription_received',
-        variables: [name, orderRef || '-'],
+        variables: [name || 'Customer'],
     });
 
 /**
- * Lab report ready (DOCUMENT header — report PDF)
- * Template: lab_report_delivery — {{1}}=name
+ * Lab report ready
+ * Template: lab_test — {{1}}=name
  */
 const sendLabReport = ({ phone, name }) =>
     sendWhatsAppMessage({
         phone,
         templateName: 'lab_report',
-        variables: [name],
+        variables: [name || 'Customer'],
     });
 
 /**
  * Daily medication reminder
- * Template: medication_reminder_daily — (no body variables)
+ * Template: plan_expiry_reminder (no body variables)
  */
 const sendPrescriptionReminder = ({ phone }) =>
     sendWhatsAppMessage({
@@ -248,24 +245,46 @@ const sendPrescriptionReminder = ({ phone }) =>
 
 /**
  * Plan expiry / renewal reminder
- * Template: renewal_reminder — {{1}}=name {{2}}=planName {{3}}=phone {{4}}=email
+ * Template: plan_expiry_reminder — {{1}}=name
  */
 const sendPlanExpiryReminder = ({ phone, name, planName }) =>
     sendWhatsAppMessage({
         phone,
         templateName: 'plan_expiry_reminder',
-        variables: [name, planName || 'Ayuxa Plan', SUPPORT_PHONE, SUPPORT_EMAIL],
+        variables: [name || 'Customer'],
     });
 
 /**
  * Feedback survey after service
- * Template: feedback_survey_form — {{1}}=name
+ * Template: feedback — {{1}}=name
  */
 const sendFeedbackSurvey = ({ phone, name }) =>
     sendWhatsAppMessage({
         phone,
         templateName: 'followup_feedback',
-        variables: [name],
+        variables: [name || 'Customer'],
+    });
+
+/**
+ * SOS alert to admin
+ * Template: urgent_alert — {{1}}=alert_type {{2}}=ayuxa_id
+ */
+const sendSOSAlertAdmin = ({ phone, name, uniqueUserId, locationLink }) =>
+    sendWhatsAppMessage({
+        phone,
+        templateName: 'sos_alert_admin',
+        variables: [name || 'User', uniqueUserId || '-'],
+    });
+
+/**
+ * SOS alert to family contact
+ * Template: urgent_alert — {{1}}=alert_type {{2}}=ayuxa_id
+ */
+const sendSOSAlertFamily = ({ phone, name, contactName, locationLink }) =>
+    sendWhatsAppMessage({
+        phone,
+        templateName: 'sos_alert_family',
+        variables: [contactName || 'Contact', name || 'User'],
     });
 
 module.exports = {
@@ -284,4 +303,6 @@ module.exports = {
     sendPrescriptionReminder,
     sendPlanExpiryReminder,
     sendFeedbackSurvey,
+    sendSOSAlertAdmin,
+    sendSOSAlertFamily,
 };
