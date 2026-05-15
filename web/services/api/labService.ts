@@ -7,6 +7,7 @@ export interface LabPackage {
     discounted_cost?: number;
     fasting: boolean;
     tests_count?: number;
+    type?: string;
 }
 
 export interface TimeSlot {
