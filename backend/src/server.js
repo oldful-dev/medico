@@ -56,7 +56,7 @@ const remoteConfigRoutes = require('./routes/remoteConfig.routes');
 const appConfigRoutes = require('./routes/appConfig.routes');
 const uploadRoutes = require('./routes/upload.routes');
 const waitlistRoutes = require('./routes/waitlist.routes');
-
+const whatsappTestRoutes = require('./routes/whatsapp-test.routes');
 
 // Initialize cron jobs
 const { initCronJobs } = require('./cron');
@@ -212,6 +212,7 @@ app.use('/api/payments', paymentLimiter, paymentRoutes);
 app.use('/api/sos', sosRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/whatsapp-test', whatsappTestRoutes);
 
 // Content
 app.use('/api/legal', legalRoutes);

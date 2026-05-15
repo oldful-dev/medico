@@ -45,7 +45,7 @@ const TEMPLATES = {
     // ── Medical flows ──
     prescription_received:   20522,  // prescription_received
     lab_report:              20512,  // lab_test
-    prescription_reminder:   20523,  // plan_expiry_reminder (no medication reminder template)
+    prescription_reminder:   20510,  // ayuxa_remember — closest approved template for medication reminders
 
     // ── Plan / subscription ──
     plan_expiry_reminder:    20523,  // plan_expiry_reminder
@@ -233,14 +233,14 @@ const sendLabReport = ({ phone, name }) =>
     });
 
 /**
- * Daily medication reminder
- * Template: plan_expiry_reminder (no body variables)
+ * Daily medication / wellness reminder
+ * Template: ayuxa_remember (ID 20510) — Var1=name
  */
-const sendPrescriptionReminder = ({ phone }) =>
+const sendPrescriptionReminder = ({ phone, name }) =>
     sendWhatsAppMessage({
         phone,
         templateName: 'prescription_reminder',
-        variables: [],
+        variables: [name || 'Customer'],
     });
 
 /**

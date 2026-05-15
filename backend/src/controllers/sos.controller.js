@@ -121,10 +121,12 @@ const triggerSOS = async (req, res) => {
     // 5. Notify admin via WhatsApp — non-fatal
     let adminNotified = false;
     try {
+        // Template: urgent_alert (ID 20513) — Var1=user name, Var2=Ayuxa ID
+        // Location is sent via email (below) — not a template variable
         await sendWhatsApp({
             phoneNumber: process.env.ADMIN_EMERGENCY_PHONE || '919999999999',
             templateName: 'sos_alert_admin',
-            parameters: [user.name, user.uniqueUserId, locationLink],
+            parameters: [user.name, user.uniqueUserId],
         });
         adminNotified = true;
     } catch (err) {
@@ -156,10 +158,11 @@ const triggerSOS = async (req, res) => {
         const contacts = await prisma.emergencyContact.findMany({ where: { userId: user.id } });
         for (const contact of contacts) {
             try {
+                // Template: urgent_alert (ID 20513) — Var1=user name, Var2=Ayuxa ID
                 await sendWhatsApp({
                     phoneNumber: contact.phone,
                     templateName: 'sos_alert_family',
-                    parameters: [user.name, contact.name, locationLink],
+                    parameters: [user.name, user.uniqueUserId],
                 });
                 familyNotified = true;
             } catch (err) {

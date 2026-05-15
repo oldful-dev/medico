@@ -112,19 +112,22 @@ const createBooking = async (req, res, next) => {
 
         // ─── Security: Server-Side Price Floor Enforcement ─────────────────────
         // Prevent amount manipulation. Use DB basePrice as the authority.
-        // 80% tolerance allows legitimate variable-priced services (e.g. nurse shifts).
-        const serverBasePrice = service.basePrice;
+        // Skip validation for BLOOD_TEST (dynamic pricing from Redcliffe Labs).
+        // Other services: Only validate if basePrice is explicitly set (> 0).
+        const serverBasePrice = service.basePrice || 0;
         const clientAmount = parseFloat(amount) || 0;
-        if (serverBasePrice > 0 && clientAmount > 0 && clientAmount < serverBasePrice * 0.8) {
+        const isBloodTest = service.slug === 'blood-test';
+
+        if (!isBloodTest && serverBasePrice > 0 && clientAmount > 0 && clientAmount < serverBasePrice * 0.8) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid booking amount. Please refresh and try again.'
+                message: `Invalid booking amount. Minimum: ₹${(serverBasePrice * 0.8).toFixed(0)}. Please refresh and try again.`
             });
         }
         const safeAmount = clientAmount;
 
-        // Note: BLOOD_TEST bookings go through /api/labs/book (2-step Redcliffe flow).
-        // The generic booking controller handles all other service types.
+        // Note: BLOOD_TEST bookings are handled here with dynamic Redcliffe pricing.
+        // All other service types use standard booking flow.
 
         // Retry up to 3 times on bookingCode collision
         let booking;

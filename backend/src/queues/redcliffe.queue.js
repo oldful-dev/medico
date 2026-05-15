@@ -158,9 +158,51 @@ const webhookWorker = new Worker('redcliffe-webhook-queue', async job => {
 }, { connection, concurrency: 10 });
 
 
-// Basic Notification mock queue worker for lab reports
+// Lab report notification queue worker
 const notificationWorker = new Worker('notification-queue', async job => {
-    logger.info(`[Notification] Would send Lab Report to User ${job.data.userId}. Link: ${job.data.reportUrl}`);
+    const { sendWhatsApp, sendEmail } = require('../utils/notifications');
+    const prisma = require('../config/database');
+
+    const { userId, reportUrl, patientName } = job.data;
+
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, name: true, phone: true, email: true, whatsappEnabled: true }
+    });
+
+    if (!user) {
+        logger.warn(`[Notification] Lab report: user ${userId} not found`);
+        return;
+    }
+
+    const displayName = patientName || user.name;
+
+    // WhatsApp — Template: lab_test (ID 20512) — Var1=name
+    await sendWhatsApp({
+        phoneNumber: user.phone,
+        templateName: 'lab_report',
+        parameters: [displayName],
+        userId: user.id,
+    });
+
+    // Email with report link
+    if (user.email) {
+        await sendEmail({
+            to: user.email,
+            subject: 'Your Lab Test Report is Ready — Ayuxa',
+            html: `
+                <h2>Lab Test Report Available</h2>
+                <p>Dear ${displayName},</p>
+                <p>Your recent lab test report is now available.</p>
+                <p><a href="${reportUrl}" style="background:#0066cc;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;">Download Report</a></p>
+                <p>You can also view it in the Ayuxa app.</p>
+                <p>Best regards,<br>Team Ayuxa</p>
+            `,
+            userId: user.id,
+        });
+    }
+
+    logger.info(`[Notification] Lab report sent to ${userId} (${displayName})`);
 }, { connection, concurrency: 5 });
 
 

@@ -10,6 +10,7 @@ const { sendResponse, sendPaginatedResponse, paginate, generateInvoiceNumber } =
 const { generateInvoicePDF } = require('../utils/pdfGenerator');
 const { uploadFile } = require('../utils/storage.service');
 const { sendEmail, sendWhatsApp } = require('../utils/notifications');
+const { sendDLTSMS } = require('../utils/fast2sms');
 const { emitToAdmins } = require('../services/socket.service');
 const crypto = require('crypto');
 
@@ -65,13 +66,16 @@ const initiatePayment = async (req, res, next) => {
         // Prevent a client from sending amount: 1 and completing a payment for ₹1.
         // The client sends total (base + GST + optional service fee), so we check
         // that it is at least 90% of the service basePrice (no GST floor).
+        // EXCEPTION: Skip validation for BLOOD_TEST (uses dynamic Redcliffe pricing).
         if (bookingId && finalAmount > 0) {
             const linkedBooking = await prisma.booking.findUnique({
                 where: { id: bookingId },
-                include: { service: { select: { basePrice: true } } }
+                include: { service: { select: { basePrice: true, slug: true } } }
             });
             const dbBasePrice = linkedBooking?.service?.basePrice;
-            if (dbBasePrice && dbBasePrice > 0 && finalAmount < dbBasePrice * 0.9) {
+            const isBloodTest = linkedBooking?.service?.slug === 'blood-test';
+
+            if (!isBloodTest && dbBasePrice && dbBasePrice > 0 && finalAmount < dbBasePrice * 0.9) {
                 return res.status(400).json({
                     success: false,
                     message: 'Payment amount does not match service price. Please refresh and try again.'
@@ -350,19 +354,30 @@ const verifyPayment = async (req, res, next) => {
                 });
             }
 
-            // Send payment confirmation via WhatsApp (Interakt)
-            // Template: ayuxa_receipt — {{1}}=name {{2}}=amount {{3}}=phone {{4}}=email
+            // WhatsApp — Template: payment_successful (ID 20520) — Var1=name, Var2=amount
             await sendWhatsApp({
                 phoneNumber: payment.user.phone,
                 templateName: 'invoice_confirmation',
                 parameters: [
-                    payment.user.name, 
-                    `₹${payment.amount}`,
-                    '+91 94801 98108',
-                    'client@ayuxa.com'
+                    payment.user.name,
+                    payment.amount.toString(),
                 ],
-                headerUrl: url,
+                mediaUrl: url,
             });
+
+            // Send DLT SMS (if enabled and SMS template configured)
+            if (payment.user.smsEnabled !== false && process.env.FAST2SMS_PAYMENT_TEMPLATE_ID) {
+                await sendDLTSMS(
+                    payment.user.phone,
+                    process.env.FAST2SMS_PAYMENT_TEMPLATE_ID,
+                    [
+                        payment.user.name || 'Customer',
+                        payment.amount.toString(), // Just the amount, template adds ₹
+                    ]
+                ).catch(err => {
+                    logger.warn(`[Payment] DLT SMS failed: ${err.message}`);
+                });
+            }
 
             await prisma.invoice.update({
                 where: { id: invoice.id },

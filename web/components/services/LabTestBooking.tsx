@@ -7,7 +7,9 @@ import { formatPrice } from '@/utils/formatPrice';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Activity, AlertCircle, ArrowLeft, ArrowRight, 
-    ChevronDown, Clock, Loader2, MapPin, Search, Zap
+    ChevronDown, Clock, Loader2, MapPin, Search, Zap,
+    HeartPulse, ScanSearch, TestTube, ShieldPlus,
+    FlaskConical, PackageSearch, Stethoscope
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
@@ -31,8 +33,26 @@ export default function LabTestBooking() {
     const [isOpen, setIsOpen] = useState(false);
     
     // Data State
+    // Data State
     const [packages, setPackages] = useState<LabPackage[]>([]);
     const [availableSlots, setAvailableSlots] = useState<LabSlot[]>([]);
+    const [page, setPage] = useState(1);
+    const itemsPerPage = 9;
+
+    const getTestIcon = (name: string) => {
+        const lowerName = name.toLowerCase();
+        if (lowerName.includes("urine")) return TestTube;
+        if (lowerName.includes("iron")) return FlaskConical;
+        if (lowerName.includes("full body") || lowerName.includes("checkup")) return HeartPulse;
+        if (lowerName.includes("screening") || lowerName.includes("advanced")) return ScanSearch;
+        if (lowerName.includes("package")) return PackageSearch;
+        if (lowerName.includes("hba1c") || lowerName.includes("glycosylated") || lowerName.includes("hemoglobin")) return Activity;
+        if (lowerName.includes("test")) return Stethoscope;
+        return ShieldPlus;
+    };
+
+    const paginatedPackages = packages.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+    const totalPages = Math.ceil(packages.length / itemsPerPage);
     
     // Selection State
     const [selectedPackage, setSelectedPackage] = useState<LabPackage | null>(null);
@@ -238,7 +258,7 @@ export default function LabTestBooking() {
         <div className="min-h-screen bg-[var(--color-bg-screen)] pb-32">
             
             {/* ── OLDUL HEADER BANNER ── */}
-            <div className="bg-[var(--color-primary-deep)] text-white pt-6 pb-16 px-6">
+            <div className="bg-[var(--color-primary-deep)] text-white pt-6 pb-8 px-6">
                 <div className="max-w-4xl mx-auto flex items-start gap-4">
                     <button onClick={() => router.back()} className="mt-1 p-2 bg-white/10 rounded-xl hover:bg-white/20 transition-colors">
                         <ArrowLeft className="w-6 h-6" />
@@ -250,84 +270,125 @@ export default function LabTestBooking() {
                 </div>
             </div>
 
-            <div className="max-w-4xl mx-auto -mt-8 px-6 grid grid-cols-1 gap-6">
+            <div className="max-w-4xl mx-auto mt-4 px-6 grid grid-cols-1 gap-8">
                 
                 {/* ── STEP 1: TEST SELECTION ── */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[2rem] p-6 shadow-xl border border-gray-100">
-                    <div className="flex items-center justify-between mb-5">
-                        <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5">
+                    <div className="flex items-center justify-between px-1">
+                        <h2 className="text-xl font-black text-gray-800 flex items-center gap-2">
                            <Activity className="w-5 h-5 text-emerald-500" /> 
                            What test or package do you need?
                         </h2>
                         {selectedPackage?.fasting && (
-                             <div className="bg-amber-50 text-amber-600 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter border border-amber-100 flex items-center gap-1">
-                                <Clock className="w-3 h-3" /> Fasting
+                             <div className="bg-amber-50 text-amber-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter border border-amber-100 flex items-center gap-1.5 shadow-sm">
+                                <Clock className="w-3.5 h-3.5" /> Fasting Required
                              </div>
                         )}
                     </div>
 
-                    <div className="relative">
-                        <button 
-                            onClick={() => setIsOpen(!isOpen)}
-                            className={`w-full h-16 px-6 rounded-2xl border-2 transition-all flex items-center justify-between group ${
-                                isOpen ? 'border-emerald-500 bg-emerald-50/30' : 'border-gray-50 bg-gray-50 hover:border-emerald-200'
-                            }`}
-                        >
-                            <div className="flex flex-col items-start min-w-0">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Select Test</span>
-                                <span className="text-base font-bold text-gray-900 truncate w-full pr-4">
-                                    {selectedPackage?.name || "Choose a lab package"}
-                                </span>
-                            </div>
-                            <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180 text-emerald-500' : ''}`} />
-                        </button>
+                    {loading ? (
+                        <div className="p-8 flex items-center justify-center gap-3">
+                            <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
+                            <span className="text-sm font-bold text-gray-400">Loading tests...</span>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                                {paginatedPackages.map((pkg) => {
+                                    const IconComponent = getTestIcon(pkg.name);
+                                    const discountPercent = pkg.cost && pkg.discounted_cost && pkg.cost > pkg.discounted_cost 
+                                        ? Math.round(((pkg.cost - pkg.discounted_cost) / pkg.cost) * 100) 
+                                        : 0;
 
-                        <AnimatePresence>
-                            {isOpen && (
-                                <motion.div 
-                                    initial={{ opacity: 0, y: 10 }} 
-                                    animate={{ opacity: 1, y: 0 }} 
-                                    exit={{ opacity: 0, y: 10 }}
-                                    className="absolute top-[105%] left-0 right-0 z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
-                                >
-                                    <div className="max-h-72 overflow-y-auto custom-scrollbar">
-                                        {loading ? (
-                                            <div className="p-8 flex items-center justify-center gap-3">
-                                                <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
-                                                <span className="text-sm font-bold text-gray-400">Loading tests...</span>
-                                            </div>
-                                        ) : packages.map((pkg) => (
-                                            <button 
-                                                key={pkg.code}
-                                                className={`w-full px-6 py-4 text-left border-b border-gray-50 last:border-0 transition-all ${
-                                                    selectedPackage?.code === pkg.code ? 'bg-emerald-50 shadow-inner' : 'hover:bg-emerald-50/30'
-                                                }`}
-                                                onClick={() => {
-                                                    setSelectedPackage(pkg);
-                                                    setIsOpen(false);
-                                                }}
-                                            >
-                                                <div className="flex items-center justify-between gap-4">
-                                                    <span className={`font-bold text-sm ${selectedPackage?.code === pkg.code ? 'text-emerald-700' : 'text-gray-700'}`}>
-                                                        {pkg.name}
+                                    return (
+                                        <button
+                                            key={pkg.code}
+                                            onClick={() => setSelectedPackage(pkg)}
+                                            className={`relative flex flex-col text-left bg-white rounded-2xl shadow-sm transition-all border-2 p-5 ${
+                                                selectedPackage?.code === pkg.code 
+                                                ? 'border-emerald-500 ring-4 ring-emerald-500/10' 
+                                                : 'border-gray-100 hover:border-emerald-200 hover:shadow-md hover:-translate-y-0.5'
+                                            }`}
+                                        >
+                                            {/* Save Badge */}
+                                            {discountPercent > 0 && (
+                                                <div className="absolute top-0 right-0 bg-rose-500 text-white text-[10px] font-black px-3 py-1.5 rounded-bl-xl rounded-tr-xl shadow-sm z-10">
+                                                    SAVE {discountPercent}%
+                                                </div>
+                                            )}
+
+                                            {/* Header: Icon & Type */}
+                                            <div className="flex items-start justify-between w-full mb-4 mt-1">
+                                                <div className={`p-3 rounded-2xl ${selectedPackage?.code === pkg.code ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-50 text-gray-400'}`}>
+                                                    <IconComponent className="w-6 h-6" />
+                                                </div>
+                                                <div className="flex flex-col items-end gap-1.5 mr-1 text-right">
+                                                    <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-md ${pkg.type === 'package' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
+                                                        {pkg.type || 'Test'}
                                                     </span>
-                                                    <div className="flex flex-col items-end shrink-0">
-                                                        <span className="text-emerald-600 font-black text-sm">₹{pkg.discounted_cost || pkg.cost}</span>
+                                                    {pkg.fasting && (
+                                                        <span className="text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-md bg-amber-50 text-amber-600 flex items-center gap-1">
+                                                            <Clock className="w-3 h-3" /> Fasting
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Body: Title & Details */}
+                                            <div className="flex-1 w-full mb-4">
+                                                <h3 className={`text-[15px] font-bold leading-snug mb-2 line-clamp-2 ${selectedPackage?.code === pkg.code ? 'text-emerald-900' : 'text-gray-800'}`}>
+                                                    {pkg.name}
+                                                </h3>
+                                                {pkg.tests_count !== undefined && pkg.tests_count > 0 && (
+                                                    <p className="text-xs text-gray-500 font-medium">
+                                                        Includes {pkg.tests_count} test{pkg.tests_count !== 1 ? 's' : ''}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            {/* Footer: Pricing */}
+                                            <div className="w-full mt-auto pt-4 border-t border-gray-100 flex items-end justify-between">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Price</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xl font-black text-gray-900 leading-none">₹{pkg.discounted_cost || pkg.cost}</span>
                                                         {(pkg.discounted_cost ?? 0) < (pkg.cost ?? 0) && (
-                                                            <span className="text-[10px] text-gray-300 line-through">₹{pkg.cost}</span>
+                                                            <span className="text-xs text-gray-400 font-medium line-through leading-none mt-0.5">₹{pkg.cost}</span>
                                                         )}
                                                     </div>
                                                 </div>
-                                                {pkg.tests_count && (
-                                                    <div className="text-[10px] text-gray-400 font-bold mt-0.5">• {pkg.tests_count} Tests included</div>
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </motion.div>
+                                                <div className={`w-5 h-5 rounded-full flex items-center justify-center border-2 transition-colors ${selectedPackage?.code === pkg.code ? 'border-emerald-500 bg-emerald-500' : 'border-gray-200 bg-white'}`}>
+                                                    {selectedPackage?.code === pkg.code && <div className="w-2 h-2 bg-white rounded-full shadow-sm" />}
+                                                </div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            
+                            {totalPages > 1 && (
+                                <div className="flex justify-center items-center gap-4 mt-2">
+                                    <button 
+                                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                                        disabled={page === 1}
+                                        className="p-2 rounded-full border border-gray-200 disabled:opacity-50 text-gray-600 hover:bg-gray-50 transition-colors"
+                                    >
+                                        <ArrowLeft className="w-4 h-4" />
+                                    </button>
+                                    <span className="text-xs font-bold text-gray-500">
+                                        Page {page} of {totalPages}
+                                    </span>
+                                    <button 
+                                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={page === totalPages}
+                                        className="p-2 rounded-full border border-gray-200 disabled:opacity-50 text-gray-600 hover:bg-gray-50 transition-colors"
+                                    >
+                                        <ArrowRight className="w-4 h-4" />
+                                    </button>
+                                </div>
                             )}
-                        </AnimatePresence>
-                    </div>
+                        </>
+                    )}
                 </motion.div>
 
                 {/* ── STEP 2: TIME & LOGISTICS ── */}
