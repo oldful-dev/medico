@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import waitlistService from '@/services/api/waitlistService';
 import { useCartStore } from '@/store/cartStore';
-import { Loader2, ShoppingCart, Package, ArrowRight } from 'lucide-react';
+import { Loader2, ShoppingCart, Package, ArrowLeft, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://Ayuxa.onrender.com/api';
@@ -27,6 +27,8 @@ export default function WellnessPage() {
   const { addItem } = useCartStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 9;
 
   // Waitlist state (shown when no products)
   const [name, setName] = useState('');
@@ -90,6 +92,9 @@ export default function WellnessPage() {
 
   // ── STORE VIEW (products exist) ───────────────────
   if (products.length > 0) {
+    const totalPages = Math.ceil(products.length / itemsPerPage);
+    const paginatedProducts = products.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
     return (
       <div className="flex-1 bg-[#FFFCF6] font-[var(--font-poppins)] py-12 px-6 md:px-12 lg:px-24">
         <div className="max-w-6xl mx-auto">
@@ -108,8 +113,8 @@ export default function WellnessPage() {
           </div>
 
           {/* Products Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map(product => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedProducts.map(product => {
               const discount = product.mrp > product.price
                 ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
                 : 0;
@@ -196,6 +201,44 @@ export default function WellnessPage() {
               );
             })}
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-12">
+              <button
+                onClick={() => {
+                  setPage(p => Math.max(1, p - 1));
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                disabled={page === 1}
+                className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </button>
+              {Array.from({ length: totalPages }).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    setPage(i + 1);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`w-10 h-10 rounded-xl text-sm font-bold transition-colors ${page === i + 1 ? 'bg-[var(--color-primary)] text-white shadow-md' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => {
+                  setPage(p => Math.min(totalPages, p + 1));
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                disabled={page === totalPages}
+                className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ArrowRight className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+          )}
 
         </div>
       </div>
