@@ -161,12 +161,11 @@ const sendWelcomeNotifications = async (user) => {
     `,
     });
 
-    // Welcome WhatsApp (Interakt)
-    // Template: ayuxa_welcome — {{1}}=name (DOCUMENT header)
+    // Welcome WhatsApp — Template: welcome_flow (ID 20514, no body variables)
     await sendWhatsApp({
         phoneNumber: user.phone,
         templateName: 'welcome_message',
-        parameters: [user.name],
+        parameters: [],
         userId: user.id,
     });
 };
@@ -195,7 +194,7 @@ const sendSOSNotifications = async ({ user, location, familyContacts }) => {
 
     // Admin — SMS fallback
     if (process.env.FAST2SMS_SOS_TEMPLATE_ID) {
-        await fast2sms.sendDLTSMS(
+        await fast2smsUtils.sendDLTSMS(
             process.env.ADMIN_EMERGENCY_PHONE || '9999999999',
             process.env.FAST2SMS_SOS_TEMPLATE_ID,
             [user.name, user.name]
@@ -205,7 +204,7 @@ const sendSOSNotifications = async ({ user, location, familyContacts }) => {
     // Family contacts — SMS fallback
     for (const contact of familyContacts) {
         if (process.env.FAST2SMS_SOS_TEMPLATE_ID) {
-            await fast2sms.sendDLTSMS(
+            await fast2smsUtils.sendDLTSMS(
                 contact.phone,
                 process.env.FAST2SMS_SOS_TEMPLATE_ID,
                 [contact.name, user.name]
@@ -226,23 +225,20 @@ const sendBookingConfirmation = async ({ user, bookingCode, booking = null }) =>
         }) || user;
     }
 
-    // Primary: WhatsApp via Interakt
+    // Primary: WhatsApp — Template: booking_confirmation (ID 20521) — Var1=name, Var2=order_id
     await sendWhatsApp({
         phoneNumber: fullUser.phone,
         templateName: 'booking_confirmation',
         parameters: [
             fullUser.name,
-            booking?.serviceName || 'your requested service',
             bookingCode || '-',
-            '+91 94801 98108',
-            'client@ayuxa.com',
         ],
         userId: fullUser.id,
     });
 
     // Also send DLT SMS if template is configured AND user allows SMS
     if (process.env.FAST2SMS_ORDER_TEMPLATE_ID && fullUser.smsEnabled !== false) {
-        await fast2sms.sendDLTSMS(
+        await fast2smsUtils.sendDLTSMS(
             fullUser.phone,
             process.env.FAST2SMS_ORDER_TEMPLATE_ID,
             [fullUser.name, bookingCode, process.env.ADMIN_EMERGENCY_PHONE || '9480198108']
@@ -275,16 +271,11 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
     `,
     });
 
-    // Template: renewal_reminder — {{1}}=name {{2}}=planName {{3}}=phone {{4}}=email
+    // WhatsApp — Template: plan_expiry_reminder (ID 20523) — Var1=name only
     await sendWhatsApp({
         phoneNumber: fullUser.phone,
         templateName: 'plan_expiry_reminder',
-        parameters: [
-            fullUser.name,
-            plan.name || 'Ayuxa Plan',
-            '+91 94801 98108',
-            'client@ayuxa.com',
-        ],
+        parameters: [fullUser.name],
         userId: fullUser.id,
     });
 };
@@ -294,7 +285,7 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
 
 const requestFast2SMSOTP = async (phoneNumber) => {
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
-    const success = await fast2sms.sendSMS(phoneNumber, `Your Ayuxa verification code is: ${otp}`);
+    const success = await fast2smsUtils.sendSMS(phoneNumber, `Your Ayuxa verification code is: ${otp}`);
 
     if (success) {
         await prisma.otpLog.create({

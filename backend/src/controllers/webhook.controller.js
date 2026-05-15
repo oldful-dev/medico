@@ -98,14 +98,13 @@ async function processEvent(event, payload) {
                 // Send WhatsApp receipt if app flow didn't already send it
                 if (payment.user?.phone) {
                     // Send WhatsApp
+                    // Template: payment_successful (ID 20520) — Var1=name, Var2=amount
                     await sendWhatsApp({
                         phoneNumber: payment.user.phone,
                         templateName: 'invoice_confirmation',
                         parameters: [
                             payment.user.name || 'Customer',
-                            `₹${payment.amount}`,
-                            '+91 94801 98108',
-                            'client@ayuxa.com',
+                            payment.amount.toString(),
                         ],
                     }).catch(() => {});
 

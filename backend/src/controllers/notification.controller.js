@@ -110,11 +110,15 @@ const sendCampaign = async (req, res, next) => {
             }
         }
 
-        // WHATSAPP Channel
+        // WHATSAPP Channel — templateId must be a valid approved marketing template key
         if (channel === 'WHATSAPP') {
+            const CAMPAIGN_TEMPLATES = ['ayuxa_remember', 'birthday_wishes', 'plan_expiry_reminder', 'followup_feedback'];
+            if (!templateId || !CAMPAIGN_TEMPLATES.includes(templateId)) {
+                return sendResponse(res, 400, null, `Invalid WhatsApp campaign template. Must be one of: ${CAMPAIGN_TEMPLATES.join(', ')}`);
+            }
             for (const user of users) {
                 if (user.phone) {
-                    const sent = await sendWhatsApp({ phoneNumber: user.phone, templateName: templateId || 'campaign', parameters: [user.name], userId: user.id });
+                    const sent = await sendWhatsApp({ phoneNumber: user.phone, templateName: templateId, parameters: [user.name], userId: user.id });
                     if (sent) sentCount++;
                 }
             }
