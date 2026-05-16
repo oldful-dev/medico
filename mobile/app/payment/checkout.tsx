@@ -395,22 +395,22 @@ export default function CheckoutScreen() {
                     <Text style={styles.cardTitle}>Secure Payment Summary</Text>
                     <View style={styles.row}>
                         <Text style={styles.rowLabel}>{label}</Text>
-                        <Text style={styles.rowValue}>₹{amount.toLocaleString('en-IN')}</Text>
+                        <Text style={styles.rowValue}>₹{baseAmount.toLocaleString('en-IN')}</Text>
                     </View>
 
                     {/* Breakdown Section */}
                     <View style={styles.breakdownSection}>
                         <View style={styles.breakdownRow}>
                             <Text style={styles.breakdownLabel}>Subtotal</Text>
-                            <Text style={styles.breakdownValue}>₹{amount.toLocaleString('en-IN')}</Text>
+                            <Text style={styles.breakdownValue}>₹{baseAmount.toLocaleString('en-IN')}</Text>
                         </View>
                         <View style={styles.breakdownRow}>
                             <Text style={styles.breakdownLabel}>GST (18%)</Text>
-                            <Text style={styles.breakdownValue}>₹{(amount * 0.18).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                            <Text style={styles.breakdownValue}>₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
                         </View>
                         <View style={styles.breakdownRow}>
                             <Text style={styles.breakdownLabel}>Service Fee</Text>
-                            <Text style={styles.breakdownValue}>₹50.00</Text>
+                            <Text style={styles.breakdownValue}>₹{serviceFee.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
                         </View>
                     </View>
 
@@ -422,7 +422,7 @@ export default function CheckoutScreen() {
                     )}
                     <View style={[styles.row, styles.totalRow]}>
                         <Text style={styles.totalLabel}>Total</Text>
-                        <Text style={styles.totalValue}>₹{(amount + (amount * 0.18) + 50 - discount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                        <Text style={styles.totalValue}>₹{(amountWithTaxAndFee - discount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
                     </View>
                 </View>
 
