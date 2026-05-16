@@ -379,7 +379,7 @@ const DEFAULT_CONFIG = {
             whatsapp_url: 'https://wa.me/919480198108',
             page_description: 'Our support team is available to help with bookings, services, and payments.',
             contacts: [
-                { id: 'customer_support', label: 'Customer Support', phone: '+91 94801 98108', email: 'client@ayuxa.com',      name: null },
+                { id: 'customer_support', label: 'Customer Support', phone: '+91 94801 98108', email: 'support@ayuxa.com',      name: null },
                 { id: 'grievance',        label: 'Grievance Officer', phone: null,              email: 'compliance@ayuxa.com', name: 'SK Murgan' },
             ],
             ticket_categories: [
