@@ -51,20 +51,23 @@ export default function CheckoutScreen() {
         ? PAYMENT_METHODS.filter(m => m.type !== 'CASH')
         : PAYMENT_METHODS;
 
-    const amount = parseFloat(params.amount ?? '0');
+    const baseAmount = parseFloat(params.amount ?? '0');
     const label  = params.label ?? 'Service Booking';
+    const gstAmount = baseAmount * 0.18;
+    const serviceFee = 50;
+    const amountWithTaxAndFee = baseAmount + gstAmount + serviceFee;
 
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(params.subscriptionId ? 'UPI' : 'UPI');
     const [couponCode,     setCouponCode]     = useState('');
     const [couponApplied,  setCouponApplied]  = useState(false);
     const [discount,       setDiscount]       = useState(0);
-    const [finalAmount,    setFinalAmount]    = useState(amount);
+    const [finalAmount,    setFinalAmount]    = useState(amountWithTaxAndFee);
     const [couponLoading,  setCouponLoading]  = useState(false);
     const [payLoading,     setPayLoading]     = useState(false);
     const [, setFlowState] = useState<PaymentFlowState>('idle');
     const [, setPendingRecovery] = useState(false);
 
-    useEffect(() => { setFinalAmount(amount - discount); }, [amount, discount]);
+    useEffect(() => { setFinalAmount(amountWithTaxAndFee - discount); }, [amountWithTaxAndFee, discount]);
 
     // ─── EDGE CASE: Recover pending payment after app crash/close ──────
     // On mount, check if there's a pending Razorpay order in AsyncStorage.
@@ -122,12 +125,12 @@ export default function CheckoutScreen() {
         if (!couponCode.trim()) return;
         setCouponLoading(true);
         try {
-            const res = await paymentService.applyCoupon({ couponCode: couponCode.trim(), amount });
+            const res = await paymentService.applyCoupon({ couponCode: couponCode.trim(), amount: amountWithTaxAndFee });
             if (res.success && res.data?.valid) {
                 setDiscount(res.data.discount);
-                setFinalAmount(res.data.finalAmount);
+                setFinalAmount(amountWithTaxAndFee - res.data.discount);
                 setCouponApplied(true);
-                Alert.alert('Coupon Applied!', `You saved ₹${res.data.discount}`);
+                Alert.alert('Coupon Applied!', `You saved ₹${res.data.discount.toLocaleString('en-IN')}`);
             } else {
                 Alert.alert('Invalid Coupon', 'This coupon code is not valid or has expired.');
             }
@@ -136,13 +139,13 @@ export default function CheckoutScreen() {
         } finally {
             setCouponLoading(false);
         }
-    }, [couponCode, amount]);
+    }, [couponCode, amountWithTaxAndFee]);
 
     const handleRemoveCoupon = () => {
         setCouponCode('');
         setCouponApplied(false);
         setDiscount(0);
-        setFinalAmount(amount);
+        setFinalAmount(amountWithTaxAndFee);
     };
 
     // ─── Helper: Clear pending order from storage (called on success/failure) ──
@@ -389,11 +392,28 @@ export default function CheckoutScreen() {
 
                 {/* Order Summary */}
                 <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Order Summary</Text>
+                    <Text style={styles.cardTitle}>Secure Payment Summary</Text>
                     <View style={styles.row}>
                         <Text style={styles.rowLabel}>{label}</Text>
                         <Text style={styles.rowValue}>₹{amount.toLocaleString('en-IN')}</Text>
                     </View>
+
+                    {/* Breakdown Section */}
+                    <View style={styles.breakdownSection}>
+                        <View style={styles.breakdownRow}>
+                            <Text style={styles.breakdownLabel}>Subtotal</Text>
+                            <Text style={styles.breakdownValue}>₹{amount.toLocaleString('en-IN')}</Text>
+                        </View>
+                        <View style={styles.breakdownRow}>
+                            <Text style={styles.breakdownLabel}>GST (18%)</Text>
+                            <Text style={styles.breakdownValue}>₹{(amount * 0.18).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                        </View>
+                        <View style={styles.breakdownRow}>
+                            <Text style={styles.breakdownLabel}>Service Fee</Text>
+                            <Text style={styles.breakdownValue}>₹50.00</Text>
+                        </View>
+                    </View>
+
                     {couponApplied && (
                         <View style={styles.row}>
                             <Text style={[styles.rowLabel, { color: '#2e7d32' }]}>Coupon Discount</Text>
@@ -401,10 +421,9 @@ export default function CheckoutScreen() {
                         </View>
                     )}
                     <View style={[styles.row, styles.totalRow]}>
-                        <Text style={styles.totalLabel}>Total Payable</Text>
-                        <Text style={styles.totalValue}>₹{finalAmount.toLocaleString('en-IN')}</Text>
+                        <Text style={styles.totalLabel}>Total</Text>
+                        <Text style={styles.totalValue}>₹{(amount + (amount * 0.18) + 50 - discount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
                     </View>
-                    <Text style={styles.gstNote}>Inclusive of all taxes (GST @ 18%)</Text>
                 </View>
 
                 {/* Coupon */}
@@ -533,6 +552,32 @@ const styles = StyleSheet.create({
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     rowLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textLight },
     rowValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark },
+
+    breakdownSection: {
+        backgroundColor: '#FAFAFA',
+        borderRadius: Radius.md,
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.md,
+        gap: Spacing.sm,
+        marginVertical: Spacing.sm,
+    },
+    breakdownRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: Spacing.xs,
+    },
+    breakdownLabel: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.caption ?? 12,
+        color: '#666'
+    },
+    breakdownValue: {
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.caption ?? 12,
+        color: Colors.textDark
+    },
+
     totalRow: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
     totalLabel: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark },
     totalValue: { fontFamily: Fonts.semiBold, fontSize: 20, color: Colors.primary },
