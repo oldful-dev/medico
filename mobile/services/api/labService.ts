@@ -7,6 +7,7 @@ export interface LabPackage {
     discounted_cost?: number;
     fasting: boolean;
     tests_count?: number;
+    type?: string;
 }
 
 export interface LabSlot {
@@ -51,6 +52,11 @@ export interface LabBookingResponse {
 export const labService = {
     getPackages: async (search = '') => {
         const response = await apiClient.get<LabPackage[]>(`/labs/packages?search=${search}`);
+        return response.data;
+    },
+
+    checkServiceability: async (lat: string, lng: string) => {
+        const response = await apiClient.get<{ status: string; message: string }>(`/labs/serviceability?lat=${lat}&lng=${lng}`);
         return response.data;
     },
 
