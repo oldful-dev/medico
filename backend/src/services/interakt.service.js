@@ -50,6 +50,10 @@ const TEMPLATES = {
     // ── Plan / subscription ──
     plan_expiry_reminder:    20523,  // plan_expiry_reminder
 
+    // ── Campaign templates (admin notification campaigns) ──
+    ayuxa_remember:          20510,  // ayuxa_remember marketing
+    birthday_wishes:         20511,  // birthday_wishes marketing
+
     // ── Support & feedback ──
     followup_feedback:       20525,  // feedback
 
