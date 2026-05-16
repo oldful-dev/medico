@@ -18,6 +18,7 @@ const init = (httpServer) => {
                     'https://ayuxa.com',
                     'https://www.ayuxa.com',
                     'https://admin.ayuxa.com',
+                    'https://oldful-admin.vercel.app',
                     process.env.ADMIN_FRONTEND_URL,
                     process.env.APP_FRONTEND_URL,
                     process.env.WEB_FRONTEND_URL,
