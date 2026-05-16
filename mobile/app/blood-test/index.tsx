@@ -1,80 +1,80 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     ScrollView,
-    FlatList,
     TouchableOpacity,
     ActivityIndicator,
     TextInput,
     RefreshControl,
+    Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
-import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { useUser } from '@/context/UserContext';
-import { getAssetUrl } from '@/utils/getAssetUrl';
 
-const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-    default: { bg: '#F0FDF4', text: '#047857', border: '#D1FAE5' },
-    medical: { bg: '#EFF6FF', text: '#1E40AF', border: '#BFDBFE' },
-    therapy: { bg: '#F3F0FF', text: '#6D28D9', border: '#E9D5FF' },
-    diagnostic: { bg: '#FFFBEB', text: '#B45309', border: '#FCD34D' },
-    emergency: { bg: '#FEF2F2', text: '#991B1B', border: '#FECACA' },
+const TEST_ICON_MAP: Record<string, string> = {
+    urine: 'water',
+    iron: 'beaker',
+    full: 'heart',
+    checkup: 'medical',
+    screening: 'search',
+    advanced: 'analytics',
+    package: 'cube',
+    hemoglobin: 'flash',
+    diabetes: 'warning',
+    thyroid: 'ellipsis-horizontal',
+    lipid: 'flask',
+    liver: 'code-working',
+    kidney: 'body',
 };
 
+const CATEGORY_COLORS = [
+    { bg: '#047857', light: '#F0FDF4', text: '#047857', name: 'Emerald' },
+    { bg: '#1E40AF', light: '#EFF6FF', text: '#1E40AF', name: 'Blue' },
+    { bg: '#6D28D9', light: '#F3F0FF', text: '#6D28D9', name: 'Violet' },
+    { bg: '#B45309', light: '#FFFBEB', text: '#B45309', name: 'Amber' },
+    { bg: '#991B1B', light: '#FEF2F2', text: '#991B1B', name: 'Red' },
+];
+
 export default function BloodTestScreen() {
-    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { services, isLoading: servicesLoading, refreshData } = useUser();
 
     const [search, setSearch] = useState('');
-    const [activeCategory, setActiveCategory] = useState('All');
+    const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
+    const [page, setPage] = useState(1);
+    const itemsPerPage = 6;
 
-    const sections = useMemo(() => {
-        if (!services.length) return [];
+    const getTestIcon = (name: string): string => {
+        const lower = name.toLowerCase();
+        for (const [key, icon] of Object.entries(TEST_ICON_MAP)) {
+            if (lower.includes(key)) return icon;
+        }
+        return 'medical';
+    };
 
-        const grouped: Record<string, any[]> = {};
-        services.forEach(service => {
-            const category = service.category || 'Other';
-            if (!grouped[category]) grouped[category] = [];
-            grouped[category].push(service);
-        });
+    const getColorByIndex = (index: number) => {
+        return CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+    };
 
-        return Object.entries(grouped).map(([title, services]) => ({
-            id: title,
-            title,
-            services: services.map(s => ({
-                id: s.id,
-                label: s.name,
-                enabled: true,
-            })),
-        }));
-    }, [services]);
+    const filteredServices = useMemo(() => {
+        return services.filter(s =>
+            s.name.toLowerCase().includes(search.toLowerCase())
+        );
+    }, [services, search]);
 
-    const categoryNames = useMemo(() => {
-        return ['All', ...sections.map(s => s.title || 'Other').filter(Boolean)];
-    }, [sections]);
+    const paginatedServices = useMemo(() => {
+        return filteredServices.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+    }, [filteredServices, page]);
 
-    const filteredSections = useMemo(() => {
-        return sections
-            .map(section => ({
-                ...section,
-                services: (section.services || [])
-                    .filter(s => s.enabled)
-                    .filter(s => s.label.toLowerCase().includes(search.toLowerCase())),
-            }))
-            .filter(section => {
-                if (activeCategory !== 'All' && section.title !== activeCategory) return false;
-                return section.services.length > 0;
-            });
-    }, [sections, search, activeCategory]);
+    const totalPages = Math.ceil(filteredServices.length / itemsPerPage);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -82,11 +82,20 @@ export default function BloodTestScreen() {
         setRefreshing(false);
     }, [refreshData]);
 
-    const handleServicePress = (service: any) => {
-        router.push({
-            pathname: '/services/[id]',
-            params: { id: service.id },
-        } as any);
+    const handleTestPress = (serviceId: string) => {
+        setSelectedTestId(serviceId);
+    };
+
+    const handleBookTest = () => {
+        if (selectedTestId) {
+            const test = services.find(s => s.id === selectedTestId);
+            if (test) {
+                router.push({
+                    pathname: '/services/[id]',
+                    params: { id: selectedTestId },
+                });
+            }
+        }
     };
 
     // ── LOADING ────────────────────────────────────────────────────────────────
@@ -96,7 +105,8 @@ export default function BloodTestScreen() {
                 <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
                 <StatusBar style="light" backgroundColor={Colors.primary} />
                 <View style={styles.headerContainer}>
-                    <Text style={styles.headerTitle}>Health Check</Text>
+                    <Text style={styles.headerTitle}>Diagnostic Labs</Text>
+                    <Text style={styles.headerSubtitle}>Hospital-grade tests at home</Text>
                 </View>
                 <View style={[styles.contentContainer, { justifyContent: 'center', alignItems: 'center' }]}>
                     <ActivityIndicator size="large" color={Colors.primary} />
@@ -113,8 +123,8 @@ export default function BloodTestScreen() {
 
             {/* Header */}
             <View style={styles.headerContainer}>
-                <Text style={styles.headerTitle}>Health Check</Text>
-                <Text style={styles.headerSubtitle}>Blood tests & diagnostics</Text>
+                <Text style={styles.headerTitle}>Diagnostic Labs</Text>
+                <Text style={styles.headerSubtitle}>Hospital-grade tests at home</Text>
             </View>
 
             <ScrollView
@@ -127,54 +137,29 @@ export default function BloodTestScreen() {
                     <Ionicons name="search" size={18} color={Colors.textMuted} style={styles.searchIcon} />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Search tests, symptoms..."
+                        placeholder="Search tests, packages..."
                         placeholderTextColor={Colors.textMuted}
                         value={search}
-                        onChangeText={setSearch}
+                        onChangeText={(text) => {
+                            setSearch(text);
+                            setPage(1);
+                        }}
                     />
                     {search.length > 0 && (
-                        <TouchableOpacity onPress={() => setSearch('')}>
+                        <TouchableOpacity onPress={() => {
+                            setSearch('');
+                            setPage(1);
+                        }}>
                             <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
                         </TouchableOpacity>
                     )}
                 </View>
 
-                {/* Category Filter Pills */}
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.categoriesContainer}
-                    scrollEventThrottle={16}
-                >
-                    {categoryNames.map(cat => (
-                        <TouchableOpacity
-                            key={cat}
-                            onPress={() => setActiveCategory(cat)}
-                            style={[
-                                styles.categoryPill,
-                                activeCategory === cat && styles.categoryPillActive,
-                            ]}
-                        >
-                            <Text
-                                style={[
-                                    styles.categoryPillText,
-                                    activeCategory === cat && styles.categoryPillTextActive,
-                                ]}
-                            >
-                                {cat}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-
                 {/* Results Count */}
-                {filteredSections.length > 0 && (
+                {filteredServices.length > 0 && (
                     <Text style={styles.resultsCount}>
-                        Showing{' '}
-                        <Text style={styles.resultCountBold}>
-                            {filteredSections.reduce((acc, s) => acc + s.services.length, 0)}
-                        </Text>
-                        {' '}tests
+                        Showing <Text style={styles.resultCountBold}>{paginatedServices.length}</Text> of{' '}
+                        <Text style={styles.resultCountBold}>{filteredServices.length}</Text> tests
                         {search && (
                             <>
                                 {' '}for "<Text style={styles.resultCountBold}>{search}</Text>"
@@ -183,130 +168,143 @@ export default function BloodTestScreen() {
                     </Text>
                 )}
 
-                {/* Services Grid */}
-                {filteredSections.length === 0 ? (
+                {/* Test Cards Grid */}
+                {filteredServices.length === 0 ? (
                     <View style={styles.emptyBox}>
                         <Text style={styles.emptyIcon}>🔍</Text>
                         <Text style={styles.emptyTitle}>No tests found</Text>
-                        <Text style={styles.emptyText}>Try a different search term or category.</Text>
+                        <Text style={styles.emptyText}>Try a different search term.</Text>
                         <TouchableOpacity
                             onPress={() => {
                                 setSearch('');
-                                setActiveCategory('All');
+                                setPage(1);
                             }}
                             style={styles.clearButton}
                         >
-                            <Text style={styles.clearButtonText}>Clear filters</Text>
+                            <Text style={styles.clearButtonText}>Clear search</Text>
                         </TouchableOpacity>
                     </View>
                 ) : (
-                    filteredSections.map((section, sectionIdx) => {
-                        const colors = Object.values(CATEGORY_COLORS)[
-                            sectionIdx % Object.keys(CATEGORY_COLORS).length
-                        ];
-                        return (
-                            <View key={section.id} style={styles.sectionContainer}>
-                                {/* Section Header */}
-                                <View style={styles.sectionHeader}>
-                                    <View style={styles.sectionTitleRow}>
+                    <>
+                        <View style={styles.testsGrid}>
+                            {paginatedServices.map((test, idx) => {
+                                const colorIndex = services.indexOf(test);
+                                const color = getColorByIndex(colorIndex);
+                                const icon = getTestIcon(test.name);
+                                const isSelected = selectedTestId === test.id;
+
+                                return (
+                                    <TouchableOpacity
+                                        key={test.id}
+                                        onPress={() => handleTestPress(test.id)}
+                                        style={[
+                                            styles.testCard,
+                                            {
+                                                borderColor: isSelected ? color.bg : '#E5E7EB',
+                                                borderWidth: isSelected ? 2 : 1,
+                                            },
+                                            isSelected && styles.testCardSelected,
+                                        ]}
+                                        activeOpacity={0.7}
+                                    >
+                                        {/* Icon Area */}
                                         <View
                                             style={[
-                                                styles.sectionDot,
-                                                { backgroundColor: colors.text },
+                                                styles.iconArea,
+                                                { backgroundColor: color.light },
                                             ]}
-                                        />
-                                        <Text style={styles.sectionTitle}>{section.title}</Text>
-                                        <View style={styles.sectionBadge}>
-                                            <Text style={styles.sectionBadgeText}>
-                                                {section.services.length}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                </View>
-
-                                {/* Services Cards Grid */}
-                                <View style={styles.servicesGrid}>
-                                    {section.services.map((service, idx) => (
-                                        <TouchableOpacity
-                                            key={service.id}
-                                            onPress={() => handleServicePress(service)}
-                                            style={[
-                                                styles.serviceCard,
-                                                { borderColor: colors.border },
-                                                idx % 2 === 1 && { marginLeft: Spacing.md },
-                                            ]}
-                                            activeOpacity={0.7}
                                         >
-                                            {/* Icon Area */}
-                                            <View
-                                                style={[
-                                                    styles.serviceIconArea,
-                                                    { backgroundColor: colors.bg },
-                                                ]}
-                                            >
-                                                <Ionicons
-                                                    name="fitness"
-                                                    size={40}
-                                                    color={colors.text}
-                                                />
-                                            </View>
+                                            <Ionicons
+                                                name={icon as any}
+                                                size={40}
+                                                color={color.bg}
+                                            />
+                                        </View>
 
-                                            {/* Card Content */}
-                                            <View style={styles.serviceContent}>
-                                                <Text style={styles.serviceLabel} numberOfLines={2}>
-                                                    {service.label.replace('\n', ' ')}
+                                        {/* Card Content */}
+                                        <View style={styles.cardContent}>
+                                            <Text style={styles.testName} numberOfLines={2}>
+                                                {test.name}
+                                            </Text>
+
+                                            {test.category && (
+                                                <Text style={styles.testCategory} numberOfLines={1}>
+                                                    {test.category}
                                                 </Text>
-                                                <Text style={styles.serviceDescription} numberOfLines={1}>
-                                                    Expert diagnosis at home
+                                            )}
+
+                                            {/* Price Section */}
+                                            <View style={styles.priceSection}>
+                                                <Text style={styles.price}>
+                                                    ₹{test.basePrice || test.discountedPrice || '---'}
                                                 </Text>
-
-                                                {/* Meta Info */}
-                                                <View style={styles.serviceMeta}>
-                                                    <View style={styles.metaItem}>
-                                                        <Ionicons
-                                                            name="time"
-                                                            size={12}
-                                                            color={Colors.textMuted}
-                                                        />
-                                                        <Text style={styles.metaText}>60 min</Text>
+                                                {isSelected && (
+                                                    <View
+                                                        style={[
+                                                            styles.selectionIndicator,
+                                                            { backgroundColor: color.bg },
+                                                        ]}
+                                                    >
+                                                        <Ionicons name="checkmark" size={16} color="white" />
                                                     </View>
-                                                    <View style={styles.metaItem}>
-                                                        <Ionicons
-                                                            name="star"
-                                                            size={12}
-                                                            color="#FBBF24"
-                                                        />
-                                                        <Text style={styles.metaText}>4.8</Text>
-                                                    </View>
-                                                </View>
-
-                                                {/* CTA Button */}
-                                                <View
-                                                    style={[
-                                                        styles.serviceButton,
-                                                        { backgroundColor: colors.bg },
-                                                    ]}
-                                                >
-                                                    <Text style={[styles.serviceButtonText, { color: colors.text }]}>
-                                                        Book
-                                                    </Text>
-                                                    <Ionicons
-                                                        name="arrow-forward"
-                                                        size={11}
-                                                        color={colors.text}
-                                                    />
-                                                </View>
+                                                )}
                                             </View>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <View style={styles.paginationContainer}>
+                                <TouchableOpacity
+                                    onPress={() => setPage(p => Math.max(1, p - 1))}
+                                    disabled={page === 1}
+                                    style={[styles.paginationButton, page === 1 && styles.paginationButtonDisabled]}
+                                >
+                                    <Ionicons name="chevron-back" size={18} color={page === 1 ? Colors.textMuted : Colors.primary} />
+                                </TouchableOpacity>
+
+                                <Text style={styles.paginationText}>
+                                    Page {page} of {totalPages}
+                                </Text>
+
+                                <TouchableOpacity
+                                    onPress={() => setPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={page === totalPages}
+                                    style={[styles.paginationButton, page === totalPages && styles.paginationButtonDisabled]}
+                                >
+                                    <Ionicons name="chevron-forward" size={18} color={page === totalPages ? Colors.textMuted : Colors.primary} />
+                                </TouchableOpacity>
                             </View>
-                        );
-                    })
+                        )}
+                    </>
                 )}
 
-                <View style={{ height: Spacing.lg }} />
+                <View style={{ height: Spacing.xl }} />
             </ScrollView>
+
+            {/* Sticky Booking Footer */}
+            {selectedTestId && filteredServices.length > 0 && (
+                <View style={styles.footerContainer}>
+                    <View style={styles.footerContent}>
+                        <View>
+                            <Text style={styles.footerLabel}>Selected Test</Text>
+                            <Text style={styles.footerTestName} numberOfLines={1}>
+                                {services.find(s => s.id === selectedTestId)?.name}
+                            </Text>
+                        </View>
+                        <TouchableOpacity
+                            onPress={handleBookTest}
+                            style={styles.bookButton}
+                        >
+                            <Text style={styles.bookButtonText}>Book Now</Text>
+                            <Ionicons name="arrow-forward" size={16} color="white" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
         </View>
     );
 }
@@ -357,31 +355,6 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.regular,
         color: Colors.textDark,
     },
-    categoriesContainer: {
-        paddingBottom: Spacing.md,
-        gap: Spacing.sm,
-    },
-    categoryPill: {
-        paddingHorizontal: Spacing.md,
-        paddingVertical: Spacing.sm,
-        borderRadius: 20,
-        backgroundColor: 'white',
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        marginRight: Spacing.sm,
-    },
-    categoryPillActive: {
-        backgroundColor: Colors.primaryDark,
-        borderColor: Colors.primaryDark,
-    },
-    categoryPillText: {
-        fontSize: FontSize.xs,
-        fontFamily: Fonts.semiBold,
-        color: '#4B5563',
-    },
-    categoryPillTextActive: {
-        color: 'white',
-    },
     resultsCount: {
         fontSize: FontSize.xs,
         color: Colors.textMuted,
@@ -391,102 +364,86 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.semiBold,
         color: Colors.textDark,
     },
-    sectionContainer: {
-        marginBottom: Spacing.lg,
-    },
-    sectionHeader: {
-        marginBottom: Spacing.md,
-    },
-    sectionTitleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: Spacing.sm,
-    },
-    sectionDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-    },
-    sectionTitle: {
-        fontSize: FontSize.base,
-        fontFamily: Fonts.bold,
-        color: Colors.textDark,
-        flex: 1,
-    },
-    sectionBadge: {
-        paddingHorizontal: Spacing.sm,
-        paddingVertical: 2,
-        backgroundColor: '#F3F4F6',
-        borderRadius: Radius.md,
-    },
-    sectionBadgeText: {
-        fontSize: FontSize.xs,
-        fontFamily: Fonts.semiBold,
-        color: '#9CA3AF',
-    },
-    servicesGrid: {
+    testsGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-    },
-    serviceCard: {
-        flex: 0.5,
-        backgroundColor: 'white',
-        borderRadius: Radius.xl,
-        borderWidth: 1,
-        overflow: 'hidden',
         marginBottom: Spacing.md,
     },
-    serviceIconArea: {
-        paddingVertical: Spacing.lg,
+    testCard: {
+        width: '48%',
+        backgroundColor: 'white',
+        borderRadius: Radius.xl,
+        marginRight: '4%',
+        marginBottom: Spacing.md,
+        overflow: 'hidden',
+        ...Shadow,
+    },
+    testCardSelected: {
+        backgroundColor: 'white',
+    },
+    iconArea: {
+        padding: Spacing.md,
         justifyContent: 'center',
         alignItems: 'center',
+        height: 100,
     },
-    serviceContent: {
-        paddingHorizontal: Spacing.sm,
-        paddingBottom: Spacing.sm,
+    cardContent: {
+        paddingHorizontal: Spacing.md,
+        paddingBottom: Spacing.md,
     },
-    serviceLabel: {
+    testName: {
         fontSize: FontSize.xs,
         fontFamily: Fonts.bold,
         color: Colors.textDark,
         marginBottom: 4,
         lineHeight: 14,
     },
-    serviceDescription: {
+    testCategory: {
         fontSize: FontSize.xs,
         fontFamily: Fonts.regular,
         color: Colors.textMuted,
         marginBottom: Spacing.sm,
     },
-    serviceMeta: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginBottom: Spacing.sm,
-        paddingBottom: Spacing.sm,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
-    },
-    metaItem: {
+    priceSection: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        justifyContent: 'space-between',
     },
-    metaText: {
-        fontSize: FontSize.xs,
-        color: Colors.textMuted,
+    price: {
+        fontSize: FontSize.base,
+        fontFamily: Fonts.bold,
+        color: Colors.primary,
     },
-    serviceButton: {
+    selectionIndicator: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    paginationContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: Spacing.sm,
-        paddingHorizontal: Spacing.xs,
-        borderRadius: Radius.md,
-        gap: 3,
+        gap: Spacing.md,
+        paddingVertical: Spacing.md,
     },
-    serviceButtonText: {
+    paginationButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    paginationButtonDisabled: {
+        opacity: 0.5,
+    },
+    paginationText: {
         fontSize: FontSize.xs,
-        fontFamily: Fonts.bold,
+        fontFamily: Fonts.semiBold,
+        color: Colors.textMuted,
     },
     emptyBox: {
         alignItems: 'center',
@@ -515,5 +472,43 @@ const styles = StyleSheet.create({
         fontSize: FontSize.xs,
         fontFamily: Fonts.semiBold,
         color: Colors.primary,
+    },
+    footerContainer: {
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
+        backgroundColor: 'white',
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.md,
+    },
+    footerContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    footerLabel: {
+        fontSize: FontSize.xs,
+        fontFamily: Fonts.regular,
+        color: Colors.textMuted,
+        marginBottom: 4,
+    },
+    footerTestName: {
+        fontSize: FontSize.sm,
+        fontFamily: Fonts.bold,
+        color: Colors.textDark,
+        maxWidth: 200,
+    },
+    bookButton: {
+        flexDirection: 'row',
+        backgroundColor: Colors.primary,
+        paddingHorizontal: Spacing.lg,
+        paddingVertical: Spacing.sm,
+        borderRadius: Radius.lg,
+        alignItems: 'center',
+        gap: Spacing.xs,
+    },
+    bookButtonText: {
+        color: 'white',
+        fontSize: FontSize.sm,
+        fontFamily: Fonts.bold,
     },
 });
