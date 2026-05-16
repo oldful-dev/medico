@@ -101,7 +101,8 @@ const transformToRedcliffePayload = (order, type) => {
 exports.checkServiceability = async (lat, long) => {
     try {
         const res = await client.get(`/api/center/v2/is-location-serviceable/`, {
-            params: { latitude: lat, longitude: long }
+            params: { latitude: lat, longitude: long },
+            timeout: 30000 // Increase timeout for serviceability check (slow on mobile)
         });
         return res.data;
     } catch (error) {

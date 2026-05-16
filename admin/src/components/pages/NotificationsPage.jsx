@@ -8,7 +8,7 @@ export default function NotificationsPage() {
     const [logs, setLogs] = useState([]);
     const [cities, setCities] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [campaign, setCampaign] = useState({ channel: 'PUSH', subject: '', body: '', cityId: '' });
+    const [campaign, setCampaign] = useState({ channel: 'PUSH', subject: '', body: '', cityId: '', templateId: '' });
     const [showCampaign, setShowCampaign] = useState(false);
 
     useEffect(() => { loadLogs(); cityAPI.getAll().then(r => setCities(r.data?.data || [])).catch(() => { }); }, []);
@@ -21,7 +21,14 @@ export default function NotificationsPage() {
         catch (e) { showToast(e.response?.data?.message || 'Failed', 'error'); }
     }
 
-    const channelColors = { EMAIL: 'badge-info', WHATSAPP: 'badge-success', PUSH: 'badge-purple' };
+    const channelColors = { EMAIL: 'badge-info', WHATSAPP: 'badge-success', PUSH: 'badge-purple', SMS: 'badge-warning' };
+
+    const whatsappTemplates = [
+        { value: 'ayuxa_remember', label: 'Ayuxa Remember (Marketing)' },
+        { value: 'birthday_wishes', label: 'Birthday Wishes (Marketing)' },
+        { value: 'plan_expiry_reminder', label: 'Plan Expiry Reminder (Marketing)' },
+        { value: 'followup_feedback', label: 'Follow-up Feedback (Marketing)' },
+    ];
 
     return (
         <div>
@@ -54,9 +61,38 @@ export default function NotificationsPage() {
                 <div className="modal-overlay" onClick={() => setShowCampaign(false)}><div className="modal" onClick={e => e.stopPropagation()}>
                     <div className="modal-header"><h3>Send Campaign</h3><button onClick={() => setShowCampaign(false)} className="btn btn-sm btn-secondary">✕</button></div>
                     <form onSubmit={sendCampaign}><div className="modal-body">
-                        <div className="form-row"><div className="form-group"><label className="form-label">Channel</label><select className="form-select" value={campaign.channel} onChange={e => setCampaign({ ...campaign, channel: e.target.value })}>{['PUSH', 'EMAIL', 'WHATSAPP'].map(c => <option key={c} value={c}>{c}</option>)}</select></div><div className="form-group"><label className="form-label">Target City</label><select className="form-select" value={campaign.cityId} onChange={e => setCampaign({ ...campaign, cityId: e.target.value })}><option value="">All Cities</option>{cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div></div>
-                        <div className="form-group"><label className="form-label">Subject</label><input className="form-input" value={campaign.subject} onChange={e => setCampaign({ ...campaign, subject: e.target.value })} /></div>
-                        <div className="form-group"><label className="form-label">Message *</label><textarea className="form-input" rows={4} required value={campaign.body} onChange={e => setCampaign({ ...campaign, body: e.target.value })} /></div>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label className="form-label">Channel</label>
+                                <select className="form-select" value={campaign.channel} onChange={e => setCampaign({ ...campaign, channel: e.target.value, templateId: '' })}>
+                                    {['PUSH', 'EMAIL', 'WHATSAPP', 'SMS'].map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Target City</label>
+                                <select className="form-select" value={campaign.cityId} onChange={e => setCampaign({ ...campaign, cityId: e.target.value })}>
+                                    <option value="">All Cities</option>
+                                    {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        {campaign.channel === 'WHATSAPP' && (
+                            <div className="form-group">
+                                <label className="form-label">WhatsApp Template *</label>
+                                <select className="form-select" required value={campaign.templateId} onChange={e => setCampaign({ ...campaign, templateId: e.target.value })}>
+                                    <option value="">Select a template</option>
+                                    {whatsappTemplates.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                                </select>
+                                <small className="text-muted">Only approved marketing templates can be used for campaigns.</small>
+                            </div>
+                        )}
+                        {campaign.channel !== 'WHATSAPP' && (
+                            <div className="form-group"><label className="form-label">Subject {campaign.channel === 'PUSH' && '(Notification title)'}</label><input className="form-input" value={campaign.subject} onChange={e => setCampaign({ ...campaign, subject: e.target.value })} /></div>
+                        )}
+                        <div className="form-group">
+                            <label className="form-label">Message {campaign.channel === 'WHATSAPP' ? '(Preview — actual content from template)' : '*'}</label>
+                            <textarea className="form-input" rows={4} required={campaign.channel !== 'WHATSAPP'} value={campaign.body} onChange={e => setCampaign({ ...campaign, body: e.target.value })} />
+                        </div>
                     </div><div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={() => setShowCampaign(false)}>Cancel</button><button type="submit" className="btn btn-success"><Send size={14} /> Send</button></div></form>
                 </div></div>
             )}

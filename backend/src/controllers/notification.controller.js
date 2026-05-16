@@ -6,6 +6,7 @@ const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/helpers');
 const { sendEmail, sendWhatsApp } = require('../utils/notifications');
 const { sendPushToUsers } = require('../utils/pushNotification.service');
+const { sendSMS } = require('../utils/fast2sms');
 
 // GET /api/notifications/logs
 const getNotificationLogs = async (req, res, next) => {
@@ -128,6 +129,16 @@ const sendCampaign = async (req, res, next) => {
         if (channel === 'PUSH') {
             const userIds = users.map(u => u.id);
             sentCount = await sendPushToUsers(userIds, { title: subject, body });
+        }
+
+        // SMS Channel — plain text broadcast via Fast2SMS
+        if (channel === 'SMS') {
+            for (const user of users) {
+                if (user.phone) {
+                    const sent = await sendSMS(user.phone, body);
+                    if (sent) sentCount++;
+                }
+            }
         }
 
         sendResponse(res, 200, { sentCount, totalUsers: users.length }, 'Campaign sent');

@@ -39,17 +39,25 @@ export default function WellnessScreen() {
     const router = useRouter();
     const { addItem } = useCart();
 
-    const [products, setProducts] = useState<Product[]>([]);
+    const [allProducts, setAllProducts] = useState<Product[]>([]);
+    const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [search, setSearch] = useState('');
+    const [page, setPage] = useState(0);
+    const ITEMS_PER_PAGE = 9;
 
     const fetchProducts = useCallback(async () => {
         try {
-            const res = await storeService.getProducts({ isEnabled: true, limit: 50 });
-            setProducts((res.data || []).filter(p => p.stock > 0));
+            const res = await storeService.getProducts({ isEnabled: true, limit: 100 });
+            const filtered = (res.data || []).filter(p => p.stock > 0);
+            setAllProducts(filtered);
+            // Show first 9 items
+            setDisplayedProducts(filtered.slice(0, ITEMS_PER_PAGE));
+            setPage(0);
         } catch {
-            setProducts([]);
+            setAllProducts([]);
+            setDisplayedProducts([]);
         }
     }, []);
 
@@ -67,6 +75,17 @@ export default function WellnessScreen() {
         setRefreshing(false);
     }, [fetchProducts]);
 
+    const loadMore = useCallback(() => {
+        const nextPage = page + 1;
+        const startIndex = nextPage * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+
+        if (startIndex < allProducts.length) {
+            setDisplayedProducts(prev => [...prev, ...allProducts.slice(startIndex, endIndex)]);
+            setPage(nextPage);
+        }
+    }, [page, allProducts]);
+
     const handleAddToCart = (product: Product) => {
         addItem({
             id: product.id,
@@ -83,11 +102,11 @@ export default function WellnessScreen() {
     };
 
     const filteredProducts = search.trim()
-        ? products.filter(p =>
+        ? displayedProducts.filter(p =>
             p.name.toLowerCase().includes(search.toLowerCase()) ||
             p.category?.name.toLowerCase().includes(search.toLowerCase())
           )
-        : products;
+        : displayedProducts;
 
     // ── LOADING ────────────────────────────────────────────────────────────────
     if (loading) {
@@ -106,7 +125,9 @@ export default function WellnessScreen() {
     }
 
     // ── STORE VIEW (products exist) ────────────────────────────────────────────
-    if (products.length > 0) {
+    if (allProducts.length > 0) {
+        const hasMoreProducts = filteredProducts.length < allProducts.length;
+
         return (
             <View style={styles.screen}>
                 <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
@@ -138,10 +159,23 @@ export default function WellnessScreen() {
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
                         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
+                        onEndReached={() => {
+                            if (!search && hasMoreProducts) {
+                                loadMore();
+                            }
+                        }}
+                        onEndReachedThreshold={0.5}
                         ListEmptyComponent={
                             <View style={styles.emptyBox}>
                                 <Text style={styles.emptyText}>No products found</Text>
                             </View>
+                        }
+                        ListFooterComponent={
+                            !search && hasMoreProducts ? (
+                                <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore} activeOpacity={0.7}>
+                                    <Text style={styles.loadMoreText}>Load More Products</Text>
+                                </TouchableOpacity>
+                            ) : null
                         }
                         renderItem={({ item: product }) => {
                             const discount = product.mrp > product.price
@@ -564,5 +598,21 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
         color: Colors.textMuted,
+    },
+    loadMoreBtn: {
+        marginHorizontal: Spacing.md,
+        marginVertical: Spacing.lg,
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.lg,
+        backgroundColor: Colors.primary,
+        borderRadius: Radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    loadMoreText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.body,
+        color: Colors.textWhite,
+        letterSpacing: 0.5,
     },
 });

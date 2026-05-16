@@ -159,9 +159,37 @@ export const userService = {
     },
 
     // ─── Profile Avatar ─────────────────────────
-    uploadProfileAvatar: async (file: any): Promise<ApiResponse<UserProfile>> => {
-        const formData = new FormData();
-        formData.append('avatar', file);
-        return apiClient.request<UserProfile>({ method: 'PUT', endpoint: '/users/profile/avatar', body: formData, isFormData: true, timeout: 60000 });
+    // Uses XHR instead of fetch — React Native's fetch has issues sending
+    // FormData with URI file objects; XHR is the reliable multipart approach.
+    uploadProfileAvatar: async (file: { uri: string; type: string; name: string }): Promise<ApiResponse<UserProfile>> => {
+        return new Promise((resolve, reject) => {
+            const formData = new FormData();
+            // @ts-ignore — RN FormData accepts URI file objects
+            formData.append('avatar', { uri: file.uri, type: file.type, name: file.name });
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('PUT', `${apiClient.getBaseUrl()}/users/profile/avatar`);
+            xhr.timeout = 60000;
+
+            const token = (apiClient as any).authToken;
+            if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+            xhr.onload = () => {
+                try {
+                    const json = JSON.parse(xhr.responseText);
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        resolve(json);
+                    } else {
+                        reject(new Error(json?.message || `Upload failed: ${xhr.status}`));
+                    }
+                } catch {
+                    reject(new Error('Invalid server response'));
+                }
+            };
+            xhr.onerror = () => reject(new Error('Network error during avatar upload'));
+            xhr.ontimeout = () => reject(new Error('Avatar upload timed out'));
+
+            xhr.send(formData);
+        });
     },
 };

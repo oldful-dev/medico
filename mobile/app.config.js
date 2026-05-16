@@ -5,7 +5,7 @@ export default {
     "owner": "ayuxacare",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icons/ios/iTunesArtwork@3x.png",
+    "icon": "./assets/icons/icon.png",
     "scheme": "ayuxacare",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -16,9 +16,8 @@ export default {
       "package": "com.ayuxacare.app",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/icons/android/mipmap-xxxhdpi/logo_foreground.png",
-        "backgroundImage": "./assets/icons/android/mipmap-xxxhdpi/logo.png"
+        "foregroundImage": "./assets/icons/icon.png",
+        "backgroundColor": "#F5F0E8"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -30,7 +29,7 @@ export default {
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/icons/ios/iTunesArtwork@3x.png"
+      "favicon": "./assets/icons/icon.png"
     },
     "extra": {
       "eas": {
@@ -42,7 +41,7 @@ export default {
       [
         "expo-notifications",
         {
-          "icon": "./assets/icons/android/mipmap-xxxhdpi/logo_foreground.png",
+          "icon": "./assets/icons/icon.png",
           "color": "#048357",
           "defaultChannel": "ayuxacare-default",
           "sounds": []

@@ -117,7 +117,7 @@ export default function AccountScreen() {
     const uploadImage = async (asset: ImagePicker.ImagePickerAsset) => {
         setUploadingAvatar(true);
         try {
-            const file = { uri: asset.uri, type: asset.mimeType || 'image/jpeg', name: asset.fileName || 'avatar.jpg' };
+            const file = { uri: asset.uri, type: asset.mimeType || 'image/jpeg', name: asset.fileName || `avatar_${Date.now()}.jpg` };
             const res = await userService.uploadProfileAvatar(file);
             if (res.success && res.data) {
                 setProfile(res.data);
