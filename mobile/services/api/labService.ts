@@ -7,7 +7,6 @@ export interface LabPackage {
     discounted_cost?: number;
     fasting: boolean;
     tests_count?: number;
-    type?: string;
 }
 
 export interface LabSlot {
@@ -51,17 +50,29 @@ export interface LabBookingResponse {
 
 export const labService = {
     getPackages: async (search = '') => {
-        const response = await apiClient.get<LabPackage[]>(`/labs/packages?search=${search}`);
-        return response.data;
-    },
-
-    checkServiceability: async (lat: string, lng: string) => {
-        const response = await apiClient.get<{ status: string; message: string }>(`/labs/serviceability?lat=${lat}&lng=${lng}`);
+        const response = await apiClient.request<LabPackage[]>({
+            method: 'GET',
+            endpoint: `/labs/packages?search=${search}`,
+            timeout: 15000
+        });
         return response.data;
     },
 
     getTimeSlots: async (date: string, lat?: string, lng?: string) => {
-        const response = await apiClient.get<LabSlot[]>(`/labs/time-slots?date=${date}&lat=${lat}&lng=${lng}`);
+        const response = await apiClient.request<LabSlot[]>({
+            method: 'GET',
+            endpoint: `/labs/time-slots?date=${date}&lat=${lat}&lng=${lng}`,
+            timeout: 30000 // Increased timeout for slots API (slower endpoint)
+        });
+        return response.data;
+    },
+
+    checkServiceability: async (lat: string, lng: string) => {
+        const response = await apiClient.request({
+            method: 'GET',
+            endpoint: `/labs/serviceability?lat=${lat}&lng=${lng}`,
+            timeout: 30000 // Increased timeout for serviceability check (slower endpoint)
+        });
         return response.data;
     },
 

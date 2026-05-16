@@ -1,4 +1,5 @@
 // Ticket Chat Screen — View messages and reply to a support ticket
+// Uses WebSocket for real-time message delivery from admin
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, TextInput,
@@ -10,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { supportService, TicketMessage, SupportTicket } from '@/services/api/supportService';
+import { initTicketSocket, onTicketMessageAdded, disconnectTicketSocket } from '@/services/socket/ticketSocket';
 
 export default function TicketChatScreen() {
     const router = useRouter();
@@ -37,6 +39,13 @@ export default function TicketChatScreen() {
         return () => { showSub.remove(); hideSub.remove(); };
     }, []);
 
+    // Cleanup socket on unmount
+    useEffect(() => {
+        return () => {
+            disconnectTicketSocket();
+        };
+    }, []);
+
     const fetchTicket = useCallback(async () => {
         if (!ticketId) return;
         try {
@@ -56,19 +65,26 @@ export default function TicketChatScreen() {
         fetchTicket();
     }, [fetchTicket]);
 
-    // Poll for new messages every 10s
+    // Initialize WebSocket and listen for real-time messages
     useEffect(() => {
         if (!ticketId) return;
-        const interval = setInterval(async () => {
-            try {
-                const res = await supportService.getTicketById(ticketId);
-                if (res.success && res.data) {
-                    setTicket(res.data);
-                    setMessages(res.data.messages || []);
-                }
-            } catch { /* silent */ }
-        }, 10000);
-        return () => clearInterval(interval);
+
+        // Initialize socket connection with user ID
+        const currentSocket = initTicketSocket(ticketId);
+        if (!currentSocket) return;
+
+        // Listen for real-time messages from admin
+        const unsubscribe = onTicketMessageAdded((data) => {
+            if (data.ticketId === ticketId) {
+                // Auto-append message if it's for this ticket
+                setMessages(prev => [...prev, data.message]);
+                setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+            }
+        });
+
+        return () => {
+            unsubscribe();
+        };
     }, [ticketId]);
 
     const handleSend = async () => {
