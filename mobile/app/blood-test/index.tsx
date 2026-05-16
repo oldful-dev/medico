@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
-import { useSDUIHooks } from '@/hooks/useSDUIHooks';
+import { useUser } from '@/context/UserContext';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -31,15 +31,32 @@ export default function BloodTestScreen() {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { useHomeConfig } = useSDUIHooks();
-
-    const { data: config, isLoading: configLoading } = useHomeConfig();
+    const { services, isLoading: servicesLoading, refreshData } = useUser();
 
     const [search, setSearch] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
     const [refreshing, setRefreshing] = useState(false);
 
-    const sections = useMemo(() => config?.sections || [], [config?.sections]);
+    const sections = useMemo(() => {
+        if (!services.length) return [];
+
+        const grouped: Record<string, any[]> = {};
+        services.forEach(service => {
+            const category = service.category || 'Other';
+            if (!grouped[category]) grouped[category] = [];
+            grouped[category].push(service);
+        });
+
+        return Object.entries(grouped).map(([title, services]) => ({
+            id: title,
+            title,
+            services: services.map(s => ({
+                id: s.id,
+                label: s.name,
+                enabled: true,
+            })),
+        }));
+    }, [services]);
 
     const categoryNames = useMemo(() => {
         return ['All', ...sections.map(s => s.title || 'Other').filter(Boolean)];
@@ -61,8 +78,9 @@ export default function BloodTestScreen() {
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        setTimeout(() => setRefreshing(false), 1000);
-    }, []);
+        await refreshData();
+        setRefreshing(false);
+    }, [refreshData]);
 
     const handleServicePress = (service: any) => {
         router.push({
@@ -72,7 +90,7 @@ export default function BloodTestScreen() {
     };
 
     // ── LOADING ────────────────────────────────────────────────────────────────
-    if (configLoading) {
+    if (servicesLoading) {
         return (
             <View style={styles.screen}>
                 <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
