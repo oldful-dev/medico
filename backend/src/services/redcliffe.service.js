@@ -113,7 +113,8 @@ exports.checkServiceability = async (lat, long) => {
 exports.fetchTimeSlots = async (date, lat, long) => {
     try {
         const res = await client.get(`/api/booking/v2/get-time-slot-list/`, {
-            params: { collection_date: date, latitude: lat, longitude: long }
+            params: { collection_date: date, latitude: lat, longitude: long },
+            timeout: 30000 // Increase timeout for slots API (slow on mobile)
         });
 
         if (res.data.status === 'success' && res.data.results) {
@@ -129,6 +130,10 @@ exports.fetchTimeSlots = async (date, lat, long) => {
         }
         return res.data;
     } catch (error) {
+        // 400 is expected when location is not serviceable — don't log as error
+        if (error.response?.status === 400) {
+            return { status: 'failure', data: [], message: 'No slots available for this location' };
+        }
         logger.error(`[Redcliffe] TimeSlot error: ${error.message}`);
         throw error;
     }
