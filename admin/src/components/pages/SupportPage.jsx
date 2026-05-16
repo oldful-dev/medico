@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { MessageSquare, CheckCircle, Eye, Send, ChevronLeft, ChevronRight, RefreshCw, ArrowLeft, Clock, User, Headphones } from "lucide-react";
 import { supportAPI } from "@/lib/api";
 import { showToast, formatDateTime, timeAgo } from "@/lib/hooks";
-import { getSocket } from "@/lib/socket";
+import { getSocket, onSocketEvent } from "@/lib/socket";
 
 const statusColors = { open: 'badge-warning', 'in-progress': 'badge-info', resolved: 'badge-success', closed: 'badge-default' };
 const priorityColors = { low: 'badge-default', medium: 'badge-info', high: 'badge-warning', critical: 'badge-danger' };
@@ -34,38 +34,33 @@ export default function SupportPage() {
 
     useEffect(() => { loadTickets(); }, [loadTickets]);
 
-    // Real-time socket updates
+    // Real-time socket updates — register once, listeners persist across reconnects
     useEffect(() => {
-        const socket = getSocket();
-        if (!socket) return;
+        getSocket(); // Initialize socket
 
-        // New ticket created
-        socket.on("new_ticket", (newTicket) => {
-            // Reload to get fresh list without duplicates
+        onSocketEvent("new_ticket", (newTicket) => {
+            console.log('[Socket] new_ticket:', newTicket);
             setPage(1);
             loadTickets();
             showToast(`🎫 New Support Ticket: ${newTicket.subject}`, 'success');
         });
 
-        // New message in any ticket
-        socket.on("ticket_message_added", (data) => {
+        onSocketEvent("ticket_message_added", (data) => {
+            console.log('[Socket] ticket_message_added:', data);
             const { ticketId, message, senderName } = data;
 
-            // Update selected ticket if viewing it
-            if (selected?.id === ticketId) {
-                setSelected(prev => {
-                    if (prev) {
-                        return {
-                            ...prev,
-                            messages: [...(prev.messages || []), message]
-                        };
-                    }
-                    return prev;
-                });
-                showToast(`💬 New message from ${senderName}`, 'info');
-            }
+            setSelected(prev => {
+                if (prev && prev.id === ticketId) {
+                    console.log('[Socket] Updating selected ticket:', ticketId);
+                    showToast(`💬 New message from ${senderName}`, 'info');
+                    return {
+                        ...prev,
+                        messages: [...(prev.messages || []), message]
+                    };
+                }
+                return prev;
+            });
 
-            // Update ticket in list
             setTickets(prev =>
                 prev.map(t =>
                     t.id === ticketId ? { ...t, lastMessageAt: new Date() } : t
@@ -73,40 +68,27 @@ export default function SupportPage() {
             );
         });
 
-        // Ticket status changed
-        socket.on("ticket_status_changed", (data) => {
+        onSocketEvent("ticket_status_changed", (data) => {
+            console.log('[Socket] ticket_status_changed:', data);
             const { ticketId, status } = data;
 
-            if (selected?.id === ticketId) {
-                setSelected(prev => prev ? { ...prev, status } : prev);
-            }
-
+            setSelected(prev => prev && prev.id === ticketId ? { ...prev, status } : prev);
             setTickets(prev =>
                 prev.map(t => t.id === ticketId ? { ...t, status } : t)
             );
             showToast(`Ticket status: ${status}`, 'info');
         });
 
-        // Ticket assigned to agent
-        socket.on("ticket_assigned", (data) => {
+        onSocketEvent("ticket_assigned", (data) => {
+            console.log('[Socket] ticket_assigned:', data);
             const { ticketId, agentName } = data;
 
-            if (selected?.id === ticketId) {
-                setSelected(prev => prev ? { ...prev, assignedAgent: agentName } : prev);
-            }
-
+            setSelected(prev => prev && prev.id === ticketId ? { ...prev, assignedAgent: agentName } : prev);
             setTickets(prev =>
                 prev.map(t => t.id === ticketId ? { ...t, assignedAgent: agentName } : t)
             );
         });
-
-        return () => {
-            socket.off("new_ticket");
-            socket.off("ticket_message_added");
-            socket.off("ticket_status_changed");
-            socket.off("ticket_assigned");
-        };
-    }, [selected?.id]);
+    }, []); // Empty deps — register listeners once
 
     // Auto-scroll chat to bottom when messages change
     useEffect(() => {
