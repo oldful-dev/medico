@@ -104,7 +104,7 @@ export default function BloodTestScreen() {
 
                     {/* Info Section */}
                     <View style={styles.infoSection}>
-                        <Text style={styles.packageName} numberOfLines={2}>{item.name}</Text>
+                        <Text style={styles.packageName} numberOfLines={3}>{item.name}</Text>
                         <Text style={styles.parametersText}>
                             {item.tests_count || 0} Parameters
                         </Text>
@@ -184,7 +184,6 @@ export default function BloodTestScreen() {
                         >
                             {cat}
                         </Text>
-                        {activeCategory === idx && <View style={styles.categoryUnderline} />}
                     </TouchableOpacity>
                 ))}
             </ScrollView>
@@ -283,24 +282,20 @@ const styles = StyleSheet.create({
     categoryTab: {
         marginRight: 20,
         paddingVertical: 8,
+        paddingBottom: 6,
     },
     categoryTabActive: {
         borderBottomWidth: 2,
         borderBottomColor: PRIMARY_GREEN,
     },
     categoryTabText: {
-        fontSize: 14,
+        fontSize: 13,
         color: TEXT_MUTED,
         fontWeight: '500',
     },
     categoryTabTextActive: {
         color: PRIMARY_GREEN,
-        fontWeight: '600',
-    },
-    categoryUnderline: {
-        height: 2,
-        backgroundColor: PRIMARY_GREEN,
-        marginTop: 4,
+        fontWeight: '700',
     },
     loadingContainer: {
         flex: 1,
@@ -356,10 +351,11 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     packageName: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '600',
         color: TEXT_DARK,
-        marginBottom: 4,
+        marginBottom: 6,
+        lineHeight: 18,
     },
     parametersText: {
         fontSize: 12,
