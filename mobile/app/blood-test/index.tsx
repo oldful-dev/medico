@@ -49,6 +49,8 @@ export default function BloodTestScreen() {
     const [cartCount, setCartCount] = useState(0);
     const [detailModalVisible, setDetailModalVisible] = useState(false);
     const [detailModalCode, setDetailModalCode] = useState<string>('');
+    const [lastCartItem, setLastCartItem] = useState<LabPackage | null>(null);
+    const [searchText, setSearchText] = useState('');
 
     useEffect(() => {
         fetchPackages();
@@ -72,11 +74,21 @@ export default function BloodTestScreen() {
     };
 
     const handleAddToCart = (pkg: LabPackage) => {
+        setLastCartItem(pkg);
         setCartCount(prev => prev + 1);
         setDetailModalVisible(false);
         // Navigate to schedule with package payload
         router.push({ pathname: '/blood-test/schedule', params: { packagePayload: JSON.stringify(pkg) } } as any);
     };
+
+    const handleCartPress = () => {
+        if (cartCount === 0 || !lastCartItem) return;
+        router.push({ pathname: '/blood-test/schedule', params: { packagePayload: JSON.stringify(lastCartItem) } } as any);
+    };
+
+    const filteredPackages = packages.filter(pkg =>
+        pkg.name.toLowerCase().includes(searchText.toLowerCase())
+    );
 
     const renderPackageCard = ({ item }: { item: LabPackage }) => {
         const icon = getTestIcon(item.name);
@@ -143,7 +155,7 @@ export default function BloodTestScreen() {
                     <Ionicons name="arrow-back" size={24} color={TEXT_DARK} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Blood Tests</Text>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={handleCartPress}>
                     <View style={styles.cartIcon}>
                         <Ionicons name="cart" size={24} color={TEXT_DARK} />
                         {cartCount > 0 && (
@@ -162,8 +174,8 @@ export default function BloodTestScreen() {
                     placeholder="Search blood tests, packages..."
                     placeholderTextColor={TEXT_MUTED}
                     style={styles.searchInput}
-                    editable={false}
-                    pointerEvents="none"
+                    value={searchText}
+                    onChangeText={setSearchText}
                 />
             </View>
 
@@ -202,12 +214,19 @@ export default function BloodTestScreen() {
                 </View>
             ) : (
                 <FlatList
-                    data={packages}
+                    data={filteredPackages}
                     renderItem={renderPackageCard}
                     keyExtractor={(item) => item.code}
                     scrollEnabled={true}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        searchText ? (
+                            <View style={styles.emptyContainer}>
+                                <Text style={styles.emptyText}>No tests found matching "{searchText}"</Text>
+                            </View>
+                        ) : null
+                    }
                 />
             )}
 
@@ -328,7 +347,9 @@ const styles = StyleSheet.create({
         borderColor: CARD_BORDER,
         borderRadius: 12,
         marginBottom: 12,
-        padding: 12,
+        paddingTop: 32,
+        paddingBottom: 12,
+        paddingHorizontal: 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,
@@ -337,8 +358,8 @@ const styles = StyleSheet.create({
     },
     saveBadge: {
         position: 'absolute',
-        top: 12,
-        right: 12,
+        top: 8,
+        right: 8,
         backgroundColor: SAVE_BADGE_RED,
         paddingHorizontal: 8,
         paddingVertical: 4,
@@ -365,6 +386,7 @@ const styles = StyleSheet.create({
     },
     infoSection: {
         flex: 1,
+        paddingRight: 8,
     },
     packageName: {
         fontSize: 12,
@@ -372,6 +394,7 @@ const styles = StyleSheet.create({
         color: TEXT_DARK,
         marginBottom: 6,
         lineHeight: 16,
+        maxWidth: '85%',
     },
     parametersText: {
         fontSize: 11,
@@ -405,5 +428,16 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: PRIMARY_GREEN,
         fontWeight: '600',
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 40,
+    },
+    emptyText: {
+        fontSize: 14,
+        color: TEXT_MUTED,
+        fontWeight: '500',
     },
 });

@@ -52,6 +52,7 @@ const supportRoutes = require('./routes/support.routes');
 const mediaRoutes = require('./routes/media.routes');
 const webhookRoutes = require('./routes/webhook.routes');
 const labRoutes = require('./routes/lab.routes');
+const locationRoutes = require('./routes/location.routes');
 const remoteConfigRoutes = require('./routes/remoteConfig.routes');
 const appConfigRoutes = require('./routes/appConfig.routes');
 const uploadRoutes = require('./routes/upload.routes');
@@ -233,6 +234,7 @@ app.use('/api/audit-logs', auditRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/insurance', insuranceRoutes);
 app.use('/api/labs', labRoutes);
+app.use('/api/location', locationRoutes);
 app.use('/api/waitlist', waitlistRoutes);
 
 

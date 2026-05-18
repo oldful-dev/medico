@@ -100,7 +100,7 @@ const transformToRedcliffePayload = (order, type) => {
 
 exports.searchLocation = async (query) => {
     try {
-        const res = await client.get(`/api/location/v2/place-search/`, {
+        const res = await client.get(`/api/partner/v2/get-partner-location-2-eloc/`, {
             params: { place_query: query },
             timeout: 10000
         });
@@ -113,7 +113,7 @@ exports.searchLocation = async (query) => {
 
 exports.getLatLngFromEloc = async (eloc) => {
     try {
-        const res = await client.get(`/api/location/v2/get-lat-lng-by-eloc/`, {
+        const res = await client.get(`/api/partner/v2/get-partner-loc-2-eloc/`, {
             params: { eloc },
             timeout: 10000
         });
