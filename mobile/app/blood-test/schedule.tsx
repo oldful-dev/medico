@@ -60,6 +60,10 @@ export default function BloodTestScheduleScreen() {
         setSelectedDate(today);
     }, [params.packagePayload]);
 
+    useEffect(() => {
+        console.log('🎯 Schedule: selectedAddress changed to:', selectedAddress);
+    }, [selectedAddress]);
+
     // Fetch slots when date changes
     useEffect(() => {
         if (!selectedDate || !pkg) return;
@@ -94,10 +98,15 @@ export default function BloodTestScheduleScreen() {
 
 
     const handleLocationConfirmed = (location: any) => {
-        console.log('Location confirmed from picker:', JSON.stringify(location, null, 2));
+        console.log('🎯 Schedule: Location confirmed from picker:', JSON.stringify(location, null, 2));
         const address = location.address || location.description || '';
-        console.log('Setting address to:', address);
+        console.log('🎯 Schedule: Raw address value:', address);
+        console.log('🎯 Schedule: Address is empty?', address.length === 0);
+
+        console.log('🎯 Schedule: About to call setSelectedAddress with:', address);
         setSelectedAddress(address);
+        console.log('🎯 Schedule: setSelectedAddress called');
+
         setCoords({
             lat: String(location.latitude),
             long: String(location.longitude),
@@ -105,16 +114,18 @@ export default function BloodTestScheduleScreen() {
 
         // Extract pincode from address (look for 6-digit number)
         const pincodeMatch = address.match(/\b\d{6}\b/);
-        console.log('Pincode match:', pincodeMatch);
+        console.log('🎯 Schedule: Pincode match result:', pincodeMatch);
         if (pincodeMatch) {
-            console.log('Setting pincode to:', pincodeMatch[0]);
+            console.log('🎯 Schedule: Setting pincode to:', pincodeMatch[0]);
             setPincode(pincodeMatch[0]);
         } else {
-            console.log('No pincode found in address, leaving empty');
+            console.log('🎯 Schedule: No pincode found in address');
         }
 
-        console.log('Checking serviceability for:', location.latitude, location.longitude);
+        console.log('🎯 Schedule: Checking serviceability for:', location.latitude, location.longitude);
         checkServiceability(String(location.latitude), String(location.longitude));
+
+        console.log('🎯 Schedule: Closing modal');
         setLocationPickerVisible(false);
     };
 
@@ -533,8 +544,14 @@ export default function BloodTestScheduleScreen() {
             {/* Location Picker Modal */}
             <LocationPickerModal
                 visible={locationPickerVisible}
-                onClose={() => setLocationPickerVisible(false)}
-                onLocationConfirmed={handleLocationConfirmed}
+                onClose={() => {
+                    console.log('🎯 Schedule: LocationPickerModal closed');
+                    setLocationPickerVisible(false);
+                }}
+                onLocationConfirmed={(location) => {
+                    console.log('🎯 Schedule: onLocationConfirmed called with:', location);
+                    handleLocationConfirmed(location);
+                }}
                 initialLat={parseFloat(coords.lat)}
                 initialLng={parseFloat(coords.long)}
             />

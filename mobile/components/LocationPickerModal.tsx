@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -46,6 +46,10 @@ export const LocationPickerModal = ({
         longitude: number;
         address?: string;
     } | null>(null);
+
+    useEffect(() => {
+        console.log('📍 LocationPickerModal: visible changed to:', visible);
+    }, [visible]);
 
     const handleSelectLocation = (placeId: string, description: string, coords?: { lat: number; lng: number }) => {
         console.log('📍 LocationPickerModal: handleSelectLocation called with:', { placeId, description, coords });
