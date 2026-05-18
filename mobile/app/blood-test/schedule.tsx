@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput,
     ActivityIndicator, Modal,
@@ -10,6 +10,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { labService, type LabPackage, type LabSlot } from '@/services/api/labService';
 import { locationService } from '@/services/device/locationService';
 import { useUser } from '@/context/UserContext';
+import { LocationPickerModal } from '@/components/LocationPickerModal';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -38,14 +39,9 @@ export default function BloodTestScheduleScreen() {
     const [pincode, setPincode] = useState('');
     const [landmark, setLandmark] = useState('');
     const [phoneNumber, setPhoneNumber] = useState(profile?.phone || '');
-    const [locationSearch, setLocationSearch] = useState('');
-    const [searchResults, setSearchResults] = useState<any[]>([]);
-    const [searchLoading, setSearchLoading] = useState(false);
     const [serviceabilityStatus, setServiceabilityStatus] = useState<'unchecked' | 'checking' | 'serviceable' | 'non-serviceable'>('unchecked');
-    const [showLocationOptions, setShowLocationOptions] = useState(true);
     const [detectingLocation, setDetectingLocation] = useState(false);
-    const [searchMode, setSearchMode] = useState<'options' | 'manual'>('options');
-    const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [locationPickerVisible, setLocationPickerVisible] = useState(false);
 
     // Step 3: Confirm
     const [isBooking, setIsBooking] = useState(false);
@@ -96,67 +92,30 @@ export default function BloodTestScheduleScreen() {
         return arr;
     };
 
-    const searchLocations = async (query: string) => {
-        if (!query.trim() || query.length < 2) {
-            setSearchResults([]);
-            return;
-        }
-        setSearchLoading(true);
-        try {
-            console.log('Searching for:', query);
-            const result: any = await labService.searchLocationByArea(query);
-            console.log('Raw search result:', result);
-            console.log('Result type:', typeof result);
-            console.log('Is array?', Array.isArray(result));
 
-            let results = [];
-            if (result?.data && Array.isArray(result.data)) {
-                results = result.data;
-            } else if (Array.isArray(result)) {
-                results = result;
-            } else if (result && typeof result === 'object') {
-                results = Object.values(result);
-            }
+    const handleLocationConfirmed = (location: any) => {
+        console.log('Location confirmed from picker:', JSON.stringify(location, null, 2));
+        const address = location.address || location.description || '';
+        console.log('Setting address to:', address);
+        setSelectedAddress(address);
+        setCoords({
+            lat: String(location.latitude),
+            long: String(location.longitude),
+        });
 
-            console.log('Processed results:', results);
-            setSearchResults(results);
-        } catch (error: any) {
-            console.error('Location search failed:', error);
-            console.error('Error message:', error?.message);
-            console.error('Error response:', error?.response);
-            setSearchResults([]);
-        } finally {
-            setSearchLoading(false);
-        }
-    };
-
-    const selectSearchResult = async (location: any) => {
-        console.log('Selected location:', location);
-        setSelectedAddress(location.placeAddress || location.placeName || '');
-        setLocationSearch('');
-        setSearchResults([]);
-
-        if (location.eloc) {
-            try {
-                const coordResult: any = await labService.getCoordinatesByEloc(location.eloc);
-                console.log('Coordinates result:', coordResult);
-
-                const lat = coordResult?.latitude || coordResult?.lat;
-                const lng = coordResult?.longitude || coordResult?.lng;
-
-                if (lat && lng) {
-                    setCoords({ lat: String(lat), long: String(lng) });
-                    setPincode(coordResult?.pincode || '');
-                    checkServiceability(String(lat), String(lng));
-                } else {
-                    console.warn('No coordinates found in result');
-                }
-            } catch (error) {
-                console.error('Failed to get coordinates:', error);
-            }
+        // Extract pincode from address (look for 6-digit number)
+        const pincodeMatch = address.match(/\b\d{6}\b/);
+        console.log('Pincode match:', pincodeMatch);
+        if (pincodeMatch) {
+            console.log('Setting pincode to:', pincodeMatch[0]);
+            setPincode(pincodeMatch[0]);
         } else {
-            console.warn('No eloc found in location', location);
+            console.log('No pincode found in address, leaving empty');
         }
+
+        console.log('Checking serviceability for:', location.latitude, location.longitude);
+        checkServiceability(String(location.latitude), String(location.longitude));
+        setLocationPickerVisible(false);
     };
 
     const handleDetectLocation = async () => {
@@ -171,7 +130,6 @@ export default function BloodTestScheduleScreen() {
             if (pincode) {
                 setPincode(pincode);
             }
-            setShowLocationOptions(false);
             checkServiceability(String(coords.latitude), String(coords.longitude));
         } catch (error) {
             Alert.alert('Location Error', 'Unable to detect your location. Please search manually.');
@@ -349,8 +307,8 @@ export default function BloodTestScheduleScreen() {
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Collection Address</Text>
 
-                {/* Location Selection Options - Show only in options mode and when no address selected */}
-                {!selectedAddress && searchMode === 'options' && (
+                {/* Location Selection Options - Show only when no address selected */}
+                {!selectedAddress && (
                     <View style={styles.locationOptionsContainer}>
                         <TouchableOpacity
                             style={[styles.locationOptionBtn, { flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }]}
@@ -370,7 +328,10 @@ export default function BloodTestScheduleScreen() {
 
                         <TouchableOpacity
                             style={[styles.locationOptionBtn, { flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }]}
-                            onPress={() => setSearchMode('manual')}
+                            onPress={() => {
+                                console.log('🎯 Schedule: Manual button pressed, opening LocationPickerModal');
+                                setLocationPickerVisible(true);
+                            }}
                         >
                             <Ionicons name="search" size={28} color={PRIMARY_GREEN} style={{ marginBottom: 8 }} />
                             <Text style={styles.locationOptionTitle}>Manual</Text>
@@ -379,66 +340,7 @@ export default function BloodTestScheduleScreen() {
                     </View>
                 )}
 
-                {/* Back button when in manual search mode */}
-                {searchMode === 'manual' && !selectedAddress && (
-                    <TouchableOpacity
-                        style={styles.backToOptionsBtn}
-                        onPress={() => {
-                            setSearchMode('options');
-                            setLocationSearch('');
-                            setSearchResults([]);
-                        }}
-                    >
-                        <Ionicons name="chevron-back" size={18} color={PRIMARY_GREEN} style={{ marginRight: 6 }} />
-                        <Text style={styles.backToOptionsBtnText}>Back to Options</Text>
-                    </TouchableOpacity>
-                )}
 
-                {/* Location Search */}
-                <View style={styles.searchBox}>
-                    <Ionicons name="search" size={16} color={TEXT_MUTED} style={{ marginRight: 8 }} />
-                    <TextInput
-                        placeholder="Search area or location..."
-                        placeholderTextColor={TEXT_MUTED}
-                        value={locationSearch}
-                        onChangeText={(text) => {
-                            setLocationSearch(text);
-                            if (searchDebounceRef.current) {
-                                clearTimeout(searchDebounceRef.current);
-                            }
-                            if (text.length >= 2) {
-                                searchDebounceRef.current = setTimeout(() => {
-                                    searchLocations(text);
-                                }, 400);
-                            } else {
-                                setSearchResults([]);
-                            }
-                        }}
-                        style={styles.searchInput}
-                    />
-                </View>
-
-                {/* Search Results */}
-                {searchLoading && (
-                    <ActivityIndicator size="small" color={PRIMARY_GREEN} style={{ marginVertical: 10 }} />
-                )}
-                {searchResults.length > 0 && (
-                    <View style={styles.searchResults}>
-                        {searchResults.map((result, idx) => (
-                            <TouchableOpacity
-                                key={idx}
-                                onPress={() => selectSearchResult(result)}
-                                style={styles.searchResultItem}
-                            >
-                                <Ionicons name="location" size={16} color={PRIMARY_GREEN} />
-                                <View style={{ flex: 1, marginLeft: 10 }}>
-                                    <Text style={styles.resultName}>{result.placeName}</Text>
-                                    <Text style={styles.resultAddr}>{result.placeAddress}</Text>
-                                </View>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                )}
 
                 {/* Serviceability Status */}
                 {serviceabilityStatus === 'checking' && (
@@ -627,6 +529,15 @@ export default function BloodTestScheduleScreen() {
                     )}
                 </TouchableOpacity>
             </View>
+
+            {/* Location Picker Modal */}
+            <LocationPickerModal
+                visible={locationPickerVisible}
+                onClose={() => setLocationPickerVisible(false)}
+                onLocationConfirmed={handleLocationConfirmed}
+                initialLat={parseFloat(coords.lat)}
+                initialLng={parseFloat(coords.long)}
+            />
         </View>
     );
 }
@@ -816,13 +727,51 @@ const styles = StyleSheet.create({
         padding: 0,
         minHeight: 40,
     },
-    searchResults: {
-        backgroundColor: '#FFFFFF',
+    searchResultsContainer: {
+        backgroundColor: '#F3F4F6',
         borderWidth: 1,
         borderColor: CARD_BORDER,
         borderRadius: 8,
         marginBottom: 12,
-        maxHeight: 150,
+        maxHeight: 220,
+        minHeight: 60,
+        overflow: 'hidden',
+    },
+    searchResults: {
+        backgroundColor: '#F3F4F6',
+        borderRadius: 8,
+        maxHeight: 200,
+        minHeight: 60,
+    },
+    loadingResult: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 16,
+        paddingHorizontal: 12,
+        backgroundColor: '#F3F4F6',
+    },
+    loadingText: {
+        fontSize: 12,
+        color: TEXT_MUTED,
+        marginLeft: 10,
+    },
+    noResultsContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 24,
+        paddingHorizontal: 12,
+        backgroundColor: '#F3F4F6',
+    },
+    noResultsText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: TEXT_DARK,
+        marginBottom: 4,
+    },
+    noResultsSubtext: {
+        fontSize: 12,
+        color: TEXT_MUTED,
     },
     searchResultItem: {
         flexDirection: 'row',
@@ -831,6 +780,7 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         borderBottomWidth: 1,
         borderBottomColor: CARD_BORDER,
+        backgroundColor: '#FFFFFF',
     },
     resultName: {
         fontSize: 13,
