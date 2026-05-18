@@ -21,31 +21,22 @@ interface DetailModalProps {
 export function BloodTestDetailModal({ visible, packageCode, onClose, onAddToCart }: DetailModalProps) {
     const [pkg, setPkg] = useState<LabPackage | null>(null);
     const [loading, setLoading] = useState(false);
-    const [expandedTests, setExpandedTests] = useState(false);
 
     useEffect(() => {
         if (visible && packageCode) {
             setLoading(true);
-            setExpandedTests(false);
-            labService.getPackageDetails(packageCode)
-                .then(data => {
-                    if (data) {
-                        setPkg(data);
+            // Fetch from packages list to get accurate data
+            labService.getPackages()
+                .then(pkgs => {
+                    const found = pkgs?.find(p => p.code === packageCode);
+                    if (found) {
+                        setPkg(found);
                     } else {
-                        // Fallback: fetch from packages list
-                        return labService.getPackages().then(pkgs => {
-                            const found = pkgs?.find(p => p.code === packageCode);
-                            if (found) setPkg(found);
-                        });
+                        console.warn('Package not found in list:', packageCode);
                     }
                 })
                 .catch(err => {
                     console.error('Failed to fetch package details:', err);
-                    // Fallback: try fetching from packages list
-                    labService.getPackages().then(pkgs => {
-                        const found = pkgs?.find(p => p.code === packageCode);
-                        if (found) setPkg(found);
-                    }).catch(e => console.error('Fallback also failed:', e));
                 })
                 .finally(() => setLoading(false));
         }
@@ -102,54 +93,31 @@ export function BloodTestDetailModal({ visible, packageCode, onClose, onAddToCar
                                     <View style={styles.infoItem}>
                                         <MaterialCommunityIcons name="clock-outline" size={18} color={PRIMARY_GREEN} />
                                         <Text style={styles.infoLabel}>Report Time</Text>
-                                        <Text style={styles.infoValue}>{pkg.reportTime || '24 Hrs'}</Text>
+                                        <Text style={styles.infoValue}>{pkg.reportTime || '12-24 Hrs'}</Text>
                                     </View>
                                     <View style={styles.infoItem}>
                                         <MaterialCommunityIcons name="home" size={18} color={PRIMARY_GREEN} />
                                         <Text style={styles.infoLabel}>Collection</Text>
-                                        <Text style={styles.infoValue}>Home Collection</Text>
+                                        <Text style={styles.infoValue}>Home</Text>
                                     </View>
                                     <View style={styles.infoItem}>
                                         <Ionicons name="flask" size={18} color={PRIMARY_GREEN} />
-                                        <Text style={styles.infoLabel}>Tests</Text>
+                                        <Text style={styles.infoLabel}>Parameters</Text>
                                         <Text style={styles.infoValue}>{pkg.tests_count || 0}</Text>
                                     </View>
                                 </View>
 
-                                {/* Tests List */}
-                                {pkg.tests && pkg.tests.length > 0 && (
+                                {/* Parameters Count */}
+                                {pkg.tests_count && pkg.tests_count > 0 && (
                                     <View style={styles.section}>
                                         <View style={styles.sectionHeader}>
-                                            <Text style={styles.sectionTitle}>Includes ({pkg.tests.length} Parameters)</Text>
-                                            <TouchableOpacity onPress={() => setExpandedTests(!expandedTests)}>
-                                                <Ionicons name={expandedTests ? "chevron-up" : "chevron-down"} size={20} color={PRIMARY_GREEN} />
-                                            </TouchableOpacity>
+                                            <Text style={styles.sectionTitle}>Includes {pkg.tests_count} Parameters</Text>
                                         </View>
-                                        {expandedTests && (
-                                            <View style={styles.testsList}>
-                                                {pkg.tests.map((test, idx) => (
-                                                    <View key={idx} style={styles.testItem}>
-                                                        <Ionicons name="checkmark-circle" size={14} color={PRIMARY_GREEN} />
-                                                        <Text style={styles.testName}>{test}</Text>
-                                                    </View>
-                                                ))}
-                                                {pkg.tests.length > 20 && (
-                                                    <TouchableOpacity onPress={() => {}}>
-                                                        <Text style={styles.moreLink}>+ More ({pkg.tests.length - 20})</Text>
-                                                    </TouchableOpacity>
-                                                )}
-                                            </View>
-                                        )}
-                                    </View>
-                                )}
-
-                                {/* Preparation */}
-                                {pkg.preparation && (
-                                    <View style={styles.section}>
-                                        <Text style={styles.sectionTitle}>Preparation</Text>
-                                        <View style={styles.prepBox}>
-                                            <Ionicons name="alert-circle" size={16} color="#D97706" style={{ marginRight: 8 }} />
-                                            <Text style={styles.prepText}>{pkg.preparation}</Text>
+                                        <View style={styles.parametersBox}>
+                                            <Ionicons name="checkmark" size={16} color={PRIMARY_GREEN} style={{ marginRight: 8 }} />
+                                            <Text style={styles.parametersText}>
+                                                Complete analysis with {pkg.tests_count} comprehensive parameters
+                                            </Text>
                                         </View>
                                     </View>
                                 )}
@@ -157,10 +125,29 @@ export function BloodTestDetailModal({ visible, packageCode, onClose, onAddToCar
                                 {/* Fasting Banner if needed */}
                                 {pkg.fasting && (
                                     <View style={styles.fastingBox}>
-                                        <Ionicons name="information-circle" size={16} color="#D97706" style={{ marginRight: 8 }} />
+                                        <Ionicons name="warning" size={16} color="#D97706" style={{ marginRight: 8 }} />
                                         <View style={{ flex: 1 }}>
                                             <Text style={styles.fastingTitle}>Fasting Required</Text>
-                                            <Text style={styles.fastingDesc}>No food or water for 10-12 hours before test</Text>
+                                            <Text style={styles.fastingDesc}>Avoid food & water for 10-12 hours before collection</Text>
+                                        </View>
+                                    </View>
+                                )}
+
+                                {/* Preparation */}
+                                {pkg.preparation ? (
+                                    <View style={styles.section}>
+                                        <Text style={styles.sectionTitle}>Preparation</Text>
+                                        <View style={styles.prepBox}>
+                                            <Ionicons name="alert-circle" size={16} color="#D97706" style={{ marginRight: 8 }} />
+                                            <Text style={styles.prepText}>{pkg.preparation}</Text>
+                                        </View>
+                                    </View>
+                                ) : (
+                                    <View style={styles.section}>
+                                        <Text style={styles.sectionTitle}>Preparation</Text>
+                                        <View style={styles.prepBox}>
+                                            <Ionicons name="checkmark-circle" size={16} color={PRIMARY_GREEN} style={{ marginRight: 8 }} />
+                                            <Text style={styles.prepText}>No special preparation required</Text>
                                         </View>
                                     </View>
                                 )}
@@ -420,5 +407,20 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 15,
         fontWeight: '700',
+    },
+    parametersBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F9FAFB',
+        padding: 12,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
+    },
+    parametersText: {
+        fontSize: 12,
+        color: TEXT_DARK,
+        flex: 1,
+        lineHeight: 18,
     },
 });
