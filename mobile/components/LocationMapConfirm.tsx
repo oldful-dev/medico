@@ -178,7 +178,10 @@ export const LocationMapConfirm = ({
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.confirmButton, loading && styles.confirmButtonDisabled]}
-                        onPress={handleConfirm}
+                        onPress={() => {
+                            console.log('🗺️ LocationMapConfirm: Confirm button PRESSED');
+                            handleConfirm();
+                        }}
                         disabled={loading}
                     >
                         <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
