@@ -7,6 +7,7 @@ import {
     ScrollView,
     ActivityIndicator,
     FlatList,
+    TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -157,7 +158,13 @@ export default function BloodTestScreen() {
             {/* Search Bar */}
             <View style={styles.searchContainer}>
                 <Ionicons name="search" size={18} color={TEXT_MUTED} style={styles.searchIcon} />
-                <Text style={styles.searchPlaceholder}>Search blood tests, packages...</Text>
+                <TextInput
+                    placeholder="Search blood tests, packages..."
+                    placeholderTextColor={TEXT_MUTED}
+                    style={styles.searchInput}
+                    editable={false}
+                    pointerEvents="none"
+                />
             </View>
 
             {/* Category Tabs */}
@@ -262,15 +269,24 @@ const styles = StyleSheet.create({
         marginVertical: 12,
         paddingHorizontal: 12,
         paddingVertical: 10,
+        minHeight: 44,
         backgroundColor: LIGHT_GREEN_BG,
         borderRadius: 8,
     },
     searchIcon: {
         marginRight: 8,
+        pointerEvents: 'none',
+    },
+    searchInput: {
+        fontSize: 13,
+        color: TEXT_DARK,
+        flex: 1,
+        padding: 0,
     },
     searchPlaceholder: {
-        fontSize: 14,
+        fontSize: 13,
         color: TEXT_MUTED,
+        flex: 1,
     },
     categoriesScroll: {
         paddingHorizontal: 16,

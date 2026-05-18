@@ -61,7 +61,7 @@ export function BloodTestDetailModal({ visible, packageCode, onClose, onAddToCar
                 <View style={styles.container}>
                     {/* Header */}
                     <View style={styles.header}>
-                        <Text style={styles.headerTitle} numberOfLines={3}>{pkg?.name || 'Test Details'}</Text>
+                        <Text style={styles.headerTitle} numberOfLines={2}>{pkg?.name || 'Test Details'}</Text>
                         <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
                             <Ionicons name="close" size={24} color={TEXT_DARK} />
                         </TouchableOpacity>
@@ -179,8 +179,14 @@ export function BloodTestDetailModal({ visible, packageCode, onClose, onAddToCar
                                 </View>
                             </>
                         ) : (
-                            <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                                <Text style={{ color: TEXT_MUTED, fontSize: 13 }}>Failed to load package details</Text>
+                            <View style={{ alignItems: 'center', paddingVertical: 50, paddingHorizontal: 20 }}>
+                                <Ionicons name="alert-circle-outline" size={48} color={TEXT_MUTED} style={{ marginBottom: 12 }} />
+                                <Text style={{ color: TEXT_DARK, fontSize: 15, fontWeight: '600', textAlign: 'center', marginBottom: 6 }}>
+                                    Unable to load
+                                </Text>
+                                <Text style={{ color: TEXT_MUTED, fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
+                                    There was an issue loading the package details. Please try again.
+                                </Text>
                             </View>
                         )}
                     </ScrollView>
@@ -210,6 +216,7 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     container: {
+        minHeight: '50%',
         maxHeight: '90%',
         backgroundColor: '#fff',
         borderTopLeftRadius: 20,
@@ -227,12 +234,12 @@ const styles = StyleSheet.create({
         borderBottomColor: '#F0F0F0',
     },
     headerTitle: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '700',
         color: TEXT_DARK,
         flex: 1,
         marginRight: 12,
-        lineHeight: 20,
+        lineHeight: 22,
     },
     closeBtn: {
         padding: 4,
