@@ -7,6 +7,11 @@ export interface LabPackage {
     discounted_cost?: number;
     fasting: boolean;
     tests_count?: number;
+    tests?: string[];
+    preparation?: string;
+    collectionType?: string;
+    reportTime?: string;
+    description?: string;
 }
 
 export interface LabSlot {
@@ -58,6 +63,15 @@ export const labService = {
         return response.data;
     },
 
+    getPackageDetails: async (code: string) => {
+        const response = await apiClient.request<LabPackage>({
+            method: 'GET',
+            endpoint: `/labs/packages/${code}`,
+            timeout: 10000
+        });
+        return response.data;
+    },
+
     getTimeSlots: async (date: string, lat?: string, lng?: string) => {
         const response = await apiClient.request<LabSlot[]>({
             method: 'GET',
@@ -83,6 +97,27 @@ export const labService = {
 
     searchLocation: async (q: string) => {
         const response = await apiClient.get(`/labs/location?search=${q}`);
+        return response.data;
+    },
+
+    // Redcliffe-specific APIs
+    searchLocationByArea: async (areaName: string) => {
+        // API #1: Get eloc (location code) by area name
+        const response = await apiClient.request({
+            method: 'GET',
+            endpoint: `/labs/location/search?place_query=${encodeURIComponent(areaName)}`,
+            timeout: 10000
+        });
+        return response.data;
+    },
+
+    getCoordinatesByEloc: async (eloc: string) => {
+        // API #2: Get latitude/longitude from eloc
+        const response = await apiClient.request({
+            method: 'GET',
+            endpoint: `/labs/location/eloc/${eloc}`,
+            timeout: 10000
+        });
         return response.data;
     }
 };

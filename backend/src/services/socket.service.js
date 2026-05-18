@@ -33,8 +33,9 @@ const init = (httpServer) => {
                 if (isAllowed) {
                     callback(null, true);
                 } else {
-                    logger.warn(`[Socket] CORS blocked: ${origin}`);
-                    callback(null, true); // allow anyway to avoid blocking real admin panel
+                    // Mobile apps don't have traditional origins; allow with debug log
+                    logger.debug(`[Socket] Non-standard origin: ${origin} (allowing for mobile)`);
+                    callback(null, true);
                 }
             },
             methods: ['GET', 'POST'],
