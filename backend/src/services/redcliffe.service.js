@@ -98,6 +98,32 @@ const transformToRedcliffePayload = (order, type) => {
     }
 };
 
+exports.searchLocation = async (query) => {
+    try {
+        const res = await client.get(`/api/location/v2/place-search/`, {
+            params: { place_query: query },
+            timeout: 10000
+        });
+        return res.data;
+    } catch (error) {
+        logger.error(`[Redcliffe] searchLocation error: ${error.message}`);
+        throw error;
+    }
+};
+
+exports.getLatLngFromEloc = async (eloc) => {
+    try {
+        const res = await client.get(`/api/location/v2/get-lat-lng-by-eloc/`, {
+            params: { eloc },
+            timeout: 10000
+        });
+        return res.data;
+    } catch (error) {
+        logger.error(`[Redcliffe] getLatLngFromEloc error: ${error.message}`);
+        throw error;
+    }
+};
+
 exports.checkServiceability = async (lat, long) => {
     try {
         const res = await client.get(`/api/center/v2/is-location-serviceable/`, {
@@ -272,6 +298,8 @@ exports.getConsolidatedReport = async (bookingId) => {
 };
 
 module.exports = {
+    searchLocation: exports.searchLocation,
+    getLatLngFromEloc: exports.getLatLngFromEloc,
     checkServiceability: exports.checkServiceability,
     getTimeSlots: exports.fetchTimeSlots,
     getPackages: exports.getPackages,
