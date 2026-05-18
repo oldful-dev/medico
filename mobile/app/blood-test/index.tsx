@@ -351,14 +351,14 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     packageName: {
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: '600',
         color: TEXT_DARK,
         marginBottom: 6,
-        lineHeight: 18,
+        lineHeight: 16,
     },
     parametersText: {
-        fontSize: 12,
+        fontSize: 11,
         color: TEXT_MUTED,
         marginBottom: 8,
     },
