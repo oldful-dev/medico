@@ -554,6 +554,8 @@ model Payment {
 
   bookingId           String?
   booking             Booking?      @relation(fields: [bookingId], references: [id])
+  labOrderId          String?
+  labOrder            LabOrder?     @relation(fields: [labOrderId], references: [id])
   subscriptionId      String?
   subscription        Subscription? @relation(fields: [subscriptionId], references: [id])
   productOrderId      String?
@@ -997,6 +999,7 @@ model LabOrder {
   paymentDetails     Json?          // razorpayOrderId, amount, isPaid
 
   processedEvents    String[]       @default([])
+  payments           Payment[]
 
   holdExpiresAt      DateTime?
   trackingLink       String?

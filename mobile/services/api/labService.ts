@@ -47,10 +47,16 @@ export interface LabBookingPayload {
 }
 
 export interface LabBookingResponse {
-    order?: {
-        redcliffeBookingId: string;
-        clientRefId: string;
-    };
+    id: string;
+    clientRefId: string;
+    redcliffeBookingId?: string;
+    status: string;
+    bookingType: string;
+    patient: any;
+    address: any;
+    packages: any;
+    slot: any;
+    // ... other fields from labOrder
 }
 
 export const labService = {

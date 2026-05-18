@@ -26,6 +26,7 @@ export interface PaymentMethodOption {
 
 export interface InitiatePaymentPayload {
     bookingId?: string;
+    labOrderId?: string;
     subscriptionId?: string;
     amount: number;
     paymentMethod?: PaymentMethod;

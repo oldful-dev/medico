@@ -142,6 +142,11 @@ class ApiClient {
 
     // ─── Response Parser ──────────────────────────
     private async parseResponse<T>(response: Response): Promise<ApiResponse<T>> {
+        // Handle 304 Not Modified - return success with no data
+        if (response.status === 304) {
+            return { success: true, data: null } as ApiResponse<T>;
+        }
+
         const json = await response.json().catch(() => null);
 
         if (!response.ok) {
