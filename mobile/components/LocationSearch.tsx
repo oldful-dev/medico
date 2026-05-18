@@ -54,9 +54,31 @@ export const LocationSearch = ({
         const details = await getPlaceDetails(prediction.place_id);
         console.log('🔍 LocationSearch: Got place details:', details);
 
-        // Use formatted_address if available, otherwise fall back to description
-        const fullAddress = details?.formatted_address || prediction.description;
-        console.log('🔍 LocationSearch: Using fullAddress:', fullAddress);
+        // Use formatted_address if available
+        let fullAddress = details?.formatted_address || prediction.description;
+        console.log('🔍 LocationSearch: Initial fullAddress:', fullAddress);
+
+        // If formatted_address doesn't contain a pincode, do reverse geocoding to get complete address
+        if (details && !fullAddress.match(/\b\d{6}\b/)) {
+            console.log('🔍 LocationSearch: No pincode in address, reverse geocoding...');
+            try {
+                const reverseResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://api.ayuxacare.com/api'}/location/reverse-geocode`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ latitude: details.latitude, longitude: details.longitude }),
+                });
+                const reverseData = await reverseResponse.json();
+                if (reverseData.statusCode === 0 && reverseData.data?.formatted_address) {
+                    fullAddress = reverseData.data.formatted_address;
+                    console.log('🔍 LocationSearch: Got reverse geocoded address:', fullAddress);
+                }
+            } catch (error) {
+                console.error('🔍 LocationSearch: Reverse geocoding failed:', error);
+                // Keep the original fullAddress if reverse geocoding fails
+            }
+        }
+
+        console.log('🔍 LocationSearch: Final fullAddress:', fullAddress);
 
         console.log('🔍 LocationSearch: Calling onSelectLocation with:', {
             placeId: prediction.place_id,
