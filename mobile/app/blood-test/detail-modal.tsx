@@ -61,16 +61,17 @@ export function BloodTestDetailModal({ visible, packageCode, onClose, onAddToCar
                 <View style={styles.container}>
                     {/* Header */}
                     <View style={styles.header}>
-                        <Text style={styles.headerTitle} numberOfLines={2}>{pkg?.name || 'Test Details'}</Text>
+                        <Text style={styles.headerTitle} numberOfLines={3}>{pkg?.name || 'Test Details'}</Text>
                         <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
                             <Ionicons name="close" size={24} color={TEXT_DARK} />
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView showsVerticalScrollIndicator={false} style={styles.content} contentContainerStyle={{ paddingBottom: 20 }}>
+                    <ScrollView showsVerticalScrollIndicator={false} style={styles.content} contentContainerStyle={{ paddingBottom: 20, minHeight: 300 }}>
                         {loading ? (
                             <View style={{ marginTop: 60, alignItems: 'center' }}>
                                 <ActivityIndicator size="large" color={PRIMARY_GREEN} />
+                                <Text style={{ marginTop: 12, color: TEXT_MUTED }}>Loading...</Text>
                             </View>
                         ) : pkg ? (
                             <>
@@ -177,7 +178,11 @@ export function BloodTestDetailModal({ visible, packageCode, onClose, onAddToCar
                                     </View>
                                 </View>
                             </>
-                        ) : null}
+                        ) : (
+                            <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                                <Text style={{ color: TEXT_MUTED, fontSize: 13 }}>Failed to load package details</Text>
+                            </View>
+                        )}
                     </ScrollView>
 
                     {/* Sticky Add to Cart Button */}
@@ -222,12 +227,12 @@ const styles = StyleSheet.create({
         borderBottomColor: '#F0F0F0',
     },
     headerTitle: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: '700',
         color: TEXT_DARK,
         flex: 1,
         marginRight: 12,
-        lineHeight: 21,
+        lineHeight: 20,
     },
     closeBtn: {
         padding: 4,

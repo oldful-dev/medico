@@ -665,12 +665,14 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginBottom: 10,
         backgroundColor: '#FFFFFF',
+        minHeight: 44,
     },
     searchInput: {
         flex: 1,
-        fontSize: 14,
+        fontSize: 13,
         color: TEXT_DARK,
         padding: 0,
+        minHeight: 40,
     },
     searchResults: {
         backgroundColor: '#FFFFFF',
