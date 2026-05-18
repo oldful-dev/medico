@@ -96,28 +96,45 @@ export const labService = {
     },
 
     searchLocation: async (q: string) => {
-        const response = await apiClient.get(`/labs/location?search=${q}`);
-        return response.data;
+        try {
+            const response = await apiClient.get(`/labs/location?search=${encodeURIComponent(q)}`);
+            return response.data || response;
+        } catch (error) {
+            console.error('searchLocation error:', error);
+            throw error;
+        }
     },
 
     // Redcliffe-specific APIs
     searchLocationByArea: async (areaName: string) => {
         // API #1: Get eloc (location code) by area name
-        const response = await apiClient.request({
-            method: 'GET',
-            endpoint: `/labs/location/search?place_query=${encodeURIComponent(areaName)}`,
-            timeout: 10000
-        });
-        return response.data;
+        try {
+            const response = await apiClient.request({
+                method: 'GET',
+                endpoint: `/labs/location/search?q=${encodeURIComponent(areaName)}`,
+                timeout: 10000
+            });
+            console.log('searchLocationByArea raw response:', response);
+            return response.data || response;
+        } catch (error) {
+            console.error('searchLocationByArea error:', error);
+            throw error;
+        }
     },
 
     getCoordinatesByEloc: async (eloc: string) => {
         // API #2: Get latitude/longitude from eloc
-        const response = await apiClient.request({
-            method: 'GET',
-            endpoint: `/labs/location/eloc/${eloc}`,
-            timeout: 10000
-        });
-        return response.data;
+        try {
+            const response = await apiClient.request({
+                method: 'GET',
+                endpoint: `/labs/location/eloc/${eloc}`,
+                timeout: 10000
+            });
+            console.log('getCoordinatesByEloc raw response:', response);
+            return response.data || response;
+        } catch (error) {
+            console.error('getCoordinatesByEloc error:', error);
+            throw error;
+        }
     }
 };

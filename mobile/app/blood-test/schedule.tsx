@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput,
-    ActivityIndicator,
+    ActivityIndicator, Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { labService, type LabPackage, type LabSlot } from '@/services/api/labService';
+import { locationService } from '@/services/device/locationService';
 import { useUser } from '@/context/UserContext';
 
 const PRIMARY_GREEN = '#02743F';
@@ -40,6 +41,10 @@ export default function BloodTestScheduleScreen() {
     const [locationSearch, setLocationSearch] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
+    const [serviceabilityStatus, setServiceabilityStatus] = useState<'unchecked' | 'checking' | 'serviceable' | 'non-serviceable'>('unchecked');
+    const [showLocationOptions, setShowLocationOptions] = useState(true);
+    const [detectingLocation, setDetectingLocation] = useState(false);
+    const [searchMode, setSearchMode] = useState<'options' | 'manual'>('options');
     const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Step 3: Confirm
@@ -66,9 +71,10 @@ export default function BloodTestScheduleScreen() {
         const dateStr = selectedDate.toISOString().split('T')[0];
         labService.getTimeSlots(dateStr, coords.lat, coords.long)
             .then(data => {
-                setSlots(data || []);
-                if (data?.length > 0) {
-                    setSelectedTime(data[0].slot || data[0].slot_time || '');
+                const slots = Array.isArray(data) ? data : [];
+                setSlots(slots);
+                if (slots.length > 0) {
+                    setSelectedTime(slots[0].slot || slots[0].slot_time || '');
                 }
             })
             .catch(() => setSlots([]))
@@ -97,17 +103,27 @@ export default function BloodTestScheduleScreen() {
         }
         setSearchLoading(true);
         try {
+            console.log('Searching for:', query);
             const result: any = await labService.searchLocationByArea(query);
-            console.log('Search result:', result);
+            console.log('Raw search result:', result);
+            console.log('Result type:', typeof result);
+            console.log('Is array?', Array.isArray(result));
+
+            let results = [];
             if (result?.data && Array.isArray(result.data)) {
-                setSearchResults(result.data);
+                results = result.data;
             } else if (Array.isArray(result)) {
-                setSearchResults(result);
-            } else {
-                setSearchResults([]);
+                results = result;
+            } else if (result && typeof result === 'object') {
+                results = Object.values(result);
             }
-        } catch (error) {
+
+            console.log('Processed results:', results);
+            setSearchResults(results);
+        } catch (error: any) {
             console.error('Location search failed:', error);
+            console.error('Error message:', error?.message);
+            console.error('Error response:', error?.response);
             setSearchResults([]);
         } finally {
             setSearchLoading(false);
@@ -115,20 +131,68 @@ export default function BloodTestScheduleScreen() {
     };
 
     const selectSearchResult = async (location: any) => {
-        setSelectedAddress(location.placeAddress || location.placeName);
+        console.log('Selected location:', location);
+        setSelectedAddress(location.placeAddress || location.placeName || '');
         setLocationSearch('');
         setSearchResults([]);
 
         if (location.eloc) {
             try {
                 const coordResult: any = await labService.getCoordinatesByEloc(location.eloc);
-                if (coordResult?.latitude && coordResult?.longitude) {
-                    setCoords({ lat: String(coordResult.latitude), long: String(coordResult.longitude) });
-                    setPincode(coordResult.pincode || '');
+                console.log('Coordinates result:', coordResult);
+
+                const lat = coordResult?.latitude || coordResult?.lat;
+                const lng = coordResult?.longitude || coordResult?.lng;
+
+                if (lat && lng) {
+                    setCoords({ lat: String(lat), long: String(lng) });
+                    setPincode(coordResult?.pincode || '');
+                    checkServiceability(String(lat), String(lng));
+                } else {
+                    console.warn('No coordinates found in result');
                 }
             } catch (error) {
                 console.error('Failed to get coordinates:', error);
             }
+        } else {
+            console.warn('No eloc found in location', location);
+        }
+    };
+
+    const handleDetectLocation = async () => {
+        setDetectingLocation(true);
+        try {
+            const coords = await locationService.getCurrentLocation();
+            const address = await locationService.getAddressFromCoordinates(coords);
+            const pincode = await locationService.getPincodeFromAddress(coords, address);
+
+            setCoords({ lat: String(coords.latitude), long: String(coords.longitude) });
+            setSelectedAddress(address);
+            if (pincode) {
+                setPincode(pincode);
+            }
+            setShowLocationOptions(false);
+            checkServiceability(String(coords.latitude), String(coords.longitude));
+        } catch (error) {
+            Alert.alert('Location Error', 'Unable to detect your location. Please search manually.');
+            console.error('Location detection failed:', error);
+        } finally {
+            setDetectingLocation(false);
+        }
+    };
+
+    const checkServiceability = async (lat: string, lng: string) => {
+        setServiceabilityStatus('checking');
+        try {
+            const result: any = await labService.checkServiceability(lat, lng);
+            if (result?.serviceable === true) {
+                setServiceabilityStatus('serviceable');
+            } else {
+                setServiceabilityStatus('non-serviceable');
+            }
+        } catch (error) {
+            console.error('Serviceability check failed:', error);
+            setServiceabilityStatus('unchecked');
         }
     };
 
@@ -146,6 +210,10 @@ export default function BloodTestScheduleScreen() {
             }
             if (pincode.length !== 6) {
                 Alert.alert('Required', 'Please enter valid 6-digit pincode');
+                return;
+            }
+            if (serviceabilityStatus === 'non-serviceable') {
+                Alert.alert('Not Serviceable', 'This location is not serviceable. Please select another address.');
                 return;
             }
             setStep(3);
@@ -281,6 +349,51 @@ export default function BloodTestScheduleScreen() {
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Collection Address</Text>
 
+                {/* Location Selection Options - Show only in options mode and when no address selected */}
+                {!selectedAddress && searchMode === 'options' && (
+                    <View style={styles.locationOptionsContainer}>
+                        <TouchableOpacity
+                            style={[styles.locationOptionBtn, { flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }]}
+                            onPress={handleDetectLocation}
+                            disabled={detectingLocation}
+                        >
+                            {detectingLocation ? (
+                                <ActivityIndicator size="small" color={PRIMARY_GREEN} />
+                            ) : (
+                                <>
+                                    <Ionicons name="locate" size={28} color={PRIMARY_GREEN} style={{ marginBottom: 8 }} />
+                                    <Text style={styles.locationOptionTitle}>Auto Detect</Text>
+                                    <Text style={styles.locationOptionDesc}>Current location</Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.locationOptionBtn, { flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }]}
+                            onPress={() => setSearchMode('manual')}
+                        >
+                            <Ionicons name="search" size={28} color={PRIMARY_GREEN} style={{ marginBottom: 8 }} />
+                            <Text style={styles.locationOptionTitle}>Manual</Text>
+                            <Text style={styles.locationOptionDesc}>Search & select</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* Back button when in manual search mode */}
+                {searchMode === 'manual' && !selectedAddress && (
+                    <TouchableOpacity
+                        style={styles.backToOptionsBtn}
+                        onPress={() => {
+                            setSearchMode('options');
+                            setLocationSearch('');
+                            setSearchResults([]);
+                        }}
+                    >
+                        <Ionicons name="chevron-back" size={18} color={PRIMARY_GREEN} style={{ marginRight: 6 }} />
+                        <Text style={styles.backToOptionsBtnText}>Back to Options</Text>
+                    </TouchableOpacity>
+                )}
+
                 {/* Location Search */}
                 <View style={styles.searchBox}>
                     <Ionicons name="search" size={16} color={TEXT_MUTED} style={{ marginRight: 8 }} />
@@ -324,6 +437,32 @@ export default function BloodTestScheduleScreen() {
                                 </View>
                             </TouchableOpacity>
                         ))}
+                    </View>
+                )}
+
+                {/* Serviceability Status */}
+                {serviceabilityStatus === 'checking' && (
+                    <View style={[styles.serviceabilityBanner, { backgroundColor: '#FEF3C7' }]}>
+                        <ActivityIndicator size="small" color="#D97706" style={{ marginRight: 10 }} />
+                        <Text style={{ fontSize: 12, color: '#92400E', fontWeight: '500' }}>
+                            Checking serviceability...
+                        </Text>
+                    </View>
+                )}
+                {serviceabilityStatus === 'serviceable' && (
+                    <View style={[styles.serviceabilityBanner, { backgroundColor: '#D1FAE5' }]}>
+                        <Ionicons name="checkmark-circle" size={16} color={PRIMARY_GREEN} style={{ marginRight: 10 }} />
+                        <Text style={{ fontSize: 12, color: PRIMARY_GREEN, fontWeight: '600' }}>
+                            Location is serviceable
+                        </Text>
+                    </View>
+                )}
+                {serviceabilityStatus === 'non-serviceable' && (
+                    <View style={[styles.serviceabilityBanner, { backgroundColor: '#FEE2E2' }]}>
+                        <Ionicons name="alert-circle" size={16} color="#DC2626" style={{ marginRight: 10 }} />
+                        <Text style={{ fontSize: 12, color: '#DC2626', fontWeight: '600' }}>
+                            Location not serviceable
+                        </Text>
                     </View>
                 )}
 
@@ -472,9 +611,12 @@ export default function BloodTestScheduleScreen() {
                     </TouchableOpacity>
                 )}
                 <TouchableOpacity
-                    style={[styles.continueButton, isBooking && styles.continueButtonDisabled]}
+                    style={[
+                        styles.continueButton,
+                        (isBooking || (step === 2 && serviceabilityStatus === 'non-serviceable')) && styles.continueButtonDisabled
+                    ]}
                     onPress={handleContinue}
-                    disabled={isBooking}
+                    disabled={isBooking || (step === 2 && serviceabilityStatus === 'non-serviceable')}
                 >
                     {isBooking ? (
                         <ActivityIndicator size="small" color="#FFFFFF" />
@@ -799,5 +941,57 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         color: '#FFFFFF',
+    },
+    locationOptionsContainer: {
+        flexDirection: 'row',
+        gap: 10,
+        marginBottom: 12,
+    },
+    locationOptionBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: CARD_BORDER,
+        borderRadius: 10,
+        padding: 14,
+        justifyContent: 'center',
+    },
+    locationOptionTitle: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: TEXT_DARK,
+    },
+    locationOptionDesc: {
+        fontSize: 11,
+        color: TEXT_MUTED,
+        marginTop: 2,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: CARD_BORDER,
+    },
+    serviceabilityBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        borderRadius: 8,
+        marginBottom: 12,
+    },
+    backToOptionsBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        marginBottom: 12,
+        borderTopWidth: 1,
+        borderTopColor: CARD_BORDER,
+        paddingTop: 12,
+    },
+    backToOptionsBtnText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: PRIMARY_GREEN,
     },
 });
