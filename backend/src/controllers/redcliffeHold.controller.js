@@ -49,7 +49,7 @@ exports.holdBooking = async (req, res) => {
             return res.status(201).json({
                 success: true,
                 message: 'Slot successfully reserved for 30 minutes.',
-                order: updatedOrder
+                data: updatedOrder
             });
 
         } catch (apiError) {

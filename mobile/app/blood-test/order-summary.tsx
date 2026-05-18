@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import RazorpayCheckout from 'react-native-razorpay';
 import { paymentService } from '@/services/api/paymentService';
-import { bookingService } from '@/services/api/bookingService';
+import { labService } from '@/services/api/labService';
 import { useUser } from '@/context/UserContext';
 
 const PRIMARY_GREEN = '#02743F';
@@ -74,31 +74,32 @@ export default function BloodTestOrderSummaryScreen() {
 
         setIsLoading(true);
         try {
-            // Create booking
-            const bookingRes = await bookingService.createBooking({
-                serviceType: 'blood-test',
-                packageCode: bookingData.packages[0]?.code,
-                packageName: bookingData.packages[0]?.name,
-                scheduledDate: bookingData.slot?.date,
-                collectionType: 'home',
-                addressLine: bookingData.address?.line1,
-                pincode: bookingData.address?.pincode,
-                landmark: '',
-                phoneNumber: bookingData.patient?.phone,
-                amount: totalAmount,
-                paymentMethod: 'UPI',
-            });
+            // Hold blood test booking via Redcliffe
+            console.log('🩸 Order Summary: Creating blood test booking with payload:', JSON.stringify(bookingData, null, 2));
+            const bookingRes = await labService.holdBooking(bookingData);
+            console.log('🩸 Order Summary: Full booking response:', JSON.stringify(bookingRes, null, 2));
 
-            if (!bookingRes.success || !bookingRes.data?.id) {
-                Alert.alert('Error', 'Could not create booking');
+            if (!bookingRes) {
+                console.error('🩸 Order Summary: holdBooking returned undefined');
+                Alert.alert('Error', 'Could not create booking - no response from server');
                 return;
             }
 
-            const bookingId = bookingRes.data.id;
+            // The response from holdBooking is the updated labOrder object
+            // which has: id, clientRefId, redcliffeBookingId, status, etc.
+            const bookingId = (bookingRes as any)?.id;
 
-            // Initiate payment
+            if (!bookingId) {
+                console.error('🩸 Order Summary: No booking ID in response:', bookingRes);
+                Alert.alert('Error', `Could not create booking`);
+                return;
+            }
+
+            console.log('🩸 Order Summary: Got booking ID:', bookingId);
+
+            // Initiate payment for blood test (use labOrderId, not bookingId)
             const payRes = await paymentService.initiatePayment({
-                bookingId,
+                labOrderId: bookingId,
                 amount: totalAmount,
                 paymentMethod: 'UPI',
                 couponCode: couponApplied ? couponCode : undefined,
@@ -150,8 +151,15 @@ export default function BloodTestOrderSummaryScreen() {
                 Alert.alert('Error', 'Payment verification failed');
             }
         } catch (error: any) {
+            console.error('🩸 Order Summary: Payment/Booking error:', error);
+            console.error('🩸 Error details:', {
+                message: error.message,
+                statusCode: error.statusCode,
+                details: error.details,
+            });
             if (error.code !== 'E_CANCELED') {
-                Alert.alert('Error', error.message || 'Payment failed');
+                const errorMsg = error.details?.message || error.message || 'Payment failed';
+                Alert.alert('Error', errorMsg);
             }
         } finally {
             setIsLoading(false);

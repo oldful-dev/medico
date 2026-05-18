@@ -154,13 +154,16 @@ export default function BloodTestScheduleScreen() {
         setServiceabilityStatus('checking');
         try {
             const result: any = await labService.checkServiceability(lat, lng);
-            if (result?.serviceable === true) {
+            console.log('🎯 Schedule: Serviceability result:', result);
+            // Check for status='success' or serviceable=true
+            const isServiceable = result?.status === 'success' || result?.data?.status === 'success' || result?.serviceable === true;
+            if (isServiceable) {
                 setServiceabilityStatus('serviceable');
             } else {
                 setServiceabilityStatus('non-serviceable');
             }
         } catch (error) {
-            console.error('Serviceability check failed:', error);
+            console.error('🎯 Schedule: Serviceability check failed:', error);
             setServiceabilityStatus('unchecked');
         }
     };
@@ -193,6 +196,11 @@ export default function BloodTestScheduleScreen() {
 
     const handleConfirmBooking = async () => {
         if (!pkg || !selectedDate || !selectedTime) return;
+
+        if (!phoneNumber.trim()) {
+            Alert.alert('Required', 'Please enter a valid phone number');
+            return;
+        }
 
         setIsBooking(true);
         try {

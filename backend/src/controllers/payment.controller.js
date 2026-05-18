@@ -57,7 +57,7 @@ const getPayments = async (req, res, next) => {
 // POST /api/payments/initiate  (Create Razorpay order)
 const initiatePayment = async (req, res, next) => {
     try {
-        const { userId, bookingId, subscriptionId, productOrderId, amount, couponCode } = req.body;
+        const { userId, bookingId, labOrderId, subscriptionId, productOrderId, amount, couponCode } = req.body;
 
         let discountAmount = 0;
         let finalAmount = amount;
@@ -79,6 +79,19 @@ const initiatePayment = async (req, res, next) => {
                 return res.status(400).json({
                     success: false,
                     message: 'Payment amount does not match service price. Please refresh and try again.'
+                });
+            }
+        }
+
+        // For blood tests, validate against labOrder (no price validation needed, skip it)
+        if (labOrderId && finalAmount > 0) {
+            const linkedLabOrder = await prisma.labOrder.findUnique({
+                where: { id: labOrderId }
+            });
+            if (!linkedLabOrder) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid lab order. Please refresh and try again.'
                 });
             }
         }
@@ -112,14 +125,16 @@ const initiatePayment = async (req, res, next) => {
             const razorpayOrder = await razorpay.createOrder(finalAmount, `receipt_${Date.now()}`);
 
             // Create payment record
+            // For blood tests, use labOrderId; for other services, use bookingId
             const payment = await prisma.payment.create({
                 data: {
                     userId: userId || req.user.id,
-                    bookingId,
-                    subscriptionId,
-                    productOrderId,
+                    ...(bookingId && { bookingId }),
+                    ...(labOrderId && { labOrderId }),
+                    ...(subscriptionId && { subscriptionId }),
+                    ...(productOrderId && { productOrderId }),
                     amount: finalAmount,
-                    couponCode,
+                    ...(couponCode && { couponCode }),
                     discountAmount,
                     razorpayOrderId: razorpayOrder.id,
                     status: 'INITIATED',

@@ -57,6 +57,8 @@ export const LocationSearch = ({
         console.log('🔍 LocationSearch: Initial fullAddress:', fullAddress);
 
         // If formatted_address doesn't contain a pincode, do reverse geocoding to get complete address
+        let finalLat = details?.latitude || 0;
+        let finalLng = details?.longitude || 0;
         if (details && !fullAddress.match(/\b\d{6}\b/)) {
             console.log('🔍 LocationSearch: No pincode in address, reverse geocoding...');
             try {
@@ -69,24 +71,39 @@ export const LocationSearch = ({
                 if (reverseData.statusCode === 0 && reverseData.data?.formatted_address) {
                     fullAddress = reverseData.data.formatted_address;
                     console.log('🔍 LocationSearch: Got reverse geocoded address:', fullAddress);
+
+                    // Now forward geocode this address to get precise coordinates for serviceability
+                    console.log('🔍 LocationSearch: Forward geocoding to get precise coordinates...');
+                    const geocodeResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://api.ayuxacare.com/api'}/location/geocode`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ address: fullAddress }),
+                    });
+                    const geocodeData = await geocodeResponse.json();
+                    if (geocodeData.statusCode === 0 && geocodeData.data) {
+                        finalLat = geocodeData.data.latitude || finalLat;
+                        finalLng = geocodeData.data.longitude || finalLng;
+                        console.log('🔍 LocationSearch: Got precise coordinates from geocode:', { finalLat, finalLng });
+                    }
                 }
             } catch (error) {
-                console.error('🔍 LocationSearch: Reverse geocoding failed:', error);
-                // Keep the original fullAddress if reverse geocoding fails
+                console.error('🔍 LocationSearch: Reverse/Forward geocoding failed:', error);
+                // Keep the original fullAddress and coords if geocoding fails
             }
         }
 
         console.log('🔍 LocationSearch: Final fullAddress:', fullAddress);
+        console.log('🔍 LocationSearch: Final coordinates:', { lat: finalLat, lng: finalLng });
 
         console.log('🔍 LocationSearch: Calling onSelectLocation with:', {
             placeId: prediction.place_id,
             description: fullAddress,
-            coords: { lat: details?.latitude || 0, lng: details?.longitude || 0 },
+            coords: { lat: finalLat, lng: finalLng },
         });
 
         onSelectLocation(prediction.place_id, fullAddress, {
-            lat: details?.latitude || 0,
-            lng: details?.longitude || 0,
+            lat: finalLat,
+            lng: finalLng,
         });
 
         // Clear search but don't close - let parent modal handle navigation
