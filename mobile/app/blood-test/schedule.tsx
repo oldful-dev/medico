@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput,
     ActivityIndicator,
@@ -40,6 +40,7 @@ export default function BloodTestScheduleScreen() {
     const [locationSearch, setLocationSearch] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
+    const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Step 3: Confirm
     const [isBooking, setIsBooking] = useState(false);
@@ -90,17 +91,20 @@ export default function BloodTestScheduleScreen() {
     };
 
     const searchLocations = async (query: string) => {
-        if (!query.trim() || query.length < 3) {
+        if (!query.trim() || query.length < 2) {
             setSearchResults([]);
             return;
         }
         setSearchLoading(true);
         try {
             const result: any = await labService.searchLocationByArea(query);
-            if (result?.data) {
+            console.log('Search result:', result);
+            if (result?.data && Array.isArray(result.data)) {
                 setSearchResults(result.data);
             } else if (Array.isArray(result)) {
                 setSearchResults(result);
+            } else {
+                setSearchResults([]);
             }
         } catch (error) {
             console.error('Location search failed:', error);
@@ -286,7 +290,16 @@ export default function BloodTestScheduleScreen() {
                         value={locationSearch}
                         onChangeText={(text) => {
                             setLocationSearch(text);
-                            searchLocations(text);
+                            if (searchDebounceRef.current) {
+                                clearTimeout(searchDebounceRef.current);
+                            }
+                            if (text.length >= 2) {
+                                searchDebounceRef.current = setTimeout(() => {
+                                    searchLocations(text);
+                                }, 400);
+                            } else {
+                                setSearchResults([]);
+                            }
                         }}
                         style={styles.searchInput}
                     />

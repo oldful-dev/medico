@@ -28,8 +28,25 @@ export function BloodTestDetailModal({ visible, packageCode, onClose, onAddToCar
             setLoading(true);
             setExpandedTests(false);
             labService.getPackageDetails(packageCode)
-                .then(data => { setPkg(data); })
-                .catch(err => console.error('Failed to fetch package details:', err))
+                .then(data => {
+                    if (data) {
+                        setPkg(data);
+                    } else {
+                        // Fallback: fetch from packages list
+                        return labService.getPackages().then(pkgs => {
+                            const found = pkgs?.find(p => p.code === packageCode);
+                            if (found) setPkg(found);
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error('Failed to fetch package details:', err);
+                    // Fallback: try fetching from packages list
+                    labService.getPackages().then(pkgs => {
+                        const found = pkgs?.find(p => p.code === packageCode);
+                        if (found) setPkg(found);
+                    }).catch(e => console.error('Fallback also failed:', e));
+                })
                 .finally(() => setLoading(false));
         }
     }, [visible, packageCode]);
@@ -188,36 +205,37 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     container: {
-        flex: 0.88,
+        maxHeight: '90%',
         backgroundColor: '#fff',
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
         overflow: 'hidden',
         flexDirection: 'column',
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 16,
+        alignItems: 'flex-start',
+        paddingHorizontal: 18,
+        paddingVertical: 14,
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
     },
     headerTitle: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '700',
         color: TEXT_DARK,
         flex: 1,
         marginRight: 12,
+        lineHeight: 21,
     },
     closeBtn: {
         padding: 4,
     },
     content: {
         flex: 1,
-        paddingHorizontal: 20,
-        paddingTop: 12,
+        paddingHorizontal: 16,
+        paddingTop: 10,
     },
     priceSection: {
         flexDirection: 'row',
@@ -373,7 +391,8 @@ const styles = StyleSheet.create({
         paddingTop: 2,
     },
     footer: {
-        padding: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
         borderTopWidth: 1,
         borderTopColor: '#F0F0F0',
         backgroundColor: '#fff',
