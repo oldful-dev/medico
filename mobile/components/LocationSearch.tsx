@@ -19,13 +19,11 @@ const LIGHT_GREEN_BG = '#F0FDF4';
 
 interface LocationSearchProps {
     onSelectLocation: (placeId: string, description: string, coords?: { lat: number; lng: number }) => void;
-    onClose?: () => void;
     showRecentSearches?: boolean;
 }
 
 export const LocationSearch = ({
     onSelectLocation,
-    onClose,
     showRecentSearches = true,
 }: LocationSearchProps) => {
     const { predictions, loading, error, search, clear, getPlaceDetails } = useLocationSearch();
@@ -91,10 +89,9 @@ export const LocationSearch = ({
             lng: details?.longitude || 0,
         });
 
-        // Clear and close
+        // Clear search but don't close - let parent modal handle navigation
         setSearchText('');
         clear();
-        onClose?.();
     };
 
     const handleSelectRecent = (location: string) => {

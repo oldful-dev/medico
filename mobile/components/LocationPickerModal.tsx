@@ -123,7 +123,6 @@ export const LocationPickerModal = ({
                 {step === 'search' && selectedLocation === null && (
                     <LocationSearch
                         onSelectLocation={handleSelectLocation}
-                        onClose={handleClose}
                         showRecentSearches={true}
                     />
                 )}
