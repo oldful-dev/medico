@@ -285,6 +285,20 @@ export default function AccountScreen() {
                     <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
                 </TouchableOpacity>
 
+                {/* My Bookings */}
+                <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => router.push('/my-bookings' as any)}>
+                    <View style={styles.linkLeft}>
+                        <View style={[styles.linkIcon, { backgroundColor: '#E8F5E9' }]}>
+                            <Ionicons name="calendar-outline" size={20} color="#048357" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.linkTitle}>My Bookings</Text>
+                            <Text style={styles.linkSubtitle}>View your health test & service bookings</Text>
+                        </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
+                </TouchableOpacity>
+
                 {/* Order History */}
                 <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => router.push('/order-history' as any)}>
                     <View style={styles.linkLeft}>

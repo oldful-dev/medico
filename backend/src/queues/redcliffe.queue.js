@@ -177,13 +177,9 @@ const notificationWorker = new Worker('notification-queue', async job => {
 
     const displayName = patientName || user.name;
 
-    // WhatsApp — Template: lab_test (ID 20512) — Var1=name
-    await sendWhatsApp({
-        phoneNumber: user.phone,
-        templateName: 'lab_report',
-        parameters: [displayName],
-        userId: user.id,
-    });
+    // WhatsApp — Template: LAB_REPORT_READY (ID 20512) — Var1=name
+    const { sendLabReportReady } = require('../services/whatsapp');
+    await sendLabReportReady({ phone: user.phone, name: displayName, userId: user.id });
 
     // Email with report link
     if (user.email) {

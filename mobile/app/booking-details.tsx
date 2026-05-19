@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { bookingService } from '@/services/api/bookingService';
+import { labService, LabOrderListItem } from '@/services/api/labService';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -39,10 +40,42 @@ interface BookingDetail {
     amount: number;
 }
 
+// Map LabOrder to BookingDetail
+function normalizeLabOrderDetail(order: LabOrderListItem): BookingDetail {
+    const pkg = order.packages?.[0];
+    const payment = order.payments?.[0];
+    const mapLabStatus = (s: string): BookingDetail['status'] => {
+        if (s === 'REPORT_GENERATED' || s === 'SAMPLE_COLLECTED') return 'completed';
+        if (s === 'CANCELLED' || s === 'FAILED') return 'cancelled';
+        if (s === 'CONFIRMED' || s === 'HOLD_CREATED') return 'confirmed';
+        return 'pending';
+    };
+    return {
+        id: order.id,
+        bookingId: order.clientRefId,
+        packageName: pkg?.name || pkg?.packageName || 'Blood Test',
+        packageCode: pkg?.code || pkg?.packageCode || '',
+        serviceType: 'blood-test',
+        status: mapLabStatus(order.status),
+        paymentStatus: payment?.status === 'SUCCESS' ? 'paid' : payment?.status === 'FAILED' ? 'failed' : 'pending',
+        scheduledDate: order.slot?.date || '',
+        scheduledTime: order.slot?.time,
+        collectionType: order.bookingType === 'HOME' ? 'home' : 'lab',
+        address: order.address?.line1 || '',
+        pincode: order.address?.pincode || '',
+        landmark: order.address?.landmark || '',
+        testsCount: order.packages?.length || 1,
+        reportReady: order.status === 'REPORT_GENERATED' && !!order.reportUrl,
+        reportUrl: order.reportUrl,
+        createdAt: order.createdAt,
+        amount: payment?.amount || 0,
+    };
+}
+
 export default function BookingDetailsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { bookingId } = useLocalSearchParams<{ bookingId?: string }>();
+    const { bookingId, type } = useLocalSearchParams<{ bookingId?: string; type?: string }>();
     const [booking, setBooking] = useState<BookingDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [downloading, setDownloading] = useState(false);
@@ -51,16 +84,26 @@ export default function BookingDetailsScreen() {
         if (bookingId) {
             fetchBookingDetails();
         }
-    }, [bookingId]);
+    }, [bookingId, type]);
 
     const fetchBookingDetails = async () => {
         try {
             setLoading(true);
-            const res = await bookingService.getBookingDetails(bookingId || '');
-            if (res.success && res.data) {
-                setBooking(res.data);
+            if (type === 'lab') {
+                const res = await labService.getLabOrderById(bookingId || '');
+                if (res.success && res.data) {
+                    const normalized = normalizeLabOrderDetail(res.data as LabOrderListItem);
+                    setBooking(normalized);
+                } else {
+                    Alert.alert('Error', 'Failed to load booking details');
+                }
             } else {
-                Alert.alert('Error', 'Failed to load booking details');
+                const res = await bookingService.getBookingDetails(bookingId || '');
+                if (res.success && res.data) {
+                    setBooking(res.data);
+                } else {
+                    Alert.alert('Error', 'Failed to load booking details');
+                }
             }
         } catch (error) {
             console.error('Failed to fetch booking details:', error);

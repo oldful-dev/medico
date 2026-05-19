@@ -10,6 +10,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { labService, type LabPackage, type LabSlot } from '@/services/api/labService';
 import { locationService } from '@/services/device/locationService';
 import { useUser } from '@/context/UserContext';
+import { userService } from '@/services/api/userService';
 import { LocationPickerModal } from '@/components/LocationPickerModal';
 
 const PRIMARY_GREEN = '#02743F';
@@ -60,9 +61,18 @@ export default function BloodTestScheduleScreen() {
         setSelectedDate(today);
     }, [params.packagePayload]);
 
+    // Auto-fill profile default address when entering step 2 and no address is set
     useEffect(() => {
-        console.log('🎯 Schedule: selectedAddress changed to:', selectedAddress);
-    }, [selectedAddress]);
+        if (step === 2 && !selectedAddress && profile?.addresses?.length) {
+            const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
+            if (defaultAddr) {
+                const parts = [defaultAddr.line1, defaultAddr.line2, defaultAddr.cityName].filter(Boolean);
+                setSelectedAddress(parts.join(', '));
+                if (defaultAddr.pincode) setPincode(defaultAddr.pincode);
+                if (defaultAddr.landmark) setLandmark(defaultAddr.landmark);
+            }
+        }
+    }, [step]);
 
     // Fetch slots when date changes
     useEffect(() => {
@@ -98,34 +108,15 @@ export default function BloodTestScheduleScreen() {
 
 
     const handleLocationConfirmed = (location: any) => {
-        console.log('🎯 Schedule: Location confirmed from picker:', JSON.stringify(location, null, 2));
         const address = location.address || location.description || '';
-        console.log('🎯 Schedule: Raw address value:', address);
-        console.log('🎯 Schedule: Address is empty?', address.length === 0);
-
-        console.log('🎯 Schedule: About to call setSelectedAddress with:', address);
         setSelectedAddress(address);
-        console.log('🎯 Schedule: setSelectedAddress called');
-
         setCoords({
             lat: String(location.latitude),
             long: String(location.longitude),
         });
-
-        // Extract pincode from address (look for 6-digit number)
         const pincodeMatch = address.match(/\b\d{6}\b/);
-        console.log('🎯 Schedule: Pincode match result:', pincodeMatch);
-        if (pincodeMatch) {
-            console.log('🎯 Schedule: Setting pincode to:', pincodeMatch[0]);
-            setPincode(pincodeMatch[0]);
-        } else {
-            console.log('🎯 Schedule: No pincode found in address');
-        }
-
-        console.log('🎯 Schedule: Checking serviceability for:', location.latitude, location.longitude);
+        if (pincodeMatch) setPincode(pincodeMatch[0]);
         checkServiceability(String(location.latitude), String(location.longitude));
-
-        console.log('🎯 Schedule: Closing modal');
         setLocationPickerVisible(false);
     };
 
@@ -154,16 +145,13 @@ export default function BloodTestScheduleScreen() {
         setServiceabilityStatus('checking');
         try {
             const result: any = await labService.checkServiceability(lat, lng);
-            console.log('🎯 Schedule: Serviceability result:', result);
-            // Check for status='success' or serviceable=true
             const isServiceable = result?.status === 'success' || result?.data?.status === 'success' || result?.serviceable === true;
             if (isServiceable) {
                 setServiceabilityStatus('serviceable');
             } else {
                 setServiceabilityStatus('non-serviceable');
             }
-        } catch (error) {
-            console.error('🎯 Schedule: Serviceability check failed:', error);
+        } catch {
             setServiceabilityStatus('unchecked');
         }
     };
@@ -218,6 +206,7 @@ export default function BloodTestScheduleScreen() {
                     long: coords.long,
                     pincode,
                     line1: selectedAddress,
+                    ...(landmark.trim() ? { landmark: landmark.trim() } : {}),
                 },
                 packages: [{
                     code: pkg.code,
@@ -230,6 +219,25 @@ export default function BloodTestScheduleScreen() {
                     slotId: selectedSlot?.slot_id || 0,
                 },
             };
+
+            // Sync address back to profile (non-blocking, non-fatal)
+            if (profile?.id && selectedAddress.trim()) {
+                const existing = profile.addresses?.find((a: any) => a.isDefault) || profile.addresses?.[0];
+                const addrPayload = {
+                    label: existing?.label || 'Home',
+                    line1: selectedAddress.trim(),
+                    cityName: existing?.cityName || '',
+                    state: existing?.state || '',
+                    pincode: pincode || existing?.pincode || '',
+                    ...(landmark.trim() ? { landmark: landmark.trim() } : {}),
+                    isDefault: true,
+                };
+                if (existing?.id) {
+                    userService.updateAddress(profile.id, existing.id, addrPayload).catch(() => {});
+                } else {
+                    userService.addAddress(profile.id, addrPayload).catch(() => {});
+                }
+            }
 
             const amount = pkg.discounted_cost || pkg.cost;
             router.push({
@@ -347,10 +355,7 @@ export default function BloodTestScheduleScreen() {
 
                         <TouchableOpacity
                             style={[styles.locationOptionBtn, { flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }]}
-                            onPress={() => {
-                                console.log('🎯 Schedule: Manual button pressed, opening LocationPickerModal');
-                                setLocationPickerVisible(true);
-                            }}
+                            onPress={() => setLocationPickerVisible(true)}
                         >
                             <Ionicons name="search" size={28} color={PRIMARY_GREEN} style={{ marginBottom: 8 }} />
                             <Text style={styles.locationOptionTitle}>Manual</Text>
@@ -552,14 +557,8 @@ export default function BloodTestScheduleScreen() {
             {/* Location Picker Modal */}
             <LocationPickerModal
                 visible={locationPickerVisible}
-                onClose={() => {
-                    console.log('🎯 Schedule: LocationPickerModal closed');
-                    setLocationPickerVisible(false);
-                }}
-                onLocationConfirmed={(location) => {
-                    console.log('🎯 Schedule: onLocationConfirmed called with:', location);
-                    handleLocationConfirmed(location);
-                }}
+                onClose={() => setLocationPickerVisible(false)}
+                onLocationConfirmed={handleLocationConfirmed}
                 initialLat={parseFloat(coords.lat)}
                 initialLng={parseFloat(coords.long)}
             />

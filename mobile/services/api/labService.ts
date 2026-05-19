@@ -59,6 +59,20 @@ export interface LabBookingResponse {
     // ... other fields from labOrder
 }
 
+export interface LabOrderListItem {
+    id: string;
+    clientRefId: string;
+    status: string;           // LabStatus enum: PENDING|HOLD_CREATED|CONFIRMED|SAMPLE_COLLECTED|REPORT_GENERATED|CANCELLED|FAILED
+    bookingType: string;      // 'HOME' | 'DROP_OFF'
+    patient: any;
+    packages: any[];
+    slot: { date: string; time: string };
+    address: any;
+    reportUrl?: string;
+    createdAt: string;
+    payments?: Array<{ status: string; amount: number }>;
+}
+
 export const labService = {
     getPackages: async (search = '') => {
         const response = await apiClient.request<LabPackage[]>({
@@ -142,5 +156,15 @@ export const labService = {
             console.error('getCoordinatesByEloc error:', error);
             throw error;
         }
+    },
+
+    getUserLabOrders: async () => {
+        const response = await apiClient.get<LabOrderListItem[]>('/labs/my-orders');
+        return response;
+    },
+
+    getLabOrderById: async (id: string) => {
+        const response = await apiClient.get<LabOrderListItem>(`/labs/booking/${id}`);
+        return response;
     }
 };

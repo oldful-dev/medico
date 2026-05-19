@@ -11,6 +11,7 @@ const imgHero = require('@/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6
 export default function BillPaymentScreen() {
     const router = useRouter();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
+    const [landmark, setLandmark] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
 
     const { isReady, cityId, serviceId, serviceName, servicePrice, address, isLoading } =

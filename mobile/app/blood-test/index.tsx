@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import {
     View,
     Text,
@@ -8,6 +8,7 @@ import {
     ActivityIndicator,
     FlatList,
     TextInput,
+    ListRenderItem,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -39,6 +40,67 @@ const getTestIcon = (name: string) => {
     return { family: 'Ionicons', name: 'shield-checkmark', color: '#6366F1' };
 };
 
+// ─── Memoized PackageCard Component ──────────────────────────────────────
+// Prevents unnecessary re-renders when parent updates but item data hasn't changed
+const PackageCard = memo(({
+    item,
+    onViewDetails
+}: {
+    item: LabPackage;
+    onViewDetails: (code: string) => void;
+}) => {
+    const icon = getTestIcon(item.name);
+    const IconComponent = icon.family === 'MaterialCommunityIcons' ? MaterialCommunityIcons : Ionicons;
+    const discountPercent = item.discounted_cost
+        ? Math.round(((item.cost - item.discounted_cost) / item.cost) * 100)
+        : 0;
+
+    return (
+        <View style={styles.packageCard}>
+            {discountPercent > 0 && (
+                <View style={styles.saveBadge}>
+                    <Text style={styles.saveBadgeText}>SAVE {discountPercent}%</Text>
+                </View>
+            )}
+
+            <View style={styles.cardContent}>
+                <View style={styles.iconSection}>
+                    <View style={[styles.iconCircle, { backgroundColor: `${icon.color}20` }]}>
+                        <IconComponent name={icon.name as any} size={28} color={icon.color} />
+                    </View>
+                </View>
+
+                <View style={styles.infoSection}>
+                    <Text style={styles.packageName} numberOfLines={2}>{item.name}</Text>
+                    <Text style={styles.parametersText}>
+                        {item.tests_count || 0} {item.tests_count === 1 ? 'Parameter' : 'Parameters'}
+                    </Text>
+
+                    <View style={styles.priceRow}>
+                        <View style={styles.priceSection}>
+                            {item.discounted_cost ? (
+                                <>
+                                    <Text style={styles.originalPrice}>₹{item.cost}</Text>
+                                    <Text style={styles.discountedPrice}>₹{item.discounted_cost}</Text>
+                                </>
+                            ) : (
+                                <Text style={styles.discountedPrice}>₹{item.cost}</Text>
+                            )}
+                        </View>
+                        <TouchableOpacity
+                            style={styles.viewDetailsBtn}
+                            onPress={() => onViewDetails(item.code)}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={styles.viewDetailsText}>View Details</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+        </View>
+    );
+});
+
 export default function BloodTestScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -68,91 +130,59 @@ export default function BloodTestScreen() {
         }
     };
 
-    const handleViewDetails = (code: string) => {
+    const handleViewDetails = useCallback((code: string) => {
         setDetailModalCode(code);
         setDetailModalVisible(true);
-    };
+    }, []);
 
-    const handleAddToCart = (pkg: LabPackage) => {
+    const handleAddToCart = useCallback((pkg: LabPackage) => {
         setLastCartItem(pkg);
         setCartCount(prev => prev + 1);
         setDetailModalVisible(false);
-        // Navigate to schedule with package payload
         router.push({ pathname: '/blood-test/schedule', params: { packagePayload: JSON.stringify(pkg) } } as any);
-    };
+    }, [router]);
 
-    const handleCartPress = () => {
+    const handleCartPress = useCallback(() => {
         if (cartCount === 0 || !lastCartItem) return;
         router.push({ pathname: '/blood-test/schedule', params: { packagePayload: JSON.stringify(lastCartItem) } } as any);
-    };
+    }, [cartCount, lastCartItem, router]);
 
-    const filteredPackages = packages.filter(pkg =>
-        pkg.name.toLowerCase().includes(searchText.toLowerCase())
+    // Memoize filtered packages to prevent unnecessary recalculations
+    const filteredPackages = useMemo(() =>
+        packages.filter(pkg =>
+            pkg.name.toLowerCase().includes(searchText.toLowerCase())
+        ),
+        [packages, searchText]
     );
 
-    const renderPackageCard = ({ item }: { item: LabPackage }) => {
-        const icon = getTestIcon(item.name);
-        const IconComponent = icon.family === 'MaterialCommunityIcons' ? MaterialCommunityIcons : Ionicons;
-        const discountPercent = item.discounted_cost
-            ? Math.round(((item.cost - item.discounted_cost) / item.cost) * 100)
-            : 0;
+    // Memoize renderItem to prevent FlatList item re-renders
+    const renderPackageCard = useCallback(({ item }: { item: LabPackage }) => (
+        <PackageCard item={item} onViewDetails={handleViewDetails} />
+    ), [handleViewDetails]);
 
-        return (
-            <View style={styles.packageCard}>
-                {/* Save Badge */}
-                {discountPercent > 0 && (
-                    <View style={styles.saveBadge}>
-                        <Text style={styles.saveBadgeText}>SAVE {discountPercent}%</Text>
-                    </View>
-                )}
-
-                {/* Card Content */}
-                <View style={styles.cardContent}>
-                    {/* Icon Section */}
-                    <View style={styles.iconSection}>
-                        <View style={[styles.iconCircle, { backgroundColor: `${icon.color}20` }]}>
-                            <IconComponent name={icon.name as any} size={28} color={icon.color} />
-                        </View>
-                    </View>
-
-                    {/* Info Section */}
-                    <View style={styles.infoSection}>
-                        <Text style={styles.packageName} numberOfLines={2}>{item.name}</Text>
-                        <Text style={styles.parametersText}>
-                            {item.tests_count || 0} {item.tests_count === 1 ? 'Parameter' : 'Parameters'}
-                        </Text>
-
-                        {/* Price and Button Row */}
-                        <View style={styles.priceRow}>
-                            <View style={styles.priceSection}>
-                                {item.discounted_cost ? (
-                                    <>
-                                        <Text style={styles.originalPrice}>₹{item.cost}</Text>
-                                        <Text style={styles.discountedPrice}>₹{item.discounted_cost}</Text>
-                                    </>
-                                ) : (
-                                    <Text style={styles.discountedPrice}>₹{item.cost}</Text>
-                                )}
-                            </View>
-                            <TouchableOpacity
-                                style={styles.viewDetailsBtn}
-                                onPress={() => handleViewDetails(item.code)}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={styles.viewDetailsText}>View Details</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
+    // Memoized empty state component to prevent unnecessary re-renders
+    const emptyListComponent = useMemo(() => (
+        loading ? null : (
+            <View style={styles.emptyContainer}>
+                <Ionicons name="search" size={48} color={TEXT_MUTED} style={styles.emptyIcon} />
+                <Text style={styles.emptyTitle}>
+                    {searchText ? 'No tests found' : 'No tests available'}
+                </Text>
+                <Text style={styles.emptySubtitle}>
+                    {searchText
+                        ? `Try searching for a different test or category`
+                        : 'Tests will appear here soon'
+                    }
+                </Text>
             </View>
-        );
-    };
+        )
+    ), [searchText, loading]);
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <StatusBar backgroundColor="#FFFFFF" />
 
-            {/* Header */}
+            {/* Header — Fixed, never remounted */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color={TEXT_DARK} />
@@ -170,7 +200,7 @@ export default function BloodTestScreen() {
                 </TouchableOpacity>
             </View>
 
-            {/* Search Bar */}
+            {/* Search Bar — Fixed, stable input */}
             <View style={styles.searchContainer}>
                 <Ionicons name="search" size={18} color={TEXT_MUTED} style={styles.searchIcon} />
                 <TextInput
@@ -182,7 +212,7 @@ export default function BloodTestScreen() {
                 />
             </View>
 
-            {/* Category Tabs */}
+            {/* Category Tabs — Fixed, stable scroll */}
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -210,13 +240,14 @@ export default function BloodTestScreen() {
                 ))}
             </ScrollView>
 
-            {/* Packages List */}
+            {/* Single FlatList Instance — Stable, persistent rendering */}
+            {/* Eliminates conditional rendering that caused layout thrashing */}
             {loading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={PRIMARY_GREEN} />
                     <Text style={styles.loadingText}>Loading tests...</Text>
                 </View>
-            ) : filteredPackages.length > 0 ? (
+            ) : (
                 <FlatList
                     data={filteredPackages}
                     renderItem={renderPackageCard}
@@ -224,23 +255,14 @@ export default function BloodTestScreen() {
                     scrollEnabled={true}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={emptyListComponent}
+                    maxToRenderPerBatch={10}
+                    updateCellsBatchingPeriod={50}
+                    initialNumToRender={10}
                 />
-            ) : (
-                <View style={styles.emptyContainer}>
-                    <Ionicons name="search" size={48} color={TEXT_MUTED} style={styles.emptyIcon} />
-                    <Text style={styles.emptyTitle}>
-                        {searchText ? 'No tests found' : 'No tests available'}
-                    </Text>
-                    <Text style={styles.emptySubtitle}>
-                        {searchText
-                            ? `Try searching for a different test or category`
-                            : 'Tests will appear here soon'
-                        }
-                    </Text>
-                </View>
             )}
 
-            {/* Detail Modal */}
+            {/* Detail Modal — Outside FlatList, non-blocking */}
             <BloodTestDetailModal
                 visible={detailModalVisible}
                 packageCode={detailModalCode}
@@ -351,6 +373,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         gap: 16,
+        minHeight: 200,
     },
     loadingText: {
         fontSize: 14,
@@ -360,7 +383,7 @@ const styles = StyleSheet.create({
     },
     listContent: {
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingTop: 0,
         paddingBottom: 24,
     },
     packageCard: {
@@ -467,6 +490,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        marginTop: 80,
         paddingVertical: 60,
         paddingHorizontal: 32,
     },

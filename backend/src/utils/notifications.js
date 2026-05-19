@@ -35,7 +35,7 @@ const sendEmail = async ({ to, subject, html, attachments = [], userId = null, i
             data: {
                 channel: 'EMAIL',
                 recipientId: userId,
-                recipientType: userId ? 'user' : 'user',
+                recipientType: userId ? 'user' : 'anonymous',
                 subject,
                 body: html,
                 isSent: success,
@@ -55,7 +55,7 @@ const sendEmail = async ({ to, subject, html, attachments = [], userId = null, i
 // WhatsApp is now handled via Fast2SMS WABA templates.
 // SMS/OTP from Fast2SMS is untouched below.
 
-const fast2sms = require('../services/interakt.service'); // Now uses Fast2SMS internally
+const wa = require('../services/whatsapp');
 const fast2smsUtils = require('./fast2sms');
 
 /**
@@ -93,12 +93,13 @@ const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [], userId
 
         // Only send WhatsApp if enabled
         if (!userPrefs || userPrefs.whatsappEnabled) {
-            success = await fast2sms.sendWhatsAppMessage({
-                phone: phoneNumber,
-                templateName,
+            success = await wa.sendWhatsApp({
+                template: templateName,
+                mobile: phoneNumber,
                 variables,
+                userId,
                 mediaUrl,
-                documentFilename,
+                docFilename: documentFilename,
             });
         }
 
@@ -132,7 +133,7 @@ const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [], userId
         data: {
             channel: 'WHATSAPP',
             recipientId: userId,
-            recipientType: userId ? 'user' : 'user',
+            recipientType: userId ? 'user' : 'anonymous',
             body: `Template: ${templateName}, Params: ${JSON.stringify(variables)}`,
             isSent: success,
             sentAt: success ? new Date() : null,
@@ -161,13 +162,12 @@ const sendWelcomeNotifications = async (user) => {
     `,
     });
 
-    // Welcome WhatsApp — Template: welcome_flow (ID 20514, no body variables)
-    await sendWhatsApp({
-        phoneNumber: user.phone,
-        templateName: 'welcome_message',
-        parameters: [],
-        userId: user.id,
-    });
+    // Welcome SMS — DLT template WELCOME_USER (215420, sender AYUXA) — Var1=name
+    // WhatsApp welcome template requires a document attachment which we don't have at signup.
+    // Falling back to SMS which is always available.
+    const { sendSMS } = require('../services/sms');
+    await sendSMS({ template: 'WELCOME_USER', mobile: user.phone, variables: [user.name], userId: user.id })
+        .catch(err => logger.warn('Welcome SMS failed (non-fatal):', err.message));
 };
 
 // ─── SOS Notifications ────────────────────
@@ -193,20 +193,20 @@ const sendSOSNotifications = async ({ user, location, familyContacts }) => {
     });
 
     // Admin — SMS fallback
-    if (process.env.FAST2SMS_SOS_TEMPLATE_ID) {
+    if (process.env.FAST2SMS_SOS_ADMIN_TEMPLATE_ID) {
         await fast2smsUtils.sendDLTSMS(
             process.env.ADMIN_EMERGENCY_PHONE || '9999999999',
-            process.env.FAST2SMS_SOS_TEMPLATE_ID,
-            [user.name, user.name]
+            process.env.FAST2SMS_SOS_ADMIN_TEMPLATE_ID,
+            [user.name, user.uniqueUserId]
         );
     }
 
     // Family contacts — SMS fallback
     for (const contact of familyContacts) {
-        if (process.env.FAST2SMS_SOS_TEMPLATE_ID) {
+        if (process.env.FAST2SMS_SOS_FAMILY_TEMPLATE_ID) {
             await fast2smsUtils.sendDLTSMS(
                 contact.phone,
-                process.env.FAST2SMS_SOS_TEMPLATE_ID,
+                process.env.FAST2SMS_SOS_FAMILY_TEMPLATE_ID,
                 [contact.name, user.name]
             );
         }
@@ -225,10 +225,10 @@ const sendBookingConfirmation = async ({ user, bookingCode, booking = null }) =>
         }) || user;
     }
 
-    // Primary: WhatsApp — Template: booking_confirmation (ID 20521) — Var1=name, Var2=order_id
+    // Primary: WhatsApp — Template: BOOKING_CONFIRMED — Var1=name, Var2=order_id
     await sendWhatsApp({
         phoneNumber: fullUser.phone,
-        templateName: 'booking_confirmation',
+        templateName: 'BOOKING_CONFIRMED',
         parameters: [
             fullUser.name,
             bookingCode || '-',
@@ -271,10 +271,10 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
     `,
     });
 
-    // WhatsApp — Template: plan_expiry_reminder (ID 20523) — Var1=name only
+    // WhatsApp — Template: PLAN_EXPIRY_REMINDER — Var1=name only
     await sendWhatsApp({
         phoneNumber: fullUser.phone,
-        templateName: 'plan_expiry_reminder',
+        templateName: 'PLAN_EXPIRY_REMINDER',
         parameters: [fullUser.name],
         userId: fullUser.id,
     });

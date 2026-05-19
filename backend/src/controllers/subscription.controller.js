@@ -4,6 +4,7 @@
 
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate, calculateExpiryDate } = require('../utils/helpers');
+const { logger } = require('../config/logger');
 
 // GET /api/subscriptions
 const getSubscriptions = async (req, res, next) => {
@@ -146,7 +147,29 @@ const cancelSubscription = async (req, res, next) => {
         const subscription = await prisma.subscription.update({
             where: { id: req.params.id },
             data: { status: 'CANCELLED', cancelledAt: new Date() },
+            include: { user: { select: { name: true, phone: true, smsEnabled: true } }, plan: true },
         });
+
+        // Notify user of plan cancellation — non-fatal
+        try {
+            if (subscription.user?.phone) {
+                const { sendSMS } = require('../services/sms');
+                const supportPhone = process.env.SUPPORT_PHONE || '9480198108';
+                await sendSMS({
+                    template: 'PLAN_EXPIRED_USER',
+                    mobile: subscription.user.phone,
+                    variables: [subscription.user.name, supportPhone],
+                });
+                // Alert admin ops (AYUXA_CONSOLE WABA)
+                if (process.env.ADMIN_OPS_PHONE) {
+                    const { sendPlanExpiryAdmin } = require('../services/whatsapp');
+                    await sendPlanExpiryAdmin({ phone: process.env.ADMIN_OPS_PHONE, name: subscription.user.name });
+                }
+            }
+        } catch (notifErr) {
+            logger.warn('cancelSubscription: notification failed (non-fatal):', notifErr.message);
+        }
+
         sendResponse(res, 200, subscription, 'Subscription cancelled');
     } catch (error) {
         next(error);
