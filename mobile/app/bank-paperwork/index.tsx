@@ -11,6 +11,7 @@ const imgHero = require('@/assets/images/056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45
 export default function BankPaperworkScreen() {
     const router = useRouter();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
+    const [landmark, setLandmark] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
 
     const { isReady, cityId, serviceId, serviceName, servicePrice, address, isLoading } =
@@ -37,6 +38,7 @@ export default function BankPaperworkScreen() {
                         serviceId, cityId,
                         scheduledDate: new Date().toISOString(),
                         addressLine: address,
+                        landmark: landmark || undefined,
                         formDataJson: { attachments: uploadedImageUrls },
                     }),
                     amount: String(servicePrice),
@@ -66,6 +68,8 @@ export default function BankPaperworkScreen() {
                 'Statement & Certificate Collection',
             ]}
             address={address}
+            landmark={landmark}
+            onLandmarkChange={setLandmark}
             onBook={handleBook}
             isLoading={isLoading || isBooking}
         >

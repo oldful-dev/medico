@@ -11,6 +11,7 @@ const imgHero = require('@/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d
 export default function DeepCleaningScreen() {
     const router = useRouter();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
+    const [landmark, setLandmark] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
 
     const { isReady, cityId, serviceId, serviceName, servicePrice, address, isLoading } =
@@ -37,6 +38,7 @@ export default function DeepCleaningScreen() {
                         serviceId, cityId,
                         scheduledDate: new Date().toISOString(),
                         addressLine: address,
+                        landmark: landmark || undefined,
                         formDataJson: { attachments: uploadedImageUrls },
                     }),
                     amount: String(servicePrice),
@@ -66,6 +68,8 @@ export default function DeepCleaningScreen() {
                 'Sofa / Carpet / Mattress Cleaning',
             ]}
             address={address}
+            landmark={landmark}
+            onLandmarkChange={setLandmark}
             onBook={handleBook}
             isLoading={isLoading || isBooking}
         >

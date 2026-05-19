@@ -11,6 +11,7 @@ const imgHero = require('@/assets/images/6c8ed456023258e8b4095af93909c6cbc6c4b90
 export default function AnythingElseScreen() {
     const router = useRouter();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
+    const [landmark, setLandmark] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
 
     const { isReady, cityId, serviceId, serviceName, servicePrice, address, isLoading } =
@@ -37,6 +38,7 @@ export default function AnythingElseScreen() {
                         serviceId, cityId,
                         scheduledDate: new Date().toISOString(),
                         addressLine: address,
+                        landmark: landmark || undefined,
                         formDataJson: { attachments: uploadedImageUrls },
                     }),
                     amount: String(servicePrice),
@@ -66,6 +68,8 @@ export default function AnythingElseScreen() {
                 'Custom Task Assistance',
             ]}
             address={address}
+            landmark={landmark}
+            onLandmarkChange={setLandmark}
             onBook={handleBook}
             isLoading={isLoading || isBooking}
         >
