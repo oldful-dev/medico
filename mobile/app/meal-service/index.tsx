@@ -201,7 +201,7 @@ export default function MealServiceScreen() {
                 <View style={[styles.textAreaContainer, { paddingHorizontal: 0 }]}>
                     <TextInput
                         style={[styles.textAreaPlaceholder, { flex: 1, paddingHorizontal: 15 }]}
-                        placeholder="write your specific requirement...(e.g, ‘No Salt’)"
+                        placeholder="Enter any other requirement (e.g. No Salt)"
                         placeholderTextColor="#898989"
                         value={otherReq}
                         onChangeText={setOtherReq}

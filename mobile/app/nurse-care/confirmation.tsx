@@ -63,7 +63,7 @@ export default function NurseCareConfirmationScreen() {
 
                     <View style={styles.detailRow}>
                         <Text style={styles.detailLabel}>Staff Type</Text>
-                        <Text style={styles.detailValue}>{params.staff || 'Option A: Qualified Nurse'}</Text>
+                        <Text style={styles.detailValue}>{params.staff || 'Qualified Nurse'}</Text>
                     </View>
 
                     <View style={styles.detailRow}>
