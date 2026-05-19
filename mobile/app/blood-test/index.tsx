@@ -57,12 +57,16 @@ const PackageCard = memo(({
 
     return (
         <View style={styles.packageCard}>
+            {/* Discount Badge Row */}
             {discountPercent > 0 && (
-                <View style={styles.saveBadge}>
-                    <Text style={styles.saveBadgeText}>SAVE {discountPercent}%</Text>
+                <View style={styles.badgeRow}>
+                    <View style={styles.saveBadge}>
+                        <Text style={styles.saveBadgeText}>SAVE {discountPercent}%</Text>
+                    </View>
                 </View>
             )}
 
+            {/* Card Content Row */}
             <View style={styles.cardContent}>
                 <View style={styles.iconSection}>
                     <View style={[styles.iconCircle, { backgroundColor: `${icon.color}20` }]}>
@@ -394,24 +398,27 @@ const styles = StyleSheet.create({
         borderColor: CARD_BORDER,
         borderRadius: 12,
         marginBottom: 10,
-        paddingTop: 10,
+        paddingTop: 0,
         paddingBottom: 10,
-        paddingHorizontal: 12,
+        paddingHorizontal: 0,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.03,
         shadowRadius: 2,
         elevation: 1,
     },
+    badgeRow: {
+        paddingHorizontal: 12,
+        paddingTop: 10,
+        paddingBottom: 6,
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+    },
     saveBadge: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
         backgroundColor: SAVE_BADGE_RED,
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 4,
-        zIndex: 10,
     },
     saveBadgeText: {
         color: '#FFFFFF',
@@ -422,6 +429,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: 8,
+        paddingHorizontal: 12,
+        paddingTop: 10,
+        paddingBottom: 0,
     },
     iconSection: {
         marginTop: 1,
