@@ -110,19 +110,21 @@ export default function BloodTestScreen() {
                 <View style={styles.cardContent}>
                     {/* Icon Section */}
                     <View style={styles.iconSection}>
-                        <View style={[styles.iconCircle, { backgroundColor: `${icon.color}15` }]}>
-                            <IconComponent name={icon.name as any} size={32} color={icon.color} />
+                        <View style={[styles.iconCircle, { backgroundColor: `${icon.color}20` }]}>
+                            <IconComponent name={icon.name as any} size={28} color={icon.color} />
                         </View>
                     </View>
 
                     {/* Info Section */}
                     <View style={styles.infoSection}>
-                        <Text style={styles.packageName} numberOfLines={3}>{item.name}</Text>
+                        <Text style={styles.packageName} numberOfLines={2}>{item.name}</Text>
                         <Text style={styles.parametersText}>
-                            {item.tests_count || 0} Parameters
+                            {item.tests_count || 0} {item.tests_count === 1 ? 'Parameter' : 'Parameters'}
                         </Text>
+
+                        {/* Price and Button Row */}
                         <View style={styles.priceRow}>
-                            <View>
+                            <View style={styles.priceSection}>
                                 {item.discounted_cost ? (
                                     <>
                                         <Text style={styles.originalPrice}>₹{item.cost}</Text>
@@ -135,6 +137,7 @@ export default function BloodTestScreen() {
                             <TouchableOpacity
                                 style={styles.viewDetailsBtn}
                                 onPress={() => handleViewDetails(item.code)}
+                                activeOpacity={0.7}
                             >
                                 <Text style={styles.viewDetailsText}>View Details</Text>
                             </TouchableOpacity>
@@ -211,8 +214,9 @@ export default function BloodTestScreen() {
             {loading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={PRIMARY_GREEN} />
+                    <Text style={styles.loadingText}>Loading tests...</Text>
                 </View>
-            ) : (
+            ) : filteredPackages.length > 0 ? (
                 <FlatList
                     data={filteredPackages}
                     renderItem={renderPackageCard}
@@ -220,14 +224,20 @@ export default function BloodTestScreen() {
                     scrollEnabled={true}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
-                    ListEmptyComponent={
-                        searchText ? (
-                            <View style={styles.emptyContainer}>
-                                <Text style={styles.emptyText}>No tests found matching "{searchText}"</Text>
-                            </View>
-                        ) : null
-                    }
                 />
+            ) : (
+                <View style={styles.emptyContainer}>
+                    <Ionicons name="search" size={48} color={TEXT_MUTED} style={styles.emptyIcon} />
+                    <Text style={styles.emptyTitle}>
+                        {searchText ? 'No tests found' : 'No tests available'}
+                    </Text>
+                    <Text style={styles.emptySubtitle}>
+                        {searchText
+                            ? `Try searching for a different test or category`
+                            : 'Tests will appear here soon'
+                        }
+                    </Text>
+                </View>
             )}
 
             {/* Detail Modal */}
@@ -286,21 +296,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginHorizontal: 16,
         marginVertical: 12,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        minHeight: 44,
+        paddingHorizontal: 14,
+        paddingVertical: 11,
+        minHeight: 46,
         backgroundColor: LIGHT_GREEN_BG,
-        borderRadius: 8,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#D1FAE5',
     },
     searchIcon: {
-        marginRight: 8,
+        marginRight: 10,
         pointerEvents: 'none',
     },
     searchInput: {
-        fontSize: 13,
+        fontSize: 14,
         color: TEXT_DARK,
         flex: 1,
         padding: 0,
+        letterSpacing: -0.3,
     },
     searchPlaceholder: {
         fontSize: 13,
@@ -309,18 +322,19 @@ const styles = StyleSheet.create({
     },
     categoriesScroll: {
         paddingHorizontal: 16,
-        marginBottom: 8,
+        marginBottom: 12,
     },
     categoriesContent: {
         paddingRight: 16,
     },
     categoryTab: {
-        marginRight: 20,
-        paddingVertical: 8,
-        paddingBottom: 6,
+        marginRight: 22,
+        paddingVertical: 10,
+        paddingBottom: 8,
+        borderBottomWidth: 3,
+        borderBottomColor: 'transparent',
     },
     categoryTabActive: {
-        borderBottomWidth: 2,
         borderBottomColor: PRIMARY_GREEN,
     },
     categoryTabText: {
@@ -330,31 +344,39 @@ const styles = StyleSheet.create({
     },
     categoryTabTextActive: {
         color: PRIMARY_GREEN,
-        fontWeight: '700',
+        fontWeight: '600',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        gap: 16,
+    },
+    loadingText: {
+        fontSize: 14,
+        color: TEXT_MUTED,
+        fontWeight: '500',
+        marginTop: 8,
     },
     listContent: {
         paddingHorizontal: 16,
-        paddingBottom: 20,
+        paddingVertical: 12,
+        paddingBottom: 24,
     },
     packageCard: {
         backgroundColor: '#FFFFFF',
         borderWidth: 1,
         borderColor: CARD_BORDER,
         borderRadius: 12,
-        marginBottom: 12,
-        paddingTop: 32,
-        paddingBottom: 12,
-        paddingHorizontal: 12,
+        marginBottom: 16,
+        paddingTop: 36,
+        paddingBottom: 16,
+        paddingHorizontal: 14,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 3,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+        elevation: 3,
     },
     saveBadge: {
         position: 'absolute',
@@ -378,51 +400,63 @@ const styles = StyleSheet.create({
         marginRight: 12,
     },
     iconCircle: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
         justifyContent: 'center',
         alignItems: 'center',
+        flexShrink: 0,
     },
     infoSection: {
         flex: 1,
-        paddingRight: 8,
+        paddingRight: 4,
+        justifyContent: 'space-between',
     },
     packageName: {
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: '600',
         color: TEXT_DARK,
         marginBottom: 6,
-        lineHeight: 16,
-        maxWidth: '85%',
+        lineHeight: 17,
     },
     parametersText: {
-        fontSize: 11,
+        fontSize: 12,
         color: TEXT_MUTED,
         marginBottom: 8,
+        fontWeight: '400',
     },
     priceRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        marginTop: 10,
+        gap: 12,
+    },
+    priceSection: {
+        flex: 1,
     },
     originalPrice: {
-        fontSize: 11,
+        fontSize: 12,
         color: TEXT_MUTED,
         textDecorationLine: 'line-through',
-        marginBottom: 2,
+        marginBottom: 3,
+        fontWeight: '400',
     },
     discountedPrice: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '700',
         color: PRIMARY_GREEN,
+        letterSpacing: -0.5,
     },
     viewDetailsBtn: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderWidth: 1,
+        paddingHorizontal: 14,
+        paddingVertical: 9,
+        borderWidth: 1.5,
         borderColor: PRIMARY_GREEN,
         borderRadius: 6,
+        backgroundColor: 'transparent',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     viewDetailsText: {
         fontSize: 12,
@@ -433,11 +467,25 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: 40,
+        paddingVertical: 60,
+        paddingHorizontal: 32,
     },
-    emptyText: {
-        fontSize: 14,
+    emptyIcon: {
+        marginBottom: 16,
+        opacity: 0.4,
+    },
+    emptyTitle: {
+        fontSize: 18,
+        color: TEXT_DARK,
+        fontWeight: '600',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    emptySubtitle: {
+        fontSize: 13,
         color: TEXT_MUTED,
-        fontWeight: '500',
+        fontWeight: '400',
+        textAlign: 'center',
+        lineHeight: 18,
     },
 });
