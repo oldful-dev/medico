@@ -53,6 +53,7 @@ export default function HospitalTripScreen() {
     const [hospitalQuery, setHospitalQuery] = useState('');
     const [selectedDoctorType, setSelectedDoctorType] = useState<'preferred' | 'recommend'>('preferred');
     const [preferredDoctor, setPreferredDoctor] = useState('');
+    const [landmark, setLandmark] = useState('');
     const [transportAddon, setTransportAddon] = useState(false);
     const [supportAddon, setSupportAddon] = useState(true);
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -112,6 +113,7 @@ export default function HospitalTripScreen() {
                 cityId,
                 scheduledDate: selectedDate!.toISOString(),
                 addressLine: address || undefined,
+                landmark: landmark || undefined,
                 formDataJson: {
                     specialist: selectedSpecialist || 'General',
                     hospitalPreference,
@@ -184,7 +186,6 @@ export default function HospitalTripScreen() {
                         <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Destination Details</Text>
                     </View>
 
-                    {/* Option: Preferred Hospital */}
                     <TouchableOpacity
                         style={styles.doctorOptionRow}
                         activeOpacity={0.7}
@@ -198,7 +199,7 @@ export default function HospitalTripScreen() {
                         <View style={styles.doctorNameInput}>
                             <TextInput
                                 style={styles.doctorTextInput}
-                                placeholder="Type Hospital Name"
+                                placeholder="Enter hospital name"
                                 placeholderTextColor="#2F2F2F"
                                 value={hospitalQuery}
                                 onChangeText={setHospitalQuery}
@@ -206,7 +207,6 @@ export default function HospitalTripScreen() {
                         </View>
                     )}
 
-                    {/* Option: Recommend Hospital */}
                     <TouchableOpacity
                         style={styles.doctorOptionRow}
                         activeOpacity={0.7}
@@ -221,7 +221,6 @@ export default function HospitalTripScreen() {
                     {/* ─── Select Doctor ─── */}
                     <Text style={[styles.sectionTitle, { marginLeft: 0 }]}>Select Doctor</Text>
 
-                    {/* Option: Preferred */}
                     <TouchableOpacity
                         style={styles.doctorOptionRow}
                         activeOpacity={0.7}
@@ -231,12 +230,11 @@ export default function HospitalTripScreen() {
                         <Text style={styles.doctorOptionText}>I have a preferred Doctor</Text>
                     </TouchableOpacity>
 
-                    {/* If Preferred, show doctor name input */}
                     {selectedDoctorType === 'preferred' && (
                         <View style={styles.doctorNameInput}>
                             <TextInput
                                 style={styles.doctorTextInput}
-                                placeholder="Dr.anil Mehta"
+                                placeholder="Enter doctor name"
                                 placeholderTextColor="#2F2F2F"
                                 value={preferredDoctor}
                                 onChangeText={setPreferredDoctor}
@@ -244,7 +242,7 @@ export default function HospitalTripScreen() {
                         </View>
                     )}
 
-                    {/* Option: Recommend */}
+
                     <TouchableOpacity
                         style={styles.doctorOptionRow}
                         activeOpacity={0.7}
@@ -343,6 +341,12 @@ export default function HospitalTripScreen() {
                         <Text style={{ fontSize: 10, color: '#888', marginTop: 4, marginLeft: 2 }}>
                             {locationDenied ? "GPS Access Denied. Please provide exact location." : "Auto-filled from Google Maps location."}
                         </Text>
+                        <FormInput
+                            placeholder="Landmark (optional, e.g. Near Apollo Hospital)"
+                            value={landmark}
+                            onChangeText={setLandmark}
+                            style={{ marginTop: 12, elevation: 0 }}
+                        />
                     </View>
 
                     {/* ─── Confirm Button ─── */}

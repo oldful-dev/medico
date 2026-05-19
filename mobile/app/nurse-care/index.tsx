@@ -32,10 +32,11 @@ export default function BookNursingCareScreen() {
 
     // Local UI state for radio buttons/selections
     const [selectedWho, setSelectedWho] = useState('Self');
-    const [selectedStaff, setSelectedStaff] = useState('Option A');
+    const [selectedStaff, setSelectedStaff] = useState('Qualified Nurse');
     const [selectedDuration, setSelectedDuration] = useState('12 Hours (Night Shift)');
     const [selectedCondition, setSelectedCondition] = useState('');
     const [selectedGender, setSelectedGender] = useState('');
+    const [landmark, setLandmark] = useState('');
     const [selectedImages] = useState<string[]>([]);
 
     const {
@@ -58,7 +59,7 @@ export default function BookNursingCareScreen() {
             return;
         }
         if (!selectedStaff) {
-            Alert.alert('Required', 'Please select a staff type (Qualified Nurse or Bedside Attendant).');
+            Alert.alert('Required', 'Please select a staff type.');
             return;
         }
         if (!selectedDuration) {
@@ -96,7 +97,8 @@ export default function BookNursingCareScreen() {
                 cityId,
                 scheduledDate: new Date().toISOString(),
                 addressLine: address || undefined,
-                staffType: selectedStaff === 'Option A' ? 'qualified-nurse' : 'bedside-attendant',
+                landmark: landmark || undefined,
+                staffType: selectedStaff === 'Qualified Nurse' ? 'qualified-nurse' : 'bedside-attendant',
                 shiftDuration,
                 formDataJson: {
                     recipient: selectedWho,
@@ -188,39 +190,37 @@ export default function BookNursingCareScreen() {
                         <View style={styles.sectionContainer}>
                             <Text style={styles.sectionTitle}>{t('nurse_care.staff_type')}</Text>
 
-                            {/* Option A: Qualified Nurse */}
                             <TouchableOpacity
-                                style={[styles.staffCard, selectedStaff === 'Option A' && styles.staffCardActive]}
-                                onPress={() => setSelectedStaff('Option A')}
+                                style={[styles.staffCard, selectedStaff === 'Qualified Nurse' && styles.staffCardActive]}
+                                onPress={() => setSelectedStaff('Qualified Nurse')}
                                 activeOpacity={0.8}
                             >
                                 <View style={styles.staffAvatarContainer}>
                                     <Image source={nurseIcon} style={styles.staffAvatar} resizeMode="contain" />
                                 </View>
                                 <View style={styles.staffInfo}>
-                                    <Text style={[styles.staffTitle, selectedStaff === 'Option A' && styles.staffTitleActive]}>
+                                    <Text style={[styles.staffTitle, selectedStaff === 'Qualified Nurse' && styles.staffTitleActive]}>
                                         {t('nurse_care.option_a_title')}
                                     </Text>
-                                    <Text style={[styles.staffSubtitle, selectedStaff === 'Option A' && styles.staffSubtitleActive]}>
+                                    <Text style={[styles.staffSubtitle, selectedStaff === 'Qualified Nurse' && styles.staffSubtitleActive]}>
                                         {t('nurse_care.option_a_subtitle')}
                                     </Text>
                                 </View>
                             </TouchableOpacity>
 
-                            {/* Option B: Bedside Attendant */}
                             <TouchableOpacity
-                                style={[styles.staffCard, selectedStaff === 'Option B' && styles.staffCardActive]}
-                                onPress={() => setSelectedStaff('Option B')}
+                                style={[styles.staffCard, selectedStaff === 'Bedside Attendant' && styles.staffCardActive]}
+                                onPress={() => setSelectedStaff('Bedside Attendant')}
                                 activeOpacity={0.8}
                             >
                                 <View style={styles.staffAvatarContainer}>
                                     <Image source={nurseIcon} style={styles.staffAvatar} resizeMode="contain" />
                                 </View>
                                 <View style={styles.staffInfo}>
-                                    <Text style={[styles.staffTitle, selectedStaff === 'Option B' && styles.staffTitleActive]}>
+                                    <Text style={[styles.staffTitle, selectedStaff === 'Bedside Attendant' && styles.staffTitleActive]}>
                                         {t('nurse_care.option_b_title')}
                                     </Text>
-                                    <Text style={[styles.staffSubtitle, selectedStaff === 'Option B' && styles.staffSubtitleActive]}>
+                                    <Text style={[styles.staffSubtitle, selectedStaff === 'Bedside Attendant' && styles.staffSubtitleActive]}>
                                         {t('nurse_care.option_b_subtitle')}
                                     </Text>
                                 </View>
@@ -333,6 +333,12 @@ export default function BookNursingCareScreen() {
                                     </TouchableOpacity>
                                 </View>
                             )}
+                            <FormInput
+                                placeholder="Landmark (optional, e.g. Near Apollo Hospital)"
+                                value={landmark}
+                                onChangeText={setLandmark}
+                                style={{ marginTop: 12, elevation: 0 }}
+                            />
                         </View>
                     </KeyboardAwareScrollView>
 
