@@ -354,15 +354,19 @@ const styles = StyleSheet.create({
     categoriesContent: {
         paddingRight: 16,
         paddingBottom: 0,
+        gap: 6,
     },
     categoryTab: {
-        marginRight: 22,
+        marginRight: 12,
         paddingVertical: 8,
-        borderBottomWidth: 2,
-        borderBottomColor: 'transparent',
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        backgroundColor: 'transparent',
+        height: 36,
+        justifyContent: 'center',
     },
     categoryTabActive: {
-        borderBottomColor: PRIMARY_GREEN,
+        backgroundColor: PRIMARY_GREEN,
     },
     categoryTabText: {
         fontSize: 13,
@@ -370,7 +374,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     categoryTabTextActive: {
-        color: PRIMARY_GREEN,
+        color: '#FFFFFF',
         fontWeight: '600',
     },
     loadingContainer: {
@@ -390,6 +394,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingTop: 0,
         paddingBottom: 24,
+        flexGrow: 1,
     },
     packageCard: {
         backgroundColor: '#FFFFFF',
