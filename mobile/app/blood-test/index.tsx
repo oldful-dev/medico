@@ -358,7 +358,6 @@ const styles = StyleSheet.create({
     categoryTab: {
         marginRight: 22,
         paddingVertical: 8,
-        paddingBottom: 0,
         borderBottomWidth: 2,
         borderBottomColor: 'transparent',
     },
@@ -389,7 +388,7 @@ const styles = StyleSheet.create({
     },
     listContent: {
         paddingHorizontal: 16,
-        paddingTop: 2,
+        paddingTop: 0,
         paddingBottom: 24,
     },
     packageCard: {
