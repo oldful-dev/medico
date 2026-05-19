@@ -11,6 +11,7 @@ const imgHero = require('@/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624
 export default function DrivingCabScreen() {
     const router = useRouter();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
+    const [landmark, setLandmark] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
 
     const { isReady, cityId, serviceId, serviceName, servicePrice, address, isLoading } =
@@ -37,6 +38,7 @@ export default function DrivingCabScreen() {
                         serviceId, cityId,
                         scheduledDate: new Date().toISOString(),
                         addressLine: address,
+                        landmark: landmark || undefined,
                         formDataJson: { attachments: uploadedImageUrls },
                     }),
                     amount: String(servicePrice),
@@ -66,6 +68,8 @@ export default function DrivingCabScreen() {
                 'Daily Commute Arrangements',
             ]}
             address={address}
+            landmark={landmark}
+            onLandmarkChange={setLandmark}
             onBook={handleBook}
             isLoading={isLoading || isBooking}
         >

@@ -11,6 +11,7 @@ const imgHero = require('@/assets/images/8ce612b04a3a83f1e834c7b71a6dd2c0174cb91
 export default function PlumbingElectricalScreen() {
     const router = useRouter();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
+    const [landmark, setLandmark] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
 
     const { isReady, cityId, serviceId, serviceName, servicePrice, address, isLoading } =
@@ -37,6 +38,7 @@ export default function PlumbingElectricalScreen() {
                         serviceId, cityId,
                         scheduledDate: new Date().toISOString(),
                         addressLine: address,
+                        landmark: landmark || undefined,
                         formDataJson: { attachments: uploadedImageUrls },
                     }),
                     amount: String(servicePrice),
@@ -66,6 +68,8 @@ export default function PlumbingElectricalScreen() {
                 'Fan & Light Fixture Installation',
             ]}
             address={address}
+            landmark={landmark}
+            onLandmarkChange={setLandmark}
             onBook={handleBook}
             isLoading={isLoading || isBooking}
         >

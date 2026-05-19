@@ -24,6 +24,7 @@ import {
     TouchableOpacity,
     ImageSourcePropType,
     ActivityIndicator,
+    TextInput,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -54,6 +55,10 @@ export interface ServiceDetailScreenProps {
     bulletItems: string[];
     /** Current address string shown in the location card */
     address: string;
+    /** Landmark input value (optional) */
+    landmark?: string;
+    /** Called when landmark changes */
+    onLandmarkChange?: (value: string) => void;
     /** Called when user taps "Book Service" */
     onBook: () => void;
     /** Disables the book button while loading / processing */
@@ -78,6 +83,8 @@ export default function ServiceDetailScreen({
     pricingNote,
     bulletItems,
     address,
+    landmark = '',
+    onLandmarkChange,
     onBook,
     isLoading = false,
     bookButtonLabel,
@@ -170,6 +177,13 @@ export default function ServiceDetailScreen({
                             {/* Map — Figma: 69×69, border-radius ~12, right of input */}
                             <Image source={imgMap} style={styles.mapThumb} />
                         </View>
+                        <TextInput
+                            style={styles.landmarkInput}
+                            placeholder="Landmark (optional, e.g. Near Apollo Hospital)"
+                            placeholderTextColor="#898989"
+                            value={landmark}
+                            onChangeText={onLandmarkChange || (() => {})}
+                        />
                     </View>
                 )}
 
@@ -433,6 +447,18 @@ const styles = StyleSheet.create({
         height: 69,
         borderRadius: 12,
         flexShrink: 0,
+    },
+    landmarkInput: {
+        marginTop: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 8,
+        fontFamily: Fonts.regular,
+        fontSize: 13,
+        color: '#2F2F2F',
+        backgroundColor: '#FFFFFF',
     },
 
     /* Book button — Figma: 281×45, primary green, full border-radius */

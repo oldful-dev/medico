@@ -35,7 +35,7 @@ const INITIAL_CONDITIONS = [
 ];
 
 const INITIAL_RECIPIENTS = [
-    { label: 'Self (Age 45-70)', selected: true },
+    { label: 'Self', selected: true },
     { label: 'Parents', selected: false },
 ];
 
