@@ -36,6 +36,7 @@ export default function OrderMedicinesScreen() {
     const [autoRefill, setAutoRefill] = useState(true);
     const [isManualEntry, setIsManualEntry] = useState(false);
     const [manualText, setManualText] = useState('');
+    const [landmark, setLandmark] = useState('');
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
     const [isBooking, setIsBooking] = useState(false);
 
@@ -123,6 +124,7 @@ export default function OrderMedicinesScreen() {
                 cityId,
                 scheduledDate: new Date().toISOString(),
                 addressLine: address || undefined,
+                landmark: landmark || undefined,
                 formDataJson: {
                     entryType: isManualEntry ? 'Manual Entry' : 'Prescription Upload',
                     manualText: isManualEntry ? manualText : undefined,
@@ -272,6 +274,14 @@ export default function OrderMedicinesScreen() {
                             <Ionicons name="pencil-outline" size={14} color="#2F2F2F" />
                         </TouchableOpacity>
                     </View>
+
+                    <TextInput
+                        style={[styles.addressText, { marginBottom: 15, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#FFF', borderRadius: 8, borderWidth: 1, borderColor: '#E5E7EB', fontFamily: 'LexendDeca_400Regular', fontSize: 12 }]}
+                        placeholder="Landmark (optional, e.g. Near Apollo Hospital)"
+                        placeholderTextColor="#898989"
+                        value={landmark}
+                        onChangeText={setLandmark}
+                    />
 
                     {/* ─── Auto-Refill Card ─── */}
                     <TouchableOpacity
