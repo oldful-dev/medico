@@ -6,6 +6,7 @@ const cron = require('node-cron');
 const prisma = require('../config/database');
 const { logger } = require('../config/logger');
 const { sendExpiryReminder } = require('../utils/notifications');
+const { sendPlanExpiryAdmin } = require('../services/whatsapp');
 const { calculateExpiryDate } = require('../utils/helpers');
 
 const initCronJobs = () => {
@@ -37,6 +38,10 @@ const initCronJobs = () => {
                     daysLeft: 7,
                     expiryDate: sub.expiryDate,
                 });
+                // Alert ops console (AYUXA_CONSOLE WABA) — non-fatal
+                if (process.env.ADMIN_OPS_PHONE) {
+                    await sendPlanExpiryAdmin({ phone: process.env.ADMIN_OPS_PHONE, name: sub.user.name }).catch(() => {});
+                }
             }
 
             // 3-day reminders
@@ -58,6 +63,10 @@ const initCronJobs = () => {
                     daysLeft: 3,
                     expiryDate: sub.expiryDate,
                 });
+                // 3-day alert also goes to ops console — non-fatal
+                if (process.env.ADMIN_OPS_PHONE) {
+                    await sendPlanExpiryAdmin({ phone: process.env.ADMIN_OPS_PHONE, name: sub.user.name }).catch(() => {});
+                }
             }
 
             // Update status of expiring subscriptions

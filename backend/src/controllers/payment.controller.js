@@ -231,6 +231,7 @@ const verifyPayment = async (req, res, next) => {
             include: {
                 user: true,
                 booking: { include: { service: true } },
+                labOrder: true,
                 productOrder: { include: { product: true } },
             },
         });
@@ -261,7 +262,7 @@ const verifyPayment = async (req, res, next) => {
                 try {
                     const formData = payment.booking.formDataJson || {};
                     const rcId = formData.redcliffeBookingId;
-                    
+
                     if (rcId) {
                         logger.info(`Finalizing Redcliffe booking ${rcId} for appointment ${payment.booking.bookingCode}`);
                         await rc.confirmBooking(rcId, true);
@@ -283,14 +284,21 @@ const verifyPayment = async (req, res, next) => {
                 body: `Your ${payment.booking.service.name} booking (${payment.booking.bookingCode}) has been confirmed.`,
                 data: { type: 'booking_created', bookingId: payment.booking.id, bookingCode: payment.booking.bookingCode },
             });
+        }
 
-            if (payment.user?.phone) {
-                await sendBookingConfirmation({ 
-                    user: payment.user, 
-                    bookingCode: payment.booking.bookingCode, 
-                    booking: { serviceName: payment.booking.service.name } 
-                });
-            }
+        // ─── Promote labOrder: HOLD_CREATED → CONFIRMED (Blood Test) ─────────────
+        if (payment.labOrder) {
+            await prisma.labOrder.update({
+                where: { id: payment.labOrder.id },
+                data: { status: 'CONFIRMED' }
+            });
+
+            const { sendPushToUser } = require('../utils/pushNotification.service');
+            await sendPushToUser(payment.userId, {
+                title: 'Blood Test Booked!',
+                body: `Your blood test booking (${payment.labOrder.clientRefId}) has been confirmed.`,
+                data: { type: 'lab_booking_confirmed', labOrderId: payment.labOrder.id, bookingId: payment.labOrder.clientRefId },
+            });
         }
 
         // ─── Promote subscription: PAYMENT_PENDING → ACTIVE ───────────────────
@@ -362,37 +370,21 @@ const verifyPayment = async (req, res, next) => {
                     subject: `Invoice ${invoiceNumber} - Ayuxa Healthcare`,
                     html: `
                         <p>Dear ${payment.user.name},</p>
-                        <p>Your payment of ₹${payment.amount} was successful.</p>
+                        <p>Your payment of ₹${parseFloat(payment.amount).toFixed(2)} was successful.</p>
                         <p>You can download your GST invoice here: <a href="${url}">Download Invoice</a></p>
                         <p>Best regards,<br/>Ayuxa Team</p>
                     `,
                 });
             }
 
-            // WhatsApp — Template: payment_successful (ID 20520) — Var1=name, Var2=amount
-            await sendWhatsApp({
-                phoneNumber: payment.user.phone,
-                templateName: 'invoice_confirmation',
-                parameters: [
-                    payment.user.name,
-                    payment.amount.toString(),
-                ],
-                mediaUrl: url,
+            // WhatsApp — Template: PAYMENT_RECEIVED (ID 20520) — Var1=name, Var2=amount
+            const { sendPaymentReceived: sendPaymentWA } = require('../services/whatsapp');
+            await sendPaymentWA({
+                phone: payment.user.phone,
+                name: payment.user.name,
+                amount: parseFloat(payment.amount).toFixed(2),
+                userId: payment.userId,
             });
-
-            // Send DLT SMS (if enabled and SMS template configured)
-            if (payment.user.smsEnabled !== false && process.env.FAST2SMS_PAYMENT_TEMPLATE_ID) {
-                await sendDLTSMS(
-                    payment.user.phone,
-                    process.env.FAST2SMS_PAYMENT_TEMPLATE_ID,
-                    [
-                        payment.user.name || 'Customer',
-                        payment.amount.toString(), // Just the amount, template adds ₹
-                    ]
-                ).catch(err => {
-                    logger.warn(`[Payment] DLT SMS failed: ${err.message}`);
-                });
-            }
 
             await prisma.invoice.update({
                 where: { id: invoice.id },

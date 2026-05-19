@@ -148,31 +148,29 @@ const requestOTP = async (req, res, next) => {
     try {
         const { phoneNumber } = req.body;
 
-        // Use Fast2SMS to send OTP
+        // Primary: SMS OTP
         const response = await requestSmsOTP(phoneNumber);
 
-        // EXTRA: Send Push Notification fallback if user exists
-        try {
-            const user = await prisma.user.findUnique({
-                where: { phone: phoneNumber },
-                select: { id: true, fcmDeviceToken: true }
-            });
-
-            if (user && user.fcmDeviceToken) {
-                const { code } = await prisma.otpLog.findFirst({
+        if (!response.success) {
+            // Fallback: WhatsApp OTP only if SMS failed
+            try {
+                const otpLog = await prisma.otpLog.findFirst({
                     where: { phoneNumber },
                     orderBy: { createdAt: 'desc' },
+                    select: { code: true },
                 });
-
-                const { sendPushToUser } = require('../utils/pushNotification.service');
-                await sendPushToUser(user.id, {
-                    title: 'Your OTP Code',
-                    body: `Your Ayuxa verification code is: ${code}`,
-                    data: { type: 'OTP', code: String(code) }
-                });
+                if (otpLog?.code) {
+                    const { sendOTP } = require('../services/whatsapp');
+                    await sendOTP({
+                        phone: phoneNumber,
+                        code: otpLog.code,
+                        supportContact: process.env.SUPPORT_PHONE || '+91 94801 98108',
+                    });
+                    logger.info(`[OTP] SMS failed → WhatsApp fallback sent to ${phoneNumber}`);
+                }
+            } catch (waErr) {
+                logger.warn(`[OTP] WhatsApp fallback failed: ${waErr.message}`);
             }
-        } catch (pushErr) {
-            logger.debug('Push OTP fallback skipped:', pushErr.message);
         }
 
         res.json({ success: true, message: 'OTP sent successfully' });

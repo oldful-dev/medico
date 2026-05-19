@@ -414,33 +414,7 @@ export default function HomeScreen() {
                     ))}
                   </View>
                 )}
-                {sos_banner.enabled && (
-                  <View style={styles.sosBanner}>
-                    <View style={styles.sosContent}>
-                      <Image
-                        source={{ uri: getAssetUrl(sos_banner.icon) }}
-                        style={styles.sosIcon}
-                        resizeMode="contain"
-                      />
-                      <View style={styles.sosTextGroup}>
-                        <Text style={styles.sosTitle}>{sos_banner.title_line1}</Text>
-                        <Text style={styles.sosTitle}>{sos_banner.title_line2}</Text>
-                        <TouchableOpacity
-                          style={styles.sosButton}
-                          onPress={() => router.push(resolveRoute(sos_banner.cta_route) as any)}
-                        >
-                          <Text style={styles.sosButtonText}>{sos_banner.cta_text}</Text>
-                          <Ionicons name="call" size={12} color="#FFFFFF" />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                    <Image
-                      source={{ uri: getAssetUrl(sos_banner.illustration) }}
-                      style={styles.sosIllustration}
-                      resizeMode="contain"
-                    />
-                  </View>
-                )}
+{/* SOS banner removed — single SOS button kept in header */}
                 <EssentialsGrid
                   section={section}
                   itemWidth={exactEssentialItemWidth}

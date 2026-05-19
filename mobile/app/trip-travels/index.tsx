@@ -158,27 +158,25 @@ export default function TripTravelsScreen() {
                 <Text style={styles.sectionTitle}>Where do you want to go?</Text>
 
                 <View style={styles.card}>
-                    {/* Option 1: Checked */}
                     <TouchableOpacity style={styles.optionRow} onPress={() => setDestination('Temple Tours')}>
                         <View style={destination === 'Temple Tours' ? styles.radioSelected : styles.radioUnselected}>
                             {destination === 'Temple Tours' && <View style={styles.radioInner} />}
                         </View>
-                        <Text style={styles.optionTextBold}>Temple Tours <Text style={styles.optionTextLight}>(Day trips to Tirupati/local temples)</Text></Text>
+                        <Text style={styles.optionTextBold}>Temple Tours</Text>
                     </TouchableOpacity>
 
-                    {/* Option 2: Unchecked Radio */}
                     <TouchableOpacity style={styles.optionRow} onPress={() => setDestination('Out of station')}>
                         <View style={destination === 'Out of station' ? styles.radioSelected : styles.radioUnselected}>
                             {destination === 'Out of station' && <View style={styles.radioInner} />}
                         </View>
-                        <Text style={styles.optionTextBold}>Out of station <Text style={styles.optionTextLight}>/anywhere in india</Text></Text>
+                        <Text style={styles.optionTextBold}>Out of station</Text>
                     </TouchableOpacity>
 
                     {/* Something Else / Text Input Mock */}
                     <View style={styles.somethingElseBox}>
                         <Image source={imgQuestionMark} style={styles.questionMarkIcon} />
                         <Text style={styles.somethingElseTitle}>
-                            Something Else? <Text style={styles.somethingElseSubtitle}>write your specific requirement...</Text>
+                            Something Else?
                         </Text>
                     </View>
 
@@ -219,33 +217,30 @@ export default function TripTravelsScreen() {
                 </View>
 
                 <View style={styles.card}>
-                    {/* Option: Morning Yoga (Checked) */}
                     <TouchableOpacity style={styles.eventRow} onPress={() => setSelectedEvent('Morning Yoga Group')}>
                         <View style={selectedEvent === 'Morning Yoga Group' ? styles.radioSelected : styles.radioUnselected}>
                             {selectedEvent === 'Morning Yoga Group' && <View style={styles.radioInner} />}
                         </View>
                         <Image source={imgYoga} style={styles.eventIcon} />
-                        <Text style={styles.optionTextBold}>Morning Yoga Group <Text style={styles.optionTextLight}>(Park meetups)</Text></Text>
+                        <Text style={styles.optionTextBold}>Morning Yoga Group</Text>
                     </TouchableOpacity>
                     <View style={styles.divider} />
 
-                    {/* Option: Day Outing (Checked but lighter check variant in figma, using same for now) */}
                     <TouchableOpacity style={styles.eventRow} onPress={() => setSelectedEvent('Day Outing')}>
                         <View style={selectedEvent === 'Day Outing' ? styles.radioSelected : styles.radioUnselected}>
                             {selectedEvent === 'Day Outing' && <View style={styles.radioInner} />}
                         </View>
                         <Image source={imgPicnic} style={styles.eventIcon} />
-                        <Text style={styles.optionTextBold}>Day Outing <Text style={styles.optionTextLight}>(Picnic spots)</Text></Text>
+                        <Text style={styles.optionTextBold}>Day Outing</Text>
                     </TouchableOpacity>
                     <View style={styles.divider} />
 
-                    {/* Option: Chai & Chat (Checked) */}
                     <TouchableOpacity style={styles.eventRow} onPress={() => setSelectedEvent('Chai & Chat')}>
                         <View style={selectedEvent === 'Chai & Chat' ? styles.radioSelected : styles.radioUnselected}>
                             {selectedEvent === 'Chai & Chat' && <View style={styles.radioInner} />}
                         </View>
                         <Image source={imgChai} style={styles.eventIcon} />
-                        <Text style={styles.optionTextBold}>Chai & Chat <Text style={styles.optionTextLight}>(Weekly meetup)</Text></Text>
+                        <Text style={styles.optionTextBold}>Chai & Chat</Text>
                     </TouchableOpacity>
                     <View style={styles.divider} />
 
@@ -253,7 +248,7 @@ export default function TripTravelsScreen() {
                     <View style={styles.somethingElseBox}>
                         <Image source={imgQuestionMark} style={styles.questionMarkIcon} />
                         <Text style={styles.somethingElseTitle}>
-                            Something Else? <Text style={styles.somethingElseSubtitle}>write your specific requirement...</Text>
+                            Something Else?
                         </Text>
                     </View>
 

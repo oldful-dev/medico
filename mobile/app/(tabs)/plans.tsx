@@ -212,12 +212,8 @@ export default function PlansScreen() {
                     })}
                 </View>
 
-                {/* ─── Plans Horizontal Scroll (API-driven) ─── */}
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.plansScrollContainer}
-                >
+                {/* ─── Plans (vertical, full-width cards) ─── */}
+                <View style={styles.plansContainer}>
                     {plans.map((plan, idx) => {
                         const accent = PLAN_ACCENTS[idx % PLAN_ACCENTS.length];
                         const price = getPriceForCycle(plan, activeCycle);
@@ -234,35 +230,38 @@ export default function PlansScreen() {
                                     isPro && styles.planCardPro,
                                 ]}
                             >
-                                <Text style={[styles.planCardTitle, { color: accent.title }]}>
-                                    {plan.name}
-                                </Text>
-
-                                {plan.description ? (
-                                    <Text style={[styles.planCardDesc, isPro && { color: 'rgba(255,255,255,0.7)' }]}>
-                                        {plan.description}
-                                    </Text>
-                                ) : null}
-
-                                {/* Price */}
-                                <View style={[styles.priceContainer, { backgroundColor: accent.price_bg }]}>
-                                    <Text style={styles.priceText}>
-                                        ₹{price.toLocaleString('en-IN')}{' '}
-                                        <Text style={styles.priceSuffix}>{cycleInfo.suffix}</Text>
-                                    </Text>
+                                {/* Plan header row */}
+                                <View style={styles.planCardHeader}>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={[styles.planCardTitle, { color: accent.title }]}>
+                                            {plan.name}
+                                        </Text>
+                                        {plan.description ? (
+                                            <Text style={[styles.planCardDesc, isPro && { color: 'rgba(255,255,255,0.7)' }]}>
+                                                {plan.description}
+                                            </Text>
+                                        ) : null}
+                                    </View>
+                                    <View style={[styles.priceContainer, { backgroundColor: accent.price_bg }]}>
+                                        <Text style={styles.priceText}>
+                                            ₹{price.toLocaleString('en-IN')}
+                                        </Text>
+                                        <Text style={[styles.priceSuffix, isPro && { color: 'rgba(2,116,63,0.8)' }]}>
+                                            {cycleInfo.suffix}
+                                        </Text>
+                                        <Text style={[styles.validityText, isPro && { color: 'rgba(255,255,255,0.6)' }]}>
+                                            {cycleInfo.days}
+                                        </Text>
+                                    </View>
                                 </View>
 
-                                <Text style={[styles.validityText, isPro && { color: 'rgba(255,255,255,0.6)' }]}>
-                                    Valid for {cycleInfo.days}
-                                </Text>
-
-                                {/* Benefits / Features */}
+                                {/* All features — fully visible, no truncation */}
                                 <View style={styles.planFeatures}>
                                     {plan.benefits?.split(',').map((benefit, bIdx) => (
                                         <View key={bIdx} style={styles.featureItem}>
                                             <Ionicons
                                                 name="checkmark-circle"
-                                                size={14}
+                                                size={16}
                                                 color={isPro ? '#0EDD94' : Colors.primary}
                                                 style={styles.featureCheck}
                                             />
@@ -288,14 +287,14 @@ export default function PlansScreen() {
                                         <ActivityIndicator size="small" color={isPro ? Colors.primary : Colors.textWhite} />
                                     ) : (
                                         <Text style={[styles.planActionText, isPro && { color: Colors.primary }]}>
-                                            {isActivePlan ? 'Active Plan' : 'Choose Plan'}
+                                            {isActivePlan ? '✓ Active Plan' : 'Choose Plan'}
                                         </Text>
                                     )}
                                 </TouchableOpacity>
                             </View>
                         );
                     })}
-                </ScrollView>
+                </View>
 
                 {/* ─── Why Subscribe (SDUI benefits) ─── */}
                 <Text style={styles.sectionTitle}>{t('plans.why_subscribe')}</Text>
@@ -373,44 +372,45 @@ const styles = StyleSheet.create({
     cycleTabText: { fontFamily: Fonts.medium, fontSize: FontSize.caption, color: Colors.textMuted },
     cycleTabTextActive: { color: Colors.textWhite },
 
-    plansScrollContainer: { paddingHorizontal: Spacing.lg, paddingBottom: 25, gap: Spacing.lg },
+    plansContainer: { paddingHorizontal: Spacing.lg, paddingBottom: 8, gap: Spacing.lg },
     planCard: {
-        borderRadius: Radius.xl, width: 215, padding: Spacing.lg,
+        borderRadius: Radius.xl, padding: Spacing.lg,
         ...Shadow.card, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)',
     },
     planCardPro: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-    planCardTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, marginBottom: 4 },
+    planCardHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: Spacing.md, gap: 12 },
+    planCardTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, marginBottom: 4 },
     planCardDesc: {
         fontFamily: Fonts.regular, fontSize: FontSize.caption,
-        color: Colors.textMuted, marginBottom: Spacing.sm, lineHeight: 16,
+        color: Colors.textMuted, lineHeight: 16,
     },
 
     priceContainer: {
-        borderRadius: 8, paddingVertical: 6, paddingHorizontal: Spacing.sm,
-        marginBottom: 4, alignSelf: 'flex-start',
+        borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12,
+        alignItems: 'center', minWidth: 90,
     },
-    priceText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: Colors.textWhite },
-    priceSuffix: { fontFamily: Fonts.regular, fontWeight: 'normal' },
+    priceText: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: Colors.textWhite },
+    priceSuffix: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: 'rgba(255,255,255,0.85)' },
     validityText: {
         fontFamily: Fonts.regular, fontSize: FontSize.caption,
-        color: Colors.textMuted, marginBottom: Spacing.md,
+        color: 'rgba(255,255,255,0.7)', marginTop: 2,
     },
 
-    planFeatures: { marginBottom: 15, flex: 1 },
-    featureItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
-    featureCheck: { marginRight: 6, marginTop: 1 },
+    planFeatures: { marginBottom: Spacing.lg },
+    featureItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
+    featureCheck: { marginRight: 8, marginTop: 1 },
     featureText: {
-        fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall,
-        color: Colors.textBody, flex: 1, lineHeight: 14,
+        fontFamily: Fonts.medium, fontSize: FontSize.body,
+        color: Colors.textBody, flex: 1, lineHeight: 20,
     },
 
     planActionButton: {
-        borderRadius: 8, height: 36, justifyContent: 'center',
-        alignItems: 'center', marginTop: 'auto',
+        borderRadius: 10, height: 46, justifyContent: 'center',
+        alignItems: 'center',
     },
     planActionButtonDisabled: { backgroundColor: '#E5E7EB' },
     planActionText: {
-        fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: Colors.textWhite,
+        fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textWhite,
     },
 
     sectionTitle: {

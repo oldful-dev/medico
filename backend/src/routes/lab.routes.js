@@ -20,6 +20,9 @@ router.get('/time-slots', ctrl.getTimeSlots);
 router.get('/packages',       ctrl.getPackages);
 router.get('/packages/:code', ctrl.getPackageDetails);
 
+// ─── User Orders (auth required) ──────────────
+router.get('/my-orders', authenticateUser, ctrl.getUserLabOrders);
+
 // ─── Booking (auth required) ─────────────────
 router.post('/book/hold', authenticateUser, holdCtrl.holdBooking);
 router.post('/book/confirm', authenticateUser, confirmCtrl.confirmBooking);

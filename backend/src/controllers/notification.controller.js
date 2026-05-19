@@ -113,7 +113,7 @@ const sendCampaign = async (req, res, next) => {
 
         // WHATSAPP Channel — templateId must be a valid approved marketing template key
         if (channel === 'WHATSAPP') {
-            const CAMPAIGN_TEMPLATES = ['ayuxa_remember', 'birthday_wishes', 'plan_expiry_reminder', 'followup_feedback'];
+            const CAMPAIGN_TEMPLATES = ['WELLNESS_REMINDER', 'BIRTHDAY_WISHES', 'PLAN_EXPIRY_REMINDER'];
             if (!templateId || !CAMPAIGN_TEMPLATES.includes(templateId)) {
                 return sendResponse(res, 400, null, `Invalid WhatsApp campaign template. Must be one of: ${CAMPAIGN_TEMPLATES.join(', ')}`);
             }

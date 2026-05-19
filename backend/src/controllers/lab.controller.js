@@ -212,17 +212,34 @@ const getLabBookingStatus = async (req, res, next) => {
         const { id } = req.params;
         logger.info(`Fetching Lab status for ID: ${id}`);
 
-        let params = {};
-        // If it starts with LAB-, it's our internal client reference
+        // First, try to fetch from our internal LabOrder table
+        // This handles UUIDs (our internal IDs) and client references (LAB-XXXX)
+        let labOrder;
+
         if (id.startsWith('LAB-')) {
-            params.client_ref_id = id;
+            // Internal client reference (LAB-EBEF9C95)
+            labOrder = await prisma.labOrder.findUnique({
+                where: { clientRefId: id },
+                include: { payments: { take: 1, orderBy: { createdAt: 'desc' } } }
+            });
+        } else if (id.length === 36 && id.includes('-')) {
+            // UUID format (our internal ID)
+            labOrder = await prisma.labOrder.findUnique({
+                where: { id },
+                include: { payments: { take: 1, orderBy: { createdAt: 'desc' } } }
+            });
         }
-        // If it's pure numeric, it's the Redcliffe internal ID
-        else if (/^\d+$/.test(id)) {
+
+        // If found in our DB, return it directly
+        if (labOrder) {
+            return sendResponse(res, 200, labOrder);
+        }
+
+        // Otherwise, try Redcliffe API (for numeric Redcliffe IDs or external lookups)
+        let params = {};
+        if (/^\d+$/.test(id)) {
             params.booking_id = parseInt(id);
-        }
-        // Otherwise, it's likely a Permanent ID or mixed ID
-        else {
+        } else {
             params.booking_id = id;
         }
 
@@ -324,6 +341,28 @@ const getConsolidatedReport = async (req, res, next) => {
     }
 };
 
+// GET /api/labs/my-orders — Authenticated user's lab orders
+const getUserLabOrders = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const orders = await prisma.labOrder.findMany({
+            where: { userId },
+            include: {
+                payments: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 1,
+                    select: { status: true, amount: true }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        sendResponse(res, 200, orders);
+    } catch (error) {
+        logger.error('getUserLabOrders error:', error.message);
+        next(error);
+    }
+};
+
 // GET /api/labs/admin/orders
 const adminGetLabOrders = async (req, res, next) => {
     try {
@@ -377,5 +416,6 @@ module.exports = {
     updateLabPackage,
     getDigitalReport,
     getConsolidatedReport,
+    getUserLabOrders,
     adminGetLabOrders,
 };

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    ActivityIndicator, Alert, RefreshControl, SectionList,
+    ActivityIndicator, Alert, RefreshControl, SectionList, Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { bookingService } from '@/services/api/bookingService';
+import { labService, LabOrderListItem } from '@/services/api/labService';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -33,6 +33,34 @@ interface Booking {
 
 type FilterTab = 'wellness' | 'health' | 'upcoming' | 'completed';
 
+// Mapper functions to normalize LabOrder → Booking
+function mapLabStatus(s: string): Booking['status'] {
+    if (s === 'REPORT_GENERATED' || s === 'SAMPLE_COLLECTED') return 'completed';
+    if (s === 'CANCELLED' || s === 'FAILED') return 'cancelled';
+    if (s === 'CONFIRMED' || s === 'HOLD_CREATED') return 'confirmed';
+    return 'pending';
+}
+
+function normalizeLabOrder(order: LabOrderListItem): Booking {
+    const pkg = order.packages?.[0];
+    const payment = order.payments?.[0];
+    return {
+        id: order.id,
+        serviceType: 'blood-test',
+        packageName: pkg?.name || pkg?.packageName || 'Blood Test',
+        packageCode: pkg?.code || pkg?.packageCode || '',
+        bookingId: order.clientRefId,
+        scheduledDate: order.slot?.date || '',
+        scheduledTime: order.slot?.time,
+        collectionType: order.bookingType === 'HOME' ? 'home' : 'drop-off',
+        status: mapLabStatus(order.status),
+        paymentStatus: payment?.status === 'SUCCESS' ? 'paid' : payment?.status === 'FAILED' ? 'failed' : 'pending',
+        reportReady: order.status === 'REPORT_GENERATED' && !!order.reportUrl,
+        reportUrl: order.reportUrl,
+        createdAt: order.createdAt,
+    };
+}
+
 export default function MyBookingsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -50,9 +78,10 @@ export default function MyBookingsScreen() {
     const fetchBookings = async () => {
         try {
             setLoading(true);
-            const res = await bookingService.getUserBookings();
-            if (res.success && res.data) {
-                setBookings(res.data);
+            const res = await labService.getUserLabOrders();
+            if (res.success && res.data && Array.isArray(res.data)) {
+                const normalizedBookings = (res.data as LabOrderListItem[]).map(normalizeLabOrder);
+                setBookings(normalizedBookings);
             }
         } catch (error) {
             console.error('Failed to fetch bookings:', error);
@@ -111,7 +140,7 @@ export default function MyBookingsScreen() {
             style={styles.bookingCard}
             onPress={() => router.push({
                 pathname: '/booking-details',
-                params: { bookingId: booking.id },
+                params: { bookingId: booking.id, type: 'lab' },
             } as any)}
             activeOpacity={0.7}
         >
@@ -164,7 +193,7 @@ export default function MyBookingsScreen() {
                     onPress={(e) => {
                         e.stopPropagation();
                         if (booking.reportUrl) {
-                            Alert.alert('Download', 'Report download feature coming soon');
+                            Linking.openURL(booking.reportUrl);
                         }
                     }}
                 >

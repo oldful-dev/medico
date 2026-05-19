@@ -4,7 +4,9 @@
 
 const prisma = require('../config/database');
 const { logger } = require('../config/logger');
-const { sendWhatsApp, sendEmail, sendPushToUser } = require('../utils/notifications');
+const { sendEmail, sendPushToUser } = require('../utils/notifications');
+const wa = require('../services/whatsapp');
+const { sendSMS } = require('../services/sms');
 const { reverseGeocode } = require('../utils/geocoding.service');
 
 // City-centre coords used when device GPS is unavailable (emulator / permission denied)
@@ -112,25 +114,51 @@ const triggerSOS = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Failed to record SOS alert' });
     }
 
-    // 4. Build location link
+    // 4. Build location details
     const locationLink = (resolvedLat && resolvedLng)
         ? `https://www.google.com/maps?q=${resolvedLat},${resolvedLng}`
         : 'Location unavailable';
-    const addressDisplay = addressSnapshot || locationLink;
+    const addressDisplay = addressSnapshot || (resolvedLat ? `${resolvedLat},${resolvedLng}` : 'Unknown');
+    const triggeredAt = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true });
 
-    // 5. Notify admin via WhatsApp — non-fatal
+    // Rich details string packed into Var2 for WhatsApp (template has only 2 vars)
+    const sosDetails = `Ph: ${user.phone} | ${addressDisplay} | ${locationLink} | ${triggeredAt}`;
+
+    const adminPhone = process.env.ADMIN_EMERGENCY_PHONE || '9999999999';
+
+    // 5. Notify admin via WhatsApp + SMS — non-fatal
     let adminNotified = false;
     try {
-        // Template: urgent_alert (ID 20513) — Var1=user name, Var2=Ayuxa ID
-        // Location is sent via email (below) — not a template variable
-        await sendWhatsApp({
-            phoneNumber: process.env.ADMIN_EMERGENCY_PHONE || '919999999999',
-            templateName: 'sos_alert_admin',
-            parameters: [user.name, user.uniqueUserId],
+        const waSent = await wa.sendSOSAlertAdmin({
+            phone: adminPhone,
+            userName: user.name,
+            ayuxaId: sosDetails,   // pack all details into Var2
         });
-        adminNotified = true;
+        if (waSent) {
+            adminNotified = true;
+            logger.info(`[SOS] Admin WhatsApp sent → ${adminPhone}`);
+        } else {
+            logger.warn(`[SOS] Admin WhatsApp failed → ${adminPhone} (trying SMS fallback)`);
+        }
     } catch (err) {
-        logger.warn('SOS admin WhatsApp failed (non-fatal):', err.message);
+        logger.warn(`[SOS] Admin WhatsApp error (non-fatal): ${err.message}`);
+    }
+
+    // Admin SMS fallback (SOS_ADMIN — sender AYUXHO)
+    try {
+        const smsSent = await sendSMS({
+            template: 'SOS_ADMIN',
+            mobile: adminPhone,
+            variables: [user.name, user.uniqueUserId],
+        });
+        if (smsSent) {
+            adminNotified = true;
+            logger.info(`[SOS] Admin SMS sent → ${adminPhone}`);
+        } else {
+            logger.warn(`[SOS] Admin SMS failed → ${adminPhone}`);
+        }
+    } catch (err) {
+        logger.warn(`[SOS] Admin SMS error (non-fatal): ${err.message}`);
     }
 
     // 6. Notify admin via email — non-fatal
@@ -139,38 +167,65 @@ const triggerSOS = async (req, res) => {
             to: process.env.ADMIN_EMAIL || 'admin@ayuxa.com',
             subject: `🚨 EMERGENCY: SOS triggered by ${user.name}`,
             html: `
-                <h2>SOS Alert Triggered</h2>
-                <p><strong>User:</strong> ${user.name} (${user.uniqueUserId})</p>
-                <p><strong>Phone:</strong> ${user.phone}</p>
+                <h2 style="color:red">🚨 SOS Alert Triggered</h2>
+                <p><strong>Client Name:</strong> ${user.name} (${user.uniqueUserId})</p>
+                <p><strong>Mobile:</strong> ${user.phone}</p>
                 <p><strong>Address:</strong> ${addressDisplay}</p>
-                <p><strong>Map:</strong> <a href="${locationLink}">${locationLink}</a></p>
-                <p>Please take immediate action.</p>
+                <p><strong>Live Location:</strong> <a href="${locationLink}">${locationLink}</a></p>
+                <p><strong>Date &amp; Time:</strong> ${triggeredAt}</p>
+                <p style="color:red;font-weight:bold">Please take immediate action.</p>
             `,
         });
         adminNotified = true;
+        logger.info(`[SOS] Admin email sent → ${process.env.ADMIN_EMAIL || 'admin@ayuxa.com'}`);
     } catch (err) {
-        logger.warn('SOS admin email failed (non-fatal):', err.message);
+        logger.warn(`[SOS] Admin email error (non-fatal): ${err.message}`);
     }
 
-    // 7. Notify family contacts via WhatsApp — non-fatal
+    // 7. Notify family contacts via WhatsApp + SMS — non-fatal
     let familyNotified = false;
     try {
         const contacts = await prisma.emergencyContact.findMany({ where: { userId: user.id } });
+        logger.info(`[SOS] Notifying ${contacts.length} emergency contact(s)`);
+
         for (const contact of contacts) {
+            // WhatsApp
             try {
-                // Template: urgent_alert (ID 20513) — Var1=user name, Var2=Ayuxa ID
-                await sendWhatsApp({
-                    phoneNumber: contact.phone,
-                    templateName: 'sos_alert_family',
-                    parameters: [user.name, user.uniqueUserId],
+                const waSent = await wa.sendSOSAlert({
+                    phone: contact.phone,
+                    userName: user.name,
+                    ayuxaId: sosDetails,   // pack location details into Var2
+                    userId: user.id,
                 });
-                familyNotified = true;
+                if (waSent) {
+                    familyNotified = true;
+                    logger.info(`[SOS] Family WhatsApp sent → ${contact.phone} (${contact.name})`);
+                } else {
+                    logger.warn(`[SOS] Family WhatsApp failed → ${contact.phone} (trying SMS)`);
+                }
             } catch (err) {
-                logger.warn(`SOS family WhatsApp to ${contact.phone} failed (non-fatal):`, err.message);
+                logger.warn(`[SOS] Family WhatsApp error for ${contact.phone}: ${err.message}`);
+            }
+
+            // SMS fallback (SOS_FAMILY — sender AYUXA)
+            try {
+                const smsSent = await sendSMS({
+                    template: 'SOS_FAMILY',
+                    mobile: contact.phone,
+                    variables: [contact.name, user.name],
+                });
+                if (smsSent) {
+                    familyNotified = true;
+                    logger.info(`[SOS] Family SMS sent → ${contact.phone} (${contact.name})`);
+                } else {
+                    logger.warn(`[SOS] Family SMS failed → ${contact.phone}`);
+                }
+            } catch (err) {
+                logger.warn(`[SOS] Family SMS error for ${contact.phone}: ${err.message}`);
             }
         }
     } catch (err) {
-        logger.warn('SOS family contacts fetch failed (non-fatal):', err.message);
+        logger.warn(`[SOS] Family contacts fetch failed (non-fatal): ${err.message}`);
     }
 
     // 8. Send push confirmation to user — non-fatal
@@ -281,11 +336,24 @@ const resolveSOS = async (req, res) => {
                 status: 'RESOLVED',
                 resolvedAt: new Date(),
                 resolvedNotes: notes,
-            }
+            },
+            include: { user: { select: { id: true, name: true, phone: true } } },
         });
 
         const { emitToAdmins } = require('../services/socket.service');
         emitToAdmins('sos_updated', alert);
+
+        // Push + SMS to user confirming their SOS has been resolved — non-fatal
+        try {
+            const { sendPushToUser } = require('../utils/pushNotification.service');
+            await sendPushToUser(alert.userId, {
+                title: 'SOS Alert Resolved',
+                body: 'Your emergency alert has been resolved by the Ayuxa team. Stay safe!',
+                data: { type: 'sos_resolved', sosId: alert.id },
+            });
+        } catch (pushErr) {
+            logger.warn('resolveSOS: push failed (non-fatal):', pushErr.message);
+        }
 
         res.json({ success: true, message: 'SOS alert resolved', data: alert });
     } catch (err) {

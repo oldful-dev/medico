@@ -13,7 +13,7 @@
 const prisma = require('../config/database');
 const crypto = require('crypto');
 const { logger } = require('../config/logger');
-const { sendWhatsApp } = require('../utils/notifications');
+const { sendPaymentReceived: sendPaymentWA } = require('../services/whatsapp');
 const { sendDLTSMS } = require('../utils/fast2sms');
 
 // POST /api/webhooks/razorpay
@@ -97,15 +97,12 @@ async function processEvent(event, payload) {
 
                 // Send WhatsApp receipt if app flow didn't already send it
                 if (payment.user?.phone) {
-                    // Send WhatsApp
-                    // Template: payment_successful (ID 20520) — Var1=name, Var2=amount
-                    await sendWhatsApp({
-                        phoneNumber: payment.user.phone,
-                        templateName: 'invoice_confirmation',
-                        parameters: [
-                            payment.user.name || 'Customer',
-                            payment.amount.toString(),
-                        ],
+                    // Template: PAYMENT_RECEIVED — Var1=name, Var2=amount
+                    await sendPaymentWA({
+                        phone: payment.user.phone,
+                        name: payment.user.name || 'Customer',
+                        amount: parseFloat(payment.amount).toFixed(2),
+                        userId: payment.userId,
                     }).catch(() => {});
 
                     // Send SMS (if enabled and SMS template configured)
@@ -115,7 +112,7 @@ async function processEvent(event, payload) {
                             process.env.FAST2SMS_PAYMENT_TEMPLATE_ID,
                             [
                                 payment.user.name || 'Customer',
-                                payment.amount.toString(), // Just the amount, template adds ₹
+                                parseFloat(payment.amount).toFixed(2),
                             ]
                         ).catch(err => {
                             logger.warn(`[Webhook] Payment SMS failed: ${err.message}`);

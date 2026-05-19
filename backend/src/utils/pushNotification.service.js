@@ -19,7 +19,7 @@ const sendPushToUser = async (userId, { title, body, data = {} }) => {
 
         if (!user?.fcmDeviceToken || user.pushEnabled === false) {
             const reason = !user?.fcmDeviceToken ? 'No FCM token' : 'User disabled push';
-            logger.debug(`${reason} for user ${userId} — skipping push (still logging to inbox)`);
+            logger.info(`[Push] Skipped for user ${userId}: ${reason}`);
             
             await prisma.notificationLog.create({
                 data: {
@@ -51,7 +51,7 @@ const sendPushToUser = async (userId, { title, body, data = {} }) => {
         };
 
         const response = await messaging.send(message);
-        logger.info(`Push sent to user ${userId}: ${response}`);
+        logger.info(`[Push] ✅ Sent to user ${userId} [msgId: ${response}]`);
 
         // Log notification
         await prisma.notificationLog.create({
@@ -77,7 +77,7 @@ const sendPushToUser = async (userId, { title, body, data = {} }) => {
                 data: { fcmDeviceToken: null },
             });
         } else {
-            logger.error(`Push notification error for user ${userId}:`, error.message);
+            logger.error(`[Push] ❌ Error for user ${userId}: ${error.message}`);
         }
 
         await prisma.notificationLog.create({
@@ -110,10 +110,11 @@ const sendPushToToken = async (token, { title, body, data = {} }) => {
             android: { priority: 'high' },
         };
 
-        await messaging.send(message);
+        const response = await messaging.send(message);
+        logger.info(`[Push] ✅ Token push sent [msgId: ${response}]`);
         return true;
     } catch (error) {
-        logger.error('Push to token error:', error.message);
+        logger.error(`[Push] ❌ Token push failed: ${error.message}`);
         return false;
     }
 };
@@ -126,7 +127,7 @@ const sendPushToUsers = async (userIds, { title, body, data = {} }) => {
         userIds.map((id) => sendPushToUser(id, { title, body, data }))
     );
     const sent = results.filter((r) => r.status === 'fulfilled' && r.value).length;
-    logger.info(`Push batch: ${sent}/${userIds.length} delivered`);
+    logger.info(`[Push] Batch: ${sent}/${userIds.length} delivered`);
     return sent;
 };
 

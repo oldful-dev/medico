@@ -6,6 +6,7 @@ const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate, generateBookingCode } = require('../utils/helpers');
 const { sendPushToUser } = require('../utils/pushNotification.service');
 const { emitToAdmins } = require('../services/socket.service');
+const { logger } = require('../config/logger');
 
 // GET /api/bookings
 const getBookings = async (req, res, next) => {
@@ -236,7 +237,7 @@ const createBooking = async (req, res, next) => {
                 data: { type: 'booking_created', bookingId: booking.id, bookingCode },
             });
 
-            // Send DLT SMS Booking Confirmation
+            // WhatsApp + SMS for COD/zero-amount bookings (no payment flow to send it)
             if (booking.user?.phone) {
                 const { sendBookingConfirmation } = require('../utils/notifications');
                 await sendBookingConfirmation({
@@ -276,9 +277,9 @@ const assignCaregiver = async (req, res, next) => {
             include: { caregiver: { select: { name: true } } },
         });
 
-        // Notify user that a caregiver has been assigned
+        // Notify user that a caregiver has been assigned — push notification
         await sendPushToUser(booking.userId, {
-            title: 'Caregiver Assigned',
+            title: 'Staff Assigned',
             body: `${booking.caregiver.name} has been assigned to your booking.`,
             data: { type: 'caregiver_assigned', bookingId: booking.id },
         });
@@ -331,13 +332,37 @@ const updateBookingStatus = async (req, res, next) => {
             userName: booking.user?.name
         });
 
-        // Notify user of status change via push
+        // Notify user of status change via push + WhatsApp/SMS for key statuses
         const statusMessages = {
             IN_PROGRESS: 'Your service is now in progress.',
             COMPLETED: 'Your service has been completed. Thank you!',
             CANCELLED: 'Your booking has been cancelled.',
             SLA_BREACH: 'We apologize for the delay. Our team is escalating your booking.',
         };
+
+        // WhatsApp + SMS for COMPLETED and CANCELLED (high-importance statuses)
+        if (status === 'COMPLETED' || status === 'CANCELLED') {
+            try {
+                const user = await prisma.user.findUnique({
+                    where: { id: booking.userId },
+                    select: { name: true, phone: true, smsEnabled: true },
+                });
+                if (user?.phone) {
+                    const { sendOrderCancelled } = require('../services/whatsapp');
+                    const { sendSMS } = require('../services/sms');
+                    if (status === 'CANCELLED') {
+                        await sendOrderCancelled({ phone: user.phone, name: user.name, orderId: booking.bookingCode || booking.id, userId: booking.userId });
+                        if (user.smsEnabled !== false) {
+                            await sendSMS({ template: 'ORDER_CANCELLED_USER', mobile: user.phone, variables: [user.name, booking.bookingCode || booking.id], userId: booking.userId });
+                        }
+                    }
+                    // COMPLETED: push is sufficient; booking confirmation already sent at creation
+                }
+            } catch (notifErr) {
+                logger.warn(`updateBookingStatus (${status}): notification failed (non-fatal):`, notifErr.message);
+            }
+        }
+
         if (statusMessages[status]) {
             await sendPushToUser(booking.userId, {
                 title: `Booking ${status.replace('_', ' ')}`,
@@ -465,6 +490,24 @@ const cancelBooking = async (req, res, next) => {
             where: { bookingId: req.params.id, status: 'SUCCESS' },
             data: { status: 'REFUND_INITIATED' }
         });
+
+        // Notify user of cancellation — non-fatal
+        try {
+            const { sendOrderCancelled } = require('../services/whatsapp');
+            const { sendSMS } = require('../services/sms');
+            const user = await prisma.user.findUnique({
+                where: { id: req.user.id },
+                select: { name: true, phone: true, smsEnabled: true, whatsappEnabled: true },
+            });
+            if (user) {
+                await sendOrderCancelled({ phone: user.phone, name: user.name, orderId: booking.bookingCode || req.params.id, userId: req.user.id });
+                if (user.smsEnabled !== false) {
+                    await sendSMS({ template: 'ORDER_CANCELLED_USER', mobile: user.phone, variables: [user.name, booking.bookingCode || req.params.id], userId: req.user.id });
+                }
+            }
+        } catch (notifErr) {
+            logger.warn('cancelBooking: notification failed (non-fatal):', notifErr.message);
+        }
 
         sendResponse(res, 200, updated, 'Booking cancelled');
     } catch (error) {

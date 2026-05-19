@@ -6,6 +6,7 @@ import {
     Text,
     Image,
     TouchableOpacity,
+    ScrollView,
     StyleSheet,
     Platform,
     useWindowDimensions,
@@ -22,12 +23,12 @@ import { useTranslation } from 'react-i18next';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { locationService } from '@/services/device/locationService';
-import FormInput from '@/components/common/FormInput';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { useUser } from '@/context/UserContext';
 import { mediaService } from '@/services/api/mediaService';
 import { bookingService, Booking } from '@/services/api/bookingService';
+import { userService } from '@/services/api/userService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 // Problems that auto-trigger Physiotherapist selection
 const PHYSIO_PROBLEMS = new Set(['Poster-surgery Rehab', 'Frozen shoulder', 'Stroke Recovery']);
@@ -66,6 +67,7 @@ export default function DoctorVisitScreen() {
 
     // ─── Global State ───
     const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, isLoading: isLoadingInit } = useServiceInitialization('doctor-home-visit');
+    const { profile } = useUser();
 
     // ─── State ───
     const [selectedProblem, setSelectedProblem] = React.useState<string | null>(null);
@@ -73,9 +75,23 @@ export default function DoctorVisitScreen() {
     const [selectedDoctorType, setSelectedDoctorType] = React.useState<'GP' | 'Physio'>('GP');
     const [selectedWhen, setSelectedWhen] = React.useState<'ASAP' | 'Later'>('ASAP');
     const [scheduledDate, setScheduledDate] = React.useState<Date>(new Date());
-    const [showDatePicker, setShowDatePicker] = React.useState(false);
-    const [pickerMode, setPickerMode] = React.useState<'date' | 'time'>('date');
-    const [visitType, setVisitType] = React.useState<'Home' | 'Clinic'>('Home');
+    const [selectedDateIdx, setSelectedDateIdx] = React.useState(0);
+    const [selectedTimeSlot, setSelectedTimeSlot] = React.useState('09:00 AM');
+    const [landmark, setLandmark] = React.useState('');
+    const [visitType] = React.useState<'Home'>('Home');
+
+    // ─── Auto-fill profile address when GPS address is not available ───
+    React.useEffect(() => {
+        const addressEmpty = !address || address === 'Fetching address...' || address === '';
+        if (addressEmpty && profile?.addresses?.length) {
+            const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
+            if (defaultAddr) {
+                const parts = [defaultAddr.line1, defaultAddr.line2, defaultAddr.cityName].filter(Boolean);
+                setAddress(parts.join(', '));
+                if (defaultAddr.landmark) setLandmark(defaultAddr.landmark);
+            }
+        }
+    }, [address, profile]);
 
     // ─── Repeat Order State ───
     const [lastPhysioBooking, setLastPhysioBooking] = React.useState<Booking | null>(null);
@@ -167,17 +183,59 @@ export default function DoctorVisitScreen() {
 
         const isPhysio = lastPhysioBooking.doctorType === 'physiotherapist';
         setSelectedDoctorType(isPhysio ? 'Physio' : 'GP');
-        setVisitType(lastPhysioBooking.formDataJson?.visitType || 'Home');
         setSelectedWhen('ASAP');
         
         Alert.alert('Applied', 'Your previous booking details have been auto-selected.');
     };
 
-    // ─── Date formatting helper ───
-    const formatScheduledDate = (d: Date) =>
-        d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) +
-        ' at ' +
-        d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    // ─── Date/Time helpers for inline picker ───
+    const LATER_DATES = React.useMemo(() => {
+        const days: Date[] = [];
+        const start = new Date();
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(start);
+            d.setDate(start.getDate() + i);
+            days.push(d);
+        }
+        return days;
+    }, []);
+
+    const TIME_SLOTS = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM'];
+
+    const applyDateTimeSelection = (dateIdx: number, timeSlot: string) => {
+        const base = LATER_DATES[dateIdx];
+        const [timePart, meridiem] = timeSlot.split(' ');
+        const [h, m] = timePart.split(':').map(Number);
+        const hours = meridiem === 'PM' && h !== 12 ? h + 12 : meridiem === 'AM' && h === 12 ? 0 : h;
+        const merged = new Date(base);
+        merged.setHours(hours, m, 0, 0);
+        setScheduledDate(merged);
+    };
+
+
+    // Silently upsert the address back to profile when user books
+    const syncAddressToProfile = async (addressText: string, landmarkText: string) => {
+        if (!profile?.id || !addressText.trim()) return;
+        try {
+            const existing = profile.addresses?.find((a: any) => a.isDefault) || profile.addresses?.[0];
+            const payload = {
+                label: existing?.label || 'Home',
+                line1: addressText.trim(),
+                cityName: existing?.cityName || '',
+                state: existing?.state || '',
+                pincode: existing?.pincode || '',
+                landmark: landmarkText.trim() || undefined,
+                isDefault: true,
+            };
+            if (existing?.id) {
+                await userService.updateAddress(profile.id, existing.id, payload);
+            } else {
+                await userService.addAddress(profile.id, payload);
+            }
+        } catch {
+            // non-fatal — booking still proceeds
+        }
+    };
 
     const handleBookService = async () => {
         if (!selectedProblem) {
@@ -213,6 +271,9 @@ export default function DoctorVisitScreen() {
 
             const symptomLabel = selectedProblem === 'Other' ? otherProblemText.trim() : selectedProblem;
 
+            // Sync address back to profile (non-blocking, non-fatal)
+            syncAddressToProfile(address, landmark);
+
             // Navigate to checkout — booking is created INSIDE checkout after payment succeeds
             const gps = await locationService.getCurrentLocation().catch(() => null);
             const bookingPayload = JSON.stringify({
@@ -220,6 +281,7 @@ export default function DoctorVisitScreen() {
                 cityId,
                 scheduledDate: (selectedWhen === 'Later' ? scheduledDate : new Date()).toISOString(),
                 addressLine: address || undefined,
+                landmark: landmark.trim() || undefined,
                 latitude: gps?.latitude,
                 longitude: gps?.longitude,
                 symptoms: [symptomLabel],
@@ -390,28 +452,6 @@ export default function DoctorVisitScreen() {
                         </View>
                     </View>
 
-                    {/* ─── Select Visit Type Card ─── */}
-                    <View style={styles.sectionCardSmall}>
-                        <Text style={styles.sectionTitle}>{t('booking.select_visit_type')}</Text>
-                        <View style={styles.visitTypeRow}>
-                            <TouchableOpacity
-                                style={[styles.visitTypeOption, visitType === 'Home' && styles.visitTypeOptionActive]}
-                                onPress={() => setVisitType('Home')}
-                            >
-                                <Ionicons name="home-outline" size={20} color={visitType === 'Home' ? Colors.primary : Colors.textLight} />
-                                <Text style={[styles.visitTypeText, visitType === 'Home' && styles.visitTypeTextActive]}>{t('doctor_visit.home_session')}</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[styles.visitTypeOption, visitType === 'Clinic' && styles.visitTypeOptionActive]}
-                                onPress={() => setVisitType('Clinic')}
-                            >
-                                <Ionicons name="business-outline" size={20} color={visitType === 'Clinic' ? Colors.primary : Colors.textLight} />
-                                <Text style={[styles.visitTypeText, visitType === 'Clinic' && styles.visitTypeTextActive]}>{t('doctor_visit.clinic_visit')}</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
                     {/* ─── When? Card ─── */}
                     <View style={styles.sectionCardSmall}>
                         <Text style={styles.sectionTitle}>{t('booking.when')}</Text>
@@ -426,51 +466,57 @@ export default function DoctorVisitScreen() {
 
                         <TouchableOpacity
                             style={styles.radioOption}
-                            onPress={() => { setSelectedWhen('Later'); setPickerMode('date'); setShowDatePicker(true); }}
+                            onPress={() => {
+                                setSelectedWhen('Later');
+                                applyDateTimeSelection(selectedDateIdx, selectedTimeSlot);
+                            }}
                         >
                             <Ionicons name={selectedWhen === 'Later' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedWhen === 'Later' ? Colors.primary : Colors.textLight} />
                             <Text style={styles.radioLabelMainGreen}>{t('booking.schedule_later')} <Text style={styles.radioLabelSub}>{t('booking.date_time_picker')}</Text></Text>
                         </TouchableOpacity>
 
-                        {/* Selected date display — tap to reopen picker */}
+                        {/* Inline date + time chips — shown when Later is selected */}
                         {selectedWhen === 'Later' && (
-                            <TouchableOpacity style={styles.datePickerBox} onPress={() => { setPickerMode('date'); setShowDatePicker(true); }} activeOpacity={0.8}>
-                                <Ionicons name="calendar-outline" size={18} color={Colors.primary} />
-                                <Text style={styles.datePickerText}>{formatScheduledDate(scheduledDate)}</Text>
-                                <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
-                            </TouchableOpacity>
-                        )}
+                            <>
+                                <Text style={styles.slotSectionLabel}>Select Date</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+                                    {LATER_DATES.map((d, idx) => (
+                                        <TouchableOpacity
+                                            key={idx}
+                                            style={[styles.chip, selectedDateIdx === idx && styles.chipActive]}
+                                            onPress={() => {
+                                                setSelectedDateIdx(idx);
+                                                applyDateTimeSelection(idx, selectedTimeSlot);
+                                            }}
+                                        >
+                                            <Text style={[styles.chipLabel, selectedDateIdx === idx && styles.chipLabelActive]}>
+                                                {d.toLocaleDateString('en-US', { weekday: 'short' })}
+                                            </Text>
+                                            <Text style={[styles.chipSub, selectedDateIdx === idx && styles.chipLabelActive]}>
+                                                {d.getDate()} {d.toLocaleDateString('en-US', { month: 'short' })}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
 
-                        {showDatePicker && (
-                            <DateTimePicker
-                                value={scheduledDate}
-                                mode={pickerMode}
-                                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                                minimumDate={pickerMode === 'date' ? new Date() : undefined}
-                                onChange={(_event: any, picked?: Date) => {
-                                    if (!picked) {
-                                        // User cancelled — close picker, keep previous value
-                                        setShowDatePicker(false);
-                                        return;
-                                    }
-                                    if (pickerMode === 'date') {
-                                        // Merge picked date with existing time
-                                        const merged = new Date(scheduledDate);
-                                        merged.setFullYear(picked.getFullYear(), picked.getMonth(), picked.getDate());
-                                        setScheduledDate(merged);
-                                        if (Platform.OS === 'android') {
-                                            // On Android: close date picker, open time picker next
-                                            setPickerMode('time');
-                                        }
-                                    } else {
-                                        // Merge picked time with existing date
-                                        const merged = new Date(scheduledDate);
-                                        merged.setHours(picked.getHours(), picked.getMinutes(), 0, 0);
-                                        setScheduledDate(merged);
-                                        setShowDatePicker(false);
-                                    }
-                                }}
-                            />
+                                <Text style={styles.slotSectionLabel}>Select Time</Text>
+                                <View style={styles.timeSlotsGrid}>
+                                    {TIME_SLOTS.map((slot) => (
+                                        <TouchableOpacity
+                                            key={slot}
+                                            style={[styles.timeSlot, selectedTimeSlot === slot && styles.timeSlotActive]}
+                                            onPress={() => {
+                                                setSelectedTimeSlot(slot);
+                                                applyDateTimeSelection(selectedDateIdx, slot);
+                                            }}
+                                        >
+                                            <Text style={[styles.timeSlotText, selectedTimeSlot === slot && styles.timeSlotTextActive]}>
+                                                {slot}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </>
                         )}
                     </View>
 
@@ -488,28 +534,32 @@ export default function DoctorVisitScreen() {
                     <View style={styles.sectionCardSmall}>
                         <Text style={styles.sectionTitle}>{t('booking.confirm_address')}</Text>
 
-                        {locationDenied ? (
-                            <FormInput
-                                placeholder="Type your full address manually"
+                        <View style={styles.addressBox}>
+                            <Ionicons name="location-outline" size={16} color="#2F2F2F" style={styles.addressIcon} />
+                            <TextInput
                                 value={address}
                                 onChangeText={setAddress}
+                                placeholder="Enter your full address"
+                                placeholderTextColor={Colors.textMuted}
                                 multiline
-                                style={{ elevation: 0 }} // Remove shadow to match card style
+                                numberOfLines={2}
+                                style={styles.addressText}
                             />
-                        ) : (
-                            <View style={styles.addressBox}>
-                                <Ionicons name="location-outline" size={16} color="#2F2F2F" style={styles.addressIcon} />
-                                <Text style={styles.addressText} numberOfLines={1}>{address}</Text>
-                                <TouchableOpacity onPress={() => router.push('/(auth)/city-selection')}>
-                                    <Text style={styles.addressEdit}>Edit</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
+                        </View>
+
+                        {/* Landmark field */}
+                        <TextInput
+                            placeholder="Landmark (optional, e.g. Near Apollo Hospital)"
+                            placeholderTextColor={Colors.textMuted}
+                            value={landmark}
+                            onChangeText={setLandmark}
+                            style={styles.landmarkInput}
+                        />
 
                         <Text style={styles.addressHelper}>
                             {locationDenied
-                                ? "GPS Access Denied. Please provide exact location."
-                                : "Auto-fitted from user profile(Google maps location)."}
+                                ? "GPS access denied — using saved address. Tap above to edit."
+                                : "Auto-fetched from your location. Tap above to edit."}
                         </Text>
                     </View>
 
@@ -843,23 +893,27 @@ const styles = StyleSheet.create({
     /* ─── Confirm Address ─── */
     addressBox: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         backgroundColor: 'rgba(217,217,217,0.29)',
         borderWidth: 1,
         borderColor: 'rgba(143,143,143,0.15)',
         borderRadius: 7,
-        height: 37,
+        minHeight: 42,
         paddingHorizontal: 12,
+        paddingVertical: 10,
         marginBottom: 6,
     },
     addressIcon: {
         marginRight: 8,
+        marginTop: 2,
     },
     addressText: {
         flex: 1,
         fontFamily: Fonts.regular,
         fontSize: FontSize.bodySmall,
         color: Colors.textDark,
+        padding: 0,
+        textAlignVertical: 'top',
     },
     addressEdit: {
         fontFamily: Fonts.regular,
@@ -872,6 +926,18 @@ const styles = StyleSheet.create({
         fontSize: FontSize.caption,
         color: Colors.primary,
         marginLeft: 4,
+    },
+    landmarkInput: {
+        borderWidth: 1,
+        borderColor: Colors.borderLight,
+        borderRadius: Radius.md,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: 8,
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textDark,
+        backgroundColor: '#fff',
+        marginTop: 6,
     },
 
     /* ─── Fixed Bottom Bar ─── */
@@ -951,23 +1017,73 @@ const styles = StyleSheet.create({
     },
 
     /* ─── Date Picker Box ─── */
-    datePickerBox: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        borderWidth: 1,
-        borderColor: Colors.primary,
-        borderRadius: Radius.md,
-        paddingHorizontal: Spacing.md,
-        paddingVertical: 10,
-        backgroundColor: 'rgba(4,131,87,0.04)',
-        marginTop: 4,
-    },
-    datePickerText: {
-        flex: 1,
+    /* ─── Inline Date/Time Picker ─── */
+    slotSectionLabel: {
         fontFamily: Fonts.medium,
-        fontSize: FontSize.bodySmall,
+        fontSize: FontSize.caption,
+        color: Colors.textMuted,
+        marginTop: 12,
+        marginBottom: 8,
+        letterSpacing: 0.2,
+    },
+    chipsScroll: {
+        marginHorizontal: -4,
+        marginBottom: 4,
+    },
+    chip: {
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(143,143,143,0.3)',
+        borderRadius: Radius.md,
+        marginHorizontal: 4,
+        backgroundColor: '#fff',
+        minWidth: 56,
+    },
+    chipActive: {
+        borderColor: Colors.primary,
+        backgroundColor: 'rgba(2,116,63,0.06)',
+    },
+    chipLabel: {
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.caption,
+        color: Colors.textMuted,
+    },
+    chipSub: {
+        fontFamily: Fonts.regular,
+        fontSize: 10,
+        color: Colors.textMuted,
+        marginTop: 2,
+    },
+    chipLabelActive: {
         color: Colors.primary,
+    },
+    timeSlotsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    timeSlot: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(143,143,143,0.3)',
+        borderRadius: Radius.md,
+        backgroundColor: '#fff',
+    },
+    timeSlotActive: {
+        borderColor: Colors.primary,
+        backgroundColor: 'rgba(2,116,63,0.06)',
+    },
+    timeSlotText: {
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.caption,
+        color: Colors.textMuted,
+    },
+    timeSlotTextActive: {
+        color: Colors.primary,
+        fontFamily: Fonts.semiBold,
     },
 
 });

@@ -140,6 +140,14 @@ export const bookingService = {
     },
 
     /**
+     * GET /api/bookings/:id
+     * Fetch a single booking's details.
+     */
+    getBookingDetails: async (bookingId: string): Promise<ApiResponse> => {
+        return apiClient.get(`/bookings/${bookingId}`);
+    },
+
+    /**
      * POST /api/bookings/:id/cancel
      * Cancel an active booking.
      */
