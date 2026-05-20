@@ -12,10 +12,13 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { supportService, TicketMessage, SupportTicket } from '@/services/api/supportService';
 import { initTicketSocket, onTicketMessageAdded, disconnectTicketSocket } from '@/services/socket/ticketSocket';
+import { joinUserRoom } from '@/services/socket/socketManager';
+import { useUser } from '@/context/UserContext';
 
 export default function TicketChatScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { profile } = useUser();
     const { ticketId } = useLocalSearchParams<{ ticketId: string }>();
     const flatListRef = useRef<FlatList>(null);
 
@@ -67,25 +70,34 @@ export default function TicketChatScreen() {
 
     // Initialize WebSocket and listen for real-time messages
     useEffect(() => {
-        if (!ticketId) return;
+        if (!ticketId || !profile?.id) return;
 
-        // Initialize socket connection with user ID
-        const currentSocket = initTicketSocket(ticketId);
-        if (!currentSocket) return;
+        const setupSocket = async () => {
+            try {
+                // Initialize socket connection
+                await initTicketSocket(ticketId);
 
-        // Listen for real-time messages from admin
-        const unsubscribe = onTicketMessageAdded((data) => {
-            if (data.ticketId === ticketId) {
-                // Auto-append message if it's for this ticket
-                setMessages(prev => [...prev, data.message]);
-                setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+                // Ensure user is in their personal room to receive messages
+                await joinUserRoom(profile.id);
+                console.log('[TicketChat] ✅ Socket initialized and user room joined');
+
+                // Listen for real-time messages from admin
+                const unsubscribe = onTicketMessageAdded((data) => {
+                    console.log('[TicketChat] New message for ticket:', data.ticketId);
+                    if (data.ticketId === ticketId) {
+                        setMessages(prev => [...prev, data.message]);
+                        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+                    }
+                });
+
+                return () => unsubscribe();
+            } catch (err) {
+                console.error('[TicketChat] Socket setup error:', err);
             }
-        });
-
-        return () => {
-            unsubscribe();
         };
-    }, [ticketId]);
+
+        return setupSocket().then(cleanup => cleanup);
+    }, [ticketId, profile?.id]);
 
     const handleSend = async () => {
         const text = messageText.trim();
