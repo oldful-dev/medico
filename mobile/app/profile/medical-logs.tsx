@@ -120,7 +120,15 @@ export default function MedicalLogsScreen() {
     useFocusEffect(useCallback(() => { fetchReports(); }, [fetchReports]));
 
     const filteredReports = reports.filter(r => {
-        const matchesCategory = activeCategory === 'All' || r.category === activeCategory;
+        let matchesCategory = false;
+        if (activeCategory === 'All') {
+            matchesCategory = true;
+        } else if (activeCategory === 'Other') {
+            // Show documents without category or explicitly marked as Other
+            matchesCategory = !r.category || r.category === 'Other';
+        } else {
+            matchesCategory = r.category === activeCategory;
+        }
         const matchesSearch = !searchText || r.title.toLowerCase().includes(searchText.toLowerCase());
         return matchesCategory && matchesSearch;
     });
