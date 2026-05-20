@@ -367,10 +367,11 @@ const getUserLabOrders = async (req, res, next) => {
 const adminGetLabOrders = async (req, res, next) => {
     try {
         const { page, limit, skip } = paginate(req.query);
-        const { status, search } = req.query;
+        const { status, search, userId } = req.query;
 
         const where = {};
         if (status) where.status = status;
+        if (userId) where.userId = userId;
         if (search) {
             where.OR = [
                 { clientRefId: { contains: search, mode: 'insensitive' } },
@@ -400,6 +401,104 @@ const adminGetLabOrders = async (req, res, next) => {
     }
 };
 
+// POST /api/labs/booking/:id/cancel
+const cancelLabOrder = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        const order = await prisma.labOrder.findUnique({ where: { id } });
+        if (!order) return sendResponse(res, 404, null, 'Lab order not found');
+        if (order.userId !== userId) return sendResponse(res, 403, null, 'Unauthorized');
+
+        // Can only cancel if not yet sample collected
+        if (['SAMPLE_COLLECTED', 'REPORT_GENERATED'].includes(order.status)) {
+            return sendResponse(res, 400, null, 'Cannot cancel after sample collection');
+        }
+
+        const updated = await prisma.labOrder.update({
+            where: { id },
+            data: { status: 'FAILED' }
+        });
+
+        logger.info(`Lab order ${id} cancelled by user ${userId}`);
+        sendResponse(res, 200, updated, 'Lab order cancelled successfully');
+    } catch (error) {
+        logger.error('cancelLabOrder error:', error.message);
+        next(error);
+    }
+};
+
+// PUT /api/labs/booking/:id/reschedule (ADMIN ONLY)
+const rescheduleLabOrder = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { date, time, reason } = req.body;
+        const adminId = req.user.id;
+
+        if (!date || !time) {
+            return sendResponse(res, 400, null, 'Date and time are required');
+        }
+
+        const order = await prisma.labOrder.findUnique({ where: { id } });
+        if (!order) return sendResponse(res, 404, null, 'Lab order not found');
+
+        // Can only reschedule if confirmed or already rescheduled (not yet sample collected)
+        if (!['CONFIRMED', 'RESCHEDULED'].includes(order.status)) {
+            return sendResponse(res, 400, null, 'Cannot reschedule at this stage');
+        }
+
+        const updated = await prisma.labOrder.update({
+            where: { id },
+            data: {
+                status: 'RESCHEDULED',
+                rescheduledDate: new Date(date),
+                rescheduledTime: time,
+                rescheduleReason: reason || null,
+                rescheduledBy: adminId,
+                rescheduledAt: new Date(),
+            },
+            include: { user: { select: { id: true, name: true } } }
+        });
+
+        // Emit activity update to user
+        const { emitToUser } = require('../services/socket.service');
+        const { sendPushToUser } = require('../utils/notifications');
+
+        emitToUser(updated.userId, 'activity_update_created', {
+            id: `reschedule_${id}_${Date.now()}`,
+            eventType: 'service_rescheduled',
+            serviceType: 'Blood Test',
+            staffName: 'Admin',
+            staffId: adminId,
+            staffPhone: '',
+            staffPhotoUrl: null,
+            statusDetail: `Your appointment has been rescheduled to ${date} at ${time}`,
+            createdAt: new Date(),
+        });
+
+        // Send FCM push
+        try {
+            await sendPushToUser(updated.userId, {
+                title: 'Appointment Rescheduled',
+                body: `Your blood test has been rescheduled to ${date} at ${time}`,
+                data: {
+                    type: 'lab_rescheduled',
+                    labOrderId: id,
+                },
+            });
+        } catch (pushErr) {
+            logger.warn('Failed to send reschedule FCM:', pushErr.message);
+        }
+
+        logger.info(`Lab order ${id} rescheduled by admin ${adminId}`);
+        sendResponse(res, 200, updated, 'Lab order rescheduled successfully');
+    } catch (error) {
+        logger.error('rescheduleLabOrder error:', error.message);
+        next(error);
+    }
+};
+
 module.exports = {
     checkServiceability,
     searchLocation,
@@ -418,4 +517,6 @@ module.exports = {
     getConsolidatedReport,
     getUserLabOrders,
     adminGetLabOrders,
+    cancelLabOrder,
+    rescheduleLabOrder,
 };

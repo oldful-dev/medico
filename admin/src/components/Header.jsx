@@ -47,136 +47,130 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
         })();
 
         // Establish Real-time Connection
-        const socket = getSocket();
-        if (!socket) return;
+        (async () => {
+            try {
+                const socket = await getSocket();
+                if (!socket) return;
 
-        const handleNewAlert = (data) => {
-            const lastCleared = parseInt(localStorage.getItem('lastClearedAlerts') || '0');
-            if (new Date(data.time).getTime() <= lastCleared) return;
-            
-            setAlerts(prev => {
-                const dismissedIds = JSON.parse(localStorage.getItem('dismissedAlerts') || '[]');
-                if (dismissedIds.includes(data.id)) return prev;
-                return [data, ...prev].slice(0, 10);
-            });
-        };
+                const handleNewAlert = (data) => {
+                    const lastCleared = parseInt(localStorage.getItem('lastClearedAlerts') || '0');
+                    if (new Date(data.time).getTime() <= lastCleared) return;
 
-        // SOS & Booking alerts
-        socket.on("new_sos", (data) => {
-            handleNewAlert({
-                id: Date.now() + Math.random(),
-                type: 'sos',
-                title: data.title,
-                description: data.title,
-                href: '/sos',
-                time: new Date()
-            });
-            showToast(`🚨 ${data.title}`, 'danger');
-        });
+                    setAlerts(prev => {
+                        const dismissedIds = JSON.parse(localStorage.getItem('dismissedAlerts') || '[]');
+                        if (dismissedIds.includes(data.id)) return prev;
+                        return [data, ...prev].slice(0, 10);
+                    });
+                };
 
-        socket.on("new_booking", (data) => {
-            handleNewAlert({
-                id: Date.now() + Math.random(),
-                type: 'booking',
-                title: `New Booking: ${data.serviceType || 'Service'}`,
-                description: `By: ${data.userName}`,
-                href: '/bookings',
-                time: new Date()
-            });
-            showToast(`📅 New Booking: ${data.serviceType || 'Service'}`, 'success');
-        });
+                // SOS & Booking alerts
+                socket.on("new_sos", (data) => {
+                    handleNewAlert({
+                        id: Date.now() + Math.random(),
+                        type: 'sos',
+                        title: data.title,
+                        description: data.title,
+                        href: '/sos',
+                        time: new Date()
+                    });
+                    showToast(`🚨 ${data.title}`, 'danger');
+                });
 
-        // Support & Ticket alerts
-        socket.on("new_ticket", (data) => {
-            handleNewAlert({
-                id: Date.now() + Math.random(),
-                type: 'ticket',
-                title: `New Ticket: ${data.subject}`,
-                description: `Priority: ${data.priority}`,
-                href: '/support',
-                time: new Date()
-            });
-            showToast(`🎫 New Support Ticket: ${data.subject}`, 'success');
-        });
+                socket.on("new_booking", (data) => {
+                    handleNewAlert({
+                        id: Date.now() + Math.random(),
+                        type: 'booking',
+                        title: `New Booking: ${data.serviceType || 'Service'}`,
+                        description: `By: ${data.userName}`,
+                        href: '/bookings',
+                        time: new Date()
+                    });
+                    showToast(`📅 New Booking: ${data.serviceType || 'Service'}`, 'success');
+                });
 
-        socket.on("ticket_message_added", (data) => {
-            handleNewAlert({
-                id: Date.now() + Math.random(),
-                type: 'ticket_message',
-                title: `New Message on Ticket`,
-                description: `From: ${data.senderName}`,
-                href: '/support',
-                time: new Date()
-            });
-            showToast(`💬 New Support Message from ${data.senderName}`, 'info');
-        });
+                // Support & Ticket alerts
+                socket.on("new_ticket", (data) => {
+                    handleNewAlert({
+                        id: Date.now() + Math.random(),
+                        type: 'ticket',
+                        title: `New Ticket: ${data.subject}`,
+                        description: `Priority: ${data.priority}`,
+                        href: '/support',
+                        time: new Date()
+                    });
+                    showToast(`🎫 New Support Ticket: ${data.subject}`, 'success');
+                });
 
-        socket.on("booking_status_changed", (data) => {
-            handleNewAlert({
-                id: Date.now() + Math.random(),
-                type: 'booking_status',
-                title: `Booking Status: ${data.status}`,
-                description: `User: ${data.userName}`,
-                href: '/bookings',
-                time: new Date()
-            });
-        });
+                socket.on("ticket_message_added", (data) => {
+                    handleNewAlert({
+                        id: Date.now() + Math.random(),
+                        type: 'ticket_message',
+                        title: `New Message on Ticket`,
+                        description: `From: ${data.senderName}`,
+                        href: '/support',
+                        time: new Date()
+                    });
+                    showToast(`💬 New Support Message from ${data.senderName}`, 'info');
+                });
 
-        socket.on("booking_payment_updated", (data) => {
-            handleNewAlert({
-                id: Date.now() + Math.random(),
-                type: data.paymentStatus === 'SUCCESS' ? 'booking' : 'warning',
-                title: data.paymentStatus === 'SUCCESS'
-                    ? `💳 Payment Confirmed: ${data.bookingCode || ''}`
-                    : `❌ Payment Failed: ${data.bookingCode || ''}`,
-                description: `${data.userName || ''} · ${data.serviceName || ''}`,
-                href: '/bookings',
-                time: new Date()
-            });
-            if (data.paymentStatus === 'SUCCESS') {
-                showToast(`💳 Payment confirmed: ${data.bookingCode || ''}`, 'success');
-            } else {
-                showToast(`❌ Payment failed for ${data.userName || 'booking'}`, 'danger');
+                socket.on("booking_status_changed", (data) => {
+                    handleNewAlert({
+                        id: Date.now() + Math.random(),
+                        type: 'booking_status',
+                        title: `Booking Status: ${data.status}`,
+                        description: `User: ${data.userName}`,
+                        href: '/bookings',
+                        time: new Date()
+                    });
+                });
+
+                socket.on("booking_payment_updated", (data) => {
+                    handleNewAlert({
+                        id: Date.now() + Math.random(),
+                        type: data.paymentStatus === 'SUCCESS' ? 'booking' : 'warning',
+                        title: data.paymentStatus === 'SUCCESS'
+                            ? `💳 Payment Confirmed: ${data.bookingCode || ''}`
+                            : `❌ Payment Failed: ${data.bookingCode || ''}`,
+                        description: `${data.userName || ''} · ${data.serviceName || ''}`,
+                        href: '/bookings',
+                        time: new Date()
+                    });
+                    if (data.paymentStatus === 'SUCCESS') {
+                        showToast(`💳 Payment confirmed: ${data.bookingCode || ''}`, 'success');
+                    } else {
+                        showToast(`❌ Payment failed for ${data.userName || 'booking'}`, 'danger');
+                    }
+                });
+
+                socket.on("low_responder_availability", (data) => {
+                    handleNewAlert({
+                        id: Date.now() + Math.random(),
+                        type: 'warning',
+                        title: 'Low Responder Availability',
+                        description: `Only ${data.availableCount} responders available`,
+                        href: '/caregivers',
+                        time: new Date()
+                    });
+                    showToast(`⚠️ Low availability: Only ${data.availableCount} responders available`, 'warning');
+                });
+
+                socket.on("response_time_breach", (data) => {
+                    handleNewAlert({
+                        id: Date.now() + Math.random(),
+                        type: 'critical',
+                        title: 'Response Time Breach',
+                        description: `${data.userName} waiting ${data.minutesWaiting}+ mins`,
+                        href: '/sos',
+                        time: new Date()
+                    });
+                    showToast(`🚨 Alert waiting ${data.minutesWaiting}+ minutes`, 'danger');
+                });
+
+                socket.on("booking_updated", fetchAlerts);
+            } catch (err) {
+                console.error('[Header] Socket error:', err);
             }
-        });
-
-        socket.on("low_responder_availability", (data) => {
-            handleNewAlert({
-                id: Date.now() + Math.random(),
-                type: 'warning',
-                title: 'Low Responder Availability',
-                description: `Only ${data.availableCount} responders available`,
-                href: '/caregivers',
-                time: new Date()
-            });
-            showToast(`⚠️ Low availability: Only ${data.availableCount} responders available`, 'warning');
-        });
-
-        socket.on("response_time_breach", (data) => {
-            handleNewAlert({
-                id: Date.now() + Math.random(),
-                type: 'critical',
-                title: 'Response Time Breach',
-                description: `${data.userName} waiting ${data.minutesWaiting}+ mins`,
-                href: '/sos',
-                time: new Date()
-            });
-            showToast(`🚨 Alert waiting ${data.minutesWaiting}+ minutes`, 'danger');
-        });
-
-        socket.on("booking_updated", fetchAlerts);
-
-        return () => {
-            socket.off("new_sos");
-            socket.off("new_booking");
-            socket.off("new_ticket");
-            socket.off("ticket_message_added");
-            socket.off("booking_status_changed");
-            socket.off("booking_payment_updated");
-            socket.off("low_responder_availability");
-            socket.off("response_time_breach");
-            socket.off("booking_updated");
-        };
+        })();
     }, []);
 
     const dismissAlert = (id, e) => {

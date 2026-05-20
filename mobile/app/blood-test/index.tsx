@@ -13,10 +13,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Alert } from 'react-native';
 import { labService } from '@/services/api/labService';
 import type { LabPackage } from '@/services/api/labService';
 import { BloodTestDetailModal } from './detail-modal';
+import { useCart } from '@/context/CartContext';
 
 // ─── Design Tokens ────────────────────────────────────────────────────
 const PRIMARY_GREEN = '#02743F';
@@ -81,16 +83,14 @@ const PackageCard = memo(({
                     </Text>
 
                     <View style={styles.priceRow}>
-                        <View style={styles.priceSection}>
-                            {item.discounted_cost ? (
-                                <>
-                                    <Text style={styles.originalPrice}>₹{item.cost}</Text>
-                                    <Text style={styles.discountedPrice}>₹{item.discounted_cost}</Text>
-                                </>
-                            ) : (
-                                <Text style={styles.discountedPrice}>₹{item.cost}</Text>
-                            )}
-                        </View>
+                        {item.discounted_cost ? (
+                            <View>
+                                <Text style={styles.originalPrice}>₹{item.cost}</Text>
+                                <Text style={styles.discountedPrice}>₹{item.discounted_cost}</Text>
+                            </View>
+                        ) : (
+                            <Text style={styles.discountedPrice}>₹{item.cost}</Text>
+                        )}
                         <TouchableOpacity
                             style={styles.viewDetailsBtn}
                             onPress={() => onViewDetails(item.code)}
@@ -108,19 +108,44 @@ const PackageCard = memo(({
 export default function BloodTestScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const params = useLocalSearchParams();
 
     const [packages, setPackages] = useState<LabPackage[]>([]);
     const [loading, setLoading] = useState(false);
     const [activeCategory, setActiveCategory] = useState(0);
-    const [cartCount, setCartCount] = useState(0);
     const [detailModalVisible, setDetailModalVisible] = useState(false);
     const [detailModalCode, setDetailModalCode] = useState<string>('');
-    const [lastCartItem, setLastCartItem] = useState<LabPackage | null>(null);
     const [searchText, setSearchText] = useState('');
+
+    // Rebook mode: auto-add package to cart and jump to checkout
+    const isRebook = params.rebook === 'true';
+    const rebookPackageCode = params.packageCode as string | undefined;
+    const rebookPackageName = params.packageName as string | undefined;
+
+    const { addItem, itemCount } = useCart();
 
     useEffect(() => {
         fetchPackages();
     }, []);
+
+    // Rebook mode: auto-add package to cart and navigate to cart
+    useEffect(() => {
+        if (isRebook && rebookPackageCode && packages.length > 0) {
+            const pkg = packages.find(p => p.code === rebookPackageCode);
+            if (pkg) {
+                addItem({
+                    id: pkg.code,
+                    serviceType: 'Bloodwork',
+                    title: pkg.name,
+                    price: pkg.discounted_cost || pkg.cost,
+                    quantity: 1,
+                    details: pkg,
+                });
+                // Navigate to cart to complete the rebook
+                router.push('/cart' as any);
+            }
+        }
+    }, [isRebook, rebookPackageCode, packages, addItem, router]);
 
     const fetchPackages = async () => {
         setLoading(true);
@@ -140,16 +165,22 @@ export default function BloodTestScreen() {
     }, []);
 
     const handleAddToCart = useCallback((pkg: LabPackage) => {
-        setLastCartItem(pkg);
-        setCartCount(prev => prev + 1);
+        addItem({
+            id: pkg.code,
+            serviceType: 'Bloodwork', // Used for category-wise grouping in the global cart
+            title: pkg.name,
+            price: pkg.discounted_cost || pkg.cost,
+            quantity: 1,
+            details: pkg,
+        });
         setDetailModalVisible(false);
-        router.push({ pathname: '/blood-test/schedule', params: { packagePayload: JSON.stringify(pkg) } } as any);
-    }, [router]);
+        Alert.alert('Added to Cart', `${pkg.name} has been added to your cart successfully.`);
+    }, [addItem]);
 
     const handleCartPress = useCallback(() => {
-        if (cartCount === 0 || !lastCartItem) return;
-        router.push({ pathname: '/blood-test/schedule', params: { packagePayload: JSON.stringify(lastCartItem) } } as any);
-    }, [cartCount, lastCartItem, router]);
+        if (itemCount === 0) return;
+        router.push('/cart' as any); // We will build this Cart page next
+    }, [itemCount, router]);
 
     // Memoize filtered packages to prevent unnecessary recalculations
     const filteredPackages = useMemo(() =>
@@ -183,11 +214,11 @@ export default function BloodTestScreen() {
     ), [searchText, loading]);
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={[styles.container, { paddingTop: insets.top }, ]}>
             <StatusBar backgroundColor="#FFFFFF" />
 
             {/* Header — Fixed, never remounted */}
-            <View style={styles.header}>
+            <View style={[styles.header, ]}>
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color={TEXT_DARK} />
                 </TouchableOpacity>
@@ -195,9 +226,9 @@ export default function BloodTestScreen() {
                 <TouchableOpacity onPress={handleCartPress}>
                     <View style={styles.cartIcon}>
                         <Ionicons name="cart" size={24} color={TEXT_DARK} />
-                        {cartCount > 0 && (
+                        {itemCount > 0 && (
                             <View style={styles.cartBadge}>
-                                <Text style={styles.cartBadgeText}>{cartCount}</Text>
+                                <Text style={styles.cartBadgeText}>{itemCount}</Text>
                             </View>
                         )}
                     </View>
@@ -205,7 +236,7 @@ export default function BloodTestScreen() {
             </View>
 
             {/* Search Bar — Fixed, stable input */}
-            <View style={styles.searchContainer}>
+            <View style={[styles.searchContainer, ]}>
                 <Ionicons name="search" size={18} color={TEXT_MUTED} style={styles.searchIcon} />
                 <TextInput
                     placeholder="Search blood tests, packages..."
@@ -220,7 +251,7 @@ export default function BloodTestScreen() {
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={styles.categoriesScroll}
+                style={[styles.categoriesScroll, ]}
                 contentContainerStyle={styles.categoriesContent}
             >
                 {CATEGORIES.map((cat, idx) => (
@@ -247,7 +278,7 @@ export default function BloodTestScreen() {
             {/* Single FlatList Instance — Stable, persistent rendering */}
             {/* Eliminates conditional rendering that caused layout thrashing */}
             {loading ? (
-                <View style={styles.loadingContainer}>
+                <View style={[styles.loadingContainer, ]}>
                     <ActivityIndicator size="large" color={PRIMARY_GREEN} />
                     <Text style={styles.loadingText}>Loading tests...</Text>
                 </View>
@@ -256,6 +287,7 @@ export default function BloodTestScreen() {
                     data={filteredPackages}
                     renderItem={renderPackageCard}
                     keyExtractor={(item) => item.code}
+                    style={[styles.flatList, ]}
                     scrollEnabled={true}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
@@ -321,12 +353,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginHorizontal: 16,
-        marginVertical: 10,
-        paddingHorizontal: 14,
-        paddingVertical: 9,
-        minHeight: 42,
+        marginVertical: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        minHeight: 40,
         backgroundColor: LIGHT_GREEN_BG,
-        borderRadius: 10,
+        borderRadius: 8,
         borderWidth: 1,
         borderColor: '#D1FAE5',
     },
@@ -339,17 +371,15 @@ const styles = StyleSheet.create({
         color: TEXT_DARK,
         flex: 1,
         padding: 0,
-        letterSpacing: -0.3,
-    },
-    searchPlaceholder: {
-        fontSize: 13,
-        color: TEXT_MUTED,
-        flex: 1,
     },
     categoriesScroll: {
         paddingHorizontal: 16,
-        marginBottom: 4,
+        marginBottom: 8,
         marginTop: 0,
+        flexGrow: 0,
+        height: 44,
+        minHeight: 44,
+        maxHeight: 44,
     },
     categoriesContent: {
         paddingRight: 16,
@@ -390,33 +420,33 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         marginTop: 8,
     },
+    flatList: {
+        flex: 1,
+    },
     listContent: {
         paddingHorizontal: 16,
-        paddingTop: 0,
+        paddingTop: 8,
         paddingBottom: 24,
-        flexGrow: 1,
     },
     packageCard: {
         backgroundColor: '#FFFFFF',
         borderWidth: 1,
         borderColor: CARD_BORDER,
-        borderRadius: 12,
-        marginBottom: 10,
-        paddingTop: 0,
-        paddingBottom: 10,
-        paddingHorizontal: 0,
+        borderRadius: 10,
+        marginBottom: 12,
+        paddingTop: 12,
+        paddingBottom: 12,
+        paddingHorizontal: 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.03,
+        shadowOpacity: 0.04,
         shadowRadius: 2,
         elevation: 1,
     },
     badgeRow: {
-        paddingHorizontal: 12,
-        paddingTop: 10,
-        paddingBottom: 6,
         flexDirection: 'row',
         justifyContent: 'flex-end',
+        marginBottom: 8,
     },
     saveBadge: {
         backgroundColor: SAVE_BADGE_RED,
@@ -432,19 +462,15 @@ const styles = StyleSheet.create({
     cardContent: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        gap: 8,
-        paddingHorizontal: 12,
-        paddingTop: 10,
-        paddingBottom: 0,
+        gap: 10,
     },
     iconSection: {
-        marginTop: 1,
-        paddingRight: 4,
+        marginTop: 2,
     },
     iconCircle: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
         justifyContent: 'center',
         alignItems: 'center',
         flexShrink: 0,
@@ -452,14 +478,12 @@ const styles = StyleSheet.create({
     infoSection: {
         flex: 1,
         justifyContent: 'flex-start',
-        gap: 3,
+        gap: 4,
     },
     packageName: {
         fontSize: 13,
         fontWeight: '600',
         color: TEXT_DARK,
-        lineHeight: 16,
-        paddingRight: 8,
     },
     parametersText: {
         fontSize: 11,
@@ -470,29 +494,25 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        gap: 6,
-        marginTop: 4,
-    },
-    priceSection: {
-        flex: 0,
+        marginTop: 2,
+        gap: 8,
     },
     originalPrice: {
-        fontSize: 10,
+        fontSize: 11,
         color: '#9CA3AF',
         textDecorationLine: 'line-through',
         fontWeight: '400',
-        lineHeight: 13,
     },
     discountedPrice: {
-        fontSize: 15,
+        fontSize: 16,
         fontWeight: '700',
         color: PRIMARY_GREEN,
-        letterSpacing: -0.3,
-        lineHeight: 17,
+        letterSpacing: -0.4,
+        lineHeight: 18,
     },
     viewDetailsBtn: {
-        paddingHorizontal: 10,
-        paddingVertical: 5,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         borderWidth: 1.5,
         borderColor: PRIMARY_GREEN,
         borderRadius: 6,
@@ -503,7 +523,7 @@ const styles = StyleSheet.create({
         minWidth: 80,
     },
     viewDetailsText: {
-        fontSize: 10,
+        fontSize: 11,
         color: PRIMARY_GREEN,
         fontWeight: '600',
     },

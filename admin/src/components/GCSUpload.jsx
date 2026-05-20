@@ -53,12 +53,17 @@ export default function GCSUpload({
             setProgress(30);
 
             // Step 2: Upload directly to GCS
-            // We use standard 'fetch' for the direct GCS PUT to avoid any global axios 
+            // We use standard 'fetch' for the direct GCS PUT to avoid any global axios
             // interceptors/headers that might break the Signed URL signature.
             const uploadRes = await fetch(signedUrl, {
                 method: 'PUT',
-                headers: { 'Content-Type': file.type },
-                body: file
+                headers: {
+                    'Content-Type': file.type,
+                    'Content-Length': file.size.toString(),
+                },
+                body: file,
+                // Important: Don't send credentials to GCS (it breaks the signed URL)
+                credentials: 'omit',
             });
 
             if (!uploadRes.ok) {

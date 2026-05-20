@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import DateTimePickerInput from '@/components/common/DateTimePickerInput';
+import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 
 
@@ -190,9 +190,10 @@ export default function PhysioFitnessScreen() {
                     </View>
 
                     {/* ─── Date / Time Selection ─── */}
-                    <DateTimePickerInput
-                        label="Schedule Appointment"
-                        onDateChange={(d) => setSelectedDate(d)}
+                    <CustomDateTimePicker
+                        label="When?"
+                        value={selectedDate}
+                        onDateChange={setSelectedDate}
                     />
 
                     {/* ─── Book Appointment Button ─── */}

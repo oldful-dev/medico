@@ -1,12 +1,38 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { Search, Eye, UserPlus, AlertTriangle, ChevronLeft, ChevronRight, Edit2, Save, X } from "lucide-react";
-import { bookingAPI, caregiverAPI, cityAPI } from "@/lib/api";
+import { Search, Eye, UserPlus, AlertTriangle, ChevronLeft, ChevronRight, Edit2, Save, X, Send, Clock, Phone } from "lucide-react";
+import { bookingAPI, caregiverAPI, cityAPI, labAPI, activityAPI } from "@/lib/api";
 import { formatDate, formatDateTime, formatCurrency, showToast } from "@/lib/hooks";
 import { getSocket } from "@/lib/socket";
 
 const statusColors = { PENDING: 'badge-warning', CONFIRMED: 'badge-info', ASSIGNED: 'badge-info', IN_PROGRESS: 'badge-purple', COMPLETED: 'badge-success', CANCELLED: 'badge-default', SLA_BREACH: 'badge-danger', PAYMENT_FAILED: 'badge-danger' };
 const paymentStatusColors = { PENDING: 'badge-warning', INITIATED: 'badge-info', SUCCESS: 'badge-success', FAILED: 'badge-danger', REFUNDED: 'badge-secondary', REFUND_INITIATED: 'badge-purple', PAYMENT_FAILED: 'badge-danger' };
+
+const EVENT_TYPES = [
+    { value: 'doctor_assigned',       label: '👨‍⚕️ Doctor Assigned' },
+    { value: 'caregiver_assigned',    label: '🤝 Caregiver Assigned' },
+    { value: 'nurse_assigned',        label: '💉 Nurse Assigned' },
+    { value: 'appointment_confirmed', label: '✅ Appointment Confirmed' },
+    { value: 'sample_collected',      label: '🧪 Lab Sample Collected' },
+    { value: 'out_for_delivery',      label: '🚴 Order Out for Delivery' },
+    { value: 'medicine_delivered',    label: '📦 Medicine Delivered' },
+    { value: 'service_rescheduled',   label: '📅 Service Rescheduled' },
+    { value: 'payment_confirmed',     label: '💳 Payment Confirmed' },
+];
+
+const EVENT_COLORS = {
+    doctor_assigned:       '#2563EB',
+    caregiver_assigned:    '#DB2777',
+    nurse_assigned:        '#7C3AED',
+    appointment_confirmed: '#059669',
+    sample_collected:      '#7C3AED',
+    out_for_delivery:      '#D97706',
+    medicine_delivered:    '#048357',
+    service_rescheduled:   '#EA580C',
+    payment_confirmed:     '#0284C7',
+};
+
+const EMPTY_ASSIGN = { eventType: '', serviceType: '', staffName: '', staffId: '', staffPhone: '', staffPhotoUrl: '', eta: '', statusDetail: '' };
 
 export default function BookingsPage() {
     const [bookings, setBookings] = useState([]);
@@ -20,10 +46,26 @@ export default function BookingsPage() {
     const [selected, setSelected] = useState(null);
     const [assignModal, setAssignModal] = useState(null);
     const [selectedCaregiver, setSelectedCaregiver] = useState('');
+    const [cgSearch, setCgSearch] = useState('');
+    const [cgRoleFilter, setCgRoleFilter] = useState('');
     const [editMode, setEditMode] = useState(false);
     const [editData, setEditData] = useState({});
     const [servicePersonModal, setServicePersonModal] = useState(false);
     const [servicePerson, setServicePerson] = useState({ name: '', phone: '', notes: '' });
+
+    // ── Lab orders tab inside detail modal ──────────
+    const [labOrders, setLabOrders] = useState([]);
+    const [labLoading, setLabLoading] = useState(false);
+    const [detailTab, setDetailTab] = useState('details'); // 'details' | 'lab'
+
+    // ── Assign staff modal ──────────────────────────
+    const [assignStaffModal, setAssignStaffModal] = useState(null); // labOrder object
+    const [assignForm, setAssignForm] = useState(EMPTY_ASSIGN);
+    const [assigning, setAssigning] = useState(false);
+    const [orderUpdates, setOrderUpdates] = useState([]); // activity updates for selected lab order
+    const [editUpdateModal, setEditUpdateModal] = useState(null); // update being edited
+    const [editUpdateForm, setEditUpdateForm] = useState({});
+
     const limit = 20;
 
     useEffect(() => {
@@ -33,61 +75,47 @@ export default function BookingsPage() {
         }).catch(() => { });
     }, []);
 
-    // Keep a ref to latest loadBookings so socket handlers never go stale
     const loadBookingsRef = useRef(loadBookings);
     useEffect(() => { loadBookingsRef.current = loadBookings; });
 
-    useEffect(() => {
-        loadBookings();
-    }, [page, filters, search]);
+    useEffect(() => { loadBookings(); }, [page, filters, search]);
 
     useEffect(() => {
-        const socket = getSocket();
-        if (!socket) return;
+        (async () => {
+            try {
+                const socket = await getSocket();
+                if (!socket) return;
 
-        socket.on("new_booking", (newBooking) => {
-            loadBookingsRef.current(false);
-            showToast(`📅 New Booking: ${newBooking.serviceType || 'Service'}`, 'success');
-        });
+                socket.on("new_booking", () => loadBookingsRef.current(false));
+                socket.on("booking_updated", (u) => {
+                    setBookings(prev => prev.map(b => b.id === u.id ? { ...b, ...u } : b));
+                    setSelected(prev => prev?.id === u.id ? { ...prev, ...u } : prev);
+                });
+                socket.on("booking_status_changed", (d) => {
+                    setBookings(prev => prev.map(b => b.id === d.bookingId ? { ...b, status: d.status } : b));
+                    setSelected(prev => prev?.id === d.bookingId ? { ...prev, status: d.status } : prev);
+                });
+                socket.on("booking_assigned", (d) => {
+                    setBookings(prev => prev.map(b => b.id === d.bookingId ? { ...b, caregiver: { name: d.caregiverName } } : b));
+                    setSelected(prev => prev?.id === d.bookingId ? { ...prev, caregiver: { name: d.caregiverName } } : prev);
+                });
+                socket.on("booking_payment_updated", (d) => {
+                    const apply = b => ({ ...b, ...(d.bookingStatus ? { status: d.bookingStatus } : {}), paymentStatus: d.paymentStatus });
+                    setBookings(prev => prev.map(b => b.id === d.bookingId ? apply(b) : b));
+                    setSelected(prev => prev?.id === d.bookingId ? apply(prev) : prev);
+                });
 
-        socket.on("booking_updated", (updatedBooking) => {
-            setBookings(prev => prev.map(b => b.id === updatedBooking.id ? { ...b, ...updatedBooking } : b));
-            setSelected(prev => prev?.id === updatedBooking.id ? { ...prev, ...updatedBooking } : prev);
-        });
-
-        socket.on("booking_status_changed", (data) => {
-            setBookings(prev => prev.map(b => b.id === data.bookingId ? { ...b, status: data.status } : b));
-            setSelected(prev => prev?.id === data.bookingId ? { ...prev, status: data.status } : prev);
-        });
-
-        socket.on("booking_assigned", (data) => {
-            setBookings(prev => prev.map(b => b.id === data.bookingId ? { ...b, caregiver: { name: data.caregiverName } } : b));
-            setSelected(prev => prev?.id === data.bookingId ? { ...prev, caregiver: { name: data.caregiverName } } : prev);
-            showToast(`✓ Caregiver assigned: ${data.caregiverName}`, 'success');
-        });
-
-        socket.on("booking_payment_updated", (data) => {
-            const applyPaymentUpdate = (b) => ({
-                ...b,
-                ...(data.bookingStatus ? { status: data.bookingStatus } : {}),
-                paymentStatus: data.paymentStatus,
-            });
-            setBookings(prev => prev.map(b => b.id === data.bookingId ? applyPaymentUpdate(b) : b));
-            setSelected(prev => prev?.id === data.bookingId ? applyPaymentUpdate(prev) : prev);
-            if (data.paymentStatus === 'SUCCESS') {
-                showToast(`💳 Payment confirmed: ${data.bookingCode || ''}`, 'success');
-            } else if (data.paymentStatus === 'FAILED') {
-                showToast(`❌ Payment failed: ${data.bookingCode || ''}`, 'danger');
+                return () => {
+                    socket.off("new_booking");
+                    socket.off("booking_updated");
+                    socket.off("booking_status_changed");
+                    socket.off("booking_assigned");
+                    socket.off("booking_payment_updated");
+                };
+            } catch (err) {
+                console.error("[BookingsPage] Socket error:", err);
             }
-        });
-
-        return () => {
-            socket.off("new_booking");
-            socket.off("booking_updated");
-            socket.off("booking_status_changed");
-            socket.off("booking_assigned");
-            socket.off("booking_payment_updated");
-        };
+        })();
     }, []);
 
     async function loadBookings(showLoading = true) {
@@ -98,8 +126,6 @@ export default function BookingsPage() {
             Object.keys(params).forEach(k => !params[k] && delete params[k]);
             const res = await bookingAPI.getAll(params);
             const data = res.data?.data?.bookings || res.data?.data || [];
-
-            // Only update if data changed to prevent unnecessary re-renders
             setBookings(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
             setTotal(res.data?.data?.total || 0);
         } catch (e) { console.error(e); }
@@ -109,16 +135,40 @@ export default function BookingsPage() {
     async function viewBooking(id) {
         try {
             const res = await bookingAPI.getById(id);
-            setSelected(res.data?.data);
-        } catch (e) { showToast('Failed to load booking', 'error'); }
+            const booking = res.data?.data;
+            setSelected(booking);
+            setDetailTab('details');
+            if (booking?.user?.id || booking?.userId) {
+                loadLabOrders(booking.user?.id || booking.userId);
+            }
+        } catch { showToast('Failed to load booking', 'error'); }
+    }
+
+    async function loadLabOrders(userId) {
+        setLabLoading(true);
+        try {
+            const res = await labAPI.getOrders({ userId, limit: 50 });
+            setLabOrders(res.data?.data?.orders || res.data?.data || []);
+        } catch { setLabOrders([]); }
+        finally { setLabLoading(false); }
+    }
+
+    async function loadOrderUpdates(labOrderId) {
+        try {
+            const res = await activityAPI.getOrderUpdates(labOrderId);
+            setOrderUpdates(res.data?.data || []);
+        } catch { setOrderUpdates([]); }
     }
 
     async function handleAssign() {
-        if (!selectedCaregiver) { showToast('Select a caregiver', 'error'); return; }
+        if (!selectedCaregiver) { showToast('Select a staff member', 'error'); return; }
         try {
             await bookingAPI.assignCaregiver(assignModal.id, { caregiverId: selectedCaregiver });
-            showToast('Caregiver assigned');
+            showToast('Staff assigned successfully');
             setAssignModal(null);
+            setSelectedCaregiver('');
+            setCgSearch('');
+            setCgRoleFilter('');
             loadBookings();
         } catch (e) { showToast(e.response?.data?.message || 'Assign failed', 'error'); }
     }
@@ -126,10 +176,10 @@ export default function BookingsPage() {
     async function updateStatus(id, status) {
         try {
             await bookingAPI.updateStatus(id, { status });
-            showToast(`Booking status updated to ${status}`);
+            showToast(`Status updated to ${status}`);
             loadBookings();
             setSelected(null);
-        } catch (e) { showToast('Update failed', 'error'); }
+        } catch { showToast('Update failed', 'error'); }
     }
 
     async function escalateBooking(id) {
@@ -138,51 +188,120 @@ export default function BookingsPage() {
             showToast('Booking escalated');
             loadBookings();
             setSelected(null);
-        } catch (e) { showToast('Escalation failed', 'error'); }
+        } catch { showToast('Escalation failed', 'error'); }
     }
 
     async function updateBookingDetails() {
         try {
             const calls = [];
-            if (editData.status && editData.status !== selected.status) {
+            if (editData.status && editData.status !== selected.status)
                 calls.push(bookingAPI.updateStatus(selected.id, { status: editData.status }));
-            }
-            const currentPaymentStatus = selected.paymentStatus || 'PENDING';
-            if (editData.paymentStatus && editData.paymentStatus !== currentPaymentStatus) {
+            if (editData.paymentStatus && editData.paymentStatus !== (selected.paymentStatus || 'PENDING'))
                 calls.push(bookingAPI.updatePaymentStatus(selected.id, { paymentStatus: editData.paymentStatus }));
-            }
-            if (calls.length === 0) {
-                showToast('No changes to save', 'info');
-                setEditMode(false);
-                return;
-            }
+            if (!calls.length) { showToast('No changes', 'info'); setEditMode(false); return; }
             await Promise.all(calls);
-            showToast('Booking updated successfully', 'success');
+            showToast('Updated successfully', 'success');
             setEditMode(false);
             await viewBooking(selected.id);
-        } catch (e) {
-            showToast(e.response?.data?.message || 'Update failed', 'error');
-        }
+        } catch (e) { showToast(e.response?.data?.message || 'Update failed', 'error'); }
     }
 
     async function addServicePerson() {
-        if (!servicePerson.name || !servicePerson.phone) {
-            showToast('Enter name and phone', 'error');
-            return;
-        }
+        if (!servicePerson.name || !servicePerson.phone) { showToast('Enter name and phone', 'error'); return; }
         try {
             await bookingAPI.updateServicePerson(selected.id, {
                 servicePersonName: servicePerson.name,
                 servicePersonPhone: servicePerson.phone,
                 servicePersonNotes: servicePerson.notes || null,
             });
-            showToast('Service person details added');
+            showToast('Service person added');
             setServicePersonModal(false);
             setServicePerson({ name: '', phone: '', notes: '' });
             await viewBooking(selected.id);
-        } catch (e) {
-            showToast('Failed to add service person', 'error');
+        } catch { showToast('Failed to add service person', 'error'); }
+    }
+
+    async function handleAssignStaff() {
+        const { eventType, staffName, staffId, staffPhone } = assignForm;
+        if (!eventType) { showToast('Select an event type', 'error'); return; }
+        if (!staffName.trim() || !staffId.trim() || !staffPhone.trim()) {
+            showToast('Staff name, ID, and phone are required', 'error');
+            return;
         }
+        setAssigning(true);
+        try {
+            await activityAPI.assignStaff(assignStaffModal.id, {
+                ...assignForm,
+                staffName: staffName.trim(),
+                staffId: staffId.trim(),
+                staffPhone: staffPhone.trim(),
+                staffPhotoUrl: assignForm.staffPhotoUrl.trim() || null,
+                eta: assignForm.eta.trim() || null,
+                statusDetail: assignForm.statusDetail.trim() || null,
+                serviceType: assignForm.serviceType.trim() || 'Blood Test',
+            });
+            showToast('Staff assigned & update pushed to user ✓', 'success');
+            setAssignStaffModal(null);
+            setAssignForm(EMPTY_ASSIGN);
+            await loadOrderUpdates(assignStaffModal.id);
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Assignment failed', 'error');
+        } finally {
+            setAssigning(false);
+        }
+    }
+
+    function openAssignStaff(order) {
+        setAssignStaffModal(order);
+        setAssignForm({
+            ...EMPTY_ASSIGN,
+            serviceType: order.packages?.[0]?.name || 'Blood Test',
+        });
+        setEditUpdateModal(null);
+        loadOrderUpdates(order.id);
+    }
+
+    async function handleEditUpdate(update) {
+        setEditUpdateModal(update);
+        setEditUpdateForm({
+            eventType: update.eventType,
+            serviceType: update.serviceType,
+            staffName: update.staffName,
+            staffId: update.staffId,
+            staffPhone: update.staffPhone,
+            staffPhotoUrl: update.staffPhotoUrl || '',
+            eta: update.eta || '',
+            statusDetail: update.statusDetail || '',
+        });
+    }
+
+    async function saveEditUpdate() {
+        if (!editUpdateModal) return;
+        try {
+            await activityAPI.updateUpdate(editUpdateModal.id, editUpdateForm);
+            showToast('Activity update saved');
+            setEditUpdateModal(null);
+            setEditUpdateForm({});
+            await loadOrderUpdates(assignStaffModal.id);
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Save failed', 'error');
+        }
+    }
+
+    async function deleteUpdate(id) {
+        if (!window.confirm('Delete this activity update?')) return;
+        try {
+            await activityAPI.deleteUpdate(id);
+            showToast('Activity update deleted');
+            await loadOrderUpdates(assignStaffModal.id);
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Delete failed', 'error');
+        }
+    }
+
+    function formatTs(iso) {
+        try { return new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); }
+        catch { return iso; }
     }
 
     return (
@@ -198,8 +317,9 @@ export default function BookingsPage() {
                 <p>View, assign, and manage all bookings in real-time</p>
             </div>
 
+            {/* ── Filter Bar ── */}
             <div className="filter-bar">
-                <form onSubmit={(e) => { e.preventDefault(); setPage(1); loadBookings(); }} style={{ display: 'flex', gap: 8, flex: 1 }}>
+                <form onSubmit={e => { e.preventDefault(); setPage(1); loadBookings(); }} style={{ display: 'flex', gap: 8, flex: 1 }}>
                     <div style={{ position: "relative", flex: 1, maxWidth: 300 }}>
                         <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
                         <input className="form-input" style={{ paddingLeft: 36 }} placeholder="Search booking code..." value={search} onChange={e => setSearch(e.target.value)} />
@@ -216,14 +336,17 @@ export default function BookingsPage() {
                 </select>
             </div>
 
+            {/* ── Table ── */}
             <div className="card">
                 <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
                     <table className="data-table">
                         <thead><tr><th>Booking Code</th><th>User</th><th>Service</th><th>City</th><th>Scheduled</th><th>Amount</th><th>Status</th><th>Caregiver</th><th>Actions</th></tr></thead>
                         <tbody>
-                            {loading ? <tr><td colSpan={9} style={{ textAlign: 'center', padding: 24 }}>Loading...</td></tr> :
-                                bookings.length === 0 ? <tr><td colSpan={9} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No bookings found</td></tr> :
-                                    bookings.map(b => (
+                            {loading
+                                ? <tr><td colSpan={9} style={{ textAlign: 'center', padding: 24 }}>Loading...</td></tr>
+                                : bookings.length === 0
+                                    ? <tr><td colSpan={9} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No bookings found</td></tr>
+                                    : bookings.map(b => (
                                         <tr key={b.id}>
                                             <td><code style={{ fontSize: 11, color: "var(--accent-primary-light)" }}>{b.bookingCode}</code></td>
                                             <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{b.user?.name || '—'}</td>
@@ -236,7 +359,7 @@ export default function BookingsPage() {
                                             <td>
                                                 <div className="flex gap-2">
                                                     <button className="btn btn-sm btn-secondary" onClick={() => viewBooking(b.id)}><Eye size={14} /></button>
-                                                    {b.status === 'PENDING' && <button className="btn btn-sm btn-primary" onClick={() => { setAssignModal(b); setSelectedCaregiver(''); }}><UserPlus size={14} /></button>}
+                                                    {(b.status === 'PENDING' || b.status === 'CONFIRMED') && <button className="btn btn-sm btn-primary" onClick={() => { setAssignModal(b); setSelectedCaregiver(''); }}><UserPlus size={14} /></button>}
                                                     {!b.isEscalated && <button className="btn btn-sm btn-warning" onClick={() => escalateBooking(b.id)}><AlertTriangle size={14} /></button>}
                                                 </div>
                                             </td>
@@ -247,6 +370,7 @@ export default function BookingsPage() {
                 </div>
             </div>
 
+            {/* ── Pagination ── */}
             {total > limit && (
                 <div className="flex justify-between items-center mt-4">
                     <span className="text-sm text-muted">Page {page} of {Math.ceil(total / limit)}</span>
@@ -257,134 +381,146 @@ export default function BookingsPage() {
                 </div>
             )}
 
-            {assignModal && (
-                <div className="modal-overlay" onClick={() => setAssignModal(null)}>
-                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
-                        <div className="modal-header"><h3>Assign Caregiver</h3><button onClick={() => setAssignModal(null)} className="btn btn-sm btn-secondary">✕</button></div>
-                        <div className="modal-body">
-                            <p className="text-sm mb-4">Booking: <strong>{assignModal.bookingCode}</strong></p>
-                            <div className="form-group"><label className="form-label">Select Caregiver</label>
-                                <select className="form-select" value={selectedCaregiver} onChange={e => setSelectedCaregiver(e.target.value)}>
-                                    <option value="">— Choose —</option>
-                                    {caregivers.filter(cg => cg.isAvailable).map(cg => <option key={cg.id} value={cg.id}>{cg.name} — {cg.specialization || 'General'}</option>)}
-                                </select>
-                            </div>
-                        </div>
-                        <div className="modal-footer"><button className="btn btn-secondary" onClick={() => setAssignModal(null)}>Cancel</button><button className="btn btn-primary" onClick={handleAssign}>Assign</button></div>
-                    </div>
-                </div>
-            )}
-
+            {/* ══════════════════════════════════════════
+                BOOKING DETAIL MODAL
+            ══════════════════════════════════════════ */}
             {selected && (
                 <div className="modal-overlay" onClick={() => { setSelected(null); setEditMode(false); }}>
-                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 800, maxHeight: '90vh', overflowY: 'auto' }}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 860, maxHeight: '92vh', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
                         <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h3>Booking Details — {selected.bookingCode}</h3>
-                            <button onClick={() => { setSelected(null); setEditMode(false); }} className="btn btn-sm btn-secondary">✕</button>
+                            <h3>Booking — {selected.bookingCode}</h3>
+                            <button onClick={() => { setSelected(null); setEditMode(false); }} className="btn btn-sm btn-secondary"><X size={14} /></button>
                         </div>
 
-                        <div className="modal-body" style={{ padding: '20px' }}>
-                            {/* User & Service Info */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
-                                <div><label className="form-label">User Name</label><div className="text-sm font-semibold">{selected.user?.name}</div></div>
-                                <div><label className="form-label">User ID</label><div className="text-sm font-semibold">{selected.user?.uniqueUserId}</div></div>
-                                <div><label className="form-label">Phone</label><div className="text-sm">{selected.user?.phone}</div></div>
-                                <div><label className="form-label">City</label><div className="text-sm">{selected.city?.name}</div></div>
-                                <div colSpan="2"><label className="form-label">Service Type</label><div className="text-sm font-semibold">{selected.service?.name}</div></div>
-                            </div>
+                        {/* Tabs */}
+                        <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border-color)', padding: '0 20px', background: 'var(--bg-card)' }}>
+                            {['details', 'lab'].map(tab => (
+                                <button key={tab} onClick={() => setDetailTab(tab)}
+                                    style={{ padding: '10px 18px', border: 'none', background: 'none', cursor: 'pointer', fontWeight: detailTab === tab ? 600 : 400, color: detailTab === tab ? 'var(--accent-primary)' : 'var(--text-muted)', borderBottom: detailTab === tab ? '2px solid var(--accent-primary)' : '2px solid transparent', fontSize: 13 }}>
+                                    {tab === 'details' ? 'Booking Details' : '🧪 Lab Orders & Assignments'}
+                                </button>
+                            ))}
+                        </div>
 
-                            {/* Service Details (Dynamic based on service type) */}
-                            <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
-                                <h4 style={{ marginBottom: 12, color: 'var(--text-primary)', fontWeight: 600 }}>Service Details</h4>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                    <div><label className="form-label">Service Type</label><div className="text-sm font-semibold">{selected.service?.name || '—'}</div></div>
-                                    <div><label className="form-label">Scheduled Date</label><div className="text-sm">{selected.scheduledDate ? formatDate(selected.scheduledDate) : '—'}</div></div>
-                                    <div><label className="form-label">Scheduled Time</label><div className="text-sm">{selected.scheduledTime || '—'}</div></div>
-                                    {selected.addressLine && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Service Address</label><div className="text-sm">{selected.addressLine}</div></div>}
+                        <div className="modal-body" style={{ padding: '20px', flex: 1, overflowY: 'auto' }}>
 
-                                    {/* Doctor Visit Fields */}
-                                    {selected.doctorType && <>
-                                        <div><label className="form-label">Doctor Type</label><div className="text-sm">{selected.doctorType}</div></div>
-                                        {selected.symptoms && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Symptoms</label><div className="text-sm">{Array.isArray(selected.symptoms) ? selected.symptoms.join(', ') : selected.symptoms}</div></div>}
-                                        {selected.prescriptionUrl && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Prescription</label><a href={selected.prescriptionUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600">View Prescription</a></div>}
-                                    </>}
-
-                                    {/* Nurse Care Fields */}
-                                    {selected.staffType && <>
-                                        <div><label className="form-label">Staff Type</label><div className="text-sm">{selected.staffType}</div></div>
-                                        {selected.shiftDuration && <div><label className="form-label">Shift Duration</label><div className="text-sm">{selected.shiftDuration}</div></div>}
-                                        {selected.startDate && <div><label className="form-label">Start Date</label><div className="text-sm">{formatDate(selected.startDate)}</div></div>}
-                                        {selected.endDate && <div><label className="form-label">End Date</label><div className="text-sm">{formatDate(selected.endDate)}</div></div>}
-                                        {selected.requirements && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Requirements</label><div className="text-sm">{Array.isArray(selected.requirements) ? selected.requirements.join(', ') : selected.requirements}</div></div>}
-                                    </>}
-
-                                    {/* Transportation Fields */}
-                                    {selected.vehicleType && <>
-                                        <div><label className="form-label">Vehicle Type</label><div className="text-sm">{selected.vehicleType}</div></div>
-                                        {selected.pickupAddress && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Pickup Address</label><div className="text-sm">{selected.pickupAddress}</div></div>}
-                                        {selected.dropAddress && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Drop Address</label><div className="text-sm">{selected.dropAddress}</div></div>}
-                                    </>}
-
-                                    {/* Location Info */}
-                                    {(selected.latitude || selected.longitude) && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Location</label><div className="text-sm">{selected.latitude}, {selected.longitude}</div></div>}
+                            {/* ── DETAILS TAB ── */}
+                            {detailTab === 'details' && (<>
+                                {/* User & Service */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
+                                    <div><label className="form-label">User Name</label><div className="text-sm font-semibold">{selected.user?.name}</div></div>
+                                    <div><label className="form-label">User ID</label><div className="text-sm">{selected.user?.uniqueUserId}</div></div>
+                                    <div><label className="form-label">Phone</label><div className="text-sm">{selected.user?.phone}</div></div>
+                                    <div><label className="form-label">City</label><div className="text-sm">{selected.city?.name}</div></div>
+                                    <div><label className="form-label">Service Type</label><div className="text-sm font-semibold">{selected.service?.name}</div></div>
                                 </div>
-                            </div>
 
-                            {/* Status & Payment Info */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
-                                <div>
-                                    <label className="form-label">Booking Status</label>
-                                    {editMode ? (
-                                        <select className="form-select" value={editData.status || ''} onChange={e => setEditData({ ...editData, status: e.target.value })}>
-                                            <option value="">— Select —</option>
-                                            {Object.keys(statusColors).map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
-                                        </select>
-                                    ) : (
-                                        <span className={`badge ${statusColors[selected.status]}`}>{selected.status?.replace(/_/g, ' ')}</span>
-                                    )}
-                                </div>
-                                <div>
-                                    <label className="form-label">Payment Status</label>
-                                    {editMode ? (
-                                        <select className="form-select" value={editData.paymentStatus || ''} onChange={e => setEditData({ ...editData, paymentStatus: e.target.value })}>
-                                            <option value="">— Select —</option>
-                                            {Object.keys(paymentStatusColors).map(s => <option key={s} value={s}>{s}</option>)}
-                                        </select>
-                                    ) : (
-                                        <span className={`badge ${paymentStatusColors[selected.paymentStatus] || 'badge-warning'}`}>{selected.paymentStatus || 'PENDING'}</span>
-                                    )}
-                                </div>
-                                <div><label className="form-label">Amount</label><div className="text-sm font-semibold">{formatCurrency(selected.amount)}</div></div>
-                            </div>
-
-                            {/* Assigned Caregiver */}
-                            <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
-                                <label className="form-label">Assigned Caregiver</label>
-                                <div className="text-sm">{selected.caregiver?.name ? `${selected.caregiver.name} — ${selected.caregiver.phone}` : '—'}</div>
-                            </div>
-
-                            {/* Service Person Details */}
-                            <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                                    <h4 style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Service Person Details</h4>
-                                    <button className="btn btn-sm btn-primary" onClick={() => setServicePersonModal(true)}>+ Add Person</button>
-                                </div>
-                                {selected.servicePersonName ? (
-                                    <div style={{ background: 'var(--bg-glass)', padding: 12, borderRadius: 8 }}>
-                                        <div><strong>{selected.servicePersonName}</strong></div>
-                                        <div className="text-sm">{selected.servicePersonPhone}</div>
-                                        {selected.servicePersonNotes && <div className="text-sm text-muted">{selected.servicePersonNotes}</div>}
+                                {/* Service Details */}
+                                <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
+                                    <h4 style={{ marginBottom: 12, fontWeight: 600 }}>Service Details</h4>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                        <div><label className="form-label">Scheduled Date</label><div className="text-sm">{selected.scheduledDate ? formatDate(selected.scheduledDate) : '—'}</div></div>
+                                        <div><label className="form-label">Scheduled Time</label><div className="text-sm">{selected.scheduledTime || '—'}</div></div>
+                                        {selected.addressLine && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Address</label><div className="text-sm">{selected.addressLine}</div></div>}
+                                        {selected.doctorType && <><div><label className="form-label">Doctor Type</label><div className="text-sm">{selected.doctorType}</div></div>{selected.symptoms && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Symptoms</label><div className="text-sm">{Array.isArray(selected.symptoms) ? selected.symptoms.join(', ') : selected.symptoms}</div></div>}</>}
+                                        {selected.staffType && <><div><label className="form-label">Staff Type</label><div className="text-sm">{selected.staffType}</div></div>{selected.shiftDuration && <div><label className="form-label">Shift</label><div className="text-sm">{selected.shiftDuration}</div></div>}</>}
+                                        {selected.vehicleType && <div><label className="form-label">Vehicle</label><div className="text-sm">{selected.vehicleType}</div></div>}
                                     </div>
-                                ) : (
-                                    <div className="text-sm text-muted">No service person assigned yet</div>
-                                )}
-                            </div>
+                                </div>
 
-                            {/* Admin Notes */}
-                            {selected.adminNotes && (
+                                {/* Status & Payment */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
+                                    <div>
+                                        <label className="form-label">Status</label>
+                                        {editMode
+                                            ? <select className="form-select" value={editData.status || ''} onChange={e => setEditData({ ...editData, status: e.target.value })}>{Object.keys(statusColors).map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}</select>
+                                            : <span className={`badge ${statusColors[selected.status]}`}>{selected.status?.replace(/_/g, ' ')}</span>}
+                                    </div>
+                                    <div>
+                                        <label className="form-label">Payment Status</label>
+                                        {editMode
+                                            ? <select className="form-select" value={editData.paymentStatus || ''} onChange={e => setEditData({ ...editData, paymentStatus: e.target.value })}>{Object.keys(paymentStatusColors).map(s => <option key={s} value={s}>{s}</option>)}</select>
+                                            : <span className={`badge ${paymentStatusColors[selected.paymentStatus] || 'badge-warning'}`}>{selected.paymentStatus || 'PENDING'}</span>}
+                                    </div>
+                                    <div><label className="form-label">Amount</label><div className="text-sm font-semibold">{formatCurrency(selected.amount)}</div></div>
+                                </div>
+
+                                {/* Staff Assignment */}
+                                <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                        <label className="form-label">Staff Assignment</label>
+                                        {(selected.status === 'PENDING' || selected.status === 'CONFIRMED') && (
+                                            <button className="btn btn-sm btn-primary" onClick={() => { setAssignModal(selected); setSelectedCaregiver(''); }}>
+                                                <UserPlus size={13} style={{ marginRight: 4 }} />
+                                                Assign
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="text-sm">{selected.caregiver?.name ? `${selected.caregiver.name} — ${selected.caregiver.phone}` : '—'}</div>
+                                </div>
+
+                                {/* External Contact Info */}
+                                <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                        <h4 style={{ fontWeight: 600 }}>External Contact Info</h4>
+                                        {(selected.status === 'PENDING' || selected.status === 'CONFIRMED') && (
+                                            <button className="btn btn-sm btn-primary" onClick={() => setServicePersonModal(true)}>+ Add</button>
+                                        )}
+                                    </div>
+                                    {selected.servicePersonName
+                                        ? <div style={{ background: 'var(--bg-glass)', padding: 12, borderRadius: 8 }}><strong>{selected.servicePersonName}</strong><div className="text-sm">{selected.servicePersonPhone}</div>{selected.servicePersonNotes && <div className="text-sm text-muted">{selected.servicePersonNotes}</div>}</div>
+                                        : <div className="text-sm text-muted">None added</div>}
+                                </div>
+
+                                {selected.adminNotes && <div><label className="form-label">Admin Notes</label><div className="text-sm" style={{ background: 'var(--bg-glass)', padding: 12, borderRadius: 8 }}>{selected.adminNotes}</div></div>}
+                            </>)}
+
+                            {/* ── LAB ORDERS TAB ── */}
+                            {detailTab === 'lab' && (
                                 <div>
-                                    <label className="form-label">Admin Notes</label>
-                                    <div className="text-sm" style={{ background: 'var(--bg-glass)', padding: 12, borderRadius: 8 }}>{selected.adminNotes}</div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                        <h4 style={{ fontWeight: 600 }}>Lab Orders</h4>
+                                        <span className="text-sm text-muted">{labOrders.length} order{labOrders.length !== 1 ? 's' : ''}</span>
+                                    </div>
+
+                                    {labLoading ? (
+                                        <div className="text-sm text-muted" style={{ textAlign: 'center', padding: 24 }}>Loading lab orders…</div>
+                                    ) : labOrders.length === 0 ? (
+                                        <div className="text-sm text-muted" style={{ textAlign: 'center', padding: 32 }}>No lab orders linked to this booking.</div>
+                                    ) : labOrders.map(order => (
+                                        <div key={order.id} style={{ border: '1px solid var(--border-color)', borderRadius: 10, marginBottom: 14, overflow: 'hidden' }}>
+                                            {/* Lab order header */}
+                                            <div style={{ background: 'var(--bg-glass)', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div>
+                                                    <span style={{ fontWeight: 600, fontSize: 13 }}>{order.clientRefId}</span>
+                                                    <span className={`badge badge-${order.status === 'CONFIRMED' ? 'info' : order.status === 'REPORT_GENERATED' ? 'success' : order.status === 'CANCELLED' ? 'default' : 'warning'}`} style={{ marginLeft: 8, fontSize: 10 }}>{order.status}</span>
+                                                </div>
+                                                {order.status === 'CONFIRMED' && (
+                                                    <button className="btn btn-sm btn-primary" onClick={() => openAssignStaff(order)}>
+                                                        <UserPlus size={13} style={{ marginRight: 4 }} />
+                                                        Assign Staff
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Lab order body */}
+                                            <div style={{ padding: '12px 14px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                                                <div><label className="form-label" style={{ fontSize: 10 }}>Patient</label><div className="text-sm">{order.patient?.name || '—'}</div></div>
+                                                <div><label className="form-label" style={{ fontSize: 10 }}>Collection</label><div className="text-sm">{order.bookingType}</div></div>
+                                                <div><label className="form-label" style={{ fontSize: 10 }}>Slot</label><div className="text-sm">{order.slot?.date} {order.slot?.time}</div></div>
+                                                <div><label className="form-label" style={{ fontSize: 10 }}>Package</label><div className="text-sm">{order.packages?.[0]?.name || '—'}</div></div>
+                                                <div><label className="form-label" style={{ fontSize: 10 }}>Amount</label><div className="text-sm">₹{order.packages?.[0]?.price || order.paymentDetails?.amount || '—'}</div></div>
+                                                {order.assignedStaff && (
+                                                    <div><label className="form-label" style={{ fontSize: 10 }}>Assigned Staff</label>
+                                                        <div className="text-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                            <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#DBEAFE', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>👤</span>
+                                                            <span><strong>{order.assignedStaff.name}</strong><br /><span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{order.assignedStaff.staffId}</span></span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>
@@ -393,15 +529,15 @@ export default function BookingsPage() {
                             {editMode ? (
                                 <>
                                     <button className="btn btn-secondary" onClick={() => setEditMode(false)}>Cancel</button>
-                                    <button className="btn btn-success" onClick={updateBookingDetails}><Save size={14} /> Save Changes</button>
+                                    <button className="btn btn-success" onClick={updateBookingDetails}><Save size={14} /> Save</button>
                                 </>
                             ) : (
                                 <>
-                                    <div style={{ flex: 1 }}></div>
+                                    <div style={{ flex: 1 }} />
                                     {selected.status === 'ASSIGNED' && <button className="btn btn-primary" onClick={() => updateStatus(selected.id, 'IN_PROGRESS')}>Start</button>}
                                     {selected.status === 'IN_PROGRESS' && <button className="btn btn-success" onClick={() => updateStatus(selected.id, 'COMPLETED')}>Complete</button>}
                                     {!['COMPLETED', 'CANCELLED'].includes(selected.status) && <button className="btn btn-danger" onClick={() => updateStatus(selected.id, 'CANCELLED')}>Cancel</button>}
-                                    <button className="btn btn-primary" onClick={() => { setEditMode(true); setEditData({ status: selected.status, paymentStatus: selected.paymentStatus || 'PENDING' }); }}><Edit2 size={14} /> Edit Details</button>
+                                    <button className="btn btn-primary" onClick={() => { setEditMode(true); setEditData({ status: selected.status, paymentStatus: selected.paymentStatus || 'PENDING' }); }}><Edit2 size={14} /> Edit</button>
                                     <button className="btn btn-secondary" onClick={() => setSelected(null)}>Close</button>
                                 </>
                             )}
@@ -410,28 +546,313 @@ export default function BookingsPage() {
                 </div>
             )}
 
-            {/* Add Service Person Modal */}
-            {servicePersonModal && (
-                <div className="modal-overlay" onClick={() => setServicePersonModal(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
-                        <div className="modal-header"><h3>Add Service Person Details</h3><button onClick={() => setServicePersonModal(false)} className="btn btn-sm btn-secondary">✕</button></div>
+            {/* ══════════════════════════════════════════
+                ASSIGN CAREGIVER MODAL — searchable picker
+            ══════════════════════════════════════════ */}
+            {assignModal && (() => {
+                const ROLE_FILTERS = ['', 'Doctor', 'Nurse', 'Caregiver', 'Physiotherapist', 'Lab'];
+                const filtered = caregivers.filter(cg => {
+                    const q = cgSearch.toLowerCase();
+                    const matchesSearch = !q || cg.name?.toLowerCase().includes(q) || cg.phone?.includes(q) || cg.specialization?.toLowerCase().includes(q);
+                    const matchesRole = !cgRoleFilter || (cg.role || cg.specialization || '').toLowerCase().includes(cgRoleFilter.toLowerCase());
+                    return matchesSearch && matchesRole;
+                });
+                const chosen = caregivers.find(cg => cg.id === selectedCaregiver);
+                return (
+                    <div className="modal-overlay" onClick={() => { setAssignModal(null); setCgSearch(''); setCgRoleFilter(''); setSelectedCaregiver(''); }}>
+                        <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 500, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+                            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                    <h3 style={{ marginBottom: 2 }}>Assign Staff</h3>
+                                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Booking: <strong>{assignModal.bookingCode}</strong></div>
+                                </div>
+                                <button onClick={() => { setAssignModal(null); setCgSearch(''); setCgRoleFilter(''); setSelectedCaregiver(''); }} className="btn btn-sm btn-secondary"><X size={14} /></button>
+                            </div>
+
+                            <div className="modal-body" style={{ padding: 16, overflowY: 'auto', flex: 1 }}>
+                                {/* Search input */}
+                                <div style={{ position: 'relative', marginBottom: 10 }}>
+                                    <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                    <input
+                                        className="form-input"
+                                        style={{ paddingLeft: 32, fontSize: 13 }}
+                                        placeholder="Search by name, phone, or specialization…"
+                                        value={cgSearch}
+                                        onChange={e => { setCgSearch(e.target.value); setSelectedCaregiver(''); }}
+                                        autoFocus
+                                    />
+                                </div>
+
+                                {/* Role filter pills */}
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+                                    {ROLE_FILTERS.map(r => (
+                                        <button key={r} onClick={() => { setCgRoleFilter(r); setSelectedCaregiver(''); }}
+                                            style={{ padding: '4px 12px', borderRadius: 20, border: '1.5px solid', cursor: 'pointer', fontSize: 11, fontWeight: cgRoleFilter === r ? 600 : 400, borderColor: cgRoleFilter === r ? 'var(--accent-primary)' : 'var(--border-color)', background: cgRoleFilter === r ? 'var(--accent-primary)' : 'var(--bg-card)', color: cgRoleFilter === r ? '#fff' : 'var(--text-secondary)', transition: 'all 0.12s' }}>
+                                            {r || 'All Roles'}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Staff list */}
+                                <div style={{ maxHeight: 300, overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: 10 }}>
+                                    {filtered.length === 0 ? (
+                                        <div style={{ padding: 24, textAlign: 'center', fontSize: 13, color: 'var(--text-muted)' }}>No staff found matching your search</div>
+                                    ) : filtered.map((cg, i) => {
+                                        const isSelected = selectedCaregiver === cg.id;
+                                        return (
+                                            <div key={cg.id} onClick={() => setSelectedCaregiver(isSelected ? '' : cg.id)}
+                                                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', cursor: 'pointer', background: isSelected ? 'var(--accent-primary)10' : 'transparent', borderBottom: i < filtered.length - 1 ? '1px solid var(--border-color)' : 'none', borderRadius: i === 0 ? '10px 10px 0 0' : i === filtered.length - 1 ? '0 0 10px 10px' : 0, transition: 'background 0.1s' }}>
+                                                {/* Avatar */}
+                                                {cg.photoUrl ? (
+                                                    <img src={cg.photoUrl} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                                                ) : (
+                                                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: isSelected ? '#DBEAFE' : 'var(--bg-glass)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>
+                                                        {cg.name?.[0] || '?'}
+                                                    </div>
+                                                )}
+                                                {/* Info */}
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontWeight: 600, fontSize: 13, color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)' }}>{cg.name}</div>
+                                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', gap: 8 }}>
+                                                        <span>{cg.specialization || cg.role || 'General'}</span>
+                                                        {cg.city?.name && <span>· {cg.city.name}</span>}
+                                                        {cg.phone && <span>· {cg.phone}</span>}
+                                                    </div>
+                                                </div>
+                                                {/* Availability badge */}
+                                                <div style={{ flexShrink: 0 }}>
+                                                    {cg.isAvailable
+                                                        ? <span style={{ padding: '2px 8px', borderRadius: 10, background: '#D1FAE5', color: '#059669', fontSize: 10, fontWeight: 600 }}>Available</span>
+                                                        : <span style={{ padding: '2px 8px', borderRadius: 10, background: '#F3F4F6', color: '#9CA3AF', fontSize: 10 }}>Busy</span>}
+                                                </div>
+                                                {/* Selected check */}
+                                                {isSelected && <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                    <span style={{ color: '#fff', fontSize: 12 }}>✓</span>
+                                                </div>}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Selected preview */}
+                                {chosen && (
+                                    <div style={{ marginTop: 14, padding: '10px 14px', background: 'var(--bg-glass)', borderRadius: 10, border: '1.5px solid var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        <div style={{ fontSize: 18 }}>✅</div>
+                                        <div>
+                                            <div style={{ fontWeight: 600, fontSize: 13 }}>{chosen.name}</div>
+                                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{chosen.specialization || chosen.role || 'General'}{chosen.phone ? ` · ${chosen.phone}` : ''}</div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="modal-footer">
+                                <button className="btn btn-secondary" onClick={() => { setAssignModal(null); setCgSearch(''); setCgRoleFilter(''); setSelectedCaregiver(''); }}>Cancel</button>
+                                <button className="btn btn-primary" onClick={handleAssign} disabled={!selectedCaregiver}>
+                                    Assign{chosen ? ` ${chosen.name}` : ''}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
+            {/* ══════════════════════════════════════════
+                EDIT ACTIVITY UPDATE MODAL
+            ══════════════════════════════════════════ */}
+            {editUpdateModal && (
+                <div className="modal-overlay" onClick={() => setEditUpdateModal(null)}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
+                        <div className="modal-header">
+                            <h3>Edit Activity Update</h3>
+                            <button onClick={() => setEditUpdateModal(null)} className="btn btn-sm btn-secondary">✕</button>
+                        </div>
                         <div className="modal-body">
                             <div className="form-group mb-4">
-                                <label className="form-label">Person Name</label>
-                                <input type="text" className="form-input" placeholder="Full name" value={servicePerson.name} onChange={e => setServicePerson({ ...servicePerson, name: e.target.value })} />
+                                <label className="form-label">Event Type</label>
+                                <select className="form-select" value={editUpdateForm.eventType} onChange={e => setEditUpdateForm({ ...editUpdateForm, eventType: e.target.value })}>
+                                    {EVENT_TYPES.map(et => <option key={et.value} value={et.value}>{et.label}</option>)}
+                                </select>
                             </div>
+
                             <div className="form-group mb-4">
-                                <label className="form-label">Phone Number</label>
-                                <input type="tel" className="form-input" placeholder="Mobile number" maxLength={10} value={servicePerson.phone} onChange={e => setServicePerson({ ...servicePerson, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })} />
+                                <label className="form-label">Service Type</label>
+                                <input type="text" className="form-input" placeholder="Blood Test" value={editUpdateForm.serviceType} onChange={e => setEditUpdateForm({ ...editUpdateForm, serviceType: e.target.value })} />
                             </div>
+
                             <div className="form-group mb-4">
-                                <label className="form-label">Notes (Optional)</label>
-                                <textarea className="form-input" rows="3" placeholder="Additional notes..." value={servicePerson.notes} onChange={e => setServicePerson({ ...servicePerson, notes: e.target.value })} />
+                                <label className="form-label">Full Name</label>
+                                <input type="text" className="form-input" placeholder="e.g. Dr. Priya Sharma" value={editUpdateForm.staffName} onChange={e => setEditUpdateForm({ ...editUpdateForm, staffName: e.target.value })} />
+                            </div>
+
+                            <div className="form-group mb-4">
+                                <label className="form-label">AYUXA Staff ID</label>
+                                <input type="text" className="form-input" placeholder="e.g. AYX-DOC-0041" value={editUpdateForm.staffId} onChange={e => setEditUpdateForm({ ...editUpdateForm, staffId: e.target.value })} />
+                            </div>
+
+                            <div className="form-group mb-4">
+                                <label className="form-label">Mobile Number</label>
+                                <input type="tel" className="form-input" placeholder="+91 98765 43210" value={editUpdateForm.staffPhone} onChange={e => setEditUpdateForm({ ...editUpdateForm, staffPhone: e.target.value })} />
+                            </div>
+
+                            <div className="form-group mb-4">
+                                <label className="form-label">ETA <span className="text-muted">(optional)</span></label>
+                                <input type="text" className="form-input" placeholder="e.g. 20 mins" value={editUpdateForm.eta} onChange={e => setEditUpdateForm({ ...editUpdateForm, eta: e.target.value })} />
+                            </div>
+
+                            <div className="form-group mb-4">
+                                <label className="form-label">Status Detail <span className="text-muted">(shown to user)</span></label>
+                                <input type="text" className="form-input" placeholder="e.g. En route to your location" value={editUpdateForm.statusDetail} onChange={e => setEditUpdateForm({ ...editUpdateForm, statusDetail: e.target.value })} />
                             </div>
                         </div>
                         <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setServicePersonModal(false)}>Cancel</button>
-                            <button className="btn btn-primary" onClick={addServicePerson}>Add Person</button>
+                            <button className="btn btn-secondary" onClick={() => setEditUpdateModal(null)}>Cancel</button>
+                            <button className="btn btn-primary" onClick={saveEditUpdate}>Save Changes</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ══════════════════════════════════════════
+                ADD SERVICE PERSON MODAL (existing)
+            ══════════════════════════════════════════ */}
+            {servicePersonModal && (
+                <div className="modal-overlay" onClick={() => setServicePersonModal(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+                        <div className="modal-header"><h3>Add Service Person</h3><button onClick={() => setServicePersonModal(false)} className="btn btn-sm btn-secondary">✕</button></div>
+                        <div className="modal-body">
+                            <div className="form-group mb-4"><label className="form-label">Name</label><input type="text" className="form-input" value={servicePerson.name} onChange={e => setServicePerson({ ...servicePerson, name: e.target.value })} /></div>
+                            <div className="form-group mb-4"><label className="form-label">Phone</label><input type="tel" className="form-input" maxLength={10} value={servicePerson.phone} onChange={e => setServicePerson({ ...servicePerson, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })} /></div>
+                            <div className="form-group mb-4"><label className="form-label">Notes</label><textarea className="form-input" rows="3" value={servicePerson.notes} onChange={e => setServicePerson({ ...servicePerson, notes: e.target.value })} /></div>
+                        </div>
+                        <div className="modal-footer"><button className="btn btn-secondary" onClick={() => setServicePersonModal(false)}>Cancel</button><button className="btn btn-primary" onClick={addServicePerson}>Save</button></div>
+                    </div>
+                </div>
+            )}
+
+            {/* ══════════════════════════════════════════
+                ASSIGN STAFF + PUSH ACTIVITY UPDATE MODAL
+            ══════════════════════════════════════════ */}
+            {assignStaffModal && (
+                <div className="modal-overlay" onClick={() => setAssignStaffModal(null)}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 560, maxHeight: '92vh', overflowY: 'auto' }}>
+                        <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h3 style={{ marginBottom: 2 }}>Assign Staff</h3>
+                                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Lab Order: {assignStaffModal.clientRefId} · {assignStaffModal.packages?.[0]?.name || 'Blood Test'}</div>
+                            </div>
+                            <button onClick={() => setAssignStaffModal(null)} className="btn btn-sm btn-secondary"><X size={14} /></button>
+                        </div>
+
+                        <div className="modal-body" style={{ padding: 20 }}>
+
+                            {/* ── Event Type ── */}
+                            <div className="form-group mb-4">
+                                <label className="form-label">Event Type <span style={{ color: 'red' }}>*</span></label>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                                    {EVENT_TYPES.map(et => (
+                                        <button key={et.value}
+                                            type="button"
+                                            onClick={() => setAssignForm(f => ({ ...f, eventType: et.value }))}
+                                            style={{
+                                                padding: '8px 10px', borderRadius: 8, border: '1.5px solid',
+                                                borderColor: assignForm.eventType === et.value ? EVENT_COLORS[et.value] : 'var(--border-color)',
+                                                background: assignForm.eventType === et.value ? `${EVENT_COLORS[et.value]}15` : 'var(--bg-card)',
+                                                color: assignForm.eventType === et.value ? EVENT_COLORS[et.value] : 'var(--text-secondary)',
+                                                cursor: 'pointer', fontSize: 12, fontWeight: assignForm.eventType === et.value ? 600 : 400,
+                                                textAlign: 'left', transition: 'all 0.15s',
+                                            }}>
+                                            {et.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* ── Staff Details ── */}
+                            <div style={{ background: 'var(--bg-glass)', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+                                <h4 style={{ fontWeight: 600, marginBottom: 12, fontSize: 13 }}>Staff Details</h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                                        <label className="form-label">Full Name <span style={{ color: 'red' }}>*</span></label>
+                                        <input className="form-input" placeholder="e.g. Dr. Priya Sharma" value={assignForm.staffName} onChange={e => setAssignForm(f => ({ ...f, staffName: e.target.value }))} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">AYUXA Staff ID <span style={{ color: 'red' }}>*</span></label>
+                                        <input className="form-input" placeholder="e.g. AYX-DOC-0041" value={assignForm.staffId} onChange={e => setAssignForm(f => ({ ...f, staffId: e.target.value }))} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Mobile Number <span style={{ color: 'red' }}>*</span></label>
+                                        <input className="form-input" type="tel" placeholder="+91 98765 43210" value={assignForm.staffPhone} onChange={e => setAssignForm(f => ({ ...f, staffPhone: e.target.value }))} />
+                                    </div>
+                                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                                        <label className="form-label">Profile Photo URL <span className="text-muted">(optional)</span></label>
+                                        <input className="form-input" placeholder="https://..." value={assignForm.staffPhotoUrl} onChange={e => setAssignForm(f => ({ ...f, staffPhotoUrl: e.target.value }))} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── Update Details ── */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                                <div className="form-group">
+                                    <label className="form-label">Service Type</label>
+                                    <input className="form-input" placeholder="Blood Test" value={assignForm.serviceType} onChange={e => setAssignForm(f => ({ ...f, serviceType: e.target.value }))} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">ETA <span className="text-muted">(optional)</span></label>
+                                    <input className="form-input" placeholder="e.g. 20 mins" value={assignForm.eta} onChange={e => setAssignForm(f => ({ ...f, eta: e.target.value }))} />
+                                </div>
+                                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                                    <label className="form-label">Status Detail <span className="text-muted">(shown to user)</span></label>
+                                    <input className="form-input" placeholder="e.g. Phlebotomist assigned and en route" value={assignForm.statusDetail} onChange={e => setAssignForm(f => ({ ...f, statusDetail: e.target.value }))} />
+                                </div>
+                            </div>
+
+                            {/* ── Preview ── */}
+                            {assignForm.eventType && assignForm.staffName && (
+                                <div style={{ border: `1.5px solid ${EVENT_COLORS[assignForm.eventType] || '#048357'}`, borderRadius: 10, padding: 14, background: `${EVENT_COLORS[assignForm.eventType]}08`, marginBottom: 16 }}>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: EVENT_COLORS[assignForm.eventType], marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Preview — what the user will see</div>
+                                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: `${EVENT_COLORS[assignForm.eventType]}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>👤</div>
+                                        <div>
+                                            <div style={{ fontWeight: 600, fontSize: 13 }}>{assignForm.staffName}</div>
+                                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{assignForm.staffId} · {assignForm.staffPhone}</div>
+                                            {assignForm.statusDetail && <div style={{ fontSize: 12, marginTop: 2, color: 'var(--text-secondary)' }}>{assignForm.statusDetail}</div>}
+                                        </div>
+                                        {assignForm.eta && <div style={{ marginLeft: 'auto', background: '#ECFDF5', padding: '4px 10px', borderRadius: 8, fontSize: 12, color: '#059669', fontWeight: 600 }}>ETA {assignForm.eta}</div>}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ── Existing Activity Updates ── */}
+                            {orderUpdates.length > 0 && (
+                                <div>
+                                    <h4 style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>Previous Updates ({orderUpdates.length})</h4>
+                                    {orderUpdates.map(u => (
+                                        <div key={u.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px', background: 'var(--bg-glass)', borderRadius: 8, marginBottom: 8 }}>
+                                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: `${EVENT_COLORS[u.eventType] || '#048357'}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
+                                                {EVENT_TYPES.find(e => e.value === u.eventType)?.label?.split(' ')[0] || '📋'}
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontSize: 12, fontWeight: 600, color: EVENT_COLORS[u.eventType] || 'var(--text-primary)', marginBottom: 2 }}>{EVENT_TYPES.find(e => e.value === u.eventType)?.label?.replace(/^.{2}/, '') || u.eventType}</div>
+                                                <div style={{ fontSize: 12, marginBottom: 2 }}>{u.staffName} <span style={{ color: 'var(--text-muted)' }}>· {u.staffId}</span></div>
+                                                {u.statusDetail && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{u.statusDetail}</div>}
+                                            </div>
+                                            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                                                <button className="btn btn-xs btn-secondary" style={{ padding: '3px 8px', fontSize: 10 }} onClick={() => handleEditUpdate(u)}>Edit</button>
+                                                <button className="btn btn-xs btn-danger" style={{ padding: '3px 8px', fontSize: 10 }} onClick={() => deleteUpdate(u.id)}>Delete</button>
+                                            </div>
+                                            <div style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0, whiteSpace: 'nowrap' }}>{formatTs(u.createdAt)}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => setAssignStaffModal(null)}>Cancel</button>
+                            <button className="btn btn-primary" onClick={handleAssignStaff} disabled={assigning}>
+                                {assigning ? 'Assigning…' : <><Send size={14} style={{ marginRight: 6 }} />Assign &amp; Notify User</>}
+                            </button>
                         </div>
                     </div>
                 </div>

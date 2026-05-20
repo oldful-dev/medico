@@ -62,12 +62,15 @@ export interface LabBookingResponse {
 export interface LabOrderListItem {
     id: string;
     clientRefId: string;
-    status: string;           // LabStatus enum: PENDING|HOLD_CREATED|CONFIRMED|SAMPLE_COLLECTED|REPORT_GENERATED|CANCELLED|FAILED
+    status: string;           // LabStatus enum: PENDING|HOLD_CREATED|CONFIRMED|RESCHEDULED|SAMPLE_COLLECTED|REPORT_GENERATED|FAILED
     bookingType: string;      // 'HOME' | 'DROP_OFF'
     patient: any;
     packages: any[];
     slot: { date: string; time: string };
+    rescheduledDate?: string; // Admin-updated date if rescheduled
+    rescheduledTime?: string; // Admin-updated time if rescheduled
     address: any;
+    assignedStaff?: { name: string; staffId?: string; phone?: string; photoUrl?: string };
     reportUrl?: string;
     createdAt: string;
     payments?: Array<{ status: string; amount: number }>;
@@ -165,6 +168,11 @@ export const labService = {
 
     getLabOrderById: async (id: string) => {
         const response = await apiClient.get<LabOrderListItem>(`/labs/booking/${id}`);
+        return response;
+    },
+
+    cancelLabOrder: async (id: string) => {
+        const response = await apiClient.post(`/labs/booking/${id}/cancel`, {});
         return response;
     }
 };

@@ -141,16 +141,21 @@ export const userService = {
         return apiClient.put<Address>(`/users/${userId}/addresses/${addressId}`, address);
     },
 
+    deleteAddress: async (userId: string, addressId: string): Promise<ApiResponse> => {
+        return apiClient.delete(`/users/${userId}/addresses/${addressId}`);
+    },
+
     // ─── Medical Card ────────────────────────────
     upsertMedicalCard: async (userId: string, data: Omit<MedicalCard, 'id'>): Promise<ApiResponse<MedicalCard>> => {
         return apiClient.post<MedicalCard>(`/users/${userId}/medical-card`, data);
     },
 
     // ─── Health Reports ──────────────────────────
-    uploadHealthReport: async (userId: string, file: any, title: string): Promise<ApiResponse<HealthReportUploadResult>> => {
+    uploadHealthReport: async (userId: string, file: any, title: string, category?: string): Promise<ApiResponse<HealthReportUploadResult>> => {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('title', title);
+        if (category) formData.append('category', category);
         return apiClient.upload<HealthReportUploadResult>(`/users/${userId}/health-reports`, formData);
     },
 

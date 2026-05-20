@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import DateTimePickerInput from '@/components/common/DateTimePickerInput';
+import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { bookingService } from '@/services/api/bookingService';
 
@@ -181,7 +181,7 @@ export default function TripTravelsScreen() {
                     </View>
 
                     {/* ─── Date & Time ─── */}
-                    <DateTimePickerInput
+                    <CustomDateTimePicker
                         label="When?"
                         value={selectedDate}
                         onDateChange={setSelectedDate}

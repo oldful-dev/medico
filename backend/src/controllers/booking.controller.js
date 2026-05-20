@@ -8,6 +8,19 @@ const { sendPushToUser } = require('../utils/pushNotification.service');
 const { emitToAdmins } = require('../services/socket.service');
 const { logger } = require('../config/logger');
 
+// ─── Subscription Check ─────────────────────────────────────────
+// Returns true if user has an active subscription (covers all services)
+async function hasActiveSubscription(userId) {
+    const activeSub = await prisma.subscription.findFirst({
+        where: {
+            userId,
+            status: 'ACTIVE',
+            endDate: { gt: new Date() }, // Not expired
+        },
+    });
+    return !!activeSub;
+}
+
 // GET /api/bookings
 const getBookings = async (req, res, next) => {
     try {
@@ -156,10 +169,17 @@ const createBooking = async (req, res, next) => {
                     }
                 }
 
+                // ─── Subscription Check ───────────────────────────────────
+                // If user has active subscription, skip all charges (except GST on subscription itself)
+                const hasSubActive = await hasActiveSubscription(finalUserId);
+                const chargeAmount = hasSubActive ? 0 : safeAmount;
+
                 // ─── Status logic ─────────────────────────────────────────
                 // COD / free services → CONFIRMED + paymentStatus=PENDING
                 // Prepaid (UPI/CARD)  → PAYMENT_PENDING (awaiting verify)
-                const isCOD = paymentMethod === 'CASH' || paymentMethod === 'cash' || !safeAmount || safeAmount === 0;
+                // Subscription active  → CONFIRMED + paymentStatus=SUCCESS (free booking)
+                const isCOD = paymentMethod === 'CASH' || paymentMethod === 'cash' || !chargeAmount || chargeAmount === 0;
+                const isSubscriptionCovering = hasSubActive && safeAmount > 0;
 
                 booking = await prisma.booking.create({
                     data: {
@@ -186,25 +206,37 @@ const createBooking = async (req, res, next) => {
                         vehicleType,
                         amount: safeAmount,
                         formDataJson: formDataJson || null,
-                        status: isCOD ? 'CONFIRMED' : 'PAYMENT_PENDING',
-                        paymentStatus: isCOD ? 'PENDING' : 'INITIATED',
-                        // Only start SLA clock for real bookings
-                        slaDeadline: isCOD ? new Date(Date.now() + 4 * 60 * 60 * 1000) : null,
+                        status: isSubscriptionCovering ? 'CONFIRMED' : (isCOD ? 'CONFIRMED' : 'PAYMENT_PENDING'),
+                        paymentStatus: isSubscriptionCovering ? 'SUCCESS' : (isCOD ? 'PENDING' : 'INITIATED'),
+                        slaDeadline: (isCOD || isSubscriptionCovering) ? new Date(Date.now() + 4 * 60 * 60 * 1000) : null,
                     },
                     include: {
                         user: { select: { id: true, name: true, phone: true } },
                         service: { select: { name: true, slug: true, icon: true } },
                     },
                 });
-                // Create CASH payment record for COD bookings so admin can track & mark collected
-                if (isCOD && safeAmount > 0) {
+                // Create payment record
+                if (chargeAmount > 0 && isCOD) {
+                    // CASH: track for admin
                     await prisma.payment.create({
                         data: {
                             userId: finalUserId,
                             bookingId: booking.id,
-                            amount: safeAmount,
+                            amount: chargeAmount,
                             status: 'INITIATED',
                             paymentMethod: 'CASH',
+                        },
+                    });
+                } else if (isSubscriptionCovering) {
+                    // Subscription-covered: audit record
+                    await prisma.payment.create({
+                        data: {
+                            userId: finalUserId,
+                            bookingId: booking.id,
+                            amount: 0,
+                            status: 'SUCCESS',
+                            paymentMethod: 'SUBSCRIPTION',
+                            notes: 'Covered by active subscription',
                         },
                     });
                 }
@@ -274,7 +306,22 @@ const assignCaregiver = async (req, res, next) => {
         const booking = await prisma.booking.update({
             where: { id: req.params.id },
             data: { caregiverId, status: 'ASSIGNED' },
-            include: { caregiver: { select: { name: true } } },
+            include: { caregiver: { select: { id: true, name: true, phone: true, profileImageUrl: true } }, service: { select: { name: true } } },
+        });
+
+        // Emit real-time update to user via Socket.io (for activity feed)
+        const { emitToUser } = require('../services/socket.service');
+        emitToUser(booking.userId, 'activity_update_created', {
+            id: `activity_${Date.now()}`,
+            bookingId: booking.id,
+            eventType: 'caregiver_assigned',
+            serviceType: booking.service?.name || 'Service',
+            staffName: booking.caregiver.name,
+            staffId: booking.caregiver.id,
+            staffPhone: booking.caregiver.phone,
+            staffPhotoUrl: booking.caregiver.profileImageUrl || null,
+            statusDetail: `${booking.caregiver.name} has been assigned to your booking`,
+            createdAt: new Date().toISOString(),
         });
 
         // Notify user that a caregiver has been assigned — push notification

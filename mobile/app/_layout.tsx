@@ -69,6 +69,11 @@ export default function RootLayout() {
                   <Stack.Screen name="all-home-essentials/index" options={{ headerShown: false }} />
                   <Stack.Screen name="all-ayuxa-services/index" options={{ headerShown: false }} />
 
+                  {/* Profile sub-screens */}
+                  <Stack.Screen name="profile" options={{ headerShown: false }} />
+                  <Stack.Screen name="family-members" options={{ headerShown: false }} />
+                  <Stack.Screen name="emergency-contacts" options={{ headerShown: false }} />
+
                   {/* Unmapped Screens */}
                   <Stack.Screen name="smart-upgrade/index" options={{ headerShown: false }} />
                   <Stack.Screen name="hospital-trip/index" options={{ headerShown: false }} />

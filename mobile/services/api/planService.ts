@@ -67,4 +67,13 @@ export const planService = {
     ): Promise<ApiResponse<InitiateSubscriptionResponse>> => {
         return apiClient.post<InitiateSubscriptionResponse>('/subscriptions/initiate', data);
     },
+
+    /**
+     * GET /api/subscriptions/me/active
+     * Check if user has an active subscription.
+     * Returns subscription details if active, or hasActiveSubscription: false if not.
+     */
+    checkActiveSubscription: async (): Promise<ApiResponse<any>> => {
+        return apiClient.get('/subscriptions/me/active');
+    },
 };

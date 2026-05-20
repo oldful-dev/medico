@@ -28,9 +28,27 @@ const PAYMENT_METHODS: MethodOption[] = [
     { type: 'CASH', label: 'Cash on Delivery',             icon: 'cash-outline' },
 ];
 
+const mapLabelToCategory = (label: string): string => {
+    const lower = label.toLowerCase();
+    if (lower.includes('doctor') || lower.includes('consult')) return 'DOCTOR_HOME_VISIT';
+    if (lower.includes('blood') || lower.includes('diagnostic') || lower.includes('test') || lower.includes('lab')) return 'BLOOD_TEST';
+    if (lower.includes('nurse') || lower.includes('care')) return 'HOME_NURSE';
+    if (lower.includes('plumb') || lower.includes('electr')) return 'PLUMBING_ELECTRICAL';
+    if (lower.includes('hospital') || lower.includes('trip')) return 'HOSPITAL_TRIP';
+    if (lower.includes('insurance')) return 'INSURANCE';
+    if (lower.includes('medicine') || lower.includes('pharmacy')) return 'MEDICINES';
+    if (lower.includes('physio') || lower.includes('fitness')) return 'PHYSIO_FITNESS';
+    if (lower.includes('equipment') || lower.includes('rental')) return 'EQUIPMENT_RENTAL';
+    if (lower.includes('meal') || lower.includes('food') || lower.includes('tiffin') || lower.includes('prep')) return 'TIFFIN';
+    if (lower.includes('tech') || lower.includes('helper')) return 'TECH_HELPER';
+    if (lower.includes('clean') || lower.includes('grocery') || lower.includes('shopping') || lower.includes('essential')) return 'HOME_ESSENTIALS';
+    if (lower.includes('club') || lower.includes('event')) return 'CLUB_EVENTS';
+    return 'OTHER';
+};
+
 export default function CheckoutScreen() {
     const router = useRouter();
-    const { refreshData } = useUser();
+    const { profile, refreshData } = useUser();
     const params = useLocalSearchParams<{
         // ─── Existing booking ID (legacy: service screens pre-created the booking)
         bookingId?: string;
@@ -44,7 +62,27 @@ export default function CheckoutScreen() {
         userName?: string;
         // ─── Plans screen: trigger profile refresh after payment success ──────
         refreshProfileOnSuccess?: string;
+        skipUpsell?: string;
+        bookingAmount?: string;
+        bookingLabel?: string;
     }>();
+
+    // ─── Intercept and redirect to Smart Upgrade Prompt if no active plan
+    useEffect(() => {
+        if (params.bookingPayload && !params.subscriptionId && params.skipUpsell !== '1') {
+            const hasActivePlan = profile?.subscriptions?.some((s: any) => s.status === 'ACTIVE');
+            if (!hasActivePlan) {
+                router.replace({
+                    pathname: '/payment/upgrade-prompt',
+                    params: {
+                        bookingPayload: params.bookingPayload,
+                        amount: params.amount,
+                        label: params.label,
+                    }
+                });
+            }
+        }
+    }, [profile, params.bookingPayload, params.subscriptionId, params.skipUpsell]);
 
     // ─── COD Restriction: Hide CASH if it's a subscription ──────────────────
     const availableMethods = params.subscriptionId 
@@ -53,21 +91,75 @@ export default function CheckoutScreen() {
 
     const baseAmount = parseFloat(params.amount ?? '0');
     const label  = params.label ?? 'Service Booking';
-    const gstAmount = baseAmount * 0.18;
-    const serviceFee = 50;
-    const amountWithTaxAndFee = baseAmount + gstAmount + serviceFee;
+    const isSubscription = !!params.subscriptionId;
 
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(params.subscriptionId ? 'UPI' : 'UPI');
     const [couponCode,     setCouponCode]     = useState('');
     const [couponApplied,  setCouponApplied]  = useState(false);
     const [discount,       setDiscount]       = useState(0);
-    const [finalAmount,    setFinalAmount]    = useState(amountWithTaxAndFee);
     const [couponLoading,  setCouponLoading]  = useState(false);
     const [payLoading,     setPayLoading]     = useState(false);
     const [, setFlowState] = useState<PaymentFlowState>('idle');
     const [, setPendingRecovery] = useState(false);
 
+    // Benefit calculation state
+    const [calcLoading, setCalcLoading] = useState(false);
+    const [calculatedPrices, setCalculatedPrices] = useState<{
+        totalAmount: number;
+        breakdown: {
+            vendorFee: number;
+            diagnosticFee: number;
+            bookingFee: number;
+            platformFee: number;
+            taxes: number;
+            ayuxaServiceFee: number;
+            benefitDiscount: number;
+        };
+        benefitApplied: boolean;
+    } | null>(null);
+
+    useEffect(() => {
+        if (params.bookingPayload && !params.subscriptionId) {
+            const fetchCalculation = async () => {
+                setCalcLoading(true);
+                try {
+                    const category = mapLabelToCategory(label);
+                    const res = await paymentService.calculateCheckout({
+                        serviceCategory: category,
+                        vendorFee: baseAmount,
+                        baseAyuxaFee: 0, // dynamic on backend now
+                        diagnosticFee: 0
+                    });
+                    if (res.success && res.data) {
+                        setCalculatedPrices(res.data);
+                    }
+                } catch (e) {
+                    console.warn('Failed to calculate checkout with benefits:', e);
+                } finally {
+                    setCalcLoading(false);
+                }
+            };
+            fetchCalculation();
+        }
+    }, [params.bookingPayload, params.subscriptionId]);
+
+    const benefitApplied = !!calculatedPrices?.benefitApplied;
+    const bookingFee = calculatedPrices ? calculatedPrices.breakdown.bookingFee : (isSubscription ? 0 : 299);
+    const platformFee = calculatedPrices ? calculatedPrices.breakdown.platformFee : (isSubscription ? 0 : 50);
+    const taxes = calculatedPrices ? calculatedPrices.breakdown.taxes : (isSubscription ? 0 : Math.round(baseAmount * 0.06));
+    
+    // Original charges before waiver (for displaying stroke-through / FREE)
+    const originalBookingFee = calculatedPrices?.benefitApplied ? (Math.abs(calculatedPrices.breakdown.benefitDiscount) > 50 ? Math.abs(calculatedPrices.breakdown.benefitDiscount) - 50 : 299) : bookingFee;
+    const originalPlatformFee = calculatedPrices?.benefitApplied ? 50 : platformFee;
+
+    const amountWithTaxAndFee = isSubscription
+        ? baseAmount
+        : (calculatedPrices ? calculatedPrices.totalAmount : (baseAmount + bookingFee + platformFee + taxes));
+
+    const [finalAmount,    setFinalAmount]    = useState(amountWithTaxAndFee);
+
     useEffect(() => { setFinalAmount(amountWithTaxAndFee - discount); }, [amountWithTaxAndFee, discount]);
+
 
     // ─── EDGE CASE: Recover pending payment after app crash/close ──────
     // On mount, check if there's a pending Razorpay order in AsyncStorage.
@@ -232,6 +324,10 @@ export default function CheckoutScreen() {
                         bookingId: sessionBookingId.current ?? '',
                         amount: '0',
                         invoiceNumber: 'FREE-BOOKING',
+                        isSubscription: isSubscription ? '1' : '0',
+                        bookingPayload: params.bookingPayload || '',
+                        bookingAmount: params.bookingAmount || '',
+                        bookingLabel: params.bookingLabel || '',
                     },
                 });
                 return;
@@ -323,6 +419,10 @@ export default function CheckoutScreen() {
                         amount:        String(finalAmount),
                         invoiceNumber: verifyRes.data?.invoice?.invoiceNumber ?? '',
                         invoicePdfUrl: verifyRes.data?.invoice?.pdfUrl ?? '',
+                        isSubscription: isSubscription ? '1' : '0',
+                        bookingPayload: params.bookingPayload || '',
+                        bookingAmount: params.bookingAmount || '',
+                        bookingLabel: params.bookingLabel || '',
                     },
                 });
             } else {
@@ -399,20 +499,44 @@ export default function CheckoutScreen() {
                     </View>
 
                     {/* Breakdown Section */}
-                    <View style={styles.breakdownSection}>
-                        <View style={styles.breakdownRow}>
-                            <Text style={styles.breakdownLabel}>Subtotal</Text>
-                            <Text style={styles.breakdownValue}>₹{baseAmount.toLocaleString('en-IN')}</Text>
+                    {!isSubscription && (
+                        <View style={styles.breakdownSection}>
+                            <View style={styles.breakdownRow}>
+                                <Text style={styles.breakdownLabel}>Consultation / Service Fee</Text>
+                                <Text style={styles.breakdownValue}>₹{baseAmount.toLocaleString('en-IN')}</Text>
+                            </View>
+                            <View style={styles.breakdownRow}>
+                                <Text style={styles.breakdownLabel}>Booking Fee</Text>
+                                {benefitApplied ? (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                        <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: Colors.textMuted }]}>₹{originalBookingFee}</Text>
+                                        <Text style={[styles.breakdownValue, { color: '#2e7d32', fontFamily: Fonts.semiBold }]}> FREE</Text>
+                                    </View>
+                                ) : (
+                                    <Text style={styles.breakdownValue}>₹{bookingFee}</Text>
+                                )}
+                            </View>
+                            <View style={styles.breakdownRow}>
+                                <Text style={styles.breakdownLabel}>Platform Fee</Text>
+                                {benefitApplied ? (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                        <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: Colors.textMuted }]}>₹{originalPlatformFee}</Text>
+                                        <Text style={[styles.breakdownValue, { color: '#2e7d32', fontFamily: Fonts.semiBold }]}> FREE</Text>
+                                    </View>
+                                ) : (
+                                    <Text style={styles.breakdownValue}>₹{platformFee}</Text>
+                                )}
+                            </View>
+                            <View style={styles.breakdownRow}>
+                                <Text style={styles.breakdownLabel}>Taxes & GST</Text>
+                                <Text style={styles.breakdownValue}>₹{taxes.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</Text>
+                            </View>
+                            {benefitApplied && (
+                                <Text style={styles.benefitNote}>(Subscription Benefits Applied)</Text>
+                            )}
                         </View>
-                        <View style={styles.breakdownRow}>
-                            <Text style={styles.breakdownLabel}>GST (18%)</Text>
-                            <Text style={styles.breakdownValue}>₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-                        </View>
-                        <View style={styles.breakdownRow}>
-                            <Text style={styles.breakdownLabel}>Service Fee</Text>
-                            <Text style={styles.breakdownValue}>₹{serviceFee.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-                        </View>
-                    </View>
+                    )}
+
 
                     {couponApplied && (
                         <View style={styles.row}>
@@ -422,8 +546,16 @@ export default function CheckoutScreen() {
                     )}
                     <View style={[styles.row, styles.totalRow]}>
                         <Text style={styles.totalLabel}>Total</Text>
-                        <Text style={styles.totalValue}>₹{(amountWithTaxAndFee - discount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                        <Text style={styles.totalValue}>₹{(amountWithTaxAndFee - discount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</Text>
                     </View>
+
+                    {benefitApplied && (
+                        <View style={styles.savingsBadge}>
+                            <Text style={styles.savingsText}>
+                                💰 You saved ₹{(Math.round((originalBookingFee - bookingFee) + (originalPlatformFee - platformFee))).toLocaleString('en-IN')} on fees!
+                            </Text>
+                        </View>
+                    )}
                 </View>
 
                 {/* Coupon */}
@@ -621,4 +753,25 @@ const styles = StyleSheet.create({
     payBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.primary, paddingVertical: 16, borderRadius: Radius.lg ?? 12 },
     payBtnLoading: { opacity: 0.7 },
     payBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textWhite },
+    benefitNote: {
+        fontFamily: Fonts.medium,
+        fontSize: 10,
+        color: '#2e7d32',
+        textAlign: 'right',
+        marginTop: -2,
+    },
+    savingsBadge: {
+        backgroundColor: '#E8F5E9',
+        borderRadius: Radius.sm ?? 6,
+        paddingVertical: 10,
+        paddingHorizontal: Spacing.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: Spacing.md,
+    },
+    savingsText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.caption ?? 12,
+        color: '#2e7d32',
+    },
 });

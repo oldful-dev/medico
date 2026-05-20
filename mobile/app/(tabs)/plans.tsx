@@ -16,7 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useAppConfig } from '@/context/AppConfigContext';
 import { getIcon } from '@/components/sdui/SDUIRenderer';
@@ -54,11 +54,17 @@ export default function PlansScreen() {
     const insets = useSafeAreaInsets();
     const { plansBanner, benefits } = useAppConfig();
     const { profile, refreshData } = useUser();
+    const params = useLocalSearchParams<{
+        bookingPayload?: string;
+        amount?: string;
+        label?: string;
+    }>();
 
     const [plans, setPlans] = useState<Plan[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeCycle, setActiveCycle] = useState<BillingCycle>('QUARTERLY');
     const [initiating, setInitiating] = useState<string | null>(null); // planId being initiated
+    const [userActiveSubscription, setUserActiveSubscription] = useState<any>(null);
 
     // ─── Fetch plans from API (same as web) ───────────────────────────────────
     const loadPlans = useCallback(async () => {
@@ -75,12 +81,44 @@ export default function PlansScreen() {
         }
     }, []);
 
-    useEffect(() => { loadPlans(); }, [loadPlans]);
+    // ─── Check if user has active subscription ────────────────────────────────
+    useEffect(() => {
+        const checkSubscription = async () => {
+            try {
+                const res = await planService.checkActiveSubscription();
+                console.log('Subscription check:', res);
+                if (res.success && res.data?.hasActiveSubscription) {
+                    setUserActiveSubscription(res.data.subscription);
+                    console.log('User has active subscription:', res.data.subscription);
+                }
+            } catch (err) {
+                console.warn('Could not fetch subscription status:', err);
+            }
+        };
+
+        loadPlans();
+        checkSubscription();
+    }, []);
 
     // ─── CTA handler — mirrors web handleChoosePlan ───────────────────────────
     const handleChoosePlan = useCallback(async (plan: Plan) => {
+        console.log('handleChoosePlan called for:', plan.name);
+        console.log('userActiveSubscription state:', userActiveSubscription);
+
         if (!profile) {
             Alert.alert('Login Required', 'Please login to subscribe to a plan.');
+            return;
+        }
+
+        // Check if user already has active subscription
+        if (userActiveSubscription) {
+            const expiryDate = new Date(userActiveSubscription.expiryDate).toLocaleDateString();
+            console.log('Blocking plan selection - user has active subscription until:', expiryDate);
+            Alert.alert(
+                'Active Plan',
+                `You already have an active ${userActiveSubscription.planName} plan until ${expiryDate}.\n\nCancel your current plan to subscribe to another.`,
+                [{ text: 'OK', onPress: () => {} }]
+            );
             return;
         }
 
@@ -121,6 +159,9 @@ export default function PlansScreen() {
                     email: profile.email ?? '',
                     // Signal checkout to call refreshData on success
                     refreshProfileOnSuccess: '1',
+                    bookingPayload: params.bookingPayload || '',
+                    bookingAmount: params.amount || '',
+                    bookingLabel: params.label || '',
                 },
             });
         } catch (err) {
@@ -278,16 +319,17 @@ export default function PlansScreen() {
                                         styles.planActionButton,
                                         { backgroundColor: isPro ? '#0EDD94' : Colors.primary },
                                         isActivePlan && styles.planActionButtonDisabled,
+                                        (userActiveSubscription && !isActivePlan) && styles.planActionButtonDisabled,
                                     ]}
                                     activeOpacity={0.8}
                                     onPress={() => handleChoosePlan(plan)}
-                                    disabled={isActivePlan || isInitiating}
+                                    disabled={isActivePlan || isInitiating || (userActiveSubscription && !isActivePlan)}
                                 >
                                     {isInitiating ? (
                                         <ActivityIndicator size="small" color={isPro ? Colors.primary : Colors.textWhite} />
                                     ) : (
                                         <Text style={[styles.planActionText, isPro && { color: Colors.primary }]}>
-                                            {isActivePlan ? '✓ Active Plan' : 'Choose Plan'}
+                                            {isActivePlan ? '✓ Active Plan' : (userActiveSubscription ? '🔒 Plan Active' : 'Choose Plan')}
                                         </Text>
                                     )}
                                 </TouchableOpacity>

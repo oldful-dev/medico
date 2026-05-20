@@ -33,85 +33,80 @@ export default function SOSPage() {
     useEffect(() => {
         loadData();
 
-        const socket = getSocket();
-        if (!socket) return;
+        (async () => {
+            try {
+                const socket = await getSocket();
+                if (!socket) return;
 
-        socket.on("connect", () => {
-            setSocketConnected(true);
-            console.log("✅ Connected to real-time gateway");
-        });
+                socket.on("connect", () => {
+                    setSocketConnected(true);
+                    console.log("✅ Connected to real-time gateway");
+                });
 
-        socket.on("disconnect", () => {
-            setSocketConnected(false);
-            console.log("❌ Disconnected from real-time gateway");
-        });
+                socket.on("disconnect", () => {
+                    setSocketConnected(false);
+                    console.log("❌ Disconnected from real-time gateway");
+                });
 
-        // Real-time SOS events
-        socket.on("new_sos", (data) => {
-            setPage(1);
-            loadData();
-            showToast(`🚨 Critical: New SOS Alert`, 'danger');
-        });
+                // Real-time SOS events
+                socket.on("new_sos", (data) => {
+                    setPage(1);
+                    loadData();
+                    showToast(`🚨 Critical: New SOS Alert`, 'danger');
+                });
 
-        socket.on("sos_updated", (alert) => {
-            setAlerts(prevAlerts =>
-                prevAlerts.map(a => a.id === alert.id ? alert : a)
-            );
-        });
+                socket.on("sos_updated", (alert) => {
+                    setAlerts(prevAlerts =>
+                        prevAlerts.map(a => a.id === alert.id ? alert : a)
+                    );
+                });
 
-        // Real-time responder events
-        socket.on("responder_location_update", (data) => {
-            setResponderLocations(prev => ({
-                ...prev,
-                [data.responderId]: {
-                    latitude: data.latitude,
-                    longitude: data.longitude,
-                    timestamp: data.timestamp,
-                    status: data.status
-                }
-            }));
-        });
+                // Real-time responder events
+                socket.on("responder_location_update", (data) => {
+                    setResponderLocations(prev => ({
+                        ...prev,
+                        [data.responderId]: {
+                            latitude: data.latitude,
+                            longitude: data.longitude,
+                            timestamp: data.timestamp,
+                            status: data.status
+                        }
+                    }));
+                });
 
-        socket.on("responder_availability_changed", (data) => {
-            setCaregivers(prev =>
-                prev.map(c =>
-                    c.id === data.responderId ? { ...c, isAvailable: data.isAvailable } : c
-                )
-            );
-        });
+                socket.on("responder_availability_changed", (data) => {
+                    setCaregivers(prev =>
+                        prev.map(c =>
+                            c.id === data.responderId ? { ...c, isAvailable: data.isAvailable } : c
+                        )
+                    );
+                });
 
-        // System alerts & warnings
-        socket.on("low_responder_availability", (data) => {
-            setLowAvailabilityWarning(true);
-            setSystemAlerts(prev => [...prev, {
-                id: Date.now(),
-                type: 'warning',
-                message: `⚠️ Low availability: Only ${data.availableCount} responders available`,
-                timestamp: new Date()
-            }]);
-        });
+                // System alerts & warnings
+                socket.on("low_responder_availability", (data) => {
+                    setLowAvailabilityWarning(true);
+                    setSystemAlerts(prev => [...prev, {
+                        id: Date.now(),
+                        type: 'warning',
+                        message: `⚠️ Low availability: Only ${data.availableCount} responders available`,
+                        timestamp: new Date()
+                    }]);
+                });
 
-        socket.on("response_time_breach", (data) => {
-            const { minutesWaiting, userName } = data;
-            setSystemAlerts(prev => [...prev, {
-                id: Date.now(),
-                type: 'critical',
-                message: `🚨 Alert waiting: ${userName} - ${minutesWaiting} mins unassigned`,
-                timestamp: new Date()
-            }]);
-            showToast(`Alert waiting ${minutesWaiting}+ mins`, 'danger');
-        });
-
-        return () => {
-            socket.off("connect");
-            socket.off("disconnect");
-            socket.off("new_sos");
-            socket.off("sos_updated");
-            socket.off("responder_location_update");
-            socket.off("responder_availability_changed");
-            socket.off("low_responder_availability");
-            socket.off("response_time_breach");
-        };
+                socket.on("response_time_breach", (data) => {
+                    const { minutesWaiting, userName } = data;
+                    setSystemAlerts(prev => [...prev, {
+                        id: Date.now(),
+                        type: 'critical',
+                        message: `🚨 Alert waiting: ${userName} - ${minutesWaiting} mins unassigned`,
+                        timestamp: new Date()
+                    }]);
+                    showToast(`Alert waiting ${minutesWaiting}+ mins`, 'danger');
+                });
+            } catch (err) {
+                console.error('[SOSPage] Socket error:', err);
+            }
+        })();
     }, []);
 
     useEffect(() => {

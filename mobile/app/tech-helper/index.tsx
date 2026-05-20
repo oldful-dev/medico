@@ -27,6 +27,16 @@ const ISSUES = [
     { id: 'banking', title: 'Banking App', sub: '(Teach me how to use UPI safely)' },
 ];
 
+const resolvePrice = (svc: any): number => {
+    if (!svc) return 0;
+    if (svc.basePrice != null && svc.basePrice > 0) return Number(svc.basePrice);
+    if (svc.pricingText) {
+        const match = svc.pricingText.match(/[\d,]+/);
+        if (match) return parseInt(match[0].replace(/,/g, ''), 10);
+    }
+    return 0;
+};
+
 export default function TechHelperScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -68,7 +78,7 @@ export default function TechHelperScreen() {
                 const serviceRes = await apiClient.get<any[]>('/services');
                 if (serviceRes.success && serviceRes.data) {
                     const svc = serviceRes.data.find((s: any) => s.slug === 'tech-helper');
-                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Tech Helper'); setServicePrice(svc.basePrice ?? 0); }
+                    if (svc) { setServiceId(svc.id); setServiceName(svc.name || 'Tech Helper'); setServicePrice(resolvePrice(svc)); }
                 }
 
             } catch (err) {

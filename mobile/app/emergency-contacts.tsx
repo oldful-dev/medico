@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, TextInput,
-    Alert, Platform, ActivityIndicator, Switch,
+    Alert, Platform, ActivityIndicator, Switch, Linking,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -145,24 +145,40 @@ export default function EmergencyContactsScreen() {
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.contactName}>{contact.name}</Text>
                                     <Text style={styles.contactRel}>{contact.relationship}</Text>
+                                    <Text style={styles.contactPhone}>{contact.phone}</Text>
                                 </View>
                             </View>
-                            <Text style={styles.contactPhone}>{contact.phone}</Text>
                         </View>
-                        <TouchableOpacity
-                            style={styles.removeBtn}
-                            onPress={() => deleteContact(contact.id)}
-                            disabled={deletingId === contact.id}
-                        >
-                            {deletingId === contact.id ? (
-                                <ActivityIndicator size="small" color="#FF3B30" />
-                            ) : (
-                                <>
-                                    <Ionicons name="trash-outline" size={14} color="#FF3B30" />
-                                    <Text style={styles.removeBtnText}>Remove</Text>
-                                </>
-                            )}
-                        </TouchableOpacity>
+                        <View style={styles.contactActions}>
+                            <TouchableOpacity
+                                style={styles.callBtn}
+                                onPress={() => Linking.openURL(`tel:${contact.phone}`)}
+                            >
+                                <Ionicons name="call" size={15} color="#fff" />
+                                <Text style={styles.callBtnText}>Call</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.waBtn}
+                                onPress={() => Linking.openURL(`whatsapp://send?phone=91${contact.phone.replace(/\D/g, '')}`)}
+                            >
+                                <Ionicons name="logo-whatsapp" size={15} color="#fff" />
+                                <Text style={styles.callBtnText}>WhatsApp</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.removeBtn}
+                                onPress={() => deleteContact(contact.id)}
+                                disabled={deletingId === contact.id}
+                            >
+                                {deletingId === contact.id ? (
+                                    <ActivityIndicator size="small" color="#FF3B30" />
+                                ) : (
+                                    <>
+                                        <Ionicons name="trash-outline" size={14} color="#FF3B30" />
+                                        <Text style={styles.removeBtnText}>Remove</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 ))}
 
@@ -260,7 +276,14 @@ const styles = StyleSheet.create({
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 13, color: '#048357',
     },
-    removeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6, borderWidth: 1, borderColor: '#FFCDD2' },
+    contactActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, borderTopWidth: 1, borderTopColor: '#F0F0F0', paddingTop: 10 },
+    callBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, backgroundColor: '#048357' },
+    waBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, backgroundColor: '#25D366' },
+    callBtnText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontSize: 12, color: '#FFFFFF',
+    },
+    removeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, borderWidth: 1, borderColor: '#FFCDD2' },
     removeBtnText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 12, color: '#FF3B30',

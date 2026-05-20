@@ -281,4 +281,27 @@ export const waitlistAPI = {
     getAll: () => api.get('/waitlist'),
 };
 
+// ── Activity Updates ──────────────────────────
+export const activityAPI = {
+    // Admin: all updates across all orders (feed)
+    getAllUpdates: (params) => api.get('/activity/admin/all', { params }),
+    // Assign staff + push activity update to user
+    assignStaff: (labOrderId, data) => api.post(`/activity/lab-orders/${labOrderId}/assign`, data),
+    // Get all activity updates for a specific lab order
+    getOrderUpdates: (labOrderId) => api.get(`/activity/lab-orders/${labOrderId}`),
+    // Edit an activity update
+    updateUpdate: (updateId, data) => api.put(`/activity/updates/${updateId}`, data),
+    // Delete an activity update
+    deleteUpdate: (updateId) => api.delete(`/activity/updates/${updateId}`),
+};
+
+// ── Service Charges ──────────────────────────────────
+export const serviceChargeAPI = {
+    getAll: () => api.get('/admin/service-charges'),
+    create: (data) => api.post('/admin/service-charges', data),
+    update: (id, data) => api.put(`/admin/service-charges/${id}`, data),
+    delete: (id) => api.delete(`/admin/service-charges/${id}`),
+};
+
 export default api;
+

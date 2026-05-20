@@ -36,58 +36,73 @@ export default function SupportPage() {
 
     // Real-time socket updates — register once, listeners persist across reconnects
     useEffect(() => {
-        getSocket(); // Initialize socket
+        (async () => {
+            try {
+                // Initialize socket with auth
+                await getSocket();
+                console.log('[Socket] ✅ Socket initialized');
 
-        onSocketEvent("new_ticket", (newTicket) => {
-            console.log('[Socket] new_ticket:', newTicket);
-            setPage(1);
-            loadTickets();
-            showToast(`🎫 New Support Ticket: ${newTicket.subject}`, 'success');
-        });
+                // Register all event listeners
+                await onSocketEvent("new_ticket", (newTicket) => {
+                    console.log('[Socket] 🎫 new_ticket:', newTicket);
+                    setPage(1);
+                    loadTickets();
+                    showToast(`🎫 New Support Ticket: ${newTicket.subject}`, 'success');
+                });
 
-        onSocketEvent("ticket_message_added", (data) => {
-            console.log('[Socket] ticket_message_added:', data);
-            const { ticketId, message, senderName } = data;
+                await onSocketEvent("ticket_message_added", (data) => {
+                    console.log('[Socket] 💬 ticket_message_added:', data);
+                    const { ticketId, message, senderName } = data;
 
-            setSelected(prev => {
-                if (prev && prev.id === ticketId) {
-                    console.log('[Socket] Updating selected ticket:', ticketId);
-                    showToast(`💬 New message from ${senderName}`, 'info');
-                    return {
-                        ...prev,
-                        messages: [...(prev.messages || []), message]
-                    };
-                }
-                return prev;
-            });
+                    setSelected(prev => {
+                        if (prev && prev.id === ticketId) {
+                            console.log('[Socket] 📨 Updating selected ticket:', ticketId);
+                            showToast(`💬 New message from ${senderName}`, 'info');
+                            // Check if message already exists to avoid duplicates
+                            const messageExists = (prev.messages || []).some(m => m.id === message.id);
+                            if (messageExists) {
+                                console.log('[Socket] Message already exists, skipping duplicate');
+                                return prev;
+                            }
+                            return {
+                                ...prev,
+                                messages: [...(prev.messages || []), message]
+                            };
+                        }
+                        return prev;
+                    });
 
-            setTickets(prev =>
-                prev.map(t =>
-                    t.id === ticketId ? { ...t, lastMessageAt: new Date() } : t
-                )
-            );
-        });
+                    setTickets(prev =>
+                        prev.map(t =>
+                            t.id === ticketId ? { ...t, lastMessageAt: new Date() } : t
+                        )
+                    );
+                });
 
-        onSocketEvent("ticket_status_changed", (data) => {
-            console.log('[Socket] ticket_status_changed:', data);
-            const { ticketId, status } = data;
+                await onSocketEvent("ticket_status_changed", (data) => {
+                    console.log('[Socket] 🔄 ticket_status_changed:', data);
+                    const { ticketId, status } = data;
 
-            setSelected(prev => prev && prev.id === ticketId ? { ...prev, status } : prev);
-            setTickets(prev =>
-                prev.map(t => t.id === ticketId ? { ...t, status } : t)
-            );
-            showToast(`Ticket status: ${status}`, 'info');
-        });
+                    setSelected(prev => prev && prev.id === ticketId ? { ...prev, status } : prev);
+                    setTickets(prev =>
+                        prev.map(t => t.id === ticketId ? { ...t, status } : t)
+                    );
+                    showToast(`Ticket status: ${status}`, 'info');
+                });
 
-        onSocketEvent("ticket_assigned", (data) => {
-            console.log('[Socket] ticket_assigned:', data);
-            const { ticketId, agentName } = data;
+                await onSocketEvent("ticket_assigned", (data) => {
+                    console.log('[Socket] 👤 ticket_assigned:', data);
+                    const { ticketId, agentName } = data;
 
-            setSelected(prev => prev && prev.id === ticketId ? { ...prev, assignedAgent: agentName } : prev);
-            setTickets(prev =>
-                prev.map(t => t.id === ticketId ? { ...t, assignedAgent: agentName } : t)
-            );
-        });
+                    setSelected(prev => prev && prev.id === ticketId ? { ...prev, assignedAgent: agentName } : prev);
+                    setTickets(prev =>
+                        prev.map(t => t.id === ticketId ? { ...t, assignedAgent: agentName } : t)
+                    );
+                });
+            } catch (err) {
+                console.error('[Socket] ❌ Setup error:', err);
+            }
+        })();
     }, []); // Empty deps — register listeners once
 
     // Auto-scroll chat to bottom when messages change
@@ -203,10 +218,12 @@ export default function SupportPage() {
                             <p>No messages yet. Send a reply to start the conversation.</p>
                         </div>
                     ) : (
-                        selected.messages.map((msg, i) => {
+                        selected.messages.map((msg) => {
                             const isAdmin = msg.senderType === 'admin';
+                            // Use timestamp as fallback if id is missing, or combine id + timestamp for uniqueness
+                            const key = msg.id ? `${msg.id}-${msg.createdAt}` : `temp-${msg.createdAt}-${msg.message.substring(0, 10)}`;
                             return (
-                                <div key={msg.id || i} style={{
+                                <div key={key} style={{
                                     display: 'flex',
                                     justifyContent: isAdmin ? 'flex-end' : 'flex-start',
                                 }}>

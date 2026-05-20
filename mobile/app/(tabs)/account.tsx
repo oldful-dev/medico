@@ -1,15 +1,14 @@
-// Account Tab — My Profile (PRD 4-Section Layout)
-// Section 1: My Health | Section 2: Management & Logistics
-// Section 3: App Preferences | Section 4: Support & Legal
+// Account Tab — My Profile
+// Comprehensive profile hub with header, bookings, medical, payments, preferences, support
 import React, { useState, useCallback } from 'react';
 import {
     View, Text, Image, TouchableOpacity, StyleSheet,
-    Switch, Modal, Alert, ActivityIndicator,
+    Switch, Modal, Alert, ActivityIndicator, Linking,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useUser } from '@/context/UserContext';
@@ -20,38 +19,49 @@ import { getAssetUrl } from '@/utils/getAssetUrl';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 
-// ─── Local Assets ───
 const avatarImg = require('@/assets/images/65a7d95e579c06bade85c7970d17cfcc5d7b7c55.png');
+
+// ─── Membership config ────────────────────────────────
+const MEMBERSHIP_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string; border: string }> = {
+    premium:  { label: 'Premium Care',  color: '#92400E', bg: '#FEF3C7', icon: 'trophy',          border: '#FDE68A' },
+    care_plus:{ label: 'Care Plus',     color: '#065F46', bg: '#D1FAE5', icon: 'shield-checkmark', border: '#6EE7B7' },
+    basic:    { label: 'Basic Care',    color: '#1E40AF', bg: '#DBEAFE', icon: 'shield-half',      border: '#BFDBFE' },
+    free:     { label: 'Free',          color: '#6B7280', bg: '#F3F4F6', icon: 'person-circle',    border: '#E5E7EB' },
+};
+
+// ─── Social links ────────────────────────────────────
+const SOCIAL_LINKS = [
+    { icon: 'logo-instagram', color: '#E1306C', url: 'https://instagram.com/ayuxacare' },
+    { icon: 'logo-facebook', color: '#1877F2', url: 'https://facebook.com/ayuxacare' },
+    { icon: 'logo-linkedin', color: '#0A66C2', url: 'https://linkedin.com/company/ayuxacare' },
+    { icon: 'logo-youtube', color: '#FF0000', url: 'https://youtube.com/@ayuxacare' },
+    { icon: 'logo-twitter', color: '#000000', url: 'https://x.com/ayuxacare' },
+    { icon: 'logo-whatsapp', color: '#25D366', url: 'https://wa.me/918012345678' },
+];
 
 export default function AccountScreen() {
     const router = useRouter();
     const { profile, setProfile } = useUser();
     const { logout } = useAuth();
     const { languages } = useAppConfig();
-
     const { t } = useTranslation();
-    const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-    // Language Modal
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const { preferredLanguage, setPreferredLanguage } = useUser();
     const [langModalVisible, setLangModalVisible] = useState(false);
     const [savingLang, setSavingLang] = useState(false);
 
     const handleToggle = async (key: string, value: boolean) => {
         if (!profile) return;
-        
-        // Optimistic update
         const oldProfile = { ...profile };
-        const newProfile = { ...profile, [key]: value };
-        setProfile(newProfile);
-
+        setProfile({ ...profile, [key]: value });
         try {
             const res = await userService.updateProfile({ [key]: value } as any);
             if (!res.success) {
                 setProfile(oldProfile);
                 Alert.alert('Error', res.message || 'Failed to update preference');
             }
-        } catch (error) {
+        } catch {
             setProfile(oldProfile);
             Alert.alert('Error', 'Network error. Please try again.');
         }
@@ -63,9 +73,8 @@ export default function AccountScreen() {
         setSavingLang(true);
         try {
             await userService.updateProfile({ preferredLanguage: code });
-            setPreferredLanguage(code);   // persists to AsyncStorage via context
+            setPreferredLanguage(code);
         } catch {
-            // non-fatal — local state still updates
             setPreferredLanguage(code);
         } finally {
             setSavingLang(false);
@@ -73,44 +82,61 @@ export default function AccountScreen() {
         }
     };
 
-    // Refetch on focus
     useFocusEffect(
         useCallback(() => {
-            const refetch = async () => {
+            (async () => {
                 try {
                     const res = await userService.getProfile();
                     if (res.success && res.data) setProfile(res.data);
                 } catch { }
-            };
-            refetch();
+            })();
         }, [setProfile])
     );
 
-    // Medical card summary
     const medicalCard = profile?.medicalCards?.[0];
-    const bloodGroup = medicalCard?.bloodGroup || t('account.not_set');
-    const allergies = medicalCard?.allergies?.length ? medicalCard.allergies.join(', ') : t('account.none');
+    const bloodGroup = medicalCard?.bloodGroup || 'Not set';
+    const allergies = medicalCard?.allergies?.length ? medicalCard.allergies.join(', ') : 'None';
 
-    // Profile Image Upload
+    const activeSub = profile?.subscriptions?.[0];
+    const resolveMembershipKey = (): string => {
+        const tier = activeSub?.plan?.tier?.toLowerCase();
+        if (tier && MEMBERSHIP_CONFIG[tier]) return tier;
+        const name = (activeSub?.plan?.name || '').toLowerCase();
+        if (name.includes('premium')) return 'premium';
+        if (name.includes('care plus') || name.includes('care_plus')) return 'care_plus';
+        if (name.includes('basic')) return 'basic';
+        return activeSub ? 'basic' : 'free';
+    };
+    const membership = MEMBERSHIP_CONFIG[resolveMembershipKey()];
+
+    // Profile completion %
+    const completionFields = [
+        profile?.name, profile?.phone, profile?.email, profile?.gender,
+        profile?.dateOfBirth, profile?.profileImageUrl,
+        profile?.addresses?.length, profile?.emergencyContacts?.length,
+        profile?.medicalCards?.length,
+    ];
+    const completionPct = Math.round((completionFields.filter(Boolean).length / completionFields.length) * 100);
+
     const handleAvatarUpload = async () => {
-        Alert.alert(t('account.update_photo'), t('account.choose_option'), [
+        Alert.alert('Update Photo', 'Choose option', [
             {
-                text: t('account.camera'), onPress: async () => {
+                text: 'Camera', onPress: async () => {
                     const perm = await ImagePicker.requestCameraPermissionsAsync();
-                    if (!perm.granted) { Alert.alert(t('common.permission_required'), t('account.camera_permission')); return; }
+                    if (!perm.granted) { Alert.alert('Permission required', 'Camera access needed'); return; }
                     const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
                     if (!result.canceled && result.assets[0]) uploadImage(result.assets[0]);
                 }
             },
             {
-                text: t('account.gallery'), onPress: async () => {
+                text: 'Gallery', onPress: async () => {
                     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                    if (!perm.granted) { Alert.alert(t('common.permission_required'), t('account.gallery_permission')); return; }
+                    if (!perm.granted) { Alert.alert('Permission required', 'Gallery access needed'); return; }
                     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
                     if (!result.canceled && result.assets[0]) uploadImage(result.assets[0]);
                 }
             },
-            { text: t('common.cancel'), style: 'cancel' },
+            { text: 'Cancel', style: 'cancel' },
         ]);
     };
 
@@ -121,23 +147,21 @@ export default function AccountScreen() {
             const res = await userService.uploadProfileAvatar(file);
             if (res.success && res.data) {
                 setProfile(res.data);
-                Alert.alert(t('common.success'), 'Profile photo updated!');
             } else {
-                Alert.alert(t('common.error'), res.message || 'Upload failed.');
+                Alert.alert('Error', res.message || 'Upload failed.');
             }
         } catch (err: any) {
-            Alert.alert(t('common.error'), err.message || 'Upload failed.');
+            Alert.alert('Error', err.message || 'Upload failed.');
         } finally {
             setUploadingAvatar(false);
         }
     };
 
-    // Logout
     const handleLogout = () => {
-        Alert.alert(t('account.logout_confirm'), t('account.logout_message'), [
-            { text: t('common.cancel'), style: 'cancel' },
+        Alert.alert('Log Out', 'Are you sure you want to log out?', [
+            { text: 'Cancel', style: 'cancel' },
             {
-                text: t('account.logout'), style: 'destructive', onPress: async () => {
+                text: 'Log Out', style: 'destructive', onPress: async () => {
                     try { await logout(); } catch { }
                     router.replace('/(auth)/login' as any);
                 }
@@ -145,307 +169,275 @@ export default function AccountScreen() {
         ]);
     };
 
+    const handleDeleteAccount = () => {
+        Alert.alert(
+            'Delete Account',
+            'This will permanently delete your account and all data. This cannot be undone.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: () => router.push('/help-support' as any) },
+            ]
+        );
+    };
+
     // ─── Render ───
     return (
         <View style={styles.screen}>
             <StatusBar style="light" />
 
-            {/* ─── Header ─── */}
+            {/* ─── Green Header Bar ─── */}
             <SafeAreaView style={styles.headerSafe} edges={['top']}>
                 <View style={styles.headerRow}>
                     <Text style={styles.headerTitle}>My Profile</Text>
                 </View>
             </SafeAreaView>
 
-            <KeyboardAwareScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} enableOnAndroid={true} extraScrollHeight={20} keyboardShouldPersistTaps="handled">
+            <KeyboardAwareScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                enableOnAndroid
+                extraScrollHeight={20}
+                keyboardShouldPersistTaps="handled"
+            >
 
-                {/* ─── Profile Card ─── */}
-                <TouchableOpacity style={styles.profileCard} activeOpacity={0.8} onPress={() => router.push('/edit-profile' as any)}>
-                    <View style={styles.profileInfoText}>
-                        <Text style={styles.profileName}>{profile?.name || 'Loading...'}</Text>
-                        <Text style={styles.profileDetail}>
-                            <Text style={styles.boldKey}>ID: </Text>{profile?.uniqueUserId || 'Pending'}
-                        </Text>
-                        <Text style={styles.profileDetail}>
-                            <Text style={styles.boldKey}>Email: </Text>{profile?.email || 'Not provided'}
-                        </Text>
-                        <Text style={styles.profileDetail}>
-                            <Text style={styles.boldKey}>Phone: </Text>{profile?.phone || '...'}
-                        </Text>
-                        <Text style={styles.profileDetail} numberOfLines={1}>
-                            <Text style={styles.boldKey}>Address: </Text>
-                            {(() => {
-                                const defAddr = profile?.addresses?.find(a => a.isDefault) || profile?.addresses?.[0];
-                                return defAddr ? `${defAddr.line1}, ${defAddr.cityName}` : 'Not set';
-                            })()}
-                        </Text>
-                    </View>
-                    <View style={styles.avatarContainer}>
-                        <View style={styles.avatarWrapper}>
-                            {uploadingAvatar ? (
-                                <ActivityIndicator size="large" color={Colors.primary} />
-                            ) : (
-                                <Image
-                                    source={profile?.profileImageUrl ? { uri: `${getAssetUrl(profile.profileImageUrl)}&_=${Math.random()}` } : avatarImg}
-                                    style={profile?.profileImageUrl ? styles.avatarFull : styles.avatarDefault}
-                                    resizeMode="cover"
-                                    key={`${profile?.profileImageUrl}-${Math.random()}`}
-                                />
-                            )}
+                {/* ═══════════════════════════════════════
+                    PROFILE HEADER CARD
+                   ═══════════════════════════════════════ */}
+                <View style={styles.profileCard}>
+                    {/* Top row: avatar + info */}
+                    <View style={styles.profileTopRow}>
+                        {/* Avatar */}
+                        <View style={styles.avatarContainer}>
+                            <View style={styles.avatarWrapper}>
+                                {uploadingAvatar ? (
+                                    <ActivityIndicator size="large" color={Colors.primary} />
+                                ) : (
+                                    <Image
+                                        source={profile?.profileImageUrl
+                                            ? { uri: `${getAssetUrl(profile.profileImageUrl)}&_=${Math.random()}` }
+                                            : avatarImg}
+                                        style={profile?.profileImageUrl ? styles.avatarFull : styles.avatarDefault}
+                                        resizeMode="cover"
+                                    />
+                                )}
+                            </View>
+                            <TouchableOpacity style={styles.editPhotoBtn} onPress={handleAvatarUpload}>
+                                <Ionicons name="camera-outline" size={13} color={Colors.primary} />
+                            </TouchableOpacity>
                         </View>
-                        <TouchableOpacity style={styles.editPhotoBtn} onPress={handleAvatarUpload}>
-                            <Ionicons name="camera-outline" size={14} color={Colors.primary} />
+
+                        {/* Name + badges */}
+                        <View style={styles.profileMeta}>
+                            <View style={styles.nameRow}>
+                                <Text style={styles.profileName} numberOfLines={1}>{profile?.name || '—'}</Text>
+                                <Ionicons name="checkmark-circle" size={16} color={Colors.primary} />
+                            </View>
+
+                            {/* Membership badge — always visible */}
+                            <TouchableOpacity
+                                style={[styles.memberBadge, { backgroundColor: membership.bg, borderColor: membership.border }]}
+                                onPress={() => router.push('/profile/subscription' as any)}
+                                activeOpacity={0.75}
+                            >
+                                <Ionicons name={membership.icon as any} size={13} color={membership.color} />
+                                <Text style={[styles.memberBadgeText, { color: membership.color }]}>
+                                    {membership.label}
+                                </Text>
+                                {membership.label === 'Free' && (
+                                    <Text style={[styles.memberBadgeUpgrade, { color: membership.color }]}>· Upgrade</Text>
+                                )}
+                            </TouchableOpacity>
+
+                            {/* AYUXA ID */}
+                            <View style={styles.idPill}>
+                                <Text style={styles.idPillText}>ID: {profile?.uniqueUserId || 'Pending'}</Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Contact info */}
+                    <View style={styles.contactGrid}>
+                        <View style={styles.contactRow}>
+                            <Ionicons name="call-outline" size={14} color={Colors.textMuted} />
+                            <Text style={styles.contactText}>{profile?.phone || '—'}</Text>
+                        </View>
+                        <View style={styles.contactRow}>
+                            <Ionicons name="mail-outline" size={14} color={Colors.textMuted} />
+                            <Text style={styles.contactText} numberOfLines={1}>{profile?.email || 'Not provided'}</Text>
+                        </View>
+                    </View>
+
+                    {/* Action buttons */}
+                    <View style={styles.profileActions}>
+                        <TouchableOpacity style={styles.actionBtnPrimary} onPress={() => router.push('/edit-profile' as any)}>
+                            <Ionicons name="create-outline" size={15} color="#fff" />
+                            <Text style={styles.actionBtnPrimaryText}>Edit Profile</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.actionBtnOutline} onPress={handleLogout}>
+                            <Ionicons name="log-out-outline" size={15} color={Colors.textMuted} />
+                            <Text style={styles.actionBtnOutlineText}>Log Out</Text>
                         </TouchableOpacity>
                     </View>
-                </TouchableOpacity>
 
-                {/* ══════════════════════════════════════════════════
-                    SECTION 1: My Health
-                   ══════════════════════════════════════════════════ */}
-                <Text style={styles.sectionHeading}>
-                    <Text style={styles.sectionGreen}>{t('account.my_health')}</Text>
-                </Text>
+                    <TouchableOpacity style={styles.deleteAccountBtn} onPress={handleDeleteAccount}>
+                        <Ionicons name="trash-outline" size={13} color="#EF4444" />
+                        <Text style={styles.deleteAccountText}>Delete My Account</Text>
+                    </TouchableOpacity>
 
-                {/* My Medical Card */}
-                <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => router.push('/edit-medical-card' as any)}>
-                    <View style={styles.linkLeft}>
-                        <View style={[styles.linkIcon, { backgroundColor: '#FFF0E0' }]}>
-                            <Ionicons name="medical-outline" size={20} color="#F5A623" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.linkTitle}>{t('account.medical_card')}</Text>
-                            <Text style={styles.linkSubtitle}>Blood: {bloodGroup} • Allergies: {allergies}</Text>
-                        </View>
+                    {/* Profile completion */}
+                    <View style={styles.completionRow}>
+                        <Text style={styles.completionLabel}>Profile Completion</Text>
+                        <Text style={styles.completionPct}>{completionPct}%</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
-                </TouchableOpacity>
-
-                {/* My Prescriptions */}
-                <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => router.push('/my-prescriptions' as any)}>
-                    <View style={styles.linkLeft}>
-                        <View style={[styles.linkIcon, { backgroundColor: '#E8F5E9' }]}>
-                            <Ionicons name="document-text-outline" size={20} color="#048357" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.linkTitle}>{t('account.prescriptions')}</Text>
-                            <Text style={styles.linkSubtitle}>View uploaded prescriptions & reports</Text>
-                        </View>
+                    <View style={styles.completionTrack}>
+                        <View style={[styles.completionFill, { width: `${completionPct}%` as any }]} />
                     </View>
-                    <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
-                </TouchableOpacity>
+                </View>
 
-                {/* Emergency Contacts */}
-                <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => router.push('/emergency-contacts' as any)}>
-                    <View style={styles.linkLeft}>
-                        <View style={[styles.linkIcon, { backgroundColor: '#FFE6E6' }]}>
-                            <Ionicons name="people-outline" size={20} color="#FF3B30" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.linkTitle}>{t('account.emergency_contacts')}</Text>
-                            <Text style={styles.linkSubtitle}>
-                                {(profile?.emergencyContacts?.length || 0) > 0
-                                    ? `${profile?.emergencyContacts?.length} contact(s) saved`
-                                    : 'Add son, daughter, neighbour'}
-                            </Text>
-                        </View>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
-                </TouchableOpacity>
+                {/* ═══════════════════════════════════════
+                    SECTION 1 — Live Updates
+                   ═══════════════════════════════════════ */}
+                <SectionHeading title="Live Updates" />
+                <MenuRow
+                    icon="pulse-outline"
+                    iconBg="#FFF0E0"
+                    iconColor="#F59E0B"
+                    title="Activity Center"
+                    subtitle="Doctor assigned, delivery updates, appointments"
+                    onPress={() => router.push('/profile/activity-center' as any)}
+                />
 
-                {/* ══════════════════════════════════════════════════
-                    SECTION 2: Management & Logistics
-                   ══════════════════════════════════════════════════ */}
-                <Text style={styles.sectionHeading}>{t('account.management')}</Text>
+                {/* ═══════════════════════════════════════
+                    SECTION 2 — Bookings
+                   ═══════════════════════════════════════ */}
+                <SectionHeading title="Bookings" />
+                <MenuRow
+                    icon="calendar-outline"
+                    iconBg="#E8F5E9"
+                    iconColor="#048357"
+                    title="Bookings"
+                    subtitle="Health tests, wellness, concierge services & transaction history"
+                    onPress={() => router.push('/my-bookings' as any)}
+                />
 
-                {/* Management & Logistics */}
-                <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => router.push('/manage-addresses' as any)}>
-                    <View style={styles.linkLeft}>
-                        <View style={[styles.linkIcon, { backgroundColor: '#E3F2FD' }]}>
-                            <Ionicons name="location-outline" size={20} color="#1E88E5" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.linkTitle}>{t('account.management')}</Text>
-                            <Text style={styles.linkSubtitle}>Home, Second Home, Clinic</Text>
-                        </View>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
-                </TouchableOpacity>
+                {/* ═══════════════════════════════════════
+                    SECTION 3 — My Health
+                   ═══════════════════════════════════════ */}
+                <SectionHeading title="My Health" green />
+                <MenuRow
+                    icon="medical-outline"
+                    iconBg="#FFF0E0"
+                    iconColor="#F5A623"
+                    title="Medical Card"
+                    subtitle={`Blood: ${bloodGroup} • Allergies: ${allergies}`}
+                    onPress={() => router.push('/edit-medical-card' as any)}
+                />
+                <MenuRow
+                    icon="documents-outline"
+                    iconBg="#E8F5E9"
+                    iconColor="#048357"
+                    title="Medical Logs"
+                    subtitle="Prescriptions, reports, scan documents"
+                    onPress={() => router.push('/profile/medical-logs' as any)}
+                />
+                <MenuRow
+                    icon="people-outline"
+                    iconBg="#FFE6E6"
+                    iconColor="#FF3B30"
+                    title="Emergency Contacts"
+                    subtitle={profile?.emergencyContacts?.length
+                        ? `${profile.emergencyContacts.length} contact(s) saved`
+                        : 'Add emergency contacts'}
+                    onPress={() => router.push('/emergency-contacts' as any)}
+                />
+                <MenuRow
+                    icon="person-add-outline"
+                    iconBg="#EDE9FE"
+                    iconColor="#7C3AED"
+                    title="Family Members"
+                    subtitle="Father, mother, spouse, children"
+                    onPress={() => router.push('/family-members' as any)}
+                />
 
-                {/* Payments & Wallet */}
-                <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => router.push('/payments-wallet' as any)}>
-                    <View style={styles.linkLeft}>
-                        <View style={[styles.linkIcon, { backgroundColor: '#F3E5F5' }]}>
-                            <Ionicons name="wallet-outline" size={20} color="#8E24AA" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.linkTitle}>{t('account.payments_wallet')}</Text>
-                            <Text style={styles.linkSubtitle}>Save cards for easy checkout</Text>
-                        </View>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
-                </TouchableOpacity>
+                {/* ═══════════════════════════════════════
+                    SECTION 4 — Account & Logistics
+                   ═══════════════════════════════════════ */}
+                <SectionHeading title="Account" />
+                <MenuRow
+                    icon="location-outline"
+                    iconBg="#E3F2FD"
+                    iconColor="#1E88E5"
+                    title="Manage Addresses"
+                    subtitle="Home, Office, Parents Home"
+                    onPress={() => router.push('/manage-addresses' as any)}
+                />
+                <MenuRow
+                    icon="wallet-outline"
+                    iconBg="#F3E5F5"
+                    iconColor="#8E24AA"
+                    title="Payment Methods"
+                    subtitle="Cards, UPI, wallet balance"
+                    onPress={() => router.push('/payments-wallet' as any)}
+                />
+                <MenuRow
+                    icon="ribbon-outline"
+                    iconBg="#FEF3C7"
+                    iconColor="#B45309"
+                    title="Subscription & Membership"
+                    subtitle={activeSub ? `${activeSub.plan?.name || 'Active Plan'} · Renew soon` : 'Upgrade to a plan'}
+                    onPress={() => router.push('/profile/subscription' as any)}
+                />
 
-                {/* My Bookings */}
-                <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => router.push('/my-bookings' as any)}>
-                    <View style={styles.linkLeft}>
-                        <View style={[styles.linkIcon, { backgroundColor: '#E8F5E9' }]}>
-                            <Ionicons name="calendar-outline" size={20} color="#048357" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.linkTitle}>My Bookings</Text>
-                            <Text style={styles.linkSubtitle}>View your health test & service bookings</Text>
-                        </View>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
-                </TouchableOpacity>
-
-                {/* Order History */}
-                <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => router.push('/order-history' as any)}>
-                    <View style={styles.linkLeft}>
-                        <View style={[styles.linkIcon, { backgroundColor: '#FFF3E0' }]}>
-                            <Ionicons name="receipt-outline" size={20} color="#EF6C00" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.linkTitle}>{t('account.order_history')}</Text>
-                            <Text style={styles.linkSubtitle}>Past bookings, orders & subscriptions</Text>
-                        </View>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
-                </TouchableOpacity>
-
-                {/* ══════════════════════════════════════════════════
-                    SECTION 3: App Preferences
-                   ══════════════════════════════════════════════════ */}
-                <Text style={styles.sectionHeading}>{t('account.preferences')}</Text>
-
-                {/* Change Language */}
-                <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => setLangModalVisible(true)}>
-                    <View style={styles.linkLeft}>
-                        <View style={[styles.linkIcon, { backgroundColor: '#E8EAF6' }]}>
+                {/* ═══════════════════════════════════════
+                    SECTION 5 — Preferences
+                   ═══════════════════════════════════════ */}
+                <SectionHeading title="Preferences" />
+                <TouchableOpacity style={styles.menuRow} activeOpacity={0.7} onPress={() => setLangModalVisible(true)}>
+                    <View style={styles.menuLeft}>
+                        <View style={[styles.menuIcon, { backgroundColor: '#E8EAF6' }]}>
                             <Ionicons name="language-outline" size={20} color="#3F51B5" />
                         </View>
-                        <Text style={styles.linkTitle}>{t('account.change_language')}</Text>
+                        <Text style={styles.menuTitle}>Language</Text>
                     </View>
-                    <View style={styles.rightWithText}>
-                        <Text style={styles.selectedText}>{currentLangLabel}</Text>
-                        <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
+                    <View style={styles.menuRight}>
+                        <Text style={styles.menuValue}>{currentLangLabel}</Text>
+                        <Ionicons name="chevron-forward" size={18} color="#AAAEAC" />
                     </View>
                 </TouchableOpacity>
 
-                {/* Push Notifications */}
-                <View style={styles.toggleCard}>
-                    <View style={styles.linkLeft}>
-                        <View style={[styles.linkIcon, { backgroundColor: '#E1F5FE' }]}>
-                            <Ionicons name="notifications-outline" size={20} color="#0288D1" />
-                        </View>
-                        <Text style={styles.linkTitle}>Push Notifications</Text>
-                    </View>
-                    <Switch 
-                        trackColor={{ false: '#AAAEAC', true: Colors.primary }} 
-                        thumbColor="#FFFFFF"
-                        ios_backgroundColor="#AAAEAC" 
-                        onValueChange={(val) => handleToggle('pushEnabled', val)} 
-                        value={!!profile?.pushEnabled} 
-                    />
+                <ToggleRow icon="notifications-outline" iconBg="#E1F5FE" iconColor="#0288D1" title="Push Notifications" value={!!profile?.pushEnabled} onToggle={v => handleToggle('pushEnabled', v)} />
+                <ToggleRow icon="chatbubble-outline" iconBg="#FFF3E0" iconColor="#EF6C00" title="SMS Alerts" value={!!profile?.smsEnabled} onToggle={v => handleToggle('smsEnabled', v)} />
+                <ToggleRow icon="logo-whatsapp" iconBg="#E8F5E9" iconColor="#25D366" title="WhatsApp Updates" value={!!profile?.whatsappEnabled} onToggle={v => handleToggle('whatsappEnabled', v)} />
+                <ToggleRow icon="megaphone-outline" iconBg="#FFF8E1" iconColor="#FFA000" title="Promotional Offers" value={!!profile?.emailMarketingEnabled} onToggle={v => handleToggle('emailMarketingEnabled', v)} />
+                <ToggleRow icon="mail-outline" iconBg="#EDE9FE" iconColor="#7C3AED" title="Email Notifications" value={!!profile?.emailMarketingEnabled} onToggle={v => handleToggle('emailMarketingEnabled', v)} />
+                <ToggleRow icon="chatbox-ellipses-outline" iconBg="#F0FDF4" iconColor="#059669" title="RCS Messages" value={false} onToggle={() => Alert.alert('Coming Soon', 'RCS messaging support is coming soon.')} />
+                <ToggleRow icon="moon-outline" iconBg="#1E1B4B15" iconColor="#4338CA" title="Dark Mode" value={false} onToggle={() => Alert.alert('Coming Soon', 'Dark mode is coming soon.')} />
+
+                {/* ═══════════════════════════════════════
+                    SECTION 6 — Support & Legal
+                   ═══════════════════════════════════════ */}
+                <SectionHeading title="Support & Legal" />
+                <MenuRow icon="headset-outline" iconBg="#E1F5FE" iconColor="#0288D1" title="Help & Support" subtitle="Call, WhatsApp, raise a ticket" onPress={() => router.push('/help-support' as any)} />
+                <MenuRow icon="star-outline" iconBg="#FFF9C4" iconColor="#FFC107" title="Rate Us" onPress={() => router.push('/rate-us' as any)} />
+                <MenuRow icon="document-text-outline" iconBg="#F3F3F3" iconColor="#616161" title="Terms & Privacy" onPress={() => router.push('/terms-policy' as any)} />
+
+                {/* ═══════════════════════════════════════
+                    SOCIAL LINKS
+                   ═══════════════════════════════════════ */}
+                <SectionHeading title="Follow Us" />
+                <View style={styles.socialRow}>
+                    {SOCIAL_LINKS.map((s, i) => (
+                        <TouchableOpacity
+                            key={i}
+                            style={[styles.socialBtn, { backgroundColor: `${s.color}15` }]}
+                            onPress={() => Linking.openURL(s.url)}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name={s.icon as any} size={22} color={s.color} />
+                        </TouchableOpacity>
+                    ))}
                 </View>
-
-                {/* SMS Alerts */}
-                <View style={styles.toggleCard}>
-                    <View style={styles.linkLeft}>
-                        <View style={[styles.linkIcon, { backgroundColor: '#FFF3E0' }]}>
-                            <Ionicons name="chatbubble-outline" size={20} color="#EF6C00" />
-                        </View>
-                        <Text style={styles.linkTitle}>SMS Alerts</Text>
-                    </View>
-                    <Switch 
-                        trackColor={{ false: '#AAAEAC', true: Colors.primary }} 
-                        thumbColor="#FFFFFF"
-                        ios_backgroundColor="#AAAEAC" 
-                        onValueChange={(val) => handleToggle('smsEnabled', val)} 
-                        value={!!profile?.smsEnabled} 
-                    />
-                </View>
-
-                {/* WhatsApp Updates */}
-                <View style={styles.toggleCard}>
-                    <View style={styles.linkLeft}>
-                        <View style={[styles.linkIcon, { backgroundColor: '#E8F5E9' }]}>
-                            <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
-                        </View>
-                        <Text style={styles.linkTitle}>{t('account.whatsapp_updates')}</Text>
-                    </View>
-                    <Switch 
-                        trackColor={{ false: '#AAAEAC', true: Colors.primary }} 
-                        thumbColor="#FFFFFF"
-                        ios_backgroundColor="#AAAEAC" 
-                        onValueChange={(val) => handleToggle('whatsappEnabled', val)} 
-                        value={!!profile?.whatsappEnabled} 
-                    />
-                </View>
-
-                {/* Promotional Offers */}
-                <View style={styles.toggleCard}>
-                    <View style={styles.linkLeft}>
-                        <View style={[styles.linkIcon, { backgroundColor: '#FFF8E1' }]}>
-                            <Ionicons name="megaphone-outline" size={20} color="#FFA000" />
-                        </View>
-                        <Text style={styles.linkTitle}>{t('account.promotional_offers')}</Text>
-                    </View>
-                    <Switch 
-                        trackColor={{ false: '#AAAEAC', true: Colors.primary }} 
-                        thumbColor="#FFFFFF"
-                        ios_backgroundColor="#AAAEAC" 
-                        onValueChange={(val) => handleToggle('emailMarketingEnabled', val)} 
-                        value={!!profile?.emailMarketingEnabled} 
-                    />
-                </View>
-
-                {/* ══════════════════════════════════════════════════
-                    SECTION 4: Support & Legal
-                   ══════════════════════════════════════════════════ */}
-                <Text style={styles.sectionHeading}>{t('account.support')}</Text>
-
-                {/* Help & Support */}
-                <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => router.push('/help-support' as any)}>
-                    <View style={styles.linkLeft}>
-                        <View style={[styles.linkIcon, { backgroundColor: '#E1F5FE' }]}>
-                            <Ionicons name="headset-outline" size={20} color="#0288D1" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.linkTitle}>{t('account.help_support')}</Text>
-                            <Text style={styles.linkSubtitle}>Call Us, WhatsApp, Raise a Ticket</Text>
-                        </View>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
-                </TouchableOpacity>
-
-                {/* Rate Ayuxa Care */}
-                <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => router.push('/rate-us' as any)}>
-                    <View style={styles.linkLeft}>
-                        <View style={[styles.linkIcon, { backgroundColor: '#FFF9C4' }]}>
-                            <Ionicons name="star-outline" size={20} color="#FFC107" />
-                        </View>
-                        <Text style={styles.linkTitle}>{t('account.rate_us')}</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
-                </TouchableOpacity>
-
-                {/* Terms & Privacy */}
-                <TouchableOpacity style={styles.linkCard} activeOpacity={0.7} onPress={() => router.push('/terms-policy' as any)}>
-                    <View style={styles.linkLeft}>
-                        <View style={[styles.linkIcon, { backgroundColor: '#F3F3F3' }]}>
-                            <Ionicons name="document-text-outline" size={20} color="#616161" />
-                        </View>
-                        <Text style={styles.linkTitle}>{t('account.terms_privacy')}</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#AAAEAC" />
-                </TouchableOpacity>
-
-                {/* ─── Log Out (grey/small at bottom) ─── */}
-                <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.6} onPress={handleLogout}>
-                    <Ionicons name="log-out-outline" size={16} color="#898989" />
-                    <Text style={styles.logoutText}>{t('account.logout')}</Text>
-                </TouchableOpacity>
 
                 <View style={{ height: 100 }} />
             </KeyboardAwareScrollView>
@@ -454,7 +446,7 @@ export default function AccountScreen() {
             <Modal visible={langModalVisible} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContainer}>
-                        <Text style={styles.modalTitle}>{t('account.select_language')}</Text>
+                        <Text style={styles.modalTitle}>Select Language</Text>
                         {savingLang ? (
                             <ActivityIndicator color={Colors.primary} style={{ marginVertical: Spacing.xl }} />
                         ) : (
@@ -484,69 +476,158 @@ export default function AccountScreen() {
     );
 }
 
+// ─── Shared small components ──────────────────────────────
+function SectionHeading({ title, green }: { title: string; green?: boolean }) {
+    return (
+        <Text style={[sharedStyles.sectionHeading, green && { color: Colors.primary }]}>
+            {title}
+        </Text>
+    );
+}
+
+function MenuRow({
+    icon, iconBg, iconColor, title, subtitle, onPress
+}: {
+    icon: string; iconBg: string; iconColor: string;
+    title: string; subtitle?: string; onPress: () => void;
+}) {
+    return (
+        <TouchableOpacity style={sharedStyles.menuRow} activeOpacity={0.7} onPress={onPress}>
+            <View style={sharedStyles.menuLeft}>
+                <View style={[sharedStyles.menuIcon, { backgroundColor: iconBg }]}>
+                    <Ionicons name={icon as any} size={20} color={iconColor} />
+                </View>
+                <View style={{ flex: 1 }}>
+                    <Text style={sharedStyles.menuTitle}>{title}</Text>
+                    {subtitle ? <Text style={sharedStyles.menuSubtitle}>{subtitle}</Text> : null}
+                </View>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#AAAEAC" />
+        </TouchableOpacity>
+    );
+}
+
+function ToggleRow({
+    icon, iconBg, iconColor, title, value, onToggle
+}: {
+    icon: string; iconBg: string; iconColor: string;
+    title: string; value: boolean; onToggle: (v: boolean) => void;
+}) {
+    return (
+        <View style={sharedStyles.menuRow}>
+            <View style={sharedStyles.menuLeft}>
+                <View style={[sharedStyles.menuIcon, { backgroundColor: iconBg }]}>
+                    <Ionicons name={icon as any} size={20} color={iconColor} />
+                </View>
+                <Text style={sharedStyles.menuTitle}>{title}</Text>
+            </View>
+            <Switch
+                trackColor={{ false: '#AAAEAC', true: Colors.primary }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor="#AAAEAC"
+                onValueChange={onToggle}
+                value={value}
+            />
+        </View>
+    );
+}
+
+// ─── Shared styles (used by sub-components) ──────────────
+const sharedStyles = StyleSheet.create({
+    sectionHeading: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading3,
+        color: Colors.textDark,
+        marginLeft: 4, marginBottom: 10, marginTop: 24,
+        letterSpacing: -0.2,
+    },
+    menuRow: {
+        backgroundColor: '#FFF', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: 8, ...Shadow.card,
+    },
+    menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+    menuIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    menuTitle: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark },
+    menuSubtitle: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textMuted, marginTop: 1 },
+});
+
+// ─── Screen-level styles ─────────────────────────────────
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#FDFDE8' },
     headerSafe: { backgroundColor: Colors.primary, borderBottomLeftRadius: Radius.xl, borderBottomRightRadius: Radius.xl, zIndex: 10 },
-    headerRow: { height: 60, justifyContent: 'center', alignItems: 'center', paddingBottom: 10 },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: Colors.textWhite, letterSpacing: -0.24, textAlign: 'center' },
+    headerRow: { height: 56, justifyContent: 'center', alignItems: 'center', paddingBottom: 8 },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: Colors.textWhite, letterSpacing: -0.24 },
 
     scrollView: { flex: 1 },
     scrollContent: { paddingHorizontal: Spacing.md, paddingTop: Spacing.lg, paddingBottom: Spacing.xl },
 
-    /* ─── Profile Card ─── */
+    // ─── Profile Card ───
     profileCard: {
-        backgroundColor: '#FFF', borderRadius: 15, padding: 22, flexDirection: 'row',
-        justifyContent: 'space-between', alignItems: 'center',
-        shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 15, elevation: 6,
-        marginBottom: 30,
+        backgroundColor: '#FFF', borderRadius: 16, padding: 18,
+        marginBottom: 8,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08, shadowRadius: 12, elevation: 5,
     },
-    profileInfoText: { flex: 1, gap: 4 },
-    profileName: { fontFamily: Fonts.semiBold, fontSize: FontSize.button, color: Colors.textDark, marginBottom: 2 },
-    profileDetail: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textBody, lineHeight: 20 },
-    boldKey: { fontFamily: Fonts.medium, color: Colors.textDark },
-    avatarContainer: { position: 'relative', marginLeft: 10 },
-    avatarWrapper: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#EBEBEB', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-    avatarDefault: { width: 60, height: 85 },
-    avatarFull: { width: 90, height: 90 },
+    profileTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, marginBottom: 14 },
+    avatarContainer: { position: 'relative' },
+    avatarWrapper: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#EBEBEB', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+    avatarDefault: { width: 56, height: 76 },
+    avatarFull: { width: 80, height: 80 },
     editPhotoBtn: {
-        position: 'absolute', top: -2, right: -4, width: 26, height: 26,
-        backgroundColor: '#FFF', borderRadius: 5, borderWidth: 1, borderColor: '#AAAEAC',
+        position: 'absolute', bottom: 0, right: -2, width: 24, height: 24,
+        backgroundColor: '#FFF', borderRadius: 12, borderWidth: 1, borderColor: '#D1D5DB',
         justifyContent: 'center', alignItems: 'center',
     },
+    profileMeta: { flex: 1, gap: 6, paddingTop: 2 },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    profileName: { fontFamily: Fonts.semiBold, fontSize: 16, color: Colors.textDark, flex: 1 },
+    memberBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, alignSelf: 'flex-start', borderWidth: 1 },
+    memberBadgeText: { fontFamily: Fonts.medium, fontSize: 11 },
+    memberBadgeUpgrade: { fontFamily: Fonts.medium, fontSize: 11, opacity: 0.7 },
+    idPill: { backgroundColor: '#F3F4F6', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: 'flex-start' },
+    idPillText: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted, letterSpacing: 0.2 },
 
-    /* ─── Section Headings ─── */
-    sectionHeading: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: Colors.textDark, marginLeft: 4, marginBottom: 14, marginTop: 24, letterSpacing: -0.24 },
-    sectionGreen: { color: Colors.primary },
+    contactGrid: { gap: 6, marginBottom: 14, paddingLeft: 2 },
+    contactRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    contactText: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textBody, flex: 1 },
 
-    /* ─── Link Cards ─── */
-    linkCard: {
-        backgroundColor: '#FFF', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 16,
+    profileActions: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+    actionBtnPrimary: {
+        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+        backgroundColor: Colors.primary, borderRadius: 10, paddingVertical: 10,
+    },
+    actionBtnPrimaryText: { fontFamily: Fonts.medium, fontSize: 13, color: '#fff' },
+    actionBtnOutline: {
+        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+        borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingVertical: 10, backgroundColor: '#FAFAFA',
+    },
+    actionBtnOutlineText: { fontFamily: Fonts.medium, fontSize: 13, color: Colors.textMuted },
+    deleteAccountBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 6 },
+    deleteAccountText: { fontFamily: Fonts.regular, fontSize: 12, color: '#EF4444' },
+    completionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 4 },
+    completionLabel: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted },
+    completionPct: { fontFamily: Fonts.semiBold, fontSize: 11, color: Colors.primary },
+    completionTrack: { height: 4, backgroundColor: '#E5E7EB', borderRadius: 2, overflow: 'hidden' },
+    completionFill: { height: 4, backgroundColor: Colors.primary, borderRadius: 2 },
+
+    // ─── Inline menu (for language row) ───
+    menuRow: {
+        backgroundColor: '#FFF', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14,
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 10, ...Shadow.card,
+        marginBottom: 8, ...Shadow.card,
     },
-    linkLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-    linkIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-    linkTitle: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark },
-    linkSubtitle: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textMuted, marginTop: 2 },
-    rightWithText: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    selectedText: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textMuted },
+    menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+    menuIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    menuTitle: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark },
+    menuRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    menuValue: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textMuted },
 
-    /* ─── Toggle Cards ─── */
-    toggleCard: {
-        backgroundColor: '#FFF', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14,
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 10, ...Shadow.card,
-    },
+    // ─── Social links ───
+    socialRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap', paddingVertical: 8 },
+    socialBtn: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
 
-    /* ─── Log Out (grey/small) ─── */
-    logoutBtn: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-        paddingVertical: 12, marginTop: 20, borderRadius: 8,
-        backgroundColor: '#F2F2F2', borderWidth: 1, borderColor: '#E5E5E5',
-    },
-    logoutText: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: '#898989' },
-
-    /* ─── Modal ─── */
+    // ─── Language Modal ───
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: Spacing.xl },
     modalContainer: { backgroundColor: '#FFF', borderRadius: Radius.lg, padding: Spacing.xl, ...Shadow.card },
     modalTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: Colors.textDark, marginBottom: Spacing.md, textAlign: 'center' },

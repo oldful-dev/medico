@@ -217,7 +217,9 @@ exports.holdBooking = async (orderData, type = 'HOME') => {
             ? '/api/external/v2/dropoff-create-booking/'
             : '/api/external/v2/center-create-booking/';
 
-        const res = await client.post(endpoint, payload);
+        const res = await client.post(endpoint, payload, {
+            timeout: 30000 // Increase timeout to 30s as booking hold can be slow
+        });
 
         // Handle explicit lowercase 'success' or capitalized 'Success' based on docs
         const status = typeof res.data.status === 'string' ? res.data.status.toLowerCase() : '';

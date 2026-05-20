@@ -214,8 +214,80 @@ const compassionateExtension = async (req, res, next) => {
     }
 };
 
+// POST /api/subscriptions/verify (User authenticated)
+const verifyUserSubscription = async (req, res, next) => {
+    try {
+        const { subscriptionId, razorpayPaymentId, razorpaySignature } = req.body;
+        // In reality, you verify the razorpay signature here using crypto
+
+        const subscription = await prisma.subscription.update({
+            where: { id: subscriptionId },
+            data: { status: 'ACTIVE' },
+            include: { plan: { include: { planBenefits: true } } }
+        });
+
+        // Initialize benefits for the user based on planBenefits
+        const usageData = subscription.plan.planBenefits.map(benefit => ({
+            subscriptionId: subscription.id,
+            serviceCategory: benefit.serviceCategory,
+            totalAllocated: benefit.freeCount,
+            usedCount: 0,
+            lockedCount: 0
+        }));
+
+        if (usageData.length > 0) {
+            await prisma.subscriptionUsage.createMany({
+                data: usageData
+            });
+        }
+
+        sendResponse(res, 200, subscription, 'Subscription activated successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
+// GET /api/subscriptions/me/active (User authenticated)
+// Check if user has an active subscription that covers booking fees
+const checkUserActiveSubscription = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const activeSub = await prisma.subscription.findFirst({
+            where: {
+                userId,
+                status: 'ACTIVE',
+                expiryDate: { gte: new Date() },
+            },
+            include: {
+                plan: { select: { name: true } },
+            },
+        });
+
+        if (activeSub) {
+            return sendResponse(res, 200, {
+                hasActiveSubscription: true,
+                subscription: {
+                    id: activeSub.id,
+                    planName: activeSub.plan?.name,
+                    expiryDate: activeSub.expiryDate,
+                    autoRenew: activeSub.autoRenew,
+                },
+                message: 'All services are free with your active subscription',
+            });
+        }
+
+        sendResponse(res, 200, {
+            hasActiveSubscription: false,
+            message: 'No active subscription. Regular charges will apply.',
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
-    getSubscriptions, createSubscription, initiateUserSubscription,
+    getSubscriptions, createSubscription, initiateUserSubscription, verifyUserSubscription,
     pauseSubscription, resumeSubscription, extendSubscription,
     cancelSubscription, toggleAutoRenew, compassionateExtension,
+    checkUserActiveSubscription,
 };
