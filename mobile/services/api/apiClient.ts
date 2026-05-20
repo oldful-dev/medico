@@ -73,6 +73,10 @@ class ApiClient {
         return this.baseUrl;
     }
 
+    getAuthToken(): string | null {
+        return this.authToken;
+    }
+
     // ─── Core Request Method ──────────────────────
     async request<T>(config: RequestConfig): Promise<ApiResponse<T>> {
         const url = `${this.baseUrl}${config.endpoint}`;
