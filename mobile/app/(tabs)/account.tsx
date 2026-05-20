@@ -331,7 +331,7 @@ export default function AccountScreen() {
                     iconColor="#F5A623"
                     title="Medical Card"
                     subtitle={`Blood: ${bloodGroup} • Allergies: ${allergies}`}
-                    onPress={() => router.push('/edit-medical-card' as any)}
+                    onPress={() => router.push('/medical-card' as any)}
                 />
                 <MenuRow
                     icon="documents-outline"
