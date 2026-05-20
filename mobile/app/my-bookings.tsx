@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
     ActivityIndicator, Alert, RefreshControl, SectionList, Linking,
@@ -16,27 +16,31 @@ const CARD_BORDER = '#E5E7EB';
 
 interface Booking {
     id: string;
-    serviceType: string;
-    packageName: string;
+    serviceType: string;        // blood-test, wellness, concierge, etc.
+    packageName: string;        // Service name
     packageCode: string;
-    bookingId: string;
+    bookingId: string;          // Display ID
     scheduledDate: string;
     scheduledTime?: string;
-    collectionType: string;
-    status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+    rescheduledDate?: string;   // New date if rescheduled by admin
+    rescheduledTime?: string;   // New time if rescheduled by admin
+    collectionType?: string;    // home, drop-off, etc.
+    status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled';
     paymentStatus: 'pending' | 'paid' | 'failed';
     reportReady: boolean;
     reportUrl?: string;
     testsCount?: number;
+    assignedPersonnel?: string; // Caregiver/staff name
     createdAt: string;
 }
 
-type FilterTab = 'wellness' | 'health' | 'upcoming' | 'completed';
+type FilterTab = 'wellness' | 'health' | 'concierge' | 'upcoming' | 'completed' | 'cancelled' | 'rescheduled';
 
 // Mapper functions to normalize LabOrder → Booking
 function mapLabStatus(s: string): Booking['status'] {
     if (s === 'REPORT_GENERATED' || s === 'SAMPLE_COLLECTED') return 'completed';
     if (s === 'CANCELLED' || s === 'FAILED') return 'cancelled';
+    if (s === 'RESCHEDULED') return 'rescheduled';
     if (s === 'CONFIRMED' || s === 'HOLD_CREATED') return 'confirmed';
     return 'pending';
 }
@@ -52,6 +56,8 @@ function normalizeLabOrder(order: LabOrderListItem): Booking {
         bookingId: order.clientRefId,
         scheduledDate: order.slot?.date || '',
         scheduledTime: order.slot?.time,
+        rescheduledDate: order.rescheduledDate,
+        rescheduledTime: order.rescheduledTime,
         collectionType: order.bookingType === 'HOME' ? 'home' : 'drop-off',
         status: mapLabStatus(order.status),
         paymentStatus: payment?.status === 'SUCCESS' ? 'paid' : payment?.status === 'FAILED' ? 'failed' : 'pending',
@@ -70,7 +76,7 @@ export default function MyBookingsScreen() {
     const [activeTab, setActiveTab] = useState<FilterTab>('health');
 
     useFocusEffect(
-        React.useCallback(() => {
+        useCallback(() => {
             fetchBookings();
         }, [])
     );
@@ -99,18 +105,13 @@ export default function MyBookingsScreen() {
     const getFilteredBookings = (): Booking[] => {
         const now = new Date();
         return bookings.filter(b => {
-            if (activeTab === 'health') {
-                return b.serviceType === 'blood-test';
-            }
-            if (activeTab === 'wellness') {
-                return b.serviceType === 'wellness';
-            }
-            if (activeTab === 'upcoming') {
-                return new Date(b.scheduledDate) > now && b.status !== 'cancelled';
-            }
-            if (activeTab === 'completed') {
-                return b.status === 'completed' || new Date(b.scheduledDate) <= now;
-            }
+            if (activeTab === 'health') return b.serviceType === 'blood-test';
+            if (activeTab === 'wellness') return b.serviceType === 'wellness';
+            if (activeTab === 'concierge') return b.serviceType === 'concierge';
+            if (activeTab === 'upcoming') return new Date(b.scheduledDate) > now && !['cancelled', 'rescheduled'].includes(b.status);
+            if (activeTab === 'completed') return b.status === 'completed';
+            if (activeTab === 'cancelled') return b.status === 'cancelled';
+            if (activeTab === 'rescheduled') return b.status === 'rescheduled';
             return false;
         });
     };
@@ -144,6 +145,7 @@ export default function MyBookingsScreen() {
             } as any)}
             activeOpacity={0.7}
         >
+            {/* Service name + Status badge */}
             <View style={styles.cardTop}>
                 <View style={{ flex: 1 }}>
                     <Text style={styles.bookingName} numberOfLines={1}>{booking.packageName}</Text>
@@ -151,32 +153,71 @@ export default function MyBookingsScreen() {
                 </View>
                 <View style={[
                     styles.statusBadge,
-                    { backgroundColor: booking.status === 'completed' ? PRIMARY_GREEN : '#F59E0B' }
+                    {
+                        backgroundColor: booking.status === 'completed' ? PRIMARY_GREEN :
+                            booking.status === 'cancelled' ? '#EF4444' :
+                            booking.status === 'rescheduled' ? '#8B5CF6' :
+                            '#F59E0B'
+                    }
                 ]}>
                     <Text style={styles.statusBadgeText}>
-                        {booking.status === 'completed' ? 'Completed' : 'Upcoming'}
+                        {booking.status === 'completed' ? 'Completed' :
+                            booking.status === 'cancelled' ? 'Cancelled' :
+                            booking.status === 'rescheduled' ? 'Rescheduled' :
+                            booking.status === 'confirmed' ? 'Upcoming' :
+                            'Pending'}
                     </Text>
                 </View>
             </View>
 
+            {/* Date & Time + Collection type (show rescheduled if applicable) */}
             <View style={styles.detailsRow}>
                 <View style={{ flex: 1 }}>
-                    <View style={styles.detailItem}>
-                        <Ionicons name="calendar" size={13} color={TEXT_MUTED} />
-                        <Text style={styles.detailText} numberOfLines={1}>
-                            {new Date(booking.scheduledDate).toLocaleDateString('en-IN', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric'
-                            })}
-                            {booking.scheduledTime ? `, ${booking.scheduledTime}` : ''}
-                        </Text>
-                    </View>
+                    {booking.status === 'rescheduled' && booking.rescheduledDate ? (
+                        <>
+                            <View style={styles.detailItem}>
+                                <Ionicons name="calendar" size={13} color={TEXT_MUTED} />
+                                <Text style={[styles.detailText, { textDecorationLine: 'line-through' }]} numberOfLines={1}>
+                                    {new Date(booking.scheduledDate).toLocaleDateString('en-IN', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric'
+                                    })}
+                                    {booking.scheduledTime ? `, ${booking.scheduledTime}` : ''}
+                                </Text>
+                            </View>
+                            <View style={styles.detailItem}>
+                                <Ionicons name="checkmark-circle" size={13} color={PRIMARY_GREEN} />
+                                <Text style={[styles.detailText, { color: PRIMARY_GREEN, fontWeight: '600' }]} numberOfLines={1}>
+                                    {new Date(booking.rescheduledDate).toLocaleDateString('en-IN', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric'
+                                    })}
+                                    {booking.rescheduledTime ? `, ${booking.rescheduledTime}` : ''}
+                                </Text>
+                            </View>
+                        </>
+                    ) : (
+                        <View style={styles.detailItem}>
+                            <Ionicons name="calendar" size={13} color={TEXT_MUTED} />
+                            <Text style={styles.detailText} numberOfLines={1}>
+                                {new Date(booking.scheduledDate).toLocaleDateString('en-IN', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric'
+                                })}
+                                {booking.scheduledTime ? `, ${booking.scheduledTime}` : ''}
+                            </Text>
+                        </View>
+                    )}
                 </View>
                 <View style={styles.badgesGroup}>
-                    {booking.collectionType === 'home' && (
+                    {booking.collectionType && (
                         <View style={styles.typeBadge}>
-                            <Text style={styles.typeBadgeText}>Home</Text>
+                            <Text style={styles.typeBadgeText}>
+                                {booking.collectionType === 'home' ? 'Home' : booking.collectionType}
+                            </Text>
                         </View>
                     )}
                     {booking.testsCount && (
@@ -187,31 +228,138 @@ export default function MyBookingsScreen() {
                 </View>
             </View>
 
-            {booking.status === 'completed' && booking.reportReady && (
-                <TouchableOpacity
-                    style={styles.downloadBtn}
-                    onPress={(e) => {
-                        e.stopPropagation();
-                        if (booking.reportUrl) {
-                            Linking.openURL(booking.reportUrl);
-                        }
-                    }}
-                >
-                    <Ionicons name="download" size={14} color={PRIMARY_GREEN} />
-                    <Text style={styles.downloadBtnText}>Download Report</Text>
-                </TouchableOpacity>
+            {/* Assigned Personnel */}
+            {booking.assignedPersonnel && (
+                <View style={styles.personnelRow}>
+                    <Ionicons name="person-outline" size={13} color={TEXT_MUTED} />
+                    <Text style={styles.personnelText} numberOfLines={1}>
+                        Assigned: {booking.assignedPersonnel}
+                    </Text>
+                </View>
             )}
+
+            {/* Action buttons */}
+            <View style={styles.actionButtonsRow}>
+                {/* Download Report (completed with report ready) */}
+                {booking.status === 'completed' && booking.reportReady && (
+                    <TouchableOpacity
+                        style={[styles.actionBtn, styles.downloadBtn]}
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            if (booking.reportUrl) {
+                                Linking.openURL(booking.reportUrl);
+                            }
+                        }}
+                    >
+                        <Ionicons name="download" size={13} color={PRIMARY_GREEN} />
+                        <Text style={styles.downloadBtnText}>Report</Text>
+                    </TouchableOpacity>
+                )}
+
+                {/* Rebook for Completed / Cancelled bookings */}
+                {(booking.status === 'completed' || booking.status === 'cancelled') && (
+                    <TouchableOpacity
+                        style={[styles.actionBtn, styles.rebookBtn]}
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            router.push({
+                                pathname: '/blood-test',
+                                params: {
+                                    rebook: 'true',
+                                    packageCode: booking.packageCode,
+                                    packageName: booking.packageName,
+                                },
+                            } as any);
+                        }}
+                    >
+                        <Ionicons name="refresh" size={13} color={PRIMARY_GREEN} />
+                        <Text style={styles.rebookBtnText}>Rebook</Text>
+                    </TouchableOpacity>
+                )}
+
+                {/* View Details for Upcoming / Rescheduled bookings */}
+                {(booking.status === 'confirmed' || booking.status === 'pending' || booking.status === 'rescheduled') && (
+                    <TouchableOpacity
+                        style={[styles.actionBtn, styles.viewDetailsBtn]}
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            router.push({
+                                pathname: '/booking-details',
+                                params: { bookingId: booking.id, type: 'lab' },
+                            } as any);
+                        }}
+                    >
+                        <Ionicons name="information-circle-outline" size={13} color={PRIMARY_GREEN} />
+                        <Text style={styles.viewDetailsBtnText}>Details</Text>
+                    </TouchableOpacity>
+                )}
+
+                {/* Cancel Booking (only for confirmed/upcoming) */}
+                {booking.status === 'confirmed' && (
+                    <TouchableOpacity
+                        style={[styles.actionBtn, styles.cancelBtn]}
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            Alert.alert(
+                                'Cancel Booking',
+                                'Are you sure you want to cancel this booking?',
+                                [
+                                    { text: 'No', style: 'cancel' },
+                                    {
+                                        text: 'Yes, Cancel',
+                                        style: 'destructive',
+                                        onPress: async () => {
+                                            try {
+                                                const res = await labService.cancelLabOrder(booking.id);
+                                                if (res.success) {
+                                                    Alert.alert('Success', 'Booking cancelled successfully');
+                                                    fetchBookings();
+                                                } else {
+                                                    Alert.alert('Error', res.message || 'Failed to cancel booking');
+                                                }
+                                            } catch (error) {
+                                                Alert.alert('Error', 'Failed to cancel booking');
+                                                console.error('Cancel error:', error);
+                                            }
+                                        }
+                                    }
+                                ]
+                            );
+                        }}
+                    >
+                        <Ionicons name="close-circle-outline" size={13} color="#EF4444" />
+                        <Text style={styles.cancelBtnText}>Cancel</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
         </TouchableOpacity>
     );
 
-    const renderSectionHeader = (section: any) => (
-        <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-            <TouchableOpacity>
-                <Text style={styles.viewAllLink}>View All</Text>
-            </TouchableOpacity>
-        </View>
-    );
+    const renderSectionHeader = (section: any) => {
+        // Only show "View All" if current tab is a service type (not already a status tab)
+        const isServiceTypeTab = ['wellness', 'health', 'concierge'].includes(activeTab);
+        const canViewAll = isServiceTypeTab && section.data.length > 0;
+
+        return (
+            <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{section.title}</Text>
+                {canViewAll && (
+                    <TouchableOpacity
+                        onPress={() => {
+                            const tabMap: Record<string, FilterTab> = {
+                                'Upcoming': 'upcoming',
+                                'Completed': 'completed',
+                            };
+                            const tab = tabMap[section.title];
+                            if (tab) setActiveTab(tab);
+                        }}
+                    >
+                        <Text style={styles.viewAllLink}>View All</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+        );
+    };
 
     const groupedBookings = getGroupedBookings();
 
@@ -219,35 +367,60 @@ export default function MyBookingsScreen() {
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <StatusBar backgroundColor="#FFFFFF" />
 
-            {/* Header */}
+            {/* Header — back button + title */}
             <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()}>
+                    <Ionicons name="arrow-back" size={24} color={TEXT_DARK} />
+                </TouchableOpacity>
                 <Text style={styles.headerTitle}>My Bookings</Text>
+                <View style={{ width: 24 }} />
             </View>
 
-            {/* Tabs */}
-            <View style={styles.tabsContainer}>
-                {(['wellness', 'health', 'upcoming', 'completed'] as FilterTab[]).map((tab) => (
-                    <TouchableOpacity
-                        key={tab}
-                        onPress={() => setActiveTab(tab)}
-                        style={[
-                            styles.tab,
-                            activeTab === tab && styles.tabActive,
-                        ]}
-                    >
-                        <Text style={[
-                            styles.tabText,
-                            activeTab === tab && styles.tabTextActive,
-                        ]}>
-                            {tab === 'health' ? 'Health' :
-                                tab === 'wellness' ? 'Wellness' :
-                                    tab === 'upcoming' ? `Upcoming (${upcomingCount})` :
-                                        `Completed (${completedCount})`}
-                        </Text>
-                        {activeTab === tab && <View style={styles.tabUnderline} />}
-                    </TouchableOpacity>
-                ))}
-            </View>
+            {/* Tabs — scrollable, filled active style */}
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.tabsScroll}
+                contentContainerStyle={styles.tabsContent}
+            >
+                <View style={styles.tabsContainer}>
+                    {(['wellness', 'health', 'concierge', 'upcoming', 'completed', 'cancelled', 'rescheduled'] as FilterTab[]).map((tab) => {
+                        const tabCounts: Record<FilterTab, number> = {
+                            wellness: bookings.filter(b => b.serviceType === 'wellness').length,
+                            health: bookings.filter(b => b.serviceType === 'blood-test').length,
+                            concierge: bookings.filter(b => b.serviceType === 'concierge').length,
+                            upcoming: upcomingCount,
+                            completed: completedCount,
+                            cancelled: bookings.filter(b => b.status === 'cancelled').length,
+                            rescheduled: bookings.filter(b => b.status === 'rescheduled').length,
+                        };
+                        const count = tabCounts[tab];
+                        return (
+                            <TouchableOpacity
+                                key={tab}
+                                onPress={() => setActiveTab(tab)}
+                                style={[
+                                    styles.tab,
+                                    activeTab === tab && styles.tabActive,
+                                ]}
+                            >
+                                <Text style={[
+                                    styles.tabText,
+                                    activeTab === tab && styles.tabTextActive,
+                                ]}>
+                                    {tab === 'health' ? 'Health' :
+                                        tab === 'wellness' ? 'Wellness' :
+                                            tab === 'concierge' ? 'Concierge' :
+                                                tab === 'upcoming' ? `Upcoming (${count})` :
+                                                    tab === 'completed' ? `Completed (${count})` :
+                                                        tab === 'cancelled' ? `Cancelled (${count})` :
+                                                            `Rescheduled (${count})`}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+            </ScrollView>
 
             {/* Content */}
             {loading ? (
@@ -283,48 +456,62 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
     },
     header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingVertical: 11,
         borderBottomWidth: 1,
         borderBottomColor: CARD_BORDER,
     },
     headerTitle: {
         fontSize: 18,
-        fontWeight: '700',
+        fontWeight: '600',
         color: TEXT_DARK,
+        flex: 1,
+        textAlign: 'center',
+    },
+    tabsScroll: {
+        paddingHorizontal: 16,
+        marginBottom: 8,
+        marginTop: 8,
+        flexGrow: 0,
+        height: 44,
+        minHeight: 44,
+        maxHeight: 44,
+    },
+    tabsContent: {
+        paddingRight: 16,
+        paddingBottom: 0,
+        gap: 6,
     },
     tabsContainer: {
         flexDirection: 'row',
-        paddingHorizontal: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: CARD_BORDER,
+        alignItems: 'center',
     },
     tab: {
-        flex: 1,
-        paddingVertical: 12,
-        alignItems: 'center',
+        marginRight: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        backgroundColor: 'transparent',
+        height: 36,
         justifyContent: 'center',
-        borderBottomWidth: 2,
-        borderBottomColor: 'transparent',
     },
     tabActive: {
-        borderBottomColor: PRIMARY_GREEN,
+        backgroundColor: PRIMARY_GREEN,
     },
     tabText: {
-        fontSize: 12,
-        fontWeight: '600',
+        fontSize: 13,
+        fontWeight: '500',
         color: TEXT_MUTED,
     },
     tabTextActive: {
-        color: PRIMARY_GREEN,
+        color: '#FFFFFF',
+        fontWeight: '600',
     },
     tabUnderline: {
-        position: 'absolute',
-        bottom: -2,
-        left: 0,
-        right: 0,
-        height: 2,
-        backgroundColor: PRIMARY_GREEN,
+        display: 'none',
     },
     listContent: {
         paddingHorizontal: 16,
@@ -420,20 +607,72 @@ const styles = StyleSheet.create({
         color: TEXT_DARK,
         fontWeight: '500',
     },
-    downloadBtn: {
+    personnelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 10,
+        paddingVertical: 6,
+    },
+    personnelText: {
+        fontSize: 11,
+        color: TEXT_MUTED,
+        fontWeight: '500',
+        flex: 1,
+    },
+    actionButtonsRow: {
+        flexDirection: 'row',
+        gap: 8,
+        borderTopWidth: 1,
+        borderTopColor: CARD_BORDER,
+        paddingTop: 10,
+        marginTop: 10,
+    },
+    actionBtn: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 8,
-        borderTopWidth: 1,
-        borderTopColor: CARD_BORDER,
-        gap: 6,
-        marginTop: 10,
+        borderRadius: 8,
+        gap: 4,
+    },
+    downloadBtn: {
+        backgroundColor: '#F0FDF4',
     },
     downloadBtnText: {
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: '600',
         color: PRIMARY_GREEN,
+    },
+    viewDetailsBtn: {
+        backgroundColor: '#F0FDF4',
+    },
+    viewDetailsBtnText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: PRIMARY_GREEN,
+    },
+    rebookBtn: {
+        backgroundColor: '#F0FDF4',
+    },
+    rebookBtnText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: PRIMARY_GREEN,
+    },
+    cancelBtn: {
+        backgroundColor: '#FEE2E2',
+    },
+    cancelBtnText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#EF4444',
+    },
+    tabsScrollContainer: {
+        backgroundColor: '#FFFFFF',
+        borderBottomWidth: 1,
+        borderBottomColor: CARD_BORDER,
     },
     centerContainer: {
         flex: 1,
@@ -441,19 +680,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     emptyContainer: {
-        flex: 1,
+        paddingVertical: 60,
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 20,
     },
     emptyText: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '600',
         color: TEXT_DARK,
         marginTop: 12,
     },
     emptySubtext: {
-        fontSize: 13,
+        fontSize: 12,
         color: TEXT_MUTED,
         marginTop: 4,
     },

@@ -16,10 +16,14 @@ export interface CartItem {
 
 interface CartContextType {
     items: CartItem[];
+    groupedItems: Record<string, CartItem[]>;
     addItem: (item: CartItem) => void;
     removeItem: (itemId: string) => void;
     updateQuantity: (itemId: string, quantity: number) => void;
+    clearCategory: (category: string) => void;
     clearCart: () => void;
+    getCategoryTotal: (category: string) => number;
+    getGrandTotal: () => number;
     totalAmount: number;
     itemCount: number;
     isInitialized: boolean;
@@ -97,15 +101,35 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setItems(prev => prev.map(i => i.id === itemId ? { ...i, quantity } : i));
     };
 
+    const clearCategory = (category: string) => {
+        setItems(prev => prev.filter(i => i.serviceType !== category));
+    };
+
     const clearCart = () => setItems([]);
 
-    const totalAmount = items.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
+    const getCategoryTotal = (category: string) => {
+        return items
+            .filter(i => i.serviceType === category)
+            .reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
+    };
+
+    const getGrandTotal = () => {
+        return items.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
+    };
+
+    const groupedItems = items.reduce((acc, item) => {
+        if (!acc[item.serviceType]) acc[item.serviceType] = [];
+        acc[item.serviceType].push(item);
+        return acc;
+    }, {} as Record<string, CartItem[]>);
+
+    const totalAmount = getGrandTotal();
     const itemCount = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
     return (
         <CartContext.Provider value={{
-            items, addItem, removeItem, updateQuantity, clearCart,
-            totalAmount, itemCount, isInitialized
+            items, groupedItems, addItem, removeItem, updateQuantity, clearCategory, clearCart,
+            getCategoryTotal, getGrandTotal, totalAmount, itemCount, isInitialized
         }}>
             {children}
         </CartContext.Provider>

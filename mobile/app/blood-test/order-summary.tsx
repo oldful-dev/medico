@@ -18,6 +18,12 @@ const TEXT_MUTED = '#888888';
 const CARD_BORDER = '#E5E7EB';
 const LIGHT_GREEN_BG = '#F0FDF4';
 
+const PAYMENT_METHODS = [
+    { type: 'UPI',  label: 'UPI (GPay / PhonePe / Paytm)', icon: 'phone-portrait-outline' },
+    { type: 'CARD', label: 'Credit / Debit Card',         icon: 'card-outline' },
+    { type: 'CASH', label: 'Cash on Delivery',             icon: 'cash-outline' },
+] as const;
+
 export default function BloodTestOrderSummaryScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -32,6 +38,7 @@ export default function BloodTestOrderSummaryScreen() {
     const [couponCode, setCouponCode] = useState('');
     const [couponApplied, setCouponApplied] = useState(false);
     const [discount, setDiscount] = useState(0);
+    const [selectedMethod, setSelectedMethod] = useState<string>('UPI');
 
     let bookingData: any = null;
     try {
@@ -75,8 +82,9 @@ export default function BloodTestOrderSummaryScreen() {
         setIsLoading(true);
         try {
             // Hold blood test booking via Redcliffe
-            console.log('🩸 Order Summary: Creating blood test booking with payload:', JSON.stringify(bookingData, null, 2));
-            const bookingRes = await labService.holdBooking(bookingData);
+            const finalBookingData = { ...bookingData, paymentMethod: selectedMethod };
+            console.log('🩸 Order Summary: Creating blood test booking with payload:', JSON.stringify(finalBookingData, null, 2));
+            const bookingRes = await labService.holdBooking(finalBookingData);
             console.log('🩸 Order Summary: Full booking response:', JSON.stringify(bookingRes, null, 2));
 
             if (!bookingRes) {
@@ -97,11 +105,23 @@ export default function BloodTestOrderSummaryScreen() {
 
             console.log('🩸 Order Summary: Got booking ID:', bookingId);
 
+            if (selectedMethod === 'CASH') {
+                router.replace({
+                    pathname: '/blood-test/success',
+                    params: {
+                        bookingId,
+                        amount: String(totalAmount),
+                        packageName: params.label,
+                    },
+                });
+                return;
+            }
+
             // Initiate payment for blood test (use labOrderId, not bookingId)
             const payRes = await paymentService.initiatePayment({
                 labOrderId: bookingId,
                 amount: totalAmount,
-                paymentMethod: 'UPI',
+                paymentMethod: selectedMethod,
                 couponCode: couponApplied ? couponCode : undefined,
             });
 
@@ -125,8 +145,27 @@ export default function BloodTestOrderSummaryScreen() {
                     name: profile?.name || '',
                     contact: profile?.phone || '',
                     email: profile?.email || '',
+                    method: selectedMethod.toLowerCase(),
                 },
                 theme: { color: PRIMARY_GREEN },
+                config: {
+                    display: {
+                        blocks: {
+                            banks: {
+                                name: selectedMethod === 'UPI' ? 'UPI' : 'Card',
+                                instruments: [
+                                    {
+                                        method: selectedMethod.toLowerCase() as any,
+                                    },
+                                ],
+                            },
+                        },
+                        sequence: ['block.banks'],
+                        preferences: {
+                            show_default_blocks: false,
+                        },
+                    },
+                },
             };
 
             const data = await RazorpayCheckout.open(options);
@@ -293,6 +332,29 @@ export default function BloodTestOrderSummaryScreen() {
                         </TouchableOpacity>
                     </View>
                 </View>
+
+                {/* Payment Method */}
+                <View style={styles.card}>
+                    <Text style={styles.sectionTitle}>Payment Method</Text>
+                    {PAYMENT_METHODS.map(m => (
+                        <TouchableOpacity
+                            key={m.type}
+                            style={[styles.methodRow, selectedMethod === m.type && styles.methodRowActive]}
+                            onPress={() => setSelectedMethod(m.type)}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons name={m.icon as any} size={20} color={selectedMethod === m.type ? PRIMARY_GREEN : TEXT_MUTED} />
+                            <Text style={[styles.methodLabel, selectedMethod === m.type && styles.methodLabelActive]}>
+                                {m.label}
+                            </Text>
+                            <Ionicons
+                                name={selectedMethod === m.type ? 'radio-button-on' : 'radio-button-off'}
+                                size={20}
+                                color={selectedMethod === m.type ? PRIMARY_GREEN : TEXT_MUTED}
+                            />
+                        </TouchableOpacity>
+                    ))}
+                </View>
             </ScrollView>
 
             {/* Footer CTA */}
@@ -306,7 +368,9 @@ export default function BloodTestOrderSummaryScreen() {
                         <ActivityIndicator size="small" color="#FFFFFF" />
                     ) : (
                         <Text style={styles.payBtnText}>
-                            Confirm & Pay ₹{totalAmount.toFixed(2)}
+                            {selectedMethod === 'CASH' 
+                                ? 'Confirm Booking' 
+                                : `Confirm & Pay ₹${totalAmount.toFixed(2)}`}
                         </Text>
                     )}
                 </TouchableOpacity>
@@ -509,4 +573,18 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#FFFFFF',
     },
+    methodRow: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        gap: 12, 
+        paddingVertical: 12, 
+        paddingHorizontal: 16, 
+        borderRadius: 8, 
+        borderWidth: 1.5, 
+        borderColor: CARD_BORDER,
+        marginBottom: 8,
+    },
+    methodRowActive: { borderColor: PRIMARY_GREEN, backgroundColor: LIGHT_GREEN_BG },
+    methodLabel: { flex: 1, fontSize: 13, color: TEXT_MUTED, fontWeight: '400' },
+    methodLabelActive: { color: TEXT_DARK, fontWeight: '600' },
 });

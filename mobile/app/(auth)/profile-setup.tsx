@@ -402,7 +402,7 @@ export default function ProfileSetupScreen() {
                         display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                         maximumDate={new Date()}
                         minimumDate={new Date(1920, 0, 1)}
-                        onChange={(event, date) => {
+                        onChange={(_, date) => {
                             // Always close picker on both platforms
                             setShowDatePicker(false);
                             if (date) setDateOfBirth(date);

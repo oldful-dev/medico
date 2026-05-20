@@ -47,6 +47,19 @@ export default function WellnessScreen() {
     const [page, setPage] = useState(0);
     const ITEMS_PER_PAGE = 9;
 
+    const [selectedCategory, setSelectedCategory] = useState<string>('All');
+
+    const CATEGORY_LIST = [
+        'All',
+        'Wellness Essentials',
+        'Healthcare Devices',
+        'Fitness & Recovery',
+        'Mobility Aids',
+        'Health Monitors',
+        'Supplements',
+        'Personal Care'
+    ];
+
     const fetchProducts = useCallback(async () => {
         try {
             const res = await storeService.getProducts({ isEnabled: true, limit: 100 });
@@ -101,12 +114,18 @@ export default function WellnessScreen() {
         ]);
     };
 
-    const filteredProducts = search.trim()
-        ? displayedProducts.filter(p =>
+    let filteredProducts = displayedProducts;
+
+    if (selectedCategory !== 'All') {
+        filteredProducts = filteredProducts.filter(p => p.category?.name === selectedCategory);
+    }
+
+    if (search.trim()) {
+        filteredProducts = filteredProducts.filter(p =>
             p.name.toLowerCase().includes(search.toLowerCase()) ||
             p.category?.name.toLowerCase().includes(search.toLowerCase())
-          )
-        : displayedProducts;
+        );
+    }
 
     // ── LOADING ────────────────────────────────────────────────────────────────
     if (loading) {
@@ -151,6 +170,26 @@ export default function WellnessScreen() {
                             </TouchableOpacity>
                         )}
                     </View>
+
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.categoryScroll}
+                        style={{ flexGrow: 0, marginBottom: Spacing.sm }}
+                    >
+                        {CATEGORY_LIST.map((cat) => (
+                            <TouchableOpacity
+                                key={cat}
+                                style={[styles.categoryChip, selectedCategory === cat && styles.categoryChipActive]}
+                                onPress={() => setSelectedCategory(cat)}
+                            >
+                                <Text style={[styles.categoryChipText, selectedCategory === cat && styles.categoryChipTextActive]}>
+                                    {cat}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+
                     <FlatList
                         data={filteredProducts}
                         keyExtractor={item => item.id}
@@ -160,7 +199,7 @@ export default function WellnessScreen() {
                         showsVerticalScrollIndicator={false}
                         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
                         onEndReached={() => {
-                            if (!search && hasMoreProducts) {
+                            if (!search && selectedCategory === 'All' && hasMoreProducts) {
                                 loadMore();
                             }
                         }}
@@ -467,6 +506,33 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
         color: Colors.textBody,
+    },
+    categoryScroll: {
+        paddingHorizontal: Spacing.lg,
+        gap: Spacing.sm,
+        alignItems: 'center',
+    },
+    categoryChip: {
+        paddingHorizontal: Spacing.md,
+        paddingVertical: 8,
+        borderRadius: Radius.xl,
+        backgroundColor: Colors.bgCard,
+        borderWidth: 1,
+        borderColor: Colors.borderLight,
+        marginRight: 8,
+    },
+    categoryChipActive: {
+        backgroundColor: Colors.primary,
+        borderColor: Colors.primary,
+    },
+    categoryChipText: {
+        fontFamily: Fonts.medium,
+        fontSize: 13,
+        color: Colors.textMuted,
+    },
+    categoryChipTextActive: {
+        color: Colors.textWhite,
+        fontFamily: Fonts.semiBold,
     },
     listContent: {
         paddingHorizontal: Spacing.md,

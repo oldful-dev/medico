@@ -23,16 +23,19 @@ interface BookingDetail {
     packageName: string;
     packageCode: string;
     serviceType: string;
-    status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+    status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled';
     paymentStatus: 'pending' | 'paid' | 'failed';
     scheduledDate: string;
     scheduledTime?: string;
+    rescheduledDate?: string;
+    rescheduledTime?: string;
     collectionType: 'home' | 'lab';
     address?: string;
     pincode?: string;
     landmark?: string;
     phoneNumber?: string;
     testsCount?: number;
+    assignedPersonnel?: string;
     reportReady: boolean;
     reportUrl?: string;
     reportGeneratedAt?: string;
@@ -47,6 +50,7 @@ function normalizeLabOrderDetail(order: LabOrderListItem): BookingDetail {
     const mapLabStatus = (s: string): BookingDetail['status'] => {
         if (s === 'REPORT_GENERATED' || s === 'SAMPLE_COLLECTED') return 'completed';
         if (s === 'CANCELLED' || s === 'FAILED') return 'cancelled';
+        if (s === 'RESCHEDULED') return 'rescheduled';
         if (s === 'CONFIRMED' || s === 'HOLD_CREATED') return 'confirmed';
         return 'pending';
     };
@@ -60,11 +64,16 @@ function normalizeLabOrderDetail(order: LabOrderListItem): BookingDetail {
         paymentStatus: payment?.status === 'SUCCESS' ? 'paid' : payment?.status === 'FAILED' ? 'failed' : 'pending',
         scheduledDate: order.slot?.date || '',
         scheduledTime: order.slot?.time,
+        rescheduledDate: order.rescheduledDate,
+        rescheduledTime: order.rescheduledTime,
         collectionType: order.bookingType === 'HOME' ? 'home' : 'lab',
         address: order.address?.line1 || '',
         pincode: order.address?.pincode || '',
         landmark: order.address?.landmark || '',
         testsCount: order.packages?.length || 1,
+        assignedPersonnel: typeof order.assignedStaff === 'string'
+            ? order.assignedStaff
+            : order.assignedStaff?.name || '',
         reportReady: order.status === 'REPORT_GENERATED' && !!order.reportUrl,
         reportUrl: order.reportUrl,
         createdAt: order.createdAt,
@@ -79,6 +88,7 @@ export default function BookingDetailsScreen() {
     const [booking, setBooking] = useState<BookingDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [downloading, setDownloading] = useState(false);
+    const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
 
     useEffect(() => {
         if (bookingId) {
@@ -144,7 +154,12 @@ export default function BookingDetailsScreen() {
                     text: 'Yes, Cancel',
                     onPress: async () => {
                         try {
-                            const res = await bookingService.cancelBooking(booking?.id || '');
+                            let res;
+                            if (type === 'lab') {
+                                res = await labService.cancelLabOrder(booking?.id || '');
+                            } else {
+                                res = await bookingService.cancelBooking(booking?.id || '');
+                            }
                             if (res.success) {
                                 Alert.alert('Success', 'Booking cancelled successfully');
                                 router.back();
@@ -163,6 +178,22 @@ export default function BookingDetailsScreen() {
 
     const handleBookAgain = () => {
         router.push('/blood-test');
+    };
+
+    const handleRescheduleClick = () => {
+        Alert.alert(
+            'Reschedule Appointment',
+            'Reschedule requests must be approved by our admin team. You can contact our support team to request a reschedule.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Contact Support',
+                    onPress: () => {
+                        router.push('/help-support' as any);
+                    },
+                },
+            ]
+        );
     };
 
     const isUpcoming = booking && new Date(booking.scheduledDate) > new Date() && booking.status !== 'cancelled';
@@ -223,6 +254,43 @@ export default function BookingDetailsScreen() {
                     </View>
                 </View>
 
+                {/* Rescheduled Notice (if applicable) */}
+                {booking.status === 'rescheduled' && booking.rescheduledDate && (
+                    <View style={[styles.card, styles.rescheduleCard]}>
+                        <View style={styles.rescheduleHeader}>
+                            <Ionicons name="alert-circle" size={16} color="#8B5CF6" />
+                            <Text style={styles.rescheduleTitle}>Appointment Rescheduled</Text>
+                        </View>
+                        <View style={styles.rescheduleDates}>
+                            <View>
+                                <Text style={styles.rescheduleLabel}>Original Date</Text>
+                                <Text style={styles.rescheduleValueOld}>
+                                    {new Date(booking.scheduledDate).toLocaleDateString('en-IN', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric',
+                                    })}
+                                    {booking.scheduledTime && `, ${booking.scheduledTime}`}
+                                </Text>
+                            </View>
+                            <View style={styles.rescheduleArrow}>
+                                <Ionicons name="arrow-forward" size={16} color="#8B5CF6" />
+                            </View>
+                            <View>
+                                <Text style={styles.rescheduleLabel}>New Date</Text>
+                                <Text style={styles.rescheduleValueNew}>
+                                    {new Date(booking.rescheduledDate).toLocaleDateString('en-IN', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric',
+                                    })}
+                                    {booking.rescheduledTime && `, ${booking.rescheduledTime}`}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
+
                 {/* Details Grid */}
                 <View style={styles.card}>
                     <View style={styles.detailsGrid}>
@@ -270,8 +338,19 @@ export default function BookingDetailsScreen() {
                                 <Ionicons name="checkmark-circle" size={16} color={PRIMARY_GREEN} />
                             </View>
                             <Text style={styles.gridLabel}>Status</Text>
-                            <Text style={[styles.gridValue, { color: isCompleted ? SUCCESS_GREEN : WARNING_AMBER }]}>
-                                {isCompleted ? 'Completed' : 'Upcoming'}
+                            <Text style={[styles.gridValue, { color: isCompleted ? SUCCESS_GREEN : booking?.status === 'rescheduled' ? '#8B5CF6' : WARNING_AMBER }]}>
+                                {booking?.status === 'rescheduled' ? 'Rescheduled' : isCompleted ? 'Completed' : 'Upcoming'}
+                            </Text>
+                        </View>
+
+                        {/* Assigned Personnel */}
+                        <View style={styles.gridItem}>
+                            <View style={styles.gridIcon}>
+                                <Ionicons name="person" size={16} color={PRIMARY_GREEN} />
+                            </View>
+                            <Text style={styles.gridLabel}>Assigned Personnel</Text>
+                            <Text style={styles.gridValue}>
+                                {booking.assignedPersonnel || 'Not assigned'}
                             </Text>
                         </View>
                     </View>
@@ -356,7 +435,10 @@ export default function BookingDetailsScreen() {
             <View style={styles.footer}>
                 {isUpcoming ? (
                     <>
-                        <TouchableOpacity style={styles.actionBtn}>
+                        <TouchableOpacity
+                            style={styles.actionBtn}
+                            onPress={handleRescheduleClick}
+                        >
                             <Text style={styles.actionBtnText}>Reschedule</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -633,5 +715,46 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '600',
         color: '#EF4444',
+    },
+    rescheduleCard: {
+        backgroundColor: '#F5F3FF',
+        borderColor: '#E9D5FF',
+    },
+    rescheduleHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 12,
+    },
+    rescheduleTitle: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#8B5CF6',
+    },
+    rescheduleDates: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    rescheduleLabel: {
+        fontSize: 10,
+        color: TEXT_MUTED,
+        fontWeight: '500',
+        marginBottom: 4,
+    },
+    rescheduleValueOld: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: TEXT_DARK,
+        textDecorationLine: 'line-through',
+    },
+    rescheduleValueNew: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#8B5CF6',
+    },
+    rescheduleArrow: {
+        paddingTop: 14,
+        paddingHorizontal: 4,
     },
 });

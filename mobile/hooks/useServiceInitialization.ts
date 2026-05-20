@@ -3,6 +3,16 @@ import { useUser } from '@/context/UserContext';
 import { locationService } from '@/services/device/locationService';
 import { apiClient } from '@/services/api/apiClient';
 
+const resolvePrice = (svc: any): number => {
+    if (!svc) return 0;
+    if (svc.basePrice != null && svc.basePrice > 0) return Number(svc.basePrice);
+    if (svc.pricingText) {
+        const match = svc.pricingText.match(/[\d,]+/);
+        if (match) return parseInt(match[0].replace(/,/g, ''), 10);
+    }
+    return 0;
+};
+
 export function useServiceInitialization(slug: string) {
     const { profile, getServiceBySlug, services, isLoading: isCatalogLoading } = useUser();
     const [cityId, setCityId] = useState('');
@@ -47,7 +57,7 @@ export function useServiceInitialization(slug: string) {
         if (svc) {
             setServiceId(svc.id);
             setServiceName(svc.name || '');
-            setServicePrice(svc.basePrice ?? 0);
+            setServicePrice(resolvePrice(svc));
             return;
         }
 
@@ -61,7 +71,7 @@ export function useServiceInitialization(slug: string) {
                         if (found) {
                             setServiceId(found.id);
                             setServiceName(found.name || '');
-                            setServicePrice(found.basePrice ?? 0);
+                            setServicePrice(resolvePrice(found));
                         }
                     }
                 } catch (err) {

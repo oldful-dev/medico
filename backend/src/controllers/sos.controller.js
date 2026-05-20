@@ -311,8 +311,41 @@ const assignResponder = async (req, res) => {
             include: { responder: true, user: true }
         });
 
-        const { emitToAdmins } = require('../services/socket.service');
+        const { emitToAdmins, emitToUser } = require('../services/socket.service');
+        const { sendPushToUser } = require('../utils/notifications');
+
+        // Notify admins of the update
         emitToAdmins('sos_updated', alert);
+
+        // Emit real-time activity update to user's Activity Center
+        if (alert.responder && alert.user) {
+            // Send real-time update via Socket.io (user sees it immediately)
+            emitToUser(alert.userId, 'activity_update_created', {
+                id: `sos_${alert.id}_${Date.now()}`,
+                eventType: 'caregiver_assigned',
+                serviceType: 'SOS Alert',
+                staffName: alert.responder.name || 'Emergency Responder',
+                staffId: alert.responder.id,
+                staffPhone: alert.responder.phone || '',
+                staffPhotoUrl: alert.responder.photoUrl || null,
+                statusDetail: 'Emergency responder assigned to your SOS alert',
+                createdAt: new Date(),
+            });
+
+            // Send FCM push notification to user
+            try {
+                await sendPushToUser(alert.userId, {
+                    title: '🚨 Emergency Responder Assigned',
+                    body: `${alert.responder.name || 'Responder'} is on the way to help you.`,
+                    data: {
+                        type: 'sos_responder_assigned',
+                        sosAlertId: alert.id,
+                    },
+                });
+            } catch (pushErr) {
+                logger.warn('Failed to send FCM push for SOS responder assignment:', pushErr.message);
+            }
+        }
 
         res.json({ success: true, message: 'Responder assigned successfully', data: alert });
     } catch (err) {

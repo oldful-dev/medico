@@ -1,11 +1,12 @@
 const { Server } = require("socket.io");
 const { logger } = require("../config/logger");
+const jwt = require('jsonwebtoken');
 
 let io;
 
 /**
  * Initialize Socket.io Server
- * @param {import('http').Server} httpServer 
+ * @param {import('http').Server} httpServer
  */
 const init = (httpServer) => {
     io = new Server(httpServer, {
@@ -46,18 +47,50 @@ const init = (httpServer) => {
         pingInterval: 25000,
     });
 
+    // Authentication middleware
+    io.use((socket, next) => {
+        const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
+
+        if (!token) {
+            logger.debug('[Socket] No token provided, allowing unauthenticated connection for now');
+            return next();
+        }
+
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+            socket.userId = decoded.id || decoded.userId;
+            socket.userRole = decoded.role;
+            logger.debug(`[Socket] Authenticated user: ${socket.userId}`);
+            next();
+        } catch (err) {
+            logger.warn(`[Socket] Auth error: ${err.message}`);
+            next();
+        }
+    });
+
     io.on("connection", (socket) => {
-        logger.info(`New Client Connected: ${socket.id}`);
+        logger.info(`New Client Connected: ${socket.id} (userId: ${socket.userId || 'anonymous'})`);
 
         socket.on("join_admin_room", () => {
-            socket.join("admin_feed");
-            logger.info(`Socket ${socket.id} joined admin_feed`);
+            if (socket.userRole === 'ADMIN' || socket.userRole === 'SUPER_ADMIN') {
+                socket.join("admin_feed");
+                logger.info(`Socket ${socket.id} joined admin_feed`);
+            } else {
+                logger.warn(`Socket ${socket.id} attempted to join admin_feed without permission`);
+            }
         });
 
         socket.on("join_user_room", (userId) => {
-            if (userId) {
+            // Allow user to join their own room only
+            if (socket.userId && socket.userId === userId) {
                 socket.join(`user_${userId}`);
                 logger.info(`Socket ${socket.id} joined user_${userId}`);
+            } else if (!socket.userId && userId) {
+                // Allow unauthenticated connections to join a room (for testing)
+                socket.join(`user_${userId}`);
+                logger.debug(`Socket ${socket.id} (unauthenticated) joined user_${userId}`);
+            } else {
+                logger.warn(`Socket ${socket.id} attempted to join user_${userId} but authenticated as ${socket.userId}`);
             }
         });
 

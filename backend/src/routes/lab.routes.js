@@ -7,6 +7,7 @@ const confirmCtrl = require('../controllers/redcliffeConfirm.controller');
 
 // ─── Admin Routes ────────────────────────────
 router.get('/admin/orders', authenticateAdmin, ctrl.adminGetLabOrders);
+router.put('/booking/:id/reschedule', authenticateAdmin, ctrl.rescheduleLabOrder);
 
 // ─── Location (public) ───────────────────────
 router.get('/serviceability',   ctrl.checkServiceability);
@@ -34,6 +35,7 @@ router.post('/booking/:id/update',          authenticateUser, ctrl.updateLabBook
 router.post('/booking/:id/members',         authenticateUser, ctrl.addLabMember);
 router.post('/booking/:id/payment-mode',    authenticateUser, ctrl.updateLabPaymentMode);
 router.post('/booking/:id/packages',        authenticateUser, ctrl.updateLabPackage);
+router.post('/booking/:id/cancel',          authenticateUser, ctrl.cancelLabOrder);
 router.get( '/booking/:id/digital-report',  authenticateUser, ctrl.getDigitalReport);
 router.get( '/booking/:id/report',          authenticateUser, ctrl.getConsolidatedReport);
 

@@ -5,7 +5,9 @@ const { auditMiddleware } = require('../middleware/audit');
 const ctrl = require('../controllers/subscription.controller');
 
 // User routes
+router.get('/me/active', authenticate, ctrl.checkUserActiveSubscription);
 router.post('/initiate', authenticate, ctrl.initiateUserSubscription);
+router.post('/verify', authenticate, ctrl.verifyUserSubscription);
 
 // Admin routes
 router.get('/', authenticateAdmin, ctrl.getSubscriptions);

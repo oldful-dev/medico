@@ -12,10 +12,13 @@ import { useUser } from '@/context/UserContext';
 import { userService, Address } from '@/services/api/userService';
 
 
+const LABEL_OPTIONS = ['Home', 'Office', 'Parents Home', 'Other'];
+
 export default function ManageAddressesScreen() {
     const router = useRouter();
     const { profile, setProfile } = useUser();
     const [showAddForm, setShowAddForm] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
 
     // Form state
@@ -43,12 +46,30 @@ export default function ManageAddressesScreen() {
     );
 
     const resetForm = () => {
-        setNewLabel(''); setNewLine1(''); setNewLine2('');
-        setNewCity(''); setNewState(''); setNewPincode(''); setNewLandmark('');
+        setNewLabel('');
+        setNewLine1('');
+        setNewLine2('');
+        setNewCity('');
+        setNewState('');
+        setNewPincode('');
+        setNewLandmark('');
         setShowAddForm(false);
+        setEditingId(null);
     };
 
-    const addAddress = async () => {
+    const startEdit = (address: Address) => {
+        setEditingId(address.id);
+        setNewLabel(address.label || '');
+        setNewLine1(address.line1);
+        setNewLine2(address.line2 || '');
+        setNewCity(address.cityName);
+        setNewState(address.state);
+        setNewPincode(address.pincode);
+        setNewLandmark(address.landmark || '');
+        setShowAddForm(true);
+    };
+
+    const saveAddress = async () => {
         if (!newLabel.trim() || !newLine1.trim() || !newCity.trim() || !newState.trim() || !newPincode.trim()) {
             Alert.alert('Missing Info', 'Please fill Label, Address Line 1, City, State, and Pincode.');
             return;
@@ -56,7 +77,7 @@ export default function ManageAddressesScreen() {
         if (!profile?.id) return;
         setSaving(true);
         try {
-            const res = await userService.addAddress(profile.id, {
+            const addressData = {
                 label: newLabel.trim(),
                 line1: newLine1.trim(),
                 line2: newLine2.trim() || undefined,
@@ -65,22 +86,53 @@ export default function ManageAddressesScreen() {
                 pincode: newPincode.trim(),
                 landmark: newLandmark.trim() || undefined,
                 isDefault: addresses.length === 0,
-            });
+            };
+
+            let res;
+            if (editingId) {
+                res = await userService.updateAddress(profile.id, editingId, addressData);
+            } else {
+                res = await userService.addAddress(profile.id, addressData);
+            }
 
             if (res.success) {
-                // Refetch profile
                 const profileRes = await userService.getProfile();
                 if (profileRes.success && profileRes.data) setProfile(profileRes.data);
                 resetForm();
-                Alert.alert('Success', 'Address added.');
+                Alert.alert('Success', editingId ? 'Address updated.' : 'Address added.');
             } else {
-                Alert.alert('Error', res.message || 'Failed to add address.');
+                Alert.alert('Error', res.message || 'Failed to save address.');
             }
         } catch (err: any) {
             Alert.alert('Error', err.message || 'Something went wrong.');
         } finally {
             setSaving(false);
         }
+    };
+
+    const deleteAddress = async (address: Address) => {
+        if (!profile?.id || !address.id) return;
+        Alert.alert(
+            'Delete Address',
+            'Are you sure you want to delete this address?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await userService.deleteAddress(profile.id, address.id);
+                            const profileRes = await userService.getProfile();
+                            if (profileRes.success && profileRes.data) setProfile(profileRes.data);
+                            Alert.alert('Success', 'Address deleted.');
+                        } catch (err: any) {
+                            Alert.alert('Error', err.message || 'Failed to delete address.');
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     const setDefault = async (address: Address) => {
@@ -121,7 +173,12 @@ export default function ManageAddressesScreen() {
                         <View style={styles.cardHeader}>
                             <View style={styles.labelBadge}>
                                 <Ionicons
-                                    name={item.label === 'Home' ? 'home-outline' : item.label === 'Work' ? 'briefcase-outline' : 'location-outline'}
+                                    name={
+                                        item.label === 'Home' ? 'home-outline' :
+                                        item.label === 'Office' ? 'briefcase-outline' :
+                                        item.label === 'Parents Home' ? 'people-outline' :
+                                        'location-outline'
+                                    }
                                     size={16} color="#048357"
                                 />
                                 <Text style={styles.labelText}>{item.label}</Text>
@@ -145,6 +202,14 @@ export default function ManageAddressesScreen() {
                                     <Text style={styles.actionBtnText}>Set Default</Text>
                                 </TouchableOpacity>
                             )}
+                            <TouchableOpacity style={styles.actionBtn} onPress={() => startEdit(item)}>
+                                <Ionicons name="pencil-outline" size={16} color="#048357" />
+                                <Text style={styles.actionBtnText}>Edit</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => deleteAddress(item)}>
+                                <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                                <Text style={[styles.actionBtnText, { color: '#EF4444' }]}>Delete</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 ))}
@@ -163,7 +228,7 @@ export default function ManageAddressesScreen() {
                             <TouchableOpacity style={styles.cancelFormBtn} onPress={resetForm}>
                                 <Text style={styles.cancelFormText}>Cancel</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.saveFormBtn} onPress={addAddress} disabled={saving}>
+                            <TouchableOpacity style={styles.saveFormBtn} onPress={saveAddress} disabled={saving}>
                                 {saving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveFormText}>Save Address</Text>}
                             </TouchableOpacity>
                         </View>

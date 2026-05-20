@@ -46,10 +46,18 @@ const getServiceById = async (req, res, next) => {
 // POST /api/services
 const createService = async (req, res, next) => {
     try {
-        const { name, slug, icon, tagline, description, pricingText, route, sortOrder, isEnabled, serviceType, formFieldsJson } = req.body;
+        const { name, slug, icon, tagline, description, pricingText, basePrice, route, sortOrder, isEnabled, serviceType, formFieldsJson } = req.body;
+
+        let parsedBasePrice = basePrice;
+        if (parsedBasePrice === undefined && pricingText) {
+            const match = pricingText.match(/[\d,]+/);
+            if (match) {
+                parsedBasePrice = parseInt(match[0].replace(/,/g, ''), 10);
+            }
+        }
 
         const service = await prisma.service.create({
-            data: { name, slug, icon, tagline, description, pricingText, route, sortOrder, isEnabled, serviceType, formFieldsJson },
+            data: { name, slug, icon, tagline, description, pricingText, basePrice: parsedBasePrice, route, sortOrder, isEnabled, serviceType, formFieldsJson },
         });
 
         sendResponse(res, 201, service, 'Service created successfully');
@@ -61,9 +69,19 @@ const createService = async (req, res, next) => {
 // PUT /api/services/:id
 const updateService = async (req, res, next) => {
     try {
+        const data = { ...req.body };
+        if (data.pricingText !== undefined && data.basePrice === undefined) {
+            const match = data.pricingText.match(/[\d,]+/);
+            if (match) {
+                data.basePrice = parseInt(match[0].replace(/,/g, ''), 10);
+            } else {
+                data.basePrice = null;
+            }
+        }
+
         const service = await prisma.service.update({
             where: { id: req.params.id },
-            data: req.body,
+            data,
         });
         sendResponse(res, 200, service, 'Service updated successfully');
     } catch (error) {

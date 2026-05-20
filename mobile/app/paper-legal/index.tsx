@@ -15,7 +15,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
-import DateTimePickerInput from '@/components/common/DateTimePickerInput';
+import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
 
@@ -161,8 +161,8 @@ export default function PaperLegalScreen() {
                     />
 
                     {/* ─── Schedule Visit ─── */}
-                    <DateTimePickerInput
-                        label="Schedule Visit"
+                    <CustomDateTimePicker
+                        label="When?"
                         value={selectedDate}
                         onDateChange={setSelectedDate}
                     />

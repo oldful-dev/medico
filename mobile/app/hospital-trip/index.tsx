@@ -16,7 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import DateTimePickerInput from '@/components/common/DateTimePickerInput';
+import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { FormInput } from '@/components/common';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 
@@ -255,9 +255,10 @@ export default function HospitalTripScreen() {
                     <View style={styles.divider} />
 
                     {/* ─── Schedule ─── */}
-                    <DateTimePickerInput
-                        label="Schedule"
-                        onDateChange={(date) => setSelectedDate(date)}
+                    <CustomDateTimePicker
+                        label="When?"
+                        value={selectedDate}
+                        onDateChange={setSelectedDate}
                     />
 
                     {/* ─── Service Add-ons ─── */}

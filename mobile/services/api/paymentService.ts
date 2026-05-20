@@ -172,4 +172,31 @@ export const paymentService = {
     setDefaultCard: async (id: string): Promise<ApiResponse<null>> => {
         return apiClient.put<null>(`/payments/saved-cards/${id}/set-default`, {});
     },
+
+    /**
+     * POST /api/checkout/calculate
+     * Get final order price and verify subscription benefits.
+     */
+    calculateCheckout: async (data: {
+        serviceCategory: string;
+        vendorFee: number;
+        baseAyuxaFee?: number;
+        diagnosticFee?: number;
+    }): Promise<ApiResponse<{
+        totalAmount: number;
+        breakdown: {
+            vendorFee: number;
+            diagnosticFee: number;
+            bookingFee: number;
+            platformFee: number;
+            taxes: number;
+            ayuxaServiceFee: number;
+            benefitDiscount: number;
+        };
+        benefitApplied: boolean;
+        remainingCountAfterOrder: number;
+    }>> => {
+        return apiClient.post('/checkout/calculate', data);
+    },
 };
+

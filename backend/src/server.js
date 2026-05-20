@@ -28,7 +28,7 @@ const rateLimit = require('express-rate-limit');
 const { logger } = require('./config/logger');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
-// Import route modules
+// Import route modules 
 const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
 const cityRoutes = require('./routes/city.routes');
@@ -58,6 +58,9 @@ const appConfigRoutes = require('./routes/appConfig.routes');
 const uploadRoutes = require('./routes/upload.routes');
 const waitlistRoutes = require('./routes/waitlist.routes');
 const whatsappTestRoutes = require('./routes/whatsapp-test.routes');
+const serviceChargeRoutes = require('./routes/serviceCharge.routes');
+const activityRoutes = require('./routes/activity.routes');
+const familyMemberRoutes = require('./routes/familyMember.routes');
 
 // Initialize cron jobs
 const { initCronJobs } = require('./cron');
@@ -194,12 +197,16 @@ app.get('/api/health', async (req, res) => {
 // Auth (with stricter rate limiting)
 app.use('/api/auth', authLimiter, authRoutes);
 
+// Admin tools (mounted before generic /api/admin to prevent parameter shadowing)
+app.use('/api/admin/service-charges', serviceChargeRoutes);
+
 // Admin
 app.use('/api/admin', adminRoutes);
 
 // Core
 app.use('/api/cities', cityRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/users', familyMemberRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/caregivers', caregiverRoutes);
@@ -208,6 +215,8 @@ app.use('/api/caregivers', caregiverRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/payments', paymentLimiter, paymentRoutes);
+app.use('/api/checkout', require('./routes/checkout.routes'));
+
 
 // Communication
 app.use('/api/sos', sosRoutes);
@@ -234,6 +243,7 @@ app.use('/api/audit-logs', auditRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/insurance', insuranceRoutes);
 app.use('/api/labs', labRoutes);
+app.use('/api/activity', activityRoutes);
 app.use('/api/location', locationRoutes);
 app.use('/api/waitlist', waitlistRoutes);
 

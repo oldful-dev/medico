@@ -72,7 +72,9 @@ export default function TicketChatScreen() {
     useEffect(() => {
         if (!ticketId || !profile?.id) return;
 
-        const setupSocket = async () => {
+        let cleanup: (() => void) | undefined;
+
+        (async () => {
             try {
                 // Initialize socket connection
                 await initTicketSocket(ticketId);
@@ -82,21 +84,21 @@ export default function TicketChatScreen() {
                 console.log('[TicketChat] ✅ Socket initialized and user room joined');
 
                 // Listen for real-time messages from admin
-                const unsubscribe = onTicketMessageAdded((data) => {
+                cleanup = onTicketMessageAdded((data) => {
                     console.log('[TicketChat] New message for ticket:', data.ticketId);
                     if (data.ticketId === ticketId) {
                         setMessages(prev => [...prev, data.message]);
                         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
                     }
                 });
-
-                return () => unsubscribe();
             } catch (err) {
                 console.error('[TicketChat] Socket setup error:', err);
             }
-        };
+        })();
 
-        return setupSocket().then(cleanup => cleanup);
+        return () => {
+            if (cleanup) cleanup();
+        };
     }, [ticketId, profile?.id]);
 
     const handleSend = async () => {

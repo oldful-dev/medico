@@ -54,33 +54,33 @@ async function main() {
 
     // ─── 3. Services ──────────────────────────
     const serviceData = [
-        { name: 'Doctor Home Visit', slug: 'doctor-visit', icon: '🩺', tagline: 'Expert doctors at your doorstep', pricingText: '₹799 / visit', route: '/doctor-visit', sortOrder: 1, serviceType: 'DOCTOR_HOME_VISIT' },
-        { name: 'Doctor Home Visit', slug: 'doctor-home-visit', icon: '🩺', tagline: 'Expert doctors at your doorstep', pricingText: '₹799 / visit', route: '/services/doctor-visit', sortOrder: 1, serviceType: 'DOCTOR_HOME_VISIT' },
-        { name: 'Hospital Trip', slug: 'hospital-trip', icon: '🏥', tagline: 'Safe & comfortable hospital trips', pricingText: '₹499 / trip', route: '/hospital-trip', sortOrder: 2, serviceType: 'HOSPITAL_TRIP' },
-        { name: 'Nurse Care', slug: 'nurse-care', icon: '👩‍⚕️', tagline: 'Professional nursing care at home', pricingText: '₹1,299 / day', route: '/nurse-care', sortOrder: 3, serviceType: 'HOME_NURSE' },
-        { name: 'Insurance', slug: 'insurance', icon: '🛡️', tagline: 'Comprehensive health insurance plans', pricingText: 'From ₹199/mo', route: '/insurance', sortOrder: 4, serviceType: 'INSURANCE' },
-        { name: 'Blood Test', slug: 'blood-test', icon: '🩸', tagline: 'Lab tests at home, reports online', pricingText: '₹299 / test', route: '/blood-test', sortOrder: 5, serviceType: 'BLOOD_TEST' },
-        { name: 'Medicines', slug: 'order-medicines', icon: '💊', tagline: 'Doorstep medicine delivery', pricingText: 'As per MRP', route: '/order-medicines', sortOrder: 6, serviceType: 'MEDICINES' },
-        { name: 'Physio & Fitness', slug: 'physio-fitness', icon: '🏋️', tagline: 'Personalized physiotherapy sessions', pricingText: '₹699 / session', route: '/physio-fitness', sortOrder: 7, serviceType: 'PHYSIO_FITNESS' },
-        { name: 'Medical Equipment', slug: 'medical-equipment', icon: '🦽', tagline: 'Medical equipment on rent', pricingText: 'From ₹99/day', route: '/medical-equipment', sortOrder: 8, serviceType: 'EQUIPMENT_RENTAL' },
-        { name: 'Meal Service', slug: 'meal-service', icon: '🍱', tagline: 'Healthy meals for seniors', pricingText: '₹149 / meal', route: '/meal-service', sortOrder: 9, serviceType: 'TIFFIN' },
-        { name: 'Tech Helper', slug: 'tech-helper', icon: '💻', tagline: 'Technology assistance for seniors', pricingText: '₹399 / visit', route: '/tech-helper', sortOrder: 10, serviceType: 'TECH_HELPER' },
-        { name: 'Home Essentials', slug: 'home-essentials', icon: '🏠', tagline: 'Daily essentials delivered', pricingText: 'Varies', route: '/all-home-essentials', sortOrder: 11, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
-        { name: 'Club & Events', slug: 'club-events', icon: '🎭', tagline: 'Social clubs & wellness events', pricingText: '₹199 / event', route: '/services/events', sortOrder: 12, serviceType: 'CLUB_EVENTS' },
+        { name: 'Doctor Home Visit', slug: 'doctor-visit', icon: '🩺', tagline: 'Expert doctors at your doorstep', pricingText: '₹799 / visit', basePrice: 799, route: '/doctor-visit', sortOrder: 1, serviceType: 'DOCTOR_HOME_VISIT' },
+        { name: 'Doctor Home Visit', slug: 'doctor-home-visit', icon: '🩺', tagline: 'Expert doctors at your doorstep', pricingText: '₹799 / visit', basePrice: 799, route: '/services/doctor-visit', sortOrder: 1, serviceType: 'DOCTOR_HOME_VISIT' },
+        { name: 'Hospital Trip', slug: 'hospital-trip', icon: '🏥', tagline: 'Safe & comfortable hospital trips', pricingText: '₹499 / trip', basePrice: 499, route: '/hospital-trip', sortOrder: 2, serviceType: 'HOSPITAL_TRIP' },
+        { name: 'Nurse Care', slug: 'nurse-care', icon: '👩‍⚕️', tagline: 'Professional nursing care at home', pricingText: '₹1,299 / day', basePrice: 1299, route: '/nurse-care', sortOrder: 3, serviceType: 'HOME_NURSE' },
+        { name: 'Insurance', slug: 'insurance', icon: '🛡️', tagline: 'Comprehensive health insurance plans', pricingText: 'From ₹199/mo', basePrice: 199, route: '/insurance', sortOrder: 4, serviceType: 'INSURANCE' },
+        { name: 'Blood Test', slug: 'blood-test', icon: '🩸', tagline: 'Lab tests at home, reports online', pricingText: '₹299 / test', basePrice: 299, route: '/blood-test', sortOrder: 5, serviceType: 'BLOOD_TEST' },
+        { name: 'Medicines', slug: 'order-medicines', icon: '💊', tagline: 'Doorstep medicine delivery', pricingText: 'As per MRP', basePrice: 0, route: '/order-medicines', sortOrder: 6, serviceType: 'MEDICINES' },
+        { name: 'Physio & Fitness', slug: 'physio-fitness', icon: '🏋️', tagline: 'Personalized physiotherapy sessions', pricingText: '₹699 / session', basePrice: 699, route: '/physio-fitness', sortOrder: 7, serviceType: 'PHYSIO_FITNESS' },
+        { name: 'Medical Equipment', slug: 'medical-equipment', icon: '🦽', tagline: 'Medical equipment on rent', pricingText: 'From ₹99/day', basePrice: 99, route: '/medical-equipment', sortOrder: 8, serviceType: 'EQUIPMENT_RENTAL' },
+        { name: 'Meal Service', slug: 'meal-service', icon: '🍱', tagline: 'Healthy meals for seniors', pricingText: '₹149 / meal', basePrice: 149, route: '/meal-service', sortOrder: 9, serviceType: 'TIFFIN' },
+        { name: 'Tech Helper', slug: 'tech-helper', icon: '💻', tagline: 'Technology assistance for seniors', pricingText: '₹399 / visit', basePrice: 399, route: '/tech-helper', sortOrder: 10, serviceType: 'TECH_HELPER' },
+        { name: 'Home Essentials', slug: 'home-essentials', icon: '🏠', tagline: 'Daily essentials delivered', pricingText: 'Varies', basePrice: 0, route: '/all-home-essentials', sortOrder: 11, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Club & Events', slug: 'club-events', icon: '🎭', tagline: 'Social clubs & wellness events', pricingText: '₹199 / event', basePrice: 199, route: '/services/events', sortOrder: 12, serviceType: 'CLUB_EVENTS' },
     ];
 
     const homeEssentialsSubServices = [
-        { name: 'AC & Appliance Repair', slug: 'appliance-repair', icon: '🛠️', tagline: 'Expert repairs for AC, Fridge, etc.', pricingText: '₹149 / booking', route: '/appliance-repair', sortOrder: 101, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
-        { name: 'Plumbing & Electrical', slug: 'plumbing-electrical', icon: '🚰', tagline: 'Certified plumbers & electricians', pricingText: '₹99 / booking', route: '/plumbing-electrical', sortOrder: 102, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
-        { name: 'Deep Cleaning', slug: 'deep-cleaning', icon: '🧹', tagline: 'Full home & toilet cleaning', pricingText: '₹499 / booking', route: '/deep-cleaning', sortOrder: 103, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
-        { name: 'Driver & Cab', slug: 'driving-cab', icon: '🚗', tagline: 'Reliable drivers for local/outstation', pricingText: '₹299 / booking', route: '/driving-cab', sortOrder: 104, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
-        { name: 'Bill Payment', slug: 'bill-payment', icon: '🧾', tagline: 'Utility bills & tax payments', pricingText: '₹49 / bill', route: '/bill-payment', sortOrder: 105, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
-        { name: 'Bank Paperwork', slug: 'bank-paperwork', icon: '🏦', tagline: 'KYC, forms & bank assistance', pricingText: '₹199 / visit', route: '/bank-paperwork', sortOrder: 106, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
-        { name: 'Grocery Run', slug: 'grocery-run', icon: '🛒', tagline: 'Fresh groceries at your door', pricingText: '₹99 / run', route: '/grocery-run', sortOrder: 107, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
-        { name: 'Anything Else', slug: 'anything-else', icon: '❓', tagline: 'Need help with something else?', pricingText: 'Contact Us', route: '/anything-else', sortOrder: 108, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
-        { name: 'Paperwork & Legal', slug: 'paper-legal', icon: '📋', tagline: 'Legal & paperwork assistance', pricingText: 'From ₹999', route: '/paper-legal', sortOrder: 109, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
-        { name: 'Trip & Travels', slug: 'trip-travels', icon: '✈️', tagline: 'Travel planning & assistance', pricingText: 'Custom', route: '/trip-travels', sortOrder: 110, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
-        { name: 'Smart Upgrade', slug: 'smart-upgrade', icon: '✨', tagline: 'Make your home elderly-friendly', pricingText: 'Custom Quote', route: '/smart-upgrade', sortOrder: 111, serviceType: 'HOME_ESSENTIALS', isEnabled: true }
+        { name: 'AC & Appliance Repair', slug: 'appliance-repair', icon: '🛠️', tagline: 'Expert repairs for AC, Fridge, etc.', pricingText: '₹149 / booking', basePrice: 149, route: '/appliance-repair', sortOrder: 101, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Plumbing & Electrical', slug: 'plumbing-electrical', icon: '🚰', tagline: 'Certified plumbers & electricians', pricingText: '₹99 / booking', basePrice: 99, route: '/plumbing-electrical', sortOrder: 102, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Deep Cleaning', slug: 'deep-cleaning', icon: '🧹', tagline: 'Full home & toilet cleaning', pricingText: '₹499 / booking', basePrice: 499, route: '/deep-cleaning', sortOrder: 103, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Driver & Cab', slug: 'driving-cab', icon: '🚗', tagline: 'Reliable drivers for local/outstation', pricingText: '₹299 / booking', basePrice: 299, route: '/driving-cab', sortOrder: 104, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Bill Payment', slug: 'bill-payment', icon: '🧾', tagline: 'Utility bills & tax payments', pricingText: '₹49 / bill', basePrice: 49, route: '/bill-payment', sortOrder: 105, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Bank Paperwork', slug: 'bank-paperwork', icon: '🏦', tagline: 'KYC, forms & bank assistance', pricingText: '₹199 / visit', basePrice: 199, route: '/bank-paperwork', sortOrder: 106, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Grocery Run', slug: 'grocery-run', icon: '🛒', tagline: 'Fresh groceries at your door', pricingText: '₹99 / run', basePrice: 99, route: '/grocery-run', sortOrder: 107, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Anything Else', slug: 'anything-else', icon: '❓', tagline: 'Need help with something else?', pricingText: 'Contact Us', basePrice: 0, route: '/anything-else', sortOrder: 108, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Paperwork & Legal', slug: 'paper-legal', icon: '📋', tagline: 'Legal & paperwork assistance', pricingText: 'From ₹999', basePrice: 999, route: '/paper-legal', sortOrder: 109, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Trip & Travels', slug: 'trip-travels', icon: '✈️', tagline: 'Travel planning & assistance', pricingText: 'Custom', basePrice: 0, route: '/trip-travels', sortOrder: 110, serviceType: 'HOME_ESSENTIALS', isEnabled: true },
+        { name: 'Smart Upgrade', slug: 'smart-upgrade', icon: '✨', tagline: 'Make your home elderly-friendly', pricingText: 'Custom Quote', basePrice: 0, route: '/smart-upgrade', sortOrder: 111, serviceType: 'HOME_ESSENTIALS', isEnabled: true }
     ];
 
     for (const s of serviceData) {
@@ -186,6 +186,74 @@ async function main() {
     }
 
     console.log('✅ Coupons seeded');
+
+    // ─── 9. Service Charges ───────────────────
+    const serviceCharges = [
+        { serviceCategory: 'DOCTOR_HOME_VISIT', bookingFee: 199, platformFee: 50, taxPercentage: 6, isSubscriptionEligible: true, isActive: true },
+        { serviceCategory: 'BLOOD_TEST', bookingFee: 99, platformFee: 50, taxPercentage: 6, isSubscriptionEligible: true, isActive: true },
+        { serviceCategory: 'HOME_NURSE', bookingFee: 399, platformFee: 50, taxPercentage: 6, isSubscriptionEligible: true, isActive: true },
+        { serviceCategory: 'PLUMBING_ELECTRICAL', bookingFee: 299, platformFee: 50, taxPercentage: 6, isSubscriptionEligible: true, isActive: true },
+    ];
+
+    for (const sc of serviceCharges) {
+        await prisma.serviceCharge.upsert({
+            where: { serviceCategory: sc.serviceCategory },
+            update: {
+                bookingFee: sc.bookingFee,
+                platformFee: sc.platformFee,
+                taxPercentage: sc.taxPercentage,
+                isSubscriptionEligible: sc.isSubscriptionEligible,
+                isActive: sc.isActive
+            },
+            create: sc,
+        });
+    }
+
+    console.log('✅ Service charges seeded');
+
+    // ─── 10. Demo Staff Profiles (for ActivityUpdate seeding) ─────────
+    // These are stand-alone seed records. In production, admin assigns real staff via the UI.
+    const demoStaff = [
+        { staffId: 'AYX-DOC-0041', name: 'Dr. Priya Sharma',   phone: '+919876543210', role: 'doctor_assigned',    photoUrl: null },
+        { staffId: 'AYX-LAB-0119', name: 'Rajan Mehta',         phone: '+918765432109', role: 'sample_collected',   photoUrl: null },
+        { staffId: 'AYX-NRS-0088', name: 'Anita Verma',         phone: '+917654321098', role: 'nurse_assigned',     photoUrl: null },
+        { staffId: 'AYX-CGR-0033', name: 'Suresh Kumar',        phone: '+916543210987', role: 'caregiver_assigned', photoUrl: null },
+        { staffId: 'AYX-DEL-0055', name: 'Vikram Logistics',    phone: '+915432109876', role: 'out_for_delivery',   photoUrl: null },
+        { staffId: 'AYX-BIL-0001', name: 'Ayuxa Billing',       phone: '+918000123456', role: 'payment_confirmed',  photoUrl: null },
+    ];
+
+    // Find any existing confirmed lab order to attach demo activity updates
+    const demoOrder = await prisma.labOrder.findFirst({ where: { status: 'CONFIRMED' } });
+    if (demoOrder) {
+        // Delete existing demo activity updates for this order to keep seed idempotent
+        await prisma.activityUpdate.deleteMany({ where: { labOrderId: demoOrder.id } });
+
+        const activitySeeds = [
+            { eventType: 'appointment_confirmed', serviceType: 'Blood Test',   staffIdx: 1, eta: '15 mins',  statusDetail: 'Phlebotomist confirmed and en route' },
+            { eventType: 'sample_collected',      serviceType: 'Blood Test',   staffIdx: 1, eta: null,       statusDetail: 'Sample dispatched to lab for processing' },
+            { eventType: 'payment_confirmed',      serviceType: 'Blood Test',   staffIdx: 5, eta: null,       statusDetail: '₹850 received · Ref #PAY9921' },
+        ];
+
+        for (const a of activitySeeds) {
+            const s = demoStaff[a.staffIdx];
+            await prisma.activityUpdate.create({
+                data: {
+                    labOrderId:   demoOrder.id,
+                    eventType:    a.eventType,
+                    serviceType:  a.serviceType,
+                    staffName:    s.name,
+                    staffId:      s.staffId,
+                    staffPhone:   s.phone,
+                    staffPhotoUrl: s.photoUrl,
+                    eta:          a.eta,
+                    statusDetail: a.statusDetail,
+                },
+            });
+        }
+        console.log(`✅ Demo activity updates seeded for order ${demoOrder.clientRefId}`);
+    } else {
+        console.log('ℹ️  No CONFIRMED lab order found — activity update demo skipped (run after a booking is confirmed)');
+    }
 
     console.log('\n🎉 Database seeded successfully!');
     console.log('──────────────────────────────────');

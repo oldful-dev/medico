@@ -1,0 +1,516 @@
+import React, { useState, useEffect } from 'react';
+import {
+    View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput,
+    ActivityIndicator
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { labService, type LabSlot } from '@/services/api/labService';
+import { locationService } from '@/services/device/locationService';
+import { useUser } from '@/context/UserContext';
+import { userService } from '@/services/api/userService';
+import { LocationPickerModal } from '@/components/LocationPickerModal';
+import { useCart } from '@/context/CartContext';
+
+const PRIMARY_GREEN = '#02743F';
+const TEXT_DARK = '#2F2F2F';
+const TEXT_MUTED = '#888888';
+const CARD_BORDER = '#E5E7EB';
+const LIGHT_GREEN_BG = '#F0FDF4';
+
+export default function CartScheduleScreen() {
+    const router = useRouter();
+    const insets = useSafeAreaInsets();
+    const { profile } = useUser();
+    const params = useLocalSearchParams<{ category?: string }>();
+    const { groupedItems, getCategoryTotal } = useCart();
+
+    const category = params.category || 'Bloodwork';
+    const cartItems = groupedItems[category] || [];
+    const totalAmount = getCategoryTotal(category);
+
+    const [step, setStep] = useState<1 | 2 | 3>(1); // 3-step flow
+    const [coords, setCoords] = useState({ lat: '12.9716', long: '77.5946' });
+
+    // Step 1: Date & Time
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const [selectedTime, setSelectedTime] = useState<string>('');
+    const [slots, setSlots] = useState<LabSlot[]>([]);
+    const [slotsLoading, setSlotsLoading] = useState(false);
+
+    // Step 2: Address
+    const [selectedAddress, setSelectedAddress] = useState('');
+    const [pincode, setPincode] = useState('');
+    const [landmark, setLandmark] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState(profile?.phone || '');
+    const [serviceabilityStatus, setServiceabilityStatus] = useState<'unchecked' | 'checking' | 'serviceable' | 'non-serviceable'>('unchecked');
+    const [detectingLocation, setDetectingLocation] = useState(false);
+    const [locationPickerVisible, setLocationPickerVisible] = useState(false);
+
+    // Step 3: Confirm
+    const [isBooking, setIsBooking] = useState(false);
+
+    useEffect(() => {
+        if (cartItems.length === 0) {
+            Alert.alert('Error', 'No items found in this category');
+            router.back();
+        }
+        const today = new Date();
+        if (today.getHours() >= 16) today.setDate(today.getDate() + 1);
+        setSelectedDate(today);
+    }, [cartItems.length]);
+
+    useEffect(() => {
+        if (step === 2 && !selectedAddress && profile?.addresses?.length) {
+            const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
+            if (defaultAddr) {
+                const parts = [defaultAddr.line1, defaultAddr.line2, defaultAddr.cityName].filter(Boolean);
+                setSelectedAddress(parts.join(', '));
+                if (defaultAddr.pincode) setPincode(defaultAddr.pincode);
+                if (defaultAddr.landmark) setLandmark(defaultAddr.landmark);
+            }
+        }
+    }, [step]);
+
+    useEffect(() => {
+        if (!selectedDate || cartItems.length === 0) return;
+        setSlotsLoading(true);
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        labService.getTimeSlots(dateStr, coords.lat, coords.long)
+            .then(data => {
+                const slots = Array.isArray(data) ? data : [];
+                setSlots(slots);
+                if (slots.length > 0) {
+                    setSelectedTime(slots[0].slot || slots[0].slot_time || '');
+                }
+            })
+            .catch(() => setSlots([]))
+            .finally(() => setSlotsLoading(false));
+    }, [selectedDate, cartItems.length, coords]);
+
+    const formatDate = (d: Date) => {
+        return `${d.getDate()} ${d.toLocaleDateString('en-US', { month: 'short' })}`;
+    };
+
+    const generateDays = () => {
+        const arr = [];
+        const start = selectedDate || new Date();
+        for (let i = 0; i < 14; i++) {
+            const d = new Date(start);
+            d.setDate(start.getDate() + i);
+            arr.push(d);
+        }
+        return arr;
+    };
+
+    const handleLocationConfirmed = (location: any) => {
+        const address = location.address || location.description || '';
+        setSelectedAddress(address);
+        setCoords({ lat: String(location.latitude), long: String(location.longitude) });
+        const pincodeMatch = address.match(/\b\d{6}\b/);
+        if (pincodeMatch) setPincode(pincodeMatch[0]);
+        checkServiceability(String(location.latitude), String(location.longitude));
+        setLocationPickerVisible(false);
+    };
+
+    const handleDetectLocation = async () => {
+        setDetectingLocation(true);
+        try {
+            const coords = await locationService.getCurrentLocation();
+            const address = await locationService.getAddressFromCoordinates(coords);
+            const pincode = await locationService.getPincodeFromAddress(coords, address);
+            setCoords({ lat: String(coords.latitude), long: String(coords.longitude) });
+            setSelectedAddress(address);
+            if (pincode) setPincode(pincode);
+            checkServiceability(String(coords.latitude), String(coords.longitude));
+        } catch (error) {
+            Alert.alert('Location Error', 'Unable to detect your location.');
+        } finally {
+            setDetectingLocation(false);
+        }
+    };
+
+    const checkServiceability = async (lat: string, lng: string) => {
+        if (category !== 'Bloodwork') {
+            setServiceabilityStatus('serviceable'); // Skip check for products
+            return;
+        }
+        setServiceabilityStatus('checking');
+        try {
+            const result: any = await labService.checkServiceability(lat, lng);
+            const isServiceable = result?.status === 'success' || result?.data?.status === 'success' || result?.serviceable === true;
+            setServiceabilityStatus(isServiceable ? 'serviceable' : 'non-serviceable');
+        } catch {
+            setServiceabilityStatus('unchecked');
+        }
+    };
+
+    const handleContinue = async () => {
+        if (step === 1) {
+            if (!selectedDate || !selectedTime) {
+                Alert.alert('Required', 'Please select date and time');
+                return;
+            }
+            setStep(2);
+        } else if (step === 2) {
+            if (!selectedAddress.trim() || pincode.length !== 6) {
+                Alert.alert('Required', 'Please enter valid address and pincode');
+                return;
+            }
+            if (serviceabilityStatus === 'non-serviceable') {
+                Alert.alert('Not Serviceable', 'This location is not serviceable.');
+                return;
+            }
+            setStep(3);
+        } else if (step === 3) {
+            await handleConfirmBooking();
+        }
+    };
+
+    const handleConfirmBooking = async () => {
+        if (!selectedDate || !selectedTime) return;
+        if (!phoneNumber.trim()) {
+            Alert.alert('Required', 'Please enter a valid phone number');
+            return;
+        }
+
+        setIsBooking(true);
+        try {
+            const selectedSlot = slots.find(s => (s.slot || s.slot_time) === selectedTime);
+            
+            // Map global cart items to lab package format
+            const packages = cartItems.map(item => ({
+                code: item.id,
+                name: item.title,
+                cost: item.price,
+            }));
+
+            const bookingPayload = {
+                bookingType: 'HOME',
+                patient: {
+                    name: profile?.name || '',
+                    age: 30,
+                    gender: profile?.gender || 'M',
+                    phone: phoneNumber,
+                },
+                address: {
+                    lat: coords.lat,
+                    long: coords.long,
+                    pincode,
+                    line1: selectedAddress,
+                    ...(landmark.trim() ? { landmark: landmark.trim() } : {}),
+                },
+                packages,
+                slot: {
+                    date: selectedDate.toISOString().split('T')[0],
+                    time: selectedTime,
+                    slotId: selectedSlot?.slot_id || 0,
+                },
+            };
+
+            // Sync address
+            if (profile?.id && selectedAddress.trim()) {
+                const existing = profile.addresses?.find((a: any) => a.isDefault) || profile.addresses?.[0];
+                const addrPayload = {
+                    label: existing?.label || 'Home',
+                    line1: selectedAddress.trim(),
+                    cityName: existing?.cityName || '',
+                    state: existing?.state || '',
+                    pincode: pincode || existing?.pincode || '',
+                    ...(landmark.trim() ? { landmark: landmark.trim() } : {}),
+                    isDefault: true,
+                };
+                if (existing?.id) {
+                    userService.updateAddress(profile.id, existing.id, addrPayload).catch(() => {});
+                } else {
+                    userService.addAddress(profile.id, addrPayload).catch(() => {});
+                }
+            }
+
+            // Route to unified category order-summary
+            router.push({
+                pathname: '/cart/order-summary',
+                params: {
+                    category,
+                    bookingPayload: JSON.stringify(bookingPayload),
+                    amount: String(totalAmount),
+                },
+            } as any);
+        } catch (error) {
+            Alert.alert('Error', 'Failed to proceed with booking');
+        } finally {
+            setIsBooking(false);
+        }
+    };
+
+    const renderStep1 = () => (
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.stepContent}>
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Select Date</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.datesScroll}>
+                    {generateDays().map((day, idx) => (
+                        <TouchableOpacity
+                            key={idx}
+                            onPress={() => setSelectedDate(day)}
+                            style={[
+                                styles.dateChip,
+                                selectedDate?.toDateString() === day.toDateString() && styles.dateChipActive,
+                            ]}
+                        >
+                            <Text style={[styles.dateChipText, selectedDate?.toDateString() === day.toDateString() && styles.dateChipTextActive]}>
+                                {formatDate(day)}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Select Time Slot</Text>
+                {slotsLoading ? (
+                    <ActivityIndicator size="small" color={PRIMARY_GREEN} />
+                ) : (
+                    <View style={styles.slotsGrid}>
+                        {slots.map((slot, idx) => (
+                            <TouchableOpacity
+                                key={idx}
+                                onPress={() => setSelectedTime(slot.slot || slot.slot_time || '')}
+                                style={[
+                                    styles.slotButton,
+                                    selectedTime === (slot.slot || slot.slot_time) && styles.slotButtonActive,
+                                ]}
+                            >
+                                <Text style={[styles.slotButtonText, selectedTime === (slot.slot || slot.slot_time) && styles.slotButtonTextActive]}>
+                                    {slot.slot || slot.slot_time}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
+            </View>
+        </ScrollView>
+    );
+
+    const renderStep2 = () => (
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.stepContent}>
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Collection Address</Text>
+                {!selectedAddress && (
+                    <View style={styles.locationOptionsContainer}>
+                        <TouchableOpacity style={[styles.locationOptionBtn, { flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }]} onPress={handleDetectLocation} disabled={detectingLocation}>
+                            {detectingLocation ? <ActivityIndicator size="small" color={PRIMARY_GREEN} /> : (
+                                <>
+                                    <Ionicons name="locate" size={28} color={PRIMARY_GREEN} style={{ marginBottom: 8 }} />
+                                    <Text style={styles.locationOptionTitle}>Auto Detect</Text>
+                                    <Text style={styles.locationOptionDesc}>Current location</Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.locationOptionBtn, { flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }]} onPress={() => setLocationPickerVisible(true)}>
+                            <Ionicons name="search" size={28} color={PRIMARY_GREEN} style={{ marginBottom: 8 }} />
+                            <Text style={styles.locationOptionTitle}>Manual</Text>
+                            <Text style={styles.locationOptionDesc}>Search & select</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {serviceabilityStatus === 'checking' && (
+                    <View style={[styles.serviceabilityBanner, { backgroundColor: '#FEF3C7' }]}>
+                        <ActivityIndicator size="small" color="#D97706" style={{ marginRight: 10 }} />
+                        <Text style={{ fontSize: 12, color: '#92400E', fontWeight: '500' }}>Checking serviceability...</Text>
+                    </View>
+                )}
+                {serviceabilityStatus === 'serviceable' && (
+                    <View style={[styles.serviceabilityBanner, { backgroundColor: '#D1FAE5' }]}>
+                        <Ionicons name="checkmark-circle" size={16} color={PRIMARY_GREEN} style={{ marginRight: 10 }} />
+                        <Text style={{ fontSize: 12, color: PRIMARY_GREEN, fontWeight: '600' }}>Location is serviceable</Text>
+                    </View>
+                )}
+                {serviceabilityStatus === 'non-serviceable' && (
+                    <View style={[styles.serviceabilityBanner, { backgroundColor: '#FEE2E2' }]}>
+                        <Ionicons name="alert-circle" size={16} color="#DC2626" style={{ marginRight: 10 }} />
+                        <Text style={{ fontSize: 12, color: '#DC2626', fontWeight: '600' }}>Location not serviceable</Text>
+                    </View>
+                )}
+
+                <TextInput
+                    placeholder="Enter full address"
+                    placeholderTextColor={TEXT_MUTED}
+                    value={selectedAddress}
+                    onChangeText={setSelectedAddress}
+                    multiline
+                    style={styles.addressInput}
+                />
+                <View style={styles.row}>
+                    <TextInput
+                        placeholder="Pincode"
+                        placeholderTextColor={TEXT_MUTED}
+                        value={pincode}
+                        onChangeText={setPincode}
+                        maxLength={6}
+                        keyboardType="numeric"
+                        style={[styles.input, { flex: 1, marginRight: 8 }]}
+                    />
+                    <TextInput
+                        placeholder="Landmark (optional)"
+                        placeholderTextColor={TEXT_MUTED}
+                        value={landmark}
+                        onChangeText={setLandmark}
+                        style={[styles.input, { flex: 1 }]}
+                    />
+                </View>
+                <TextInput
+                    placeholder="Phone Number"
+                    placeholderTextColor={TEXT_MUTED}
+                    value={phoneNumber}
+                    onChangeText={setPhoneNumber}
+                    keyboardType="phone-pad"
+                    style={styles.input}
+                />
+            </View>
+        </ScrollView>
+    );
+
+    const renderStep3 = () => (
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.stepContent}>
+            <View style={styles.summaryCard}>
+                <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Category</Text>
+                    <Text style={styles.summaryValue}>{category}</Text>
+                </View>
+                <View style={[styles.summaryRow, styles.summaryRowDivider]}>
+                    <Text style={styles.summaryLabel}>Items</Text>
+                    <Text style={styles.summaryValue}>{cartItems.length} items</Text>
+                </View>
+                <View style={[styles.summaryRow, styles.summaryRowDivider]}>
+                    <Text style={styles.summaryLabel}>Date & Time</Text>
+                    <Text style={styles.summaryValue}>
+                        {selectedDate?.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}, {selectedTime}
+                    </Text>
+                </View>
+                <View style={[styles.summaryRow, styles.summaryRowDivider]}>
+                    <Text style={styles.summaryLabel}>Address</Text>
+                    <Text style={styles.summaryValue}>{selectedAddress}</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Amount</Text>
+                    <Text style={styles.summaryAmount}>₹{totalAmount}</Text>
+                </View>
+            </View>
+        </ScrollView>
+    );
+
+    const getStepContent = () => {
+        switch (step) {
+            case 1: return renderStep1();
+            case 2: return renderStep2();
+            case 3: return renderStep3();
+            default: return null;
+        }
+    };
+
+    return (
+        <View style={[styles.container, { paddingTop: insets.top }]}>
+            <StatusBar backgroundColor="#FFFFFF" />
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()}>
+                    <Ionicons name="arrow-back" size={24} color={TEXT_DARK} />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Schedule {category}</Text>
+                <View style={{ width: 24 }} />
+            </View>
+
+            <View style={styles.stepIndicator}>
+                {[1, 2, 3].map((s) => (
+                    <View key={s} style={{ alignItems: 'center', flex: 1 }}>
+                        <View style={[styles.stepDot, step >= s && styles.stepDotActive]}>
+                            <Text style={[styles.stepDotText, step >= s && styles.stepDotTextActive]}>{s}</Text>
+                        </View>
+                        {s < 3 && <View style={[styles.stepLine, step > s && styles.stepLineActive]} />}
+                    </View>
+                ))}
+            </View>
+
+            <View style={styles.stepLabels}>
+                <Text style={[styles.stepLabel, step === 1 && styles.stepLabelActive]}>Date & Time</Text>
+                <Text style={[styles.stepLabel, step === 2 && styles.stepLabelActive]}>Address</Text>
+                <Text style={[styles.stepLabel, step === 3 && styles.stepLabelActive]}>Confirm</Text>
+            </View>
+
+            {getStepContent()}
+
+            <View style={styles.footer}>
+                {step > 1 && (
+                    <TouchableOpacity style={styles.backButton} onPress={() => setStep((s) => (s - 1) as 1 | 2 | 3)}>
+                        <Text style={styles.backButtonText}>Back</Text>
+                    </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                    style={[styles.continueButton, (isBooking || (step === 2 && serviceabilityStatus === 'non-serviceable')) && styles.continueButtonDisabled]}
+                    onPress={handleContinue}
+                    disabled={isBooking || (step === 2 && serviceabilityStatus === 'non-serviceable')}
+                >
+                    {isBooking ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={styles.continueButtonText}>{step === 3 ? 'Continue to Payment' : 'Continue'}</Text>}
+                </TouchableOpacity>
+            </View>
+
+            <LocationPickerModal
+                visible={locationPickerVisible}
+                onClose={() => setLocationPickerVisible(false)}
+                onLocationConfirmed={handleLocationConfirmed}
+                initialLat={parseFloat(coords.lat)}
+                initialLng={parseFloat(coords.long)}
+            />
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: '#FFFFFF' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: CARD_BORDER },
+    headerTitle: { fontSize: 16, fontWeight: '600', color: TEXT_DARK, flex: 1, textAlign: 'center' },
+    stepIndicator: { paddingHorizontal: 16, paddingVertical: 20, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+    stepDot: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' },
+    stepDotActive: { backgroundColor: PRIMARY_GREEN, borderColor: PRIMARY_GREEN },
+    stepDotText: { fontSize: 14, fontWeight: '600', color: TEXT_MUTED },
+    stepDotTextActive: { color: '#FFFFFF' },
+    stepLine: { width: 2, height: 16, backgroundColor: '#E5E7EB', marginTop: 4 },
+    stepLineActive: { backgroundColor: PRIMARY_GREEN },
+    stepLabels: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 16, marginBottom: 16 },
+    stepLabel: { fontSize: 12, color: TEXT_MUTED, fontWeight: '500', textAlign: 'center', flex: 1 },
+    stepLabelActive: { color: PRIMARY_GREEN, fontWeight: '600' },
+    stepContent: { flex: 1, paddingHorizontal: 16 },
+    section: { marginBottom: 20 },
+    sectionTitle: { fontSize: 14, fontWeight: '600', color: TEXT_DARK, marginBottom: 12 },
+    datesScroll: { marginHorizontal: -16, paddingHorizontal: 16 },
+    dateChip: { paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: CARD_BORDER, borderRadius: 8, marginRight: 8, backgroundColor: '#FFFFFF' },
+    dateChipActive: { backgroundColor: PRIMARY_GREEN, borderColor: PRIMARY_GREEN },
+    dateChipText: { fontSize: 12, color: TEXT_DARK, fontWeight: '500' },
+    dateChipTextActive: { color: '#FFFFFF' },
+    slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    slotButton: { flex: 1, minWidth: '45%', paddingVertical: 12, paddingHorizontal: 10, borderWidth: 1, borderColor: CARD_BORDER, borderRadius: 8, alignItems: 'center', backgroundColor: '#FFFFFF' },
+    slotButtonActive: { backgroundColor: PRIMARY_GREEN, borderColor: PRIMARY_GREEN },
+    slotButtonText: { fontSize: 13, color: TEXT_DARK, fontWeight: '500' },
+    slotButtonTextActive: { color: '#FFFFFF' },
+    locationOptionsContainer: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+    locationOptionBtn: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: CARD_BORDER, borderRadius: 12, padding: 16 },
+    locationOptionTitle: { fontSize: 14, fontWeight: '600', color: TEXT_DARK, marginBottom: 4 },
+    locationOptionDesc: { fontSize: 12, color: TEXT_MUTED, textAlign: 'center' },
+    serviceabilityBanner: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 8, marginBottom: 16 },
+    addressInput: { borderWidth: 1, borderColor: CARD_BORDER, borderRadius: 8, padding: 12, minHeight: 80, textAlignVertical: 'top', fontSize: 14, color: TEXT_DARK, marginBottom: 12 },
+    row: { flexDirection: 'row', marginBottom: 12 },
+    input: { borderWidth: 1, borderColor: CARD_BORDER, borderRadius: 8, padding: 12, fontSize: 14, color: TEXT_DARK, marginBottom: 12 },
+    summaryCard: { borderWidth: 1, borderColor: CARD_BORDER, borderRadius: 12, padding: 16, backgroundColor: '#F9FAFB' },
+    summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12 },
+    summaryRowDivider: { borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+    summaryLabel: { fontSize: 14, color: TEXT_MUTED, flex: 1 },
+    summaryValue: { fontSize: 14, color: TEXT_DARK, fontWeight: '500', flex: 2, textAlign: 'right' },
+    summaryAmount: { fontSize: 18, color: PRIMARY_GREEN, fontWeight: '700' },
+    footer: { flexDirection: 'row', padding: 16, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: CARD_BORDER, gap: 12 },
+    backButton: { paddingVertical: 14, paddingHorizontal: 24, borderRadius: 8, borderWidth: 1, borderColor: CARD_BORDER, alignItems: 'center', justifyContent: 'center' },
+    backButtonText: { fontSize: 14, fontWeight: '600', color: TEXT_DARK },
+    continueButton: { flex: 1, backgroundColor: PRIMARY_GREEN, paddingVertical: 14, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+    continueButtonDisabled: { backgroundColor: '#A7F3D0' },
+    continueButtonText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' }
+});
