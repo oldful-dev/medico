@@ -4,12 +4,13 @@ import ServiceDetailScreen from '@/components/services/ServiceDetailScreen';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 const imgHero = require('@/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png');
 
 export default function DrivingCabScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const [landmark, setLandmark] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
@@ -32,7 +33,7 @@ export default function DrivingCabScreen() {
                 ? await mediaService.uploadMultipleMedia(selectedImages, 'driving-cab')
                 : [];
             router.push({
-                pathname: '/payment/checkout',
+                pathname: '/service-checkout',
                 params: {
                     bookingPayload: JSON.stringify({
                         serviceId, cityId,
@@ -43,6 +44,7 @@ export default function DrivingCabScreen() {
                     }),
                     amount: String(servicePrice),
                     label: serviceName || 'Driver / Cab Booking',
+                    ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
         } catch {

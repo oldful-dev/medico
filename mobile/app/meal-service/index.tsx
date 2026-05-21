@@ -14,7 +14,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 
 
@@ -44,6 +44,7 @@ const CheckedSolidRadio = () => (
 export default function MealServiceScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const params = useLocalSearchParams<{ subscriptionId?: string }>();
 
     const [mealType, setMealType] = useState('Home Style');
     const [subMode, setSubMode] = useState('Monthly Subscription');
@@ -91,8 +92,8 @@ export default function MealServiceScreen() {
             });
 
             router.push({
-                pathname: '/payment/checkout',
-                params: { bookingPayload, amount: String(servicePrice), label: serviceName || 'Meal Service' },
+                pathname: '/service-checkout',
+                params: { bookingPayload, amount: String(servicePrice), label: serviceName || 'Meal Service', ...(params.subscriptionId && { subscriptionId: params.subscriptionId }) },
             });
         } catch (error) {
             console.error('Meal service error:', error);

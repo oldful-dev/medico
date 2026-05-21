@@ -4,12 +4,13 @@ import ServiceDetailScreen from '@/components/services/ServiceDetailScreen';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 const imgHero = require('@/assets/images/8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png');
 
 export default function PlumbingElectricalScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const [landmark, setLandmark] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
@@ -32,7 +33,7 @@ export default function PlumbingElectricalScreen() {
                 ? await mediaService.uploadMultipleMedia(selectedImages, 'plumbing-electrical')
                 : [];
             router.push({
-                pathname: '/payment/checkout',
+                pathname: '/service-checkout',
                 params: {
                     bookingPayload: JSON.stringify({
                         serviceId, cityId,
@@ -43,6 +44,7 @@ export default function PlumbingElectricalScreen() {
                     }),
                     amount: String(servicePrice),
                     label: serviceName || 'Plumbing & Electrical',
+                    ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
         } catch {

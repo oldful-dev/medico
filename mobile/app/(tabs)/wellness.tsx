@@ -37,7 +37,7 @@ export default function WellnessScreen() {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { addItem } = useCart();
+    const { addItem, items } = useCart();
 
     const [allProducts, setAllProducts] = useState<Product[]>([]);
     const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
@@ -153,6 +153,14 @@ export default function WellnessScreen() {
                 <StatusBar style="light" backgroundColor={Colors.primary} />
                 <View style={styles.headerContainer}>
                     <Text style={styles.headerTitle}>Wellness Store</Text>
+                    <TouchableOpacity onPress={() => router.push('/(tabs)/cart' as any)} style={styles.cartIconBtn}>
+                        <Ionicons name="cart-outline" size={22} color="#fff" />
+                        {items.length > 0 && (
+                            <View style={styles.cartBadge}>
+                                <Text style={styles.cartBadgeText}>{items.length}</Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
                 </View>
                 <View style={styles.contentContainer}>
                     <View style={styles.searchRow}>
@@ -356,6 +364,34 @@ const styles = StyleSheet.create({
         fontSize: FontSize.heading2,
         color: Colors.textWhite,
         letterSpacing: -0.24,
+    },
+    cartIconBtn: {
+        position: 'absolute',
+        right: Spacing.md,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cartBadge: {
+        position: 'absolute',
+        top: -6,
+        right: -6,
+        backgroundColor: '#EF4444',
+        borderRadius: 10,
+        width: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#fff',
+    },
+    cartBadgeText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.bodySmall,
+        color: '#fff',
     },
     /* ─── Main Content Container (Cream Box) ─── */
     contentContainer: {

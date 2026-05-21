@@ -4,12 +4,13 @@ import ServiceDetailScreen from '@/components/services/ServiceDetailScreen';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 const imgHero = require('@/assets/images/6c8ed456023258e8b4095af93909c6cbc6c4b909.png');
 
 export default function AnythingElseScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const [landmark, setLandmark] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
@@ -43,6 +44,7 @@ export default function AnythingElseScreen() {
                     }),
                     amount: String(servicePrice),
                     label: serviceName || 'Anything Else',
+                    ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
         } catch {

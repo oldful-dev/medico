@@ -4,12 +4,13 @@ import ServiceDetailScreen from '@/components/services/ServiceDetailScreen';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 const imgHero = require('@/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png');
 
 export default function BillPaymentScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const [landmark, setLandmark] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
@@ -28,7 +29,7 @@ export default function BillPaymentScreen() {
                 ? await mediaService.uploadMultipleMedia(selectedImages, 'bill-payment')
                 : [];
             router.push({
-                pathname: '/payment/checkout',
+                pathname: '/service-checkout',
                 params: {
                     bookingPayload: JSON.stringify({
                         serviceId,
@@ -39,6 +40,7 @@ export default function BillPaymentScreen() {
                     }),
                     amount: String(servicePrice),
                     label: serviceName || 'Bill Payment',
+                    ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
         } catch {

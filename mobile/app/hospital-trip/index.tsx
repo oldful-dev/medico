@@ -14,7 +14,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { FormInput } from '@/components/common';
@@ -47,6 +47,7 @@ export default function HospitalTripScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const params = useLocalSearchParams<{ subscriptionId?: string }>();
 
     const [selectedSpecialist, setSelectedSpecialist] = useState<string | null>(null);
     const [hospitalPreference, setHospitalPreference] = useState<'preferred' | 'recommend' | null>(null);
@@ -126,8 +127,8 @@ export default function HospitalTripScreen() {
             });
 
             router.push({
-                pathname: '/payment/checkout',
-                params: { bookingPayload, amount: String(servicePrice), label: serviceName },
+                pathname: '/service-checkout',
+                params: { bookingPayload, amount: String(servicePrice), label: serviceName, ...(params.subscriptionId && { subscriptionId: params.subscriptionId }) },
             });
         } catch (error) {
             console.error('Hospital trip error:', error);

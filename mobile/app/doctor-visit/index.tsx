@@ -18,7 +18,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
@@ -64,6 +64,7 @@ export default function DoctorVisitScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const { width } = useWindowDimensions();
+    const params = useLocalSearchParams<{ subscriptionId?: string }>();
 
     // ─── Global State ───
     const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, isLoading: isLoadingInit } = useServiceInitialization('doctor-home-visit');
@@ -294,11 +295,12 @@ export default function DoctorVisitScreen() {
             });
 
             router.push({
-                pathname: '/payment/checkout',
+                pathname: '/service-checkout',
                 params: {
                     bookingPayload,
                     amount: String(servicePrice),
                     label: serviceName || 'Doctor Home Visit',
+                    ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
         } catch (error) {

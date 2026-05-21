@@ -79,7 +79,7 @@ const SERVICE_ICON: Record<string, string> = {
 function categorizeItem(serviceType: string): ServiceCategory {
     const lower = serviceType.toLowerCase();
     if (lower.includes('blood') || lower.includes('lab') || lower.includes('test')) return 'blood-test';
-    if (lower.includes('wellness') || lower.includes('supplement') || lower.includes('vitamin')) return 'wellness';
+    if (lower.includes('wellness') || lower.includes('supplement') || lower.includes('vitamin') || lower.includes('product')) return 'wellness';
     if (lower.includes('doctor') || lower.includes('consult')) return 'doctor';
     if (lower.includes('nurse')) return 'nurse';
     if (lower.includes('service') || lower.includes('concierge')) return 'service';
@@ -141,14 +141,24 @@ export default function CartScreen() {
         const categoryTotal = categoryItems.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
 
         if (category === 'blood-test') {
-            // Blood test has its own flow
+            // Blood test has its own flow (Redcliffe slots)
             router.push(config.checkoutFlow as any);
         } else if (category === 'doctor') {
-            // Doctor booking has its own flow
-            router.push(config.checkoutFlow as any);
+            // Doctor booking → doctor-visit screen with plan info
+            router.push({
+                pathname: config.checkoutFlow as any,
+                params: {
+                    ...(hasActivePlan && activePlanId && { subscriptionId: activePlanId }),
+                },
+            } as any);
         } else if (category === 'nurse' || category === 'service') {
-            // Service bookings
-            router.push(config.checkoutFlow as any);
+            // Service bookings → all-ayuxa-services or specific service screen with plan info
+            router.push({
+                pathname: config.checkoutFlow as any,
+                params: {
+                    ...(hasActivePlan && activePlanId && { subscriptionId: activePlanId }),
+                },
+            } as any);
         } else {
             // Products/Wellness: use payment checkout with plan info for benefit calculation
             router.push({

@@ -13,7 +13,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 
@@ -29,6 +29,7 @@ const imgWalker = require('@/assets/images/00863cfbd96593a21fa1f5b136210f8574404
 export default function MedicalEquipmentScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const [selectedEquipment, setSelectedEquipment] = useState('wheelchair');
     const [selectedDuration, setSelectedDuration] = useState('Monthly');
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -73,8 +74,8 @@ export default function MedicalEquipmentScreen() {
             });
 
             router.push({
-                pathname: '/payment/checkout',
-                params: { bookingPayload, amount: String(servicePrice), label: serviceName },
+                pathname: '/service-checkout',
+                params: { bookingPayload, amount: String(servicePrice), label: serviceName, ...(params.subscriptionId && { subscriptionId: params.subscriptionId }) },
             });
         } catch (error) {
             console.error('Equipment error:', error);
