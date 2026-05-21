@@ -345,8 +345,20 @@ export default function CheckoutScreen() {
                 Alert.alert('Pincode Required', 'Please enter a valid 6-digit pincode');
                 return;
             }
+            // ─── Serviceability Check: Block payment if location is not serviceable ───
+            if (serviceabilityStatus === 'non-serviceable') {
+                Alert.alert(
+                    'Location Not Serviceable',
+                    'Collection is not available at this location. Please select a different address.'
+                );
+                return;
+            }
             if (serviceabilityStatus !== 'serviceable') {
-                Alert.alert('Not Serviceable', 'Collection is not available at this location');
+                // Status is 'unchecked' or 'checking'
+                Alert.alert(
+                    'Address Verification Needed',
+                    'Please wait for address verification to complete, or try a different location.'
+                );
                 return;
             }
             if (!phoneNumber?.trim() || phoneNumber.length < 10) {
@@ -935,12 +947,25 @@ export default function CheckoutScreen() {
 
             </ScrollView>
 
+            {/* Serviceability Alert for Blood Test */}
+            {isBloodTest && serviceabilityStatus === 'non-serviceable' && selectedAddress && (
+                <View style={styles.warningBanner}>
+                    <Ionicons name="alert-circle" size={18} color="#DC2626" />
+                    <Text style={styles.warningText}>
+                        Collection unavailable here. Please select a different address.
+                    </Text>
+                </View>
+            )}
+
             {/* Pay Button */}
             <View style={styles.footer}>
                 <TouchableOpacity
-                    style={[styles.payBtn, payLoading && styles.payBtnLoading]}
+                    style={[
+                        styles.payBtn,
+                        (payLoading || (isBloodTest && serviceabilityStatus === 'non-serviceable')) && styles.payBtnLoading
+                    ]}
                     onPress={handlePay}
-                    disabled={payLoading}
+                    disabled={payLoading || (isBloodTest && serviceabilityStatus === 'non-serviceable')}
                     activeOpacity={0.85}
                 >
                     {payLoading
@@ -948,7 +973,7 @@ export default function CheckoutScreen() {
                         : <>
                             <Ionicons name={selectedMethod === 'CASH' ? "checkmark-circle-outline" : "lock-closed-outline"} size={18} color={Colors.textWhite} />
                             <Text style={styles.payBtnText}>
-                                {selectedMethod === 'CASH' 
+                                {selectedMethod === 'CASH'
                                     ? `Confirm Booking (₹${finalAmount.toLocaleString('en-IN')})`
                                     : `Pay ₹${finalAmount.toLocaleString('en-IN')}`
                                 }
@@ -1056,6 +1081,23 @@ const styles = StyleSheet.create({
     payBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.primary, paddingVertical: 16, borderRadius: Radius.lg ?? 12 },
     payBtnLoading: { opacity: 0.7 },
     payBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textWhite },
+    warningBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.md,
+        backgroundColor: '#FEE2E2',
+        borderRadius: Radius.md,
+        padding: Spacing.md,
+        marginBottom: Spacing.lg,
+        borderLeftWidth: 4,
+        borderLeftColor: '#DC2626',
+    },
+    warningText: {
+        flex: 1,
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.body,
+        color: '#991B1B',
+    },
     benefitNote: {
         fontFamily: Fonts.medium,
         fontSize: 10,
