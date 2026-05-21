@@ -6,14 +6,15 @@ import {
     TouchableOpacity,
     TextInput,
     Alert,
+    Platform,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
-import DateTimePickerInput from '@/components/common/DateTimePickerInput';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { userService } from '@/services/api/userService';
 import { apiClient } from '@/services/api/apiClient';
@@ -48,6 +49,8 @@ export default function TechHelperScreen() {
     // State for mode selection (radio button)
     const [selectedMode, setSelectedMode] = useState<'home' | 'phone'>('home');
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+    const [showDatePicker, setShowDatePicker] = React.useState(false);
+    const [showTimePicker, setShowTimePicker] = React.useState(false);
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const [cityId, setCityId] = React.useState('');
     const [serviceId, setServiceId] = React.useState('');
@@ -210,13 +213,68 @@ export default function TechHelperScreen() {
                         />
                     </View>
 
-                    <View style={{ marginTop: 20 }}>
-                        <DateTimePickerInput
-                            label="Preferred Date & Time"
-                            value={selectedDate}
-                            onDateChange={setSelectedDate}
-                        />
+                    {/* ─── Date & Time Picker ─── */}
+                    <View style={{ marginTop: 20, marginBottom: 20 }}>
+                        <Text style={styles.sectionTitle}>Preferred Date & Time</Text>
+                        <TouchableOpacity
+                            style={styles.dateTimeButton}
+                            onPress={() => setShowDatePicker(true)}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="calendar-outline" size={20} color={Colors.primary} />
+                            <Text style={[styles.dateTimeText, selectedDate && styles.dateTimeTextSelected]}>
+                                {selectedDate
+                                    ? selectedDate.toLocaleDateString('en-IN', {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                    })
+                                    : 'Select date & time'}
+                            </Text>
+                        </TouchableOpacity>
                     </View>
+
+                    {showDatePicker && (
+                        <DateTimePicker
+                            value={selectedDate || new Date()}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            minimumDate={new Date()}
+                            onChange={(event, date) => {
+                                if (Platform.OS === 'android') {
+                                    setShowDatePicker(false);
+                                    if (event.type === 'set' && date) {
+                                        setSelectedDate(date);
+                                        setShowTimePicker(true);
+                                    }
+                                } else if (date) {
+                                    setSelectedDate(date);
+                                    setShowTimePicker(true);
+                                }
+                            }}
+                        />
+                    )}
+
+                    {showTimePicker && (
+                        <DateTimePicker
+                            value={selectedDate || new Date()}
+                            mode="time"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={(event, date) => {
+                                if (Platform.OS === 'android') {
+                                    setShowTimePicker(false);
+                                    if (event.type === 'set' && date) {
+                                        setSelectedDate(date);
+                                    }
+                                } else if (date) {
+                                    setSelectedDate(date);
+                                    setShowTimePicker(false);
+                                }
+                            }}
+                        />
+                    )}
 
                     <View style={{ marginTop: 20 }}>
                         <ImageUploadBox

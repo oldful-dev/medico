@@ -350,23 +350,34 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         )}
-        {/* ─── Hero Banner (Firebase-driven) ─── */}
-        {activeBanner && (
-          <TouchableOpacity
-            activeOpacity={activeBanner.cta_route ? 0.85 : 1}
-            onPress={() => activeBanner.cta_route && router.push(resolveRoute(activeBanner.cta_route) as any)}
-            style={styles.greetingBannerWrapper}
-          >
-            <Image
-              source={{ uri: getAssetUrl(activeBanner.image) }}
-              style={styles.greetingBanner}
-              resizeMode="cover"
-            />
-            <View style={styles.greetingOverlay}>
-              <Text style={styles.greetingTitle}>{greeting}, {userName}</Text>
+        {/* ─── Greeting Banner (New Design) ─── */}
+        <View style={styles.newGreetingBanner}>
+          <View style={styles.greetingContent}>
+            <View style={styles.greetingTextContainer}>
+              <Text style={styles.newGreetingTitle}>{greeting}, {userName}!</Text>
+              <Text style={styles.newGreetingSubtitle}>We see you. We hear you. We care you.</Text>
+              <TouchableOpacity
+                onPress={() => router.push('/my-bookings')}
+                style={styles.bookingStatusBtn}
+              >
+                <Ionicons name="calendar" size={14} color="#02743F" />
+                <Text style={styles.bookingStatusBtnText}>Booking Status</Text>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-        )}
+            <View style={styles.greetingAvatarContainer}>
+              {profile?.profileImageUrl ? (
+                <Image
+                  source={{ uri: profile.profileImageUrl }}
+                  style={styles.greetingAvatar}
+                />
+              ) : (
+                <View style={styles.greetingAvatarPlaceholder}>
+                  <Ionicons name="person" size={48} color="#02743F" />
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
 
         {/* ─── Dynamic Sections ─── */}
         {sections.map(section => {
@@ -506,27 +517,73 @@ const styles = StyleSheet.create({
   },
 
   /* Hero Banner */
-  greetingBannerWrapper: {
-    height: 117,
-    width: '100%',
-  },
-  greetingBanner: {
-    height: 117,
-    width: '100%',
-  },
-  greetingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 117,
-    justifyContent: 'center',
+  newGreetingBanner: {
+    marginHorizontal: Spacing.cardMargin,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
+    backgroundColor: '#02743F',
+    borderRadius: Radius.xl,
+    paddingVertical: 18,
     paddingHorizontal: Spacing.lg,
+    ...Shadow.card,
   },
-  greetingTitle: {
+  greetingContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  greetingTextContainer: {
+    flex: 1,
+    marginRight: Spacing.lg,
+  },
+  newGreetingTitle: {
     fontFamily: Fonts.bold,
-    fontSize: FontSize.heading2,
-    color: Colors.textWhite,
+    fontSize: 16,
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  newGreetingSubtitle: {
+    fontFamily: Fonts.regular,
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 10,
+    lineHeight: 16,
+  },
+  bookingStatusBtn: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: Radius.full,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+  },
+  bookingStatusBtnText: {
+    fontFamily: Fonts.semiBold,
+    fontSize: 11,
+    color: '#02743F',
+  },
+  greetingAvatarContainer: {
+    width: 90,
+    height: 90,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  greetingAvatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#FFFFFF',
+  },
+  greetingAvatarPlaceholder: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   /* Quick Service Strip */
