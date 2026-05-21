@@ -128,6 +128,7 @@ export default function CheckoutScreen() {
     // ─── Blood Test Specific State ─────────────────────────────────────────
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedTime, setSelectedTime] = useState<string>('');
+    const [selectedSlotId, setSelectedSlotId] = useState<number>(0);
     const [slots, setSlots] = useState<LabSlot[]>([]);
     const [slotsLoading, setSlotsLoading] = useState(false);
     const [coords, setCoords] = useState({ lat: '12.9716', long: '77.5946' });
@@ -215,11 +216,12 @@ export default function CheckoutScreen() {
                 setSlots(slots);
                 if (slots.length > 0) {
                     setSelectedTime(slots[0].slot || slots[0].slot_time || '');
+                    setSelectedSlotId(slots[0].slot_id || 0);
                 }
             })
             .catch(() => setSlots([]))
             .finally(() => setSlotsLoading(false));
-    }, [isBloodTest, selectedDate]);
+    }, [isBloodTest, selectedDate, coords.lat, coords.long]);
 
     // ─── Update coords when selected address changes (for blood test slot fetching)
     useEffect(() => {
@@ -375,11 +377,22 @@ export default function CheckoutScreen() {
                 if (isBloodTest) {
                     // ─── Blood Test Booking ───────────────────────────────────────
                     // Transform to LabBookingPayload structure expected by backend
+                    const calculateAge = (dob: string | undefined) => {
+                        if (!dob) return 0;
+                        const today = new Date();
+                        const birthDate = new Date(dob);
+                        let age = today.getFullYear() - birthDate.getFullYear();
+                        if (today.getMonth() < birthDate.getMonth() ||
+                            (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) {
+                            age--;
+                        }
+                        return age;
+                    };
                     const bookingPayload = {
                         bookingType: 'HOME' as const,
                         patient: {
                             name: profile?.name || '',
-                            age: profile?.age || 0,
+                            age: calculateAge(profile?.dateOfBirth),
                             gender: profile?.gender || 'M',
                             phone: phoneNumber,
                             email: profile?.email || '',
@@ -394,13 +407,13 @@ export default function CheckoutScreen() {
                         },
                         packages: bloodTestItems.map(item => ({
                             code: item.details?.code || item.id,
-                            name: item.details?.name || item.name || '',
+                            name: item.details?.name || item.title || '',
                             cost: item.price || 0,
                         })),
                         slot: {
                             date: selectedDate?.toISOString().split('T')[0] || '',
                             time: selectedTime,
-                            slotId: 0, // Placeholder; may need to track actual slot ID
+                            slotId: selectedSlotId,
                         },
                     };
                     const bookingRes = await labService.holdBooking(bookingPayload);
@@ -818,7 +831,10 @@ export default function CheckoutScreen() {
                                             styles.slotCard,
                                             selectedTime === (slot.slot || slot.slot_time) && styles.slotCardActive,
                                         ]}
-                                        onPress={() => setSelectedTime(slot.slot || slot.slot_time)}
+                                        onPress={() => {
+                                            setSelectedTime(slot.slot || slot.slot_time || '');
+                                            setSelectedSlotId(slot.slot_id || 0);
+                                        }}
                                     >
                                         <Text style={[
                                             styles.slotTime,
@@ -1114,7 +1130,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         borderRadius: Radius.md,
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: Colors.borderLight,
         marginRight: 8,
         minWidth: 90,
         alignItems: 'center',
@@ -1148,7 +1164,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         borderRadius: Radius.md,
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: Colors.borderLight,
         alignItems: 'center',
         backgroundColor: '#FFFFFF',
         shadowColor: '#000',
@@ -1177,7 +1193,7 @@ const styles = StyleSheet.create({
     },
     input: {
         borderWidth: 1,
-        borderColor: Colors.border,
+        borderColor: Colors.borderLight,
         borderRadius: Radius.md,
         paddingVertical: 10,
         paddingHorizontal: 12,
