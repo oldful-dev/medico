@@ -142,7 +142,12 @@ export default function CartScreen() {
 
         if (category === 'blood-test') {
             // Blood test has its own flow (Redcliffe slots)
-            router.push(config.checkoutFlow as any);
+            router.push({
+                pathname: config.checkoutFlow as any,
+                params: {
+                    fromCheckout: 'true',
+                },
+            } as any);
         } else if (category === 'doctor') {
             // Doctor booking → doctor-visit screen with plan info
             router.push({

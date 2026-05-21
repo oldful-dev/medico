@@ -121,6 +121,7 @@ export default function BloodTestScreen() {
     const isRebook = params.rebook === 'true';
     const rebookPackageCode = params.packageCode as string | undefined;
     const rebookPackageName = params.packageName as string | undefined;
+    const isFromCheckout = params.fromCheckout === 'true';
 
     const { addItem, itemCount } = useCart();
 
@@ -223,16 +224,19 @@ export default function BloodTestScreen() {
                     <Ionicons name="arrow-back" size={24} color={TEXT_DARK} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Blood Tests</Text>
-                <TouchableOpacity onPress={handleCartPress}>
-                    <View style={styles.cartIcon}>
-                        <Ionicons name="cart" size={24} color={TEXT_DARK} />
-                        {itemCount > 0 && (
-                            <View style={styles.cartBadge}>
-                                <Text style={styles.cartBadgeText}>{itemCount}</Text>
-                            </View>
-                        )}
-                    </View>
-                </TouchableOpacity>
+                {!isFromCheckout && (
+                    <TouchableOpacity onPress={handleCartPress}>
+                        <View style={styles.cartIcon}>
+                            <Ionicons name="cart" size={24} color={TEXT_DARK} />
+                            {itemCount > 0 && (
+                                <View style={styles.cartBadge}>
+                                    <Text style={styles.cartBadgeText}>{itemCount}</Text>
+                                </View>
+                            )}
+                        </View>
+                    </TouchableOpacity>
+                )}
+                {isFromCheckout && <View style={{ width: 24 }} />}
             </View>
 
             {/* Search Bar — Fixed, stable input */}
