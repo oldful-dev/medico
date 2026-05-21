@@ -118,8 +118,13 @@ export default function CheckoutScreen() {
         benefitApplied: boolean;
     } | null>(null);
 
+    // ─── Calculate checkout with benefits
+    // Applies plan benefits based on authenticated user's active subscription
+    // Runs for:
+    // 1. Service bookings (bookingPayload from service screens)
+    // 2. Product/Wellness (cart passing amount + label)
     useEffect(() => {
-        if (params.bookingPayload && !params.subscriptionId) {
+        if (params.bookingPayload || (params.amount && params.category && !params.subscriptionId)) {
             const fetchCalculation = async () => {
                 setCalcLoading(true);
                 try {
@@ -141,7 +146,7 @@ export default function CheckoutScreen() {
             };
             fetchCalculation();
         }
-    }, [params.bookingPayload, params.subscriptionId]);
+    }, [params.bookingPayload, params.amount, params.category, label]);
 
     const benefitApplied = !!calculatedPrices?.benefitApplied;
     const bookingFee = calculatedPrices ? calculatedPrices.breakdown.bookingFee : (isSubscription ? 0 : 299);
