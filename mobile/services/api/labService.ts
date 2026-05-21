@@ -27,12 +27,15 @@ export interface LabBookingPayload {
         age: number;
         gender: string;
         phone: string;
+        email?: string;
     };
     address: {
         lat: string;
         long: string;
         pincode: string;
         line1: string;
+        line2?: string;
+        landmark?: string;
     };
     packages: Array<{
         code: string;
