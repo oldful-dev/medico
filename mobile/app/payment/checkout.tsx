@@ -14,8 +14,11 @@ import RazorpayCheckout from 'react-native-razorpay';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { paymentService, PaymentMethod } from '@/services/api/paymentService';
 import { bookingService } from '@/services/api/bookingService';
+import { labService, type LabSlot } from '@/services/api/labService';
 import { storageService, STORAGE_KEYS } from '@/services/device/storageService';
 import { useUser } from '@/context/UserContext';
+import { useCart } from '@/context/CartContext';
+import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 
 // ─── Payment Flow States (for debugging & recovery) ──────
 type PaymentFlowState = 'idle' | 'creating_booking' | 'initiating_order' | 'checkout_opened' | 'verifying' | 'success' | 'failed' | 'cancelled';
@@ -49,6 +52,7 @@ const mapLabelToCategory = (label: string): string => {
 export default function CheckoutScreen() {
     const router = useRouter();
     const { profile, refreshData } = useUser();
+    const { items, clearCategory } = useCart();
     const params = useLocalSearchParams<{
         // ─── Existing booking ID (legacy: service screens pre-created the booking)
         bookingId?: string;
@@ -57,6 +61,7 @@ export default function CheckoutScreen() {
         subscriptionId?: string;
         amount?: string;
         label?: string;
+        category?: string; // 'wellness' | 'blood-test' | service categories
         email?: string;
         phone?: string;
         userName?: string;
@@ -66,6 +71,12 @@ export default function CheckoutScreen() {
         bookingAmount?: string;
         bookingLabel?: string;
     }>();
+
+    // Get blood test items from cart if blood-test category
+    const isBloodTest = params.category === 'blood-test';
+    const bloodTestItems = isBloodTest
+        ? items.filter(i => i.serviceType?.toLowerCase().includes('blood') || i.serviceType === 'Bloodwork')
+        : [];
 
     // ─── Intercept and redirect to Smart Upgrade Prompt if no active plan
     useEffect(() => {
@@ -102,12 +113,25 @@ export default function CheckoutScreen() {
     const [, setFlowState] = useState<PaymentFlowState>('idle');
     const [, setPendingRecovery] = useState(false);
 
-    // ─── Address Selection (for product/wellness deliveries) ──────────────────
-    const [selectedAddress, setSelectedAddress] = useState<any>(
-        profile?.addresses && profile.addresses.length > 0
-            ? profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0]
-            : null
-    );
+    // ─── Address Selection (for product/wellness/blood-test deliveries) ──────
+    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [landmark, setLandmark] = useState('');
+
+    // ─── Sync phone from profile when it loads
+    useEffect(() => {
+        if (profile?.phone && !phoneNumber) {
+            setPhoneNumber(profile.phone);
+        }
+    }, [profile?.phone]);
+
+    // ─── Blood Test Specific State ─────────────────────────────────────────
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const [selectedTime, setSelectedTime] = useState<string>('');
+    const [slots, setSlots] = useState<LabSlot[]>([]);
+    const [slotsLoading, setSlotsLoading] = useState(false);
+    const [coords, setCoords] = useState({ lat: '12.9716', long: '77.5946' });
+    const [serviceabilityStatus, setServiceabilityStatus] = useState<'unchecked' | 'checking' | 'serviceable' | 'non-serviceable'>('unchecked');
 
     // Benefit calculation state
     const [calcLoading, setCalcLoading] = useState(false);
@@ -172,6 +196,40 @@ export default function CheckoutScreen() {
 
     useEffect(() => { setFinalAmount(amountWithTaxAndFee - discount); }, [amountWithTaxAndFee, discount]);
 
+    // ─── Blood Test: Initialize collection date
+    useEffect(() => {
+        if (!isBloodTest) return;
+        const today = new Date();
+        if (today.getHours() >= 16) today.setDate(today.getDate() + 1);
+        setSelectedDate(today);
+    }, [isBloodTest]);
+
+    // ─── Blood Test: Fetch time slots when date changes
+    useEffect(() => {
+        if (!isBloodTest || !selectedDate) return;
+        setSlotsLoading(true);
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        labService.getTimeSlots(dateStr, coords.lat, coords.long)
+            .then(data => {
+                const slots = Array.isArray(data) ? data : [];
+                setSlots(slots);
+                if (slots.length > 0) {
+                    setSelectedTime(slots[0].slot || slots[0].slot_time || '');
+                }
+            })
+            .catch(() => setSlots([]))
+            .finally(() => setSlotsLoading(false));
+    }, [isBloodTest, selectedDate]);
+
+    // ─── Update coords when selected address changes (for blood test slot fetching)
+    useEffect(() => {
+        if (selectedAddress?.latitude && selectedAddress?.longitude) {
+            setCoords({
+                lat: String(selectedAddress.latitude),
+                long: String(selectedAddress.longitude),
+            });
+        }
+    }, [selectedAddress?.latitude, selectedAddress?.longitude]);
 
     // ─── EDGE CASE: Recover pending payment after app crash/close ──────
     // On mount, check if there's a pending Razorpay order in AsyncStorage.
@@ -271,11 +329,40 @@ export default function CheckoutScreen() {
     const handlePay = useCallback(async () => {
         if (payLoading) return;
 
-        // ─── Validate address for wellness/product orders ──────────────────────
-        // Service bookings have their own address validation; this is for products
-        if (params.category === 'wellness' && !selectedAddress) {
-            Alert.alert('Address Required', 'Please select a delivery address.');
-            return;
+        // ─── Blood Test Validation ────────────────────────────────────────────
+        if (isBloodTest) {
+            if (!selectedDate || !selectedTime) {
+                Alert.alert('Required', 'Please select collection date and time');
+                return;
+            }
+            if (!selectedAddress || !selectedAddress.line1) {
+                Alert.alert('Address Required', 'Please select a collection address');
+                return;
+            }
+            if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) {
+                Alert.alert('Pincode Required', 'Please enter a valid 6-digit pincode');
+                return;
+            }
+            if (serviceabilityStatus !== 'serviceable') {
+                Alert.alert('Not Serviceable', 'Collection is not available at this location');
+                return;
+            }
+            if (!phoneNumber?.trim() || phoneNumber.length < 10) {
+                Alert.alert('Phone Required', 'Please enter a valid 10-digit phone number');
+                return;
+            }
+        }
+
+        // ─── Wellness/Product Validation ───────────────────────────────────────
+        if (params.category === 'wellness') {
+            if (!selectedAddress || !selectedAddress.line1) {
+                Alert.alert('Address Required', 'Please select a delivery address.');
+                return;
+            }
+            if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) {
+                Alert.alert('Pincode Required', 'Please enter a valid 6-digit pincode');
+                return;
+            }
         }
 
         setPayLoading(true);
@@ -284,46 +371,105 @@ export default function CheckoutScreen() {
             // (Mirrors Next.js: bookingId guard with createdBookingIds state)
             // The booking starts as PENDING and is only CONFIRMED after payment verify.
             setFlowState('creating_booking');
-            if (!sessionBookingId.current && params.bookingPayload) {
-                // bookingPayload is a JSON-serialised CreateBookingPayload passed from service screens
-                const payload = JSON.parse(params.bookingPayload as string);
-                const bookingRes = await bookingService.createBooking({
-                    ...payload,
-                    amount: finalAmount,
-                    paymentMethod: selectedMethod,
-                });
-                if (!bookingRes.success || !bookingRes.data) {
-                    setFlowState('failed');
-                    Alert.alert('Booking Error', bookingRes.message ?? 'Could not create booking. Please try again.');
-                    return;
+            if (!sessionBookingId.current) {
+                if (isBloodTest) {
+                    // ─── Blood Test Booking ───────────────────────────────────────
+                    // Transform to LabBookingPayload structure expected by backend
+                    const bookingPayload = {
+                        bookingType: 'HOME' as const,
+                        patient: {
+                            name: profile?.name || '',
+                            age: profile?.age || 0,
+                            gender: profile?.gender || 'M',
+                            phone: phoneNumber,
+                            email: profile?.email || '',
+                        },
+                        address: {
+                            lat: coords.lat,
+                            long: coords.long,
+                            pincode: selectedAddress?.pincode || '',
+                            line1: selectedAddress?.line1 || '',
+                            line2: selectedAddress?.line2,
+                            landmark,
+                        },
+                        packages: bloodTestItems.map(item => ({
+                            code: item.details?.code || item.id,
+                            name: item.details?.name || item.name || '',
+                            cost: item.price || 0,
+                        })),
+                        slot: {
+                            date: selectedDate?.toISOString().split('T')[0] || '',
+                            time: selectedTime,
+                            slotId: 0, // Placeholder; may need to track actual slot ID
+                        },
+                    };
+                    const bookingRes = await labService.holdBooking(bookingPayload);
+                    if (!bookingRes || !(bookingRes as any)?.id) {
+                        setFlowState('failed');
+                        Alert.alert('Booking Error', 'Could not create blood test booking. Please try again.');
+                        return;
+                    }
+                    sessionBookingId.current = (bookingRes as any).id;
+                } else if (params.bookingPayload) {
+                    // ─── Service/Product Booking ──────────────────────────────────
+                    const payload = JSON.parse(params.bookingPayload as string);
+                    const bookingRes = await bookingService.createBooking({
+                        ...payload,
+                        amount: finalAmount,
+                        paymentMethod: selectedMethod,
+                    });
+                    if (!bookingRes.success || !bookingRes.data) {
+                        setFlowState('failed');
+                        Alert.alert('Booking Error', bookingRes.message ?? 'Could not create booking. Please try again.');
+                        return;
+                    }
+                    sessionBookingId.current = bookingRes.data.id;
                 }
-                sessionBookingId.current = bookingRes.data.id;
             }
 
             // ─── STEP 2: Handle COD (Cash on Delivery) vs Razorpay
             if (selectedMethod === 'CASH') {
                 // COD Flow — Direct success (Booking is already PENDING)
                 setFlowState('success');
-                Alert.alert(
-                    'Booking Received', 
-                    'Your service has been scheduled. Please pay ₹' + finalAmount + ' in cash to our provider when they arrive.',
-                    [{ text: 'OK', onPress: () => router.replace({ 
-                        pathname: '/service-confirmation', 
-                        params: { bookingId: sessionBookingId.current! } 
-                    }) }]
-                );
+                if (isBloodTest) {
+                    clearCategory('blood-test');
+                    Alert.alert(
+                        'Booking Confirmed',
+                        `Your blood test collection is scheduled. Please pay ₹${finalAmount.toLocaleString('en-IN')} in cash to the phlebotomist when they arrive.`,
+                        [{ text: 'OK', onPress: () => router.replace({
+                            pathname: '/blood-test/success',
+                            params: { bookingId: sessionBookingId.current!, amount: String(finalAmount), packageName: label }
+                        }) }]
+                    );
+                } else {
+                    Alert.alert(
+                        'Booking Received',
+                        'Your service has been scheduled. Please pay ₹' + finalAmount + ' in cash to our provider when they arrive.',
+                        [{ text: 'OK', onPress: () => router.replace({
+                            pathname: '/service-confirmation',
+                            params: { bookingId: sessionBookingId.current! }
+                        }) }]
+                    );
+                }
                 return;
             }
 
             // ─── STEP 3: Create Razorpay order on backend
             setFlowState('initiating_order');
-            const initiateRes = await paymentService.initiatePayment({
-                bookingId:      sessionBookingId.current ?? undefined,
-                subscriptionId: params.subscriptionId,
-                amount:         finalAmount,
-                paymentMethod:  selectedMethod,
-                couponCode:     couponApplied ? couponCode : undefined,
-            });
+            const initiateRes = isBloodTest
+                ? await paymentService.initiatePayment({
+                    labOrderId: sessionBookingId.current ?? undefined,
+                    amount: finalAmount,
+                    paymentMethod: selectedMethod,
+                    couponCode: couponApplied ? couponCode : undefined,
+                })
+                : await paymentService.initiatePayment({
+                    bookingId: sessionBookingId.current ?? undefined,
+                    subscriptionId: params.subscriptionId,
+                    amount: finalAmount,
+                    paymentMethod: selectedMethod,
+                    couponCode: couponApplied ? couponCode : undefined,
+                });
 
             if (!initiateRes.success || !initiateRes.data) {
                 setFlowState('failed');
@@ -425,26 +571,37 @@ export default function CheckoutScreen() {
                 setFlowState('success');
 
                 // ─── Globally refresh user profile if requested ─────────────
-                // Used by Plans screen so the active subscription badge updates
-                // instantly across the whole app without requiring a restart.
                 if (params.refreshProfileOnSuccess === '1') {
                     try { await refreshData(); } catch { /* non-blocking */ }
                 }
 
-                // Route to dedicated success screen (clear UX for elderly users)
-                router.replace({
-                    pathname: '/payment/payment-success',
-                    params: {
-                        bookingId:     sessionBookingId.current ?? '',
-                        amount:        String(finalAmount),
-                        invoiceNumber: verifyRes.data?.invoice?.invoiceNumber ?? '',
-                        invoicePdfUrl: verifyRes.data?.invoice?.pdfUrl ?? '',
-                        isSubscription: isSubscription ? '1' : '0',
-                        bookingPayload: params.bookingPayload || '',
-                        bookingAmount: params.bookingAmount || '',
-                        bookingLabel: params.bookingLabel || '',
-                    },
-                });
+                if (isBloodTest) {
+                    // ─── Blood Test Success Route ──────────────────────────────
+                    clearCategory('blood-test');
+                    router.replace({
+                        pathname: '/blood-test/success',
+                        params: {
+                            bookingId: sessionBookingId.current ?? '',
+                            amount: String(finalAmount),
+                            packageName: label,
+                        },
+                    });
+                } else {
+                    // ─── Service/Product Success Route ────────────────────────
+                    router.replace({
+                        pathname: '/payment/payment-success',
+                        params: {
+                            bookingId: sessionBookingId.current ?? '',
+                            amount: String(finalAmount),
+                            invoiceNumber: verifyRes.data?.invoice?.invoiceNumber ?? '',
+                            invoicePdfUrl: verifyRes.data?.invoice?.pdfUrl ?? '',
+                            isSubscription: isSubscription ? '1' : '0',
+                            bookingPayload: params.bookingPayload || '',
+                            bookingAmount: params.bookingAmount || '',
+                            bookingLabel: params.bookingLabel || '',
+                        },
+                    });
+                }
             } else {
                 setFlowState('failed');
                 Alert.alert(
@@ -615,43 +772,114 @@ export default function CheckoutScreen() {
                     )}
                 </View>
 
-                {/* Delivery Address — Only for wellness/products */}
-                {params.category === 'wellness' && (
+                {/* Blood Test: Collection Date & Time */}
+                {isBloodTest && (
                     <View style={styles.card}>
-                        <Text style={styles.cardTitle}>Delivery Address</Text>
-                        {profile?.addresses && profile.addresses.length > 0 ? (
-                            <View style={{ gap: 10 }}>
-                                {profile.addresses.map((addr: any) => (
+                        <Text style={styles.cardTitle}>Collection Date & Time</Text>
+                        <Text style={styles.sectionLabel}>Preferred Collection Date</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.daysScroll}>
+                            {(() => {
+                                const days = [];
+                                const start = selectedDate || new Date();
+                                for (let i = 0; i < 14; i++) {
+                                    const d = new Date(start);
+                                    d.setDate(start.getDate() + i);
+                                    days.push(d);
+                                }
+                                return days;
+                            })().map((day, idx) => (
+                                <TouchableOpacity
+                                    key={idx}
+                                    style={[
+                                        styles.dayCard,
+                                        selectedDate?.toDateString() === day.toDateString() && styles.dayCardActive,
+                                    ]}
+                                    onPress={() => setSelectedDate(day)}
+                                >
+                                    <Text style={[
+                                        styles.dayText,
+                                        selectedDate?.toDateString() === day.toDateString() && styles.dayTextActive,
+                                    ]}>
+                                        {day.getDate()} {day.toLocaleDateString('en-US', { month: 'short' })}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+
+                        <Text style={[styles.sectionLabel, { marginTop: Spacing.md }]}>Collection Time</Text>
+                        {slotsLoading ? (
+                            <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: Spacing.md }} />
+                        ) : slots.length > 0 ? (
+                            <View style={styles.slotsGrid}>
+                                {slots.map((slot, idx) => (
                                     <TouchableOpacity
-                                        key={addr.id}
+                                        key={idx}
                                         style={[
-                                            styles.addressCard,
-                                            selectedAddress?.id === addr.id && styles.addressCardActive,
+                                            styles.slotCard,
+                                            selectedTime === (slot.slot || slot.slot_time) && styles.slotCardActive,
                                         ]}
-                                        onPress={() => setSelectedAddress(addr)}
-                                        activeOpacity={0.7}
+                                        onPress={() => setSelectedTime(slot.slot || slot.slot_time)}
                                     >
-                                        <Ionicons
-                                            name={selectedAddress?.id === addr.id ? 'radio-button-on' : 'radio-button-off'}
-                                            size={20}
-                                            color={selectedAddress?.id === addr.id ? Colors.primary : Colors.textLight}
-                                        />
-                                        <View style={{ flex: 1, marginLeft: 12 }}>
-                                            <Text style={styles.addressLabel}>
-                                                {addr.line1}{addr.line2 ? ', ' + addr.line2 : ''}, {addr.cityName}
-                                            </Text>
-                                            <Text style={styles.addressSub}>{addr.label}</Text>
-                                            {addr.isDefault && (
-                                                <Text style={styles.defaultBadge}>Default Address</Text>
-                                            )}
-                                        </View>
+                                        <Text style={[
+                                            styles.slotTime,
+                                            selectedTime === (slot.slot || slot.slot_time) && styles.slotTimeActive,
+                                        ]}>
+                                            {slot.slot || slot.slot_time}
+                                        </Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
                         ) : (
-                            <Text style={styles.noAddressText}>No saved addresses. Please add one in your profile.</Text>
+                            <Text style={styles.noSlotsText}>No slots available for this date</Text>
                         )}
                     </View>
+                )}
+
+                {/* Blood Test: Collection Address — Using AddressPickerSection */}
+                {isBloodTest && (
+                    <AddressPickerSection
+                        selectedAddress={selectedAddress}
+                        onAddressChange={setSelectedAddress}
+                        showServiceabilityCheck={true}
+                        serviceabilityStatus={serviceabilityStatus}
+                        onServiceabilityChange={setServiceabilityStatus}
+                        checkServiceabilityFn={async (lat: string, lng: string) => {
+                            try {
+                                const result: any = await labService.checkServiceability(lat, lng);
+                                const isServiceable = result?.status === 'success' || result?.data?.status === 'success' || result?.serviceable === true;
+                                setServiceabilityStatus(isServiceable ? 'serviceable' : 'non-serviceable');
+                                return isServiceable;
+                            } catch {
+                                setServiceabilityStatus('non-serviceable');
+                                return false;
+                            }
+                        }}
+                        phoneNumber={phoneNumber}
+                        onPhoneChange={setPhoneNumber}
+                        landmark={landmark}
+                        onLandmarkChange={setLandmark}
+                        title="Collection Address"
+                        showPhoneField={true}
+                        showLandmarkField={true}
+                        allowManualEntry={true}
+                        initialLat={parseFloat(coords.lat)}
+                        initialLng={parseFloat(coords.long)}
+                    />
+                )}
+
+                {/* Delivery Address — Only for wellness/products — Using AddressPickerSection */}
+                {params.category === 'wellness' && (
+                    <AddressPickerSection
+                        selectedAddress={selectedAddress}
+                        onAddressChange={setSelectedAddress}
+                        showServiceabilityCheck={false}
+                        phoneNumber={phoneNumber}
+                        onPhoneChange={setPhoneNumber}
+                        title="Delivery Address"
+                        showPhoneField={true}
+                        showLandmarkField={false}
+                        allowManualEntry={true}
+                    />
                 )}
 
                 {/* Payment Method */}
@@ -871,5 +1099,105 @@ const styles = StyleSheet.create({
         color: Colors.textMuted,
         textAlign: 'center',
         paddingVertical: Spacing.lg,
+    },
+
+    // Blood Test Specific Styles
+    sectionLabel: {
+        fontFamily: Fonts.semiBold,
+        fontSize: 13,
+        color: Colors.textDark,
+        marginBottom: Spacing.sm,
+    },
+    daysScroll: { marginBottom: Spacing.md },
+    dayCard: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: Radius.md,
+        borderWidth: 1,
+        borderColor: Colors.border,
+        marginRight: 8,
+        minWidth: 90,
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 1,
+        elevation: 1,
+    },
+    dayCardActive: {
+        backgroundColor: Colors.primary,
+        borderColor: Colors.primary,
+        shadowOpacity: 0.1,
+    },
+    dayText: {
+        fontFamily: Fonts.medium,
+        fontSize: 13,
+        color: Colors.textDark,
+    },
+    dayTextActive: { color: '#fff' },
+    slotsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: Spacing.sm,
+    },
+    slotCard: {
+        flex: 1,
+        minWidth: '45%',
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: Radius.md,
+        borderWidth: 1,
+        borderColor: Colors.border,
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 1,
+        elevation: 1,
+    },
+    slotCardActive: {
+        backgroundColor: Colors.primary,
+        borderColor: Colors.primary,
+        shadowOpacity: 0.1,
+    },
+    slotTime: {
+        fontFamily: Fonts.medium,
+        fontSize: 12,
+        color: Colors.textDark,
+    },
+    slotTimeActive: { color: '#fff' },
+    noSlotsText: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textMuted,
+        textAlign: 'center',
+        paddingVertical: Spacing.lg,
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: Colors.border,
+        borderRadius: Radius.md,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
+        marginTop: Spacing.md,
+        backgroundColor: '#FFFFFF',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.03,
+        shadowRadius: 1,
+        elevation: 1,
+    },
+    serviceabilityBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: Spacing.md,
+        borderRadius: Radius.md,
+        borderWidth: 1,
+        marginTop: Spacing.md,
     },
 });
