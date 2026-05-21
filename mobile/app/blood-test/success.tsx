@@ -43,7 +43,7 @@ export default function BloodTestSuccessScreen() {
 
                 {/* Success Title */}
                 <Text style={styles.title}>Payment Successful!</Text>
-                <Text style={styles.subtitle}>Your blood test has been booked successfully</Text>
+                <Text style={styles.subtitle}>Your blood test collection(s) have been booked successfully</Text>
 
                 {/* Details Box */}
                 <View style={styles.detailsBox}>
