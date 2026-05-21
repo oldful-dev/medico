@@ -388,7 +388,7 @@ export default function CheckoutScreen() {
             if (!sessionBookingId.current) {
                 if (isBloodTest) {
                     // ─── Blood Test Booking ───────────────────────────────────────
-                    // Transform to LabBookingPayload structure expected by backend
+                    // Create separate booking for each blood test package
                     const calculateAge = (dob: string | undefined) => {
                         if (!dob) return 0;
                         const today = new Date();
@@ -400,7 +400,9 @@ export default function CheckoutScreen() {
                         }
                         return age;
                     };
-                    const bookingPayload = {
+
+                    // Create a booking for each package (Redcliffe requires separate bookings)
+                    const basePayload = {
                         bookingType: 'HOME' as const,
                         patient: {
                             name: profile?.name || '',
@@ -417,24 +419,33 @@ export default function CheckoutScreen() {
                             line2: selectedAddress?.line2,
                             landmark,
                         },
-                        packages: bloodTestItems.map(item => ({
-                            code: item.details?.code || item.id,
-                            name: item.details?.name || item.title || '',
-                            cost: item.price || 0,
-                        })),
                         slot: {
                             date: selectedDate?.toISOString().split('T')[0] || '',
                             time: selectedTime,
                             slotId: selectedSlotId,
                         },
                     };
-                    const bookingRes = await labService.holdBooking(bookingPayload);
-                    if (!bookingRes || !(bookingRes as any)?.id) {
-                        setFlowState('failed');
-                        Alert.alert('Booking Error', 'Could not create blood test booking. Please try again.');
-                        return;
+
+                    let lastBookingId: string | null = null;
+                    for (const item of bloodTestItems) {
+                        const bookingPayload = {
+                            ...basePayload,
+                            packages: [{
+                                code: item.details?.code || item.id,
+                                name: item.details?.name || item.title || '',
+                                cost: item.price || 0,
+                            }],
+                        };
+                        const bookingRes = await labService.holdBooking(bookingPayload);
+                        if (!bookingRes || !(bookingRes as any)?.id) {
+                            setFlowState('failed');
+                            Alert.alert('Booking Error', `Could not create booking for ${item.title || 'Blood Test'}. Please try again.`);
+                            return;
+                        }
+                        lastBookingId = (bookingRes as any).id;
                     }
-                    sessionBookingId.current = (bookingRes as any).id;
+                    // Use the last booking ID for display (or we could use the first one)
+                    sessionBookingId.current = lastBookingId;
                 } else if (params.bookingPayload) {
                     // ─── Service/Product Booking ──────────────────────────────────
                     const payload = JSON.parse(params.bookingPayload as string);
