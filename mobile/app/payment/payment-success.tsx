@@ -134,13 +134,22 @@ export default function PaymentSuccessScreen() {
                 </TouchableOpacity>
 
                 {params.bookingId && !isSubscriptionSuccess ? (
-                    <TouchableOpacity
-                        style={styles.secondaryBtn}
-                        onPress={() => router.replace({ pathname: '/service-confirmation', params: { bookingId: params.bookingId } })}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.secondaryBtnText}>View Booking Details</Text>
-                    </TouchableOpacity>
+                    <>
+                        <TouchableOpacity
+                            style={styles.secondaryBtn}
+                            onPress={() => router.replace({ pathname: '/service-confirmation', params: { bookingId: params.bookingId } })}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.secondaryBtnText}>View Booking Details</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.tertiaryBtn}
+                            onPress={() => router.replace('/my-bookings')}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.tertiaryBtnText}>View All Bookings</Text>
+                        </TouchableOpacity>
+                    </>
                 ) : null}
             </View>
         </SafeAreaView>
@@ -283,5 +292,17 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
         color: Colors.primary,
+    },
+    tertiaryBtn: {
+        width: '100%',
+        paddingVertical: 12,
+        borderRadius: Radius.lg ?? 12,
+        alignItems: 'center',
+        backgroundColor: '#F3F4F6',
+    },
+    tertiaryBtnText: {
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
     },
 });
