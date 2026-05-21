@@ -350,13 +350,27 @@ export default function ProfileSetupScreen() {
                         onChangeText={setName}
                     />
                     <TouchableOpacity style={styles.profilePhotoContainer} onPress={handlePickImage} activeOpacity={0.7}>
-                        <Image
-                            source={profileImageUri ? { uri: profileImageUri } : defaultProfilePhoto}
-                            style={styles.profilePhoto}
-                        />
-                        <View style={styles.cameraOverlay}>
-                            <Ionicons name="camera" size={16} color="#FFFFFF" />
-                        </View>
+                        {profileImageUri ? (
+                            <>
+                                <Image
+                                    source={{ uri: profileImageUri }}
+                                    style={styles.profilePhoto}
+                                />
+                                <View style={styles.cameraOverlay}>
+                                    <Ionicons name="camera" size={16} color="#FFFFFF" />
+                                </View>
+                            </>
+                        ) : (
+                            <>
+                                <View style={styles.profilePhotoPlaceholder}>
+                                    <View style={styles.placeholderHead} />
+                                    <View style={styles.placeholderBody} />
+                                </View>
+                                <View style={styles.cameraOverlay}>
+                                    <Ionicons name="camera" size={16} color="#FFFFFF" />
+                                </View>
+                            </>
+                        )}
                     </TouchableOpacity>
                 </View>
 
@@ -614,12 +628,32 @@ const styles = StyleSheet.create({
         height: 92,
         borderRadius: 46,
         overflow: 'hidden',
-        borderWidth: 2,
-        borderColor: '#888888',
+        borderWidth: 3,
+        borderColor: '#66BB6A',
     },
     profilePhoto: {
         width: '100%',
         height: '100%',
+    },
+    profilePhotoPlaceholder: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#E8F5E9',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    placeholderHead: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#81C784',
+        marginBottom: 6,
+    },
+    placeholderBody: {
+        width: 40,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#81C784',
     },
     cameraOverlay: {
         position: 'absolute',

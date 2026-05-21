@@ -7,22 +7,32 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
-import * as Print from 'expo-print';
-import * as FileSystem from 'expo-file-system';
 import { useUser } from '@/context/UserContext';
 import { userService } from '@/services/api/userService';
-import { generateMedicalCardHTML } from '@/utils/medicalCardPDF';
+import * as Print from 'expo-print';
 
 const PRIMARY_GREEN = '#02743F';
 const CARD_BORDER = '#E5E7EB';
 const TEXT_DARK = '#2F2F2F';
 const TEXT_MUTED = '#888888';
 
+const formatDate = (iso?: string) => {
+    if (!iso) return 'N/A';
+    try {
+        return new Date(iso).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+        });
+    } catch {
+        return iso;
+    }
+};
+
 export default function MedicalCardScreen() {
     const router = useRouter();
     const { profile } = useUser();
     const [loading, setLoading] = useState(false);
-    const [generating, setGenerating] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
@@ -56,72 +66,178 @@ export default function MedicalCardScreen() {
         currentMedications: medicalCard?.currentMedications || [],
         emergencyContacts: emergencyContacts,
         addresses: addresses,
-        insuranceInfo: '', // Could be extended
-        primaryDoctor: '', // Could be extended
+        insuranceInfo: medicalCard?.insuranceInfo || '',
+        primaryDoctor: medicalCard?.primaryDoctor || '',
+    };
+
+    const generateCardText = () => {
+        const allergies = (medicalCard?.allergies || []).join(', ') || 'None';
+        const conditions = (medicalCard?.chronicConditions || []).join(', ') || 'None';
+        const medications = (medicalCard?.currentMedications || []).join(', ') || 'None';
+
+        return `AYUXA MEDICAL CARD
+
+═══════════════════════════════════════
+FULL CLIENT DETAILS
+═══════════════════════════════════════
+
+Name: ${profile?.name || 'N/A'}
+AYUXA Client ID: ${profile?.uniqueUserId || 'N/A'}
+Phone: ${profile?.phone || 'N/A'}
+Email: ${profile?.email || 'N/A'}
+Date of Birth: ${formatDate(profile?.dateOfBirth)}
+Gender: ${profile?.gender || 'N/A'}
+
+═══════════════════════════════════════
+BLOOD GROUP & EMERGENCY
+═══════════════════════════════════════
+
+Blood Group: ${medicalCard?.bloodGroup || 'Not recorded'}
+Primary Doctor: ${medicalCard?.primaryDoctor || 'Not assigned'}
+
+═══════════════════════════════════════
+MEDICAL HISTORY
+═══════════════════════════════════════
+
+Allergies: ${allergies}
+Existing Conditions: ${conditions}
+Current Medications: ${medications}
+
+═══════════════════════════════════════
+EMERGENCY CONTACTS
+═══════════════════════════════════════
+
+${(emergencyContacts || []).map(c => `${c.name} (${c.relationship}): ${c.phone}`).join('\n') || 'None'}
+
+═══════════════════════════════════════
+ADDRESS
+═══════════════════════════════════════
+
+${addresses[0] ? `${addresses[0].line1}\n${addresses[0].cityName}, ${addresses[0].state} ${addresses[0].pincode}` : 'Not recorded'}
+
+═══════════════════════════════════════
+INSURANCE INFORMATION
+═══════════════════════════════════════
+
+${medicalCard?.insuranceInfo || 'Not recorded'}
+
+═══════════════════════════════════════
+Generated on ${new Date().toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        })}
+═══════════════════════════════════════`;
     };
 
     const handleDownloadPDF = async () => {
-        setGenerating(true);
         try {
-            const html = generateMedicalCardHTML(cardData);
-            const { uri } = await Print.printToFileAsync({ html });
+            const cardText = generateCardText();
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+                        h1 { color: #02743F; text-align: center; }
+                        .section { margin: 20px 0; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+                        .section h2 { color: #02743F; font-size: 14px; margin-top: 15px; }
+                        .field { margin: 8px 0; }
+                        .label { font-weight: bold; color: #666; }
+                        .value { color: #2F2F2F; }
+                    </style>
+                </head>
+                <body>
+                    <pre>${cardText}</pre>
+                </body>
+                </html>
+            `;
 
-            // Share file or save to device
-            if (Platform.OS === 'ios') {
-                await Share.share({
-                    url: uri,
-                    title: `${profile?.name}-MedicalCard.pdf`,
-                    message: 'My AYUXA Medical Card',
-                });
-            } else {
-                // On Android, show file saved location
-                Alert.alert('Success', `Medical card saved to:\n${uri}`, [
-                    { text: 'OK' },
-                    {
-                        text: 'Share',
-                        onPress: () => {
-                            Share.share({
-                                url: uri,
-                                title: `${profile?.name}-MedicalCard.pdf`,
-                                message: 'My AYUXA Medical Card',
-                            });
-                        },
-                    },
-                ]);
-            }
+            const result = await Print.printToFileAsync({
+                html: htmlContent,
+                base64: false,
+            });
+
+            await Share.share({
+                url: result.uri,
+                title: `${profile?.name}-MedicalCard.pdf`,
+            });
         } catch (error) {
-            Alert.alert('Error', 'Failed to generate PDF. Please try again.');
-            console.error('PDF generation error:', error);
-        } finally {
-            setGenerating(false);
+            Alert.alert('Error', 'Failed to generate PDF.');
         }
     };
 
     const handleShareWhatsApp = async () => {
         try {
-            const html = generateMedicalCardHTML(cardData);
-            const message = `Hey! Check out my AYUXA Medical Card:\n\n${profile?.name}\nAYUXA ID: ${profile?.uniqueUserId}\nBlood Group: ${medicalCard?.bloodGroup || 'Not set'}\n\nFor complete details, ask me to share the PDF.`;
+            const cardText = generateCardText();
+            const message = encodeURIComponent(`📋 My AYUXA Medical Card:\n\n${cardText}`);
 
-            await Share.share({
-                message: message,
-                title: 'My Medical Card',
-                url: 'https://ayuxa.com', // App URL
-            });
+            const whatsappUrl = Platform.OS === 'ios'
+                ? `whatsapp://send?text=${message}`
+                : `https://wa.me/?text=${message}`;
+
+            const canOpen = await Linking.canOpenURL(whatsappUrl);
+            if (canOpen) {
+                await Linking.openURL(whatsappUrl);
+            } else {
+                Alert.alert('WhatsApp not installed', 'Please install WhatsApp to share.');
+            }
         } catch (error) {
-            Alert.alert('Error', 'Failed to share via WhatsApp.');
+            Alert.alert('Error', 'Failed to open WhatsApp.');
+        }
+    };
+
+    const handleShareEmail = async () => {
+        try {
+            const cardText = generateCardText();
+            const subject = encodeURIComponent(`${profile?.name} - AYUXA Medical Card`);
+            const body = encodeURIComponent(cardText);
+
+            const mailtoLink = `mailto:?subject=${subject}&body=${body}`;
+
+            const canOpen = await Linking.canOpenURL(mailtoLink);
+            if (canOpen) {
+                await Linking.openURL(mailtoLink);
+            } else {
+                Alert.alert('Error', 'No email client available.');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to open email.');
         }
     };
 
     const handlePrint = async () => {
-        setGenerating(true);
         try {
-            const html = generateMedicalCardHTML(cardData);
-            await Print.printAsync({ html });
+            const cardText = generateCardText();
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+                        h1 { color: #02743F; text-align: center; }
+                        .section { margin: 20px 0; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+                        .section h2 { color: #02743F; font-size: 14px; margin-top: 15px; }
+                        .field { margin: 8px 0; }
+                        .label { font-weight: bold; color: #666; }
+                        .value { color: #2F2F2F; }
+                    </style>
+                </head>
+                <body>
+                    <pre>${cardText}</pre>
+                </body>
+                </html>
+            `;
+
+            await Print.printAsync({
+                html: htmlContent,
+            });
         } catch (error) {
-            Alert.alert('Error', 'Failed to print. Please try again.');
-            console.error('Print error:', error);
-        } finally {
-            setGenerating(false);
+            Alert.alert('Error', 'Failed to open print dialog.');
         }
     };
 
@@ -196,38 +312,44 @@ export default function MedicalCardScreen() {
                     </View>
                 </View>
 
-                {/* Action Buttons */}
+                {/* Action Buttons - Row 1 */}
                 <View style={styles.actionButtonsContainer}>
                     <TouchableOpacity
                         style={[styles.actionBtn, styles.downloadBtn]}
                         onPress={handleDownloadPDF}
-                        disabled={generating}
+                        activeOpacity={0.7}
                     >
-                        {generating ? (
-                            <ActivityIndicator size="small" color={PRIMARY_GREEN} />
-                        ) : (
-                            <>
-                                <Ionicons name="download-outline" size={18} color={PRIMARY_GREEN} />
-                                <Text style={styles.actionBtnText}>Download PDF</Text>
-                            </>
-                        )}
+                        <Ionicons name="download-outline" size={16} color={PRIMARY_GREEN} />
+                        <Text style={styles.actionBtnText}>Download</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={[styles.actionBtn, styles.whatsappBtn]}
                         onPress={handleShareWhatsApp}
-                        disabled={generating}
+                        activeOpacity={0.7}
                     >
-                        <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+                        <Ionicons name="logo-whatsapp" size={16} color="#25D366" />
                         <Text style={[styles.actionBtnText, { color: '#25D366' }]}>WhatsApp</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Action Buttons - Row 2 */}
+                <View style={styles.actionButtonsContainer}>
+                    <TouchableOpacity
+                        style={[styles.actionBtn, styles.emailBtn]}
+                        onPress={handleShareEmail}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="mail-outline" size={16} color="#EA580C" />
+                        <Text style={[styles.actionBtnText, { color: '#EA580C' }]}>Email</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={[styles.actionBtn, styles.printBtn]}
                         onPress={handlePrint}
-                        disabled={generating}
+                        activeOpacity={0.7}
                     >
-                        <Ionicons name="print-outline" size={18} color="#7C3AED" />
+                        <Ionicons name="print-outline" size={16} color="#7C3AED" />
                         <Text style={[styles.actionBtnText, { color: '#7C3AED' }]}>Print</Text>
                     </TouchableOpacity>
                 </View>
@@ -237,7 +359,7 @@ export default function MedicalCardScreen() {
                     <FieldRow label="Full Name" value={profile?.name} />
                     <FieldRow label="Phone" value={profile?.phone} />
                     <FieldRow label="Email" value={profile?.email} />
-                    <FieldRow label="Date of Birth" value={profile?.dateOfBirth} />
+                    <FieldRow label="Date of Birth" value={formatDate(profile?.dateOfBirth)} />
                     <FieldRow label="Gender" value={profile?.gender} />
                 </SectionCard>
 
@@ -246,6 +368,10 @@ export default function MedicalCardScreen() {
                     <View style={styles.bloodGroupContainer}>
                         <Text style={styles.bloodGroupLabel}>Blood Group</Text>
                         <Text style={styles.bloodGroupValue}>{medicalCard?.bloodGroup || 'Not recorded'}</Text>
+                    </View>
+                    <View style={styles.fieldRow}>
+                        <Text style={styles.fieldLabel}>Primary Doctor</Text>
+                        <Text style={styles.fieldValue}>{(medicalCard as any)?.primaryDoctor || 'Not assigned'}</Text>
                     </View>
                 </SectionCard>
 
@@ -299,6 +425,13 @@ export default function MedicalCardScreen() {
                     </SectionCard>
                 )}
 
+                {/* Insurance Information */}
+                {(medicalCard as any)?.insuranceInfo && (
+                    <SectionCard title="Insurance Information">
+                        <Text style={styles.addressText}>{(medicalCard as any).insuranceInfo}</Text>
+                    </SectionCard>
+                )}
+
                 {/* Edit Button */}
                 <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
                     <Ionicons name="pencil-outline" size={16} color="#FFFFFF" />
@@ -337,12 +470,13 @@ const styles = StyleSheet.create({
     bloodGroupBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 2, borderColor: '#FFFFFF' },
     bloodGroupText: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
 
-    actionButtonsContainer: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-    actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 10, borderWidth: 1.5 },
+    actionButtonsContainer: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+    actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5 },
     downloadBtn: { backgroundColor: 'rgba(2, 116, 63, 0.08)', borderColor: PRIMARY_GREEN },
     whatsappBtn: { backgroundColor: 'rgba(37, 211, 102, 0.08)', borderColor: '#D1FAE5' },
+    emailBtn: { backgroundColor: 'rgba(234, 88, 12, 0.08)', borderColor: '#FED7AA' },
     printBtn: { backgroundColor: 'rgba(124, 58, 237, 0.08)', borderColor: '#E9D5FF' },
-    actionBtnText: { fontSize: 12, fontWeight: '600', color: PRIMARY_GREEN },
+    actionBtnText: { fontSize: 11, fontWeight: '600', color: PRIMARY_GREEN },
 
     sectionCard: { backgroundColor: '#FAFAFA', borderRadius: 12, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: CARD_BORDER },
     sectionTitle: { fontSize: 14, fontWeight: '700', color: PRIMARY_GREEN, marginBottom: 12 },
