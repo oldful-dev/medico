@@ -4,12 +4,13 @@ import ServiceDetailScreen from '@/components/services/ServiceDetailScreen';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 const imgHero = require('@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png');
 
 export default function ApplianceRepairScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const [landmark, setLandmark] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
@@ -32,7 +33,7 @@ export default function ApplianceRepairScreen() {
                 ? await mediaService.uploadMultipleMedia(selectedImages, 'appliance-repair')
                 : [];
             router.push({
-                pathname: '/payment/checkout',
+                pathname: '/service-checkout',
                 params: {
                     bookingPayload: JSON.stringify({
                         serviceId, cityId,
@@ -43,6 +44,7 @@ export default function ApplianceRepairScreen() {
                     }),
                     amount: String(servicePrice),
                     label: serviceName || 'Appliance Repair',
+                    ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
         } catch {

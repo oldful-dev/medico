@@ -1,6 +1,6 @@
-// Payment Screen — Razorpay native in-app popup
-// Flow: Order summary → optional coupon → create booking → initiate order → native Razorpay → verify → success
-// Edge cases: cancel (ondismiss), failure (retry), app crash (AsyncStorage recovery)
+// Unified Service Checkout — All Ayuxa Services (Doctor, Nurse, Physio, Medicines, etc.)
+// Flow: Address confirmation → Payment method → Razorpay → Success
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity,
@@ -17,7 +17,6 @@ import { bookingService } from '@/services/api/bookingService';
 import { storageService, STORAGE_KEYS } from '@/services/device/storageService';
 import { useUser } from '@/context/UserContext';
 
-// ─── Payment Flow States (for debugging & recovery) ──────
 type PaymentFlowState = 'idle' | 'creating_booking' | 'initiating_order' | 'checkout_opened' | 'verifying' | 'success' | 'failed' | 'cancelled';
 
 type MethodOption = { type: PaymentMethod; label: string; icon: keyof typeof Ionicons.glyphMap };
@@ -31,28 +30,27 @@ const PAYMENT_METHODS: MethodOption[] = [
 const mapLabelToCategory = (label: string): string => {
     const lower = label.toLowerCase();
     if (lower.includes('doctor') || lower.includes('consult')) return 'DOCTOR_HOME_VISIT';
-    if (lower.includes('blood') || lower.includes('diagnostic') || lower.includes('test') || lower.includes('lab')) return 'BLOOD_TEST';
     if (lower.includes('nurse') || lower.includes('care')) return 'HOME_NURSE';
-    if (lower.includes('plumb') || lower.includes('electr')) return 'PLUMBING_ELECTRICAL';
-    if (lower.includes('hospital') || lower.includes('trip')) return 'HOSPITAL_TRIP';
-    if (lower.includes('insurance')) return 'INSURANCE';
-    if (lower.includes('medicine') || lower.includes('pharmacy')) return 'MEDICINES';
     if (lower.includes('physio') || lower.includes('fitness')) return 'PHYSIO_FITNESS';
+    if (lower.includes('medicine') || lower.includes('pharmacy')) return 'MEDICINES';
+    if (lower.includes('meal') || lower.includes('food') || lower.includes('tiffin')) return 'TIFFIN';
     if (lower.includes('equipment') || lower.includes('rental')) return 'EQUIPMENT_RENTAL';
-    if (lower.includes('meal') || lower.includes('food') || lower.includes('tiffin') || lower.includes('prep')) return 'TIFFIN';
     if (lower.includes('tech') || lower.includes('helper')) return 'TECH_HELPER';
     if (lower.includes('clean') || lower.includes('grocery') || lower.includes('shopping') || lower.includes('essential')) return 'HOME_ESSENTIALS';
-    if (lower.includes('club') || lower.includes('event')) return 'CLUB_EVENTS';
+    if (lower.includes('plumb') || lower.includes('electr')) return 'PLUMBING_ELECTRICAL';
+    if (lower.includes('appliance') || lower.includes('repair')) return 'APPLIANCE_REPAIR';
+    if (lower.includes('bill') || lower.includes('payment')) return 'BILL_PAYMENT';
+    if (lower.includes('bank') || lower.includes('paperwork')) return 'BANK_PAPERWORK';
+    if (lower.includes('legal') || lower.includes('paper')) return 'LEGAL_PAPERWORK';
+    if (lower.includes('hospital') || lower.includes('trip')) return 'HOSPITAL_TRIP';
+    if (lower.includes('transport') || lower.includes('cab') || lower.includes('driving')) return 'TRANSPORTATION';
     return 'OTHER';
 };
 
-export default function CheckoutScreen() {
+export default function ServiceCheckoutScreen() {
     const router = useRouter();
     const { profile, refreshData } = useUser();
     const params = useLocalSearchParams<{
-        // ─── Existing booking ID (legacy: service screens pre-created the booking)
-        bookingId?: string;
-        // ─── New: serialised CreateBookingPayload — checkout creates the booking itself
         bookingPayload?: string;
         subscriptionId?: string;
         amount?: string;
@@ -60,40 +58,12 @@ export default function CheckoutScreen() {
         email?: string;
         phone?: string;
         userName?: string;
-        // ─── Plans screen: trigger profile refresh after payment success ──────
-        refreshProfileOnSuccess?: string;
-        skipUpsell?: string;
-        bookingAmount?: string;
-        bookingLabel?: string;
     }>();
-
-    // ─── Intercept and redirect to Smart Upgrade Prompt if no active plan
-    useEffect(() => {
-        if (params.bookingPayload && !params.subscriptionId && params.skipUpsell !== '1') {
-            const hasActivePlan = profile?.subscriptions?.some((s: any) => s.status === 'ACTIVE');
-            if (!hasActivePlan) {
-                router.replace({
-                    pathname: '/payment/upgrade-prompt',
-                    params: {
-                        bookingPayload: params.bookingPayload,
-                        amount: params.amount,
-                        label: params.label,
-                    }
-                });
-            }
-        }
-    }, [profile, params.bookingPayload, params.subscriptionId, params.skipUpsell]);
-
-    // ─── COD Restriction: Hide CASH if it's a subscription ──────────────────
-    const availableMethods = params.subscriptionId 
-        ? PAYMENT_METHODS.filter(m => m.type !== 'CASH')
-        : PAYMENT_METHODS;
 
     const baseAmount = parseFloat(params.amount ?? '0');
     const label  = params.label ?? 'Service Booking';
-    const isSubscription = !!params.subscriptionId;
 
-    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(params.subscriptionId ? 'UPI' : 'UPI');
+    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('UPI');
     const [couponCode,     setCouponCode]     = useState('');
     const [couponApplied,  setCouponApplied]  = useState(false);
     const [discount,       setDiscount]       = useState(0);
@@ -102,14 +72,14 @@ export default function CheckoutScreen() {
     const [, setFlowState] = useState<PaymentFlowState>('idle');
     const [, setPendingRecovery] = useState(false);
 
-    // ─── Address Selection (for product/wellness deliveries) ──────────────────
+    // ─── Address Selection ──────────────────────────────────────────────
     const [selectedAddress, setSelectedAddress] = useState<any>(
         profile?.addresses && profile.addresses.length > 0
             ? profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0]
             : null
     );
 
-    // Benefit calculation state
+    // ─── Benefit calculation state ──────────────────────────────────────
     const [calcLoading, setCalcLoading] = useState(false);
     const [calculatedPrices, setCalculatedPrices] = useState<{
         totalAmount: number;
@@ -125,13 +95,9 @@ export default function CheckoutScreen() {
         benefitApplied: boolean;
     } | null>(null);
 
-    // ─── Calculate checkout with benefits
-    // Applies plan benefits based on authenticated user's active subscription
-    // Runs for:
-    // 1. Service bookings (bookingPayload from service screens)
-    // 2. Product/Wellness (cart passing amount + label)
+    // ─── Calculate checkout with benefits ──────────────────────────────
     useEffect(() => {
-        if (params.bookingPayload || (params.amount && params.category && !params.subscriptionId)) {
+        if (params.bookingPayload) {
             const fetchCalculation = async () => {
                 setCalcLoading(true);
                 try {
@@ -139,7 +105,7 @@ export default function CheckoutScreen() {
                     const res = await paymentService.calculateCheckout({
                         serviceCategory: category,
                         vendorFee: baseAmount,
-                        baseAyuxaFee: 0, // dynamic on backend now
+                        baseAyuxaFee: 0,
                         diagnosticFee: 0
                     });
                     if (res.success && res.data) {
@@ -153,30 +119,23 @@ export default function CheckoutScreen() {
             };
             fetchCalculation();
         }
-    }, [params.bookingPayload, params.amount, params.category, label]);
+    }, [params.bookingPayload, label]);
 
     const benefitApplied = !!calculatedPrices?.benefitApplied;
-    const bookingFee = calculatedPrices ? calculatedPrices.breakdown.bookingFee : (isSubscription ? 0 : 299);
-    const platformFee = calculatedPrices ? calculatedPrices.breakdown.platformFee : (isSubscription ? 0 : 50);
-    const taxes = calculatedPrices ? calculatedPrices.breakdown.taxes : (isSubscription ? 0 : Math.round(baseAmount * 0.06));
-    
-    // Original charges before waiver (for displaying stroke-through / FREE)
+    const bookingFee = calculatedPrices ? calculatedPrices.breakdown.bookingFee : 299;
+    const platformFee = calculatedPrices ? calculatedPrices.breakdown.platformFee : 50;
+    const taxes = calculatedPrices ? calculatedPrices.breakdown.taxes : Math.round(baseAmount * 0.06);
+
     const originalBookingFee = calculatedPrices?.benefitApplied ? (Math.abs(calculatedPrices.breakdown.benefitDiscount) > 50 ? Math.abs(calculatedPrices.breakdown.benefitDiscount) - 50 : 299) : bookingFee;
     const originalPlatformFee = calculatedPrices?.benefitApplied ? 50 : platformFee;
 
-    const amountWithTaxAndFee = isSubscription
-        ? baseAmount
-        : (calculatedPrices ? calculatedPrices.totalAmount : (baseAmount + bookingFee + platformFee + taxes));
-
-    const [finalAmount,    setFinalAmount]    = useState(amountWithTaxAndFee);
+    const amountWithTaxAndFee = calculatedPrices ? calculatedPrices.totalAmount : (baseAmount + bookingFee + platformFee + taxes);
+    const [finalAmount, setFinalAmount] = useState(amountWithTaxAndFee);
 
     useEffect(() => { setFinalAmount(amountWithTaxAndFee - discount); }, [amountWithTaxAndFee, discount]);
 
-
-    // ─── EDGE CASE: Recover pending payment after app crash/close ──────
-    // On mount, check if there's a pending Razorpay order in AsyncStorage.
-    // If found, offer user to check the payment status with backend.
-    const sessionBookingId = useRef<string | null>(params.bookingId ?? null);
+    // ─── Pending order recovery ─────────────────────────────────────────
+    const sessionBookingId = useRef<string | null>(null);
     const pendingOrderId = useRef<string | null>(null);
 
     useEffect(() => {
@@ -195,7 +154,6 @@ export default function CheckoutScreen() {
                                 text: 'Dismiss',
                                 style: 'cancel',
                                 onPress: async () => {
-                                    // Clear stale pending order
                                     await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_ID);
                                     await storageService.removeItem(STORAGE_KEYS.PENDING_BOOKING_ID);
                                     setPendingRecovery(false);
@@ -204,8 +162,6 @@ export default function CheckoutScreen() {
                             {
                                 text: 'Check Status',
                                 onPress: async () => {
-                                    // Navigate to service-confirmation which fetches booking from backend
-                                    // The backend will have the real payment status from Razorpay webhooks
                                     await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_ID);
                                     await storageService.removeItem(STORAGE_KEYS.PENDING_BOOKING_ID);
                                     router.replace({
@@ -224,7 +180,7 @@ export default function CheckoutScreen() {
         checkPendingOrder();
     }, [router]);
 
-    // ─── Apply coupon ───────────────────────────────────────
+    // ─── Apply coupon ───────────────────────────────────────────────────
     const handleApplyCoupon = useCallback(async () => {
         if (!couponCode.trim()) return;
         setCouponLoading(true);
@@ -252,45 +208,40 @@ export default function CheckoutScreen() {
         setFinalAmount(amountWithTaxAndFee);
     };
 
-    // ─── Helper: Clear pending order from storage (called on success/failure) ──
     const clearPendingOrder = async () => {
         await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_ID);
         await storageService.removeItem(STORAGE_KEYS.PENDING_BOOKING_ID);
     };
 
-    // ─── Helper: Cancel payment on backend (dismiss / failure) ────────────────
-    // Marks booking as PAYMENT_FAILED so it disappears from Cart/Active.
     const cancelPaymentOnBackend = async () => {
         if (pendingOrderId.current) {
-            try { await paymentService.cancelPayment(pendingOrderId.current); } 
+            try { await paymentService.cancelPayment(pendingOrderId.current); }
             catch (e) { console.warn('cancelPayment call failed (non-blocking):', e); }
         }
     };
 
-    // ─── Open Razorpay native popup ─────────────────────────
+    // ─── Open Razorpay native popup ─────────────────────────────────────
     const handlePay = useCallback(async () => {
         if (payLoading) return;
 
-        // ─── Validate address for wellness/product orders ──────────────────────
-        // Service bookings have their own address validation; this is for products
-        if (params.category === 'wellness' && !selectedAddress) {
-            Alert.alert('Address Required', 'Please select a delivery address.');
+        // ─── Validate address ──────────────────────────────────────────
+        if (!selectedAddress) {
+            Alert.alert('Address Required', 'Please select a service address.');
             return;
         }
 
         setPayLoading(true);
         try {
-            // ─── STEP 1: Create booking ONLY if we don't already have one
-            // (Mirrors Next.js: bookingId guard with createdBookingIds state)
-            // The booking starts as PENDING and is only CONFIRMED after payment verify.
+            // ─── STEP 1: Create booking if not already created ────────
             setFlowState('creating_booking');
             if (!sessionBookingId.current && params.bookingPayload) {
-                // bookingPayload is a JSON-serialised CreateBookingPayload passed from service screens
                 const payload = JSON.parse(params.bookingPayload as string);
                 const bookingRes = await bookingService.createBooking({
                     ...payload,
                     amount: finalAmount,
                     paymentMethod: selectedMethod,
+                    addressId: selectedAddress.id,
+                    addressLine: selectedAddress.line1,
                 });
                 if (!bookingRes.success || !bookingRes.data) {
                     setFlowState('failed');
@@ -300,22 +251,21 @@ export default function CheckoutScreen() {
                 sessionBookingId.current = bookingRes.data.id;
             }
 
-            // ─── STEP 2: Handle COD (Cash on Delivery) vs Razorpay
+            // ─── STEP 2: Handle COD (Cash on Delivery) ─────────────────
             if (selectedMethod === 'CASH') {
-                // COD Flow — Direct success (Booking is already PENDING)
                 setFlowState('success');
                 Alert.alert(
-                    'Booking Received', 
+                    'Booking Received',
                     'Your service has been scheduled. Please pay ₹' + finalAmount + ' in cash to our provider when they arrive.',
-                    [{ text: 'OK', onPress: () => router.replace({ 
-                        pathname: '/service-confirmation', 
-                        params: { bookingId: sessionBookingId.current! } 
+                    [{ text: 'OK', onPress: () => router.replace({
+                        pathname: '/service-confirmation',
+                        params: { bookingId: sessionBookingId.current! }
                     }) }]
                 );
                 return;
             }
 
-            // ─── STEP 3: Create Razorpay order on backend
+            // ─── STEP 3: Create Razorpay order on backend ──────────────
             setFlowState('initiating_order');
             const initiateRes = await paymentService.initiatePayment({
                 bookingId:      sessionBookingId.current ?? undefined,
@@ -332,28 +282,25 @@ export default function CheckoutScreen() {
             }
 
             const { orderId, amount: orderAmount, key: backendKey, paymentNotRequired } = initiateRes.data as any;
-            pendingOrderId.current = orderId; // Store for cancel/failure handler
+            pendingOrderId.current = orderId;
 
-            // ─── STEP 4: Handle Zero Amount Booking (Post-Initiation) ─────────
+            // ─── STEP 4: Handle Zero Amount Booking ────────────────────
             if (paymentNotRequired) {
                 setFlowState('success');
-                // The backend already marks it as SUCCESS in this case
                 router.replace({
                     pathname: '/payment/payment-success',
                     params: {
                         bookingId: sessionBookingId.current ?? '',
                         amount: '0',
                         invoiceNumber: 'FREE-BOOKING',
-                        isSubscription: isSubscription ? '1' : '0',
+                        isSubscription: params.subscriptionId ? '1' : '0',
                         bookingPayload: params.bookingPayload || '',
-                        bookingAmount: params.bookingAmount || '',
-                        bookingLabel: params.bookingLabel || '',
                     },
                 });
                 return;
             }
 
-            // ─── STEP 5: Guard — native module must exist (fails in Expo Go)
+            // ─── STEP 5: Guard — native module must exist ──────────────
             if (!NativeModules.RNRazorpayCheckout) {
                 Alert.alert(
                     'Build Required',
@@ -362,21 +309,20 @@ export default function CheckoutScreen() {
                 return;
             }
 
-            // ─── STEP 5: Persist pending order for crash recovery ──────
-            // If the app crashes while Razorpay is open, we can recover on next launch.
+            // ─── STEP 6: Persist pending order for crash recovery ─────
             await storageService.setItem(STORAGE_KEYS.PENDING_ORDER_ID, orderId);
             if (sessionBookingId.current) {
                 await storageService.setItem(STORAGE_KEYS.PENDING_BOOKING_ID, sessionBookingId.current);
             }
 
-            // ─── STEP 6: Open Razorpay native checkout sheet
+            // ─── STEP 7: Open Razorpay native checkout sheet ──────────
             setFlowState('checkout_opened');
             const options: any = {
                 description:  label,
                 image:        'https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/onlylogo.png',
                 currency:     'INR',
                 key:          backendKey || process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || '',
-                amount:       String(Math.round(orderAmount * 100)), // paise
+                amount:       String(Math.round(orderAmount * 100)),
                 name:         'Ayuxa Healthcare',
                 order_id:     orderId,
                 prefill: {
@@ -406,11 +352,9 @@ export default function CheckoutScreen() {
                 },
             };
 
-            // Await resolves ONLY on successful payment — throws on cancel/failure
             const data = await RazorpayCheckout.open(options);
 
-            // ─── STEP 7: Verify signature on backend
-            // Backend verifyPayment also: updates booking → CONFIRMED, sends push, generates invoice
+            // ─── STEP 8: Verify signature on backend ───────────────────
             setFlowState('verifying');
             const verifyRes = await paymentService.verifyPayment({
                 razorpayPaymentId: data.razorpay_payment_id,
@@ -418,20 +362,15 @@ export default function CheckoutScreen() {
                 razorpaySignature: data.razorpay_signature,
             });
 
-            // ─── Clear pending order from storage (payment is resolved)
             await clearPendingOrder();
 
             if (verifyRes.success) {
                 setFlowState('success');
 
-                // ─── Globally refresh user profile if requested ─────────────
-                // Used by Plans screen so the active subscription badge updates
-                // instantly across the whole app without requiring a restart.
                 if (params.refreshProfileOnSuccess === '1') {
                     try { await refreshData(); } catch { /* non-blocking */ }
                 }
 
-                // Route to dedicated success screen (clear UX for elderly users)
                 router.replace({
                     pathname: '/payment/payment-success',
                     params: {
@@ -439,10 +378,8 @@ export default function CheckoutScreen() {
                         amount:        String(finalAmount),
                         invoiceNumber: verifyRes.data?.invoice?.invoiceNumber ?? '',
                         invoicePdfUrl: verifyRes.data?.invoice?.pdfUrl ?? '',
-                        isSubscription: isSubscription ? '1' : '0',
+                        isSubscription: params.subscriptionId ? '1' : '0',
                         bookingPayload: params.bookingPayload || '',
-                        bookingAmount: params.bookingAmount || '',
-                        bookingLabel: params.bookingLabel || '',
                     },
                 });
             } else {
@@ -453,17 +390,10 @@ export default function CheckoutScreen() {
                 );
             }
         } catch (error: any) {
-            // ─── Clear pending order from storage
             await clearPendingOrder();
 
-            // Razorpay SDK throws { code, description } on dismissal and failure.
-            // code === 0 means the user explicitly closed the modal — no action needed.
-            // Any other code is a genuine payment failure.
             if (error?.code === 0) {
-                // User explicitly dismissed Razorpay
                 setFlowState('cancelled');
-                // ─── CRITICAL: Mark booking as PAYMENT_FAILED on backend ────────────
-                // Without this, the PAYMENT_PENDING booking stays visible in Cart/Active.
                 await cancelPaymentOnBackend();
                 await clearPendingOrder();
                 Alert.alert(
@@ -474,7 +404,6 @@ export default function CheckoutScreen() {
                 return;
             }
 
-            // Genuine payment failure — mark failed and offer retry
             setFlowState('failed');
             await cancelPaymentOnBackend();
             await clearPendingOrder();
@@ -486,16 +415,14 @@ export default function CheckoutScreen() {
                     { text: 'Go Back', style: 'cancel', onPress: () => router.back() },
                     { text: 'Retry Payment', onPress: () => {
                         setFlowState('idle');
-                        // handlePay will be called again by the user pressing the button
                     }},
                 ],
             );
         } finally {
             setPayLoading(false);
         }
-    }, [payLoading, finalAmount, selectedMethod, couponApplied, couponCode, params, label, router]);
+    }, [payLoading, finalAmount, selectedMethod, couponApplied, couponCode, params, label, router, refreshData, selectedAddress]);
 
-    // ─── UI ─────────────────────────────────────────────────
     return (
         <SafeAreaView style={styles.screen} edges={['top']}>
             <StatusBar style="light" />
@@ -512,51 +439,48 @@ export default function CheckoutScreen() {
 
                 {/* Order Summary */}
                 <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Secure Payment Summary</Text>
+                    <Text style={styles.cardTitle}>Service Summary</Text>
                     <View style={styles.row}>
                         <Text style={styles.rowLabel}>{label}</Text>
                         <Text style={styles.rowValue}>₹{baseAmount.toLocaleString('en-IN')}</Text>
                     </View>
 
                     {/* Breakdown Section */}
-                    {!isSubscription && (
-                        <View style={styles.breakdownSection}>
-                            <View style={styles.breakdownRow}>
-                                <Text style={styles.breakdownLabel}>Consultation / Service Fee</Text>
-                                <Text style={styles.breakdownValue}>₹{baseAmount.toLocaleString('en-IN')}</Text>
-                            </View>
-                            <View style={styles.breakdownRow}>
-                                <Text style={styles.breakdownLabel}>Booking Fee</Text>
-                                {benefitApplied ? (
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                        <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: Colors.textMuted }]}>₹{originalBookingFee}</Text>
-                                        <Text style={[styles.breakdownValue, { color: '#2e7d32', fontFamily: Fonts.semiBold }]}> FREE</Text>
-                                    </View>
-                                ) : (
-                                    <Text style={styles.breakdownValue}>₹{bookingFee}</Text>
-                                )}
-                            </View>
-                            <View style={styles.breakdownRow}>
-                                <Text style={styles.breakdownLabel}>Platform Fee</Text>
-                                {benefitApplied ? (
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                        <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: Colors.textMuted }]}>₹{originalPlatformFee}</Text>
-                                        <Text style={[styles.breakdownValue, { color: '#2e7d32', fontFamily: Fonts.semiBold }]}> FREE</Text>
-                                    </View>
-                                ) : (
-                                    <Text style={styles.breakdownValue}>₹{platformFee}</Text>
-                                )}
-                            </View>
-                            <View style={styles.breakdownRow}>
-                                <Text style={styles.breakdownLabel}>Taxes & GST</Text>
-                                <Text style={styles.breakdownValue}>₹{taxes.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</Text>
-                            </View>
-                            {benefitApplied && (
-                                <Text style={styles.benefitNote}>(Subscription Benefits Applied)</Text>
+                    <View style={styles.breakdownSection}>
+                        <View style={styles.breakdownRow}>
+                            <Text style={styles.breakdownLabel}>Service Fee</Text>
+                            <Text style={styles.breakdownValue}>₹{baseAmount.toLocaleString('en-IN')}</Text>
+                        </View>
+                        <View style={styles.breakdownRow}>
+                            <Text style={styles.breakdownLabel}>Booking Fee</Text>
+                            {benefitApplied ? (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                    <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: Colors.textMuted }]}>₹{originalBookingFee}</Text>
+                                    <Text style={[styles.breakdownValue, { color: '#2e7d32', fontFamily: Fonts.semiBold }]}> FREE</Text>
+                                </View>
+                            ) : (
+                                <Text style={styles.breakdownValue}>₹{bookingFee}</Text>
                             )}
                         </View>
-                    )}
-
+                        <View style={styles.breakdownRow}>
+                            <Text style={styles.breakdownLabel}>Platform Fee</Text>
+                            {benefitApplied ? (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                    <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: Colors.textMuted }]}>₹{originalPlatformFee}</Text>
+                                    <Text style={[styles.breakdownValue, { color: '#2e7d32', fontFamily: Fonts.semiBold }]}> FREE</Text>
+                                </View>
+                            ) : (
+                                <Text style={styles.breakdownValue}>₹{platformFee}</Text>
+                            )}
+                        </View>
+                        <View style={styles.breakdownRow}>
+                            <Text style={styles.breakdownLabel}>Taxes & GST</Text>
+                            <Text style={styles.breakdownValue}>₹{taxes.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</Text>
+                        </View>
+                        {benefitApplied && (
+                            <Text style={styles.benefitNote}>(Subscription Benefits Applied)</Text>
+                        )}
+                    </View>
 
                     {couponApplied && (
                         <View style={styles.row}>
@@ -575,6 +499,43 @@ export default function CheckoutScreen() {
                                 💰 You saved ₹{(Math.round((originalBookingFee - bookingFee) + (originalPlatformFee - platformFee))).toLocaleString('en-IN')} on fees!
                             </Text>
                         </View>
+                    )}
+                </View>
+
+                {/* Service Address */}
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Service Address</Text>
+                    {profile?.addresses && profile.addresses.length > 0 ? (
+                        <View style={{ gap: 10 }}>
+                            {profile.addresses.map((addr: any) => (
+                                <TouchableOpacity
+                                    key={addr.id}
+                                    style={[
+                                        styles.addressCard,
+                                        selectedAddress?.id === addr.id && styles.addressCardActive,
+                                    ]}
+                                    onPress={() => setSelectedAddress(addr)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Ionicons
+                                        name={selectedAddress?.id === addr.id ? 'radio-button-on' : 'radio-button-off'}
+                                        size={20}
+                                        color={selectedAddress?.id === addr.id ? Colors.primary : Colors.textLight}
+                                    />
+                                    <View style={{ flex: 1, marginLeft: 12 }}>
+                                        <Text style={styles.addressLabel}>
+                                            {addr.line1}{addr.line2 ? ', ' + addr.line2 : ''}, {addr.cityName}
+                                        </Text>
+                                        <Text style={styles.addressSub}>{addr.label}</Text>
+                                        {addr.isDefault && (
+                                            <Text style={styles.defaultBadge}>Default Address</Text>
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    ) : (
+                        <Text style={styles.noAddressText}>No saved addresses. Please add one in your profile.</Text>
                     )}
                 </View>
 
@@ -615,49 +576,10 @@ export default function CheckoutScreen() {
                     )}
                 </View>
 
-                {/* Delivery Address — Only for wellness/products */}
-                {params.category === 'wellness' && (
-                    <View style={styles.card}>
-                        <Text style={styles.cardTitle}>Delivery Address</Text>
-                        {profile?.addresses && profile.addresses.length > 0 ? (
-                            <View style={{ gap: 10 }}>
-                                {profile.addresses.map((addr: any) => (
-                                    <TouchableOpacity
-                                        key={addr.id}
-                                        style={[
-                                            styles.addressCard,
-                                            selectedAddress?.id === addr.id && styles.addressCardActive,
-                                        ]}
-                                        onPress={() => setSelectedAddress(addr)}
-                                        activeOpacity={0.7}
-                                    >
-                                        <Ionicons
-                                            name={selectedAddress?.id === addr.id ? 'radio-button-on' : 'radio-button-off'}
-                                            size={20}
-                                            color={selectedAddress?.id === addr.id ? Colors.primary : Colors.textLight}
-                                        />
-                                        <View style={{ flex: 1, marginLeft: 12 }}>
-                                            <Text style={styles.addressLabel}>
-                                                {addr.line1}{addr.line2 ? ', ' + addr.line2 : ''}, {addr.cityName}
-                                            </Text>
-                                            <Text style={styles.addressSub}>{addr.label}</Text>
-                                            {addr.isDefault && (
-                                                <Text style={styles.defaultBadge}>Default Address</Text>
-                                            )}
-                                        </View>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        ) : (
-                            <Text style={styles.noAddressText}>No saved addresses. Please add one in your profile.</Text>
-                        )}
-                    </View>
-                )}
-
                 {/* Payment Method */}
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>Payment Method</Text>
-                    {availableMethods.map(m => (
+                    {PAYMENT_METHODS.map(m => (
                         <TouchableOpacity
                             key={m.type}
                             style={[styles.methodRow, selectedMethod === m.type && styles.methodRowActive]}
@@ -682,7 +604,7 @@ export default function CheckoutScreen() {
                 <View style={styles.securityNote}>
                     <Ionicons name={selectedMethod === 'CASH' ? "information-circle-outline" : "shield-checkmark-outline"} size={16} color="#666" />
                     <Text style={styles.securityText}>
-                        {selectedMethod === 'CASH' 
+                        {selectedMethod === 'CASH'
                             ? 'Please prepare exact change if possible. Our provider will collect the amount upon arrival.'
                             : 'Secured by Razorpay. Your payment information is encrypted and safe.'
                         }
@@ -704,7 +626,7 @@ export default function CheckoutScreen() {
                         : <>
                             <Ionicons name={selectedMethod === 'CASH' ? "checkmark-circle-outline" : "lock-closed-outline"} size={18} color={Colors.textWhite} />
                             <Text style={styles.payBtnText}>
-                                {selectedMethod === 'CASH' 
+                                {selectedMethod === 'CASH'
                                     ? `Confirm Booking (₹${finalAmount.toLocaleString('en-IN')})`
                                     : `Pay ₹${finalAmount.toLocaleString('en-IN')}`
                                 }
@@ -724,9 +646,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.xl, paddingVertical: Spacing.lg,
     },
     backBtn: { padding: 8 },
-    headerTitle: { 
-        fontFamily: Fonts.semiBold, 
-        fontSize: FontSize.heading2, 
+    headerTitle: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading2,
         color: Colors.textWhite,
         marginLeft: 12,
     },
@@ -747,8 +669,7 @@ const styles = StyleSheet.create({
     breakdownSection: {
         backgroundColor: '#FAFAFA',
         borderRadius: Radius.md,
-        paddingVertical: Spacing.md,
-        paddingHorizontal: Spacing.md,
+        padding: Spacing.md,
         gap: Spacing.sm,
         marginVertical: Spacing.sm,
     },
@@ -772,67 +693,6 @@ const styles = StyleSheet.create({
     totalRow: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
     totalLabel: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark },
     totalValue: { fontFamily: Fonts.semiBold, fontSize: 20, color: Colors.primary },
-    gstNote: { fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: '#999' },
-
-    couponRow: { flexDirection: 'row', gap: Spacing.sm },
-    couponInput: {
-        flex: 1, height: 44, borderWidth: 1.5, borderColor: '#E5E5E5', borderRadius: Radius.md,
-        paddingHorizontal: Spacing.md, fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark,
-    },
-    couponBtn: { paddingHorizontal: Spacing.lg, height: 44, backgroundColor: Colors.primary, borderRadius: Radius.md, justifyContent: 'center', alignItems: 'center' },
-    couponBtnDisabled: { opacity: 0.45 },
-    couponBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textWhite },
-    couponApplied: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#E8F5E9', padding: Spacing.md, borderRadius: Radius.sm },
-    couponAppliedText: { flex: 1, fontFamily: Fonts.medium, fontSize: FontSize.caption ?? 13, color: '#2e7d32' },
-
-    methodRow: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        gap: Spacing.md, 
-        paddingVertical: Spacing.md, 
-        paddingHorizontal: Spacing.lg, 
-        borderRadius: Radius.md, 
-        borderWidth: 1.5, 
-        borderColor: '#EEEEEE' 
-    },
-    methodRowActive: { borderColor: Colors.primary, backgroundColor: '#F0FAF4' },
-    methodLabel: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textLight },
-    methodLabelActive: { color: Colors.textDark, fontFamily: Fonts.medium },
-
-    securityNote: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: Spacing.md },
-    securityText: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: '#888', lineHeight: 18 },
-
-    footer: {
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        backgroundColor: Colors.bgScreen ?? '#FAFAF0',
-        padding: Spacing.xl,
-        paddingBottom: Platform.OS === 'ios' ? Spacing.xl + 16 : Spacing.xl,
-        borderTopWidth: 1, borderTopColor: '#E5E5E5',
-    },
-    payBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.primary, paddingVertical: 16, borderRadius: Radius.lg ?? 12 },
-    payBtnLoading: { opacity: 0.7 },
-    payBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textWhite },
-    benefitNote: {
-        fontFamily: Fonts.medium,
-        fontSize: 10,
-        color: '#2e7d32',
-        textAlign: 'right',
-        marginTop: -2,
-    },
-    savingsBadge: {
-        backgroundColor: '#E8F5E9',
-        borderRadius: Radius.sm ?? 6,
-        paddingVertical: 10,
-        paddingHorizontal: Spacing.md,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: Spacing.md,
-    },
-    savingsText: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.caption ?? 12,
-        color: '#2e7d32',
-    },
 
     addressCard: {
         flexDirection: 'row',
@@ -871,5 +731,66 @@ const styles = StyleSheet.create({
         color: Colors.textMuted,
         textAlign: 'center',
         paddingVertical: Spacing.lg,
+    },
+
+    couponRow: { flexDirection: 'row', gap: Spacing.sm },
+    couponInput: {
+        flex: 1, height: 44, borderWidth: 1.5, borderColor: '#E5E5E5', borderRadius: Radius.md,
+        paddingHorizontal: Spacing.md, fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark,
+    },
+    couponBtn: { paddingHorizontal: Spacing.lg, height: 44, backgroundColor: Colors.primary, borderRadius: Radius.md, justifyContent: 'center', alignItems: 'center' },
+    couponBtnDisabled: { opacity: 0.45 },
+    couponBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textWhite },
+    couponApplied: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#E8F5E9', padding: Spacing.md, borderRadius: Radius.sm },
+    couponAppliedText: { flex: 1, fontFamily: Fonts.medium, fontSize: FontSize.caption ?? 13, color: '#2e7d32' },
+
+    methodRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.md,
+        paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.lg,
+        borderRadius: Radius.md,
+        borderWidth: 1.5,
+        borderColor: '#EEEEEE'
+    },
+    methodRowActive: { borderColor: Colors.primary, backgroundColor: '#F0FAF4' },
+    methodLabel: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textLight },
+    methodLabelActive: { color: Colors.textDark, fontFamily: Fonts.medium },
+
+    securityNote: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: Spacing.md },
+    securityText: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: '#888', lineHeight: 18 },
+
+    footer: {
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        backgroundColor: Colors.bgScreen ?? '#FAFAF0',
+        padding: Spacing.xl,
+        paddingBottom: Platform.OS === 'ios' ? Spacing.xl + 16 : Spacing.xl,
+        borderTopWidth: 1, borderTopColor: '#E5E5E5',
+    },
+    payBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.primary, paddingVertical: 16, borderRadius: Radius.lg ?? 12 },
+    payBtnLoading: { opacity: 0.7 },
+    payBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textWhite },
+
+    benefitNote: {
+        fontFamily: Fonts.medium,
+        fontSize: 10,
+        color: '#2e7d32',
+        textAlign: 'right',
+        marginTop: -2,
+    },
+    savingsBadge: {
+        backgroundColor: '#E8F5E9',
+        borderRadius: Radius.sm ?? 6,
+        paddingVertical: 10,
+        paddingHorizontal: Spacing.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: Spacing.md,
+    },
+    savingsText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.caption ?? 12,
+        color: '#2e7d32',
     },
 });

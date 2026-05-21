@@ -13,7 +13,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
@@ -25,6 +25,7 @@ const imllustration = require('@/assets/images/49fa5256c84b3ee062131d88f5ae26383
 export default function PaperLegalScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const [selectedService, setSelectedService] = useState('Digital Life Certificate');
     const [details, setDetails] = useState('');
     
@@ -66,8 +67,8 @@ export default function PaperLegalScreen() {
             });
 
             router.push({
-                pathname: '/payment/checkout',
-                params: { bookingPayload, amount: String(servicePrice), label: serviceName || 'Paperwork & Legal' },
+                pathname: '/service-checkout',
+                params: { bookingPayload, amount: String(servicePrice), label: serviceName || 'Paperwork & Legal', ...(params.subscriptionId && { subscriptionId: params.subscriptionId }) },
             });
         } catch (error) {
             console.error('Paper-legal error:', error);

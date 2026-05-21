@@ -15,7 +15,7 @@ export default function WellnessProductScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { addItem } = useCart();
+    const { addItem, items } = useCart();
 
     const [product, setProduct] = useState<Product | null>(null);
     const [related, setRelated] = useState<Product[]>([]);
@@ -116,8 +116,13 @@ export default function WellnessProductScreen() {
                 <Text style={styles.headerTitle} numberOfLines={1}>
                     {product.category?.name ?? 'Product'}
                 </Text>
-                <TouchableOpacity onPress={() => router.push('/(tabs)/cart' as any)} style={styles.backBtn}>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/cart' as any)} style={styles.cartBtn}>
                     <Ionicons name="cart-outline" size={22} color={Colors.textBody} />
+                    {items.length > 0 && (
+                        <View style={styles.cartBadge}>
+                            <Text style={styles.cartBadgeText}>{items.length}</Text>
+                        </View>
+                    )}
                 </TouchableOpacity>
             </View>
 
@@ -320,6 +325,33 @@ const styles = StyleSheet.create({
         backgroundColor: '#f5f5f5',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    cartBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: '#f5f5f5',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative',
+    },
+    cartBadge: {
+        position: 'absolute',
+        top: -6,
+        right: -6,
+        backgroundColor: '#EF4444',
+        borderRadius: 10,
+        width: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#fff',
+    },
+    cartBadgeText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.bodySmall,
+        color: '#fff',
     },
     headerTitle: {
         flex: 1,

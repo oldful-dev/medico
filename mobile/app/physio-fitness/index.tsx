@@ -14,7 +14,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 
@@ -30,8 +30,9 @@ const BODY_PARTS = ['Back', 'Knee', 'Neck', 'Shoulder', 'Leg'];
 export default function PhysioFitnessScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const params = useLocalSearchParams<{ subscriptionId?: string }>();
 
-    // State 
+    // State
     const [selectedService, setSelectedService] = useState<'pain' | 'fitness'>('pain');
     const [selectedBodyPart, setSelectedBodyPart] = useState<string>('Back');
     const [otherIssue, setOtherIssue] = useState<string>('');
@@ -72,8 +73,13 @@ export default function PhysioFitnessScreen() {
             });
 
             router.push({
-                pathname: '/payment/checkout',
-                params: { bookingPayload, amount: String(servicePrice), label: serviceName },
+                pathname: '/service-checkout',
+                params: {
+                    bookingPayload,
+                    amount: String(servicePrice),
+                    label: serviceName,
+                    ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
+                },
             });
         } catch (error) {
             console.error('Physio error:', error);

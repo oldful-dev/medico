@@ -4,12 +4,13 @@ import ServiceDetailScreen from '@/components/services/ServiceDetailScreen';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 const imgHero = require('@/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png');
 
 export default function DeepCleaningScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
     const [landmark, setLandmark] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
@@ -32,7 +33,7 @@ export default function DeepCleaningScreen() {
                 ? await mediaService.uploadMultipleMedia(selectedImages, 'deep-cleaning')
                 : [];
             router.push({
-                pathname: '/payment/checkout',
+                pathname: '/service-checkout',
                 params: {
                     bookingPayload: JSON.stringify({
                         serviceId, cityId,
@@ -43,6 +44,7 @@ export default function DeepCleaningScreen() {
                     }),
                     amount: String(servicePrice),
                     label: serviceName || 'Deep Cleaning',
+                    ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
         } catch {

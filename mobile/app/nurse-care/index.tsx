@@ -14,7 +14,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
@@ -29,6 +29,7 @@ export default function BookNursingCareScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const params = useLocalSearchParams<{ subscriptionId?: string }>();
 
     // Local UI state for radio buttons/selections
     const [selectedWho, setSelectedWho] = useState('Self');
@@ -110,8 +111,13 @@ export default function BookNursingCareScreen() {
             });
 
             router.push({
-                pathname: '/payment/checkout',
-                params: { bookingPayload, amount: String(servicePrice), label: serviceName },
+                pathname: '/service-checkout',
+                params: {
+                    bookingPayload,
+                    amount: String(servicePrice),
+                    label: serviceName,
+                    ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
+                },
             });
         } catch (error) {
             console.error('Nurse care error:', error);
