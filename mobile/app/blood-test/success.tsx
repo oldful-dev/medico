@@ -97,7 +97,7 @@ export default function BloodTestSuccessScreen() {
             <View style={styles.footer}>
                 <TouchableOpacity
                     style={styles.viewBookingsBtn}
-                    onPress={() => router.push('/(tabs)/account')}
+                    onPress={() => router.push('/my-bookings')}
                 >
                     <Text style={styles.viewBookingsBtnText}>View Bookings</Text>
                 </TouchableOpacity>
