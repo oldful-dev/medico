@@ -141,9 +141,9 @@ export default function CartScreen() {
         const categoryTotal = categoryItems.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
 
         if (category === 'blood-test') {
-            // Blood test has its own flow (Redcliffe slots)
+            // Blood test: unified checkout flow (same as services)
             router.push({
-                pathname: config.checkoutFlow as any,
+                pathname: '/blood-test-checkout',
                 params: {
                     fromCheckout: 'true',
                 },
