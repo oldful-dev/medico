@@ -467,6 +467,10 @@ export default function CheckoutScreen() {
                         }) }]
                     );
                 } else {
+                    // Clear cart for wellness/services/products
+                    if (params.category) {
+                        clearCategory(params.category);
+                    }
                     Alert.alert(
                         'Booking Received',
                         'Your service has been scheduled. Please pay ₹' + finalAmount + ' in cash to our provider when they arrive.',
@@ -613,6 +617,10 @@ export default function CheckoutScreen() {
                     });
                 } else {
                     // ─── Service/Product Success Route ────────────────────────
+                    // Clear cart for wellness/services/products
+                    if (params.category) {
+                        clearCategory(params.category);
+                    }
                     router.replace({
                         pathname: '/payment/payment-success',
                         params: {
