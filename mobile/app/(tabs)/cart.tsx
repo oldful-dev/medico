@@ -9,6 +9,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
+import { useUser } from '@/context/UserContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
 // ─── Category Mapping ────────────────────────────────────────
@@ -89,7 +90,12 @@ export default function CartScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { items, removeItem, clearCategory } = useCart();
+    const { profile } = useUser();
     const [showMixedCartInfo, setShowMixedCartInfo] = useState(false);
+
+    // Check for active subscription/plan
+    const hasActivePlan = profile?.subscriptions?.some((s: any) => s.status === 'ACTIVE');
+    const activePlanId = profile?.subscriptions?.find((s: any) => s.status === 'ACTIVE')?.id;
 
     const TAB_BAR_HEIGHT = 83;
 
@@ -144,7 +150,7 @@ export default function CartScreen() {
             // Service bookings
             router.push(config.checkoutFlow as any);
         } else {
-            // Products/Wellness: use payment checkout
+            // Products/Wellness: use payment checkout with plan info for benefit calculation
             router.push({
                 pathname: config.checkoutFlow as any,
                 params: {
@@ -152,6 +158,9 @@ export default function CartScreen() {
                     label: config.label,
                     category,
                     itemCount: categoryItems.length,
+                    // Pass plan info for benefit calculation at checkout
+                    ...(hasActivePlan && activePlanId && { subscriptionId: activePlanId }),
+                    skipUpsell: hasActivePlan ? '1' : '0',
                 },
             } as any);
         }
@@ -173,6 +182,22 @@ export default function CartScreen() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={[styles.scroll, { paddingBottom: 20 + TAB_BAR_HEIGHT }]}
             >
+                {/* ── Active Plan Benefit Banner ── */}
+                {hasActivePlan && (
+                    <View style={styles.benefitBanner}>
+                        <View style={styles.benefitContent}>
+                            <Ionicons name="star" size={20} color="#10B981" />
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.benefitTitle}>Plan Benefits Active</Text>
+                                <Text style={styles.benefitText}>Booking & platform fees waived on checkout</Text>
+                            </View>
+                            <View style={styles.benefitBadge}>
+                                <Text style={styles.benefitBadgeText}>ACTIVE</Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
+
                 {/* ── Mixed Cart Warning ── */}
                 {isMixedCart && !showMixedCartInfo && (
                     <TouchableOpacity
@@ -313,6 +338,30 @@ const styles = StyleSheet.create({
     headerBadgeText: { fontFamily: Fonts.semiBold, fontSize: 12, color: Colors.primary },
 
     scroll: { paddingTop: Spacing.md, paddingHorizontal: Spacing.md, gap: Spacing.md },
+
+    // Active plan benefit banner
+    benefitBanner: {
+        backgroundColor: '#F0FDF4',
+        borderWidth: 1,
+        borderColor: '#DCFCE7',
+        borderRadius: Radius.lg,
+        padding: Spacing.md,
+        marginBottom: Spacing.sm,
+    },
+    benefitContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+    },
+    benefitTitle: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#065F46' },
+    benefitText: { fontFamily: Fonts.regular, fontSize: 12, color: '#047857' },
+    benefitBadge: {
+        backgroundColor: '#10B981',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    benefitBadgeText: { fontFamily: Fonts.semiBold, fontSize: 10, color: '#fff' },
 
     // Mixed cart banner
     mixedCartBanner: {
