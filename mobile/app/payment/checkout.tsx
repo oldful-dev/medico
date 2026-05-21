@@ -51,7 +51,7 @@ const mapLabelToCategory = (label: string): string => {
 
 export default function CheckoutScreen() {
     const router = useRouter();
-    const { profile, refreshData } = useUser();
+    const { profile, refreshData, isLoading } = useUser();
     const { items, clearCategory } = useCart();
     const params = useLocalSearchParams<{
         // ─── Existing booking ID (legacy: service screens pre-created the booking)
