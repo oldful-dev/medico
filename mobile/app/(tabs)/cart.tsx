@@ -25,7 +25,7 @@ const CATEGORY_CONFIG: Record<ServiceCategory, {
         label: 'Bloodwork',
         icon: 'test-tube',
         color: '#EF4444',
-        checkoutFlow: '/blood-test/slot-selection',
+        checkoutFlow: '/blood-test',
         description: 'Schedule blood collection',
     },
     'wellness': {
@@ -39,21 +39,21 @@ const CATEGORY_CONFIG: Record<ServiceCategory, {
         label: 'Doctor Consultation',
         icon: 'stethoscope',
         color: '#3B82F6',
-        checkoutFlow: '/doctor-booking/details',
+        checkoutFlow: '/doctor-visit',
         description: 'Book doctor consultation',
     },
     'nurse': {
         label: 'Nurse Care',
         icon: 'medical-bag',
         color: '#8B5CF6',
-        checkoutFlow: '/service-booking/details',
+        checkoutFlow: '/all-ayuxa-services',
         description: 'Home nursing care',
     },
     'service': {
         label: 'Services',
         icon: 'briefcase',
         color: '#F59E0B',
-        checkoutFlow: '/service-booking/details',
+        checkoutFlow: '/all-ayuxa-services',
         description: 'Concierge services',
     },
     'other': {
