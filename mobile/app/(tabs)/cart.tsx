@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    ScrollView, Platform,
+    ScrollView, Platform, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -10,6 +10,60 @@ import { useRouter } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
 import { LinearGradient } from 'expo-linear-gradient';
+
+// ─── Category Mapping ────────────────────────────────────────
+type ServiceCategory = 'blood-test' | 'wellness' | 'service' | 'doctor' | 'nurse' | 'other';
+
+const CATEGORY_CONFIG: Record<ServiceCategory, {
+    label: string;
+    icon: string;
+    color: string;
+    checkoutFlow: string; // route path
+    description: string;
+}> = {
+    'blood-test': {
+        label: 'Bloodwork',
+        icon: 'test-tube',
+        color: '#EF4444',
+        checkoutFlow: '/blood-test/slot-selection',
+        description: 'Schedule blood collection',
+    },
+    'wellness': {
+        label: 'Wellness Products',
+        icon: 'leaf',
+        color: '#10B981',
+        checkoutFlow: '/payment/checkout',
+        description: 'Order supplements & wellness items',
+    },
+    'doctor': {
+        label: 'Doctor Consultation',
+        icon: 'stethoscope',
+        color: '#3B82F6',
+        checkoutFlow: '/doctor-booking/details',
+        description: 'Book doctor consultation',
+    },
+    'nurse': {
+        label: 'Nurse Care',
+        icon: 'medical-bag',
+        color: '#8B5CF6',
+        checkoutFlow: '/service-booking/details',
+        description: 'Home nursing care',
+    },
+    'service': {
+        label: 'Services',
+        icon: 'briefcase',
+        color: '#F59E0B',
+        checkoutFlow: '/service-booking/details',
+        description: 'Concierge services',
+    },
+    'other': {
+        label: 'Other',
+        icon: 'cube-outline',
+        color: '#6B7280',
+        checkoutFlow: '/payment/checkout',
+        description: 'Other items',
+    },
+};
 
 const SERVICE_ICON: Record<string, string> = {
     'doctor-visit':   'stethoscope',
@@ -20,12 +74,35 @@ const SERVICE_ICON: Record<string, string> = {
     'product':        'package-variant',
 };
 
+// ─── Categorize items ──────────────────────────────────────────
+function categorizeItem(serviceType: string): ServiceCategory {
+    const lower = serviceType.toLowerCase();
+    if (lower.includes('blood') || lower.includes('lab') || lower.includes('test')) return 'blood-test';
+    if (lower.includes('wellness') || lower.includes('supplement') || lower.includes('vitamin')) return 'wellness';
+    if (lower.includes('doctor') || lower.includes('consult')) return 'doctor';
+    if (lower.includes('nurse')) return 'nurse';
+    if (lower.includes('service') || lower.includes('concierge')) return 'service';
+    return 'other';
+}
+
 export default function CartScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { items, removeItem } = useCart();
+    const { items, removeItem, clearCategory } = useCart();
+    const [showMixedCartInfo, setShowMixedCartInfo] = useState(false);
 
     const TAB_BAR_HEIGHT = 83;
+
+    // Group items by category
+    const groupedByCategory = items.reduce((acc, item) => {
+        const category = categorizeItem(item.serviceType);
+        if (!acc[category]) acc[category] = [];
+        acc[category].push(item);
+        return acc;
+    }, {} as Record<ServiceCategory, typeof items>);
+
+    const categories = Object.keys(groupedByCategory) as ServiceCategory[];
+    const isMixedCart = categories.length > 1;
 
     const subtotal    = items.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
     const taxes       = Math.round(subtotal * 0.18);
@@ -52,6 +129,34 @@ export default function CartScreen() {
         );
     }
 
+    const handleCategoryCheckout = (category: ServiceCategory) => {
+        const config = CATEGORY_CONFIG[category];
+        const categoryItems = groupedByCategory[category];
+        const categoryTotal = categoryItems.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
+
+        if (category === 'blood-test') {
+            // Blood test has its own flow
+            router.push(config.checkoutFlow as any);
+        } else if (category === 'doctor') {
+            // Doctor booking has its own flow
+            router.push(config.checkoutFlow as any);
+        } else if (category === 'nurse' || category === 'service') {
+            // Service bookings
+            router.push(config.checkoutFlow as any);
+        } else {
+            // Products/Wellness: use payment checkout
+            router.push({
+                pathname: config.checkoutFlow as any,
+                params: {
+                    amount: String(categoryTotal),
+                    label: config.label,
+                    category,
+                    itemCount: categoryItems.length,
+                },
+            } as any);
+        }
+    };
+
     return (
         <View style={[styles.screen, { paddingTop: insets.top }]}>
             <StatusBar style="dark" />
@@ -66,116 +171,107 @@ export default function CartScreen() {
 
             <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={[styles.scroll, { paddingBottom: 80 + TAB_BAR_HEIGHT }]}
+                contentContainerStyle={[styles.scroll, { paddingBottom: 20 + TAB_BAR_HEIGHT }]}
             >
-                {/* ── Cart Items ── */}
-                <View style={styles.section}>
-                    {items.map(item => {
-                        const icon = SERVICE_ICON[item.serviceType] || 'medical-bag';
-                        const itemTotal = (item.price || 0) * (item.quantity || 1);
-                        return (
-                            <View key={item.id} style={styles.card}>
-                                {/* Icon + Info */}
-                                <View style={styles.cardRow}>
-                                    <View style={styles.iconBox}>
-                                        <MaterialCommunityIcons name={icon as any} size={22} color={Colors.primary} />
-                                    </View>
-                                    <View style={styles.cardInfo}>
-                                        <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-                                        {item.details?.when && (
-                                            <View style={styles.metaRow}>
-                                                <Ionicons name="calendar-outline" size={12} color={Colors.textMuted} />
-                                                <Text style={styles.metaText}>{item.details.when}</Text>
-                                            </View>
-                                        )}
-                                        {item.details?.address && (
-                                            <View style={styles.metaRow}>
-                                                <Ionicons name="location-outline" size={12} color={Colors.textMuted} />
-                                                <Text style={styles.metaText} numberOfLines={1}>{item.details.address}</Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                    <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.removeBtn}>
-                                        <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
-                                    </TouchableOpacity>
-                                </View>
+                {/* ── Mixed Cart Warning ── */}
+                {isMixedCart && !showMixedCartInfo && (
+                    <TouchableOpacity
+                        style={styles.mixedCartBanner}
+                        onPress={() => setShowMixedCartInfo(true)}
+                    >
+                        <View style={styles.mixedCartContent}>
+                            <Ionicons name="information-circle" size={20} color="#F59E0B" />
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.mixedCartTitle}>Mixed Cart</Text>
+                                <Text style={styles.mixedCartText}>Checkout separately for each category</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#F59E0B" />
+                        </View>
+                    </TouchableOpacity>
+                )}
 
-                                {/* Divider + Price */}
-                                <View style={styles.cardFooter}>
-                                    {(item.quantity || 1) > 1 && (
-                                        <Text style={styles.qtyText}>₹{item.price} × {item.quantity}</Text>
-                                    )}
-                                    <Text style={styles.itemPrice}>
-                                        {itemTotal > 0 ? `₹${itemTotal.toLocaleString('en-IN')}` : 'Price on confirmation'}
+                {/* ── Category Sections ── */}
+                {categories.map(category => {
+                    const categoryItems = groupedByCategory[category];
+                    const categoryTotal = categoryItems.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
+                    const config = CATEGORY_CONFIG[category];
+
+                    return (
+                        <View key={category} style={styles.categorySection}>
+                            {/* Category Header */}
+                            <View style={[styles.categoryHeader, { borderLeftColor: config.color }]}>
+                                <View style={[styles.categoryIcon, { backgroundColor: `${config.color}15` }]}>
+                                    <MaterialCommunityIcons name={config.icon as any} size={20} color={config.color} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.categoryTitle}>{config.label}</Text>
+                                    <Text style={styles.categoryItemCount}>
+                                        {categoryItems.length} item{categoryItems.length > 1 ? 's' : ''}
                                     </Text>
                                 </View>
+                                <Text style={styles.categoryTotal}>₹{categoryTotal.toLocaleString('en-IN')}</Text>
                             </View>
-                        );
-                    })}
-                </View>
 
-                {/* ── Bill Summary ── */}
-                <View style={styles.billCard}>
-                    <Text style={styles.billTitle}>Bill Summary</Text>
+                            {/* Category Items */}
+                            <View style={styles.itemsContainer}>
+                                {categoryItems.map(item => {
+                                    const icon = SERVICE_ICON[item.serviceType] || 'medical-bag';
+                                    const itemTotal = (item.price || 0) * (item.quantity || 1);
+                                    return (
+                                        <View key={item.id} style={styles.cartItem}>
+                                            <View style={styles.itemContent}>
+                                                <View style={[styles.itemIcon, { backgroundColor: `${config.color}08` }]}>
+                                                    <MaterialCommunityIcons name={icon as any} size={18} color={config.color} />
+                                                </View>
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={styles.itemTitle} numberOfLines={1}>{item.title}</Text>
+                                                    {item.details?.when && (
+                                                        <Text style={styles.itemMeta} numberOfLines={1}>
+                                                            {item.details.when}
+                                                        </Text>
+                                                    )}
+                                                </View>
+                                                <TouchableOpacity onPress={() => removeItem(item.id)}>
+                                                    <Ionicons name="close-circle" size={20} color="#EF4444" />
+                                                </TouchableOpacity>
+                                            </View>
+                                            <View style={styles.itemPrice}>
+                                                <Text style={styles.itemPriceText}>
+                                                    {itemTotal > 0 ? `₹${itemTotal.toLocaleString('en-IN')}` : 'TBD'}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    );
+                                })}
+                            </View>
 
-                    <View style={styles.billRows}>
-                        <View style={styles.billRow}>
-                            <Text style={styles.billLabel}>Item Total</Text>
-                            <Text style={styles.billValue}>₹{subtotal.toLocaleString('en-IN')}</Text>
+                            {/* Category Checkout Button */}
+                            <TouchableOpacity
+                                style={[styles.categoryCheckoutBtn, { backgroundColor: config.color }]}
+                                onPress={() => handleCategoryCheckout(category)}
+                                activeOpacity={0.88}
+                            >
+                                <Ionicons name="arrow-forward" size={16} color="#fff" />
+                                <Text style={styles.categoryCheckoutText}>Checkout</Text>
+                            </TouchableOpacity>
                         </View>
-                        <View style={styles.billRow}>
-                            <Text style={styles.billLabel}>GST & Service Tax (18%)</Text>
-                            <Text style={styles.billValue}>₹{taxes.toLocaleString('en-IN')}</Text>
-                        </View>
-                        <View style={styles.billRow}>
-                            <Text style={styles.billLabel}>Platform Fee</Text>
-                            <Text style={styles.billValue}>₹{platformFee}</Text>
-                        </View>
-                    </View>
+                    );
+                })}
 
-                    <View style={styles.billDivider} />
-
-                    <View style={styles.billRow}>
-                        <Text style={styles.grandLabel}>Total Payable</Text>
-                        <Text style={styles.grandValue}>₹{grandTotal.toLocaleString('en-IN')}</Text>
-                    </View>
-                </View>
-
-                {/* ── Trust row ── */}
+                {/* ── Trust Row ── */}
                 <View style={styles.trustRow}>
                     {[
                         { icon: 'lock-closed-outline', label: 'Secure Payment' },
-                        { icon: 'shield-checkmark-outline', label: 'Verified Providers' },
-                        { icon: 'flash-outline', label: 'Quick Setup' },
+                        { icon: 'shield-checkmark-outline', label: 'Verified' },
+                        { icon: 'flash-outline', label: 'Quick' },
                     ].map(({ icon, label }) => (
                         <View key={label} style={styles.trustItem}>
-                            <Ionicons name={icon as any} size={18} color={Colors.primary} />
+                            <Ionicons name={icon as any} size={16} color={Colors.primary} />
                             <Text style={styles.trustLabel}>{label}</Text>
                         </View>
                     ))}
                 </View>
             </ScrollView>
-
-            {/* ── Sticky Footer ── */}
-            <View style={[styles.footer, { bottom: TAB_BAR_HEIGHT, paddingBottom: 12 }]}>
-                <View style={styles.footerLeft}>
-                    <Text style={styles.footerLabel}>Grand Total</Text>
-                    <Text style={styles.footerAmount}>₹{grandTotal.toLocaleString('en-IN')}</Text>
-                </View>
-                <TouchableOpacity
-                    style={styles.checkoutBtn}
-                    activeOpacity={0.88}
-                    onPress={() => router.push({
-                        pathname: '/payment/checkout',
-                        params: { amount: String(grandTotal), label: 'Service Booking' },
-                    })}
-                >
-                    <LinearGradient colors={[Colors.primary, Colors.primaryDark]} style={styles.checkoutGradient}>
-                        <Text style={styles.checkoutText}>Proceed to Pay</Text>
-                        <Ionicons name="chevron-forward" size={18} color="#fff" />
-                    </LinearGradient>
-                </TouchableOpacity>
-            </View>
         </View>
     );
 }
@@ -216,84 +312,109 @@ const styles = StyleSheet.create({
     },
     headerBadgeText: { fontFamily: Fonts.semiBold, fontSize: 12, color: Colors.primary },
 
-    scroll: { paddingTop: Spacing.md },
-    section: { paddingHorizontal: Spacing.md, gap: Spacing.sm },
+    scroll: { paddingTop: Spacing.md, paddingHorizontal: Spacing.md, gap: Spacing.md },
 
-    // Cart card
-    card: {
-        backgroundColor: '#fff',
+    // Mixed cart banner
+    mixedCartBanner: {
+        backgroundColor: '#FFFBEB',
+        borderWidth: 1,
+        borderColor: '#FEF3C7',
         borderRadius: Radius.lg,
         padding: Spacing.md,
-        borderWidth: 1,
-        borderColor: '#EBEBEB',
-        ...Shadow.card,
+        marginBottom: Spacing.sm,
     },
-    cardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-    iconBox: {
-        width: 44, height: 44, borderRadius: 12,
-        backgroundColor: 'rgba(4,131,87,0.08)',
-        justifyContent: 'center', alignItems: 'center',
+    mixedCartContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
     },
-    cardInfo: { flex: 1, gap: 4 },
-    cardTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textBody, lineHeight: 20 },
-    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    metaText: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, flex: 1 },
-    removeBtn: {
-        width: 34, height: 34, borderRadius: 10,
-        backgroundColor: '#FFF0F0',
-        justifyContent: 'center', alignItems: 'center',
-    },
-    cardFooter: {
-        flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center',
-        gap: 8, marginTop: 10,
-        paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F0F0F0',
-    },
-    qtyText: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted },
-    itemPrice: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textBody },
+    mixedCartTitle: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#92400E' },
+    mixedCartText: { fontFamily: Fonts.regular, fontSize: 12, color: '#B45309' },
 
-    // Bill Summary
-    billCard: {
-        margin: Spacing.md,
+    // Category Section
+    categorySection: {
         backgroundColor: '#fff',
         borderRadius: Radius.lg,
-        padding: Spacing.lg,
+        overflow: 'hidden',
         borderWidth: 1,
         borderColor: '#EBEBEB',
         ...Shadow.card,
     },
-    billTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: Colors.textBody, marginBottom: Spacing.md },
-    billRows: { gap: 10, marginBottom: Spacing.md },
-    billRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    billLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textMuted },
-    billValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textBody },
-    billDivider: { height: 1, backgroundColor: '#EBEBEB', marginBottom: Spacing.md },
-    grandLabel: { fontFamily: Fonts.semiBold, fontSize: 16, color: Colors.textBody },
-    grandValue: { fontFamily: Fonts.semiBold, fontSize: 18, color: Colors.primary },
+    categoryHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.md,
+        padding: Spacing.md,
+        borderLeftWidth: 4,
+        backgroundColor: '#FAFAFA',
+    },
+    categoryIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    categoryTitle: { fontFamily: Fonts.semiBold, fontSize: 15, color: Colors.textBody },
+    categoryItemCount: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted },
+    categoryTotal: { fontFamily: Fonts.semiBold, fontSize: 16, color: Colors.textBody },
+
+    // Items container
+    itemsContainer: {
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.sm,
+        gap: Spacing.xs,
+    },
+    cartItem: {
+        paddingVertical: Spacing.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
+    },
+    itemContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+        marginBottom: Spacing.xs,
+    },
+    itemIcon: {
+        width: 32,
+        height: 32,
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    itemTitle: { fontFamily: Fonts.medium, fontSize: 13, color: Colors.textBody },
+    itemMeta: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted, marginTop: 2 },
+    itemPrice: {
+        paddingLeft: 40,
+        paddingBottom: Spacing.xs,
+    },
+    itemPriceText: { fontFamily: Fonts.semiBold, fontSize: 13, color: Colors.primary },
+
+    // Category Checkout Button
+    categoryCheckoutBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        marginHorizontal: Spacing.md,
+        marginBottom: Spacing.md,
+        paddingVertical: 12,
+        borderRadius: Radius.md,
+    },
+    categoryCheckoutText: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#fff' },
 
     // Trust
     trustRow: {
-        flexDirection: 'row', justifyContent: 'space-around',
-        marginHorizontal: Spacing.md, marginBottom: Spacing.md,
-        backgroundColor: '#fff', borderRadius: Radius.lg,
-        paddingVertical: Spacing.md,
-        borderWidth: 1, borderColor: '#EBEBEB',
-    },
-    trustItem: { alignItems: 'center', gap: 6 },
-    trustLabel: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted, textAlign: 'center' },
-
-    // Footer
-    footer: {
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-        paddingHorizontal: Spacing.lg, paddingTop: 14,
+        flexDirection: 'row',
+        justifyContent: 'space-around',
         backgroundColor: '#fff',
-        borderTopWidth: 1, borderTopColor: '#EBEBEB',
-        ...Shadow.header,
+        borderRadius: Radius.lg,
+        paddingVertical: Spacing.md,
+        borderWidth: 1,
+        borderColor: '#EBEBEB',
+        marginTop: Spacing.sm,
     },
-    footerLeft: { flex: 1 },
-    footerLabel: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted },
-    footerAmount: { fontFamily: Fonts.semiBold, fontSize: 20, color: Colors.textBody },
-    checkoutBtn: { flex: 1.4, height: 52, borderRadius: Radius.lg, overflow: 'hidden' },
-    checkoutGradient: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-    checkoutText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: '#fff' },
+    trustItem: { alignItems: 'center', gap: 4 },
+    trustLabel: { fontFamily: Fonts.regular, fontSize: 10, color: Colors.textMuted, textAlign: 'center' },
 });
