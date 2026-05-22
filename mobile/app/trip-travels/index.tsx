@@ -9,6 +9,7 @@ import {
     TextInput,
     Modal,
     FlatList,
+    ActivityIndicator,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -114,27 +115,29 @@ export default function TripTravelsScreen() {
         <View style={[s.container, { paddingTop: insets.top }]}>
             <StatusBar barStyle="dark-content" />
 
-            {/* Header */}
+            {/* Header with back button + title */}
             <View style={s.header}>
-                <TouchableOpacity onPress={() => router.back()}>
-                    <Ionicons name="chevron-back" size={28} color={colors.textDark} />
+                <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Ionicons name="arrow-back" size={24} color={colors.textDark} />
                 </TouchableOpacity>
                 <Text style={s.headerTitle}>Trip & Travel</Text>
-                <View style={{ width: 28 }} />
+                <View style={{ width: 24 }} />
             </View>
 
             <KeyboardAwareScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={s.scrollContent}
+                enableOnAndroid
+                extraScrollHeight={20}
             >
-                {/* Hero Section */}
+                {/* Hero Section — centered icon + title + subtitle */}
                 <View style={s.heroSection}>
                     <View style={s.heroIcon}>
-                        <Ionicons name="airplane" size={40} color={colors.primary} />
+                        <Ionicons name="airplane" size={40} color="#02743F" />
                     </View>
                     <Text style={s.heroTitle}>Where do you want to go?</Text>
                     <Text style={s.heroSubtitle}>
-                        Share your travel plan and we'll assist you better.
+                        Share your travel plan and{'\n'}we'll assist you better.
                     </Text>
                 </View>
 
@@ -355,61 +358,60 @@ function makeStyles(colors: any) {
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingHorizontal: 16,
-            paddingVertical: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: '#e5e7eb',
+            paddingVertical: 14,
+            backgroundColor: colors.bgScreen,
         },
         headerTitle: {
             fontSize: 18,
             fontWeight: '600',
             color: colors.textDark,
+            flex: 1,
+            textAlign: 'center',
         },
         scrollContent: {
-            paddingBottom: 32,
+            paddingBottom: 40,
         },
         heroSection: {
             alignItems: 'center',
             paddingHorizontal: 24,
-            paddingVertical: 32,
-            backgroundColor: colors.bgCard,
-            marginHorizontal: 16,
-            marginTop: 16,
-            borderRadius: 12,
+            paddingVertical: 36,
+            backgroundColor: colors.bgScreen,
         },
         heroIcon: {
-            width: 80,
-            height: 80,
-            borderRadius: 40,
-            backgroundColor: '#e8f5e9',
+            width: 72,
+            height: 72,
+            borderRadius: 36,
+            backgroundColor: '#E8F5E9',
             alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: 16,
+            marginBottom: 20,
         },
         heroTitle: {
-            fontSize: 20,
-            fontWeight: '700',
+            fontSize: 22,
+            fontWeight: '600',
             color: colors.textDark,
             marginBottom: 8,
             textAlign: 'center',
         },
         heroSubtitle: {
             fontSize: 14,
-            color: colors.textMuted,
+            fontWeight: '500',
+            color: '#888888',
             textAlign: 'center',
-            lineHeight: 20,
+            lineHeight: 22,
         },
         formSection: {
-            paddingHorizontal: 16,
-            paddingTop: 24,
+            paddingHorizontal: 20,
+            paddingTop: 8,
         },
         formGroup: {
-            marginBottom: 20,
+            marginBottom: 22,
         },
         label: {
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: '600',
-            color: colors.textDark,
-            marginBottom: 8,
+            color: '#2F2F2F',
+            marginBottom: 10,
         },
         required: {
             color: '#dc2626',
@@ -418,65 +420,71 @@ function makeStyles(colors: any) {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            paddingHorizontal: 12,
-            paddingVertical: 12,
+            paddingHorizontal: 14,
+            paddingVertical: 13,
             borderWidth: 1,
-            borderColor: '#e5e7eb',
+            borderColor: '#E5E7EB',
             borderRadius: 8,
-            backgroundColor: colors.bgCard,
+            backgroundColor: '#FFFFFF',
+            minHeight: 48,
         },
         inputText: {
             flex: 1,
             fontSize: 14,
-            color: colors.textDark,
+            fontWeight: '500',
+            color: '#2F2F2F',
         },
         inputPlaceholder: {
             flex: 1,
             fontSize: 14,
-            color: colors.textMuted,
+            color: '#C2C2C2',
         },
         textarea: {
-            height: 100,
+            height: 110,
             paddingVertical: 12,
             textAlignVertical: 'top',
+            paddingTop: 12,
         },
         submitButton: {
-            backgroundColor: colors.primary,
+            backgroundColor: '#02743F',
             paddingVertical: 14,
             borderRadius: 8,
             alignItems: 'center',
-            marginTop: 24,
-            marginBottom: 16,
+            justifyContent: 'center',
+            marginTop: 28,
+            marginBottom: 24,
+            minHeight: 48,
         },
         submitButtonText: {
             fontSize: 16,
             fontWeight: '600',
-            color: '#ffffff',
+            color: '#FFFFFF',
         },
         modalOverlay: {
             flex: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
             justifyContent: 'flex-end',
         },
         modal: {
-            backgroundColor: colors.bgCard,
+            backgroundColor: '#FFFFFF',
             borderTopLeftRadius: 16,
             borderTopRightRadius: 16,
-            maxHeight: '80%',
+            maxHeight: '75%',
+            paddingBottom: 20,
         },
         modalHeader: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingHorizontal: 16,
-            paddingVertical: 16,
+            paddingVertical: 18,
             borderBottomWidth: 1,
-            borderBottomColor: '#e5e7eb',
+            borderBottomColor: '#E5E7EB',
         },
         modalTitle: {
             fontSize: 16,
             fontWeight: '600',
-            color: colors.textDark,
+            color: '#2F2F2F',
         },
         optionItem: {
             flexDirection: 'row',
@@ -484,12 +492,12 @@ function makeStyles(colors: any) {
             justifyContent: 'space-between',
             paddingHorizontal: 16,
             paddingVertical: 14,
-            borderBottomWidth: 1,
-            borderBottomColor: '#f0f0f0',
+            borderBottomWidth: 0,
         },
         optionText: {
             fontSize: 14,
-            color: colors.textDark,
+            fontWeight: '500',
+            color: '#2F2F2F',
         },
     });
 }
