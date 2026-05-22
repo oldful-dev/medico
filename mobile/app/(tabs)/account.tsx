@@ -300,53 +300,50 @@ export default function AccountScreen() {
                 </View>
 
                 {/* ═══════════════════════════════════════
-                    SECTION 1 — Live Updates
+                    SECTION 1 — Activity Center (Live Updates)
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Live Updates" colors={colors} />
+                <SectionHeading title="Activity Center" colors={colors} />
                 <MenuRow
                     icon="pulse-outline"
                     iconBg="#FFF0E0"
                     iconColor="#F59E0B"
-                    title="Activity Center"
-                    subtitle="Doctor assigned, delivery updates, appointments"
+                    title="Live Updates"
+                    subtitle="Doctor, nurse, caregiver assignments & delivery updates"
                     onPress={() => router.push('/profile/activity-center' as any)}
                     colors={colors}
                 />
 
                 {/* ═══════════════════════════════════════
-                    SECTION 2 — Bookings
+                    SECTION 2 — Bookings & Addresses & Family
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Bookings" colors={colors} />
+                <SectionHeading title="Bookings & Services" colors={colors} />
                 <MenuRow
                     icon="calendar-outline"
                     iconBg="#E8F5E9"
                     iconColor="#048357"
-                    title="Bookings"
-                    subtitle="Health tests, wellness, concierge services & transaction history"
+                    title="My Bookings"
+                    subtitle="Health, wellness, concierge bookings & history"
                     onPress={() => router.push('/my-bookings' as any)}
                     colors={colors}
                 />
 
-                {/* ═══════════════════════════════════════
-                    SECTION 3 — My Health
-                   ═══════════════════════════════════════ */}
-                <SectionHeading title="My Health" green colors={colors} />
+                <SectionHeading title="Addresses & People" colors={colors} />
                 <MenuRow
-                    icon="medical-outline"
-                    iconBg="#FFF0E0"
-                    iconColor="#F5A623"
-                    title="Medical Card"
-                    subtitle={`Blood: ${bloodGroup} • Allergies: ${allergies}`}
-                    onPress={() => router.push('/medical-card' as any)}
+                    icon="location-outline"
+                    iconBg="#E3F2FD"
+                    iconColor="#1E88E5"
+                    title="Manage Addresses"
+                    subtitle="Home, Office, Parents Home, Other"
+                    onPress={() => router.push('/manage-addresses' as any)}
                     colors={colors}
                 />
                 <MenuRow
-                    icon="documents-outline"
-                    iconBg="#E8F5E9"
-                    iconColor="#048357"
-                    title="Medical Logs"
-                    subtitle="Prescriptions, reports, scan documents"
-                    onPress={() => router.push('/profile/medical-logs' as any)}
+                    icon="person-add-outline"
+                    iconBg="#EDE9FE"
+                    iconColor="#7C3AED"
+                    title="Family Members"
+                    subtitle="Father, mother, spouse, children & dependents"
+                    onPress={() => router.push('/family-members' as any)}
                     colors={colors}
                 />
                 <MenuRow
@@ -360,35 +357,40 @@ export default function AccountScreen() {
                     onPress={() => router.push('/emergency-contacts' as any)}
                     colors={colors}
                 />
+
+                {/* ═══════════════════════════════════════
+                    SECTION 3 — Medical & Health
+                   ═══════════════════════════════════════ */}
+                <SectionHeading title="Health & Medical" green colors={colors} />
                 <MenuRow
-                    icon="person-add-outline"
-                    iconBg="#EDE9FE"
-                    iconColor="#7C3AED"
-                    title="Family Members"
-                    subtitle="Father, mother, spouse, children"
-                    onPress={() => router.push('/family-members' as any)}
+                    icon="medical-outline"
+                    iconBg="#FFF0E0"
+                    iconColor="#F5A623"
+                    title="Medical Card"
+                    subtitle={`Blood: ${bloodGroup} • Allergies: ${allergies}`}
+                    onPress={() => router.push('/profile/medical-card' as any)}
+                    colors={colors}
+                />
+                <MenuRow
+                    icon="documents-outline"
+                    iconBg="#E8F5E9"
+                    iconColor="#048357"
+                    title="Medical Logs"
+                    subtitle="Prescriptions, reports, scans, discharge summaries"
+                    onPress={() => router.push('/profile/medical-logs' as any)}
                     colors={colors}
                 />
 
                 {/* ═══════════════════════════════════════
-                    SECTION 4 — Account & Logistics
+                    SECTION 4 — Payments & Subscription
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Account" colors={colors} />
-                <MenuRow
-                    icon="location-outline"
-                    iconBg="#E3F2FD"
-                    iconColor="#1E88E5"
-                    title="Manage Addresses"
-                    subtitle="Home, Office, Parents Home"
-                    onPress={() => router.push('/manage-addresses' as any)}
-                    colors={colors}
-                />
+                <SectionHeading title="Payments & Plans" colors={colors} />
                 <MenuRow
                     icon="wallet-outline"
                     iconBg="#F3E5F5"
                     iconColor="#8E24AA"
                     title="Payment Methods"
-                    subtitle="Cards, UPI, wallet balance"
+                    subtitle="Cards, UPI, wallet, net banking"
                     onPress={() => router.push('/payments-wallet' as any)}
                     colors={colors}
                 />
@@ -403,7 +405,7 @@ export default function AccountScreen() {
                 />
 
                 {/* ═══════════════════════════════════════
-                    SECTION 5 — Preferences
+                    SECTION 5 — Preferences & Notifications
                    ═══════════════════════════════════════ */}
                 <SectionHeading title="Preferences" colors={colors} />
                 <TouchableOpacity style={styles.menuRow} activeOpacity={0.7} onPress={() => setLangModalVisible(true)}>
@@ -418,24 +420,32 @@ export default function AccountScreen() {
                         <Ionicons name="chevron-forward" size={18} color={colors.textLight} />
                     </View>
                 </TouchableOpacity>
+                <ToggleRow icon="moon-outline" iconBg="#1E1B4B15" iconColor="#4338CA" title="Dark Mode" value={isDarkMode} onToggle={toggleDarkMode} colors={colors} />
 
+                <SectionHeading title="Notifications" colors={colors} />
                 <ToggleRow icon="notifications-outline" iconBg="#E1F5FE" iconColor="#0288D1" title="Push Notifications" value={!!profile?.pushEnabled} onToggle={v => handleToggle('pushEnabled', v)} colors={colors} />
                 <ToggleRow icon="chatbubble-outline" iconBg="#FFF3E0" iconColor="#EF6C00" title="SMS Alerts" value={!!profile?.smsEnabled} onToggle={v => handleToggle('smsEnabled', v)} colors={colors} />
                 <ToggleRow icon="logo-whatsapp" iconBg="#E8F5E9" iconColor="#25D366" title="WhatsApp Updates" value={!!profile?.whatsappEnabled} onToggle={v => handleToggle('whatsappEnabled', v)} colors={colors} />
-                <ToggleRow icon="megaphone-outline" iconBg="#FFF8E1" iconColor="#FFA000" title="Promotional Offers" value={!!profile?.emailMarketingEnabled} onToggle={v => handleToggle('emailMarketingEnabled', v)} colors={colors} />
                 <ToggleRow icon="mail-outline" iconBg="#EDE9FE" iconColor="#7C3AED" title="Email Notifications" value={!!profile?.emailMarketingEnabled} onToggle={v => handleToggle('emailMarketingEnabled', v)} colors={colors} />
-                <ToggleRow icon="moon-outline" iconBg="#1E1B4B15" iconColor="#4338CA" title="Dark Mode" value={isDarkMode} onToggle={toggleDarkMode} colors={colors} />
+                <ToggleRow icon="megaphone-outline" iconBg="#FFF8E1" iconColor="#FFA000" title="Promotional Offers" value={!!profile?.emailMarketingEnabled} onToggle={v => handleToggle('emailMarketingEnabled', v)} colors={colors} />
 
                 {/* ═══════════════════════════════════════
-                    SECTION 6 — Support & Legal
+                    SECTION 6 — Help & Support
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Support & Legal" colors={colors} />
-                <MenuRow icon="headset-outline" iconBg="#E1F5FE" iconColor="#0288D1" title="Help & Support" subtitle="Call, WhatsApp, raise a ticket" onPress={() => router.push('/help-support' as any)} colors={colors} />
-                <MenuRow icon="star-outline" iconBg="#FFF9C4" iconColor="#FFC107" title="Rate Us" onPress={() => router.push('/rate-us' as any)} colors={colors} />
-                <MenuRow icon="document-text-outline" iconBg="#F3F3F3" iconColor="#616161" title="Terms & Privacy" onPress={() => router.push('/terms-policy' as any)} colors={colors} />
+                <SectionHeading title="Help & Support" colors={colors} />
+                <MenuRow icon="headset-outline" iconBg="#E1F5FE" iconColor="#0288D1" title="Help & Support" subtitle="Call, WhatsApp, email, raise a ticket" onPress={() => router.push('/help-support' as any)} colors={colors} />
+                <MenuRow icon="star-outline" iconBg="#FFF9C4" iconColor="#FFC107" title="Rate Us" subtitle="Share your experience with AYUXA" onPress={() => router.push('/rate-us' as any)} colors={colors} />
 
                 {/* ═══════════════════════════════════════
-                    SOCIAL LINKS
+                    SECTION 7 — Legal & Documents
+                   ═══════════════════════════════════════ */}
+                <SectionHeading title="Legal & Documents" colors={colors} />
+                <MenuRow icon="document-text-outline" iconBg="#F3F3F3" iconColor="#616161" title="Terms & Conditions" onPress={() => router.push('/terms-policy' as any)} colors={colors} />
+                <MenuRow icon="shield-outline" iconBg="#F3F3F3" iconColor="#616161" title="Privacy Policy" onPress={() => router.push('/privacy-policy' as any)} colors={colors} />
+                <MenuRow icon="receipt-outline" iconBg="#F3F3F3" iconColor="#616161" title="Refund & Cancellation" onPress={() => router.push('/refund-policy' as any)} colors={colors} />
+
+                {/* ═══════════════════════════════════════
+                    SECTION 8 — Social Media
                    ═══════════════════════════════════════ */}
                 <SectionHeading title="Follow Us" colors={colors} />
                 <View style={styles.socialRow}>

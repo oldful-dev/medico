@@ -1,21 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View,
-    Text,
-    Modal,
-    TouchableOpacity,
-    StyleSheet,
-    SafeAreaView,
+    View, Text, Modal, TouchableOpacity, StyleSheet, SafeAreaView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { LocationSearch } from './LocationSearch';
 import { LocationMapConfirm } from './LocationMapConfirm';
 
-const PRIMARY_GREEN = '#02743F';
-const TEXT_DARK = '#2F2F2F';
-const CARD_BORDER = '#E5E7EB';
-
-type LocationPickerStep = 'search' | 'map' | 'confirm';
+type LocationPickerStep = 'search' | 'map';
 
 interface LocationPickerModalProps {
     visible: boolean;
@@ -38,6 +31,7 @@ export const LocationPickerModal = ({
     initialLat = 28.7041,
     initialLng = 77.1025,
 }: LocationPickerModalProps) => {
+    const insets = useSafeAreaInsets();
     const [step, setStep] = useState<LocationPickerStep>('search');
     const [selectedLocation, setSelectedLocation] = useState<{
         placeId: string;
@@ -47,45 +41,22 @@ export const LocationPickerModal = ({
         address?: string;
     } | null>(null);
 
-    useEffect(() => {
-        console.log('📍 LocationPickerModal: visible changed to:', visible);
-    }, [visible]);
-
     const handleSelectLocation = (placeId: string, description: string, coords?: { lat: number; lng: number }) => {
-        console.log('📍 LocationPickerModal: handleSelectLocation called with:', { placeId, description, coords });
-        const locationData = {
+        setSelectedLocation({
             placeId,
             description,
             address: description,
             latitude: coords?.lat || initialLat,
             longitude: coords?.lng || initialLng,
-        };
-        console.log('📍 LocationPickerModal: Setting selectedLocation to:', locationData);
-        setSelectedLocation(locationData);
-        console.log('📍 LocationPickerModal: Moving to map step');
+        });
         setStep('map');
     };
 
     const handleMapConfirm = (lat: number, lng: number, address: string) => {
-        console.log('📍 LocationPickerModal: handleMapConfirm called with:', { lat, lng, address });
-        console.log('📍 LocationPickerModal: selectedLocation:', selectedLocation);
         if (selectedLocation) {
-            // Use the address from map (reverse geocode if marker was dragged, or initial if not)
-            // If address is empty, fall back to selectedLocation.address
             const finalAddress = address.trim() || selectedLocation.address || selectedLocation.description;
-            const finalData = {
-                ...selectedLocation,
-                latitude: lat,
-                longitude: lng,
-                address: finalAddress,
-            };
-            console.log('📍 LocationPickerModal: Sending onLocationConfirmed with:', finalData);
-            console.log('📍 LocationPickerModal: About to call onLocationConfirmed callback');
-            onLocationConfirmed(finalData);
-            console.log('📍 LocationPickerModal: Called onLocationConfirmed, now closing modal');
+            onLocationConfirmed({ ...selectedLocation, latitude: lat, longitude: lng, address: finalAddress });
             handleClose();
-        } else {
-            console.warn('📍 LocationPickerModal: selectedLocation is null!');
         }
     };
 
@@ -101,38 +72,62 @@ export const LocationPickerModal = ({
     };
 
     return (
-        <Modal
-            visible={visible}
-            animationType="slide"
-            transparent={false}
-            onRequestClose={handleClose}
-        >
+        <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={handleClose}>
+            <View style={[styles.safeTopPadding, { height: insets.top, backgroundColor: Colors.primaryDark }]} />
             <SafeAreaView style={styles.container}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={handleClose}>
-                        <Ionicons name="close" size={24} color={TEXT_DARK} />
+                    <TouchableOpacity
+                        style={styles.headerBtn}
+                        onPress={step === 'map' ? handleBackFromMap : handleClose}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                        <Ionicons
+                            name={step === 'map' ? 'arrow-back' : 'close'}
+                            size={20}
+                            color="#FFFFFF"
+                        />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>
-                        {step === 'search' ? 'Select Location' : 'Confirm Location'}
-                    </Text>
-                    <View style={{ width: 24 }} />
+
+                    <View style={styles.headerCenter}>
+                        <Text style={styles.headerTitle}>
+                            {step === 'search' ? 'Search Location' : 'Confirm on Map'}
+                        </Text>
+                        <Text style={styles.headerSub}>
+                            {step === 'search' ? 'Type your area or address' : 'Drag pin to fine-tune'}
+                        </Text>
+                    </View>
+
+                    <View style={styles.headerBtn} />
+                </View>
+
+                {/* Step indicator */}
+                <View style={styles.stepBar}>
+                    <View style={styles.stepRow}>
+                        <View style={[styles.stepDot, styles.stepDotActive]}>
+                            <Ionicons name="search" size={10} color="#FFFFFF" />
+                        </View>
+                        <View style={[styles.stepLine, step === 'map' && styles.stepLineActive]} />
+                        <View style={[styles.stepDot, step === 'map' && styles.stepDotActive]}>
+                            <Ionicons name="map" size={10} color={step === 'map' ? '#FFFFFF' : Colors.primaryDark} />
+                        </View>
+                    </View>
+                    <View style={styles.stepLabels}>
+                        <Text style={[styles.stepLabel, styles.stepLabelActive]}>Search</Text>
+                        <Text style={[styles.stepLabel, step === 'map' && styles.stepLabelActive]}>Confirm</Text>
+                    </View>
                 </View>
 
                 {/* Content */}
-                {step === 'search' && selectedLocation === null && (
-                    <LocationSearch
-                        onSelectLocation={handleSelectLocation}
-                        showRecentSearches={true}
-                    />
-                )}
+                <View style={styles.content}>
+                    {step === 'search' && (
+                        <LocationSearch
+                            onSelectLocation={handleSelectLocation}
+                            showRecentSearches={true}
+                        />
+                    )}
 
-                {step === 'map' && selectedLocation && (
-                    <>
-                        <TouchableOpacity style={styles.backButton} onPress={handleBackFromMap}>
-                            <Ionicons name="chevron-back" size={20} color={PRIMARY_GREEN} />
-                            <Text style={styles.backButtonText}>Back</Text>
-                        </TouchableOpacity>
+                    {step === 'map' && selectedLocation && (
                         <LocationMapConfirm
                             initialLat={selectedLocation.latitude}
                             initialLng={selectedLocation.longitude}
@@ -140,43 +135,114 @@ export const LocationPickerModal = ({
                             onConfirm={handleMapConfirm}
                             onCancel={handleBackFromMap}
                         />
-                    </>
-                )}
+                    )}
+                </View>
             </SafeAreaView>
         </Modal>
     );
 };
 
 const styles = StyleSheet.create({
+    safeTopPadding: {
+        width: '100%',
+    },
     container: {
         flex: 1,
         backgroundColor: '#FFFFFF',
     },
+
+    // Header — green band
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: CARD_BORDER,
+        backgroundColor: Colors.primaryDark,
+        paddingHorizontal: Spacing.lg,
+        paddingTop: Spacing.md,
+        paddingBottom: Spacing.sm,
+        gap: Spacing.sm,
+    },
+    headerBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    headerCenter: {
+        flex: 1,
+        alignItems: 'center',
     },
     headerTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: TEXT_DARK,
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading3,
+        color: '#FFFFFF',
     },
-    backButton: {
+    headerSub: {
+        fontFamily: Fonts.regular,
+        fontSize: 10,
+        color: 'rgba(255,255,255,0.65)',
+        marginTop: 1,
+    },
+
+    // Step indicator
+    stepBar: {
+        backgroundColor: Colors.primaryDark,
+        paddingTop: Spacing.sm,
+        paddingBottom: Spacing.xl,
+        alignItems: 'center',
+    },
+    stepRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        zIndex: 10,
+        width: 100,
     },
-    backButtonText: {
-        fontSize: 14,
-        color: PRIMARY_GREEN,
-        fontWeight: '500',
-        marginLeft: 4,
+    stepDot: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: 'rgba(255,255,255,0.35)',
+    },
+    stepDotActive: {
+        backgroundColor: Colors.accent,
+        borderColor: Colors.accent,
+    },
+    stepLine: {
+        flex: 1,
+        height: 2,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        marginHorizontal: 4,
+    },
+    stepLineActive: {
+        backgroundColor: Colors.accent,
+    },
+    stepLabels: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: 100,
+        marginTop: 4,
+    },
+    stepLabel: {
+        fontFamily: Fonts.regular,
+        fontSize: 10,
+        color: 'rgba(255,255,255,0.45)',
+    },
+    stepLabelActive: {
+        color: 'rgba(255,255,255,0.9)',
+        fontFamily: Fonts.medium,
+    },
+
+    // Content area — white rounded top, no negative margin
+    content: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        overflow: 'hidden',
+        marginTop: -20,
     },
 });

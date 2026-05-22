@@ -262,7 +262,7 @@ export default function PricingPage() {
                                     {serviceCharges.length === 0 ? (
                                         <tr>
                                             <td colSpan="7" style={{ textAlign: "center", color: "var(--text-muted)", padding: 24 }}>
-                                                No service charges configured yet. Click "Set Service Charge" to create one.
+                                                No service charges configured yet. Click &quot;Set Service Charge&quot; to create one.
                                             </td>
                                         </tr>
                                     ) : (

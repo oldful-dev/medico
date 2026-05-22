@@ -242,7 +242,7 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
     };
 
     const handleEdit = () => {
-        router.push('/edit-medical-card' as any);
+        router.push('/profile/edit-medical-card' as any);
     };
 
     const SectionCard = ({ title, children }: { title: string; children: React.ReactNode }) => (

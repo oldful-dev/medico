@@ -35,6 +35,7 @@ export default function CartOrderSummaryScreen() {
         category?: string;
         bookingPayload?: string;
         amount?: string;
+        collectionType?: string;
     }>();
 
     const category = params.category || 'Bloodwork';
@@ -235,14 +236,29 @@ export default function CartOrderSummaryScreen() {
                     <View style={styles.divider} />
 
                     <View style={styles.detailRow}>
-                        <View style={styles.detailIcon}><Ionicons name="location" size={16} color={PRIMARY_GREEN} /></View>
+                        <View style={styles.detailIcon}>
+                            <Ionicons name={params.collectionType === 'LAB' ? 'business' : 'home'} size={16} color={PRIMARY_GREEN} />
+                        </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.detailLabel}>Address</Text>
-                            <Text style={styles.detailValue} numberOfLines={2}>
-                                {bookingData?.address?.line1}, {bookingData?.address?.pincode}
-                            </Text>
+                            <Text style={styles.detailLabel}>Collection Type</Text>
+                            <Text style={styles.detailValue}>{params.collectionType === 'LAB' ? 'Lab Visit' : 'Home Collection'}</Text>
                         </View>
                     </View>
+
+                    {params.collectionType !== 'LAB' && bookingData?.address?.line1 && (
+                        <>
+                            <View style={styles.divider} />
+                            <View style={styles.detailRow}>
+                                <View style={styles.detailIcon}><Ionicons name="location" size={16} color={PRIMARY_GREEN} /></View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.detailLabel}>Address</Text>
+                                    <Text style={styles.detailValue} numberOfLines={2}>
+                                        {bookingData?.address?.line1}, {bookingData?.address?.pincode}
+                                    </Text>
+                                </View>
+                            </View>
+                        </>
+                    )}
                 </View>
 
                 <View style={styles.card}>
