@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
     ActivityIndicator, Alert, RefreshControl, SectionList, Linking,
@@ -6,8 +6,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { labService, LabOrderListItem } from '@/services/api/labService';
+import { useCart } from '@/context/CartContext';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -70,15 +71,24 @@ function normalizeLabOrder(order: LabOrderListItem): Booking {
 export default function MyBookingsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { tab, scrollToCheckout } = useLocalSearchParams<{ tab?: string; scrollToCheckout?: string }>();
+    const { cart } = useCart();
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [activeTab, setActiveTab] = useState<FilterTab>('health');
+    const [activeTab, setActiveTab] = useState<FilterTab>((tab as FilterTab) || 'health');
+    const scrollViewRef = useRef<ScrollView>(null);
 
     useFocusEffect(
         useCallback(() => {
             fetchBookings();
-        }, [])
+            // If coming from checkout flow, scroll to checkout section after data loads
+            if (scrollToCheckout === 'true') {
+                setTimeout(() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 300);
+            }
+        }, [scrollToCheckout])
     );
 
     const fetchBookings = async () => {
@@ -100,6 +110,11 @@ export default function MyBookingsScreen() {
         setRefreshing(true);
         await fetchBookings();
         setRefreshing(false);
+    };
+
+    const getBloodTestCartItems = () => {
+        if (!cart || !cart.items) return [];
+        return cart.items.filter((item: any) => item.serviceType === 'blood-test');
     };
 
     const getFilteredBookings = (): Booking[] => {
@@ -427,24 +442,78 @@ export default function MyBookingsScreen() {
                 <View style={styles.centerContainer}>
                     <ActivityIndicator size="large" color={PRIMARY_GREEN} />
                 </View>
-            ) : groupedBookings.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                    <Ionicons name="document-text-outline" size={48} color={TEXT_MUTED} />
-                    <Text style={styles.emptyText}>No bookings found</Text>
-                    <Text style={styles.emptySubtext}>Book a service to see it here</Text>
-                </View>
             ) : (
-                <SectionList
-                    sections={groupedBookings}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => renderBookingCard(item)}
-                    renderSectionHeader={({ section }) => renderSectionHeader(section)}
-                    contentContainerStyle={styles.listContent}
+                <ScrollView
+                    ref={scrollViewRef}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                     }
-                />
+                >
+                    {groupedBookings.length === 0 ? (
+                        <View style={styles.emptyContainer}>
+                            <Ionicons name="document-text-outline" size={48} color={TEXT_MUTED} />
+                            <Text style={styles.emptyText}>No bookings found</Text>
+                            <Text style={styles.emptySubtext}>Book a service to see it here</Text>
+                        </View>
+                    ) : (
+                        <View style={styles.listContent}>
+                            {groupedBookings.map((section) => (
+                                <View key={section.title}>
+                                    {renderSectionHeader(section)}
+                                    {section.data.map((item) => (
+                                        <View key={item.id}>
+                                            {renderBookingCard(item)}
+                                        </View>
+                                    ))}
+                                </View>
+                            ))}
+                        </View>
+                    )}
+
+                    {/* Checkout Section (when coming from cart) */}
+                    {scrollToCheckout === 'true' && getBloodTestCartItems().length > 0 && (
+                        <View style={styles.checkoutSection}>
+                            <Text style={styles.checkoutTitle}>Ready to Checkout?</Text>
+                            <Text style={styles.checkoutSubtitle}>
+                                You have {getBloodTestCartItems().length} blood test{getBloodTestCartItems().length > 1 ? 's' : ''} pending checkout
+                            </Text>
+
+                            {/* Pending Items Preview */}
+                            <View style={styles.checkoutItems}>
+                                {getBloodTestCartItems().map((item: any) => (
+                                    <View key={item.id} style={styles.checkoutItemCard}>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.checkoutItemName} numberOfLines={2}>
+                                                {item.packageName || item.name || 'Blood Test'}
+                                            </Text>
+                                            <Text style={styles.checkoutItemPrice}>
+                                                ₹{item.price || 0}
+                                            </Text>
+                                        </View>
+                                        <Text style={styles.checkoutItemQty}>Qty: {item.quantity || 1}</Text>
+                                    </View>
+                                ))}
+                            </View>
+
+                            {/* Checkout Button */}
+                            <TouchableOpacity
+                                style={styles.checkoutButton}
+                                onPress={() => {
+                                    router.push({
+                                        pathname: '/blood-test-checkout',
+                                        params: { fromCheckout: 'true' },
+                                    } as any);
+                                }}
+                            >
+                                <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
+                                <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    <View style={{ height: 24 }} />
+                </ScrollView>
             )}
         </View>
     );
@@ -695,5 +764,72 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: TEXT_MUTED,
         marginTop: 4,
+    },
+    checkoutSection: {
+        backgroundColor: '#F8F8F8',
+        marginHorizontal: 16,
+        marginTop: 20,
+        marginBottom: 16,
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: PRIMARY_GREEN,
+    },
+    checkoutTitle: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: TEXT_DARK,
+        marginBottom: 4,
+    },
+    checkoutSubtitle: {
+        fontSize: 12,
+        color: TEXT_MUTED,
+        fontWeight: '500',
+        marginBottom: 14,
+    },
+    checkoutItems: {
+        gap: 10,
+        marginBottom: 14,
+    },
+    checkoutItemCard: {
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: CARD_BORDER,
+        borderRadius: 8,
+        padding: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    checkoutItemName: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: TEXT_DARK,
+        marginBottom: 4,
+    },
+    checkoutItemPrice: {
+        fontSize: 11,
+        color: PRIMARY_GREEN,
+        fontWeight: '700',
+    },
+    checkoutItemQty: {
+        fontSize: 11,
+        color: TEXT_MUTED,
+        fontWeight: '500',
+    },
+    checkoutButton: {
+        backgroundColor: PRIMARY_GREEN,
+        borderRadius: 8,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    checkoutButtonText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#FFFFFF',
     },
 });

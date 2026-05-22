@@ -20,18 +20,6 @@ import { getRemoteValue, initRemoteConfig } from './firebaseConfig';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-/** A hero banner displayed at the top of the home screen. */
-export interface HomeBanner {
-    id: string;
-    /** GCS image filename (e.g. "85703338762dce300aaacb9a05f302adc3d527f4.png") */
-    image: string;
-    title: string;
-    /** Optional subtitle line */
-    subtitle?: string;
-    /** Optional deep-link route (e.g. "/doctor-visit") */
-    cta_route?: string;
-    enabled: boolean;
-}
 
 /** A single tappable service card inside a section. */
 export interface HomeService {
@@ -85,7 +73,6 @@ export interface SOSBannerConfig {
 /** Full home screen config — this is the shape of the "home_config" RC parameter. */
 export interface HomeConfig {
     version: string;
-    banners: HomeBanner[];
     sections: HomeSection[];
     trust_badges: TrustBadge[];
     sos_banner: SOSBannerConfig;
@@ -97,16 +84,6 @@ export interface HomeConfig {
 
 export const HOME_CONFIG_FALLBACK: HomeConfig = {
     version: '1.0.0',
-    banners: [
-        {
-            id: 'banner_greeting',
-            image: '63e6c29e1ee4daac9d964f5b379bfa5d992c8dec.png',
-            title: 'Your health, our priority',
-            subtitle: 'Book a doctor visit in minutes',
-            cta_route: '/doctor-visit',
-            enabled: true,
-        },
-    ],
     sections: [
         {
             id: 'quick_services',

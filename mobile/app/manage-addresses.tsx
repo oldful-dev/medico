@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, TextInput,
-    Alert, Platform, ActivityIndicator,
+    Alert, Platform, ActivityIndicator, ScrollView,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,17 +9,83 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useUser } from '@/context/UserContext';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 import { userService, Address } from '@/services/api/userService';
+import { locationService } from '@/services/device/locationService';
+import { LocationPickerModal } from '@/components/LocationPickerModal';
 
 
 const LABEL_OPTIONS = ['Home', 'Office', 'Parents Home', 'Other'];
 
+// Parse address components from full address string (from Google Maps)
+const parseAddressComponents = async (address: string, coords?: { lat: number; lng: number }) => {
+    const parts: { city?: string; state?: string; pincode?: string } = {};
+
+    // Try native geocoding first for more structured data
+    if (coords) {
+        try {
+            const results = await Location.reverseGeocodeAsync({
+                latitude: coords.lat,
+                longitude: coords.lng,
+            });
+
+            if (results.length > 0) {
+                const addr = results[0];
+                if (addr.city) parts.city = addr.city;
+                if (addr.region) parts.state = addr.region;
+                if (addr.postalCode) parts.pincode = addr.postalCode;
+            }
+        } catch (error) {
+            console.warn('Native geocoding failed:', error);
+        }
+    }
+
+    // Extract pincode from address string (6-digit pattern)
+    if (!parts.pincode) {
+        const pincodeMatch = address.match(/\b(\d{6})\b/);
+        if (pincodeMatch) parts.pincode = pincodeMatch[1];
+    }
+
+    // Parse address string to extract city and state (works for Google formatted addresses)
+    // Format: "Street, Area, City, State Pincode, Country"
+    const addressParts = address.split(',').map(s => s.trim());
+
+    // If we don't have city, try to extract from address parts
+    if (!parts.city && addressParts.length > 1) {
+        // Usually city is 2-3 parts from the end (before state/pincode/country)
+        parts.city = addressParts[Math.max(0, addressParts.length - 3)];
+    }
+
+    // If we don't have state, try to extract
+    if (!parts.state && addressParts.length > 1) {
+        // State is often before pincode
+        const stateIndex = addressParts.length - 2;
+        if (stateIndex > 0) {
+            const stateCandidate = addressParts[stateIndex];
+            // Remove pincode if it's in this part
+            parts.state = stateCandidate.replace(/\d{6}/, '').trim();
+        }
+    }
+
+    return parts;
+};
+
+// Import Location for native geocoding
+import * as Location from 'expo-location';
+
 export default function ManageAddressesScreen() {
     const router = useRouter();
     const { profile, setProfile } = useUser();
+    const colors = useThemeColors();
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
+
+    // Location detection
+    const [detectedAddress, setDetectedAddress] = useState<string>('');
+    const [detectingLocation, setDetectingLocation] = useState(false);
+    const [locationDetectionAttempted, setLocationDetectionAttempted] = useState(false);
+    const [showLocationPicker, setShowLocationPicker] = useState(false);
 
     // Form state
     const [newLabel, setNewLabel] = useState('');
@@ -29,8 +95,16 @@ export default function ManageAddressesScreen() {
     const [newState, setNewState] = useState('');
     const [newPincode, setNewPincode] = useState('');
     const [newLandmark, setNewLandmark] = useState('');
+    const [detectedCoords, setDetectedCoords] = useState<{ lat: number; lng: number } | null>(null);
 
     const addresses: Address[] = profile?.addresses || [];
+
+    // Auto-detect location on first load
+    React.useEffect(() => {
+        if (!locationDetectionAttempted) {
+            detectLocation();
+        }
+    }, []);
 
     // Refetch profile on focus to pick up changes
     useFocusEffect(
@@ -44,6 +118,51 @@ export default function ManageAddressesScreen() {
             refetch();
         }, [setProfile])
     );
+
+    // Auto-detect current location (Swiggy/Zomato style)
+    const detectLocation = async () => {
+        setDetectingLocation(true);
+        setLocationDetectionAttempted(true);
+        try {
+            const hasPermission = await locationService.requestPermission();
+            if (hasPermission) {
+                const coords = await locationService.getCurrentLocation();
+                const address = await locationService.getAddressFromCoordinates(coords);
+                setDetectedAddress(address);
+                setDetectedCoords({ lat: coords.latitude, lng: coords.longitude });
+            }
+        } catch (err) {
+            console.warn('Location detection failed:', err);
+        } finally {
+            setDetectingLocation(false);
+        }
+    };
+
+    // Handle location picker confirmation
+    const handleLocationConfirmed = async (location: {
+        placeId: string;
+        description: string;
+        latitude: number;
+        longitude: number;
+        address: string;
+    }) => {
+        const fullAddress = location.address || location.description;
+        setDetectedAddress(fullAddress);
+        setDetectedCoords({ lat: location.latitude, lng: location.longitude });
+        setShowLocationPicker(false);
+
+        // Auto-fill form with picked location and extract components
+        setNewLine1(location.description);
+        setNewLine2('');
+
+        const components = await parseAddressComponents(fullAddress, {
+            lat: location.latitude,
+            lng: location.longitude,
+        });
+        setNewCity(components.city || '');
+        setNewState(components.state || '');
+        setNewPincode(components.pincode || '');
+    };
 
     const resetForm = () => {
         setNewLabel('');
@@ -66,6 +185,22 @@ export default function ManageAddressesScreen() {
         setNewState(address.state);
         setNewPincode(address.pincode);
         setNewLandmark(address.landmark || '');
+        setDetectedAddress(''); // Clear detected address when editing
+        setShowAddForm(true);
+    };
+
+    const startAddFromDetected = async () => {
+        setEditingId(null);
+        setNewLabel('Home');
+        setNewLine1(detectedAddress);
+        setNewLine2('');
+
+        // Auto-populate city, state, pincode from detected address
+        const components = await parseAddressComponents(detectedAddress, detectedCoords || undefined);
+        setNewCity(components.city || '');
+        setNewState(components.state || '');
+        setNewPincode(components.pincode || '');
+        setNewLandmark('');
         setShowAddForm(true);
     };
 
@@ -146,27 +281,207 @@ export default function ManageAddressesScreen() {
         }
     };
 
+    const dynamicStyles = useMemo(() => StyleSheet.create({
+        screen: { flex: 1, backgroundColor: colors.primary },
+        headerSafe: { backgroundColor: colors.primary },
+        scrollView: { flex: 1, backgroundColor: colors.bgScreen, borderTopLeftRadius: 30, borderTopRightRadius: 30 },
+        detectCard: {
+            backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, overflow: 'hidden',
+            shadowColor: colors.shadowColor, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
+        },
+        detectIconContainer: {
+            width: 48, height: 48, borderRadius: 24, backgroundColor: `${colors.primary}15`,
+            alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        },
+        detectTitle: {
+            fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+            fontSize: 15, color: colors.textDark, marginBottom: 2,
+        },
+        detectSubtitle: {
+            fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+            fontSize: 13, color: colors.primary, fontWeight: '500',
+        },
+        detectAddBtn: {
+            flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+            backgroundColor: colors.primary, borderRadius: 10, paddingVertical: 12,
+        },
+        detectSearchBtn: {
+            flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+            borderWidth: 1.5, borderColor: colors.primary, borderRadius: 10, paddingVertical: 12,
+        },
+        detectSearchBtnText: {
+            fontFamily: Platform.select({ ios: 'Poppins-Medium', android: 'Poppins_500Medium', default: 'System' }),
+            fontSize: 14, color: colors.primary,
+        },
+        emptyTitle: {
+            fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+            fontSize: 18, color: colors.textDark, marginTop: 14,
+        },
+        emptyDesc: {
+            fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+            fontSize: 14, color: colors.textMuted, marginTop: 4,
+        },
+        savedAddressesTitle: {
+            fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+            fontSize: 15, color: colors.textDark, marginBottom: 12, marginTop: 8,
+        },
+        card: {
+            backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 12,
+            shadowColor: colors.shadowColor, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
+        },
+        cardDefault: { borderWidth: 1.5, borderColor: colors.primary },
+        labelBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, gap: 6 },
+        addressText: {
+            fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+            fontSize: 14, color: colors.textBody, lineHeight: 20, marginBottom: 4,
+        },
+        phoneText: {
+            fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+            fontSize: 13, color: colors.textMuted, marginBottom: 10,
+        },
+        actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: colors.borderLight },
+        actionBtnText: {
+            fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+            fontSize: 12, color: colors.primary,
+        },
+        addForm: {
+            backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 14,
+            shadowColor: colors.shadowColor, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
+        },
+        formTitle: {
+            fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+            fontSize: 18, color: colors.textDark, marginBottom: 16,
+        },
+        fieldLabel: {
+            fontFamily: Platform.select({ ios: 'Poppins-Medium', android: 'Poppins_500Medium', default: 'System' }),
+            fontSize: 13, color: colors.textDark, marginBottom: 8, marginTop: 12,
+        },
+        labelChip: {
+            paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.borderLight,
+            backgroundColor: colors.bgCard, marginHorizontal: 2,
+        },
+        labelChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+        labelChipText: {
+            fontFamily: Platform.select({ ios: 'Poppins-Medium', android: 'Poppins_500Medium', default: 'System' }),
+            fontSize: 13, color: colors.textMuted,
+        },
+        input: {
+            backgroundColor: colors.bgCardMuted, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
+            fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+            fontSize: 14, color: colors.textDark, borderWidth: 1, borderColor: colors.borderLight,
+        },
+        mapBtn: {
+            width: 44, height: 44, borderRadius: 10, backgroundColor: `${colors.primary}15`,
+            alignItems: 'center', justifyContent: 'center', marginTop: 2,
+        },
+        cancelFormBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: colors.borderLight },
+        cancelFormText: {
+            fontFamily: Platform.select({ ios: 'Poppins-Medium', android: 'Poppins_500Medium', default: 'System' }),
+            fontSize: 14, color: colors.textMuted,
+        },
+        saveFormBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, backgroundColor: colors.primary },
+        addButton: {
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+            paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.primary,
+            backgroundColor: `${colors.primary}15`, marginTop: 16,
+        },
+        addButtonText: {
+            fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+            fontSize: 15, color: colors.primary,
+        },
+    }), [colors]);
+
     return (
-        <View style={styles.screen}>
+        <View style={dynamicStyles.screen}>
             <StatusBar style="light" />
-            <SafeAreaView style={styles.headerSafe} edges={['top']}>
+            <SafeAreaView style={dynamicStyles.headerSafe} edges={['top']}>
                 <View style={styles.headerRow}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                        <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                        <Ionicons name="arrow-back" size={24} color={colors.textWhite} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Manage Addresses</Text>
+                    <Text style={[styles.headerTitle, { color: colors.textWhite }]}>Manage Addresses</Text>
                 </View>
             </SafeAreaView>
 
-            <KeyboardAwareScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} enableOnAndroid={true} extraScrollHeight={20} keyboardShouldPersistTaps="handled">
+            <KeyboardAwareScrollView style={dynamicStyles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} enableOnAndroid={true} extraScrollHeight={20} keyboardShouldPersistTaps="handled">
 
-                {addresses.length === 0 && !showAddForm && (
-                    <View style={styles.emptyState}>
-                        <Ionicons name="location-outline" size={56} color="#AAAEAC" />
-                        <Text style={styles.emptyTitle}>No Addresses Yet</Text>
-                        <Text style={styles.emptyDesc}>Add your first address below.</Text>
+                {/* ═════════════════════════════════════════
+                    AUTO-DETECT LOCATION SECTION (Like Swiggy/Zomato)
+                   ═════════════════════════════════════════ */}
+                {!showAddForm && (
+                    <View style={styles.detectSection}>
+                        <View style={styles.detectCard}>
+                            <View style={styles.detectHeader}>
+                                <View style={styles.detectIconContainer}>
+                                    {detectingLocation ? (
+                                        <ActivityIndicator size="small" color="#048357" />
+                                    ) : (
+                                        <Ionicons name="location" size={22} color="#048357" />
+                                    )}
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.detectTitle}>Detect Current Location</Text>
+                                    {detectedAddress ? (
+                                        <Text style={styles.detectSubtitle} numberOfLines={1}>{detectedAddress}</Text>
+                                    ) : (
+                                        <Text style={styles.detectSubtitleEmpty}>
+                                            {detectingLocation ? 'Finding your location...' : 'Tap to auto-detect your current address'}
+                                        </Text>
+                                    )}
+                                </View>
+                                <TouchableOpacity
+                                    onPress={detectLocation}
+                                    disabled={detectingLocation}
+                                    style={styles.detectRefreshBtn}
+                                >
+                                    <Ionicons name="refresh" size={18} color="#048357" />
+                                </TouchableOpacity>
+                            </View>
+
+                            {detectedAddress && !showAddForm && (
+                                <View style={styles.detectActions}>
+                                    <TouchableOpacity
+                                        style={styles.detectAddBtn}
+                                        onPress={startAddFromDetected}
+                                    >
+                                        <Ionicons name="add-circle" size={18} color="#FFFFFF" />
+                                        <Text style={styles.detectAddBtnText}>Save This Address</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.detectSearchBtn}
+                                        onPress={() => setShowLocationPicker(true)}
+                                    >
+                                        <Ionicons name="search" size={18} color="#048357" />
+                                        <Text style={styles.detectSearchBtnText}>Search Location</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+
+                            {!detectedAddress && locationDetectionAttempted && !showAddForm && (
+                                <TouchableOpacity
+                                    style={styles.detectSearchBtn}
+                                    onPress={() => setShowLocationPicker(true)}
+                                >
+                                    <Ionicons name="search" size={18} color="#048357" />
+                                    <Text style={styles.detectSearchBtnText}>Search & Pick Location</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
                     </View>
                 )}
+
+                {/* ═════════════════════════════════════════
+                    SAVED ADDRESSES
+                   ═════════════════════════════════════════ */}
+                {addresses.length === 0 && !showAddForm && (
+                    <View style={styles.emptyState}>
+                        <Ionicons name="bookmark-outline" size={56} color="#AAAEAC" />
+                        <Text style={styles.emptyTitle}>No Saved Addresses</Text>
+                        <Text style={styles.emptyDesc}>Start by detecting or searching your location above.</Text>
+                    </View>
+                )}
+
+                {addresses.length > 0 && <Text style={styles.savedAddressesTitle}>Saved Addresses</Text>}
 
                 {addresses.map((item) => (
                     <View key={item.id} style={[styles.card, item.isDefault && styles.cardDefault]}>
@@ -174,12 +489,12 @@ export default function ManageAddressesScreen() {
                             <View style={styles.labelBadge}>
                                 <Ionicons
                                     name={
-                                        item.label === 'Home' ? 'home-outline' :
-                                        item.label === 'Office' ? 'briefcase-outline' :
-                                        item.label === 'Parents Home' ? 'people-outline' :
-                                        'location-outline'
+                                        item.label === 'Home' ? 'home' :
+                                        item.label === 'Office' ? 'briefcase' :
+                                        item.label === 'Parents Home' ? 'people' :
+                                        'location'
                                     }
-                                    size={16} color="#048357"
+                                    size={16} color="#FFFFFF"
                                 />
                                 <Text style={styles.labelText}>{item.label}</Text>
                             </View>
@@ -216,30 +531,147 @@ export default function ManageAddressesScreen() {
 
                 {showAddForm && (
                     <View style={styles.addForm}>
-                        <Text style={styles.formTitle}>Add New Address</Text>
-                        <TextInput style={styles.input} placeholder="Label (e.g. Home, Office)" placeholderTextColor="#898989" value={newLabel} onChangeText={setNewLabel} />
-                        <TextInput style={[styles.input, { minHeight: 60, textAlignVertical: 'top' }]} placeholder="Address Line 1 *" placeholderTextColor="#898989" multiline value={newLine1} onChangeText={setNewLine1} />
-                        <TextInput style={styles.input} placeholder="Address Line 2 (optional)" placeholderTextColor="#898989" value={newLine2} onChangeText={setNewLine2} />
-                        <TextInput style={styles.input} placeholder="City *" placeholderTextColor="#898989" value={newCity} onChangeText={setNewCity} />
-                        <TextInput style={styles.input} placeholder="State *" placeholderTextColor="#898989" value={newState} onChangeText={setNewState} />
-                        <TextInput style={styles.input} placeholder="Pincode *" placeholderTextColor="#898989" keyboardType="numeric" value={newPincode} onChangeText={setNewPincode} />
-                        <TextInput style={styles.input} placeholder="Landmark (optional)" placeholderTextColor="#898989" value={newLandmark} onChangeText={setNewLandmark} />
+                        <Text style={styles.formTitle}>{editingId ? 'Edit Address' : 'Save Address'}</Text>
+
+                        {/* Label Selection */}
+                        <Text style={styles.fieldLabel}>Address Label *</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.labelChips}>
+                            {LABEL_OPTIONS.map((label) => (
+                                <TouchableOpacity
+                                    key={label}
+                                    style={[styles.labelChip, newLabel === label && styles.labelChipActive]}
+                                    onPress={() => setNewLabel(label)}
+                                >
+                                    <Text style={[styles.labelChipText, newLabel === label && styles.labelChipTextActive]}>
+                                        {label}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+
+                        {/* Address Fields */}
+                        <Text style={styles.fieldLabel}>Address Line 1 *</Text>
+                        <View style={styles.inputWithButton}>
+                            <TextInput
+                                style={[styles.input, { flex: 1 }]}
+                                placeholder="Street address"
+                                placeholderTextColor="#898989"
+                                multiline
+                                numberOfLines={2}
+                                value={newLine1}
+                                onChangeText={setNewLine1}
+                            />
+                            <TouchableOpacity
+                                style={styles.mapBtn}
+                                onPress={() => setShowLocationPicker(true)}
+                            >
+                                <Ionicons name="map" size={20} color="#048357" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.fieldLabel}>Address Line 2 (Optional)</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Apartment, suite, etc."
+                            placeholderTextColor="#898989"
+                            value={newLine2}
+                            onChangeText={setNewLine2}
+                        />
+
+                        <View style={styles.twoColRow}>
+                            <View style={styles.twoColField}>
+                                <Text style={styles.fieldLabel}>City *</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="City"
+                                    placeholderTextColor="#898989"
+                                    value={newCity}
+                                    onChangeText={setNewCity}
+                                />
+                            </View>
+                            <View style={styles.twoColField}>
+                                <Text style={styles.fieldLabel}>State *</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="State"
+                                    placeholderTextColor="#898989"
+                                    value={newState}
+                                    onChangeText={setNewState}
+                                />
+                            </View>
+                        </View>
+
+                        <Text style={styles.fieldLabel}>Pincode *</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="6-digit pincode"
+                            placeholderTextColor="#898989"
+                            keyboardType="numeric"
+                            maxLength={6}
+                            value={newPincode}
+                            onChangeText={setNewPincode}
+                        />
+
+                        <Text style={styles.fieldLabel}>Landmark (Optional)</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="e.g. Near Apollo Hospital, Opposite Park"
+                            placeholderTextColor="#898989"
+                            value={newLandmark}
+                            onChangeText={setNewLandmark}
+                        />
+
                         <View style={styles.formActions}>
                             <TouchableOpacity style={styles.cancelFormBtn} onPress={resetForm}>
                                 <Text style={styles.cancelFormText}>Cancel</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.saveFormBtn} onPress={saveAddress} disabled={saving}>
-                                {saving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveFormText}>Save Address</Text>}
+                            <TouchableOpacity
+                                style={[styles.saveFormBtn, saving && { opacity: 0.6 }]}
+                                onPress={saveAddress}
+                                disabled={saving}
+                            >
+                                {saving ? (
+                                    <ActivityIndicator color="#FFF" size="small" />
+                                ) : (
+                                    <Text style={styles.saveFormText}>{editingId ? 'Update' : 'Save'}</Text>
+                                )}
                             </TouchableOpacity>
                         </View>
                     </View>
                 )}
 
-                <TouchableOpacity style={styles.addButton} onPress={() => setShowAddForm(!showAddForm)} activeOpacity={0.7}>
-                    <Ionicons name="add-circle-outline" size={22} color="#048357" />
-                    <Text style={styles.addButtonText}>Add New Address</Text>
-                </TouchableOpacity>
+                {!showAddForm && (
+                    <TouchableOpacity
+                        style={styles.addButton}
+                        onPress={() => {
+                            setEditingId(null);
+                            setNewLabel('Home');
+                            setNewLine1('');
+                            setNewLine2('');
+                            setNewCity('');
+                            setNewState('');
+                            setNewPincode('');
+                            setNewLandmark('');
+                            setShowAddForm(true);
+                        }}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="add-circle-outline" size={22} color="#048357" />
+                        <Text style={styles.addButtonText}>Add New Address</Text>
+                    </TouchableOpacity>
+                )}
+
+                <View style={{ height: 30 }} />
             </KeyboardAwareScrollView>
+
+            {/* Location Picker Modal */}
+            <LocationPickerModal
+                visible={showLocationPicker}
+                onClose={() => setShowLocationPicker(false)}
+                onLocationConfirmed={handleLocationConfirmed}
+                initialLat={detectedCoords?.lat}
+                initialLng={detectedCoords?.lng}
+            />
         </View>
     );
 }
@@ -251,13 +683,55 @@ const styles = StyleSheet.create({
     backBtn: { padding: 4, marginRight: 8 },
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 20, color: '#FFFFFF',
-        flex: 1,
+        fontSize: 20, color: '#FFFFFF', flex: 1,
     },
     scrollView: { flex: 1, backgroundColor: '#FFFFE3', borderTopLeftRadius: 30, borderTopRightRadius: 30 },
-    scrollContent: { padding: 20, paddingBottom: 50 },
+    scrollContent: { padding: 16, paddingBottom: 50 },
 
-    emptyState: { alignItems: 'center', marginTop: 50, marginBottom: 30 },
+    // ─── Auto-Detect Section (Swiggy/Zomato Style) ───
+    detectSection: { marginBottom: 24 },
+    detectCard: {
+        backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, overflow: 'hidden',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
+    },
+    detectHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+    detectIconContainer: {
+        width: 48, height: 48, borderRadius: 24, backgroundColor: '#E8F5E9',
+        alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    },
+    detectTitle: {
+        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontSize: 15, color: '#2F2F2F', marginBottom: 2,
+    },
+    detectSubtitle: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 13, color: '#048357', fontWeight: '500',
+    },
+    detectSubtitleEmpty: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 12, color: '#898989',
+    },
+    detectRefreshBtn: { padding: 6 },
+    detectActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
+    detectAddBtn: {
+        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+        backgroundColor: '#048357', borderRadius: 10, paddingVertical: 12,
+    },
+    detectAddBtnText: {
+        fontFamily: Platform.select({ ios: 'Poppins-Medium', android: 'Poppins_500Medium', default: 'System' }),
+        fontSize: 14, color: '#FFFFFF',
+    },
+    detectSearchBtn: {
+        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+        borderWidth: 1.5, borderColor: '#048357', borderRadius: 10, paddingVertical: 12,
+    },
+    detectSearchBtnText: {
+        fontFamily: Platform.select({ ios: 'Poppins-Medium', android: 'Poppins_500Medium', default: 'System' }),
+        fontSize: 14, color: '#048357',
+    },
+
+    // ─── Empty State ───
+    emptyState: { alignItems: 'center', marginTop: 40, marginBottom: 30 },
     emptyTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 18, color: '#2F2F2F', marginTop: 14,
@@ -267,16 +741,23 @@ const styles = StyleSheet.create({
         fontSize: 14, color: '#898989', marginTop: 4,
     },
 
+    // ─── Saved Addresses Section ───
+    savedAddressesTitle: {
+        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontSize: 15, color: '#2F2F2F', marginBottom: 12, marginTop: 8,
+    },
+
+    // ─── Address Cards ───
     card: {
-        backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, marginBottom: 14,
+        backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, marginBottom: 12,
         shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
     },
     cardDefault: { borderWidth: 1.5, borderColor: '#048357' },
     cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-    labelBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, gap: 6 },
+    labelBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#048357', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, gap: 6 },
     labelText: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 13, color: '#048357',
+        fontSize: 13, color: '#FFFFFF',
     },
     defaultBadge: { backgroundColor: '#048357', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 },
     defaultBadgeText: {
@@ -291,39 +772,67 @@ const styles = StyleSheet.create({
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 13, color: '#898989', marginBottom: 10,
     },
-    cardActions: { flexDirection: 'row', gap: 12 },
-    actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6, borderWidth: 1, borderColor: '#E5E5E5' },
+    cardActions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+    actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: '#E5E5E5' },
+    deleteBtn: { borderColor: '#FFE0E0' },
     actionBtnText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 12, color: '#048357',
     },
 
-    addForm: { backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: '#048357' },
+    // ─── Form ───
+    addForm: {
+        backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, marginBottom: 14,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
+    },
     formTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 16, color: '#2F2F2F', marginBottom: 12,
+        fontSize: 18, color: '#2F2F2F', marginBottom: 16,
     },
+    fieldLabel: {
+        fontFamily: Platform.select({ ios: 'Poppins-Medium', android: 'Poppins_500Medium', default: 'System' }),
+        fontSize: 13, color: '#2F2F2F', marginBottom: 8, marginTop: 12,
+    },
+    labelChips: { marginBottom: 12, marginHorizontal: -2 },
+    labelChip: {
+        paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#E5E5E5',
+        backgroundColor: '#FFFFFF', marginHorizontal: 2,
+    },
+    labelChipActive: { backgroundColor: '#048357', borderColor: '#048357' },
+    labelChipText: {
+        fontFamily: Platform.select({ ios: 'Poppins-Medium', android: 'Poppins_500Medium', default: 'System' }),
+        fontSize: 13, color: '#555555',
+    },
+    labelChipTextActive: { color: '#FFFFFF' },
+    inputWithButton: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
     input: {
         backgroundColor: '#F9F9F9', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 14, color: '#2F2F2F', borderWidth: 1, borderColor: '#E5E5E5', marginBottom: 10,
+        fontSize: 14, color: '#2F2F2F', borderWidth: 1, borderColor: '#E5E5E5',
     },
-    formActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 4 },
-    cancelFormBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#E5E5E5' },
+    mapBtn: {
+        width: 44, height: 44, borderRadius: 10, backgroundColor: '#E8F5E9',
+        alignItems: 'center', justifyContent: 'center', marginTop: 2,
+    },
+    twoColRow: { flexDirection: 'row', gap: 10 },
+    twoColField: { flex: 1 },
+    formActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 16 },
+    cancelFormBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: '#E5E5E5' },
     cancelFormText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontFamily: Platform.select({ ios: 'Poppins-Medium', android: 'Poppins_500Medium', default: 'System' }),
         fontSize: 14, color: '#555555',
     },
-    saveFormBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: '#048357' },
+    saveFormBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, backgroundColor: '#048357' },
     saveFormText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontFamily: Platform.select({ ios: 'Poppins-Medium', android: 'Poppins_500Medium', default: 'System' }),
         fontSize: 14, color: '#FFFFFF',
     },
 
+    // ─── Add Button ───
     addButton: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
         paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#048357',
-        backgroundColor: '#F0FFF4', marginTop: 4,
+        backgroundColor: '#F0FFF4', marginTop: 16,
     },
     addButtonText: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),

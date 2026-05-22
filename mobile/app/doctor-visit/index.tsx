@@ -22,6 +22,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 import { locationService } from '@/services/device/locationService';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { useUser } from '@/context/UserContext';
@@ -65,6 +66,7 @@ export default function DoctorVisitScreen() {
     const router = useRouter();
     const { width } = useWindowDimensions();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
+    const colors = useThemeColors();
 
     // ─── Global State ───
     const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, isLoading: isLoadingInit } = useServiceInitialization('doctor-home-visit');
@@ -81,8 +83,10 @@ export default function DoctorVisitScreen() {
     const [landmark, setLandmark] = React.useState('');
     const [visitType] = React.useState<'Home'>('Home');
 
-    // ─── Auto-fill profile address when GPS address is not available ───
+    // ─── Auto-fill profile address only on mount when GPS address is not available ───
+    const [addressInitialized, setAddressInitialized] = React.useState(false);
     React.useEffect(() => {
+        if (addressInitialized) return; // Only run once
         const addressEmpty = !address || address === 'Fetching address...' || address === '';
         if (addressEmpty && profile?.addresses?.length) {
             const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
@@ -90,9 +94,13 @@ export default function DoctorVisitScreen() {
                 const parts = [defaultAddr.line1, defaultAddr.line2, defaultAddr.cityName].filter(Boolean);
                 setAddress(parts.join(', '));
                 if (defaultAddr.landmark) setLandmark(defaultAddr.landmark);
+                setAddressInitialized(true);
             }
         }
-    }, [address, profile]);
+        if (!addressEmpty) {
+            setAddressInitialized(true);
+        }
+    }, [profile]);
 
     // ─── Repeat Order State ───
     const [lastPhysioBooking, setLastPhysioBooking] = React.useState<Booking | null>(null);
@@ -329,11 +337,11 @@ export default function DoctorVisitScreen() {
     }
 
     return (
-        <View style={styles.screen}>
-            <StatusBar style="light" />
+        <View style={[styles.screen, { backgroundColor: colors.primary }]}>
+            <StatusBar style="light" backgroundColor={colors.primary} />
 
             {/* ─── Header Section (Green Background) ─── */}
-            <SafeAreaView style={styles.headerSafe} edges={['top']}>
+            <SafeAreaView style={[styles.headerSafe, { backgroundColor: colors.primary }]} edges={['top']}>
                 <View style={styles.headerRow}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
@@ -343,7 +351,7 @@ export default function DoctorVisitScreen() {
             </SafeAreaView>
 
             {/* ─── Main Content Card (Cream Background with Top Radius) ─── */}
-            <View style={styles.contentCard}>
+            <View style={[styles.contentCard, { backgroundColor: colors.bgScreen }]}>
                 <KeyboardAwareScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
@@ -354,31 +362,31 @@ export default function DoctorVisitScreen() {
                 >
                     {/* ─── Repeat Order Banner (only shown if last physio booking exists) ─── */}
                     {lastPhysioBooking && (
-                        <TouchableOpacity style={styles.repeatBanner} onPress={applyRepeatOrder} activeOpacity={0.85}>
-                            <Ionicons name="refresh-circle-outline" size={22} color={Colors.primary} />
+                        <TouchableOpacity style={[styles.repeatBanner, { backgroundColor: colors.bgCardMuted, borderColor: colors.primary }]} onPress={applyRepeatOrder} activeOpacity={0.85}>
+                            <Ionicons name="refresh-circle-outline" size={22} color={colors.primary} />
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.repeatBannerTitle}>Book Same as Last Time</Text>
-                                <Text style={styles.repeatBannerSub}>
-                                    {(Array.isArray(lastPhysioBooking.symptoms) ? lastPhysioBooking.symptoms[0] : 
+                                <Text style={[styles.repeatBannerTitle, { color: colors.textDark }]}>Book Same as Last Time</Text>
+                                <Text style={[styles.repeatBannerSub, { color: colors.textMuted }]}>
+                                    {(Array.isArray(lastPhysioBooking.symptoms) ? lastPhysioBooking.symptoms[0] :
                                       (lastPhysioBooking.formDataJson?.symptoms?.[0] || lastPhysioBooking.formDataJson?.reason || lastPhysioBooking.symptoms)) || 'Last visit'} · {lastPhysioBooking.doctorType === 'physiotherapist' ? 'Physiotherapist' : 'General Physician'}
                                 </Text>
                             </View>
-                            <Ionicons name="chevron-forward" size={18} color={Colors.primary} />
+                            <Ionicons name="chevron-forward" size={18} color={colors.primary} />
                         </TouchableOpacity>
                     )}
 
                     {/* Description Card */}
-                    <View style={styles.descCard}>
+                    <View style={[styles.descCard, { backgroundColor: colors.bgCardMuted }]}>
                         <Text style={styles.descText}>
-                            <Text style={styles.descTextBold}>Booking a doctor or </Text>
-                            <Text style={styles.descTextGreen}>physiotherapist </Text>
-                            <Text style={styles.descTextNormal}>to visit your home for non-emergency issues.</Text>
+                            <Text style={[styles.descTextBold, { color: colors.textDark }]}>Booking a doctor or </Text>
+                            <Text style={[styles.descTextGreen, { color: colors.primary }]}>physiotherapist </Text>
+                            <Text style={[styles.descTextNormal, { color: colors.textMuted }]}>to visit your home for non-emergency issues.</Text>
                         </Text>
                     </View>
 
                     {/* ─── Select Problem Card ─── */}
-                    <View style={styles.sectionCard}>
-                        <Text style={styles.sectionTitle}>{t('booking.select_problem')}</Text>
+                    <View style={[styles.sectionCard, { backgroundColor: colors.bgCard }]}>
+                        <Text style={[styles.sectionTitle, { color: colors.primary }]}>{t('booking.select_problem')}</Text>
 
                         <View style={styles.problemsGrid}>
                             {paddedProblems.map((item, index) => {
@@ -392,15 +400,15 @@ export default function DoctorVisitScreen() {
                                         key={index}
                                         style={[
                                             styles.problemItem,
-                                            { width: exactProblemWidth },
-                                            selectedProblem === item.label && styles.problemItemActive
+                                            { width: exactProblemWidth, backgroundColor: colors.bgScreen },
+                                            selectedProblem === item.label && [styles.problemItemActive, { borderColor: colors.primary }]
                                         ]}
                                         onPress={() => handleProblemSelect(item.label)}
                                     >
                                         <View style={[styles.problemIconContainer, { height: exactIconHeight }]}>
                                             <Image source={item.icon} style={styles.problemIcon} resizeMode="cover" />
                                         </View>
-                                        <Text style={[styles.problemLabel, selectedProblem === item.label && styles.problemLabelActive]}>{item.label}</Text>
+                                        <Text style={[styles.problemLabel, { color: colors.textDark }, selectedProblem === item.label && [styles.problemLabelActive, { color: colors.primary }]]}>{item.label}</Text>
                                     </TouchableOpacity>
                                 );
                             })}
@@ -409,9 +417,9 @@ export default function DoctorVisitScreen() {
                         {/* "Other" free-text input — only shown when Other is selected */}
                         {selectedProblem === 'Other' && (
                             <TextInput
-                                style={styles.otherInput}
+                                style={[styles.otherInput, { backgroundColor: colors.bgScreen, color: colors.textDark, borderColor: colors.borderLight }]}
                                 placeholder="Describe your health problem..."
-                                placeholderTextColor={Colors.textMuted}
+                                placeholderTextColor={colors.textMuted}
                                 value={otherProblemText}
                                 onChangeText={setOtherProblemText}
                                 multiline
@@ -422,9 +430,9 @@ export default function DoctorVisitScreen() {
                         {/* Smart Banner */}
                         <View style={styles.smartBanner}>
                             <View style={styles.smartTag}>
-                                <Text style={styles.smartTagText}>Smart :</Text>
+                                <Text style={[styles.smartTagText, { color: colors.textDark }]}>Smart :</Text>
                             </View>
-                            <Text style={styles.smartBannerText}>
+                            <Text style={[styles.smartBannerText, { color: colors.primary }]}>
                                 Post-surgery, frozen shoulder & stroke visits will auto-select physiotherapist
                             </Text>
                         </View>

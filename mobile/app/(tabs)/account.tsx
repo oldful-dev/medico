@@ -1,5 +1,4 @@
 // Account Tab — My Profile
-// Comprehensive profile hub with header, bookings, medical, payments, preferences, support
 import React, { useState, useCallback } from 'react';
 import {
     View, Text, Image, TouchableOpacity, StyleSheet,
@@ -8,12 +7,14 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useUser } from '@/context/UserContext';
 import { useAuth } from '@/context/AuthContext';
 import { useAppConfig } from '@/context/AppConfigContext';
+import { useTheme } from '@/context/ThemeContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { userService } from '@/services/api/userService';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import * as ImagePicker from 'expo-image-picker';
@@ -45,6 +46,9 @@ export default function AccountScreen() {
     const { logout } = useAuth();
     const { languages } = useAppConfig();
     const { t } = useTranslation();
+    const { isDarkMode, toggleDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(colors);
 
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const { preferredLanguage, setPreferredLanguage } = useUser();
@@ -183,7 +187,7 @@ export default function AccountScreen() {
     // ─── Render ───
     return (
         <View style={styles.screen}>
-            <StatusBar style="light" />
+            <StatusBar style={isDarkMode ? 'light' : 'light'} />
 
             {/* ─── Green Header Bar ─── */}
             <SafeAreaView style={styles.headerSafe} edges={['top']}>
@@ -211,7 +215,7 @@ export default function AccountScreen() {
                         <View style={styles.avatarContainer}>
                             <View style={styles.avatarWrapper}>
                                 {uploadingAvatar ? (
-                                    <ActivityIndicator size="large" color={Colors.primary} />
+                                    <ActivityIndicator size="large" color={colors.primary} />
                                 ) : (
                                     <Image
                                         source={profile?.profileImageUrl
@@ -223,7 +227,7 @@ export default function AccountScreen() {
                                 )}
                             </View>
                             <TouchableOpacity style={styles.editPhotoBtn} onPress={handleAvatarUpload}>
-                                <Ionicons name="camera-outline" size={13} color={Colors.primary} />
+                                <Ionicons name="camera-outline" size={13} color={colors.primary} />
                             </TouchableOpacity>
                         </View>
 
@@ -231,7 +235,7 @@ export default function AccountScreen() {
                         <View style={styles.profileMeta}>
                             <View style={styles.nameRow}>
                                 <Text style={styles.profileName} numberOfLines={1}>{profile?.name || '—'}</Text>
-                                <Ionicons name="checkmark-circle" size={16} color={Colors.primary} />
+                                <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
                             </View>
 
                             {/* Membership badge — always visible */}
@@ -259,11 +263,11 @@ export default function AccountScreen() {
                     {/* Contact info */}
                     <View style={styles.contactGrid}>
                         <View style={styles.contactRow}>
-                            <Ionicons name="call-outline" size={14} color={Colors.textMuted} />
+                            <Ionicons name="call-outline" size={14} color={colors.textMuted} />
                             <Text style={styles.contactText}>{profile?.phone || '—'}</Text>
                         </View>
                         <View style={styles.contactRow}>
-                            <Ionicons name="mail-outline" size={14} color={Colors.textMuted} />
+                            <Ionicons name="mail-outline" size={14} color={colors.textMuted} />
                             <Text style={styles.contactText} numberOfLines={1}>{profile?.email || 'Not provided'}</Text>
                         </View>
                     </View>
@@ -275,7 +279,7 @@ export default function AccountScreen() {
                             <Text style={styles.actionBtnPrimaryText}>Edit Profile</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.actionBtnOutline} onPress={handleLogout}>
-                            <Ionicons name="log-out-outline" size={15} color={Colors.textMuted} />
+                            <Ionicons name="log-out-outline" size={15} color={colors.textMuted} />
                             <Text style={styles.actionBtnOutlineText}>Log Out</Text>
                         </TouchableOpacity>
                     </View>
@@ -298,7 +302,7 @@ export default function AccountScreen() {
                 {/* ═══════════════════════════════════════
                     SECTION 1 — Live Updates
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Live Updates" />
+                <SectionHeading title="Live Updates" colors={colors} />
                 <MenuRow
                     icon="pulse-outline"
                     iconBg="#FFF0E0"
@@ -306,12 +310,13 @@ export default function AccountScreen() {
                     title="Activity Center"
                     subtitle="Doctor assigned, delivery updates, appointments"
                     onPress={() => router.push('/profile/activity-center' as any)}
+                    colors={colors}
                 />
 
                 {/* ═══════════════════════════════════════
                     SECTION 2 — Bookings
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Bookings" />
+                <SectionHeading title="Bookings" colors={colors} />
                 <MenuRow
                     icon="calendar-outline"
                     iconBg="#E8F5E9"
@@ -319,12 +324,13 @@ export default function AccountScreen() {
                     title="Bookings"
                     subtitle="Health tests, wellness, concierge services & transaction history"
                     onPress={() => router.push('/my-bookings' as any)}
+                    colors={colors}
                 />
 
                 {/* ═══════════════════════════════════════
                     SECTION 3 — My Health
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="My Health" green />
+                <SectionHeading title="My Health" green colors={colors} />
                 <MenuRow
                     icon="medical-outline"
                     iconBg="#FFF0E0"
@@ -332,6 +338,7 @@ export default function AccountScreen() {
                     title="Medical Card"
                     subtitle={`Blood: ${bloodGroup} • Allergies: ${allergies}`}
                     onPress={() => router.push('/medical-card' as any)}
+                    colors={colors}
                 />
                 <MenuRow
                     icon="documents-outline"
@@ -340,6 +347,7 @@ export default function AccountScreen() {
                     title="Medical Logs"
                     subtitle="Prescriptions, reports, scan documents"
                     onPress={() => router.push('/profile/medical-logs' as any)}
+                    colors={colors}
                 />
                 <MenuRow
                     icon="people-outline"
@@ -350,6 +358,7 @@ export default function AccountScreen() {
                         ? `${profile.emergencyContacts.length} contact(s) saved`
                         : 'Add emergency contacts'}
                     onPress={() => router.push('/emergency-contacts' as any)}
+                    colors={colors}
                 />
                 <MenuRow
                     icon="person-add-outline"
@@ -358,12 +367,13 @@ export default function AccountScreen() {
                     title="Family Members"
                     subtitle="Father, mother, spouse, children"
                     onPress={() => router.push('/family-members' as any)}
+                    colors={colors}
                 />
 
                 {/* ═══════════════════════════════════════
                     SECTION 4 — Account & Logistics
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Account" />
+                <SectionHeading title="Account" colors={colors} />
                 <MenuRow
                     icon="location-outline"
                     iconBg="#E3F2FD"
@@ -371,6 +381,7 @@ export default function AccountScreen() {
                     title="Manage Addresses"
                     subtitle="Home, Office, Parents Home"
                     onPress={() => router.push('/manage-addresses' as any)}
+                    colors={colors}
                 />
                 <MenuRow
                     icon="wallet-outline"
@@ -379,6 +390,7 @@ export default function AccountScreen() {
                     title="Payment Methods"
                     subtitle="Cards, UPI, wallet balance"
                     onPress={() => router.push('/payments-wallet' as any)}
+                    colors={colors}
                 />
                 <MenuRow
                     icon="ribbon-outline"
@@ -387,12 +399,13 @@ export default function AccountScreen() {
                     title="Subscription & Membership"
                     subtitle={activeSub ? `${activeSub.plan?.name || 'Active Plan'} · Renew soon` : 'Upgrade to a plan'}
                     onPress={() => router.push('/profile/subscription' as any)}
+                    colors={colors}
                 />
 
                 {/* ═══════════════════════════════════════
                     SECTION 5 — Preferences
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Preferences" />
+                <SectionHeading title="Preferences" colors={colors} />
                 <TouchableOpacity style={styles.menuRow} activeOpacity={0.7} onPress={() => setLangModalVisible(true)}>
                     <View style={styles.menuLeft}>
                         <View style={[styles.menuIcon, { backgroundColor: '#E8EAF6' }]}>
@@ -402,30 +415,29 @@ export default function AccountScreen() {
                     </View>
                     <View style={styles.menuRight}>
                         <Text style={styles.menuValue}>{currentLangLabel}</Text>
-                        <Ionicons name="chevron-forward" size={18} color="#AAAEAC" />
+                        <Ionicons name="chevron-forward" size={18} color={colors.textLight} />
                     </View>
                 </TouchableOpacity>
 
-                <ToggleRow icon="notifications-outline" iconBg="#E1F5FE" iconColor="#0288D1" title="Push Notifications" value={!!profile?.pushEnabled} onToggle={v => handleToggle('pushEnabled', v)} />
-                <ToggleRow icon="chatbubble-outline" iconBg="#FFF3E0" iconColor="#EF6C00" title="SMS Alerts" value={!!profile?.smsEnabled} onToggle={v => handleToggle('smsEnabled', v)} />
-                <ToggleRow icon="logo-whatsapp" iconBg="#E8F5E9" iconColor="#25D366" title="WhatsApp Updates" value={!!profile?.whatsappEnabled} onToggle={v => handleToggle('whatsappEnabled', v)} />
-                <ToggleRow icon="megaphone-outline" iconBg="#FFF8E1" iconColor="#FFA000" title="Promotional Offers" value={!!profile?.emailMarketingEnabled} onToggle={v => handleToggle('emailMarketingEnabled', v)} />
-                <ToggleRow icon="mail-outline" iconBg="#EDE9FE" iconColor="#7C3AED" title="Email Notifications" value={!!profile?.emailMarketingEnabled} onToggle={v => handleToggle('emailMarketingEnabled', v)} />
-                <ToggleRow icon="chatbox-ellipses-outline" iconBg="#F0FDF4" iconColor="#059669" title="RCS Messages" value={false} onToggle={() => Alert.alert('Coming Soon', 'RCS messaging support is coming soon.')} />
-                <ToggleRow icon="moon-outline" iconBg="#1E1B4B15" iconColor="#4338CA" title="Dark Mode" value={false} onToggle={() => Alert.alert('Coming Soon', 'Dark mode is coming soon.')} />
+                <ToggleRow icon="notifications-outline" iconBg="#E1F5FE" iconColor="#0288D1" title="Push Notifications" value={!!profile?.pushEnabled} onToggle={v => handleToggle('pushEnabled', v)} colors={colors} />
+                <ToggleRow icon="chatbubble-outline" iconBg="#FFF3E0" iconColor="#EF6C00" title="SMS Alerts" value={!!profile?.smsEnabled} onToggle={v => handleToggle('smsEnabled', v)} colors={colors} />
+                <ToggleRow icon="logo-whatsapp" iconBg="#E8F5E9" iconColor="#25D366" title="WhatsApp Updates" value={!!profile?.whatsappEnabled} onToggle={v => handleToggle('whatsappEnabled', v)} colors={colors} />
+                <ToggleRow icon="megaphone-outline" iconBg="#FFF8E1" iconColor="#FFA000" title="Promotional Offers" value={!!profile?.emailMarketingEnabled} onToggle={v => handleToggle('emailMarketingEnabled', v)} colors={colors} />
+                <ToggleRow icon="mail-outline" iconBg="#EDE9FE" iconColor="#7C3AED" title="Email Notifications" value={!!profile?.emailMarketingEnabled} onToggle={v => handleToggle('emailMarketingEnabled', v)} colors={colors} />
+                <ToggleRow icon="moon-outline" iconBg="#1E1B4B15" iconColor="#4338CA" title="Dark Mode" value={isDarkMode} onToggle={toggleDarkMode} colors={colors} />
 
                 {/* ═══════════════════════════════════════
                     SECTION 6 — Support & Legal
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Support & Legal" />
-                <MenuRow icon="headset-outline" iconBg="#E1F5FE" iconColor="#0288D1" title="Help & Support" subtitle="Call, WhatsApp, raise a ticket" onPress={() => router.push('/help-support' as any)} />
-                <MenuRow icon="star-outline" iconBg="#FFF9C4" iconColor="#FFC107" title="Rate Us" onPress={() => router.push('/rate-us' as any)} />
-                <MenuRow icon="document-text-outline" iconBg="#F3F3F3" iconColor="#616161" title="Terms & Privacy" onPress={() => router.push('/terms-policy' as any)} />
+                <SectionHeading title="Support & Legal" colors={colors} />
+                <MenuRow icon="headset-outline" iconBg="#E1F5FE" iconColor="#0288D1" title="Help & Support" subtitle="Call, WhatsApp, raise a ticket" onPress={() => router.push('/help-support' as any)} colors={colors} />
+                <MenuRow icon="star-outline" iconBg="#FFF9C4" iconColor="#FFC107" title="Rate Us" onPress={() => router.push('/rate-us' as any)} colors={colors} />
+                <MenuRow icon="document-text-outline" iconBg="#F3F3F3" iconColor="#616161" title="Terms & Privacy" onPress={() => router.push('/terms-policy' as any)} colors={colors} />
 
                 {/* ═══════════════════════════════════════
                     SOCIAL LINKS
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Follow Us" />
+                <SectionHeading title="Follow Us" colors={colors} />
                 <View style={styles.socialRow}>
                     {SOCIAL_LINKS.map((s, i) => (
                         <TouchableOpacity
@@ -448,7 +460,7 @@ export default function AccountScreen() {
                     <View style={styles.modalContainer}>
                         <Text style={styles.modalTitle}>Select Language</Text>
                         {savingLang ? (
-                            <ActivityIndicator color={Colors.primary} style={{ marginVertical: Spacing.xl }} />
+                            <ActivityIndicator color={colors.primary} style={{ marginVertical: Spacing.xl }} />
                         ) : (
                             languages.map(lang => (
                                 <TouchableOpacity
@@ -462,7 +474,7 @@ export default function AccountScreen() {
                                         </Text>
                                         <Text style={styles.langNative}>{lang.native_label}</Text>
                                     </View>
-                                    {preferredLanguage === lang.code && <Ionicons name="checkmark-circle" size={22} color="#048357" />}
+                                    {preferredLanguage === lang.code && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
                                 </TouchableOpacity>
                             ))
                         )}
@@ -477,54 +489,57 @@ export default function AccountScreen() {
 }
 
 // ─── Shared small components ──────────────────────────────
-function SectionHeading({ title, green }: { title: string; green?: boolean }) {
+function SectionHeading({ title, green, colors }: { title: string; green?: boolean; colors: ThemeColors }) {
+    const s = makeSharedStyles(colors);
     return (
-        <Text style={[sharedStyles.sectionHeading, green && { color: Colors.primary }]}>
+        <Text style={[s.sectionHeading, green && { color: colors.primary }]}>
             {title}
         </Text>
     );
 }
 
 function MenuRow({
-    icon, iconBg, iconColor, title, subtitle, onPress
+    icon, iconBg, iconColor, title, subtitle, onPress, colors
 }: {
     icon: string; iconBg: string; iconColor: string;
-    title: string; subtitle?: string; onPress: () => void;
+    title: string; subtitle?: string; onPress: () => void; colors: ThemeColors;
 }) {
+    const s = makeSharedStyles(colors);
     return (
-        <TouchableOpacity style={sharedStyles.menuRow} activeOpacity={0.7} onPress={onPress}>
-            <View style={sharedStyles.menuLeft}>
-                <View style={[sharedStyles.menuIcon, { backgroundColor: iconBg }]}>
+        <TouchableOpacity style={s.menuRow} activeOpacity={0.7} onPress={onPress}>
+            <View style={s.menuLeft}>
+                <View style={[s.menuIcon, { backgroundColor: iconBg }]}>
                     <Ionicons name={icon as any} size={20} color={iconColor} />
                 </View>
                 <View style={{ flex: 1 }}>
-                    <Text style={sharedStyles.menuTitle}>{title}</Text>
-                    {subtitle ? <Text style={sharedStyles.menuSubtitle}>{subtitle}</Text> : null}
+                    <Text style={s.menuTitle}>{title}</Text>
+                    {subtitle ? <Text style={s.menuSubtitle}>{subtitle}</Text> : null}
                 </View>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#AAAEAC" />
+            <Ionicons name="chevron-forward" size={18} color={colors.textLight} />
         </TouchableOpacity>
     );
 }
 
 function ToggleRow({
-    icon, iconBg, iconColor, title, value, onToggle
+    icon, iconBg, iconColor, title, value, onToggle, colors
 }: {
     icon: string; iconBg: string; iconColor: string;
-    title: string; value: boolean; onToggle: (v: boolean) => void;
+    title: string; value: boolean; onToggle: (v: boolean) => void; colors: ThemeColors;
 }) {
+    const s = makeSharedStyles(colors);
     return (
-        <View style={sharedStyles.menuRow}>
-            <View style={sharedStyles.menuLeft}>
-                <View style={[sharedStyles.menuIcon, { backgroundColor: iconBg }]}>
+        <View style={s.menuRow}>
+            <View style={s.menuLeft}>
+                <View style={[s.menuIcon, { backgroundColor: iconBg }]}>
                     <Ionicons name={icon as any} size={20} color={iconColor} />
                 </View>
-                <Text style={sharedStyles.menuTitle}>{title}</Text>
+                <Text style={s.menuTitle}>{title}</Text>
             </View>
             <Switch
-                trackColor={{ false: '#AAAEAC', true: Colors.primary }}
+                trackColor={{ false: colors.textLight, true: colors.primary }}
                 thumbColor="#FFFFFF"
-                ios_backgroundColor="#AAAEAC"
+                ios_backgroundColor={colors.textLight}
                 onValueChange={onToggle}
                 value={value}
             />
@@ -532,110 +547,109 @@ function ToggleRow({
     );
 }
 
-// ─── Shared styles (used by sub-components) ──────────────
-const sharedStyles = StyleSheet.create({
-    sectionHeading: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.heading3,
-        color: Colors.textDark,
-        marginLeft: 4, marginBottom: 10, marginTop: 24,
-        letterSpacing: -0.2,
-    },
-    menuRow: {
-        backgroundColor: '#FFF', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14,
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 8, ...Shadow.card,
-    },
-    menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-    menuIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-    menuTitle: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark },
-    menuSubtitle: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textMuted, marginTop: 1 },
-});
+// ─── Style factories ──────────────────────────────────────
 
-// ─── Screen-level styles ─────────────────────────────────
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: '#FDFDE8' },
-    headerSafe: { backgroundColor: Colors.primary, borderBottomLeftRadius: Radius.xl, borderBottomRightRadius: Radius.xl, zIndex: 10 },
-    headerRow: { height: 56, justifyContent: 'center', alignItems: 'center', paddingBottom: 8 },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: Colors.textWhite, letterSpacing: -0.24 },
+function makeSharedStyles(c: ThemeColors) {
+    return StyleSheet.create({
+        sectionHeading: {
+            fontFamily: Fonts.semiBold,
+            fontSize: FontSize.heading3,
+            color: c.textDark,
+            marginLeft: 4, marginBottom: 10, marginTop: 24,
+            letterSpacing: -0.2,
+        },
+        menuRow: {
+            backgroundColor: c.bgCard, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14,
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: 8, ...Shadow.card,
+        },
+        menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+        menuIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+        menuTitle: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: c.textDark },
+        menuSubtitle: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: c.textMuted, marginTop: 1 },
+    });
+}
 
-    scrollView: { flex: 1 },
-    scrollContent: { paddingHorizontal: Spacing.md, paddingTop: Spacing.lg, paddingBottom: Spacing.xl },
+function makeStyles(c: ThemeColors) {
+    return StyleSheet.create({
+        screen: { flex: 1, backgroundColor: c.bgScreen },
+        headerSafe: { backgroundColor: c.primary, borderBottomLeftRadius: Radius.xl, borderBottomRightRadius: Radius.xl, zIndex: 10 },
+        headerRow: { height: 56, justifyContent: 'center', alignItems: 'center', paddingBottom: 8 },
+        headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: c.textWhite, letterSpacing: -0.24 },
 
-    // ─── Profile Card ───
-    profileCard: {
-        backgroundColor: '#FFF', borderRadius: 16, padding: 18,
-        marginBottom: 8,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08, shadowRadius: 12, elevation: 5,
-    },
-    profileTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, marginBottom: 14 },
-    avatarContainer: { position: 'relative' },
-    avatarWrapper: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#EBEBEB', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-    avatarDefault: { width: 56, height: 76 },
-    avatarFull: { width: 80, height: 80 },
-    editPhotoBtn: {
-        position: 'absolute', bottom: 0, right: -2, width: 24, height: 24,
-        backgroundColor: '#FFF', borderRadius: 12, borderWidth: 1, borderColor: '#D1D5DB',
-        justifyContent: 'center', alignItems: 'center',
-    },
-    profileMeta: { flex: 1, gap: 6, paddingTop: 2 },
-    nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-    profileName: { fontFamily: Fonts.semiBold, fontSize: 16, color: Colors.textDark, flex: 1 },
-    memberBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, alignSelf: 'flex-start', borderWidth: 1 },
-    memberBadgeText: { fontFamily: Fonts.medium, fontSize: 11 },
-    memberBadgeUpgrade: { fontFamily: Fonts.medium, fontSize: 11, opacity: 0.7 },
-    idPill: { backgroundColor: '#F3F4F6', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: 'flex-start' },
-    idPillText: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted, letterSpacing: 0.2 },
+        scrollView: { flex: 1 },
+        scrollContent: { paddingHorizontal: Spacing.md, paddingTop: Spacing.lg, paddingBottom: Spacing.xl },
 
-    contactGrid: { gap: 6, marginBottom: 14, paddingLeft: 2 },
-    contactRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    contactText: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textBody, flex: 1 },
+        profileCard: {
+            backgroundColor: c.bgCard, borderRadius: 16, padding: 18, marginBottom: 8,
+            shadowColor: c.shadowColor, shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.08, shadowRadius: 12, elevation: 5,
+        },
+        profileTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, marginBottom: 14 },
+        avatarContainer: { position: 'relative' },
+        avatarWrapper: { width: 80, height: 80, borderRadius: 40, backgroundColor: c.bgCardMuted, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+        avatarDefault: { width: 56, height: 76 },
+        avatarFull: { width: 80, height: 80 },
+        editPhotoBtn: {
+            position: 'absolute', bottom: 0, right: -2, width: 24, height: 24,
+            backgroundColor: c.bgCard, borderRadius: 12, borderWidth: 1, borderColor: c.borderLight,
+            justifyContent: 'center', alignItems: 'center',
+        },
+        profileMeta: { flex: 1, gap: 6, paddingTop: 2 },
+        nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+        profileName: { fontFamily: Fonts.semiBold, fontSize: 16, color: c.textDark, flex: 1 },
+        memberBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, alignSelf: 'flex-start', borderWidth: 1 },
+        memberBadgeText: { fontFamily: Fonts.medium, fontSize: 11 },
+        memberBadgeUpgrade: { fontFamily: Fonts.medium, fontSize: 11, opacity: 0.7 },
+        idPill: { backgroundColor: c.bgCardMuted, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: 'flex-start' },
+        idPillText: { fontFamily: Fonts.regular, fontSize: 11, color: c.textMuted, letterSpacing: 0.2 },
 
-    profileActions: { flexDirection: 'row', gap: 10, marginBottom: 10 },
-    actionBtnPrimary: {
-        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-        backgroundColor: Colors.primary, borderRadius: 10, paddingVertical: 10,
-    },
-    actionBtnPrimaryText: { fontFamily: Fonts.medium, fontSize: 13, color: '#fff' },
-    actionBtnOutline: {
-        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-        borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, paddingVertical: 10, backgroundColor: '#FAFAFA',
-    },
-    actionBtnOutlineText: { fontFamily: Fonts.medium, fontSize: 13, color: Colors.textMuted },
-    deleteAccountBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 6 },
-    deleteAccountText: { fontFamily: Fonts.regular, fontSize: 12, color: '#EF4444' },
-    completionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 4 },
-    completionLabel: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted },
-    completionPct: { fontFamily: Fonts.semiBold, fontSize: 11, color: Colors.primary },
-    completionTrack: { height: 4, backgroundColor: '#E5E7EB', borderRadius: 2, overflow: 'hidden' },
-    completionFill: { height: 4, backgroundColor: Colors.primary, borderRadius: 2 },
+        contactGrid: { gap: 6, marginBottom: 14, paddingLeft: 2 },
+        contactRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+        contactText: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: c.textBody, flex: 1 },
 
-    // ─── Inline menu (for language row) ───
-    menuRow: {
-        backgroundColor: '#FFF', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14,
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 8, ...Shadow.card,
-    },
-    menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-    menuIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-    menuTitle: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark },
-    menuRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    menuValue: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textMuted },
+        profileActions: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+        actionBtnPrimary: {
+            flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+            backgroundColor: c.primary, borderRadius: 10, paddingVertical: 10,
+        },
+        actionBtnPrimaryText: { fontFamily: Fonts.medium, fontSize: 13, color: '#fff' },
+        actionBtnOutline: {
+            flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+            borderWidth: 1, borderColor: c.borderLight, borderRadius: 10, paddingVertical: 10, backgroundColor: c.bgCardMuted,
+        },
+        actionBtnOutlineText: { fontFamily: Fonts.medium, fontSize: 13, color: c.textMuted },
+        deleteAccountBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 6 },
+        deleteAccountText: { fontFamily: Fonts.regular, fontSize: 12, color: '#EF4444' },
+        completionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 4 },
+        completionLabel: { fontFamily: Fonts.regular, fontSize: 11, color: c.textMuted },
+        completionPct: { fontFamily: Fonts.semiBold, fontSize: 11, color: c.primary },
+        completionTrack: { height: 4, backgroundColor: c.borderLight, borderRadius: 2, overflow: 'hidden' },
+        completionFill: { height: 4, backgroundColor: c.primary, borderRadius: 2 },
 
-    // ─── Social links ───
-    socialRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap', paddingVertical: 8 },
-    socialBtn: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+        menuRow: {
+            backgroundColor: c.bgCard, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14,
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: 8, ...Shadow.card,
+        },
+        menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+        menuIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+        menuTitle: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: c.textDark },
+        menuRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+        menuValue: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: c.textMuted },
 
-    // ─── Language Modal ───
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: Spacing.xl },
-    modalContainer: { backgroundColor: '#FFF', borderRadius: Radius.lg, padding: Spacing.xl, ...Shadow.card },
-    modalTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: Colors.textDark, marginBottom: Spacing.md, textAlign: 'center' },
-    langOption: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-    langOptionActive: { backgroundColor: 'rgba(4,131,87,0.05)', borderRadius: Radius.sm, borderBottomWidth: 0, paddingHorizontal: Spacing.sm },
-    langText: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textDark },
-    langTextActive: { fontFamily: Fonts.semiBold, color: Colors.primary },
-    langNative: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textMuted, marginTop: 1 },
-    modalCancel: { marginTop: Spacing.xl, paddingVertical: Spacing.sm, alignItems: 'center' },
-    modalCancelText: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textMuted },
-});
+        socialRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap', paddingVertical: 8 },
+        socialBtn: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+
+        modalOverlay: { flex: 1, backgroundColor: c.overlay, justifyContent: 'center', padding: Spacing.xl },
+        modalContainer: { backgroundColor: c.bgCard, borderRadius: Radius.lg, padding: Spacing.xl, ...Shadow.card },
+        modalTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: c.textDark, marginBottom: Spacing.md, textAlign: 'center' },
+        langOption: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: c.borderLight },
+        langOptionActive: { backgroundColor: `${c.primary}10`, borderRadius: Radius.sm, borderBottomWidth: 0, paddingHorizontal: Spacing.sm },
+        langText: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: c.textDark },
+        langTextActive: { fontFamily: Fonts.semiBold, color: c.primary },
+        langNative: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: c.textMuted, marginTop: 1 },
+        modalCancel: { marginTop: Spacing.xl, paddingVertical: Spacing.sm, alignItems: 'center' },
+        modalCancelText: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: c.textMuted },
+    });
+}

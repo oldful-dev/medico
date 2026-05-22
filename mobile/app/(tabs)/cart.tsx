@@ -141,11 +141,15 @@ export default function CartScreen() {
         const categoryTotal = categoryItems.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
 
         if (category === 'blood-test') {
-            // Blood test: unified checkout flow (same as services)
+            // Blood test: use universal checkout with blood-test category
             router.push({
-                pathname: '/blood-test-checkout',
+                pathname: '/payment/checkout',
                 params: {
-                    fromCheckout: 'true',
+                    category: 'blood-test',
+                    amount: String(categoryTotal),
+                    label: 'Blood Test Package',
+                    itemCount: categoryItems.length,
+                    skipUpsell: '1', // Skip plan upsell for blood tests
                 },
             } as any);
         } else if (category === 'doctor') {

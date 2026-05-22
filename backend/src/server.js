@@ -52,6 +52,7 @@ const supportRoutes = require('./routes/support.routes');
 const mediaRoutes = require('./routes/media.routes');
 const webhookRoutes = require('./routes/webhook.routes');
 const labRoutes = require('./routes/lab.routes');
+const bannerRoutes = require('./routes/banner.routes');
 const locationRoutes = require('./routes/location.routes');
 const remoteConfigRoutes = require('./routes/remoteConfig.routes');
 const appConfigRoutes = require('./routes/appConfig.routes');
@@ -246,6 +247,9 @@ app.use('/api/labs', labRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/location', locationRoutes);
 app.use('/api/waitlist', waitlistRoutes);
+
+// Banners (public + admin)
+app.use('/api/banners', bannerRoutes);
 
 
 // ═══ ERROR HANDLING ═════════════════════════════════════════

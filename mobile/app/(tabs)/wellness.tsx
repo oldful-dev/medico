@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { storeService, Product } from '@/services/api/storeService';
 import { useCart } from '@/context/CartContext';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 
 // Using local images or placeholder for Hero if a specific illustration isn't explicitly supplied
 // For this teaser, we'll build a vibrant Hero with a prominent 'Ayuxa Care' logo or generic medical icon
@@ -38,6 +39,7 @@ export default function WellnessScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { addItem, items } = useCart();
+    const colors = useThemeColors();
 
     const [allProducts, setAllProducts] = useState<Product[]>([]);
     const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
@@ -130,14 +132,14 @@ export default function WellnessScreen() {
     // ── LOADING ────────────────────────────────────────────────────────────────
     if (loading) {
         return (
-            <View style={styles.screen}>
-                <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
-                <StatusBar style="light" backgroundColor={Colors.primary} />
-                <View style={styles.headerContainer}>
+            <View style={[styles.screen, { backgroundColor: colors.primary }]}>
+                <View style={{ backgroundColor: colors.primary, height: insets.top }} />
+                <StatusBar style="light" backgroundColor={colors.primary} />
+                <View style={[styles.headerContainer, { backgroundColor: colors.primary }]}>
                     <Text style={styles.headerTitle}>Ayuxa Wellness</Text>
                 </View>
-                <View style={[styles.contentContainer, { justifyContent: 'center', alignItems: 'center' }]}>
-                    <ActivityIndicator size="large" color={Colors.primary} />
+                <View style={[styles.contentContainer, { backgroundColor: colors.bgScreen, justifyContent: 'center', alignItems: 'center' }]}>
+                    <ActivityIndicator size="large" color={colors.primary} />
                 </View>
             </View>
         );
@@ -148,10 +150,10 @@ export default function WellnessScreen() {
         const hasMoreProducts = filteredProducts.length < allProducts.length;
 
         return (
-            <View style={styles.screen}>
-                <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
-                <StatusBar style="light" backgroundColor={Colors.primary} />
-                <View style={styles.headerContainer}>
+            <View style={[styles.screen, { backgroundColor: colors.primary }]}>
+                <View style={{ backgroundColor: colors.primary, height: insets.top }} />
+                <StatusBar style="light" backgroundColor={colors.primary} />
+                <View style={[styles.headerContainer, { backgroundColor: colors.primary }]}>
                     <Text style={styles.headerTitle}>Wellness Store</Text>
                     <TouchableOpacity onPress={() => router.push('/(tabs)/cart' as any)} style={styles.cartIconBtn}>
                         <Ionicons name="cart-outline" size={22} color="#fff" />
@@ -162,13 +164,13 @@ export default function WellnessScreen() {
                         )}
                     </TouchableOpacity>
                 </View>
-                <View style={styles.contentContainer}>
-                    <View style={styles.searchRow}>
-                        <Ionicons name="search" size={18} color={Colors.textMuted} style={styles.searchIcon} />
+                <View style={[styles.contentContainer, { backgroundColor: colors.bgScreen }]}>
+                    <View style={[styles.searchRow, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }]}>
+                        <Ionicons name="search" size={18} color={colors.textMuted} style={styles.searchIcon} />
                         <TextInput
-                            style={styles.searchInput}
+                            style={[styles.searchInput, { color: colors.textDark }]}
                             placeholder="Search products..."
-                            placeholderTextColor={Colors.textMuted}
+                            placeholderTextColor={colors.textMuted}
                             value={search}
                             onChangeText={setSearch}
                         />
@@ -188,10 +190,10 @@ export default function WellnessScreen() {
                         {CATEGORY_LIST.map((cat) => (
                             <TouchableOpacity
                                 key={cat}
-                                style={[styles.categoryChip, selectedCategory === cat && styles.categoryChipActive]}
+                                style={[styles.categoryChip, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }, selectedCategory === cat && [styles.categoryChipActive, { backgroundColor: colors.primary }]]}
                                 onPress={() => setSelectedCategory(cat)}
                             >
-                                <Text style={[styles.categoryChipText, selectedCategory === cat && styles.categoryChipTextActive]}>
+                                <Text style={[styles.categoryChipText, { color: colors.textMuted }, selectedCategory === cat && [styles.categoryChipTextActive, { color: colors.textWhite }]]}>
                                     {cat}
                                 </Text>
                             </TouchableOpacity>
@@ -205,7 +207,7 @@ export default function WellnessScreen() {
                         columnWrapperStyle={styles.row}
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
-                        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
+                        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
                         onEndReached={() => {
                             if (!search && selectedCategory === 'All' && hasMoreProducts) {
                                 loadMore();
@@ -214,12 +216,12 @@ export default function WellnessScreen() {
                         onEndReachedThreshold={0.5}
                         ListEmptyComponent={
                             <View style={styles.emptyBox}>
-                                <Text style={styles.emptyText}>No products found</Text>
+                                <Text style={[styles.emptyText, { color: colors.textMuted }]}>No products found</Text>
                             </View>
                         }
                         ListFooterComponent={
                             !search && hasMoreProducts ? (
-                                <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore} activeOpacity={0.7}>
+                                <TouchableOpacity style={[styles.loadMoreBtn, { backgroundColor: colors.primary }]} onPress={loadMore} activeOpacity={0.7}>
                                     <Text style={styles.loadMoreText}>Load More Products</Text>
                                 </TouchableOpacity>
                             ) : null
@@ -231,16 +233,16 @@ export default function WellnessScreen() {
                             const lowStock = product.stock <= 5 && product.stock > 0;
                             return (
                                 <TouchableOpacity
-                                    style={styles.card}
+                                    style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }]}
                                     activeOpacity={0.9}
                                     onPress={() => router.push(`/wellness-product?id=${product.id}` as any)}
                                 >
-                                    <View style={styles.imageBox}>
+                                    <View style={[styles.imageBox, { backgroundColor: colors.bgCardMuted }]}>
                                         {product.imageUrl ? (
                                             <Image source={{ uri: product.imageUrl }} style={styles.productImage} resizeMode="cover" />
                                         ) : (
                                             <View style={styles.imageFallback}>
-                                                <Ionicons name="cube-outline" size={36} color={Colors.borderLight} />
+                                                <Ionicons name="cube-outline" size={36} color={colors.borderLight} />
                                             </View>
                                         )}
                                         {discount > 0 && (
@@ -256,25 +258,25 @@ export default function WellnessScreen() {
                                     </View>
                                     <View style={styles.cardBody}>
                                         {product.category && (
-                                            <Text style={styles.categoryLabel}>{product.category.name}</Text>
+                                            <Text style={[styles.categoryLabel, { color: colors.primary }]}>{product.category.name}</Text>
                                         )}
-                                        <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
+                                        <Text style={[styles.productName, { color: colors.textDark }]} numberOfLines={2}>{product.name}</Text>
                                         <View style={styles.priceRow}>
-                                            <Text style={styles.price}>₹{product.price.toLocaleString('en-IN')}</Text>
+                                            <Text style={[styles.price, { color: colors.textDark }]}>₹{product.price.toLocaleString('en-IN')}</Text>
                                             {product.mrp > product.price && (
-                                                <Text style={styles.mrp}>₹{product.mrp.toLocaleString('en-IN')}</Text>
+                                                <Text style={[styles.mrp, { color: colors.textMuted }]}>₹{product.mrp.toLocaleString('en-IN')}</Text>
                                             )}
                                         </View>
                                         <View style={styles.ctaRow}>
-                                            <TouchableOpacity style={styles.addBtn} onPress={() => handleAddToCart(product)}>
+                                            <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={() => handleAddToCart(product)}>
                                                 <Ionicons name="cart-outline" size={14} color="#fff" />
                                                 <Text style={styles.addBtnText}>Add</Text>
                                             </TouchableOpacity>
                                             <TouchableOpacity
-                                                style={styles.detailBtn}
+                                                style={[styles.detailBtn, { borderColor: colors.borderLight }]}
                                                 onPress={() => router.push(`/wellness-product?id=${product.id}` as any)}
                                             >
-                                                <Ionicons name="arrow-forward" size={16} color={Colors.textMuted} />
+                                                <Ionicons name="arrow-forward" size={16} color={colors.textMuted} />
                                             </TouchableOpacity>
                                         </View>
                                     </View>
@@ -289,51 +291,51 @@ export default function WellnessScreen() {
 
     // ── COMING SOON (no products) — UI untouched ──────────────────────────────
     return (
-        <View style={styles.screen}>
+        <View style={[styles.screen, { backgroundColor: colors.primary }]}>
             {/* Header extension */}
-            <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
-            <StatusBar style="light" backgroundColor={Colors.primary} />
+            <View style={{ backgroundColor: colors.primary, height: insets.top }} />
+            <StatusBar style="light" backgroundColor={colors.primary} />
 
             {/* ─── Header ─── */}
-            <View style={styles.headerContainer}>
+            <View style={[styles.headerContainer, { backgroundColor: colors.primary }]}>
                 <Text style={styles.headerTitle}>Ayuxa Wellness</Text>
             </View>
 
-            <View style={styles.contentContainer}>
+            <View style={[styles.contentContainer, { backgroundColor: colors.bgScreen }]}>
                 <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
                     {/* ─── The Visual Hook (Hero Section) ─── */}
                     <View style={styles.heroSection}>
-                        <View style={styles.heroImageContainer}>
+                        <View style={[styles.heroImageContainer, { backgroundColor: colors.bgCardMuted }]}>
                             {/* We fallback to the meal service image or any generic asset since we lack a specific "senior receiving package" image, but styled beautifully */}
                             <Image source={imgPlaceholderHero} style={styles.heroImage} resizeMode="contain" />
-                            <View style={styles.comingSoonBadge}>
+                            <View style={[styles.comingSoonBadge, { backgroundColor: colors.primary, borderColor: colors.bgScreen }]}>
                                 <Text style={styles.comingSoonBadgeText}>{t('wellness.coming_soon').toUpperCase()}</Text>
                             </View>
                         </View>
 
-                        <Text style={styles.heroHeadline}>The Ayuxa Wellness Store is Opening Soon!</Text>
-                        <Text style={styles.heroSubHeadline}>
+                        <Text style={[styles.heroHeadline, { color: colors.textDark }]}>The Ayuxa Wellness Store is Opening Soon!</Text>
+                        <Text style={[styles.heroSubHeadline, { color: colors.textDark }]}>
                             Genuine Medicines, Senior Care Products, and Daily Essentials delivered to your door.
                         </Text>
                     </View>
 
                     {/* ─── "What can you buy here?" (Teaser Grid) ─── */}
-                    <View style={styles.teaserSection}>
-                        <Text style={styles.teaserSectionTitle}>What can you buy here?</Text>
-                        <Text style={styles.teaserSectionSubtitle}>
+                    <View style={[styles.teaserSection, { backgroundColor: colors.bgCard }]}>
+                        <Text style={[styles.teaserSectionTitle, { color: colors.textDark }]}>What can you buy here?</Text>
+                        <Text style={[styles.teaserSectionSubtitle, { color: colors.textMuted }]}>
                             A fully-stocked pharmacy and senior-care shop right at your fingertips.
                         </Text>
 
                         <View style={styles.gridContainer}>
                             {CATEGORIES.map((cat) => (
-                                <View key={cat.id} style={styles.gridItem}>
-                                    <View style={styles.iconCircle}>
-                                        <Ionicons name={cat.icon as any} size={28} color="#A0A0A0" />
+                                <View key={cat.id} style={[styles.gridItem, { backgroundColor: colors.bgScreen, borderColor: colors.borderLight }]}>
+                                    <View style={[styles.iconCircle, { backgroundColor: colors.bgCardMuted }]}>
+                                        <Ionicons name={cat.icon as any} size={28} color={colors.textMuted} />
                                     </View>
                                     <View style={styles.gridTextGroup}>
-                                        <Text style={styles.gridItemTitle}>{cat.title}</Text>
-                                        <Text style={styles.gridItemSub}>{cat.subtitle}</Text>
+                                        <Text style={[styles.gridItemTitle, { color: colors.textMuted }]}>{cat.title}</Text>
+                                        <Text style={[styles.gridItemSub, { color: colors.textLight }]}>{cat.subtitle}</Text>
                                     </View>
                                 </View>
                             ))}

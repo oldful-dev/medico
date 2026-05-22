@@ -1,13 +1,4 @@
 // Home Screen — Server-Driven UI via Firebase Remote Config
-//
-// Layout is 100% driven by sduiService.getHomeConfig():
-//   • Banners, sections, services, trust badges, SOS banner
-//   • All images served from Cloudflare CDN via getAssetUrl()
-//   • Admin toggles services ON/OFF, swaps banners, updates labels in Firebase
-//     Console → Remote Config → home_config → Publish (no app update needed)
-//
-// Service screen routing uses Expo Router push() — screens are static,
-// only the listing/visibility is dynamic.
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -28,56 +19,52 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useTranslation } from 'react-i18next';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 import { locationService } from '@/services/device/locationService';
 import { useUser } from '@/context/UserContext';
 import { useAppConfig } from '@/context/AppConfigContext';
 import { sduiService, HomeConfig, HomeSection } from '@/services/firebase/sduiService';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BannerSlider } from '@/components/BannerSlider';
+import { bannerService, Banner } from '@/services/api/bannerService';
 
-// ─── Logo (only static asset — not content-driven) ───────────────────────────
 const logoSmall = require('@/assets/images/onlylogo.png');
 
-// ─── Route Resolver ──────────────────────────────────────────────────────────
 const resolveRoute = (route?: string) => {
   if (!route) return '/';
   let clean = route.toLowerCase().trim();
-  
-  // Specific catch for the "All Services" grid
   if (clean.includes('home-essentials') || clean.includes('home essentials')) return '/all-home-essentials';
   if (clean.includes('all-ayuxa') || clean.includes('all-ayuxacare') || clean.includes('all-oldful')) return '/all-ayuxa-services';
-  
-  // General brand name replacement for other routes
   return route.replace(/oldful/gi, 'ayuxa').replace(/ayuxacare/gi, 'ayuxa');
 };
 
-// ─── Section Renderers ────────────────────────────────────────────────────────
+// ─── Sub-components receive colors prop ──────────────────────────────────────
 
 interface QuickServicesProps {
   section: HomeSection;
   itemWidth: number;
   cardHeight: number;
+  colors: ThemeColors;
 }
 
-function QuickServicesStrip({ section }: QuickServicesProps) {
+function QuickServicesStrip({ section, colors }: QuickServicesProps) {
   const router = useRouter();
+  const s = makeStyles(colors);
   return (
-    <View style={styles.quickServiceCard}>
+    <View style={s.quickServiceCard}>
       {section.services.map((item, index) => {
         const [line1, line2] = item.label.split('\n');
         return (
           <TouchableOpacity
             key={item.id}
-            style={[styles.quickServiceBox, index === 0 && { backgroundColor: 'transparent' }]}
+            style={[s.quickServiceBox, index === 0 && { backgroundColor: 'transparent' }]}
             onPress={() => router.push(resolveRoute(item.route) as any)}
           >
-            <Image
-              source={{ uri: getAssetUrl(item.icon) }}
-              style={styles.quickServiceIcon}
-              resizeMode="contain"
-            />
-            <Text style={styles.quickServiceLabel}>{line1}</Text>
-            {line2 ? <Text style={styles.quickServiceLabel}>{line2}</Text> : null}
+            <Image source={{ uri: getAssetUrl(item.icon) }} style={s.quickServiceIcon} resizeMode="contain" />
+            <Text style={s.quickServiceLabel}>{line1}</Text>
+            {line2 ? <Text style={s.quickServiceLabel}>{line2}</Text> : null}
           </TouchableOpacity>
         );
       })}
@@ -90,40 +77,42 @@ interface ServiceGridProps {
   itemWidth: number;
   imageHeight: number;
   cardHeight: number;
+  colors: ThemeColors;
 }
 
-function ServiceGrid({ section, itemWidth, imageHeight, cardHeight }: ServiceGridProps) {
+function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors }: ServiceGridProps) {
   const { t } = useTranslation();
   const router = useRouter();
+  const s = makeStyles(colors);
   const items = section.max_items ? section.services.slice(0, section.max_items) : section.services;
 
   return (
-    <View style={styles.servicesCard}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{section.title}</Text>
+    <View style={s.servicesCard}>
+      <View style={s.sectionHeader}>
+        <Text style={s.sectionTitle}>{section.title}</Text>
         {section.view_all_route && (
           <TouchableOpacity onPress={() => router.push(resolveRoute(section.view_all_route) as any)}>
-            <Text style={styles.viewAllText}>{t('common.view_all')}</Text>
+            <Text style={s.viewAllText}>{t('common.view_all')}</Text>
           </TouchableOpacity>
         )}
       </View>
-      <View style={styles.serviceGrid}>
+      <View style={s.serviceGrid}>
         {items.map(item => {
           const [line1, line2] = item.label.split('\n');
           return (
             <TouchableOpacity
               key={item.id}
-              style={[styles.serviceGridItem, { width: itemWidth, height: cardHeight }]}
+              style={[s.serviceGridItem, { width: itemWidth, height: cardHeight }]}
               onPress={() => router.push(resolveRoute(item.route) as any)}
             >
               <Image
                 source={{ uri: getAssetUrl(item.icon) }}
-                style={[styles.serviceGridImage, { width: itemWidth, height: imageHeight }]}
+                style={[s.serviceGridImage, { width: itemWidth, height: imageHeight }]}
                 resizeMode="cover"
               />
-              <View style={styles.serviceGridLabelContainer}>
-                <Text style={styles.serviceGridLabel}>{line1}</Text>
-                {line2 ? <Text style={styles.serviceGridLabel}>{line2}</Text> : null}
+              <View style={s.serviceGridLabelContainer}>
+                <Text style={s.serviceGridLabel}>{line1}</Text>
+                {line2 ? <Text style={s.serviceGridLabel}>{line2}</Text> : null}
               </View>
             </TouchableOpacity>
           );
@@ -137,47 +126,44 @@ interface EssentialsGridProps {
   section: HomeSection;
   itemWidth: number;
   cardHeight: number;
+  colors: ThemeColors;
 }
 
-function EssentialsGrid({ section, itemWidth, cardHeight }: EssentialsGridProps) {
+function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGridProps) {
   const router = useRouter();
+  const s = makeStyles(colors);
   const items = section.max_items ? section.services.slice(0, section.max_items) : section.services;
 
-  // Split into rows of 4
   const rows: (typeof items)[] = [];
   for (let i = 0; i < items.length; i += 4) {
     rows.push(items.slice(i, i + 4));
   }
 
   return (
-    <View style={styles.essentialsCard}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.essentialsTitle}>{section.title}</Text>
+    <View style={s.essentialsCard}>
+      <View style={s.sectionHeader}>
+        <Text style={s.essentialsTitle}>{section.title}</Text>
         {section.view_all_route && (
           <TouchableOpacity onPress={() => router.push(resolveRoute(section.view_all_route) as any)}>
-            <Text style={styles.viewAllSmall}>View All</Text>
+            <Text style={s.viewAllSmall}>View All</Text>
           </TouchableOpacity>
         )}
       </View>
       {rows.map((row, rowIdx) => (
-        <View key={rowIdx} style={styles.essentialsRow}>
+        <View key={rowIdx} style={s.essentialsRow}>
           {row.map(item => {
             const [line1, line2] = item.label.split('\n');
             return (
               <TouchableOpacity
                 key={item.id}
-                style={[styles.essentialItem, { width: itemWidth, height: cardHeight }]}
+                style={[s.essentialItem, { width: itemWidth, height: cardHeight }]}
                 onPress={() => router.push(resolveRoute(item.route) as any)}
               >
-                <View style={styles.essentialIconCircle}>
-                  <Image
-                    source={{ uri: getAssetUrl(item.icon) }}
-                    style={styles.essentialIcon}
-                    resizeMode="contain"
-                  />
+                <View style={s.essentialIconCircle}>
+                  <Image source={{ uri: getAssetUrl(item.icon) }} style={s.essentialIcon} resizeMode="contain" />
                 </View>
-                <Text style={styles.essentialLabel}>{line1}</Text>
-                {line2 ? <Text style={styles.essentialLabel}>{line2}</Text> : null}
+                <Text style={s.essentialLabel}>{line1}</Text>
+                {line2 ? <Text style={s.essentialLabel}>{line2}</Text> : null}
               </TouchableOpacity>
             );
           })}
@@ -187,31 +173,36 @@ function EssentialsGrid({ section, itemWidth, cardHeight }: EssentialsGridProps)
   );
 }
 
-// ─── Main Screen ──────────────────────────────────────────────────────────────
+// ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const { profile, selectedCity, setSelectedCity } = useUser();
-  const { cities } = useAppConfig();
+  const { profile } = useUser();
+  const { cities, setSelectedCity, selectedCity } = useAppConfig() as any;
+  const colors = useThemeColors();
+  const { isDarkMode } = useTheme();
+
+  const [homeConfig, setHomeConfig] = useState<HomeConfig | null>(null);
+  const [banners, setBanners] = useState<Banner[]>([]);
   const [currentLocationStr, setCurrentLocationStr] = useState('Loading...');
   const [isCitySupported, setIsCitySupported] = useState(true);
-  const [homeConfig, setHomeConfig] = useState<HomeConfig | null>(null);
 
-  // ── Load Remote Config ──────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       await sduiService.init();
       setHomeConfig(sduiService.getHomeConfig());
+
+      // Fetch banners from admin API
+      const homeBanners = await bannerService.getHomeBanners();
+      setBanners(homeBanners);
     })();
   }, []);
 
-  // ── Location ────────────────────────────────────────────────────────────
   useFocusEffect(
     useCallback(() => {
       (async () => {
         try {
-          // Priority: User's manual selection -> Profile City -> GPS
           if (selectedCity) {
             setCurrentLocationStr(selectedCity);
             const cityData = cities.find((c: any) => c.name.toLowerCase() === selectedCity.toLowerCase());
@@ -224,12 +215,9 @@ export default function HomeScreen() {
           if (hasPermission) {
             const coords = await locationService.getCurrentLocation();
             const address = await locationService.getAddressFromCoordinates(coords);
-
-            // Show locality (first part of formatted address)
             const locality = address.split(',')[0] || 'Unknown Location';
             setCurrentLocationStr(locality);
 
-            // ─── City Name Normalization ───
             const CITY_SYNONYMS: Record<string, string[]> = {
               'Bangalore': ['bengaluru', 'bangalore urban', 'bangalore rural'],
               'Gurgaon': ['gurugram'],
@@ -241,14 +229,11 @@ export default function HomeScreen() {
               const addr = addressStr.toLowerCase();
               const primary = cityName.toLowerCase();
               if (addr.includes(primary)) return true;
-
               const synonyms = CITY_SYNONYMS[cityName] || [];
               return synonyms.some(s => addr.includes(s));
             };
 
-            // Detect city for "Coming Soon" banner
             const detectedCityMatch = cities.find((c: any) => isMatch(c.name, address));
-
             if (detectedCityMatch) {
               setSelectedCity(detectedCityMatch.name);
               setIsCitySupported(true);
@@ -259,14 +244,12 @@ export default function HomeScreen() {
             setCurrentLocationStr('Location Required');
           }
         } catch (e) {
-          console.error("Home location fetch error:", e);
           setCurrentLocationStr('Permission Required');
         }
       })();
     }, [selectedCity, cities, setSelectedCity])
   );
 
-  // ── Pixel math (prevents sub-pixel wrapping) ────────────────────────────
   const availableWidth = width - 60;
   const exactAyuxaItemWidth = Math.floor(availableWidth * 0.315);
   const exactAyuxaImageHeight = exactAyuxaItemWidth * 0.85;
@@ -274,104 +257,80 @@ export default function HomeScreen() {
   const exactEssentialItemWidth = Math.floor(availableWidth * 0.23);
   const exactEssentialCardHeight = exactEssentialItemWidth * 1.35;
 
-  // ── Dynamic greeting ────────────────────────────────────────────────────
   const userName = profile?.name?.split(' ')[0] || 'User';
   const currentHour = new Date().getHours();
-  const greeting =
-    currentHour >= 16 ? 'Good Evening' : currentHour >= 12 ? 'Good Afternoon' : 'Good Morning';
+  const greeting = currentHour >= 16 ? 'Good Evening' : currentHour >= 12 ? 'Good Afternoon' : 'Good Morning';
 
-  // ── Loading state ───────────────────────────────────────────────────────
+  const s = makeStyles(colors);
+
   if (!homeConfig) {
     return (
-      <View style={[styles.screen, { alignItems: 'center', justifyContent: 'center' }]}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+      <View style={[s.screen, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
-  const { banners, sections, trust_badges, sos_banner } = homeConfig;
-
-  const activeBanner = banners[0]; // Show first enabled banner as hero
+  const { sections, trust_badges, sos_banner } = homeConfig;
 
   return (
-    <View style={styles.screen}>
-      <StatusBar style="dark" />
+    <View style={s.screen}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
 
-      {/* ═══ FIXED HEADER ═══ */}
-      <SafeAreaView edges={['top']} style={styles.headerSafe}>
-        <View style={styles.header}>
-          <Image source={logoSmall} style={styles.logoSmall} resizeMode="contain" />
-          <TouchableOpacity
-            style={styles.locationPill}
-            onPress={() => router.push('/(auth)/city-selection')}
-          >
-            <Ionicons name="location-sharp" size={16} color={Colors.primary} />
-            <Text style={styles.locationText} numberOfLines={1}>{currentLocationStr}</Text>
+      <SafeAreaView edges={['top']} style={s.headerSafe}>
+        <View style={s.header}>
+          <Image source={logoSmall} style={s.logoSmall} resizeMode="contain" />
+          <TouchableOpacity style={s.locationPill} onPress={() => router.push('/(auth)/city-selection')}>
+            <Ionicons name="location-sharp" size={16} color={colors.primary} />
+            <Text style={s.locationText} numberOfLines={1}>{currentLocationStr}</Text>
           </TouchableOpacity>
-          <View style={styles.headerRight}>
+          <View style={s.headerRight}>
             <TouchableOpacity onPress={() => router.push('/sos-emergency')}>
-              <LinearGradient
-                colors={['#FF4B2B', '#FF416C']}
-                style={styles.sosCircle}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Text style={styles.sosCircleText}>SOS</Text>
+              <LinearGradient colors={['#FF4B2B', '#FF416C']} style={s.sosCircle} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                <Text style={s.sosCircleText}>SOS</Text>
               </LinearGradient>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push('/notifications')}>
-              <Ionicons name="notifications" size={24} color={Colors.primary} />
+              <Ionicons name="notifications" size={24} color={colors.primary} />
             </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>
 
-      {/* ═══ SCROLLABLE CONTENT ═══ */}
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Coming Soon Banner (PRD Requirement) */}
+      <ScrollView style={s.scrollView} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
         {!isCitySupported && (
-          <View style={styles.comingSoonBanner}>
-            <View style={styles.comingSoonContent}>
-              <Ionicons name="notifications-circle" size={40} color="#048357" />
-              <View style={styles.comingSoonTextRow}>
-                <Text style={styles.comingSoonTitle}>We&apos;re coming soon to {currentLocationStr}!</Text>
-                <Text style={styles.comingSoonDesc}>Notify me when you launch in my city.</Text>
+          <View style={s.comingSoonBanner}>
+            <View style={s.comingSoonContent}>
+              <Ionicons name="notifications-circle" size={40} color={colors.primary} />
+              <View style={s.comingSoonTextRow}>
+                <Text style={s.comingSoonTitle}>We&apos;re coming soon to {currentLocationStr}!</Text>
+                <Text style={s.comingSoonDesc}>Notify me when you launch in my city.</Text>
               </View>
             </View>
             <TouchableOpacity
-              style={styles.notifyMeButton}
+              style={s.notifyMeButton}
               onPress={() => Alert.alert('Success', "We'll notify you as soon as we start operations in " + currentLocationStr)}
             >
-              <Text style={styles.notifyMeText}>Notify Me</Text>
+              <Text style={s.notifyMeText}>Notify Me</Text>
             </TouchableOpacity>
           </View>
         )}
-        {/* ─── Greeting Banner (New Design) ─── */}
-        <View style={styles.newGreetingBanner}>
-          <View style={styles.greetingContent}>
-            <View style={styles.greetingTextContainer}>
-              <Text style={styles.newGreetingTitle}>{greeting}, {userName}!</Text>
-              <Text style={styles.newGreetingSubtitle}>We see you. We hear you. We care you.</Text>
-              <TouchableOpacity
-                onPress={() => router.push('/my-bookings')}
-                style={styles.bookingStatusBtn}
-              >
+
+        <View style={s.newGreetingBanner}>
+          <View style={s.greetingContent}>
+            <View style={s.greetingTextContainer}>
+              <Text style={s.newGreetingTitle}>{greeting}, {userName}!</Text>
+              <Text style={s.newGreetingSubtitle}>We see you. We hear you. We care you.</Text>
+              <TouchableOpacity onPress={() => router.push('/my-bookings')} style={s.bookingStatusBtn}>
                 <Ionicons name="calendar" size={14} color="#02743F" />
-                <Text style={styles.bookingStatusBtnText}>Booking Status</Text>
+                <Text style={s.bookingStatusBtnText}>Booking Status</Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.greetingAvatarContainer}>
+            <View style={s.greetingAvatarContainer}>
               {profile?.profileImageUrl ? (
-                <Image
-                  source={{ uri: profile.profileImageUrl }}
-                  style={styles.greetingAvatar}
-                />
+                <Image source={{ uri: profile.profileImageUrl }} style={s.greetingAvatar} />
               ) : (
-                <View style={styles.greetingAvatarPlaceholder}>
+                <View style={s.greetingAvatarPlaceholder}>
                   <Ionicons name="person" size={48} color="#02743F" />
                 </View>
               )}
@@ -379,7 +338,11 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ─── Dynamic Sections ─── */}
+        {/* Banner Slider — Option 1: After Greeting (Admin-Managed) */}
+        {banners.length > 0 && (
+          <BannerSlider banners={banners} colors={colors} />
+        )}
+
         {sections.map(section => {
           if (section.type === 'quick_services') {
             return (
@@ -388,6 +351,7 @@ export default function HomeScreen() {
                 section={section}
                 itemWidth={exactEssentialItemWidth}
                 cardHeight={exactEssentialCardHeight}
+                colors={colors}
               />
             );
           }
@@ -399,475 +363,219 @@ export default function HomeScreen() {
                 itemWidth={exactAyuxaItemWidth}
                 imageHeight={exactAyuxaImageHeight}
                 cardHeight={exactAyuxaCardHeight}
+                colors={colors}
               />
             );
           }
           if (section.type === 'essentials_grid') {
             return (
               <React.Fragment key={section.id}>
-                {/* Trust Badges + SOS always render just before essentials */}
                 {trust_badges.length > 0 && (
-                  <View style={styles.trustCard}>
+                  <View style={s.trustCard}>
                     {trust_badges.map((badge, i) => (
                       <React.Fragment key={badge.id}>
-                        <View style={styles.trustItem}>
-                          <View style={styles.trustIconCircle}>
-                            <Image
-                              source={{ uri: getAssetUrl(badge.icon) }}
-                              style={styles.trustIcon}
-                              resizeMode="contain"
-                            />
+                        <View style={s.trustItem}>
+                          <View style={s.trustIconCircle}>
+                            <Image source={{ uri: getAssetUrl(badge.icon) }} style={s.trustIcon} resizeMode="contain" />
                           </View>
-                          <Text style={styles.trustLabel}>{badge.label}</Text>
+                          <Text style={s.trustLabel}>{badge.label}</Text>
                         </View>
-                        {i < trust_badges.length - 1 && <View style={styles.trustDivider} />}
+                        {i < trust_badges.length - 1 && <View style={s.trustDivider} />}
                       </React.Fragment>
                     ))}
                   </View>
                 )}
-{/* SOS banner removed — single SOS button kept in header */}
                 <EssentialsGrid
                   section={section}
                   itemWidth={exactEssentialItemWidth}
                   cardHeight={exactEssentialCardHeight}
+                  colors={colors}
                 />
               </React.Fragment>
             );
           }
           return null;
         })}
-
       </ScrollView>
     </View>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// ─── Styles factory ───────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: Colors.bgScreen,
-  },
+function makeStyles(c: ThemeColors) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: c.bgScreen },
 
-  /* Header */
-  headerSafe: {
-    backgroundColor: Colors.bgHeader,
-    borderBottomLeftRadius: Radius.xl,
-    borderBottomRightRadius: Radius.xl,
-    ...Shadow.header,
-    zIndex: 10,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
-    paddingTop: Spacing.md,
-  },
-  logoSmall: {
-    width: 42,
-    height: 32,
-  },
-  locationPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    backgroundColor: '#F8F9FA',
-    borderRadius: Radius.xl,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-    marginHorizontal: Spacing.sm,
-    flex: 1,
-    gap: 4,
-  },
-  locationText: {
-    fontFamily: Fonts.medium,
-    fontSize: FontSize.bodySmall,
-    color: Colors.textBody,
-    flex: 1,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  sosCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Shadow.card,
-  },
-  sosCircleText: {
-    fontFamily: Fonts.bold,
-    fontSize: 10,
-    color: Colors.textWhite,
-  },
+    headerSafe: {
+      backgroundColor: c.bgHeader,
+      borderBottomLeftRadius: Radius.xl,
+      borderBottomRightRadius: Radius.xl,
+      ...Shadow.header,
+      zIndex: 10,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.lg,
+      paddingBottom: Spacing.md,
+      paddingTop: Spacing.md,
+    },
+    logoSmall: { width: 42, height: 32 },
+    locationPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      borderWidth: 1,
+      borderColor: c.borderLight,
+      backgroundColor: c.bgCardMuted,
+      borderRadius: Radius.xl,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 6,
+      marginHorizontal: Spacing.sm,
+      flex: 1,
+      gap: 4,
+    },
+    locationText: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: c.textBody, flex: 1 },
+    headerRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+    sosCircle: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center', ...Shadow.card },
+    sosCircleText: { fontFamily: Fonts.bold, fontSize: 10, color: c.textWhite },
 
-  /* Scroll */
-  scrollView: { flex: 1 },
-  scrollContent: { 
-    paddingTop: 20, 
-    paddingBottom: 120 
-  },
+    scrollView: { flex: 1 },
+    scrollContent: { paddingTop: 20, paddingBottom: 120 },
 
-  /* Hero Banner */
-  newGreetingBanner: {
-    marginHorizontal: Spacing.cardMargin,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.md,
-    backgroundColor: '#02743F',
-    borderRadius: Radius.xl,
-    paddingVertical: 18,
-    paddingHorizontal: Spacing.lg,
-    ...Shadow.card,
-  },
-  greetingContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  greetingTextContainer: {
-    flex: 1,
-    marginRight: Spacing.lg,
-  },
-  newGreetingTitle: {
-    fontFamily: Fonts.bold,
-    fontSize: 16,
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  newGreetingSubtitle: {
-    fontFamily: Fonts.regular,
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 10,
-    lineHeight: 16,
-  },
-  bookingStatusBtn: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 7,
-    paddingHorizontal: 14,
-    borderRadius: Radius.full,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-  },
-  bookingStatusBtnText: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 11,
-    color: '#02743F',
-  },
-  greetingAvatarContainer: {
-    width: 90,
-    height: 90,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  greetingAvatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: '#FFFFFF',
-  },
-  greetingAvatarPlaceholder: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    newGreetingBanner: {
+      marginHorizontal: Spacing.cardMargin,
+      marginTop: Spacing.md,
+      marginBottom: Spacing.md,
+      backgroundColor: '#02743F',
+      borderRadius: Radius.xl,
+      paddingVertical: 18,
+      paddingHorizontal: Spacing.lg,
+      ...Shadow.card,
+    },
+    greetingContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    greetingTextContainer: { flex: 1, marginRight: Spacing.lg },
+    newGreetingTitle: { fontFamily: Fonts.bold, fontSize: 16, color: '#FFFFFF', marginBottom: 4 },
+    newGreetingSubtitle: { fontFamily: Fonts.regular, fontSize: 12, color: 'rgba(255,255,255,0.8)', marginBottom: 10, lineHeight: 16 },
+    bookingStatusBtn: {
+      backgroundColor: '#FFFFFF',
+      paddingVertical: 7,
+      paddingHorizontal: 14,
+      borderRadius: Radius.full,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      alignSelf: 'flex-start',
+    },
+    bookingStatusBtnText: { fontFamily: Fonts.semiBold, fontSize: 11, color: '#02743F' },
+    greetingAvatarContainer: { width: 90, height: 90, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+    greetingAvatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#FFFFFF' },
+    greetingAvatarPlaceholder: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center' },
 
-  /* Quick Service Strip */
-  quickServiceCard: {
-    marginHorizontal: Spacing.cardMargin,
-    marginTop: Spacing.sectionGap,
-    backgroundColor: Colors.bgCard,
-    borderRadius: Radius.xl,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.sm,
-    ...Shadow.card,
-  },
-  quickServiceBox: {
-    flex: 1,
-    minHeight: 85,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.bgCardMuted,
-    borderRadius: Radius.lg,
-    paddingVertical: Spacing.sm,
-    marginHorizontal: Spacing.xs,
-  },
-  quickServiceIcon: {
-    width: 44,
-    height: 44,
-    marginBottom: Spacing.xs,
-  },
-  quickServiceLabel: {
-    fontFamily: Fonts.medium,
-    fontSize: FontSize.caption,
-    color: Colors.primaryText,
-    textAlign: 'center',
-    lineHeight: 12,
-  },
+    quickServiceCard: {
+      marginHorizontal: Spacing.cardMargin,
+      marginTop: Spacing.sectionGap,
+      backgroundColor: c.bgCard,
+      borderRadius: Radius.xl,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.sm,
+      ...Shadow.card,
+    },
+    quickServiceBox: {
+      flex: 1,
+      minHeight: 85,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.bgCardMuted,
+      borderRadius: Radius.lg,
+      paddingVertical: Spacing.sm,
+      marginHorizontal: Spacing.xs,
+    },
+    quickServiceIcon: { width: 44, height: 44, marginBottom: Spacing.xs },
+    quickServiceLabel: { fontFamily: Fonts.medium, fontSize: FontSize.caption, color: c.primaryText, textAlign: 'center', lineHeight: 12 },
 
-  /* Ayuxa Services Grid */
-  servicesCard: {
-    marginHorizontal: Spacing.cardMargin,
-    marginTop: Spacing.sectionGap,
-    backgroundColor: Colors.bgCard,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-    ...Shadow.card,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
-  },
-  sectionTitle: {
-    fontFamily: Fonts.bold,
-    fontSize: FontSize.heading2,
-    color: Colors.primaryDeep,
-  },
-  viewAllText: {
-    fontFamily: Fonts.semiBold,
-    fontSize: FontSize.bodySmall,
-    color: Colors.textLight,
-  },
-  serviceGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  serviceGridItem: {
-    marginBottom: Spacing.md,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.bgCardMuted,
-    overflow: 'hidden',
-    alignItems: 'center',
-  },
-  serviceGridImage: {
-    borderTopLeftRadius: Radius.md,
-    borderTopRightRadius: Radius.md,
-  },
-  serviceGridLabelContainer: {
-    flex: 1,
-    width: '100%',
-    paddingHorizontal: Spacing.xs,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  serviceGridLabel: {
-    fontFamily: Fonts.medium,
-    fontSize: FontSize.bodySmall,
-    color: Colors.primaryText,
-    textAlign: 'center',
-    lineHeight: 14,
-  },
+    servicesCard: {
+      marginHorizontal: Spacing.cardMargin,
+      marginTop: Spacing.sectionGap,
+      backgroundColor: c.bgCard,
+      borderRadius: Radius.lg,
+      padding: Spacing.lg,
+      ...Shadow.card,
+    },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.lg },
+    sectionTitle: { fontFamily: Fonts.bold, fontSize: FontSize.heading2, color: c.primaryDeep },
+    viewAllText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: c.textLight },
+    serviceGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+    serviceGridItem: { marginBottom: Spacing.md, borderRadius: Radius.md, backgroundColor: c.bgCardMuted, overflow: 'hidden', alignItems: 'center' },
+    serviceGridImage: { borderTopLeftRadius: Radius.md, borderTopRightRadius: Radius.md },
+    serviceGridLabelContainer: { flex: 1, width: '100%', paddingHorizontal: Spacing.xs, alignItems: 'center', justifyContent: 'center' },
+    serviceGridLabel: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: c.primaryText, textAlign: 'center', lineHeight: 14 },
 
-  /* Trust Badges */
-  trustCard: {
-    marginHorizontal: Spacing.cardMargin,
-    marginTop: Spacing.sectionGap,
-    backgroundColor: Colors.bgCard,
-    borderRadius: Radius.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.lg,
-    ...Shadow.card,
-  },
-  trustItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  trustIconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#EDF2F7', 
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  trustIcon: {
-    width: 38,
-    height: 38,
-  },
-  trustLabel: {
-    fontFamily: Fonts.bold,
-    fontSize: 10,
-    color: '#034C2A', // Deep green from design
-    textAlign: 'center',
-    paddingHorizontal: 4,
-  },
-  trustDivider: {
-    width: 1,
-    height: '70%',
-    backgroundColor: Colors.textLight,
-    opacity: 0.3,
-  },
+    trustCard: {
+      marginHorizontal: Spacing.cardMargin,
+      marginTop: Spacing.sectionGap,
+      backgroundColor: c.bgCard,
+      borderRadius: Radius.lg,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: Spacing.lg,
+      ...Shadow.card,
+    },
+    trustItem: { flex: 1, alignItems: 'center' },
+    trustIconCircle: { width: 60, height: 60, borderRadius: 30, backgroundColor: c.bgCardMuted, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.sm },
+    trustIcon: { width: 38, height: 38 },
+    trustLabel: { fontFamily: Fonts.bold, fontSize: 10, color: c.primaryDeep, textAlign: 'center', paddingHorizontal: 4 },
+    trustDivider: { width: 1, height: '70%' as any, backgroundColor: c.textLight, opacity: 0.3 },
 
-  /* SOS Banner */
-  sosBanner: {
-    marginHorizontal: Spacing.cardMargin,
-    marginTop: Spacing.sectionGap,
-    backgroundColor: Colors.bgCard,
-    borderWidth: 1,
-    borderColor: Colors.primaryDark,
-    borderRadius: Radius.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
-  },
-  sosContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  sosIcon: {
-    width: 44,
-    height: 44,
-  },
-  sosTextGroup: {
-    gap: 2,
-  },
-  sosTitle: {
-    fontFamily: Fonts.semiBold,
-    fontSize: FontSize.bodySmall,
-    color: Colors.textDark,
-  },
-  sosButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-    gap: Spacing.xs,
-    marginTop: 6,
-    alignSelf: 'flex-start',
-  },
-  sosButtonText: {
-    fontFamily: Fonts.semiBold,
-    fontSize: FontSize.caption,
-    color: Colors.textWhite,
-  },
-  sosIllustration: {
-    width: 60,
-    height: 60,
-  },
+    essentialsCard: {
+      marginHorizontal: Spacing.cardMargin,
+      marginTop: Spacing.sectionGap,
+      backgroundColor: c.bgCard,
+      borderRadius: Radius.lg,
+      padding: Spacing.lg,
+      ...Shadow.card,
+    },
+    essentialsTitle: { fontFamily: Fonts.bold, fontSize: FontSize.heading3, color: c.primaryDeep },
+    viewAllSmall: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: c.textLight },
+    essentialsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.md },
+    essentialItem: { borderWidth: 1, borderColor: c.accent, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },
+    essentialIconCircle: { width: '60%', aspectRatio: 1, borderRadius: Radius.full, backgroundColor: c.bgCardMuted, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs },
+    essentialIcon: { width: '80%', height: '80%' },
+    essentialLabel: { fontFamily: Fonts.medium, fontSize: FontSize.caption, color: c.textMuted, textAlign: 'center', lineHeight: 12 },
 
-  /* Home Essentials */
-  essentialsCard: {
-    marginHorizontal: Spacing.cardMargin,
-    marginTop: Spacing.sectionGap,
-    backgroundColor: Colors.bgCard,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-    ...Shadow.card,
-  },
-  essentialsTitle: {
-    fontFamily: Fonts.bold,
-    fontSize: FontSize.heading3,
-    color: Colors.primaryDeep,
-  },
-  viewAllSmall: {
-    fontFamily: Fonts.medium,
-    fontSize: FontSize.bodySmall,
-    color: Colors.textLight,
-  },
-  essentialsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.md,
-  },
-  essentialItem: {
-    borderWidth: 1,
-    borderColor: Colors.accent,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 6,
-  },
-  essentialIconCircle: {
-    width: '60%',
-    aspectRatio: 1,
-    borderRadius: Radius.full,
-    backgroundColor: '#FEF9C3', // Light yellow circle fill
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.xs,
-  },
-  essentialIcon: {
-    width: '80%',
-    height: '80%',
-  },
-  essentialLabel: {
-    fontFamily: Fonts.medium,
-    fontSize: FontSize.caption,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 12,
-  },
-  /* ═══ Coming Soon Banner ═══ */
-  comingSoonBanner: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1.5,
-    borderColor: '#048357',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  comingSoonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  comingSoonTextRow: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  comingSoonTitle: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 16,
-    color: '#2F2F2F',
-    marginBottom: 2,
-  },
-  comingSoonDesc: {
-    fontFamily: Fonts.regular,
-    fontSize: 12,
-    color: '#777777',
-  },
-  notifyMeButton: {
-    backgroundColor: '#048357',
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  notifyMeText: {
-    fontFamily: Fonts.medium,
-    fontSize: 14,
-    color: '#FFFFFF',
-  },
-});
+    comingSoonBanner: {
+      backgroundColor: c.bgCard,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 20,
+      borderWidth: 1.5,
+      borderColor: c.primary,
+      shadowColor: c.shadowColor,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+      elevation: 4,
+    },
+    comingSoonContent: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+    comingSoonTextRow: { marginLeft: 12, flex: 1 },
+    comingSoonTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: c.textDark, marginBottom: 2 },
+    comingSoonDesc: { fontFamily: Fonts.regular, fontSize: 12, color: c.textMuted },
+    notifyMeButton: { backgroundColor: c.primary, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
+    notifyMeText: { fontFamily: Fonts.medium, fontSize: 14, color: '#FFFFFF' },
+
+    // unused legacy styles kept to avoid TS errors in case referenced elsewhere
+    sosBanner: {} as any,
+    sosContent: {} as any,
+    sosIcon: {} as any,
+    sosTextGroup: {} as any,
+    sosTitle: {} as any,
+    sosButton: {} as any,
+    sosButtonText: {} as any,
+    sosIllustration: {} as any,
+  });
+}

@@ -6,6 +6,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 import { Colors, Fonts, Radius, Shadow } from '@/constants/theme';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 import React, { useEffect, useRef } from 'react';
 import { useUser } from '@/context/UserContext';
 import { useAuth } from '@/context/AuthContext';
@@ -19,6 +20,7 @@ export default function TabLayout() {
   const { logout } = useAuth();
   const router = useRouter();
   const hasHandledError = useRef(false);
+  const colors = useThemeColors();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -54,10 +56,10 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.primaryDark,
-        tabBarInactiveTintColor: Colors.textLight,
+        tabBarActiveTintColor: colors.primaryDark,
+        tabBarInactiveTintColor: colors.textLight,
         tabBarStyle: {
-          backgroundColor: Colors.bgHeader,
+          backgroundColor: colors.bgHeader,
           borderTopLeftRadius: Radius.xl,
           borderTopRightRadius: Radius.xl,
           height: 83,
