@@ -645,6 +645,7 @@ const styles = StyleSheet.create({
     tabsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: 10,
     },
     tab: {
         paddingVertical: 9,

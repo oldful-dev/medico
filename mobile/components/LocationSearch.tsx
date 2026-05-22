@@ -1,21 +1,11 @@
 import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    FlatList,
-    ActivityIndicator,
-    StyleSheet,
+    View, Text, TextInput, TouchableOpacity,
+    FlatList, ActivityIndicator, StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { useLocationSearch, type LocationPrediction } from '@/hooks/useLocationSearch';
-
-const PRIMARY_GREEN = '#02743F';
-const TEXT_DARK = '#2F2F2F';
-const TEXT_MUTED = '#888888';
-const CARD_BORDER = '#E5E7EB';
-const LIGHT_GREEN_BG = '#F0FDF4';
 
 interface LocationSearchProps {
     onSelectLocation: (placeId: string, description: string, coords?: { lat: number; lng: number }) => void;
@@ -29,84 +19,51 @@ export const LocationSearch = ({
     const { predictions, loading, error, search, clear, getPlaceDetails } = useLocationSearch();
     const [searchText, setSearchText] = useState('');
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
+    const [selecting, setSelecting] = useState(false);
 
     const handleSearch = (text: string) => {
         setSearchText(text);
-        if (text.length >= 2) {
-            search(text);
-        } else {
-            clear();
-        }
+        if (text.length >= 2) search(text);
+        else clear();
     };
 
     const handleSelectPrediction = async (prediction: LocationPrediction) => {
-        console.log('🔍 LocationSearch: Selected prediction:', prediction);
-
-        // Add to recent searches
+        setSelecting(true);
         if (!recentSearches.includes(prediction.description)) {
             setRecentSearches(prev => [prediction.description, ...prev].slice(0, 5));
         }
 
-        // Fetch full details
-        console.log('🔍 LocationSearch: Fetching place details for:', prediction.place_id);
         const details = await getPlaceDetails(prediction.place_id);
-        console.log('🔍 LocationSearch: Got place details:', details);
-
-        // Use formatted_address if available
         let fullAddress = details?.formatted_address || prediction.description;
-        console.log('🔍 LocationSearch: Initial fullAddress:', fullAddress);
-
-        // If formatted_address doesn't contain a pincode, do reverse geocoding to get complete address
         let finalLat = details?.latitude || 0;
         let finalLng = details?.longitude || 0;
+
         if (details && !fullAddress.match(/\b\d{6}\b/)) {
-            console.log('🔍 LocationSearch: No pincode in address, reverse geocoding...');
             try {
-                const reverseResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://api.ayuxacare.com/api'}/location/reverse-geocode`, {
+                const revRes = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://api.ayuxacare.com/api'}/location/reverse-geocode`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ latitude: details.latitude, longitude: details.longitude }),
                 });
-                const reverseData = await reverseResponse.json();
-                if (reverseData.statusCode === 0 && reverseData.data?.formatted_address) {
-                    fullAddress = reverseData.data.formatted_address;
-                    console.log('🔍 LocationSearch: Got reverse geocoded address:', fullAddress);
-
-                    // Now forward geocode this address to get precise coordinates for serviceability
-                    console.log('🔍 LocationSearch: Forward geocoding to get precise coordinates...');
-                    const geocodeResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://api.ayuxacare.com/api'}/location/geocode`, {
+                const revData = await revRes.json();
+                if (revData.statusCode === 0 && revData.data?.formatted_address) {
+                    fullAddress = revData.data.formatted_address;
+                    const geoRes = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://api.ayuxacare.com/api'}/location/geocode`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ address: fullAddress }),
                     });
-                    const geocodeData = await geocodeResponse.json();
-                    if (geocodeData.statusCode === 0 && geocodeData.data) {
-                        finalLat = geocodeData.data.latitude || finalLat;
-                        finalLng = geocodeData.data.longitude || finalLng;
-                        console.log('🔍 LocationSearch: Got precise coordinates from geocode:', { finalLat, finalLng });
+                    const geoData = await geoRes.json();
+                    if (geoData.statusCode === 0 && geoData.data) {
+                        finalLat = geoData.data.latitude || finalLat;
+                        finalLng = geoData.data.longitude || finalLng;
                     }
                 }
-            } catch (error) {
-                console.error('🔍 LocationSearch: Reverse/Forward geocoding failed:', error);
-                // Keep the original fullAddress and coords if geocoding fails
-            }
+            } catch { /* keep original */ }
         }
 
-        console.log('🔍 LocationSearch: Final fullAddress:', fullAddress);
-        console.log('🔍 LocationSearch: Final coordinates:', { lat: finalLat, lng: finalLng });
-
-        console.log('🔍 LocationSearch: Calling onSelectLocation with:', {
-            placeId: prediction.place_id,
-            description: fullAddress,
-            coords: { lat: finalLat, lng: finalLng },
-        });
-
-        onSelectLocation(prediction.place_id, fullAddress, {
-            lat: finalLat,
-            lng: finalLng,
-        });
-
-        // Clear search but don't close - let parent modal handle navigation
+        setSelecting(false);
+        onSelectLocation(prediction.place_id, fullAddress, { lat: finalLat, lng: finalLng });
         setSearchText('');
         clear();
     };
@@ -116,106 +73,130 @@ export const LocationSearch = ({
         search(location);
     };
 
-    const renderPredictionItem = ({ item }: { item: LocationPrediction }) => (
-        <TouchableOpacity
-            style={styles.predictionItem}
-            onPress={() => handleSelectPrediction(item)}
-        >
-            <Ionicons name="location-outline" size={20} color={PRIMARY_GREEN} style={{ marginRight: 12 }} />
-            <View style={{ flex: 1 }}>
-                <Text style={styles.mainText} numberOfLines={1}>{item.main_text}</Text>
-                {item.secondary_text && (
-                    <Text style={styles.secondaryText} numberOfLines={1}>{item.secondary_text}</Text>
-                )}
-            </View>
-        </TouchableOpacity>
-    );
-
-    const renderRecentSearch = ({ item }: { item: string }) => (
-        <TouchableOpacity
-            style={styles.recentItem}
-            onPress={() => handleSelectRecent(item)}
-        >
-            <Ionicons name="time-outline" size={16} color={TEXT_MUTED} style={{ marginRight: 10 }} />
-            <Text style={styles.recentText}>{item}</Text>
-        </TouchableOpacity>
-    );
+    const showEmpty = !loading && !selecting && predictions.length === 0 && searchText.length >= 2;
+    const showHelp  = !loading && !selecting && predictions.length === 0 && searchText.length === 0;
+    const showRecent = showHelp && showRecentSearches && recentSearches.length > 0;
 
     return (
         <View style={styles.container}>
-            {/* Search Input */}
-            <View style={styles.searchBox}>
-                <Ionicons name="search" size={18} color={TEXT_MUTED} style={{ marginRight: 10 }} />
-                <TextInput
-                    placeholder="Search location or address..."
-                    placeholderTextColor={TEXT_MUTED}
-                    value={searchText}
-                    onChangeText={handleSearch}
-                    style={styles.searchInput}
-                    autoFocus
-                />
-                {searchText ? (
-                    <TouchableOpacity onPress={() => { setSearchText(''); clear(); }}>
-                        <Ionicons name="close-circle" size={18} color={TEXT_MUTED} />
-                    </TouchableOpacity>
-                ) : null}
+            {/* Search bar */}
+            <View style={styles.searchWrap}>
+                <View style={styles.searchBar}>
+                    <Ionicons name="search-outline" size={17} color={Colors.textMuted} style={{ marginRight: 8 }} />
+                    <TextInput
+                        placeholder="Search area, street, landmark..."
+                        placeholderTextColor={Colors.textLight}
+                        value={searchText}
+                        onChangeText={handleSearch}
+                        style={styles.searchInput}
+                        autoFocus
+                        returnKeyType="search"
+                    />
+                    {searchText.length > 0 && (
+                        <TouchableOpacity onPress={() => { setSearchText(''); clear(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                            <Ionicons name="close-circle" size={16} color={Colors.textMuted} />
+                        </TouchableOpacity>
+                    )}
+                </View>
             </View>
 
-            {/* Error Message */}
+            {/* Error */}
             {error && (
                 <View style={styles.errorBanner}>
-                    <Ionicons name="alert-circle" size={16} color="#DC2626" />
+                    <Ionicons name="alert-circle-outline" size={15} color="#DC2626" />
                     <Text style={styles.errorText}>{error}</Text>
                 </View>
             )}
 
-            {/* Loading State */}
-            {loading && (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={PRIMARY_GREEN} />
-                    <Text style={styles.loadingText}>Searching locations...</Text>
+            {/* Loading / selecting */}
+            {(loading || selecting) && (
+                <View style={styles.loadingRow}>
+                    <ActivityIndicator size="small" color={Colors.primaryDark} />
+                    <Text style={styles.loadingText}>
+                        {selecting ? 'Fetching address details…' : 'Searching…'}
+                    </Text>
                 </View>
             )}
 
-            {/* Predictions List */}
-            {!loading && predictions.length > 0 && (
+            {/* Results */}
+            {!loading && !selecting && predictions.length > 0 && (
                 <FlatList
                     data={predictions}
-                    renderItem={renderPredictionItem}
-                    keyExtractor={(item) => item.place_id}
+                    keyExtractor={item => item.place_id}
                     scrollEnabled={false}
-                    style={styles.predictionsList}
+                    contentContainerStyle={{ paddingTop: 4 }}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={styles.resultRow}
+                            onPress={() => handleSelectPrediction(item)}
+                            activeOpacity={0.75}
+                        >
+                            <View style={styles.resultIcon}>
+                                <Ionicons name="location" size={16} color={Colors.primaryDark} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.resultMain} numberOfLines={1}>{item.main_text}</Text>
+                                {item.secondary_text ? (
+                                    <Text style={styles.resultSub} numberOfLines={1}>{item.secondary_text}</Text>
+                                ) : null}
+                            </View>
+                            <Ionicons name="chevron-forward" size={15} color={Colors.textLight} />
+                        </TouchableOpacity>
+                    )}
                 />
             )}
 
-            {/* Recent Searches */}
-            {!loading && predictions.length === 0 && searchText.length < 2 && showRecentSearches && recentSearches.length > 0 && (
-                <>
-                    <Text style={styles.sectionTitle}>Recent Searches</Text>
-                    <FlatList
-                        data={recentSearches}
-                        renderItem={renderRecentSearch}
-                        keyExtractor={(item, idx) => `${item}-${idx}`}
-                        scrollEnabled={false}
-                        style={styles.recentList}
-                    />
-                </>
-            )}
-
-            {/* Empty State */}
-            {!loading && predictions.length === 0 && searchText.length >= 2 && (
-                <View style={styles.emptyContainer}>
-                    <Ionicons name="location-outline" size={40} color={TEXT_MUTED} />
-                    <Text style={styles.emptyText}>No locations found</Text>
-                    <Text style={styles.emptySubtext}>Try a different search term</Text>
+            {/* Recent searches */}
+            {showRecent && (
+                <View>
+                    <View style={styles.sectionHeader}>
+                        <Ionicons name="time-outline" size={13} color={Colors.textMuted} style={{ marginRight: 5 }} />
+                        <Text style={styles.sectionTitle}>Recent Searches</Text>
+                    </View>
+                    {recentSearches.map((loc, i) => (
+                        <TouchableOpacity
+                            key={`${loc}-${i}`}
+                            style={styles.recentRow}
+                            onPress={() => handleSelectRecent(loc)}
+                            activeOpacity={0.75}
+                        >
+                            <View style={styles.recentIcon}>
+                                <Ionicons name="time" size={14} color={Colors.textMuted} />
+                            </View>
+                            <Text style={styles.recentText} numberOfLines={1}>{loc}</Text>
+                        </TouchableOpacity>
+                    ))}
                 </View>
             )}
 
-            {/* Help Text */}
-            {!loading && predictions.length === 0 && searchText.length === 0 && (
-                <View style={styles.helpContainer}>
-                    <Ionicons name="information-circle-outline" size={24} color={TEXT_MUTED} style={{ marginBottom: 12 }} />
-                    <Text style={styles.helpText}>Type at least 2 characters to search</Text>
+            {/* Empty state */}
+            {showEmpty && (
+                <View style={styles.centerBox}>
+                    <View style={styles.emptyIconWrap}>
+                        <Ionicons name="location-outline" size={32} color={Colors.primaryDark} />
+                    </View>
+                    <Text style={styles.emptyTitle}>No results found</Text>
+                    <Text style={styles.emptySub}>Try a different area or landmark name</Text>
+                </View>
+            )}
+
+            {/* Help state */}
+            {showHelp && !showRecent && (
+                <View style={styles.centerBox}>
+                    <View style={styles.helpCards}>
+                        {[
+                            { icon: 'business-outline' as const, text: 'Search by area or locality' },
+                            { icon: 'flag-outline' as const,     text: 'Try a landmark or street' },
+                            { icon: 'pin-outline' as const,      text: 'Enter full address or pincode' },
+                        ].map((tip, i) => (
+                            <View key={i} style={styles.tipRow}>
+                                <View style={styles.tipIcon}>
+                                    <Ionicons name={tip.icon} size={15} color={Colors.primaryDark} />
+                                </View>
+                                <Text style={styles.tipText}>{tip.text}</Text>
+                            </View>
+                        ))}
+                    </View>
                 </View>
             )}
         </View>
@@ -227,118 +208,198 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#FFFFFF',
     },
-    searchBox: {
+
+    // Search bar
+    searchWrap: {
+        paddingHorizontal: Spacing.lg,
+        paddingTop: Spacing.xl,
+        paddingBottom: Spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.borderLight,
+    },
+    searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
+        backgroundColor: '#F8F9FA',
+        borderRadius: Radius.md,
+        borderWidth: 1.5,
+        borderColor: Colors.borderLight,
+        paddingHorizontal: Spacing.md,
         paddingVertical: 12,
-        backgroundColor: LIGHT_GREEN_BG,
-        borderBottomWidth: 1,
-        borderBottomColor: CARD_BORDER,
     },
     searchInput: {
         flex: 1,
-        fontSize: 14,
-        color: TEXT_DARK,
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
         padding: 0,
     },
+
+    // Error
     errorBanner: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        backgroundColor: '#FEE2E2',
-        borderBottomWidth: 1,
-        borderBottomColor: '#FECACA',
+        gap: Spacing.sm,
+        marginHorizontal: Spacing.lg,
+        marginTop: Spacing.sm,
+        backgroundColor: '#FEF2F2',
+        borderRadius: Radius.sm,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.sm,
+        borderLeftWidth: 3,
+        borderLeftColor: '#EF4444',
     },
     errorText: {
-        fontSize: 13,
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
         color: '#DC2626',
-        marginLeft: 8,
         flex: 1,
     },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
+
+    // Loading
+    loadingRow: {
+        flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 60,
+        gap: Spacing.sm,
+        paddingHorizontal: Spacing.lg,
+        paddingTop: Spacing.lg,
+        paddingBottom: Spacing.sm,
     },
     loadingText: {
-        fontSize: 14,
-        color: TEXT_MUTED,
-        marginTop: 12,
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textMuted,
     },
-    predictionsList: {
-        flex: 1,
-    },
-    predictionItem: {
+
+    // Results
+    resultRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
+        paddingHorizontal: Spacing.lg,
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: CARD_BORDER,
+        borderBottomColor: Colors.borderLight,
+        gap: Spacing.md,
     },
-    mainText: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: TEXT_DARK,
+    resultIcon: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: '#F0FAF4',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexShrink: 0,
     },
-    secondaryText: {
-        fontSize: 12,
-        color: TEXT_MUTED,
-        marginTop: 4,
+    resultMain: {
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
     },
-    sectionTitle: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: TEXT_MUTED,
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 8,
-        textTransform: 'uppercase',
+    resultSub: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textMuted,
+        marginTop: 2,
     },
-    recentList: {
-        flex: 1,
-    },
-    recentItem: {
+
+    // Recent
+    sectionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
+        paddingHorizontal: Spacing.lg,
+        paddingTop: Spacing.lg,
+        paddingBottom: Spacing.sm,
+    },
+    sectionTitle: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textMuted,
+        textTransform: 'uppercase',
+        letterSpacing: 0.6,
+    },
+    recentRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: Spacing.lg,
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: CARD_BORDER,
+        borderBottomColor: Colors.borderLight,
+        gap: Spacing.md,
+    },
+    recentIcon: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#F5F5F5',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexShrink: 0,
     },
     recentText: {
-        fontSize: 14,
-        color: TEXT_DARK,
-    },
-    emptyContainer: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
         flex: 1,
+    },
+
+    // Centre-aligned states
+    centerBox: {
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        paddingHorizontal: Spacing.lg,
+        paddingTop: Spacing.xl * 2,
+    },
+    emptyIconWrap: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: '#F0FAF4',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 16,
+        marginBottom: Spacing.md,
     },
-    emptyText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: TEXT_DARK,
-        marginTop: 12,
-    },
-    emptySubtext: {
-        fontSize: 13,
-        color: TEXT_MUTED,
-        marginTop: 6,
-    },
-    helpContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-    },
-    helpText: {
-        fontSize: 14,
-        color: TEXT_MUTED,
+    emptyTitle: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading3,
+        color: Colors.textDark,
+        marginBottom: 6,
         textAlign: 'center',
+    },
+    emptySub: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        color: Colors.textMuted,
+        textAlign: 'center',
+    },
+
+    // Tips / help
+    helpCards: {
+        width: '100%',
+        gap: Spacing.sm,
+    },
+    tipRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.md,
+        backgroundColor: '#F8F9FA',
+        borderRadius: Radius.md,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: 13,
+        borderWidth: 1,
+        borderColor: Colors.borderLight,
+    },
+    tipIcon: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#E8F5EE',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    tipText: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textDark,
     },
 });

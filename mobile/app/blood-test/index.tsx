@@ -1,99 +1,112 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
-    ActivityIndicator,
-    FlatList,
-    TextInput,
-    ListRenderItem,
+    View, Text, StyleSheet, TouchableOpacity, ScrollView,
+    ActivityIndicator, FlatList, TextInput, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Alert } from 'react-native';
 import { labService } from '@/services/api/labService';
 import type { LabPackage } from '@/services/api/labService';
 import { BloodTestDetailModal } from './detail-modal';
 import { useCart } from '@/context/CartContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
+import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
+const CATEGORIES = ['All', 'Popular', 'Health Checks', 'Wellness'];
 
-const CATEGORIES = ['All Packages', 'Popular', 'Health Checkups', 'Wellness'];
-
-const getTestIcon = (name: string) => {
-    const lowerName = name.toLowerCase();
-    if (lowerName.includes("urine")) return { family: 'MaterialCommunityIcons', name: 'test-tube', color: '#8B5CF6' };
-    if (lowerName.includes("iron")) return { family: 'MaterialCommunityIcons', name: 'flask', color: '#14B8A6' };
-    if (lowerName.includes("full body") || lowerName.includes("checkup")) return { family: 'Ionicons', name: 'fitness', color: '#F43F5E' };
-    if (lowerName.includes("screening") || lowerName.includes("advanced")) return { family: 'Ionicons', name: 'scan', color: '#0EA5E9' };
-    if (lowerName.includes("package")) return { family: 'MaterialCommunityIcons', name: 'package', color: '#3B82F6' };
-    if (lowerName.includes("hba1c") || lowerName.includes("glycosylated") || lowerName.includes("hemoglobin")) return { family: 'Ionicons', name: 'pulse', color: '#EF4444' };
-    if (lowerName.includes("test")) return { family: 'MaterialCommunityIcons', name: 'stethoscope', color: '#10B981' };
-    return { family: 'Ionicons', name: 'shield-checkmark', color: '#6366F1' };
+const getTestIcon = (name: string): { lib: 'ion' | 'mci'; icon: string; color: string; bg: string } => {
+    const n = name.toLowerCase();
+    if (n.includes('urine'))                               return { lib: 'mci', icon: 'test-tube',     color: '#8B5CF6', bg: '#F3EFFE' };
+    if (n.includes('iron'))                                return { lib: 'mci', icon: 'flask',         color: '#14B8A6', bg: '#EFFCFA' };
+    if (n.includes('full body') || n.includes('checkup')) return { lib: 'ion', icon: 'fitness',       color: '#F43F5E', bg: '#FFF0F3' };
+    if (n.includes('screening') || n.includes('advanced'))return { lib: 'ion', icon: 'scan',          color: '#0EA5E9', bg: '#EFF8FF' };
+    if (n.includes('hba1c') || n.includes('hemoglobin'))  return { lib: 'ion', icon: 'pulse',         color: '#EF4444', bg: '#FFF1F1' };
+    if (n.includes('thyroid') || n.includes('tsh'))       return { lib: 'ion', icon: 'cellular',      color: '#EC4899', bg: '#FDF2F8' };
+    if (n.includes('vitamin') || n.includes('deficiency'))return { lib: 'ion', icon: 'sunny',         color: '#F59E0B', bg: '#FFFBEB' };
+    if (n.includes('diabetes') || n.includes('glucose'))  return { lib: 'mci', icon: 'water',         color: '#3B82F6', bg: '#EFF4FF' };
+    if (n.includes('test'))                                return { lib: 'mci', icon: 'stethoscope',   color: '#10B981', bg: '#EDFCF4' };
+    return                                                        { lib: 'ion', icon: 'shield-checkmark', color: '#6366F1', bg: '#F0F0FF' };
 };
 
-// ─── Memoized PackageCard Component ──────────────────────────────────────
-// Prevents unnecessary re-renders when parent updates but item data hasn't changed
+// ─── Package Card ─────────────────────────────────────────────────────────────
 const PackageCard = memo(({
     item,
     onViewDetails,
-    styles: cardStyles
+    onBookNow,
+    themeColors,
 }: {
     item: LabPackage;
     onViewDetails: (code: string) => void;
-    styles: ReturnType<typeof makeStyles>;
+    onBookNow: (pkg: LabPackage) => void;
+    themeColors: ReturnType<typeof useThemeColors>;
 }) => {
-    const icon = getTestIcon(item.name);
-    const IconComponent = icon.family === 'MaterialCommunityIcons' ? MaterialCommunityIcons : Ionicons;
-    const discountPercent = item.discounted_cost
+    const { lib, icon, color, bg } = getTestIcon(item.name);
+    const IconComp = lib === 'mci' ? MaterialCommunityIcons : Ionicons;
+    const discountPct = item.discounted_cost
         ? Math.round(((item.cost - item.discounted_cost) / item.cost) * 100)
         : 0;
+    const price = item.discounted_cost || item.cost;
 
     return (
-        <View style={cardStyles.packageCard}>
-            {/* Discount Badge Row */}
-            {discountPercent > 0 && (
-                <View style={cardStyles.badgeRow}>
-                    <View style={cardStyles.saveBadge}>
-                        <Text style={cardStyles.saveBadgeText}>SAVE {discountPercent}%</Text>
-                    </View>
+        <View style={[styles.card, { backgroundColor: themeColors.bgCard }]}>
+            {discountPct > 0 && (
+                <View style={styles.ribbon}>
+                    <Text style={styles.ribbonText}>{discountPct}% OFF</Text>
                 </View>
             )}
 
-            {/* Card Content Row */}
-            <View style={cardStyles.cardContent}>
-                <View style={cardStyles.iconSection}>
-                    <View style={[cardStyles.iconCircle, { backgroundColor: `${icon.color}20` }]}>
-                        <IconComponent name={icon.name as any} size={28} color={icon.color} />
-                    </View>
+            <View style={styles.cardInner}>
+                {/* Icon */}
+                <View style={[styles.iconBox, { backgroundColor: bg }]}>
+                    <IconComp name={icon as any} size={24} color={color} />
                 </View>
 
-                <View style={cardStyles.infoSection}>
-                    <Text style={cardStyles.packageName} numberOfLines={2}>{item.name}</Text>
-                    <Text style={cardStyles.parametersText}>
-                        {item.tests_count || 0} {item.tests_count === 1 ? 'Parameter' : 'Parameters'}
+                {/* Content */}
+                <View style={styles.cardBody}>
+                    <Text style={[styles.cardName, { color: themeColors.textDark }]} numberOfLines={2}>
+                        {item.name}
                     </Text>
 
-                    <View style={cardStyles.priceRow}>
-                        {item.discounted_cost ? (
-                            <View>
-                                <Text style={cardStyles.originalPrice}>₹{item.cost}</Text>
-                                <Text style={cardStyles.discountedPrice}>₹{item.discounted_cost}</Text>
-                            </View>
-                        ) : (
-                            <Text style={cardStyles.discountedPrice}>₹{item.cost}</Text>
-                        )}
-                        <TouchableOpacity
-                            style={cardStyles.viewDetailsBtn}
-                            onPress={() => onViewDetails(item.code)}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={cardStyles.viewDetailsText}>View Details</Text>
-                        </TouchableOpacity>
+                    <View style={styles.metaRow}>
+                        <Ionicons name="flask-outline" size={11} color={themeColors.textMuted} />
+                        <Text style={[styles.metaText, { color: themeColors.textMuted }]}>
+                            {item.tests_count || 0} {item.tests_count === 1 ? 'Parameter' : 'Parameters'}
+                        </Text>
+                        <Text style={[styles.metaDot, { color: themeColors.textMuted }]}>·</Text>
+                        <Ionicons name="home-outline" size={11} color={themeColors.textMuted} />
+                        <Text style={[styles.metaText, { color: themeColors.textMuted }]}>Home / Lab</Text>
+                    </View>
+
+                    <View style={styles.cardFooter}>
+                        <View>
+                            {item.discounted_cost ? (
+                                <View>
+                                    <Text style={[styles.strikePrice, { color: themeColors.textMuted }]}>₹{item.cost}</Text>
+                                    <Text style={styles.finalPrice}>₹{price}</Text>
+                                </View>
+                            ) : (
+                                <Text style={styles.finalPrice}>₹{price}</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.btnRow}>
+                            <TouchableOpacity
+                                style={[styles.detailsBtn, { borderColor: Colors.primaryDark }]}
+                                onPress={() => onViewDetails(item.code)}
+                                activeOpacity={0.75}
+                            >
+                                <Text style={[styles.detailsBtnText, { color: Colors.primaryDark }]}>Details</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.bookBtn}
+                                onPress={() => onBookNow(item)}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.bookBtnText}>Book Now</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
             </View>
@@ -101,307 +114,44 @@ const PackageCard = memo(({
     );
 });
 
-const makeStyles = (colors: ReturnType<typeof useThemeColors>) => StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.bgScreen,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 11,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.borderLight,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: colors.textDark,
-        flex: 1,
-        textAlign: 'center',
-    },
-    cartIcon: {
-        position: 'relative',
-    },
-    cartBadge: {
-        position: 'absolute',
-        top: -8,
-        right: -8,
-        backgroundColor: colors.sosRed,
-        borderRadius: 10,
-        width: 20,
-        height: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    cartBadgeText: {
-        color: '#FFFFFF',
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginHorizontal: 16,
-        marginVertical: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        minHeight: 40,
-        backgroundColor: colors.bgCardMuted,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: colors.borderLight,
-    },
-    searchIcon: {
-        marginRight: 10,
-        pointerEvents: 'none',
-    },
-    searchInput: {
-        fontSize: 14,
-        color: colors.textDark,
-        flex: 1,
-        padding: 0,
-    },
-    categoriesScroll: {
-        paddingHorizontal: 16,
-        marginBottom: 8,
-        marginTop: 0,
-        flexGrow: 0,
-        height: 44,
-        minHeight: 44,
-        maxHeight: 44,
-    },
-    categoriesContent: {
-        paddingRight: 16,
-        paddingBottom: 0,
-        gap: 6,
-    },
-    categoryTab: {
-        marginRight: 12,
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 8,
-        backgroundColor: 'transparent',
-        height: 36,
-        justifyContent: 'center',
-    },
-    categoryTabActive: {
-        backgroundColor: colors.primary,
-    },
-    categoryTabText: {
-        fontSize: 13,
-        color: colors.textMuted,
-        fontWeight: '500',
-    },
-    categoryTabTextActive: {
-        color: '#FFFFFF',
-        fontWeight: '600',
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 16,
-        minHeight: 200,
-    },
-    loadingText: {
-        fontSize: 14,
-        color: colors.textMuted,
-        fontWeight: '500',
-        marginTop: 8,
-    },
-    flatList: {
-        flex: 1,
-    },
-    listContent: {
-        paddingHorizontal: 16,
-        paddingTop: 8,
-        paddingBottom: 24,
-    },
-    packageCard: {
-        backgroundColor: colors.bgCard,
-        borderWidth: 1,
-        borderColor: colors.borderLight,
-        borderRadius: 10,
-        marginBottom: 12,
-        paddingTop: 12,
-        paddingBottom: 12,
-        paddingHorizontal: 12,
-        shadowColor: colors.shadowColor,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.04,
-        shadowRadius: 2,
-        elevation: 1,
-    },
-    badgeRow: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        marginBottom: 8,
-    },
-    saveBadge: {
-        backgroundColor: colors.sosRed,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 4,
-    },
-    saveBadgeText: {
-        color: '#FFFFFF',
-        fontSize: 10,
-        fontWeight: '700',
-    },
-    cardContent: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: 10,
-    },
-    iconSection: {
-        marginTop: 2,
-    },
-    iconCircle: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexShrink: 0,
-    },
-    infoSection: {
-        flex: 1,
-        justifyContent: 'flex-start',
-        gap: 4,
-    },
-    packageName: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: colors.textDark,
-    },
-    parametersText: {
-        fontSize: 11,
-        color: colors.textMuted,
-        fontWeight: '400',
-    },
-    priceRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 2,
-        gap: 8,
-    },
-    originalPrice: {
-        fontSize: 11,
-        color: colors.textMuted,
-        textDecorationLine: 'line-through',
-        fontWeight: '400',
-    },
-    discountedPrice: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: colors.primary,
-        letterSpacing: -0.4,
-        lineHeight: 18,
-    },
-    viewDetailsBtn: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderWidth: 1.5,
-        borderColor: colors.primary,
-        borderRadius: 6,
-        backgroundColor: 'transparent',
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexDirection: 'row',
-        minWidth: 80,
-    },
-    viewDetailsText: {
-        fontSize: 11,
-        color: colors.primary,
-        fontWeight: '600',
-    },
-    emptyContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: 300,
-        paddingVertical: 40,
-        paddingHorizontal: 32,
-    },
-    emptyIcon: {
-        marginBottom: 12,
-        opacity: 0.35,
-    },
-    emptyTitle: {
-        fontSize: 16,
-        color: colors.textDark,
-        fontWeight: '600',
-        marginBottom: 6,
-        textAlign: 'center',
-    },
-    emptySubtitle: {
-        fontSize: 12,
-        color: colors.textMuted,
-        fontWeight: '400',
-        textAlign: 'center',
-        lineHeight: 16,
-    },
-});
-
+// ─── Screen ───────────────────────────────────────────────────────────────────
 export default function BloodTestScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
-    const colors = useThemeColors();
-    const s = makeStyles(colors);
+    const themeColors = useThemeColors();
 
     const [packages, setPackages] = useState<LabPackage[]>([]);
     const [loading, setLoading] = useState(false);
     const [activeCategory, setActiveCategory] = useState(0);
     const [detailModalVisible, setDetailModalVisible] = useState(false);
-    const [detailModalCode, setDetailModalCode] = useState<string>('');
+    const [detailModalCode, setDetailModalCode] = useState('');
     const [searchText, setSearchText] = useState('');
 
-    // Rebook mode: auto-add package to cart and jump to checkout
     const isRebook = params.rebook === 'true';
     const rebookPackageCode = params.packageCode as string | undefined;
-    const rebookPackageName = params.packageName as string | undefined;
     const isFromCheckout = params.fromCheckout === 'true';
 
     const { addItem, itemCount } = useCart();
 
-    useEffect(() => {
-        fetchPackages();
-    }, []);
+    useEffect(() => { fetchPackages(); }, []);
 
-    // Rebook mode: auto-add package to cart and navigate to cart
     useEffect(() => {
         if (isRebook && rebookPackageCode && packages.length > 0) {
             const pkg = packages.find(p => p.code === rebookPackageCode);
             if (pkg) {
-                addItem({
-                    id: pkg.code,
-                    serviceType: 'Bloodwork',
-                    title: pkg.name,
-                    price: pkg.discounted_cost || pkg.cost,
-                    quantity: 1,
-                    details: pkg,
-                });
-                // Navigate to cart to complete the rebook
+                addItem({ id: pkg.code, serviceType: 'Bloodwork', title: pkg.name, price: pkg.discounted_cost || pkg.cost, quantity: 1, details: pkg });
                 router.push('/cart' as any);
             }
         }
-    }, [isRebook, rebookPackageCode, packages, addItem, router]);
+    }, [isRebook, rebookPackageCode, packages]);
 
     const fetchPackages = async () => {
         setLoading(true);
         try {
             const pkgs = await labService.getPackages();
             setPackages(pkgs || []);
-        } catch (error) {
-            console.error('Fetch packages failed:', error);
-        } finally {
-            setLoading(false);
-        }
+        } catch { /* silent */ } finally { setLoading(false); }
     };
 
     const handleViewDetails = useCallback((code: string) => {
@@ -410,149 +160,371 @@ export default function BloodTestScreen() {
     }, []);
 
     const handleAddToCart = useCallback((pkg: LabPackage) => {
-        addItem({
-            id: pkg.code,
-            serviceType: 'Bloodwork', // Used for category-wise grouping in the global cart
-            title: pkg.name,
-            price: pkg.discounted_cost || pkg.cost,
-            quantity: 1,
-            details: pkg,
-        });
+        addItem({ id: pkg.code, serviceType: 'Bloodwork', title: pkg.name, price: pkg.discounted_cost || pkg.cost, quantity: 1, details: pkg });
         setDetailModalVisible(false);
-        Alert.alert('Added to Cart', `${pkg.name} has been added to your cart successfully.`);
+        Alert.alert('Added to Cart', `${pkg.name} added to your cart.`);
     }, [addItem]);
 
-    const handleCartPress = useCallback(() => {
-        if (itemCount === 0) return;
-        router.push('/(tabs)/cart' as any);
-    }, [itemCount, router]);
+    const handleBookNow = useCallback((pkg: LabPackage) => {
+        setDetailModalVisible(false);
+        addItem({ id: pkg.code, serviceType: 'Bloodwork', title: pkg.name, price: pkg.discounted_cost || pkg.cost, quantity: 1, details: pkg });
+        router.push({
+            pathname: '/payment/checkout',
+            params: { category: 'blood-test', amount: String(pkg.discounted_cost || pkg.cost), label: pkg.name, skipUpsell: '1' },
+        } as any);
+    }, [router, addItem]);
 
-    // Memoize filtered packages to prevent unnecessary recalculations
     const filteredPackages = useMemo(() =>
-        packages.filter(pkg =>
-            pkg.name.toLowerCase().includes(searchText.toLowerCase())
-        ),
+        packages.filter(pkg => pkg.name.toLowerCase().includes(searchText.toLowerCase())),
         [packages, searchText]
     );
 
-    // Memoize renderItem to prevent FlatList item re-renders
-    const renderPackageCard = useCallback(({ item }: { item: LabPackage }) => (
-        <PackageCard item={item} onViewDetails={handleViewDetails} styles={s} />
-    ), [handleViewDetails, s]);
-
-    // Memoized empty state component to prevent unnecessary re-renders
-    const emptyListComponent = useMemo(() => (
-        loading ? null : (
-            <View style={s.emptyContainer}>
-                <Ionicons name="search" size={48} color={colors.textMuted} style={s.emptyIcon} />
-                <Text style={s.emptyTitle}>
-                    {searchText ? 'No tests found' : 'No tests available'}
-                </Text>
-                <Text style={s.emptySubtitle}>
-                    {searchText
-                        ? `Try searching for a different test or category`
-                        : 'Tests will appear here soon'
-                    }
-                </Text>
-            </View>
-        )
-    ), [searchText, loading, s, colors.textMuted]);
+    const renderItem = useCallback(({ item }: { item: LabPackage }) => (
+        <PackageCard
+            item={item}
+            onViewDetails={handleViewDetails}
+            onBookNow={handleBookNow}
+            themeColors={themeColors}
+        />
+    ), [handleViewDetails, handleBookNow, themeColors]);
 
     return (
-        <View style={[s.container, { paddingTop: insets.top }, ]}>
-            <StatusBar backgroundColor={colors.bgScreen} />
+        <View style={[styles.screen, { backgroundColor: Colors.primaryDark, paddingTop: insets.top }]}>
+            <StatusBar style="light" backgroundColor={Colors.primaryDark} />
 
-            {/* Header — Fixed, never remounted */}
-            <View style={[s.header, ]}>
-                <TouchableOpacity onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color={colors.textDark} />
+            {/* ── Green Header ── */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={s.headerTitle}>Blood Tests</Text>
-                {!isFromCheckout && (
-                    <TouchableOpacity onPress={handleCartPress}>
-                        <View style={s.cartIcon}>
-                            <Ionicons name="cart" size={24} color={colors.textDark} />
-                            {itemCount > 0 && (
-                                <View style={s.cartBadge}>
-                                    <Text style={s.cartBadgeText}>{itemCount}</Text>
-                                </View>
-                            )}
-                        </View>
-                    </TouchableOpacity>
-                )}
-                {isFromCheckout && <View style={{ width: 24 }} />}
-            </View>
-
-            {/* Search Bar — Fixed, stable input */}
-            <View style={[s.searchContainer, ]}>
-                <Ionicons name="search" size={18} color={colors.textMuted} style={s.searchIcon} />
-                <TextInput
-                    placeholder="Search blood tests, packages..."
-                    placeholderTextColor={colors.textMuted}
-                    style={s.searchInput}
-                    value={searchText}
-                    onChangeText={setSearchText}
-                />
-            </View>
-
-            {/* Category Tabs — Fixed, stable scroll */}
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={[s.categoriesScroll, ]}
-                contentContainerStyle={s.categoriesContent}
-            >
-                {CATEGORIES.map((cat, idx) => (
-                    <TouchableOpacity
-                        key={idx}
-                        onPress={() => setActiveCategory(idx)}
-                        style={[
-                            s.categoryTab,
-                            activeCategory === idx && s.categoryTabActive,
-                        ]}
-                    >
-                        <Text
-                            style={[
-                                s.categoryTabText,
-                                activeCategory === idx && s.categoryTabTextActive,
-                            ]}
-                        >
-                            {cat}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-
-            {/* Single FlatList Instance — Stable, persistent rendering */}
-            {/* Eliminates conditional rendering that caused layout thrashing */}
-            {loading ? (
-                <View style={[s.loadingContainer, ]}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={s.loadingText}>Loading tests...</Text>
+                <View style={styles.headerCenter}>
+                    <Text style={styles.headerTitle}>Blood Tests</Text>
+                    <Text style={styles.headerSub}>NABL Certified · Home Collection</Text>
                 </View>
-            ) : (
-                <FlatList
-                    data={filteredPackages}
-                    renderItem={renderPackageCard}
-                    keyExtractor={(item) => item.code}
-                    style={[s.flatList, ]}
-                    scrollEnabled={true}
-                    contentContainerStyle={s.listContent}
-                    showsVerticalScrollIndicator={false}
-                    ListEmptyComponent={emptyListComponent}
-                    maxToRenderPerBatch={10}
-                    updateCellsBatchingPeriod={50}
-                    initialNumToRender={10}
-                />
-            )}
+                {!isFromCheckout ? (
+                    <TouchableOpacity
+                        onPress={() => itemCount > 0 && router.push('/(tabs)/cart' as any)}
+                        style={styles.cartBtn}
+                    >
+                        <Ionicons name="cart-outline" size={20} color="#FFFFFF" />
+                        {itemCount > 0 && (
+                            <View style={styles.cartBadge}>
+                                <Text style={styles.cartBadgeText}>{itemCount}</Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                ) : (
+                    <View style={{ width: 40 }} />
+                )}
+            </View>
 
-            {/* Detail Modal — Outside FlatList, non-blocking */}
+            {/* ── Trust strip inside green area ── */}
+            <View style={styles.trustStrip}>
+                {[
+                    { icon: 'home-outline' as const, label: 'Free Home Collection' },
+                    { icon: 'time-outline' as const, label: 'Reports in 24h' },
+                    { icon: 'shield-checkmark-outline' as const, label: 'NABL Certified' },
+                ].map((b, i) => (
+                    <View key={i} style={styles.trustItem}>
+                        <Ionicons name={b.icon} size={12} color="rgba(255,255,255,0.8)" />
+                        <Text style={styles.trustLabel}>{b.label}</Text>
+                    </View>
+                ))}
+            </View>
+
+            {/* ── White rounded panel ── */}
+            <View style={[styles.contentPanel, { backgroundColor: themeColors.bgScreen }]}>
+                {/* Search */}
+                <View style={[styles.searchBar, { backgroundColor: themeColors.bgCard, borderColor: themeColors.borderLight }]}>
+                    <Ionicons name="search-outline" size={16} color={themeColors.textMuted} style={{ marginRight: 8 }} />
+                    <TextInput
+                        placeholder="Search tests & packages..."
+                        placeholderTextColor={themeColors.textMuted}
+                        style={[styles.searchInput, { color: themeColors.textDark }]}
+                        value={searchText}
+                        onChangeText={setSearchText}
+                    />
+                    {searchText.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearchText('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                            <Ionicons name="close-circle" size={15} color={themeColors.textMuted} />
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                {/* Category chips */}
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.chipsRow}
+                    style={styles.chipsScroll}
+                >
+                    {CATEGORIES.map((cat, idx) => {
+                        const active = activeCategory === idx;
+                        return (
+                            <TouchableOpacity
+                                key={idx}
+                                onPress={() => setActiveCategory(idx)}
+                                style={[
+                                    styles.chip,
+                                    active
+                                        ? { backgroundColor: Colors.primaryDark, borderColor: Colors.primaryDark }
+                                        : { backgroundColor: themeColors.bgCard, borderColor: themeColors.borderLight },
+                                ]}
+                                activeOpacity={0.75}
+                            >
+                                <Text style={[styles.chipText, active ? { color: '#FFFFFF' } : { color: themeColors.textMuted }]}>
+                                    {cat}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
+
+                {/* List */}
+                {loading ? (
+                    <View style={styles.loadingBox}>
+                        <ActivityIndicator size="large" color={Colors.primaryDark} />
+                        <Text style={[styles.loadingText, { color: themeColors.textMuted }]}>Loading packages...</Text>
+                    </View>
+                ) : (
+                    <FlatList
+                        data={filteredPackages}
+                        renderItem={renderItem}
+                        keyExtractor={item => item.code}
+                        contentContainerStyle={styles.listContent}
+                        showsVerticalScrollIndicator={false}
+                        ListHeaderComponent={
+                            <Text style={[styles.countLabel, { color: themeColors.textMuted }]}>
+                                {filteredPackages.length} {filteredPackages.length === 1 ? 'package' : 'packages'} available
+                            </Text>
+                        }
+                        ListEmptyComponent={
+                            <View style={styles.emptyBox}>
+                                <Ionicons name="search-outline" size={42} color={themeColors.textMuted} style={{ opacity: 0.35, marginBottom: 10 }} />
+                                <Text style={[styles.emptyTitle, { color: themeColors.textDark }]}>No packages found</Text>
+                                <Text style={[styles.emptySub, { color: themeColors.textMuted }]}>Try a different search term</Text>
+                            </View>
+                        }
+                        maxToRenderPerBatch={10}
+                        initialNumToRender={8}
+                    />
+                )}
+            </View>
+
             <BloodTestDetailModal
                 visible={detailModalVisible}
                 packageCode={detailModalCode}
                 onClose={() => setDetailModalVisible(false)}
                 onAddToCart={handleAddToCart}
+                onBookNow={handleBookNow}
             />
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    screen: { flex: 1 },
+
+    // Header
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: Spacing.lg,
+        paddingTop: Spacing.sm,
+        paddingBottom: Spacing.md,
+        gap: Spacing.md,
+    },
+    headerCenter: { flex: 1, alignItems: 'center' },
+    headerTitle: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading2,
+        color: '#FFFFFF',
+        letterSpacing: 0.2,
+    },
+    headerSub: {
+        fontFamily: Fonts.regular,
+        fontSize: 10,
+        color: 'rgba(255,255,255,0.65)',
+        marginTop: 1,
+        letterSpacing: 0.3,
+    },
+    cartBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cartBadge: {
+        position: 'absolute',
+        top: -4,
+        right: -4,
+        backgroundColor: '#EF4444',
+        borderRadius: 9,
+        width: 18,
+        height: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: Colors.primaryDark,
+    },
+    cartBadgeText: { fontFamily: Fonts.semiBold, fontSize: 9, color: '#FFFFFF' },
+
+    // Trust strip
+    trustStrip: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: Spacing.lg,
+        paddingHorizontal: Spacing.lg,
+        paddingBottom: Spacing.lg,
+    },
+    trustItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    trustLabel: { fontFamily: Fonts.regular, fontSize: 10, color: 'rgba(255,255,255,0.75)' },
+
+    // White panel
+    contentPanel: {
+        flex: 1,
+        borderTopLeftRadius: Radius.xl * 2,
+        borderTopRightRadius: Radius.xl * 2,
+        paddingTop: Spacing.lg,
+        ...Shadow.header,
+    },
+
+    // Search
+    searchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginHorizontal: Spacing.lg,
+        marginBottom: Spacing.md,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: 10,
+        borderRadius: Radius.md,
+        borderWidth: 1,
+    },
+    searchInput: {
+        flex: 1,
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        padding: 0,
+    },
+
+    // Chips
+    chipsScroll: { flexGrow: 0, marginBottom: Spacing.sm },
+    chipsRow: { paddingHorizontal: Spacing.lg, gap: Spacing.sm, paddingRight: Spacing.xl },
+    chip: {
+        paddingHorizontal: Spacing.md,
+        paddingVertical: 7,
+        borderRadius: Radius.full,
+        borderWidth: 1,
+    },
+    chipText: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall },
+
+    // Count label
+    countLabel: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        marginBottom: Spacing.sm,
+    },
+
+    // List
+    listContent: {
+        paddingHorizontal: Spacing.lg,
+        paddingBottom: Spacing.xl * 2,
+    },
+
+    // Card
+    card: {
+        borderRadius: Radius.lg,
+        marginBottom: Spacing.md,
+        padding: Spacing.md,
+        overflow: 'hidden',
+        ...Shadow.card,
+        shadowOpacity: 0.06,
+        elevation: 2,
+    },
+    ribbon: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        backgroundColor: '#EF4444',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderTopRightRadius: Radius.lg,
+        borderBottomLeftRadius: Radius.sm,
+    },
+    ribbonText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: 9,
+        color: '#FFFFFF',
+        letterSpacing: 0.5,
+    },
+    cardInner: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: Spacing.md,
+    },
+    iconBox: {
+        width: 48,
+        height: 48,
+        borderRadius: Radius.md,
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexShrink: 0,
+        marginTop: 2,
+    },
+    cardBody: { flex: 1, gap: 5 },
+    cardName: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.body,
+        lineHeight: 20,
+        paddingRight: 52, // space for discount ribbon
+    },
+    metaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        flexWrap: 'wrap',
+    },
+    metaText: { fontFamily: Fonts.regular, fontSize: 11 },
+    metaDot: { fontSize: 11, opacity: 0.5 },
+    cardFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 4,
+    },
+    strikePrice: {
+        fontFamily: Fonts.regular,
+        fontSize: 11,
+        textDecorationLine: 'line-through',
+    },
+    finalPrice: {
+        fontFamily: Fonts.bold,
+        fontSize: FontSize.heading2,
+        color: Colors.primaryDark,
+        letterSpacing: -0.5,
+    },
+    btnRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
+    detailsBtn: {
+        paddingHorizontal: Spacing.md,
+        paddingVertical: 7,
+        borderRadius: Radius.sm,
+        borderWidth: 1.5,
+    },
+    detailsBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall },
+    bookBtn: {
+        paddingHorizontal: Spacing.md,
+        paddingVertical: 7,
+        borderRadius: Radius.sm,
+        backgroundColor: Colors.primaryDark,
+    },
+    bookBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: '#FFFFFF' },
+
+    // Loading / empty
+    loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.md, paddingTop: 60 },
+    loadingText: { fontFamily: Fonts.regular, fontSize: FontSize.body },
+    emptyBox: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 32 },
+    emptyTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, marginBottom: 6, textAlign: 'center' },
+    emptySub: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, textAlign: 'center', lineHeight: 18 },
+});

@@ -3,7 +3,7 @@
 // Edge cases: cancel (ondismiss), failure (retry), app crash (AsyncStorage recovery)
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-    View, Text, ScrollView, TouchableOpacity,
+    View, Text, ScrollView, TouchableOpacity, Modal,
     TextInput, ActivityIndicator, StyleSheet, Platform, Alert, NativeModules,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -15,6 +15,7 @@ import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { paymentService, PaymentMethod } from '@/services/api/paymentService';
 import { bookingService } from '@/services/api/bookingService';
 import { labService, type LabSlot } from '@/services/api/labService';
+import { storeService } from '@/services/api/storeService';
 import { storageService, STORAGE_KEYS } from '@/services/device/storageService';
 import { useUser } from '@/context/UserContext';
 import { useCart } from '@/context/CartContext';
@@ -133,6 +134,8 @@ export default function CheckoutScreen() {
     const [slotsLoading, setSlotsLoading] = useState(false);
     const [coords, setCoords] = useState({ lat: '12.9716', long: '77.5946' });
     const [serviceabilityStatus, setServiceabilityStatus] = useState<'unchecked' | 'checking' | 'serviceable' | 'non-serviceable'>('unchecked');
+    const [collectionType, setCollectionType] = useState<'HOME' | 'LAB'>('HOME');
+    const [confirmModalVisible, setConfirmModalVisible] = useState(false);
 
     // Benefit calculation state
     const [calcLoading, setCalcLoading] = useState(false);
@@ -327,48 +330,34 @@ export default function CheckoutScreen() {
         }
     };
 
-    // ─── Open Razorpay native popup ─────────────────────────
-    const handlePay = useCallback(async () => {
-        if (payLoading) return;
-
-        // ─── Blood Test Validation ────────────────────────────────────────────
-        if (isBloodTest) {
-            if (!selectedDate || !selectedTime) {
-                Alert.alert('Required', 'Please select collection date and time');
-                return;
-            }
-            if (!selectedAddress || !selectedAddress.line1) {
-                Alert.alert('Address Required', 'Please select a collection address');
-                return;
-            }
-            if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) {
-                Alert.alert('Pincode Required', 'Please enter a valid 6-digit pincode');
-                return;
-            }
-            // ─── Serviceability Check: Block payment if location is not serviceable ───
-            if (serviceabilityStatus === 'non-serviceable') {
-                Alert.alert(
-                    'Location Not Serviceable',
-                    'Collection is not available at this location. Please select a different address.'
-                );
-                return;
-            }
-            if (serviceabilityStatus !== 'serviceable') {
-                // Status is 'unchecked' or 'checking'
-                Alert.alert(
-                    'Address Verification Needed',
-                    'Please wait for address verification to complete, or try a different location.'
-                );
-                return;
-            }
-            if (!phoneNumber?.trim() || phoneNumber.length < 10) {
-                Alert.alert('Phone Required', 'Please enter a valid 10-digit phone number');
-                return;
-            }
-        }
+    // ─── Core payment execution (called after confirmation for blood tests) ─
+    const executePayment = useCallback(async () => {
 
         // ─── Wellness/Product Validation ───────────────────────────────────────
         if (params.category === 'wellness') {
+            // Check if all wellness products are still enabled
+            try {
+                const res = await storeService.getProducts({ limit: 1000 });
+                const disabledItems: string[] = [];
+                bloodTestItems.forEach(item => {
+                    const product = (res.data || []).find(p => p.id === item.id);
+                    if (!product || !product.isEnabled) {
+                        disabledItems.push(item.title);
+                    }
+                });
+                if (disabledItems.length > 0) {
+                    Alert.alert(
+                        'Products Unavailable',
+                        `${disabledItems.join(', ')} ${disabledItems.length === 1 ? 'is' : 'are'} no longer available. Please update your cart.`,
+                        [{ text: 'OK', onPress: () => router.back() }]
+                    );
+                    setPayLoading(false);
+                    return;
+                }
+            } catch (e) {
+                console.warn('Failed to validate product status:', e);
+            }
+
             if (!selectedAddress || !selectedAddress.line1) {
                 Alert.alert('Address Required', 'Please select a delivery address.');
                 return;
@@ -403,7 +392,7 @@ export default function CheckoutScreen() {
 
                     // Create a booking for each package (Redcliffe requires separate bookings)
                     const basePayload = {
-                        bookingType: 'HOME' as const,
+                        bookingType: collectionType,
                         patient: {
                             name: profile?.name || '',
                             age: calculateAge(profile?.dateOfBirth),
@@ -694,7 +683,47 @@ export default function CheckoutScreen() {
         } finally {
             setPayLoading(false);
         }
-    }, [payLoading, finalAmount, selectedMethod, couponApplied, couponCode, params, label, router]);
+    }, [payLoading, finalAmount, selectedMethod, couponApplied, couponCode, params, label, router, collectionType, selectedDate, selectedTime, selectedAddress, serviceabilityStatus, phoneNumber]);
+
+    // ─── Open Razorpay native popup ─────────────────────────
+    const handlePay = useCallback(async () => {
+        if (payLoading) return;
+
+        // ─── Blood Test Validation ────────────────────────────────────────────
+        if (isBloodTest) {
+            if (!selectedDate || !selectedTime) {
+                Alert.alert('Required', 'Please select collection date and time');
+                return;
+            }
+            if (collectionType === 'HOME') {
+                if (!selectedAddress || !selectedAddress.line1) {
+                    Alert.alert('Address Required', 'Please select a collection address');
+                    return;
+                }
+                if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) {
+                    Alert.alert('Pincode Required', 'Please enter a valid 6-digit pincode');
+                    return;
+                }
+                if (serviceabilityStatus === 'non-serviceable') {
+                    Alert.alert('Location Not Serviceable', 'Collection is not available at this location. Please select a different address.');
+                    return;
+                }
+                if (serviceabilityStatus !== 'serviceable') {
+                    Alert.alert('Address Verification Needed', 'Please wait for address verification to complete, or try a different location.');
+                    return;
+                }
+            }
+            if (!phoneNumber?.trim() || phoneNumber.length < 10) {
+                Alert.alert('Phone Required', 'Please enter a valid 10-digit phone number');
+                return;
+            }
+            // Show summary confirmation before Razorpay
+            setConfirmModalVisible(true);
+            return;
+        }
+
+        await executePayment();
+    }, [payLoading, isBloodTest, selectedDate, selectedTime, collectionType, selectedAddress, serviceabilityStatus, phoneNumber, executePayment]);
 
     // ─── UI ─────────────────────────────────────────────────
     return (
@@ -882,8 +911,39 @@ export default function CheckoutScreen() {
                     </View>
                 )}
 
-                {/* Blood Test: Collection Address — Using AddressPickerSection */}
+                {/* Blood Test: Collection Type */}
                 {isBloodTest && (
+                    <View style={styles.card}>
+                        <Text style={styles.cardTitle}>Collection Type</Text>
+                        <TouchableOpacity
+                            style={[styles.collectionOption, collectionType === 'HOME' && styles.collectionOptionActive]}
+                            onPress={() => setCollectionType('HOME')}
+                            activeOpacity={0.75}
+                        >
+                            <Ionicons name="home" size={20} color={collectionType === 'HOME' ? Colors.primary : Colors.textLight} style={{ marginRight: 12 }} />
+                            <View style={{ flex: 1 }}>
+                                <Text style={[styles.collectionOptionTitle, collectionType === 'HOME' && { color: Colors.textDark }]}>Home Collection</Text>
+                                <Text style={styles.collectionOptionDesc}>We'll collect sample from your home</Text>
+                            </View>
+                            <Ionicons name={collectionType === 'HOME' ? 'checkmark-circle' : 'radio-button-off'} size={22} color={collectionType === 'HOME' ? Colors.primary : '#D1D5DB'} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.collectionOption, collectionType === 'LAB' && styles.collectionOptionActive]}
+                            onPress={() => setCollectionType('LAB')}
+                            activeOpacity={0.75}
+                        >
+                            <Ionicons name="business" size={20} color={collectionType === 'LAB' ? Colors.primary : Colors.textLight} style={{ marginRight: 12 }} />
+                            <View style={{ flex: 1 }}>
+                                <Text style={[styles.collectionOptionTitle, collectionType === 'LAB' && { color: Colors.textDark }]}>Lab Visit</Text>
+                                <Text style={styles.collectionOptionDesc}>Drop your sample at the nearest lab</Text>
+                            </View>
+                            <Ionicons name={collectionType === 'LAB' ? 'checkmark-circle' : 'radio-button-off'} size={22} color={collectionType === 'LAB' ? Colors.primary : '#D1D5DB'} />
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* Blood Test: Collection Address — Using AddressPickerSection */}
+                {isBloodTest && collectionType === 'HOME' && (
                     <AddressPickerSection
                         selectedAddress={selectedAddress}
                         onAddressChange={setSelectedAddress}
@@ -1001,6 +1061,81 @@ export default function CheckoutScreen() {
                     }
                 </TouchableOpacity>
             </View>
+
+            {/* Blood Test: Order Confirmation Modal */}
+            {isBloodTest && (
+                <Modal visible={confirmModalVisible} transparent animationType="slide">
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalSheet}>
+                            <View style={styles.modalHandle} />
+                            <Text style={styles.modalTitle}>Confirm Your Booking</Text>
+
+                            <View style={styles.modalSummary}>
+                                {bloodTestItems.map((item, idx) => (
+                                    <View key={idx} style={styles.modalRow}>
+                                        <Ionicons name="flask-outline" size={15} color={Colors.primary} style={{ marginRight: 8 }} />
+                                        <Text style={styles.modalRowLabel} numberOfLines={1}>{item.title}</Text>
+                                        <Text style={styles.modalRowValue}>₹{item.price}</Text>
+                                    </View>
+                                ))}
+
+                                <View style={[styles.modalRow, styles.modalDivider]}>
+                                    <Ionicons name="calendar-outline" size={15} color={Colors.primary} style={{ marginRight: 8 }} />
+                                    <Text style={styles.modalRowLabel}>Date & Time</Text>
+                                    <Text style={styles.modalRowValue} numberOfLines={1}>
+                                        {selectedDate?.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}, {selectedTime}
+                                    </Text>
+                                </View>
+
+                                <View style={[styles.modalRow, styles.modalDivider]}>
+                                    <Ionicons name={collectionType === 'LAB' ? 'business-outline' : 'home-outline'} size={15} color={Colors.primary} style={{ marginRight: 8 }} />
+                                    <Text style={styles.modalRowLabel}>Collection</Text>
+                                    <Text style={styles.modalRowValue}>{collectionType === 'LAB' ? 'Lab Visit' : 'Home Collection'}</Text>
+                                </View>
+
+                                {collectionType === 'HOME' && selectedAddress?.line1 && (
+                                    <View style={[styles.modalRow, styles.modalDivider]}>
+                                        <Ionicons name="location-outline" size={15} color={Colors.primary} style={{ marginRight: 8 }} />
+                                        <Text style={styles.modalRowLabel}>Address</Text>
+                                        <Text style={[styles.modalRowValue, { maxWidth: '55%' }]} numberOfLines={2}>{selectedAddress.line1}</Text>
+                                    </View>
+                                )}
+
+                                <View style={[styles.modalRow, styles.modalDivider, { marginTop: 4 }]}>
+                                    <Ionicons name="cash-outline" size={15} color={Colors.primary} style={{ marginRight: 8 }} />
+                                    <Text style={[styles.modalRowLabel, { fontFamily: Fonts.semiBold, color: Colors.textDark }]}>Total Payable</Text>
+                                    <Text style={[styles.modalRowValue, { fontFamily: Fonts.semiBold, fontSize: 16, color: Colors.primary }]}>
+                                        ₹{finalAmount.toLocaleString('en-IN')}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.modalActions}>
+                                <TouchableOpacity
+                                    style={styles.modalCancelBtn}
+                                    onPress={() => setConfirmModalVisible(false)}
+                                >
+                                    <Text style={styles.modalCancelText}>Edit</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.modalConfirmBtn}
+                                    onPress={() => {
+                                        setConfirmModalVisible(false);
+                                        executePayment();
+                                    }}
+                                >
+                                    {payLoading
+                                        ? <ActivityIndicator size="small" color="#FFFFFF" />
+                                        : <Text style={styles.modalConfirmText}>
+                                            {selectedMethod === 'CASH' ? 'Confirm Booking' : `Confirm & Pay`}
+                                          </Text>
+                                    }
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+            )}
         </SafeAreaView>
     );
 }
@@ -1276,5 +1411,118 @@ const styles = StyleSheet.create({
         borderRadius: Radius.md,
         borderWidth: 1,
         marginTop: Spacing.md,
+    },
+
+    // Collection Type
+    collectionOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 14,
+        borderWidth: 1,
+        borderColor: Colors.borderLight,
+        borderRadius: Radius.md,
+        backgroundColor: '#FFFFFF',
+        marginBottom: 8,
+    },
+    collectionOptionActive: {
+        borderColor: Colors.primary,
+        backgroundColor: '#F0FAF4',
+    },
+    collectionOptionTitle: {
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.body,
+        color: Colors.textMuted,
+    },
+    collectionOptionDesc: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.caption ?? 12,
+        color: Colors.textMuted,
+        marginTop: 2,
+    },
+
+    // Confirmation Modal
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalSheet: {
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        padding: 20,
+        paddingBottom: 36,
+    },
+    modalHandle: {
+        width: 40,
+        height: 4,
+        backgroundColor: '#E5E7EB',
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginBottom: 16,
+    },
+    modalTitle: {
+        fontFamily: Fonts.semiBold,
+        fontSize: 16,
+        color: Colors.textDark,
+        marginBottom: 16,
+    },
+    modalSummary: {
+        backgroundColor: '#F9FAFB',
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 16,
+    },
+    modalRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+    },
+    modalDivider: {
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
+        marginTop: 4,
+    },
+    modalRowLabel: {
+        flex: 1,
+        fontFamily: Fonts.regular,
+        fontSize: 13,
+        color: Colors.textMuted,
+    },
+    modalRowValue: {
+        fontFamily: Fonts.medium,
+        fontSize: 13,
+        color: Colors.textDark,
+        textAlign: 'right',
+    },
+    modalActions: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    modalCancelBtn: {
+        flex: 1,
+        paddingVertical: 13,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: Colors.primary,
+        alignItems: 'center',
+    },
+    modalCancelText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: 14,
+        color: Colors.primary,
+    },
+    modalConfirmBtn: {
+        flex: 1,
+        backgroundColor: Colors.primary,
+        paddingVertical: 13,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalConfirmText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: 14,
+        color: '#FFFFFF',
     },
 });

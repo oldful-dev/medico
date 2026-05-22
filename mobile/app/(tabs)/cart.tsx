@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
     ScrollView, Platform, Alert,
@@ -11,6 +11,7 @@ import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/th
 import { useCart } from '@/context/CartContext';
 import { useUser } from '@/context/UserContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { storeService } from '@/services/api/storeService';
 
 // ─── Category Mapping ────────────────────────────────────────
 type ServiceCategory = 'blood-test' | 'wellness' | 'service' | 'doctor' | 'nurse' | 'other';
@@ -92,12 +93,38 @@ export default function CartScreen() {
     const { items, removeItem, clearCategory } = useCart();
     const { profile } = useUser();
     const [showMixedCartInfo, setShowMixedCartInfo] = useState(false);
+    const [disabledProductIds, setDisabledProductIds] = useState<Set<string>>(new Set());
 
     // Check for active subscription/plan
     const hasActivePlan = profile?.subscriptions?.some((s: any) => s.status === 'ACTIVE');
     const activePlanId = profile?.subscriptions?.find((s: any) => s.status === 'ACTIVE')?.id;
 
     const TAB_BAR_HEIGHT = 83;
+
+    // Check product status on mount and when items change
+    useEffect(() => {
+        const checkProductStatus = async () => {
+            const wellnessItems = items.filter(i => categorizeItem(i.serviceType) === 'wellness');
+            if (wellnessItems.length === 0) {
+                setDisabledProductIds(new Set());
+                return;
+            }
+            try {
+                const res = await storeService.getProducts({ limit: 1000 });
+                const disabledIds = new Set<string>();
+                wellnessItems.forEach(item => {
+                    const product = (res.data || []).find(p => p.id === item.id);
+                    if (!product || !product.isEnabled) {
+                        disabledIds.add(item.id);
+                    }
+                });
+                setDisabledProductIds(disabledIds);
+            } catch (e) {
+                console.warn('Failed to check product status:', e);
+            }
+        };
+        checkProductStatus();
+    }, [items]);
 
     // Group items by category
     const groupedByCategory = items.reduce((acc, item) => {
@@ -138,10 +165,26 @@ export default function CartScreen() {
     const handleCategoryCheckout = (category: ServiceCategory) => {
         const config = CATEGORY_CONFIG[category];
         const categoryItems = groupedByCategory[category];
+
+        // Check if any wellness items are disabled
+        if (category === 'wellness') {
+            const disabledItems = categoryItems.filter(item => disabledProductIds.has(item.id));
+            if (disabledItems.length > 0) {
+                Alert.alert(
+                    'Products Unavailable',
+                    `${disabledItems.map(i => i.title).join(', ')} ${disabledItems.length === 1 ? 'is' : 'are'} no longer available.`,
+                    [
+                        { text: 'Remove', onPress: () => disabledItems.forEach(i => removeItem(i.id)) },
+                        { text: 'Keep', style: 'cancel' },
+                    ]
+                );
+                return;
+            }
+        }
+
         const categoryTotal = categoryItems.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
 
         if (category === 'blood-test') {
-            // Blood test: use universal checkout with blood-test category
             router.push({
                 pathname: '/payment/checkout',
                 params: {
@@ -149,7 +192,7 @@ export default function CartScreen() {
                     amount: String(categoryTotal),
                     label: 'Blood Test Package',
                     itemCount: categoryItems.length,
-                    skipUpsell: '1', // Skip plan upsell for blood tests
+                    skipUpsell: '1',
                 },
             } as any);
         } else if (category === 'doctor') {
@@ -261,9 +304,16 @@ export default function CartScreen() {
                                 {categoryItems.map(item => {
                                     const icon = SERVICE_ICON[item.serviceType] || 'medical-bag';
                                     const itemTotal = (item.price || 0) * (item.quantity || 1);
+                                    const isDisabled = disabledProductIds.has(item.id);
                                     return (
-                                        <View key={item.id} style={styles.cartItem}>
-                                            <View style={styles.itemContent}>
+                                        <View key={item.id} style={[styles.cartItem, isDisabled && styles.cartItemDisabled]}>
+                                            {isDisabled && (
+                                                <View style={styles.disabledOverlay}>
+                                                    <Ionicons name="alert-circle-outline" size={18} color="#EF4444" />
+                                                    <Text style={styles.disabledLabel}>No longer available</Text>
+                                                </View>
+                                            )}
+                                            <View style={[styles.itemContent, isDisabled && { opacity: 0.5 }]}>
                                                 <View style={[styles.itemIcon, { backgroundColor: `${config.color}08` }]}>
                                                     <MaterialCommunityIcons name={icon as any} size={18} color={config.color} />
                                                 </View>
@@ -437,6 +487,28 @@ const styles = StyleSheet.create({
         paddingVertical: Spacing.sm,
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
+        position: 'relative',
+    },
+    cartItemDisabled: {
+        backgroundColor: '#FAFAFA',
+    },
+    disabledOverlay: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        paddingRight: Spacing.md,
+        zIndex: 10,
+        gap: 6,
+    },
+    disabledLabel: {
+        fontFamily: Fonts.semiBold,
+        fontSize: 12,
+        color: '#EF4444',
     },
     itemContent: {
         flexDirection: 'row',

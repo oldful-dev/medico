@@ -32,6 +32,8 @@ export default function BloodTestOrderSummaryScreen() {
         bookingPayload?: string;
         amount?: string;
         label?: string;
+        testsCount?: string;
+        collectionType?: string;
     }>();
 
     const [isLoading, setIsLoading] = useState(false);
@@ -225,7 +227,11 @@ export default function BloodTestOrderSummaryScreen() {
                     <View style={styles.cardHeader}>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.testName}>{params.label}</Text>
-                            <Text style={styles.parametersText}>{bookingData?.packages[0]?.name}</Text>
+                            {params.testsCount && parseInt(params.testsCount) > 0 && (
+                                <Text style={styles.parametersText}>
+                                    {params.testsCount} {parseInt(params.testsCount) === 1 ? 'Parameter' : 'Parameters'} included
+                                </Text>
+                            )}
                         </View>
                         <View style={styles.priceTag}>
                             <Text style={styles.priceAmount}>₹{baseAmount}</Text>
@@ -253,28 +259,31 @@ export default function BloodTestOrderSummaryScreen() {
                     {/* Collection Type */}
                     <View style={styles.detailRow}>
                         <View style={styles.detailIcon}>
-                            <Ionicons name="home" size={16} color={PRIMARY_GREEN} />
+                            <Ionicons name={params.collectionType === 'LAB' ? 'business' : 'home'} size={16} color={PRIMARY_GREEN} />
                         </View>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.detailLabel}>Collection Type</Text>
-                            <Text style={styles.detailValue}>Home Collection</Text>
+                            <Text style={styles.detailValue}>{params.collectionType === 'LAB' ? 'Lab Visit' : 'Home Collection'}</Text>
                         </View>
                     </View>
 
-                    <View style={styles.divider} />
-
-                    {/* Address */}
-                    <View style={styles.detailRow}>
-                        <View style={styles.detailIcon}>
-                            <Ionicons name="location" size={16} color={PRIMARY_GREEN} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.detailLabel}>Address</Text>
-                            <Text style={styles.detailValue} numberOfLines={2}>
-                                {bookingData?.address?.line1}, {bookingData?.address?.pincode}
-                            </Text>
-                        </View>
-                    </View>
+                    {params.collectionType !== 'LAB' && bookingData?.address?.line1 && (
+                        <>
+                            <View style={styles.divider} />
+                            {/* Address */}
+                            <View style={styles.detailRow}>
+                                <View style={styles.detailIcon}>
+                                    <Ionicons name="location" size={16} color={PRIMARY_GREEN} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.detailLabel}>Address</Text>
+                                    <Text style={styles.detailValue} numberOfLines={2}>
+                                        {bookingData?.address?.line1}, {bookingData?.address?.pincode}
+                                    </Text>
+                                </View>
+                            </View>
+                        </>
+                    )}
                 </View>
 
                 {/* Price Breakdown */}

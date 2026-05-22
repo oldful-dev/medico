@@ -16,9 +16,10 @@ interface DetailModalProps {
     packageCode?: string;
     onClose: () => void;
     onAddToCart: (pkg: LabPackage) => void;
+    onBookNow?: (pkg: LabPackage) => void;
 }
 
-export function BloodTestDetailModal({ visible, packageCode, onClose, onAddToCart }: DetailModalProps) {
+export function BloodTestDetailModal({ visible, packageCode, onClose, onAddToCart, onBookNow }: DetailModalProps) {
     const [pkg, setPkg] = useState<LabPackage | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -178,17 +179,31 @@ export function BloodTestDetailModal({ visible, packageCode, onClose, onAddToCar
                         )}
                     </ScrollView>
 
-                    {/* Sticky Add to Cart Button */}
+                    {/* Sticky Footer Buttons */}
                     <View style={styles.footer}>
                         <TouchableOpacity
-                            style={styles.addBtn}
+                            style={styles.cartBtn}
                             onPress={() => {
                                 if (pkg) onAddToCart(pkg);
                                 onClose();
                             }}
                         >
-                            <Text style={styles.addBtnText}>Add to Cart</Text>
+                            <Ionicons name="cart-outline" size={18} color={PRIMARY_GREEN} style={{ marginRight: 6 }} />
+                            <Text style={styles.cartBtnText}>Add to Cart</Text>
                         </TouchableOpacity>
+                        {onBookNow && (
+                            <TouchableOpacity
+                                style={styles.bookBtn}
+                                onPress={() => {
+                                    if (pkg) {
+                                        onClose();
+                                        onBookNow(pkg);
+                                    }
+                                }}
+                            >
+                                <Text style={styles.bookBtnText}>Book Now</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </View>
             </View>
@@ -390,22 +405,41 @@ const styles = StyleSheet.create({
         paddingTop: 2,
     },
     footer: {
+        flexDirection: 'row',
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderTopWidth: 1,
         borderTopColor: '#F0F0F0',
         backgroundColor: '#fff',
+        gap: 10,
     },
-    addBtn: {
+    cartBtn: {
+        flex: 1,
+        flexDirection: 'row',
+        paddingVertical: 13,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1.5,
+        borderColor: PRIMARY_GREEN,
+        backgroundColor: '#FFFFFF',
+    },
+    cartBtnText: {
+        color: PRIMARY_GREEN,
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    bookBtn: {
+        flex: 1,
         backgroundColor: PRIMARY_GREEN,
-        paddingVertical: 14,
+        paddingVertical: 13,
         borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    addBtnText: {
+    bookBtnText: {
         color: '#fff',
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: '700',
     },
     parametersBox: {
