@@ -85,14 +85,15 @@ export default function TripTravelsScreen() {
                 serviceId,
                 cityId,
                 scheduledDate: travelDates.toISOString(),
-                addressLine: 'Trip / Travel Inquiry',
+                addressLine: destination,
                 formDataJson: {
                     type: 'TRIP',
                     destination,
+                    travelDates: travelDates.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
                     numTravellers: parseInt(numTravellers),
                     purposeOfTravel,
-                    specialRequirements,
-                    additionalDetails,
+                    specialRequirements: specialRequirements.trim() || null,
+                    additionalDetails: additionalDetails.trim() || null,
                 },
             });
             if (res.success && res.data) {
@@ -113,12 +114,12 @@ export default function TripTravelsScreen() {
 
     return (
         <View style={[s.container, { paddingTop: insets.top }]}>
-            <StatusBar barStyle="dark-content" />
+            <StatusBar style="light" backgroundColor="#02743F" />
 
             {/* Header with back button + title */}
             <View style={s.header}>
                 <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Ionicons name="arrow-back" size={24} color={colors.textDark} />
+                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={s.headerTitle}>Trip & Travel</Text>
                 <View style={{ width: 24 }} />
@@ -359,12 +360,12 @@ function makeStyles(colors: any) {
             justifyContent: 'space-between',
             paddingHorizontal: 16,
             paddingVertical: 14,
-            backgroundColor: colors.bgScreen,
+            backgroundColor: '#02743F',
         },
         headerTitle: {
             fontSize: 18,
             fontWeight: '600',
-            color: colors.textDark,
+            color: '#FFFFFF',
             flex: 1,
             textAlign: 'center',
         },
