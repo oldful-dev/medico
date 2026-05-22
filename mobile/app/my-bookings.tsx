@@ -400,30 +400,24 @@ export default function MyBookingsScreen() {
                 <View style={styles.statsRow}>
                     <View style={styles.statCard}>
                         <View style={styles.statIcon}>
-                            <Ionicons name="calendar" size={18} color={PRIMARY_GREEN} />
+                            <Ionicons name="calendar" size={20} color={PRIMARY_GREEN} />
                         </View>
-                        <View>
-                            <Text style={styles.statValue}>{upcomingCount}</Text>
-                            <Text style={styles.statLabel}>Upcoming</Text>
-                        </View>
+                        <Text style={styles.statValue}>{upcomingCount}</Text>
+                        <Text style={styles.statLabel}>Upcoming</Text>
                     </View>
                     <View style={styles.statCard}>
                         <View style={styles.statIcon}>
-                            <Ionicons name="checkmark-circle" size={18} color={PRIMARY_GREEN} />
+                            <Ionicons name="checkmark-circle" size={20} color={PRIMARY_GREEN} />
                         </View>
-                        <View>
-                            <Text style={styles.statValue}>{completedCount}</Text>
-                            <Text style={styles.statLabel}>Completed</Text>
-                        </View>
+                        <Text style={styles.statValue}>{completedCount}</Text>
+                        <Text style={styles.statLabel}>Completed</Text>
                     </View>
                     <View style={styles.statCard}>
                         <View style={styles.statIcon}>
-                            <Ionicons name="layers" size={18} color={PRIMARY_GREEN} />
+                            <Ionicons name="layers" size={20} color={PRIMARY_GREEN} />
                         </View>
-                        <View>
-                            <Text style={styles.statValue}>{bookings.length}</Text>
-                            <Text style={styles.statLabel}>Total</Text>
-                        </View>
+                        <Text style={styles.statValue}>{bookings.length}</Text>
+                        <Text style={styles.statLabel}>Total</Text>
                     </View>
                 </View>
             </View>
@@ -564,14 +558,14 @@ const styles = StyleSheet.create({
     heroHeader: {
         backgroundColor: PRIMARY_GREEN,
         paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 24,
+        paddingTop: 14,
+        paddingBottom: 28,
     },
     heroContent: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 24,
+        marginBottom: 28,
     },
     backBtn: {
         width: 40,
@@ -584,49 +578,49 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     heroTitle: {
-        fontSize: 24,
+        fontSize: 26,
         fontWeight: '700',
         color: '#FFFFFF',
-        marginBottom: 2,
+        marginBottom: 3,
     },
     heroSubtitle: {
-        fontSize: 12,
-        color: 'rgba(255,255,255,0.7)',
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.8)',
         fontWeight: '500',
     },
     statsRow: {
         flexDirection: 'row',
-        gap: 10,
+        gap: 12,
     },
     statCard: {
         flex: 1,
-        backgroundColor: 'rgba(255,255,255,0.12)',
-        borderRadius: 12,
-        padding: 12,
-        flexDirection: 'row',
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        borderRadius: 14,
+        padding: 14,
         alignItems: 'center',
-        gap: 10,
+        justifyContent: 'center',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)',
+        borderColor: 'rgba(255,255,255,0.25)',
     },
     statIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         backgroundColor: PRIMARY_LIGHT,
         justifyContent: 'center',
         alignItems: 'center',
+        marginBottom: 10,
     },
     statValue: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '700',
         color: '#FFFFFF',
+        marginBottom: 3,
     },
     statLabel: {
-        fontSize: 10,
-        color: 'rgba(255,255,255,0.75)',
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.8)',
         fontWeight: '500',
-        marginTop: 2,
     },
     tabsScroll: {
         paddingHorizontal: 16,
