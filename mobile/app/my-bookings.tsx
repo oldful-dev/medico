@@ -11,6 +11,7 @@ import { labService, LabOrderListItem } from '@/services/api/labService';
 import { useCart } from '@/context/CartContext';
 
 const PRIMARY_GREEN = '#02743F';
+const PRIMARY_LIGHT = '#F0FAF4';
 const TEXT_DARK = '#2F2F2F';
 const TEXT_MUTED = '#888888';
 const CARD_BORDER = '#E5E7EB';
@@ -380,15 +381,51 @@ export default function MyBookingsScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar backgroundColor="#FFFFFF" />
+            <StatusBar backgroundColor={PRIMARY_GREEN} barStyle="light-content" />
 
-            {/* Header — back button + title */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color={TEXT_DARK} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>My Bookings</Text>
-                <View style={{ width: 24 }} />
+            {/* Green Hero Header */}
+            <View style={styles.heroHeader}>
+                <View style={styles.heroContent}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                        <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <View style={styles.heroTitleWrap}>
+                        <Text style={styles.heroTitle}>My Bookings</Text>
+                        <Text style={styles.heroSubtitle}>Track your health appointments</Text>
+                    </View>
+                    <View style={{ width: 24 }} />
+                </View>
+
+                {/* Stats Row */}
+                <View style={styles.statsRow}>
+                    <View style={styles.statCard}>
+                        <View style={styles.statIcon}>
+                            <Ionicons name="calendar" size={18} color={PRIMARY_GREEN} />
+                        </View>
+                        <View>
+                            <Text style={styles.statValue}>{upcomingCount}</Text>
+                            <Text style={styles.statLabel}>Upcoming</Text>
+                        </View>
+                    </View>
+                    <View style={styles.statCard}>
+                        <View style={styles.statIcon}>
+                            <Ionicons name="checkmark-circle" size={18} color={PRIMARY_GREEN} />
+                        </View>
+                        <View>
+                            <Text style={styles.statValue}>{completedCount}</Text>
+                            <Text style={styles.statLabel}>Completed</Text>
+                        </View>
+                    </View>
+                    <View style={styles.statCard}>
+                        <View style={styles.statIcon}>
+                            <Ionicons name="layers" size={18} color={PRIMARY_GREEN} />
+                        </View>
+                        <View>
+                            <Text style={styles.statValue}>{bookings.length}</Text>
+                            <Text style={styles.statLabel}>Total</Text>
+                        </View>
+                    </View>
+                </View>
             </View>
 
             {/* Tabs — scrollable, filled active style */}
@@ -524,26 +561,77 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#FFFFFF',
     },
-    header: {
+    heroHeader: {
+        backgroundColor: PRIMARY_GREEN,
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        paddingBottom: 24,
+    },
+    heroContent: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 11,
-        borderBottomWidth: 1,
-        borderBottomColor: CARD_BORDER,
+        marginBottom: 24,
     },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: TEXT_DARK,
+    backBtn: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    heroTitleWrap: {
         flex: 1,
-        textAlign: 'center',
+        alignItems: 'center',
+    },
+    heroTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        marginBottom: 2,
+    },
+    heroSubtitle: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.7)',
+        fontWeight: '500',
+    },
+    statsRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    statCard: {
+        flex: 1,
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        borderRadius: 12,
+        padding: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
+    },
+    statIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: PRIMARY_LIGHT,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    statValue: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#FFFFFF',
+    },
+    statLabel: {
+        fontSize: 10,
+        color: 'rgba(255,255,255,0.75)',
+        fontWeight: '500',
+        marginTop: 2,
     },
     tabsScroll: {
         paddingHorizontal: 16,
-        marginBottom: 8,
-        marginTop: 8,
+        marginBottom: 4,
+        marginTop: 12,
         flexGrow: 0,
         height: 44,
         minHeight: 44,
@@ -552,18 +640,18 @@ const styles = StyleSheet.create({
     tabsContent: {
         paddingRight: 16,
         paddingBottom: 0,
-        gap: 6,
+        gap: 8,
     },
     tabsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     tab: {
-        marginRight: 8,
+        marginRight: 0,
         paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 8,
-        backgroundColor: 'transparent',
+        paddingHorizontal: 14,
+        borderRadius: 9,
+        backgroundColor: '#F5F5F5',
         height: 36,
         justifyContent: 'center',
     },
@@ -584,19 +672,20 @@ const styles = StyleSheet.create({
     },
     listContent: {
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingVertical: 16,
     },
     sectionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
-        marginTop: 12,
+        marginBottom: 14,
+        marginTop: 18,
     },
     sectionTitle: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '700',
         color: TEXT_DARK,
+        letterSpacing: 0.3,
     },
     viewAllLink: {
         fontSize: 12,
@@ -607,14 +696,14 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderWidth: 1,
         borderColor: CARD_BORDER,
-        borderRadius: 12,
-        padding: 14,
-        marginBottom: 10,
+        borderRadius: 14,
+        padding: 16,
+        marginBottom: 12,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 3,
+        elevation: 2,
     },
     cardTop: {
         flexDirection: 'row',
@@ -707,7 +796,9 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     downloadBtn: {
-        backgroundColor: '#F0FDF4',
+        backgroundColor: PRIMARY_LIGHT,
+        borderWidth: 1,
+        borderColor: PRIMARY_GREEN,
     },
     downloadBtnText: {
         fontSize: 11,
@@ -715,7 +806,9 @@ const styles = StyleSheet.create({
         color: PRIMARY_GREEN,
     },
     viewDetailsBtn: {
-        backgroundColor: '#F0FDF4',
+        backgroundColor: PRIMARY_LIGHT,
+        borderWidth: 1,
+        borderColor: PRIMARY_GREEN,
     },
     viewDetailsBtnText: {
         fontSize: 11,
@@ -723,7 +816,9 @@ const styles = StyleSheet.create({
         color: PRIMARY_GREEN,
     },
     rebookBtn: {
-        backgroundColor: '#F0FDF4',
+        backgroundColor: PRIMARY_LIGHT,
+        borderWidth: 1,
+        borderColor: PRIMARY_GREEN,
     },
     rebookBtnText: {
         fontSize: 11,
@@ -732,6 +827,8 @@ const styles = StyleSheet.create({
     },
     cancelBtn: {
         backgroundColor: '#FEE2E2',
+        borderWidth: 1,
+        borderColor: '#FECACA',
     },
     cancelBtnText: {
         fontSize: 11,
@@ -749,43 +846,45 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     emptyContainer: {
-        paddingVertical: 60,
+        paddingVertical: 80,
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 20,
     },
     emptyText: {
-        fontSize: 15,
-        fontWeight: '600',
+        fontSize: 16,
+        fontWeight: '700',
         color: TEXT_DARK,
-        marginTop: 12,
+        marginTop: 16,
+        textAlign: 'center',
     },
     emptySubtext: {
-        fontSize: 12,
+        fontSize: 13,
         color: TEXT_MUTED,
-        marginTop: 4,
+        marginTop: 6,
+        textAlign: 'center',
     },
     checkoutSection: {
-        backgroundColor: '#F8F8F8',
+        backgroundColor: PRIMARY_LIGHT,
         marginHorizontal: 16,
-        marginTop: 20,
+        marginTop: 28,
         marginBottom: 16,
         padding: 16,
-        borderRadius: 12,
-        borderWidth: 1,
+        borderRadius: 14,
+        borderWidth: 1.5,
         borderColor: PRIMARY_GREEN,
     },
     checkoutTitle: {
         fontSize: 15,
         fontWeight: '700',
         color: TEXT_DARK,
-        marginBottom: 4,
+        marginBottom: 6,
     },
     checkoutSubtitle: {
         fontSize: 12,
         color: TEXT_MUTED,
         fontWeight: '500',
-        marginBottom: 14,
+        marginBottom: 16,
     },
     checkoutItems: {
         gap: 10,
