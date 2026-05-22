@@ -8,6 +8,7 @@ import {
     TextInput,
     Modal,
     FlatList,
+    ScrollView,
     ActivityIndicator,
     Platform,
 } from 'react-native';
@@ -278,15 +279,22 @@ export default function TripTravelsScreen() {
             {showDatePicker && (
                 <Modal transparent visible={showDatePicker} animationType="slide">
                     <View style={styles.modalOverlay}>
-                        <View style={styles.modal}>
+                        <View style={[styles.modal, styles.datePickerModal]}>
                             <ModalHeader title="Select Travel Date" onClose={() => setShowDatePicker(false)} />
-                            <CustomDateTimePicker
-                                value={travelDates}
-                                onChange={(date) => {
-                                    setTravelDates(date);
-                                    setShowDatePicker(false);
-                                }}
-                            />
+                            <ScrollView
+                                showsVerticalScrollIndicator={false}
+                                contentContainerStyle={{ paddingBottom: 16 }}
+                                keyboardShouldPersistTaps="handled"
+                            >
+                                <CustomDateTimePicker
+                                    value={travelDates}
+                                    onChange={(date) => {
+                                        setTravelDates(date);
+                                        setShowDatePicker(false);
+                                    }}
+                                    daysToShow={21}
+                                />
+                            </ScrollView>
                         </View>
                     </View>
                 </Modal>
@@ -604,6 +612,9 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 20,
         maxHeight: '75%',
         paddingBottom: Platform.OS === 'ios' ? 24 : 16,
+    },
+    datePickerModal: {
+        maxHeight: '85%',
     },
     modalHeader: {
         flexDirection: 'row',
