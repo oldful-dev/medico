@@ -1,7 +1,7 @@
 import {
     LayoutDashboard, Users, Shield, MapPin, Settings, CalendarCheck,
     HeartPulse, CreditCard, DollarSign, AlertTriangle, Bell, FileText,
-    ShoppingBag, Image as ImageIcon, BarChart3, ClipboardList, Sliders, LifeBuoy, Brain, Clock, Activity
+    ShoppingBag, Image as ImageIcon, BarChart3, ClipboardList, Sliders, LifeBuoy, Brain, Clock, Activity, Sparkles
 } from "lucide-react";
 
 export const NAV_SECTIONS = [
@@ -43,6 +43,7 @@ export const NAV_SECTIONS = [
             { id: "activity-center", href: "/activity-center", label: "Activity Center", icon: Activity, badge: "Live", roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER'] },
             { id: "sos", href: "/sos", label: "SOS Emergency", icon: AlertTriangle, badge: "Live", roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER', 'SUPPORT_AGENT'] },
             { id: "notifications", href: "/notifications", label: "Notifications", icon: Bell, roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },
+            { id: "banners", href: "/banners", label: "Home Banners", icon: Sparkles, badge: "New", roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },
             { id: "legal", href: "/legal", label: "Legal CMS", icon: FileText, roles: ['SUPER_ADMIN'] },
             { id: "store", href: "/store", label: "Wellness Store", icon: ShoppingBag, roles: ['SUPER_ADMIN'] },
             { id: "media", href: "/media", label: "Media Library", icon: ImageIcon, roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },

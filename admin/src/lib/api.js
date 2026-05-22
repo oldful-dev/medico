@@ -221,6 +221,18 @@ export const auditAPI = {
     getById: (id) => api.get(`/audit-logs/${id}`),
 };
 
+// ── Banners (Home Screen Carousel) ───────────────────
+export const bannerAPI = {
+    getHome: () => api.get('/banners/home'),  // Public
+    getAll: (params) => api.get('/banners', { params }),
+    getById: (id) => api.get(`/banners/${id}`),
+    create: (data) => api.post('/banners', data),
+    update: (id, data) => api.put(`/banners/${id}`, data),
+    toggle: (id, data) => api.patch(`/banners/${id}/toggle`, data),
+    reorder: (data) => api.post('/banners/reorder', data),
+    delete: (id) => api.delete(`/banners/${id}`),
+};
+
 // ── UI Config (Server-Driven UI) ─────────────────────
 export const uiConfigAPI = {
     getAll: () => api.get('/ui-config'),
