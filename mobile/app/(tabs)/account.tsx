@@ -54,6 +54,7 @@ export default function AccountScreen() {
     const { preferredLanguage, setPreferredLanguage } = useUser();
     const [langModalVisible, setLangModalVisible] = useState(false);
     const [savingLang, setSavingLang] = useState(false);
+    const [docsExpanded, setDocsExpanded] = useState(false);
 
     const handleToggle = async (key: string, value: boolean) => {
         if (!profile) return;
@@ -439,10 +440,38 @@ export default function AccountScreen() {
                 {/* ═══════════════════════════════════════
                     SECTION 7 — Legal & Documents
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Legal & Documents" colors={colors} />
-                <MenuRow icon="document-text-outline" iconBg="#F3F3F3" iconColor="#616161" title="Terms & Conditions" onPress={() => router.push('/terms-policy' as any)} colors={colors} />
-                <MenuRow icon="shield-outline" iconBg="#F3F3F3" iconColor="#616161" title="Privacy Policy" onPress={() => router.push('/privacy-policy' as any)} colors={colors} />
-                <MenuRow icon="receipt-outline" iconBg="#F3F3F3" iconColor="#616161" title="Refund & Cancellation" onPress={() => router.push('/refund-policy' as any)} colors={colors} />
+                <SectionHeading title="Terms, Conditions & Documents" colors={colors} />
+
+                {/* Collapsible Documents Dropdown */}
+                <TouchableOpacity
+                    style={[styles.docDropdownHeader, { borderColor: colors.border }]}
+                    onPress={() => setDocsExpanded(!docsExpanded)}
+                    activeOpacity={0.7}
+                >
+                    <View style={styles.docDropdownLeft}>
+                        <View style={[styles.docDropdownIcon, { backgroundColor: '#F3F3F3' }]}>
+                            <Ionicons name="documents-outline" size={18} color="#616161" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.docDropdownTitle}>Documents & Policies</Text>
+                            <Text style={styles.docDropdownSub}>{docsExpanded ? 'Tap to collapse' : 'View all documents'}</Text>
+                        </View>
+                    </View>
+                    <Ionicons name={docsExpanded ? "chevron-up" : "chevron-down"} size={20} color={colors.text} />
+                </TouchableOpacity>
+
+                {/* Expanded Content */}
+                {docsExpanded && (
+                    <View style={[styles.docDropdownContent, { borderColor: colors.border }]}>
+                        <MenuRow icon="document-text-outline" iconBg="#FFF3E0" iconColor="#F57C00" title="Terms & Conditions" onPress={() => router.push('/terms-policy' as any)} colors={colors} />
+                        <MenuRow icon="shield-outline" iconBg="#E8F5E9" iconColor="#2E7D32" title="Privacy Policy" onPress={() => router.push('/privacy-policy' as any)} colors={colors} />
+                        <MenuRow icon="receipt-outline" iconBg="#FCE4EC" iconColor="#C2185B" title="Refund Policy" onPress={() => router.push('/refund-policy' as any)} colors={colors} />
+                        <MenuRow icon="checkmark-circle-outline" iconBg="#F3E5F5" iconColor="#6A1B9A" title="Consent Forms" onPress={() => Alert.alert('Consent Forms', 'Coming soon')} colors={colors} />
+                        <MenuRow icon="contract-outline" iconBg="#E0F2F1" iconColor="#00796B" title="Service Agreements" onPress={() => Alert.alert('Service Agreements', 'Coming soon')} colors={colors} />
+                        <MenuRow icon="eye-outline" iconBg="#EFF7F6" iconColor="#004D40" title="View Documents" onPress={() => Alert.alert('View Documents', 'Coming soon')} colors={colors} />
+                        <MenuRow icon="download-outline" iconBg="#F1F8E9" iconColor="#558B2F" title="Download Documents" onPress={() => Alert.alert('Download Documents', 'Coming soon')} colors={colors} />
+                    </View>
+                )}
 
                 {/* ═══════════════════════════════════════
                     SECTION 8 — Social Media
@@ -661,5 +690,50 @@ function makeStyles(c: ThemeColors) {
         langNative: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: c.textMuted, marginTop: 1 },
         modalCancel: { marginTop: Spacing.xl, paddingVertical: Spacing.sm, alignItems: 'center' },
         modalCancelText: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: c.textMuted },
+
+        docDropdownHeader: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: c.bgCard,
+            borderWidth: 1,
+            borderRadius: Radius.md,
+            padding: Spacing.md,
+            marginBottom: Spacing.sm,
+            marginHorizontal: 0,
+        },
+        docDropdownLeft: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            flex: 1,
+            gap: Spacing.md,
+        },
+        docDropdownIcon: {
+            width: 40,
+            height: 40,
+            borderRadius: Radius.sm,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        docDropdownTitle: {
+            fontFamily: Fonts.semiBold,
+            fontSize: FontSize.body,
+            color: c.textDark,
+        },
+        docDropdownSub: {
+            fontFamily: Fonts.regular,
+            fontSize: FontSize.caption,
+            color: c.textMuted,
+            marginTop: 2,
+        },
+        docDropdownContent: {
+            borderWidth: 1,
+            borderRadius: Radius.md,
+            borderTopWidth: 0,
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: 0,
+            overflow: 'hidden',
+            marginBottom: Spacing.lg,
+        },
     });
 }
