@@ -36,7 +36,7 @@ const SOCIAL_LINKS = [
     { icon: 'logo-facebook', color: '#1877F2', url: 'https://facebook.com/ayuxacare' },
     { icon: 'logo-linkedin', color: '#0A66C2', url: 'https://linkedin.com/company/ayuxacare' },
     { icon: 'logo-youtube', color: '#FF0000', url: 'https://youtube.com/@ayuxacare' },
-    { icon: 'logo-twitter', color: '#000000', url: 'https://x.com/ayuxacare' },
+    { icon: 'logo-x', color: '#000000', url: 'https://x.com/ayuxacare' },
     { icon: 'logo-whatsapp', color: '#25D366', url: 'https://wa.me/918012345678' },
 ];
 
