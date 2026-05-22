@@ -4,12 +4,12 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    ScrollView,
     Alert,
     TextInput,
     Modal,
     FlatList,
     ActivityIndicator,
+    Platform,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,65 +19,60 @@ import { useRouter } from 'expo-router';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { bookingService } from '@/services/api/bookingService';
-import { useThemeColors } from '@/hooks/use-theme-colors';
+
+const PRIMARY = '#02743F';
+const PRIMARY_LIGHT = '#E8F5E9';
+const PRIMARY_MID = '#03924F';
+const TEXT_DARK = '#1A1A1A';
+const TEXT_MUTED = '#9CA3AF';
+const TEXT_LABEL = '#374151';
+const BORDER = '#E5E7EB';
+const BG = '#F8FAF9';
+const WHITE = '#FFFFFF';
+const RED = '#EF4444';
+
+const purposes = [
+    { id: '1', label: 'Leisure / Vacation',  icon: 'sunny-outline' },
+    { id: '2', label: 'Business Travel',      icon: 'briefcase-outline' },
+    { id: '3', label: 'Family Getaway',       icon: 'people-outline' },
+    { id: '4', label: 'Adventure Trip',       icon: 'bicycle-outline' },
+    { id: '5', label: 'Wellness Retreat',     icon: 'flower-outline' },
+    { id: '6', label: 'Cultural Tour',        icon: 'earth-outline' },
+    { id: '7', label: 'Other',                icon: 'ellipsis-horizontal-circle-outline' },
+];
+
+const travellerCounts = Array.from({ length: 10 }, (_, i) => (i + 1).toString());
 
 export default function TripTravelsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const colors = useThemeColors();
 
-    // Form state
-    const [destination, setDestination] = useState('');
-    const [travelDates, setTravelDates] = useState<Date | undefined>(undefined);
-    const [numTravellers, setNumTravellers] = useState('');
-    const [purposeOfTravel, setPurposeOfTravel] = useState('');
+    const [destination, setDestination]             = useState('');
+    const [travelDates, setTravelDates]             = useState<Date | undefined>(undefined);
+    const [numTravellers, setNumTravellers]         = useState('');
+    const [purposeOfTravel, setPurposeOfTravel]     = useState('');
     const [specialRequirements, setSpecialRequirements] = useState('');
     const [additionalDetails, setAdditionalDetails] = useState('');
+    const [isBooking, setIsBooking]                 = useState(false);
 
-    // Modal states
-    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showDatePicker, setShowDatePicker]         = useState(false);
     const [showTravellerPicker, setShowTravellerPicker] = useState(false);
-    const [showPurposePicker, setShowPurposePicker] = useState(false);
+    const [showPurposePicker, setShowPurposePicker]   = useState(false);
 
-    const [isBooking, setIsBooking] = React.useState(false);
+    const { cityId, serviceId, isLoading: isLoadingInit } = useServiceInitialization('trip-travels');
 
-    const { isReady, cityId, serviceId, isLoading: isLoadingInit } = useServiceInitialization('trip-travels');
+    const formattedDate = travelDates
+        ? travelDates.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+        : '';
 
-    // Options
-    const travellerCounts = Array.from({ length: 10 }, (_, i) => (i + 1).toString());
-    const purposes = [
-        { id: '1', label: 'Leisure / Vacation' },
-        { id: '2', label: 'Business Travel' },
-        { id: '3', label: 'Family Getaway' },
-        { id: '4', label: 'Adventure Trip' },
-        { id: '5', label: 'Wellness Retreat' },
-        { id: '6', label: 'Cultural Tour' },
-        { id: '7', label: 'Other' },
-    ];
+    const selectedPurpose = purposes.find(p => p.label === purposeOfTravel);
 
     const handleSubmit = async () => {
-        // Validation
-        if (!destination.trim()) {
-            Alert.alert('Required Field', 'Please enter your destination');
-            return;
-        }
-        if (!travelDates) {
-            Alert.alert('Required Field', 'Please select travel dates');
-            return;
-        }
-        if (!numTravellers) {
-            Alert.alert('Required Field', 'Please select number of travellers');
-            return;
-        }
-        if (!purposeOfTravel) {
-            Alert.alert('Required Field', 'Please select purpose of travel');
-            return;
-        }
-
-        if (!cityId || !serviceId) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
-            return;
-        }
+        if (!destination.trim())  { Alert.alert('Required', 'Please enter your destination'); return; }
+        if (!travelDates)         { Alert.alert('Required', 'Please select travel dates'); return; }
+        if (!numTravellers)       { Alert.alert('Required', 'Please select number of travellers'); return; }
+        if (!purposeOfTravel)     { Alert.alert('Required', 'Please select purpose of travel'); return; }
+        if (!cityId || !serviceId) { Alert.alert('Error', 'Service initialization incomplete.'); return; }
 
         try {
             setIsBooking(true);
@@ -89,7 +84,7 @@ export default function TripTravelsScreen() {
                 formDataJson: {
                     type: 'TRIP',
                     destination,
-                    travelDates: travelDates.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+                    travelDates: formattedDate,
                     numTravellers: parseInt(numTravellers),
                     purposeOfTravel,
                     specialRequirements: specialRequirements.trim() || null,
@@ -109,162 +104,182 @@ export default function TripTravelsScreen() {
         }
     };
 
-    const s = makeStyles(colors);
-    const formattedDate = travelDates ? travelDates.toLocaleDateString() : '';
-
     return (
-        <View style={[s.container, { paddingTop: insets.top }]}>
-            <StatusBar style="light" backgroundColor="#02743F" />
+        <View style={[styles.container, { paddingTop: insets.top }]}>
+            <StatusBar style="light" backgroundColor={PRIMARY} />
 
-            {/* Header with back button + title */}
-            <View style={s.header}>
-                <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+            {/* ── Green Header ── */}
+            <View style={styles.header}>
+                <TouchableOpacity
+                    onPress={() => router.back()}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    style={styles.backBtn}
+                >
+                    <Ionicons name="arrow-back" size={22} color={WHITE} />
                 </TouchableOpacity>
-                <Text style={s.headerTitle}>Trip & Travel</Text>
-                <View style={{ width: 24 }} />
+                <Text style={styles.headerTitle}>Trip & Travel</Text>
+                <View style={{ width: 40 }} />
             </View>
 
+            {/* ── Hero Banner (still part of green area) ── */}
+            <View style={styles.heroBanner}>
+                <View style={styles.heroIconCircle}>
+                    <Ionicons name="airplane" size={32} color={PRIMARY} />
+                </View>
+                <Text style={styles.heroTitle}>Where do you want to go?</Text>
+                <Text style={styles.heroSubtitle}>
+                    Share your travel plan and we'll assist you better.
+                </Text>
+            </View>
+
+            {/* ── Scrollable Form Card ── */}
             <KeyboardAwareScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={s.scrollContent}
+                contentContainerStyle={styles.scrollContent}
                 enableOnAndroid
-                extraScrollHeight={20}
+                extraScrollHeight={24}
+                keyboardShouldPersistTaps="handled"
             >
-                {/* Hero Section — centered icon + title + subtitle */}
-                <View style={s.heroSection}>
-                    <View style={s.heroIcon}>
-                        <Ionicons name="airplane" size={40} color="#02743F" />
-                    </View>
-                    <Text style={s.heroTitle}>Where do you want to go?</Text>
-                    <Text style={s.heroSubtitle}>
-                        Share your travel plan and{'\n'}we'll assist you better.
-                    </Text>
-                </View>
+                <View style={styles.formCard}>
 
-                {/* Form */}
-                <View style={s.formSection}>
                     {/* Destination */}
-                    <View style={s.formGroup}>
-                        <Text style={s.label}>
-                            Destination (Preferred) <Text style={s.required}>*</Text>
-                        </Text>
-                        <TextInput
-                            style={s.input}
-                            placeholder="Enter destination"
-                            placeholderTextColor={colors.textMuted}
-                            value={destination}
-                            onChangeText={setDestination}
-                            editable={!isLoadingInit}
-                        />
-                    </View>
+                    <FormField label="Destination (Preferred)" required>
+                        <View style={styles.inputRow}>
+                            <Ionicons name="location-outline" size={18} color={PRIMARY} style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.inputText}
+                                placeholder="Enter destination"
+                                placeholderTextColor={TEXT_MUTED}
+                                value={destination}
+                                onChangeText={setDestination}
+                                editable={!isLoadingInit}
+                                returnKeyType="next"
+                            />
+                        </View>
+                    </FormField>
 
                     {/* Travel Dates */}
-                    <View style={s.formGroup}>
-                        <Text style={s.label}>
-                            Travel Dates <Text style={s.required}>*</Text>
-                        </Text>
+                    <FormField label="Travel Dates" required>
                         <TouchableOpacity
-                            style={s.input}
+                            style={styles.inputRow}
                             onPress={() => setShowDatePicker(true)}
                             activeOpacity={0.7}
                         >
-                            <Text style={formattedDate ? s.inputText : s.inputPlaceholder}>
+                            <Ionicons name="calendar-outline" size={18} color={PRIMARY} style={styles.inputIcon} />
+                            <Text style={[styles.inputText, !formattedDate && styles.placeholder]}>
                                 {formattedDate || 'Select travel dates'}
                             </Text>
-                            <Ionicons name="calendar" size={20} color={colors.primary} />
+                            <Ionicons name="chevron-forward" size={16} color={TEXT_MUTED} />
                         </TouchableOpacity>
+                    </FormField>
+
+                    {/* Two-column row: Travellers + Purpose */}
+                    <View style={styles.rowTwo}>
+                        <View style={{ flex: 1, marginRight: 8 }}>
+                            <FormField label="Travellers" required compact>
+                                <TouchableOpacity
+                                    style={styles.inputRow}
+                                    onPress={() => setShowTravellerPicker(true)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Ionicons name="people-outline" size={18} color={PRIMARY} style={styles.inputIcon} />
+                                    <Text style={[styles.inputText, !numTravellers && styles.placeholder]} numberOfLines={1}>
+                                        {numTravellers ? `${numTravellers} ${numTravellers === '1' ? 'person' : 'people'}` : 'Select'}
+                                    </Text>
+                                    <Ionicons name="chevron-down" size={14} color={TEXT_MUTED} />
+                                </TouchableOpacity>
+                            </FormField>
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 8 }}>
+                            <FormField label="Purpose" required compact>
+                                <TouchableOpacity
+                                    style={styles.inputRow}
+                                    onPress={() => setShowPurposePicker(true)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Ionicons
+                                        name={(selectedPurpose?.icon as any) || 'compass-outline'}
+                                        size={18}
+                                        color={PRIMARY}
+                                        style={styles.inputIcon}
+                                    />
+                                    <Text style={[styles.inputText, !purposeOfTravel && styles.placeholder]} numberOfLines={1}>
+                                        {purposeOfTravel ? purposeOfTravel.split(' ')[0] : 'Select'}
+                                    </Text>
+                                    <Ionicons name="chevron-down" size={14} color={TEXT_MUTED} />
+                                </TouchableOpacity>
+                            </FormField>
+                        </View>
                     </View>
 
-                    {/* Number of Travellers */}
-                    <View style={s.formGroup}>
-                        <Text style={s.label}>
-                            Number of Travellers <Text style={s.required}>*</Text>
-                        </Text>
-                        <TouchableOpacity
-                            style={s.input}
-                            onPress={() => setShowTravellerPicker(true)}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={numTravellers ? s.inputText : s.inputPlaceholder}>
-                                {numTravellers ? `${numTravellers} ${numTravellers === '1' ? 'person' : 'people'}` : 'Select number of travellers'}
-                            </Text>
-                            <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Purpose of Travel */}
-                    <View style={s.formGroup}>
-                        <Text style={s.label}>
-                            Purpose of Travel <Text style={s.required}>*</Text>
-                        </Text>
-                        <TouchableOpacity
-                            style={s.input}
-                            onPress={() => setShowPurposePicker(true)}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={purposeOfTravel ? s.inputText : s.inputPlaceholder}>
-                                {purposeOfTravel || 'Select purpose'}
-                            </Text>
-                            <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
-                        </TouchableOpacity>
-                    </View>
+                    {/* Divider */}
+                    <View style={styles.divider} />
 
                     {/* Special Requirements */}
-                    <View style={s.formGroup}>
-                        <Text style={s.label}>Special Requirements / Assistance</Text>
-                        <TextInput
-                            style={[s.input, s.textarea]}
-                            placeholder="Enter your requirements"
-                            placeholderTextColor={colors.textMuted}
-                            value={specialRequirements}
-                            onChangeText={setSpecialRequirements}
-                            multiline
-                            numberOfLines={4}
-                            editable={!isLoadingInit}
-                        />
-                    </View>
+                    <FormField label="Special Requirements / Assistance">
+                        <View style={[styles.inputRow, styles.textareaRow]}>
+                            <Ionicons name="list-outline" size={18} color={PRIMARY} style={[styles.inputIcon, { alignSelf: 'flex-start', marginTop: 2 }]} />
+                            <TextInput
+                                style={[styles.inputText, styles.textareaText]}
+                                placeholder="Wheelchair access, dietary needs, medical equipment…"
+                                placeholderTextColor={TEXT_MUTED}
+                                value={specialRequirements}
+                                onChangeText={setSpecialRequirements}
+                                multiline
+                                numberOfLines={3}
+                                editable={!isLoadingInit}
+                                textAlignVertical="top"
+                            />
+                        </View>
+                    </FormField>
 
                     {/* Additional Details */}
-                    <View style={s.formGroup}>
-                        <Text style={s.label}>Additional Details (Optional)</Text>
-                        <TextInput
-                            style={[s.input, s.textarea]}
-                            placeholder="Enter any additional information"
-                            placeholderTextColor={colors.textMuted}
-                            value={additionalDetails}
-                            onChangeText={setAdditionalDetails}
-                            multiline
-                            numberOfLines={4}
-                            editable={!isLoadingInit}
-                        />
-                    </View>
+                    <FormField label="Additional Details" optional>
+                        <View style={[styles.inputRow, styles.textareaRow]}>
+                            <Ionicons name="create-outline" size={18} color={PRIMARY} style={[styles.inputIcon, { alignSelf: 'flex-start', marginTop: 2 }]} />
+                            <TextInput
+                                style={[styles.inputText, styles.textareaText]}
+                                placeholder="Preferred airlines, seat preferences, hotel tier…"
+                                placeholderTextColor={TEXT_MUTED}
+                                value={additionalDetails}
+                                onChangeText={setAdditionalDetails}
+                                multiline
+                                numberOfLines={3}
+                                editable={!isLoadingInit}
+                                textAlignVertical="top"
+                            />
+                        </View>
+                    </FormField>
 
-                    {/* Submit Button */}
+                    {/* Submit */}
                     <TouchableOpacity
-                        style={[s.submitButton, isBooking && { opacity: 0.6 }]}
+                        style={[styles.submitBtn, (isBooking || isLoadingInit) && styles.submitBtnDisabled]}
                         onPress={handleSubmit}
                         disabled={isBooking || isLoadingInit}
                         activeOpacity={0.85}
                     >
-                        <Text style={s.submitButtonText}>
-                            {isBooking ? 'Submitting...' : 'Submit Enquiry'}
-                        </Text>
+                        {isBooking ? (
+                            <ActivityIndicator size="small" color={WHITE} />
+                        ) : (
+                            <>
+                                <Ionicons name="paper-plane-outline" size={18} color={WHITE} style={{ marginRight: 8 }} />
+                                <Text style={styles.submitBtnText}>Submit Enquiry</Text>
+                            </>
+                        )}
                     </TouchableOpacity>
+
+                    <Text style={styles.footerNote}>
+                        Our team will contact you within 24 hours to confirm your travel plan.
+                    </Text>
                 </View>
             </KeyboardAwareScrollView>
 
-            {/* Date Picker Modal */}
+            {/* ── Date Picker Modal ── */}
             {showDatePicker && (
                 <Modal transparent visible={showDatePicker} animationType="slide">
-                    <View style={s.modalOverlay}>
-                        <View style={s.modal}>
-                            <View style={s.modalHeader}>
-                                <Text style={s.modalTitle}>Select Travel Dates</Text>
-                                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                                    <Ionicons name="close" size={24} color={colors.textDark} />
-                                </TouchableOpacity>
-                            </View>
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modal}>
+                            <ModalHeader title="Select Travel Date" onClose={() => setShowDatePicker(false)} />
                             <CustomDateTimePicker
                                 value={travelDates}
                                 onChange={(date) => {
@@ -277,69 +292,67 @@ export default function TripTravelsScreen() {
                 </Modal>
             )}
 
-            {/* Traveller Count Picker Modal */}
+            {/* ── Travellers Picker Modal ── */}
             <Modal transparent visible={showTravellerPicker} animationType="slide">
-                <View style={s.modalOverlay}>
-                    <View style={s.modal}>
-                        <View style={s.modalHeader}>
-                            <Text style={s.modalTitle}>Number of Travellers</Text>
-                            <TouchableOpacity onPress={() => setShowTravellerPicker(false)}>
-                                <Ionicons name="close" size={24} color={colors.textDark} />
-                            </TouchableOpacity>
-                        </View>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modal}>
+                        <ModalHeader title="Number of Travellers" onClose={() => setShowTravellerPicker(false)} />
                         <FlatList
                             data={travellerCounts}
                             keyExtractor={(item) => item}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    style={s.optionItem}
-                                    onPress={() => {
-                                        setNumTravellers(item);
-                                        setShowTravellerPicker(false);
-                                    }}
-                                >
-                                    <Text style={[s.optionText, numTravellers === item && { color: colors.primary, fontWeight: '600' }]}>
-                                        {item} {item === '1' ? 'person' : 'people'}
-                                    </Text>
-                                    {numTravellers === item && (
-                                        <Ionicons name="checkmark" size={20} color={colors.primary} />
-                                    )}
-                                </TouchableOpacity>
-                            )}
+                            renderItem={({ item }) => {
+                                const active = numTravellers === item;
+                                return (
+                                    <TouchableOpacity
+                                        style={[styles.optionItem, active && styles.optionItemActive]}
+                                        onPress={() => { setNumTravellers(item); setShowTravellerPicker(false); }}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={styles.optionLeft}>
+                                            <View style={[styles.optionDot, active && styles.optionDotActive]}>
+                                                <Text style={[styles.optionDotText, active && { color: WHITE }]}>{item}</Text>
+                                            </View>
+                                            <Text style={[styles.optionLabel, active && styles.optionLabelActive]}>
+                                                {item === '1' ? '1 person' : `${item} people`}
+                                            </Text>
+                                        </View>
+                                        {active && <Ionicons name="checkmark-circle" size={20} color={PRIMARY} />}
+                                    </TouchableOpacity>
+                                );
+                            }}
                         />
                     </View>
                 </View>
             </Modal>
 
-            {/* Purpose Picker Modal */}
+            {/* ── Purpose Picker Modal ── */}
             <Modal transparent visible={showPurposePicker} animationType="slide">
-                <View style={s.modalOverlay}>
-                    <View style={s.modal}>
-                        <View style={s.modalHeader}>
-                            <Text style={s.modalTitle}>Purpose of Travel</Text>
-                            <TouchableOpacity onPress={() => setShowPurposePicker(false)}>
-                                <Ionicons name="close" size={24} color={colors.textDark} />
-                            </TouchableOpacity>
-                        </View>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modal}>
+                        <ModalHeader title="Purpose of Travel" onClose={() => setShowPurposePicker(false)} />
                         <FlatList
                             data={purposes}
                             keyExtractor={(item) => item.id}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    style={s.optionItem}
-                                    onPress={() => {
-                                        setPurposeOfTravel(item.label);
-                                        setShowPurposePicker(false);
-                                    }}
-                                >
-                                    <Text style={[s.optionText, purposeOfTravel === item.label && { color: colors.primary, fontWeight: '600' }]}>
-                                        {item.label}
-                                    </Text>
-                                    {purposeOfTravel === item.label && (
-                                        <Ionicons name="checkmark" size={20} color={colors.primary} />
-                                    )}
-                                </TouchableOpacity>
-                            )}
+                            renderItem={({ item }) => {
+                                const active = purposeOfTravel === item.label;
+                                return (
+                                    <TouchableOpacity
+                                        style={[styles.optionItem, active && styles.optionItemActive]}
+                                        onPress={() => { setPurposeOfTravel(item.label); setShowPurposePicker(false); }}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={styles.optionLeft}>
+                                            <View style={[styles.purposeIconBox, active && styles.purposeIconBoxActive]}>
+                                                <Ionicons name={item.icon as any} size={16} color={active ? WHITE : PRIMARY} />
+                                            </View>
+                                            <Text style={[styles.optionLabel, active && styles.optionLabelActive]}>
+                                                {item.label}
+                                            </Text>
+                                        </View>
+                                        {active && <Ionicons name="checkmark-circle" size={20} color={PRIMARY} />}
+                                    </TouchableOpacity>
+                                );
+                            }}
                         />
                     </View>
                 </View>
@@ -348,157 +361,324 @@ export default function TripTravelsScreen() {
     );
 }
 
-function makeStyles(colors: any) {
-    return StyleSheet.create({
-        container: {
-            flex: 1,
-            backgroundColor: colors.bgScreen,
-        },
-        header: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 16,
-            paddingVertical: 14,
-            backgroundColor: '#02743F',
-        },
-        headerTitle: {
-            fontSize: 18,
-            fontWeight: '600',
-            color: '#FFFFFF',
-            flex: 1,
-            textAlign: 'center',
-        },
-        scrollContent: {
-            paddingBottom: 40,
-        },
-        heroSection: {
-            alignItems: 'center',
-            paddingHorizontal: 24,
-            paddingVertical: 36,
-            backgroundColor: colors.bgScreen,
-        },
-        heroIcon: {
-            width: 72,
-            height: 72,
-            borderRadius: 36,
-            backgroundColor: '#E8F5E9',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 20,
-        },
-        heroTitle: {
-            fontSize: 22,
-            fontWeight: '600',
-            color: colors.textDark,
-            marginBottom: 8,
-            textAlign: 'center',
-        },
-        heroSubtitle: {
-            fontSize: 14,
-            fontWeight: '500',
-            color: '#888888',
-            textAlign: 'center',
-            lineHeight: 22,
-        },
-        formSection: {
-            paddingHorizontal: 20,
-            paddingTop: 8,
-        },
-        formGroup: {
-            marginBottom: 22,
-        },
-        label: {
-            fontSize: 14,
-            fontWeight: '600',
-            color: '#2F2F2F',
-            marginBottom: 10,
-        },
-        required: {
-            color: '#dc2626',
-        },
-        input: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 14,
-            paddingVertical: 13,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            borderRadius: 8,
-            backgroundColor: '#FFFFFF',
-            minHeight: 48,
-        },
-        inputText: {
-            flex: 1,
-            fontSize: 14,
-            fontWeight: '500',
-            color: '#2F2F2F',
-        },
-        inputPlaceholder: {
-            flex: 1,
-            fontSize: 14,
-            color: '#C2C2C2',
-        },
-        textarea: {
-            height: 110,
-            paddingVertical: 12,
-            textAlignVertical: 'top',
-            paddingTop: 12,
-        },
-        submitButton: {
-            backgroundColor: '#02743F',
-            paddingVertical: 14,
-            borderRadius: 8,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginTop: 28,
-            marginBottom: 24,
-            minHeight: 48,
-        },
-        submitButtonText: {
-            fontSize: 16,
-            fontWeight: '600',
-            color: '#FFFFFF',
-        },
-        modalOverlay: {
-            flex: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.4)',
-            justifyContent: 'flex-end',
-        },
-        modal: {
-            backgroundColor: '#FFFFFF',
-            borderTopLeftRadius: 16,
-            borderTopRightRadius: 16,
-            maxHeight: '75%',
-            paddingBottom: 20,
-        },
-        modalHeader: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 16,
-            paddingVertical: 18,
-            borderBottomWidth: 1,
-            borderBottomColor: '#E5E7EB',
-        },
-        modalTitle: {
-            fontSize: 16,
-            fontWeight: '600',
-            color: '#2F2F2F',
-        },
-        optionItem: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 16,
-            paddingVertical: 14,
-            borderBottomWidth: 0,
-        },
-        optionText: {
-            fontSize: 14,
-            fontWeight: '500',
-            color: '#2F2F2F',
-        },
-    });
+// ── Small helpers ────────────────────────────────────────────────────────────
+
+function FormField({
+    label, required, optional, compact, children,
+}: {
+    label: string; required?: boolean; optional?: boolean; compact?: boolean; children: React.ReactNode;
+}) {
+    return (
+        <View style={{ marginBottom: compact ? 0 : 20 }}>
+            <View style={styles.labelRow}>
+                <Text style={styles.label}>{label}</Text>
+                {required && <Text style={styles.requiredDot}> *</Text>}
+                {optional && <Text style={styles.optionalTag}> Optional</Text>}
+            </View>
+            {children}
+        </View>
+    );
 }
+
+function ModalHeader({ title, onClose }: { title: string; onClose: () => void }) {
+    return (
+        <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{title}</Text>
+            <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <View style={styles.closeBtn}>
+                    <Ionicons name="close" size={16} color={TEXT_DARK} />
+                </View>
+            </TouchableOpacity>
+        </View>
+    );
+}
+
+// ── Styles ───────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: PRIMARY,
+    },
+
+    // Header
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingBottom: 12,
+        paddingTop: 4,
+        backgroundColor: PRIMARY,
+    },
+    backBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerTitle: {
+        flex: 1,
+        fontSize: 18,
+        fontWeight: '700',
+        color: WHITE,
+        textAlign: 'center',
+        letterSpacing: 0.3,
+    },
+
+    // Hero Banner
+    heroBanner: {
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        paddingTop: 8,
+        paddingBottom: 32,
+        backgroundColor: PRIMARY,
+    },
+    heroIconCircle: {
+        width: 68,
+        height: 68,
+        borderRadius: 34,
+        backgroundColor: 'rgba(255,255,255,0.18)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 14,
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.3)',
+    },
+    heroTitle: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: WHITE,
+        textAlign: 'center',
+        marginBottom: 8,
+        letterSpacing: 0.2,
+    },
+    heroSubtitle: {
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.82)',
+        textAlign: 'center',
+        lineHeight: 20,
+        fontWeight: '400',
+    },
+
+    // Scroll + Card
+    scrollContent: {
+        flexGrow: 1,
+    },
+    formCard: {
+        backgroundColor: BG,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        paddingHorizontal: 20,
+        paddingTop: 28,
+        paddingBottom: 40,
+        minHeight: '100%',
+        // shadow for iOS
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+    },
+
+    // Row of two fields
+    rowTwo: {
+        flexDirection: 'row',
+        marginBottom: 20,
+    },
+
+    // Form Fields
+    labelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    label: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: TEXT_LABEL,
+    },
+    requiredDot: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: RED,
+    },
+    optionalTag: {
+        fontSize: 11,
+        fontWeight: '500',
+        color: TEXT_MUTED,
+    },
+
+    // Input rows
+    inputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: WHITE,
+        borderWidth: 1,
+        borderColor: BORDER,
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        minHeight: 50,
+        // subtle shadow
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.04,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    textareaRow: {
+        alignItems: 'flex-start',
+        paddingTop: 12,
+        minHeight: 100,
+    },
+    inputIcon: {
+        marginRight: 10,
+    },
+    inputText: {
+        flex: 1,
+        fontSize: 14,
+        fontWeight: '500',
+        color: TEXT_DARK,
+        padding: 0,
+    },
+    textareaText: {
+        height: 80,
+        lineHeight: 20,
+    },
+    placeholder: {
+        color: TEXT_MUTED,
+        fontWeight: '400',
+    },
+
+    // Divider
+    divider: {
+        height: 1,
+        backgroundColor: BORDER,
+        marginVertical: 8,
+        marginBottom: 20,
+    },
+
+    // Submit button
+    submitBtn: {
+        backgroundColor: PRIMARY,
+        borderRadius: 14,
+        paddingVertical: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 8,
+        shadowColor: PRIMARY,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    submitBtnDisabled: {
+        opacity: 0.6,
+    },
+    submitBtnText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: WHITE,
+        letterSpacing: 0.3,
+    },
+    footerNote: {
+        textAlign: 'center',
+        fontSize: 12,
+        color: TEXT_MUTED,
+        marginTop: 16,
+        lineHeight: 18,
+        fontStyle: 'italic',
+    },
+
+    // Modals
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'flex-end',
+    },
+    modal: {
+        backgroundColor: WHITE,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        maxHeight: '75%',
+        paddingBottom: Platform.OS === 'ios' ? 24 : 16,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: BORDER,
+    },
+    modalTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: TEXT_DARK,
+    },
+    closeBtn: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: '#F3F4F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    optionItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 13,
+        borderRadius: 10,
+        marginHorizontal: 8,
+        marginVertical: 2,
+    },
+    optionItemActive: {
+        backgroundColor: PRIMARY_LIGHT,
+    },
+    optionLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    optionDot: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#F3F4F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    optionDotActive: {
+        backgroundColor: PRIMARY,
+    },
+    optionDotText: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: TEXT_DARK,
+    },
+    optionLabel: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: TEXT_DARK,
+    },
+    optionLabelActive: {
+        color: PRIMARY,
+        fontWeight: '600',
+    },
+    purposeIconBox: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        backgroundColor: PRIMARY_LIGHT,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    purposeIconBoxActive: {
+        backgroundColor: PRIMARY,
+    },
+});
