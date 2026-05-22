@@ -472,6 +472,54 @@ export default function BookingsPage() {
                                         : <div className="text-sm text-muted">None added</div>}
                                 </div>
 
+                                {/* Trip & Travel Details — rendered when formDataJson.type === 'TRIP' */}
+                                {selected.formDataJson?.type === 'TRIP' && (() => {
+                                    const fd = selected.formDataJson;
+                                    return (
+                                        <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
+                                            <h4 style={{ marginBottom: 12, fontWeight: 600, color: '#02743F' }}>✈️ Trip & Travel Details</h4>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                                {fd.destination && (
+                                                    <div style={{ gridColumn: '1 / -1' }}>
+                                                        <label className="form-label">Destination</label>
+                                                        <div className="text-sm font-semibold">{fd.destination}</div>
+                                                    </div>
+                                                )}
+                                                {fd.travelDates && (
+                                                    <div>
+                                                        <label className="form-label">Travel Dates</label>
+                                                        <div className="text-sm">{fd.travelDates}</div>
+                                                    </div>
+                                                )}
+                                                {fd.numTravellers && (
+                                                    <div>
+                                                        <label className="form-label">Number of Travellers</label>
+                                                        <div className="text-sm">{fd.numTravellers} {fd.numTravellers === 1 ? 'person' : 'people'}</div>
+                                                    </div>
+                                                )}
+                                                {fd.purposeOfTravel && (
+                                                    <div style={{ gridColumn: '1 / -1' }}>
+                                                        <label className="form-label">Purpose of Travel</label>
+                                                        <div className="text-sm">{fd.purposeOfTravel}</div>
+                                                    </div>
+                                                )}
+                                                {fd.specialRequirements && (
+                                                    <div style={{ gridColumn: '1 / -1' }}>
+                                                        <label className="form-label">Special Requirements / Assistance</label>
+                                                        <div className="text-sm" style={{ background: 'var(--bg-glass)', padding: '8px 12px', borderRadius: 8 }}>{fd.specialRequirements}</div>
+                                                    </div>
+                                                )}
+                                                {fd.additionalDetails && (
+                                                    <div style={{ gridColumn: '1 / -1' }}>
+                                                        <label className="form-label">Additional Details</label>
+                                                        <div className="text-sm" style={{ background: 'var(--bg-glass)', padding: '8px 12px', borderRadius: 8 }}>{fd.additionalDetails}</div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
                                 {selected.adminNotes && <div><label className="form-label">Admin Notes</label><div className="text-sm" style={{ background: 'var(--bg-glass)', padding: 12, borderRadius: 8 }}>{selected.adminNotes}</div></div>}
                             </>)}
 
