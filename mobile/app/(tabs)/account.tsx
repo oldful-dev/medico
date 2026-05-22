@@ -466,10 +466,10 @@ export default function AccountScreen() {
                         <MenuRow icon="document-text-outline" iconBg="#FFF3E0" iconColor="#F57C00" title="Terms & Conditions" onPress={() => router.push('/terms-policy' as any)} colors={colors} />
                         <MenuRow icon="shield-outline" iconBg="#E8F5E9" iconColor="#2E7D32" title="Privacy Policy" onPress={() => router.push('/privacy-policy' as any)} colors={colors} />
                         <MenuRow icon="receipt-outline" iconBg="#FCE4EC" iconColor="#C2185B" title="Refund Policy" onPress={() => router.push('/refund-policy' as any)} colors={colors} />
-                        <MenuRow icon="checkmark-circle-outline" iconBg="#F3E5F5" iconColor="#6A1B9A" title="Consent Forms" onPress={() => Alert.alert('Consent Forms', 'Coming soon')} colors={colors} />
-                        <MenuRow icon="contract-outline" iconBg="#E0F2F1" iconColor="#00796B" title="Service Agreements" onPress={() => Alert.alert('Service Agreements', 'Coming soon')} colors={colors} />
-                        <MenuRow icon="eye-outline" iconBg="#EFF7F6" iconColor="#004D40" title="View Documents" onPress={() => Alert.alert('View Documents', 'Coming soon')} colors={colors} />
-                        <MenuRow icon="download-outline" iconBg="#F1F8E9" iconColor="#558B2F" title="Download Documents" onPress={() => Alert.alert('Download Documents', 'Coming soon')} colors={colors} />
+                        <MenuRow icon="checkmark-circle-outline" iconBg="#F3E5F5" iconColor="#6A1B9A" title="Consent Forms" onPress={() => router.push('/profile/consent-forms' as any)} colors={colors} />
+                        <MenuRow icon="contract-outline" iconBg="#E0F2F1" iconColor="#00796B" title="Service Agreements" onPress={() => router.push('/profile/service-agreements' as any)} colors={colors} />
+                        <MenuRow icon="eye-outline" iconBg="#EFF7F6" iconColor="#004D40" title="View Documents" onPress={() => router.push('/profile/view-documents' as any)} colors={colors} />
+                        <MenuRow icon="download-outline" iconBg="#F1F8E9" iconColor="#558B2F" title="Download Documents" onPress={() => router.push('/profile/download-documents' as any)} colors={colors} />
                     </View>
                 )}
 
