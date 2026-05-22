@@ -1,5 +1,6 @@
 // Design Tokens — Single source of truth for the Medico mobile UI
 // All screens must import from here for consistency
+// For dark mode support, use useThemeColors() hook instead of Colors directly
 import { Platform } from 'react-native';
 
 // ─── Colors ───

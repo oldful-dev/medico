@@ -1,4 +1,4 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -12,6 +12,7 @@ import { UserProvider } from '@/context/UserContext';
 import { BookingProvider } from '@/context/BookingContext';
 import { CartProvider } from '@/context/CartContext';
 import { AppConfigProvider } from '@/context/AppConfigContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 
 // Keep the native splash visible until splash.tsx explicitly hides it.
 // Never hide it here — doing so causes a blank/Metro screen gap.
@@ -39,9 +40,10 @@ export default function RootLayout() {
     <AppConfigProvider>
       <AuthProvider>
         <UserProvider>
-          <BookingProvider>
-            <CartProvider>
-              <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <ThemeProvider>
+            <BookingProvider>
+              <CartProvider>
+                <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
                 <Stack screenOptions={{ headerShown: false }}>
                   {/* Auth / Onboarding Flow */}
                   <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -73,6 +75,8 @@ export default function RootLayout() {
                   <Stack.Screen name="profile" options={{ headerShown: false }} />
                   <Stack.Screen name="family-members" options={{ headerShown: false }} />
                   <Stack.Screen name="emergency-contacts" options={{ headerShown: false }} />
+                  <Stack.Screen name="medical-card" options={{ headerShown: false }} />
+                  <Stack.Screen name="manage-addresses" options={{ headerShown: false }} />
 
                   {/* Unmapped Screens */}
                   <Stack.Screen name="smart-upgrade/index" options={{ headerShown: false }} />
@@ -81,9 +85,10 @@ export default function RootLayout() {
                   <Stack.Screen name="tech-helper/index" options={{ headerShown: false }} />
                 </Stack>
                 <StatusBar style="auto" />
-              </ThemeProvider>
+              </NavigationThemeProvider>
             </CartProvider>
           </BookingProvider>
+          </ThemeProvider>
         </UserProvider>
       </AuthProvider>
     </AppConfigProvider>

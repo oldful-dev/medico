@@ -30,6 +30,19 @@ function formatDate(iso: string): string {
     catch { return iso; }
 }
 
+function calculateDaysRemaining(expiryDate?: string): number | null {
+    if (!expiryDate) return null;
+    try {
+        const today = new Date();
+        const expiry = new Date(expiryDate);
+        const diff = expiry.getTime() - today.getTime();
+        const daysLeft = Math.ceil(diff / (1000 * 3600 * 24));
+        return daysLeft > 0 ? daysLeft : 0;
+    } catch {
+        return null;
+    }
+}
+
 function parseBenefits(raw?: string): string[] {
     if (!raw) return [];
     try { return JSON.parse(raw); } catch { }
@@ -51,9 +64,9 @@ function getPlanPrice(plan: Plan, cycle: CycleKey): number {
 
 // ─── Plan Card ────────────────────────────────────────────
 function PlanCard({
-    plan, cycle, isActive, onSelect,
+    plan, cycle, isActive, onSelect, isDisabled,
 }: {
-    plan: Plan; cycle: CycleKey; isActive: boolean; onSelect: () => void;
+    plan: Plan; cycle: CycleKey; isActive: boolean; onSelect: () => void; isDisabled?: boolean;
 }) {
     const tier = getTierConfig(plan.name);
     const price = getPlanPrice(plan, cycle);
@@ -62,9 +75,15 @@ function PlanCard({
 
     return (
         <TouchableOpacity
-            style={[styles.planCard, { borderColor: isActive ? tier.color : '#E5E7EB' }, isActive && { borderWidth: 2 }]}
+            style={[
+                styles.planCard,
+                { borderColor: isActive ? tier.color : '#E5E7EB' },
+                isActive && { borderWidth: 2 },
+                isDisabled && !isActive && styles.planCardDisabled,
+            ]}
             onPress={onSelect}
-            activeOpacity={0.85}
+            activeOpacity={isDisabled ? 1 : 0.85}
+            disabled={isDisabled}
         >
             {isActive && (
                 <View style={[styles.activeBadge, { backgroundColor: tier.color }]}>
@@ -129,7 +148,76 @@ export default function SubscriptionScreen() {
         })();
     }, []));
 
-    const handleSelectPlan = async (plan: Plan) => {
+    const handleSelectPlan = async (plan: Plan, isFromRenewButton: boolean = false) => {
+        // ─── Restrict plan change if user has active subscription ───
+        if (activeSub && activeSub.status === 'ACTIVE') {
+            // Only allow renewing the same plan via Renew button or contact support for upgrade
+            if (plan.id === activePlanId && isFromRenewButton) {
+                // User can renew their current plan via Renew Now button
+                const price = getPlanPrice(plan, selectedCycle);
+                const cycleLabel = CYCLES.find(c => c.key === selectedCycle)?.label || '';
+
+                Alert.alert(
+                    `Renew ${plan.name}`,
+                    `₹${price.toLocaleString('en-IN')} for ${cycleLabel}\n\nProceed to payment?`,
+                    [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                            text: 'Continue',
+                            onPress: async () => {
+                                setInitiating(plan.id);
+                                try {
+                                    const res = await planService.initiateSubscription({
+                                        planId: plan.id,
+                                        billingCycle: selectedCycle,
+                                        amount: price,
+                                    });
+                                    if (res.success && res.data) {
+                                        router.push({
+                                            pathname: '/payment/checkout',
+                                            params: {
+                                                subscriptionId: res.data.id,
+                                                amount: String(price),
+                                                planName: plan.name,
+                                            },
+                                        } as any);
+                                    } else {
+                                        Alert.alert('Error', res.message || 'Could not initiate subscription.');
+                                    }
+                                } catch {
+                                    Alert.alert('Error', 'Something went wrong. Please try again.');
+                                } finally {
+                                    setInitiating(null);
+                                }
+                            },
+                        },
+                    ]
+                );
+            } else if (plan.id === activePlanId && !isFromRenewButton) {
+                // User tapped card directly - block it
+                Alert.alert(
+                    'Renew Plan',
+                    'Use the "Renew Now" button above to renew your current plan.',
+                    [{ text: 'OK', style: 'cancel' }]
+                );
+            } else {
+                // User cannot switch plans while active
+                Alert.alert(
+                    'Upgrade Plan?',
+                    `You currently have an active ${activeSub.plan?.name} plan. To upgrade or downgrade, please contact our support team for assistance.`,
+                    [
+                        { text: 'Dismiss', style: 'cancel' },
+                        {
+                            text: 'Contact Support',
+                            onPress: () => router.push('/help-support' as any),
+                        },
+                    ]
+                );
+            }
+            return;
+        }
+
+        // ─── Normal flow: No active subscription, allow subscribing to any plan ───
         const price = getPlanPrice(plan, selectedCycle);
         const cycleLabel = CYCLES.find(c => c.key === selectedCycle)?.label || '';
 
@@ -205,6 +293,37 @@ export default function SubscriptionScreen() {
                                 </Text>
                             </View>
                         </View>
+
+                        {/* Duration and Days Remaining */}
+                        <View style={styles.durationSection}>
+                            <View style={styles.durationBlock}>
+                                <Ionicons name="calendar-outline" size={16} color="#B45309" />
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.durationLabel}>Plan Duration</Text>
+                                    <Text style={styles.durationValue}>
+                                        {formatDate(activeSub.startDate || activeSub.createdAt || '')} • {formatDate(activeSub.expiryDate || '')}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.daysRemainingBlock}>
+                                <Ionicons name="hourglass-outline" size={16} color={calculateDaysRemaining(activeSub.expiryDate) && calculateDaysRemaining(activeSub.expiryDate)! <= 7 ? '#DC2626' : '#B45309'} />
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.daysLabel}>Days Remaining</Text>
+                                    {calculateDaysRemaining(activeSub.expiryDate) !== null ? (
+                                        <Text style={[
+                                            styles.daysValue,
+                                            calculateDaysRemaining(activeSub.expiryDate)! <= 7 && styles.daysValueWarning
+                                        ]}>
+                                            {calculateDaysRemaining(activeSub.expiryDate)} days left
+                                        </Text>
+                                    ) : (
+                                        <Text style={styles.daysValue}>—</Text>
+                                    )}
+                                </View>
+                            </View>
+                        </View>
+
                         <View style={styles.renewalRow}>
                             <View style={styles.renewalDateBlock}>
                                 <Ionicons name="time-outline" size={14} color="#B45309" />
@@ -215,7 +334,7 @@ export default function SubscriptionScreen() {
                                 style={styles.renewBtn}
                                 onPress={() => {
                                     const activePlan = plans.find(p => p.id === activePlanId);
-                                    if (activePlan) handleSelectPlan(activePlan);
+                                    if (activePlan) handleSelectPlan(activePlan, true); // true = from Renew button
                                     else Alert.alert('Renew', 'Select a plan below to renew your membership.');
                                 }}
                             >
@@ -223,6 +342,16 @@ export default function SubscriptionScreen() {
                                 <Text style={styles.renewBtnText}>Renew Now</Text>
                             </TouchableOpacity>
                         </View>
+
+                        {/* Restriction Notice */}
+                        {activeSub.status === 'ACTIVE' && (
+                            <View style={styles.restrictionNotice}>
+                                <Ionicons name="information-circle" size={16} color="#B45309" />
+                                <Text style={styles.restrictionText}>
+                                    You can only renew your current plan. To upgrade or downgrade, contact support after expiry.
+                                </Text>
+                            </View>
+                        )}
                     </View>
                 )}
 
@@ -260,21 +389,30 @@ export default function SubscriptionScreen() {
                         <Text style={styles.emptyText}>No plans available right now.</Text>
                     </View>
                 ) : (
-                    plans.map(plan => (
-                        <View key={plan.id} style={{ position: 'relative' }}>
-                            <PlanCard
-                                plan={plan}
-                                cycle={selectedCycle}
-                                isActive={plan.id === activePlanId}
-                                onSelect={() => handleSelectPlan(plan)}
-                            />
-                            {initiating === plan.id && (
-                                <View style={styles.cardOverlay}>
-                                    <ActivityIndicator color={Colors.primary} />
-                                </View>
-                            )}
-                        </View>
-                    ))
+                    plans.map(plan => {
+                        const isDisabled = activeSub && activeSub.status === 'ACTIVE' && plan.id !== activePlanId;
+                        return (
+                            <View key={plan.id} style={{ position: 'relative' }}>
+                                <PlanCard
+                                    plan={plan}
+                                    cycle={selectedCycle}
+                                    isActive={plan.id === activePlanId}
+                                    onSelect={() => handleSelectPlan(plan)}
+                                    isDisabled={isDisabled}
+                                />
+                                {isDisabled && (
+                                    <View style={styles.disabledOverlay}>
+                                        <Text style={styles.disabledText}>Contact support to upgrade</Text>
+                                    </View>
+                                )}
+                                {initiating === plan.id && (
+                                    <View style={styles.cardOverlay}>
+                                        <ActivityIndicator color={Colors.primary} />
+                                    </View>
+                                )}
+                            </View>
+                        );
+                    })
                 )}
 
                 {/* Cancel note */}
@@ -309,12 +447,37 @@ const styles = StyleSheet.create({
     activeSubTitle: { fontFamily: Fonts.semiBold, fontSize: 15, color: Colors.textDark },
     activeSubMeta: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, marginTop: 2 },
     activeStatusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-    renewalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#FEF3C7', paddingTop: 12 },
+
+    // Duration and Days Remaining
+    durationSection: {
+        borderTopWidth: 1, borderTopColor: '#FEF3C7', paddingTop: 12, marginBottom: 12,
+        gap: 10,
+    },
+    durationBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+    daysRemainingBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+    durationLabel: { fontFamily: Fonts.regular, fontSize: 11, color: '#B45309', marginBottom: 2 },
+    durationValue: { fontFamily: Fonts.semiBold, fontSize: 13, color: '#92400E', lineHeight: 18 },
+    daysLabel: { fontFamily: Fonts.regular, fontSize: 11, color: '#B45309', marginBottom: 2 },
+    daysValue: { fontFamily: Fonts.semiBold, fontSize: 13, color: '#059669' },
+    daysValueWarning: { color: '#DC2626' },
+
+    renewalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#FEF3C7', paddingTop: 12, marginBottom: 12 },
     renewalDateBlock: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     renewalLabel: { fontFamily: Fonts.regular, fontSize: 12, color: '#B45309' },
     renewalDate: { fontFamily: Fonts.semiBold, fontSize: 13, color: '#92400E' },
     renewBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#B45309', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
     renewBtnText: { fontFamily: Fonts.medium, fontSize: 13, color: '#fff' },
+
+    // Restriction Notice
+    restrictionNotice: {
+        flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+        backgroundColor: 'rgba(180, 83, 9, 0.1)', borderRadius: 8, padding: 10,
+        borderLeftWidth: 3, borderLeftColor: '#B45309',
+    },
+    restrictionText: {
+        fontFamily: Fonts.regular, fontSize: 12, color: '#92400E',
+        flex: 1, lineHeight: 16,
+    },
 
     sectionLabel: { fontFamily: Fonts.semiBold, fontSize: 14, color: Colors.textDark, marginBottom: 10 },
 
@@ -334,8 +497,22 @@ const styles = StyleSheet.create({
         borderWidth: 1, overflow: 'hidden',
         ...Shadow.card,
     },
+    planCardDisabled: { opacity: 0.5 },
     activeBadge: { paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-end', borderBottomLeftRadius: 8 },
     activeBadgeText: { fontFamily: Fonts.medium, fontSize: 11, color: '#fff' },
+    disabledOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(255, 255, 255, 0.85)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 16,
+    },
+    disabledText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: 13,
+        color: Colors.textMuted,
+        textAlign: 'center',
+    },
     planHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingBottom: 12 },
     planIconWrap: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
     planName: { fontFamily: Fonts.semiBold, fontSize: 16 },

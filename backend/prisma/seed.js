@@ -255,6 +255,54 @@ async function main() {
         console.log('ℹ️  No CONFIRMED lab order found — activity update demo skipped (run after a booking is confirmed)');
     }
 
+    // ─── Banners ──────────────────────────────
+    const banners = await Promise.all([
+        prisma.banner.upsert({
+            where: { id: 'banner_01' },
+            update: {},
+            create: {
+                id: 'banner_01',
+                imageUrl: 'https://images.unsplash.com/photo-1631217314830-e41d473b8eb0?w=800',
+                heading: 'Share Your Travel Plan',
+                subheading: 'Tell us where you want to go and we\'ll assist you',
+                ctaText: 'Share Now',
+                ctaRoute: '/trip-travels',
+                order: 1,
+                isActive: true,
+            },
+        }),
+        prisma.banner.upsert({
+            where: { id: 'banner_02' },
+            update: {},
+            create: {
+                id: 'banner_02',
+                imageUrl: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800',
+                heading: 'Health Checkup at Home',
+                subheading: 'Complete wellness packages delivered to your doorstep',
+                ctaText: 'Book Now',
+                ctaRoute: '/blood-test',
+                order: 2,
+                isActive: true,
+            },
+        }),
+        prisma.banner.upsert({
+            where: { id: 'banner_03' },
+            update: {},
+            create: {
+                id: 'banner_03',
+                imageUrl: 'https://images.unsplash.com/photo-1579154204601-01d82b27d100?w=800',
+                heading: 'Expert Medical Advice',
+                subheading: 'Connect with qualified doctors for consultation',
+                ctaText: 'Consult Now',
+                ctaRoute: '/doctor-visit',
+                order: 3,
+                isActive: true,
+            },
+        }),
+    ]);
+
+    console.log(`✅ ${banners.length} banners seeded`);
+
     console.log('\n🎉 Database seeded successfully!');
     console.log('──────────────────────────────────');
     console.log('Super Admin Login:');
