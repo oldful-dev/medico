@@ -247,9 +247,9 @@ export default function ServiceCheckoutScreen() {
 
         setPayLoading(true);
         try {
-            // ─── STEP 1: Create booking if not already created ────────
+            // ─── STEP 1: Create booking if not already created (skip for meetups) ────────
             setFlowState('creating_booking');
-            if (!sessionBookingId.current && params.bookingPayload) {
+            if (!params.meetupId && !sessionBookingId.current && params.bookingPayload) {
                 const payload = JSON.parse(params.bookingPayload as string);
                 const bookingRes = await bookingService.createBooking({
                     ...payload,
