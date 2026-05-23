@@ -14,6 +14,7 @@ import RazorpayCheckout from 'react-native-razorpay';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { paymentService, PaymentMethod } from '@/services/api/paymentService';
 import { bookingService } from '@/services/api/bookingService';
+import { meetupService } from '@/services/api/meetupService';
 import { storageService, STORAGE_KEYS } from '@/services/device/storageService';
 import { useUser } from '@/context/UserContext';
 
@@ -44,6 +45,7 @@ const mapLabelToCategory = (label: string): string => {
     if (lower.includes('legal') || lower.includes('paper')) return 'LEGAL_PAPERWORK';
     if (lower.includes('hospital') || lower.includes('trip')) return 'HOSPITAL_TRIP';
     if (lower.includes('transport') || lower.includes('cab') || lower.includes('driving')) return 'TRANSPORTATION';
+    if (lower.includes('meetup') || lower.includes('event')) return 'LOCAL_MEETUP';
     return 'OTHER';
 };
 
@@ -58,6 +60,8 @@ export default function ServiceCheckoutScreen() {
         email?: string;
         phone?: string;
         userName?: string;
+        meetupId?: string;
+        meetupParams?: string;
     }>();
 
     const baseAmount = parseFloat(params.amount ?? '0');
@@ -369,6 +373,44 @@ export default function ServiceCheckoutScreen() {
 
                 if (params.refreshProfileOnSuccess === '1') {
                     try { await refreshData(); } catch { /* non-blocking */ }
+                }
+
+                // ─── MEETUP: Register after payment verified ──────────────
+                if (params.meetupId && params.bookingPayload) {
+                    try {
+                        const payload = JSON.parse(params.bookingPayload as string);
+                        const regRes = await meetupService.registerForMeetup(params.meetupId, {
+                            fullName: payload.fullName,
+                            mobile: payload.mobile,
+                            age: payload.age,
+                            gender: payload.gender,
+                            assistanceJson: payload.assistanceJson,
+                            specialNotes: payload.specialNotes,
+                            pickupEnabled: payload.pickupEnabled,
+                            pickupAddress: payload.pickupAddress,
+                            pickupLandmark: payload.pickupLandmark,
+                            pickupContact: payload.pickupContact,
+                            preferredPickupTime: payload.preferredPickupTime,
+                        });
+
+                        if (regRes.success && regRes.data) {
+                            const meetupParams = params.meetupParams ? JSON.parse(params.meetupParams as string) : {};
+                            router.replace({
+                                pathname: '/meetup/confirmation',
+                                params: {
+                                    bookingCode: regRes.data.bookingCode,
+                                    meetupEventDate: meetupParams.meetupEventDate || '',
+                                    meetupStartTime: meetupParams.meetupStartTime || '',
+                                    meetupEndTime: meetupParams.meetupEndTime || '',
+                                    meetupVenue: meetupParams.meetupVenue || '',
+                                    meetupPinCode: meetupParams.meetupPinCode || '',
+                                },
+                            });
+                            return;
+                        }
+                    } catch (e) {
+                        console.warn('Meetup registration failed:', e);
+                    }
                 }
 
                 router.replace({
