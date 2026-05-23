@@ -235,8 +235,7 @@ const createBooking = async (req, res, next) => {
                             bookingId: booking.id,
                             amount: 0,
                             status: 'SUCCESS',
-                            paymentMethod: 'SUBSCRIPTION',
-                            notes: 'Covered by active subscription',
+                            paymentMethod: 'WALLET',
                         },
                     });
                 }
