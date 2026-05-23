@@ -705,8 +705,8 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     tab: {
-        paddingVertical: 5,
-        paddingHorizontal: 12,
+        paddingVertical: 7,
+        paddingHorizontal: 16,
         borderRadius: 20,
         backgroundColor: '#F0F0F0',
         justifyContent: 'center',
