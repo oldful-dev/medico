@@ -62,14 +62,17 @@ export default function MeetupRegisterScreen() {
 
     const handleContinue = () => {
         if (!fullName.trim()) { Alert.alert('Required', 'Please enter your full name'); return; }
-        if (!mobile.trim() || mobile.length < 10) { Alert.alert('Required', 'Please enter a valid mobile number'); return; }
+        const phoneDigits = mobile.replace(/\D/g, '');
+        if (!mobile.trim() || phoneDigits.length < 10) { Alert.alert('Required', 'Please enter a valid 10-digit mobile number'); return; }
         if (!age.trim()) { Alert.alert('Required', 'Please enter your age'); return; }
         if (!gender) { Alert.alert('Required', 'Please select your gender'); return; }
+
+        const cleanMobile = phoneDigits.slice(-10); // Get last 10 digits
 
         const params: any = {
             id,
             fullName,
-            mobile,
+            mobile: cleanMobile,
             age,
             gender,
             assistanceJson: JSON.stringify(assistance),
@@ -90,7 +93,7 @@ export default function MeetupRegisterScreen() {
             router.push({ pathname: '/service-checkout', params: {
                 bookingPayload: JSON.stringify({
                     fullName,
-                    mobile,
+                    mobile: cleanMobile,
                     age,
                     gender,
                     assistanceJson: JSON.stringify(assistance),
