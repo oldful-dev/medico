@@ -651,7 +651,17 @@ export default function ServiceCheckoutScreen() {
                             ))}
                         </View>
                     ) : (
-                        <Text style={styles.noAddressText}>No saved addresses. Please add one in your profile.</Text>
+                        <View>
+                            <Text style={styles.noAddressText}>No saved addresses. Please add one in your profile.</Text>
+                            <TouchableOpacity
+                                style={[styles.payBtn, { marginTop: 12, backgroundColor: Colors.primary }]}
+                                onPress={() => router.push('/manage-addresses')}
+                                activeOpacity={0.85}
+                            >
+                                <Ionicons name="add-outline" size={18} color="#fff" />
+                                <Text style={styles.payBtnText}>Add Address</Text>
+                            </TouchableOpacity>
+                        </View>
                     )}
                 </View>
                 )}
