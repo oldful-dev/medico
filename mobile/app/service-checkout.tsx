@@ -67,6 +67,11 @@ export default function ServiceCheckoutScreen() {
     const baseAmount = parseFloat(params.amount ?? '0');
     const label  = params.label ?? 'Service Booking';
 
+    // Parse meetup details if this is a meetup booking
+    const meetupParamsObj = params.meetupParams ? (() => {
+        try { return JSON.parse(params.meetupParams); } catch { return null; }
+    })() : null;
+
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('UPI');
     const [couponCode,     setCouponCode]     = useState('');
     const [couponApplied,  setCouponApplied]  = useState(false);
@@ -480,24 +485,81 @@ export default function ServiceCheckoutScreen() {
             <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} showsVerticalScrollIndicator={false}>
 
                 {/* Meetup Service & Pickup Details */}
-                {params.meetupId && params.pickupAddress && (
-                    <View style={styles.card}>
-                        <Text style={styles.cardTitle}>Service & Pickup Details</Text>
-                        <View style={styles.detailRow}>
-                            <Ionicons name="list-outline" size={16} color={Colors.primary} />
-                            <View style={{ flex: 1, marginLeft: 8 }}>
-                                <Text style={styles.detailLabel}>Service</Text>
-                                <Text style={styles.detailValue}>{label}</Text>
-                            </View>
+                {params.meetupId && meetupParamsObj && (
+                    <>
+                        {/* Price Summary */}
+                        <View style={styles.card}>
+                            <Text style={styles.cardTitle}>Service Charge</Text>
+                            <Text style={styles.servicePrice}>₹{baseAmount}</Text>
                         </View>
-                        <View style={styles.detailRow}>
-                            <Ionicons name="location-outline" size={16} color={Colors.primary} />
-                            <View style={{ flex: 1, marginLeft: 8 }}>
-                                <Text style={styles.detailLabel}>Pickup Address</Text>
-                                <Text style={styles.detailValue}>{params.pickupAddress}</Text>
+
+                        {/* Included in Service Charge */}
+                        {meetupParamsObj.includedItems && meetupParamsObj.includedItems.length > 0 && (
+                            <View style={styles.card}>
+                                <Text style={styles.cardTitle}>Included in Service Charge</Text>
+                                {meetupParamsObj.includedItems.map((item: string, i: number) => (
+                                    <View key={i} style={styles.includeRow}>
+                                        <Ionicons name="checkmark-circle" size={16} color={Colors.primary} />
+                                        <Text style={styles.includeText}>{item}</Text>
+                                    </View>
+                                ))}
                             </View>
-                        </View>
-                    </View>
+                        )}
+
+                        {/* Additional Charges (Extra) */}
+                        {meetupParamsObj.extraCharges && meetupParamsObj.extraCharges.length > 0 && (
+                            <View style={styles.card}>
+                                <Text style={styles.cardTitle}>Additional Charges (Extra)</Text>
+                                {meetupParamsObj.extraCharges.map((item: string, i: number) => (
+                                    <View key={i} style={styles.extraRow}>
+                                        <Ionicons name="close-circle" size={16} color="#EF4444" />
+                                        <Text style={styles.extraText}>{item}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+
+                        {/* Pickup Details */}
+                        {params.pickupAddress && (
+                            <View style={styles.card}>
+                                <Text style={styles.cardTitle}>Pickup Details</Text>
+                                <View style={styles.pickupRow}>
+                                    <Ionicons name="location-outline" size={16} color={Colors.primary} />
+                                    <View style={{ flex: 1, marginLeft: 12 }}>
+                                        <Text style={styles.pickupLabel}>Pickup Address</Text>
+                                        <Text style={styles.pickupValue}>{params.pickupAddress}</Text>
+                                    </View>
+                                </View>
+                                {meetupParamsObj.pickupLandmark && (
+                                    <View style={styles.pickupRow}>
+                                        <Ionicons name="flag-outline" size={16} color={Colors.primary} />
+                                        <View style={{ flex: 1, marginLeft: 12 }}>
+                                            <Text style={styles.pickupLabel}>Landmark</Text>
+                                            <Text style={styles.pickupValue}>{meetupParamsObj.pickupLandmark}</Text>
+                                        </View>
+                                    </View>
+                                )}
+                                {meetupParamsObj.preferredTime && (
+                                    <View style={styles.pickupRow}>
+                                        <Ionicons name="time-outline" size={16} color={Colors.primary} />
+                                        <View style={{ flex: 1, marginLeft: 12 }}>
+                                            <Text style={styles.pickupLabel}>Preferred Pickup Time</Text>
+                                            <Text style={styles.pickupValue}>{meetupParamsObj.preferredTime}</Text>
+                                        </View>
+                                    </View>
+                                )}
+                                {meetupParamsObj.alternateContact && (
+                                    <View style={styles.pickupRow}>
+                                        <Ionicons name="call-outline" size={16} color={Colors.primary} />
+                                        <View style={{ flex: 1, marginLeft: 12 }}>
+                                            <Text style={styles.pickupLabel}>Alternate Contact</Text>
+                                            <Text style={styles.pickupValue}>{meetupParamsObj.alternateContact}</Text>
+                                        </View>
+                                    </View>
+                                )}
+                            </View>
+                        )}
+                    </>
                 )}
 
                 {/* Order Summary */}
@@ -732,6 +794,18 @@ const styles = StyleSheet.create({
     detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, paddingVertical: Spacing.sm },
     detailLabel: { fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: Colors.textLight },
     detailValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark, marginTop: 4 },
+
+    servicePrice: { fontFamily: Fonts.bold, fontSize: 32, color: Colors.primary, textAlign: 'center', marginVertical: Spacing.sm },
+
+    includeRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
+    includeText: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textBody, flex: 1 },
+
+    extraRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
+    extraText: { fontFamily: Fonts.regular, fontSize: 13, color: '#DC2626', flex: 1 },
+
+    pickupRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, marginBottom: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    pickupLabel: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted },
+    pickupValue: { fontFamily: Fonts.medium, fontSize: 14, color: Colors.textDark, marginTop: 4 },
 
     breakdownSection: {
         backgroundColor: '#FAFAFA',

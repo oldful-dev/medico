@@ -35,6 +35,8 @@ export default function MeetupRegisterScreen() {
         meetupVenue,
         meetupPinCode,
         meetupServiceCharge,
+        includedItems: includedItemsStr,
+        extraCharges: extraChargesStr,
     } = useLocalSearchParams<{
         id: string;
         meetupEventDate: string;
@@ -43,6 +45,8 @@ export default function MeetupRegisterScreen() {
         meetupVenue: string;
         meetupPinCode: string;
         meetupServiceCharge: string;
+        includedItems?: string;
+        extraCharges?: string;
     }>();
     const { profile } = useUser();
 
@@ -76,12 +80,32 @@ export default function MeetupRegisterScreen() {
             meetupVenue,
             meetupPinCode,
             meetupServiceCharge,
+            includedItems: includedItemsStr,
+            extraCharges: extraChargesStr,
         };
 
         if (assistance['requiresPickupSupport']) {
             router.push({ pathname: '/meetup/pickup', params } as any);
         } else {
-            router.push({ pathname: '/meetup/payment', params } as any);
+            router.push({ pathname: '/service-checkout', params: {
+                bookingPayload: JSON.stringify({
+                    fullName,
+                    mobile,
+                    age,
+                    gender,
+                    assistanceJson: JSON.stringify(assistance),
+                    specialNotes,
+                    pickupEnabled: false,
+                    pickupAddress: '',
+                    pickupLandmark: '',
+                    pickupContact: '',
+                    preferredPickupTime: '',
+                }),
+                amount: meetupServiceCharge,
+                label: 'Local Meetup',
+                meetupId: id,
+                meetupParams: JSON.stringify(params),
+            } } as any);
         }
     };
 

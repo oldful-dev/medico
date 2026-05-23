@@ -138,6 +138,8 @@ export default function MeetupDetailsScreen() {
                             meetupVenue: meetup.venue,
                             meetupPinCode: meetup.pinCode ?? '',
                             meetupServiceCharge: String(meetup.serviceCharge ?? 299),
+                            includedItems: JSON.stringify(meetup.includedItems ?? []),
+                            extraCharges: JSON.stringify(meetup.extraCharges ?? []),
                         },
                     } as any)}
                     activeOpacity={0.85}
