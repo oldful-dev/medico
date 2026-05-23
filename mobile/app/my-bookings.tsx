@@ -222,12 +222,10 @@ export default function MyBookingsScreen() {
         <TouchableOpacity
             style={styles.bookingCard}
             onPress={() => {
-                if (booking.serviceType === 'blood-test') {
-                    router.push({ pathname: '/booking-details', params: { bookingId: booking.id, type: 'lab' } } as any);
-                } else if (booking.serviceType === 'service') {
-                    router.push({ pathname: '/service-confirmation', params: { bookingId: booking.id } } as any);
-                }
-                // meetup type: no detail page yet, tap is no-op
+                const type = booking.serviceType === 'blood-test' ? 'lab'
+                    : booking.serviceType === 'meetup' ? 'meetup'
+                    : 'service';
+                router.push({ pathname: '/booking-details', params: { bookingId: booking.id, type } } as any);
             }}
             activeOpacity={0.7}
         >
@@ -367,13 +365,16 @@ export default function MyBookingsScreen() {
                     </TouchableOpacity>
                 )}
 
-                {/* View Details for blood test upcoming bookings */}
-                {booking.serviceType === 'blood-test' && (booking.status === 'confirmed' || booking.status === 'pending') && (
+                {/* View Details for upcoming bookings */}
+                {(booking.status === 'confirmed' || booking.status === 'pending') && (
                     <TouchableOpacity
                         style={[styles.actionBtn, styles.viewDetailsBtn]}
                         onPress={(e) => {
                             e.stopPropagation();
-                            router.push({ pathname: '/booking-details', params: { bookingId: booking.id, type: 'lab' } } as any);
+                            const type = booking.serviceType === 'blood-test' ? 'lab'
+                                : booking.serviceType === 'meetup' ? 'meetup'
+                                : 'service';
+                            router.push({ pathname: '/booking-details', params: { bookingId: booking.id, type } } as any);
                         }}
                     >
                         <Ionicons name="information-circle-outline" size={13} color={PRIMARY_GREEN} />

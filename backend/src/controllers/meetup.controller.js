@@ -154,6 +154,25 @@ const getMyRegistrations = async (req, res, next) => {
     }
 };
 
+// ─── User: Get single registration ──────────────────────────────
+// GET /api/meetups/registrations/:regId
+const getRegistrationById = async (req, res, next) => {
+    try {
+        const { regId } = req.params;
+        const userId = req.user.id;
+        const reg = await prisma.meetupRegistration.findUnique({
+            where: { id: regId },
+            include: { meetup: true },
+        });
+        if (!reg) return sendResponse(res, 404, null, 'Registration not found');
+        if (reg.userId !== userId) return sendResponse(res, 403, null, 'Forbidden');
+        sendResponse(res, 200, reg);
+    } catch (error) {
+        logger.error('getRegistrationById error:', error.message);
+        next(error);
+    }
+};
+
 // ─── User: Cancel registration ───────────────────────────────────
 // POST /api/meetups/registrations/:regId/cancel
 const cancelRegistration = async (req, res, next) => {
@@ -292,6 +311,7 @@ module.exports = {
     getMeetupById,
     registerForMeetup,
     getMyRegistrations,
+    getRegistrationById,
     cancelRegistration,
     createMeetup,
     updateMeetup,
