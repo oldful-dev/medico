@@ -493,14 +493,9 @@ export default function ServiceCheckoutScreen() {
                 {/* Meetup Service & Pickup Details */}
                 {params.meetupId && meetupParamsObj && (
                     <View style={[styles.card, styles.meetupCard]}>
-                        {/* Price Summary */}
-                        <Text style={styles.chargeLabel}>Service Charge</Text>
-                        <Text style={styles.chargeAmount}>₹{baseAmount}</Text>
-
                         {/* Included in Service Charge */}
                         {meetupParamsObj.includedItems && meetupParamsObj.includedItems.length > 0 && (
                             <>
-                                <View style={styles.divider} />
                                 <Text style={styles.subHeading}>Included in Service Charge</Text>
                                 {meetupParamsObj.includedItems.map((item: string, i: number) => (
                                     <View key={i} style={styles.includeRow}>
@@ -508,13 +503,13 @@ export default function ServiceCheckoutScreen() {
                                         <Text style={styles.includeText}>{item}</Text>
                                     </View>
                                 ))}
+                                <View style={styles.divider} />
                             </>
                         )}
 
                         {/* Additional Charges (Extra) */}
                         {meetupParamsObj.extraCharges && meetupParamsObj.extraCharges.length > 0 && (
                             <>
-                                <View style={styles.divider} />
                                 <Text style={styles.extraHeading}>Additional Charges (Extra)</Text>
                                 {meetupParamsObj.extraCharges.map((item: string, i: number) => (
                                     <View key={i} style={styles.extraRow}>
@@ -522,13 +517,13 @@ export default function ServiceCheckoutScreen() {
                                         <Text style={styles.extraText}>{item}</Text>
                                     </View>
                                 ))}
+                                <View style={styles.divider} />
                             </>
                         )}
 
                         {/* Pickup Details */}
                         {params.pickupAddress && (
                             <>
-                                <View style={styles.divider} />
                                 <Text style={styles.subHeading}>Pickup Details</Text>
                                 <View style={styles.pickupDetailRow}>
                                     <Text style={styles.pickupLabel}>Address:</Text>
@@ -791,9 +786,7 @@ const styles = StyleSheet.create({
     detailValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark, marginTop: 4 },
 
     meetupCard: { gap: 0 },
-    chargeLabel: { fontFamily: Fonts.semiBold, fontSize: 13, color: Colors.textMuted, textAlign: 'center', marginBottom: 4 },
-    chargeAmount: { fontFamily: Fonts.bold, fontSize: 40, color: Colors.primary, textAlign: 'center', marginBottom: 4 },
-    divider: { height: 1, backgroundColor: Colors.borderLight, marginVertical: 14 },
+    divider: { height: 1, backgroundColor: Colors.borderLight, marginVertical: 10 },
     subHeading: { fontFamily: Fonts.semiBold, fontSize: 13, color: Colors.textDark, marginBottom: 10 },
     extraHeading: { fontFamily: Fonts.semiBold, fontSize: 13, color: '#DC2626', marginBottom: 10 },
 
