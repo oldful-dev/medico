@@ -166,7 +166,7 @@ export default function MeetupRegisterScreen() {
                         value={mobile}
                         onChangeText={setMobile}
                         keyboardType="phone-pad"
-                        maxLength={10}
+                        maxLength={13}
                     />
 
                     <Text style={styles.label}>Age <Text style={styles.required}>*</Text></Text>
