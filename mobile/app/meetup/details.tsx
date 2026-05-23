@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Image,
+    View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Image, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -18,13 +18,27 @@ export default function MeetupDetailsScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const [meetup, setMeetup] = useState<Meetup | null>(null);
     const [loading, setLoading] = useState(true);
+    const [userRegistrations, setUserRegistrations] = useState<any[]>([]);
 
     useEffect(() => {
         if (!id) return;
-        meetupService.getMeetupById(id).then(res => {
-            if (res.success && res.data) setMeetup(res.data);
-        }).finally(() => setLoading(false));
+        const loadData = async () => {
+            try {
+                const meetupRes = await meetupService.getMeetupById(id);
+                if (meetupRes.success && meetupRes.data) setMeetup(meetupRes.data);
+
+                const regRes = await meetupService.getMyRegistrations();
+                if (regRes.success && regRes.data) setUserRegistrations(regRes.data);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
     }, [id]);
+
+    // Check if user already registered for this meetup
+    const userRegistrationForThisMeetup = userRegistrations.find(r => r.meetupId === id);
+    const canBook = !userRegistrationForThisMeetup;
 
     if (loading) {
         return (
@@ -127,25 +141,39 @@ export default function MeetupDetailsScreen() {
                     <Text style={styles.footerPrice}>₹{meetup.serviceCharge ?? 299}</Text>
                 </View>
                 <TouchableOpacity
-                    style={styles.joinBtn}
-                    onPress={() => router.push({
-                        pathname: '/meetup/register',
-                        params: {
-                            id: meetup.id,
-                            meetupEventDate: meetup.eventDate,
-                            meetupStartTime: meetup.startTime,
-                            meetupEndTime: meetup.endTime ?? '',
-                            meetupVenue: meetup.venue,
-                            meetupPinCode: meetup.pinCode ?? '',
-                            meetupServiceCharge: String(meetup.serviceCharge ?? 299),
-                            includedItems: JSON.stringify(meetup.includedItems ?? []),
-                            extraCharges: JSON.stringify(meetup.extraCharges ?? []),
-                        },
-                    } as any)}
+                    style={[styles.joinBtn, !canBook && styles.joinBtnDisabled]}
+                    onPress={() => {
+                        if (!canBook) {
+                            const statusLabel = userRegistrationForThisMeetup?.status === 'CANCELLED' ? 'Cancelled' : userRegistrationForThisMeetup?.status;
+                            Alert.alert(
+                                'Already Registered',
+                                `You already have a registration for this event (Status: ${statusLabel}). You cannot book again.`,
+                                [{ text: 'OK' }]
+                            );
+                            return;
+                        }
+                        router.push({
+                            pathname: '/meetup/register',
+                            params: {
+                                id: meetup.id,
+                                meetupEventDate: meetup.eventDate,
+                                meetupStartTime: meetup.startTime,
+                                meetupEndTime: meetup.endTime ?? '',
+                                meetupVenue: meetup.venue,
+                                meetupPinCode: meetup.pinCode ?? '',
+                                meetupServiceCharge: String(meetup.serviceCharge ?? 299),
+                                includedItems: JSON.stringify(meetup.includedItems ?? []),
+                                extraCharges: JSON.stringify(meetup.extraCharges ?? []),
+                            },
+                        } as any);
+                    }}
                     activeOpacity={0.85}
+                    disabled={!canBook}
                 >
-                    <Text style={styles.joinBtnText}>Join Now</Text>
-                    <Ionicons name="arrow-forward" size={18} color="#fff" />
+                    <Text style={styles.joinBtnText}>
+                        {canBook ? 'Join Now' : 'Already Registered'}
+                    </Text>
+                    {canBook && <Ionicons name="arrow-forward" size={18} color="#fff" />}
                 </TouchableOpacity>
             </View>
         </View>
@@ -210,5 +238,6 @@ const styles = StyleSheet.create({
         backgroundColor: PRIMARY, borderRadius: 14,
         paddingHorizontal: 28, paddingVertical: 14,
     },
+    joinBtnDisabled: { opacity: 0.5 },
     joinBtnText: { fontFamily: Fonts.semiBold, fontSize: 16, color: '#fff' },
 });
