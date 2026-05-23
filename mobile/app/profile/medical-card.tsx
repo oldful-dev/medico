@@ -9,12 +9,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useUser } from '@/context/UserContext';
 import { userService } from '@/services/api/userService';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 import * as Print from 'expo-print';
-
-const PRIMARY_GREEN = '#02743F';
-const CARD_BORDER = '#E5E7EB';
-const TEXT_DARK = '#2F2F2F';
-const TEXT_MUTED = '#888888';
 
 const formatDate = (iso?: string) => {
     if (!iso) return 'N/A';
@@ -32,6 +29,9 @@ const formatDate = (iso?: string) => {
 export default function MedicalCardScreen() {
     const router = useRouter();
     const { profile } = useUser();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(colors, isDarkMode);
     const [loading, setLoading] = useState(false);
 
     useFocusEffect(
@@ -39,8 +39,7 @@ export default function MedicalCardScreen() {
             if (!profile?.id) {
                 (async () => {
                     try {
-                        const res = await userService.getProfile();
-                        // Profile will be updated in context
+                        await userService.getProfile();
                     } catch (err) {
                         console.error('Failed to fetch profile:', err);
                     }
@@ -52,23 +51,6 @@ export default function MedicalCardScreen() {
     const medicalCard = profile?.medicalCards?.[0];
     const emergencyContacts = profile?.emergencyContacts || [];
     const addresses = profile?.addresses || [];
-
-    const cardData = {
-        name: profile?.name || 'N/A',
-        phone: profile?.phone || 'N/A',
-        email: profile?.email || '',
-        dateOfBirth: profile?.dateOfBirth || '',
-        gender: profile?.gender || '',
-        uniqueUserId: profile?.uniqueUserId || 'N/A',
-        bloodGroup: medicalCard?.bloodGroup || '',
-        allergies: medicalCard?.allergies || [],
-        chronicConditions: medicalCard?.chronicConditions || [],
-        currentMedications: medicalCard?.currentMedications || [],
-        emergencyContacts: emergencyContacts,
-        addresses: addresses,
-        insuranceInfo: medicalCard?.insuranceInfo || '',
-        primaryDoctor: medicalCard?.primaryDoctor || '',
-    };
 
     const generateCardText = () => {
         const allergies = (medicalCard?.allergies || []).join(', ') || 'None';
@@ -276,22 +258,22 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
     if (loading) {
         return (
             <View style={styles.centerContainer}>
-                <ActivityIndicator size="large" color={PRIMARY_GREEN} />
+                <ActivityIndicator size="large" color={colors.primary} />
             </View>
         );
     }
 
     return (
         <View style={styles.screen}>
-            <StatusBar backgroundColor="#FFFFFF" />
+            <StatusBar style={isDarkMode ? "light" : "dark"} />
             <SafeAreaView style={styles.headerSafe} edges={['top']}>
                 <View style={styles.headerRow}>
-                    <TouchableOpacity onPress={() => router.back()}>
-                        <Ionicons name="arrow-back" size={24} color={TEXT_DARK} />
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                        <Ionicons name="arrow-back" size={24} color={colors.textDark} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Medical Card</Text>
-                    <TouchableOpacity onPress={handleEdit}>
-                        <Ionicons name="create-outline" size={24} color={PRIMARY_GREEN} />
+                    <TouchableOpacity onPress={handleEdit} style={styles.editHeaderBtn}>
+                        <Ionicons name="create-outline" size={24} color={colors.primary} />
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -300,8 +282,8 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
                 {/* Header Card */}
                 <View style={styles.headerCard}>
                     <View style={styles.headerTop}>
-                        <View>
-                            <Text style={styles.userName}>{profile?.name || 'User'}</Text>
+                        <View style={{ flex: 1, marginRight: 10 }}>
+                            <Text style={styles.userName} numberOfLines={1}>{profile?.name || 'User'}</Text>
                             <Text style={styles.userId}>AYUXA ID: {profile?.uniqueUserId}</Text>
                         </View>
                         {medicalCard?.bloodGroup && (
@@ -319,8 +301,8 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
                         onPress={handleDownloadPDF}
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="download-outline" size={16} color={PRIMARY_GREEN} />
-                        <Text style={styles.actionBtnText}>Download</Text>
+                        <Ionicons name="download-outline" size={16} color={colors.primary} />
+                        <Text style={[styles.actionBtnText, { color: colors.primary }]}>Download</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -405,7 +387,7 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
                         {emergencyContacts.map((contact, idx) => (
                             <View key={idx} style={styles.contactItem}>
                                 <View style={styles.contactIcon}>
-                                    <Ionicons name="person-circle-outline" size={20} color={PRIMARY_GREEN} />
+                                    <Ionicons name="person-circle-outline" size={20} color={colors.primary} />
                                 </View>
                                 <View style={styles.contactInfo}>
                                     <Text style={styles.contactName}>{contact.name}</Text>
@@ -444,21 +426,23 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: '#FFFFFF' },
-    centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    headerSafe: { backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: CARD_BORDER },
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.bgScreen },
+    centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bgScreen },
+    headerSafe: { backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-    headerTitle: { fontSize: 18, fontWeight: '600', color: TEXT_DARK, flex: 1, textAlign: 'center' },
-    scrollView: { flex: 1, backgroundColor: '#FFFFFF' },
+    backBtn: { padding: 4 },
+    editHeaderBtn: { padding: 4 },
+    headerTitle: { fontSize: 18, fontWeight: '600', color: colors.textDark, flex: 1, textAlign: 'center' },
+    scrollView: { flex: 1, backgroundColor: colors.bgScreen },
     scrollContent: { paddingHorizontal: 16, paddingVertical: 16, paddingBottom: 40 },
 
     headerCard: {
-        backgroundColor: PRIMARY_GREEN,
+        backgroundColor: colors.primary,
         borderRadius: 14,
         padding: 20,
         marginBottom: 20,
-        shadowColor: '#000',
+        shadowColor: colors.shadowColor,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
@@ -471,41 +455,41 @@ const styles = StyleSheet.create({
     bloodGroupText: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
 
     actionButtonsContainer: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-    actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5 },
-    downloadBtn: { backgroundColor: 'rgba(2, 116, 63, 0.08)', borderColor: PRIMARY_GREEN },
-    whatsappBtn: { backgroundColor: 'rgba(37, 211, 102, 0.08)', borderColor: '#D1FAE5' },
-    emailBtn: { backgroundColor: 'rgba(234, 88, 12, 0.08)', borderColor: '#FED7AA' },
-    printBtn: { backgroundColor: 'rgba(124, 58, 237, 0.08)', borderColor: '#E9D5FF' },
-    actionBtnText: { fontSize: 11, fontWeight: '600', color: PRIMARY_GREEN },
+    actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, backgroundColor: colors.bgCard, borderColor: colors.borderLight },
+    downloadBtn: { backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : 'rgba(2, 116, 63, 0.08)', borderColor: colors.primary },
+    whatsappBtn: { backgroundColor: isDarkMode ? 'rgba(37, 211, 102, 0.1)' : 'rgba(37, 211, 102, 0.08)', borderColor: '#25D366' },
+    emailBtn: { backgroundColor: isDarkMode ? 'rgba(234, 88, 12, 0.1)' : 'rgba(234, 88, 12, 0.08)', borderColor: '#EA580C' },
+    printBtn: { backgroundColor: isDarkMode ? 'rgba(124, 58, 237, 0.1)' : 'rgba(124, 58, 237, 0.08)', borderColor: '#7C3AED' },
+    actionBtnText: { fontSize: 11, fontWeight: '600' },
 
-    sectionCard: { backgroundColor: '#FAFAFA', borderRadius: 12, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: CARD_BORDER },
-    sectionTitle: { fontSize: 14, fontWeight: '700', color: PRIMARY_GREEN, marginBottom: 12 },
+    sectionCard: { backgroundColor: colors.bgCard, borderRadius: 12, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: colors.borderLight },
+    sectionTitle: { fontSize: 14, fontWeight: '700', color: colors.primary, marginBottom: 12 },
 
     fieldRow: { marginBottom: 12 },
-    fieldLabel: { fontSize: 11, fontWeight: '600', color: TEXT_MUTED, textTransform: 'uppercase', marginBottom: 3 },
-    fieldValue: { fontSize: 14, fontWeight: '500', color: TEXT_DARK },
+    fieldLabel: { fontSize: 11, fontWeight: '600', color: colors.textMuted, textTransform: 'uppercase', marginBottom: 3 },
+    fieldValue: { fontSize: 14, fontWeight: '500', color: colors.textDark },
 
     subsection: { marginBottom: 14 },
-    subsectionLabel: { fontSize: 12, fontWeight: '600', color: TEXT_MUTED, marginBottom: 8 },
+    subsectionLabel: { fontSize: 12, fontWeight: '600', color: colors.textMuted, marginBottom: 8 },
 
     tagContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    tag: { backgroundColor: PRIMARY_GREEN, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+    tag: { backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
     tagText: { fontSize: 12, fontWeight: '500', color: '#FFFFFF' },
-    emptyText: { fontSize: 12, color: TEXT_MUTED, fontStyle: 'italic' },
+    emptyText: { fontSize: 12, color: colors.textMuted, fontStyle: 'italic' },
 
     medicationItem: { marginBottom: 6 },
-    medicationText: { fontSize: 13, color: TEXT_DARK, lineHeight: 18 },
+    medicationText: { fontSize: 13, color: colors.textDark, lineHeight: 18 },
 
-    contactItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: CARD_BORDER },
+    contactItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
     contactIcon: { marginTop: 2 },
     contactInfo: { flex: 1 },
-    contactName: { fontSize: 13, fontWeight: '600', color: TEXT_DARK },
-    contactDetails: { fontSize: 12, color: TEXT_MUTED, marginTop: 2 },
+    contactName: { fontSize: 13, fontWeight: '600', color: colors.textDark },
+    contactDetails: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
 
-    addressText: { fontSize: 13, color: TEXT_DARK, lineHeight: 20 },
+    addressText: { fontSize: 13, color: colors.textDark, lineHeight: 20 },
 
     bloodGroupContainer: { alignItems: 'center', paddingVertical: 10 },
-    bloodGroupLabel: { fontSize: 11, fontWeight: '600', color: TEXT_MUTED, textTransform: 'uppercase', marginBottom: 6 },
+    bloodGroupLabel: { fontSize: 11, fontWeight: '600', color: colors.textMuted, textTransform: 'uppercase', marginBottom: 6 },
     bloodGroupValue: { fontSize: 28, fontWeight: '700', color: '#DC2626' },
 
     editButton: {
@@ -513,7 +497,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: PRIMARY_GREEN,
+        backgroundColor: colors.primary,
         paddingVertical: 14,
         borderRadius: 12,
         marginTop: 20,

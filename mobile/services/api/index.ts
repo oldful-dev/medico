@@ -18,3 +18,5 @@ export { uiConfigService } from './uiConfigService';
 export { legalService } from './legalService';
 export { storeService } from './storeService';
 export { labService } from './labService';
+export { meetupService } from './meetupService';
+export type { Meetup, MeetupRegistration, RegisterMeetupPayload } from './meetupService';

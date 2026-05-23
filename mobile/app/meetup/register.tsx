@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView,
+    View, Text, StyleSheet, TouchableOpacity,
     TextInput, Alert,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,7 +27,23 @@ const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
 export default function MeetupRegisterScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { id } = useLocalSearchParams<{ id: string }>();
+    const {
+        id,
+        meetupEventDate,
+        meetupStartTime,
+        meetupEndTime,
+        meetupVenue,
+        meetupPinCode,
+        meetupServiceCharge,
+    } = useLocalSearchParams<{
+        id: string;
+        meetupEventDate: string;
+        meetupStartTime: string;
+        meetupEndTime: string;
+        meetupVenue: string;
+        meetupPinCode: string;
+        meetupServiceCharge: string;
+    }>();
     const { profile } = useUser();
 
     const [fullName, setFullName] = useState(profile?.name || '');
@@ -53,6 +70,12 @@ export default function MeetupRegisterScreen() {
             gender,
             assistanceJson: JSON.stringify(assistance),
             specialNotes,
+            meetupEventDate,
+            meetupStartTime,
+            meetupEndTime,
+            meetupVenue,
+            meetupPinCode,
+            meetupServiceCharge,
         };
 
         if (assistance['requiresPickupSupport']) {
@@ -77,7 +100,7 @@ export default function MeetupRegisterScreen() {
 
             {/* Step indicator */}
             <View style={styles.stepBar}>
-                {['Registration', 'Pickup', 'Payment', 'Confirm'].map((step, i) => (
+                {['Registration', 'Pickup', 'Checkout'].map((step, i) => (
                     <React.Fragment key={step}>
                         <View style={styles.stepItem}>
                             <View style={[styles.stepDot, i === 0 && styles.stepDotActive]}>
@@ -88,12 +111,12 @@ export default function MeetupRegisterScreen() {
                             </View>
                             <Text style={[styles.stepLabel, i === 0 && styles.stepLabelActive]}>{step}</Text>
                         </View>
-                        {i < 3 && <View style={styles.stepLine} />}
+                        {i < 2 && <View style={styles.stepLine} />}
                     </React.Fragment>
                 ))}
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+            <KeyboardAwareScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                 {/* Personal Details */}
                 <View style={styles.section}>
@@ -202,7 +225,7 @@ export default function MeetupRegisterScreen() {
                 )}
 
                 <View style={{ height: 20 }} />
-            </ScrollView>
+            </KeyboardAwareScrollView>
 
             {/* Continue button */}
             <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>

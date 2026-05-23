@@ -10,6 +10,9 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { familyMemberService, FamilyMember } from '@/services/api/familyMemberService';
 import { useUser } from '@/context/UserContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
+import { Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 
 const RELATIONS = ['Father', 'Mother', 'Spouse', 'Son', 'Daughter', 'Sibling', 'Dependent', 'Other'];
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-', 'Unknown'];
@@ -29,6 +32,10 @@ const RELATION_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 export default function FamilyMembersScreen() {
     const router = useRouter();
     const { profile } = useUser();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(colors, isDarkMode);
+
     const [members, setMembers] = useState<FamilyMember[]>([]);
     const [showForm, setShowForm] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -169,11 +176,11 @@ export default function FamilyMembersScreen() {
 
                 {loading ? (
                     <View style={styles.centerContainer}>
-                        <ActivityIndicator size="large" color="#048357" />
+                        <ActivityIndicator size="large" color={colors.primary} />
                     </View>
                 ) : members.length === 0 && !showForm ? (
                     <View style={styles.emptyState}>
-                        <Ionicons name="people-outline" size={56} color="#AAAEAC" />
+                        <Ionicons name="people-outline" size={56} color={colors.textMuted} />
                         <Text style={styles.emptyTitle}>No Family Members</Text>
                         <Text style={styles.emptyDesc}>Add family members to manage their health profiles and share bookings.</Text>
                     </View>
@@ -188,7 +195,7 @@ export default function FamilyMembersScreen() {
                         >
                             <View style={styles.memberInfo}>
                                 <View style={styles.relIconCircle}>
-                                    <Ionicons name={RELATION_ICONS[member.relation] || 'person-outline'} size={20} color="#048357" />
+                                    <Ionicons name={RELATION_ICONS[member.relation] || 'person-outline'} size={20} color={colors.primary} />
                                 </View>
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.memberName}>{member.name}</Text>
@@ -201,7 +208,7 @@ export default function FamilyMembersScreen() {
                                         <Text style={styles.bloodGroupText}>{member.bloodGroup}</Text>
                                     </View>
                                 ) : null}
-                                <Ionicons name={expandedId === member.id ? 'chevron-up' : 'chevron-down'} size={18} color="#AAAEAC" />
+                                <Ionicons name={expandedId === member.id ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textMuted} />
                             </View>
                         </TouchableOpacity>
 
@@ -209,7 +216,7 @@ export default function FamilyMembersScreen() {
                             <View style={styles.cardDetails}>
                                 {member.dateOfBirth ? (
                                     <View style={styles.detailRow}>
-                                        <Ionicons name="calendar-outline" size={14} color="#898989" />
+                                        <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
                                         <Text style={styles.detailText}>DOB: {member.dateOfBirth}</Text>
                                     </View>
                                 ) : null}
@@ -227,13 +234,13 @@ export default function FamilyMembersScreen() {
                                 ) : null}
                                 {member.emergencyNotes ? (
                                     <View style={styles.detailRow}>
-                                        <Ionicons name="document-text-outline" size={14} color="#898989" />
+                                        <Ionicons name="document-text-outline" size={14} color={colors.textMuted} />
                                         <Text style={styles.detailText}>{member.emergencyNotes}</Text>
                                     </View>
                                 ) : null}
                                 <View style={styles.cardActions}>
                                     <TouchableOpacity style={styles.editBtn} onPress={() => startEdit(member)}>
-                                        <Ionicons name="pencil-outline" size={14} color="#048357" />
+                                        <Ionicons name="pencil-outline" size={14} color={colors.primary} />
                                         <Text style={styles.editBtnText}>Edit</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity style={styles.removeBtn} onPress={() => deleteMember(member)}>
@@ -253,7 +260,7 @@ export default function FamilyMembersScreen() {
                         <TextInput
                             style={styles.input}
                             placeholder="Full Name *"
-                            placeholderTextColor="#898989"
+                            placeholderTextColor={colors.textMuted}
                             value={form.name}
                             onChangeText={v => setForm(f => ({ ...f, name: v }))}
                         />
@@ -263,8 +270,8 @@ export default function FamilyMembersScreen() {
                             activeOpacity={0.7}
                         >
                             <View style={styles.dateInputContent}>
-                                <Ionicons name="calendar-outline" size={16} color="#048357" />
-                                <Text style={[styles.dateInputText, !form.dateOfBirth && { color: '#898989' }]}>
+                                <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+                                <Text style={[styles.dateInputText, !form.dateOfBirth && { color: colors.textMuted }]}>
                                     {form.dateOfBirth ? new Date(form.dateOfBirth).toLocaleDateString('en-GB') : 'Date of Birth (optional)'}
                                 </Text>
                             </View>
@@ -312,21 +319,21 @@ export default function FamilyMembersScreen() {
                         <TextInput
                             style={styles.input}
                             placeholder="Allergies (if any)"
-                            placeholderTextColor="#898989"
+                            placeholderTextColor={colors.textMuted}
                             value={form.allergies}
                             onChangeText={v => setForm(f => ({ ...f, allergies: v }))}
                         />
                         <TextInput
                             style={styles.input}
                             placeholder="Chronic Conditions (if any)"
-                            placeholderTextColor="#898989"
+                            placeholderTextColor={colors.textMuted}
                             value={form.chronicConditions}
                             onChangeText={v => setForm(f => ({ ...f, chronicConditions: v }))}
                         />
                         <TextInput
                             style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
                             placeholder="Emergency Notes (optional)"
-                            placeholderTextColor="#898989"
+                            placeholderTextColor={colors.textMuted}
                             multiline
                             value={form.emergencyNotes}
                             onChangeText={v => setForm(f => ({ ...f, emergencyNotes: v }))}
@@ -344,12 +351,12 @@ export default function FamilyMembersScreen() {
                 )}
 
                 <TouchableOpacity style={styles.addButton} onPress={() => setShowForm(!showForm)} activeOpacity={0.7}>
-                    <Ionicons name="add-circle-outline" size={22} color="#048357" />
+                    <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
                     <Text style={styles.addButtonText}>Add Family Member</Text>
                 </TouchableOpacity>
 
                 <View style={styles.infoBox}>
-                    <Ionicons name="information-circle-outline" size={16} color="#048357" />
+                    <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
                     <Text style={styles.infoText}>Family member health profiles help our care team provide personalised service recommendations.</Text>
                 </View>
             </ScrollView>
@@ -368,122 +375,122 @@ export default function FamilyMembersScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: '#048357' },
-    headerSafe: { backgroundColor: '#048357' },
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.primary },
+    headerSafe: { backgroundColor: colors.primary },
     headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
     backBtn: { padding: 4, marginRight: 8 },
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20, color: '#FFFFFF', flex: 1,
     },
-    scrollView: { flex: 1, backgroundColor: '#FFFFE3', borderTopLeftRadius: 30, borderTopRightRadius: 30 },
+    scrollView: { flex: 1, backgroundColor: colors.bgScreen, borderTopLeftRadius: 30, borderTopRightRadius: 30 },
     scrollContent: { padding: 20, paddingBottom: 50 },
 
     emptyState: { alignItems: 'center', marginTop: 50, marginBottom: 30 },
     emptyTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 18, color: '#2F2F2F', marginTop: 14,
+        fontSize: 18, color: colors.textDark, marginTop: 14,
     },
     emptyDesc: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 14, color: '#898989', marginTop: 4, textAlign: 'center',
+        fontSize: 14, color: colors.textMuted, marginTop: 4, textAlign: 'center',
     },
 
     card: {
-        backgroundColor: '#FFFFFF', borderRadius: 14, marginBottom: 12,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+        backgroundColor: colors.bgCard, borderRadius: 14, marginBottom: 12,
+        shadowColor: colors.shadowColor, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
     },
     cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14 },
     memberInfo: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-    relIconCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center' },
+    relIconCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : '#E8F5E9', justifyContent: 'center', alignItems: 'center' },
     memberName: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 14, color: '#2F2F2F',
+        fontSize: 14, color: colors.textDark,
     },
     memberRel: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 12, color: '#898989', marginTop: 1,
+        fontSize: 12, color: colors.textMuted, marginTop: 1,
     },
     cardTopRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    bloodGroupBadge: { backgroundColor: '#FEF3C7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+    bloodGroupBadge: { backgroundColor: isDarkMode ? 'rgba(251,191,36,0.15)' : '#FEF3C7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
     bloodGroupText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 11, color: '#B45309', fontWeight: '700',
+        fontSize: 11, color: isDarkMode ? '#F59E0B' : '#B45309', fontWeight: '700',
     },
-    cardDetails: { borderTopWidth: 1, borderTopColor: '#F3F4F6', padding: 14, gap: 8 },
+    cardDetails: { borderTopWidth: 1, borderTopColor: colors.borderLight, padding: 14, gap: 8 },
     detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
     detailText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 13, color: '#555555', flex: 1, lineHeight: 18,
+        fontSize: 13, color: colors.textDark, flex: 1, lineHeight: 18,
     },
     cardActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
-    editBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, borderWidth: 1, borderColor: '#D1FAE5', backgroundColor: 'rgba(4, 131, 87, 0.05)' },
+    editBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, borderWidth: 1, borderColor: colors.borderLight, backgroundColor: isDarkMode ? 'rgba(52,199,89,0.05)' : 'rgba(4, 131, 87, 0.05)' },
     editBtnText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 12, color: '#048357',
+        fontSize: 12, color: colors.primary,
     },
-    removeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, borderWidth: 1, borderColor: '#FFCDD2' },
+    removeBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, borderWidth: 1, borderColor: isDarkMode ? '#EF4444' : '#FFCDD2' },
     removeBtnText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 12, color: '#FF3B30',
     },
     centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 50 },
 
-    addForm: { backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: '#048357' },
+    addForm: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: colors.primary },
     formTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 16, color: '#2F2F2F', marginBottom: 12,
+        fontSize: 16, color: colors.textDark, marginBottom: 12,
     },
     input: {
-        backgroundColor: '#F9F9F9', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
+        backgroundColor: colors.bgCardMuted, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 14, color: '#2F2F2F', borderWidth: 1, borderColor: '#E5E5E5', marginBottom: 10,
+        fontSize: 14, color: colors.textDark, borderWidth: 1, borderColor: colors.borderLight, marginBottom: 10,
     },
     dateInputContent: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     dateInputText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 14, color: '#2F2F2F',
+        fontSize: 14, color: colors.textDark,
     },
     chipLabel: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 13, color: '#2F2F2F', marginBottom: 8,
+        fontSize: 13, color: colors.textDark, marginBottom: 8,
     },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
-    chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: '#E5E5E5', backgroundColor: '#FFF' },
-    chipActive: { borderColor: '#048357', backgroundColor: 'rgba(4, 131, 87, 0.08)' },
+    chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: colors.borderLight, backgroundColor: colors.bgCardMuted },
+    chipActive: { borderColor: colors.primary, backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : 'rgba(4, 131, 87, 0.08)' },
     chipText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 13, color: '#898989',
+        fontSize: 13, color: colors.textMuted,
     },
-    chipTextActive: { color: '#048357' },
+    chipTextActive: { color: colors.primary },
     formActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 4 },
-    cancelBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#E5E5E5' },
+    cancelBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: colors.borderLight },
     cancelBtnText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 14, color: '#555555',
+        fontSize: 14, color: colors.textDark,
     },
-    saveBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: '#048357' },
+    saveBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: colors.primary },
     saveBtnText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 14, color: '#FFFFFF',
     },
     addButton: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-        paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#048357',
-        backgroundColor: '#F0FFF4', marginTop: 4, marginBottom: 16,
+        paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.primary,
+        backgroundColor: isDarkMode ? 'rgba(52,199,89,0.05)' : '#F0FFF4', marginTop: 4, marginBottom: 16,
     },
     addButtonText: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 15, color: '#048357',
+        fontSize: 15, color: colors.primary,
     },
     infoBox: {
         flexDirection: 'row', gap: 8, alignItems: 'flex-start',
-        backgroundColor: 'rgba(4, 131, 87, 0.05)', borderRadius: 10, padding: 12,
-        borderWidth: 1, borderColor: '#E8F5E9',
+        backgroundColor: isDarkMode ? 'rgba(52,199,89,0.05)' : 'rgba(4, 131, 87, 0.05)', borderRadius: 10, padding: 12,
+        borderWidth: 1, borderColor: colors.borderLight,
     },
     infoText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 12, color: '#555555', flex: 1, lineHeight: 18,
+        fontSize: 12, color: colors.textDark, flex: 1, lineHeight: 18,
     },
 });

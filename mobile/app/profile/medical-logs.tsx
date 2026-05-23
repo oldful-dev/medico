@@ -10,9 +10,11 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { userService } from '@/services/api/userService';
 import { useUser } from '@/context/UserContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 
 // ─── Types ────────────────────────────────────────────────
 interface HealthReport {
@@ -53,6 +55,9 @@ function ReportCard({ item, onOpen, onDownload, onDelete }: {
     onDownload: (url: string) => void;
     onDelete: (id: string) => void;
 }) {
+    const colors = useThemeColors();
+    const { isDarkMode } = useTheme();
+    const styles = makeStyles(colors, isDarkMode);
     const cat = getCategoryConfig(item.category || 'Other');
 
     return (
@@ -73,14 +78,14 @@ function ReportCard({ item, onOpen, onDownload, onDelete }: {
             </View>
             <View style={styles.cardActions}>
                 <TouchableOpacity style={styles.actionBtn} onPress={() => onOpen(item.fileUrl)} activeOpacity={0.7}>
-                    <Ionicons name="eye-outline" size={15} color={Colors.primary} />
+                    <Ionicons name="eye-outline" size={15} color={colors.primary} />
                     <Text style={styles.actionBtnText}>View</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionBtn} onPress={() => onDownload(item.fileUrl)} activeOpacity={0.7}>
                     <Ionicons name="download-outline" size={15} color="#7C3AED" />
                     <Text style={[styles.actionBtnText, { color: '#7C3AED' }]}>Download</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionBtn, { borderColor: '#FEE2E2' }]} onPress={() => onDelete(item.id)} activeOpacity={0.7}>
+                <TouchableOpacity style={[styles.actionBtn, { borderColor: isDarkMode ? '#7F1D1D' : '#FEE2E2' }]} onPress={() => onDelete(item.id)} activeOpacity={0.7}>
                     <Ionicons name="trash-outline" size={15} color="#DC2626" />
                     <Text style={[styles.actionBtnText, { color: '#DC2626' }]}>Delete</Text>
                 </TouchableOpacity>
@@ -93,6 +98,10 @@ function ReportCard({ item, onOpen, onDownload, onDelete }: {
 export default function MedicalLogsScreen() {
     const router = useRouter();
     const { profile } = useUser();
+    const colors = useThemeColors();
+    const { isDarkMode } = useTheme();
+    const styles = makeStyles(colors, isDarkMode);
+
     const [reports, setReports] = useState<HealthReport[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -208,12 +217,12 @@ export default function MedicalLogsScreen() {
 
     return (
         <SafeAreaView style={styles.screen} edges={['top']}>
-            <StatusBar style="dark" />
+            <StatusBar style={isDarkMode ? "light" : "dark"} />
 
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.textDark} />
+                    <Ionicons name="arrow-back" size={24} color={colors.textDark} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Medical Logs</Text>
                 <TouchableOpacity
@@ -222,58 +231,60 @@ export default function MedicalLogsScreen() {
                     disabled={uploading}
                 >
                     {uploading
-                        ? <ActivityIndicator size="small" color={Colors.primary} />
-                        : <Ionicons name="add" size={22} color={Colors.primary} />
+                        ? <ActivityIndicator size="small" color={colors.primary} />
+                        : <Ionicons name="add" size={22} color={colors.primary} />
                     }
                 </TouchableOpacity>
             </View>
 
             {/* Search */}
             <View style={styles.searchBar}>
-                <Ionicons name="search-outline" size={16} color={Colors.textMuted} />
+                <Ionicons name="search-outline" size={16} color={colors.textMuted} />
                 <TextInput
                     style={styles.searchInput}
                     placeholder="Search documents…"
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={colors.textMuted}
                     value={searchText}
                     onChangeText={setSearchText}
                 />
                 {searchText.length > 0 && (
                     <TouchableOpacity onPress={() => setSearchText('')}>
-                        <Ionicons name="close-circle" size={16} color={Colors.textMuted} />
+                        <Ionicons name="close-circle" size={16} color={colors.textMuted} />
                     </TouchableOpacity>
                 )}
             </View>
 
             {/* Category tabs */}
-            <FlatList
-                horizontal
-                data={CATEGORIES}
-                keyExtractor={c => c.key}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.tabsContent}
-                style={styles.tabsScroll}
-                renderItem={({ item: cat }) => (
-                    <TouchableOpacity
-                        style={[styles.tab, activeCategory === cat.key && { backgroundColor: cat.color }]}
-                        onPress={() => setActiveCategory(cat.key)}
-                    >
-                        <Ionicons
-                            name={cat.icon as any}
-                            size={14}
-                            color={activeCategory === cat.key ? '#fff' : cat.color}
-                        />
-                        <Text style={[styles.tabText, activeCategory === cat.key && { color: '#fff' }]}>
-                            {cat.label}
-                        </Text>
-                    </TouchableOpacity>
-                )}
-            />
+            <View style={styles.tabsContainer}>
+                <FlatList
+                    horizontal
+                    data={CATEGORIES}
+                    keyExtractor={c => c.key}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.tabsContent}
+                    style={styles.tabsScroll}
+                    renderItem={({ item: cat }) => (
+                        <TouchableOpacity
+                            style={[styles.tab, activeCategory === cat.key && { backgroundColor: cat.color }]}
+                            onPress={() => setActiveCategory(cat.key)}
+                        >
+                            <Ionicons
+                                name={cat.icon as any}
+                                size={14}
+                                color={activeCategory === cat.key ? '#fff' : cat.color}
+                            />
+                            <Text style={[styles.tabText, activeCategory === cat.key && { color: '#fff' }]}>
+                                {cat.label}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                />
+            </View>
 
             {/* Reports list */}
             {loading ? (
                 <View style={styles.center}>
-                    <ActivityIndicator size="large" color={Colors.primary} />
+                    <ActivityIndicator size="large" color={colors.primary} />
                     <Text style={styles.loadingText}>Loading documents…</Text>
                 </View>
             ) : (
@@ -287,13 +298,13 @@ export default function MedicalLogsScreen() {
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={() => fetchReports(true)}
-                            colors={[Colors.primary]}
-                            tintColor={Colors.primary}
+                            colors={[colors.primary]}
+                            tintColor={colors.primary}
                         />
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <Ionicons name="documents-outline" size={64} color="#E5E7EB" />
+                            <Ionicons name="documents-outline" size={64} color={isDarkMode ? '#374151' : '#E5E7EB'} />
                             <Text style={styles.emptyTitle}>No documents yet</Text>
                             <Text style={styles.emptySubtitle}>
                                 {searchText ? 'No documents match your search.' : 'Upload prescriptions, reports, and medical documents.'}
@@ -319,7 +330,7 @@ export default function MedicalLogsScreen() {
                         <TextInput
                             style={styles.fieldInput}
                             placeholder="e.g. Blood test report Jan 2026"
-                            placeholderTextColor={Colors.textMuted}
+                            placeholderTextColor={colors.textMuted}
                             value={uploadTitle}
                             onChangeText={setUploadTitle}
                         />
@@ -345,11 +356,11 @@ export default function MedicalLogsScreen() {
 
                         <View style={styles.uploadOptions}>
                             <TouchableOpacity style={styles.uploadOptionBtn} onPress={pickFromCamera}>
-                                <Ionicons name="camera-outline" size={22} color={Colors.primary} />
+                                <Ionicons name="camera-outline" size={22} color={colors.primary} />
                                 <Text style={styles.uploadOptionText}>Camera</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.uploadOptionBtn} onPress={pickFromGallery}>
-                                <Ionicons name="image-outline" size={22} color={Colors.primary} />
+                                <Ionicons name="image-outline" size={22} color={colors.primary} />
                                 <Text style={styles.uploadOptionText}>Gallery</Text>
                             </TouchableOpacity>
                         </View>
@@ -364,75 +375,78 @@ export default function MedicalLogsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: '#F9FAFB' },
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.bgScreen },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: 16, paddingVertical: 14,
-        backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB',
+        backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.borderLight,
     },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: Colors.textDark },
-    uploadHeaderBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#F0FDF4', justifyContent: 'center', alignItems: 'center' },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: colors.textDark },
+    uploadHeaderBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : '#F0FDF4', justifyContent: 'center', alignItems: 'center' },
 
     searchBar: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
         marginHorizontal: 16, marginVertical: 10,
-        backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB',
+        backgroundColor: colors.bgCard, borderRadius: 10, borderWidth: 1, borderColor: colors.borderLight,
         paddingHorizontal: 12, paddingVertical: 9,
     },
-    searchInput: { flex: 1, fontFamily: Fonts.regular, fontSize: 14, color: Colors.textDark, padding: 0 },
+    searchInput: { flex: 1, fontFamily: Fonts.regular, fontSize: 14, color: colors.textDark, padding: 0 },
 
-    tabsScroll: { maxHeight: 44, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    tabsContainer: { backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+    tabsScroll: { maxHeight: 44 },
     tabsContent: { paddingHorizontal: 12, paddingVertical: 6, gap: 8 },
-    tab: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, backgroundColor: '#F3F4F6' },
-    tabText: { fontFamily: Fonts.medium, fontSize: 12, color: Colors.textMuted },
+    tab: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, backgroundColor: colors.bgCardMuted },
+    tabText: { fontFamily: Fonts.medium, fontSize: 12, color: colors.textMuted },
 
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
-    loadingText: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted },
+    loadingText: { fontFamily: Fonts.regular, fontSize: 14, color: colors.textMuted },
     listContent: { padding: 16, paddingBottom: 40, flexGrow: 1 },
 
     card: {
-        backgroundColor: '#fff', borderRadius: 12,
+        backgroundColor: colors.bgCard, borderRadius: 12,
         marginBottom: 10, padding: 14,
-        borderWidth: 1, borderColor: '#E5E7EB',
+        borderWidth: 1, borderColor: colors.borderLight,
     },
     cardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
     cardIcon: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12, flexShrink: 0 },
     cardBody: { flex: 1 },
-    cardTitle: { fontFamily: Fonts.medium, fontSize: 14, color: Colors.textDark, marginBottom: 6 },
+    cardTitle: { fontFamily: Fonts.medium, fontSize: 14, color: colors.textDark, marginBottom: 6 },
     cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     catBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5 },
     catBadgeText: { fontFamily: Fonts.medium, fontSize: 10 },
-    cardDate: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted },
-    cardActions: { flexDirection: 'row', gap: 8, borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 10 },
-    actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderColor: '#E5E7EB', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 7 },
-    actionBtnText: { fontFamily: Fonts.medium, fontSize: 12, color: Colors.primary },
+    cardDate: { fontFamily: Fonts.regular, fontSize: 11, color: colors.textMuted },
+    cardActions: { flexDirection: 'row', gap: 8, borderTopWidth: 1, borderTopColor: colors.borderLight, paddingTop: 10 },
+    actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderColor: colors.borderLight, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 7 },
+    actionBtnText: { fontFamily: Fonts.medium, fontSize: 12, color: colors.primary },
 
     emptyContainer: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 32 },
-    emptyTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: Colors.textDark, marginTop: 16, marginBottom: 8 },
-    emptySubtitle: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 20 },
-    emptyUploadBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 },
+    emptyTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: colors.textDark, marginTop: 16, marginBottom: 8 },
+    emptySubtitle: { fontFamily: Fonts.regular, fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 20 },
+    emptyUploadBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 },
     emptyUploadText: { fontFamily: Fonts.medium, fontSize: 14, color: '#fff' },
 
     // Modal
     modalOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modal: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 36 },
-    modalTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: Colors.textDark, marginBottom: 16 },
-    fieldLabel: { fontFamily: Fonts.medium, fontSize: 13, color: Colors.textDark, marginBottom: 6 },
+    modal: { backgroundColor: colors.bgCard, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 36 },
+    modalTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: colors.textDark, marginBottom: 16 },
+    fieldLabel: { fontFamily: Fonts.medium, fontSize: 13, color: colors.textDark, marginBottom: 6 },
     fieldInput: {
-        borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10,
+        borderWidth: 1, borderColor: colors.borderLight, borderRadius: 10,
         paddingHorizontal: 12, paddingVertical: 10,
-        fontFamily: Fonts.regular, fontSize: 14, color: Colors.textDark,
+        fontFamily: Fonts.regular, fontSize: 14, color: colors.textDark,
+        backgroundColor: colors.bgCardMuted,
         marginBottom: 14,
     },
-    catChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: '#F3F4F6' },
-    catChipText: { fontFamily: Fonts.medium, fontSize: 12, color: Colors.textMuted },
+    catChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: colors.bgCardMuted },
+    catChipText: { fontFamily: Fonts.medium, fontSize: 12, color: colors.textMuted },
     uploadOptions: { flexDirection: 'row', gap: 12, marginBottom: 12 },
     uploadOptionBtn: {
         flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-        borderWidth: 1.5, borderColor: Colors.primary, borderRadius: 12, paddingVertical: 14,
+        borderWidth: 1.5, borderColor: colors.primary, borderRadius: 12, paddingVertical: 14,
+        backgroundColor: colors.bgCard,
     },
-    uploadOptionText: { fontFamily: Fonts.medium, fontSize: 14, color: Colors.primary },
+    uploadOptionText: { fontFamily: Fonts.medium, fontSize: 14, color: colors.primary },
     modalCancelBtn: { alignItems: 'center', paddingVertical: 12 },
-    modalCancelText: { fontFamily: Fonts.medium, fontSize: 14, color: Colors.textMuted },
+    modalCancelText: { fontFamily: Fonts.medium, fontSize: 14, color: colors.textMuted },
 });

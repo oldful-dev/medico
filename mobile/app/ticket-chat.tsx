@@ -9,16 +9,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { supportService, TicketMessage, SupportTicket } from '@/services/api/supportService';
 import { initTicketSocket, onTicketMessageAdded, disconnectTicketSocket } from '@/services/socket/ticketSocket';
 import { joinUserRoom } from '@/services/socket/socketManager';
 import { useUser } from '@/context/UserContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function TicketChatScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { profile } = useUser();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(colors, isDarkMode);
     const { ticketId } = useLocalSearchParams<{ ticketId: string }>();
     const flatListRef = useRef<FlatList>(null);
 
@@ -139,9 +144,9 @@ export default function TicketChatScreen() {
                     <Ionicons
                         name={isUser ? 'person-circle-outline' : 'headset-outline'}
                         size={16}
-                        color={isUser ? Colors.primary : '#F5A623'}
+                        color={isUser ? colors.primary : '#F5A623'}
                     />
-                    <Text style={[styles.senderLabel, { color: isUser ? Colors.primary : '#F5A623' }]}>
+                    <Text style={[styles.senderLabel, { color: isUser ? colors.primary : '#F5A623' }]}>
                         {isUser ? 'You' : 'Support Team'}
                     </Text>
                 </View>
@@ -158,7 +163,7 @@ export default function TicketChatScreen() {
     if (loading) {
         return (
             <View style={[styles.screen, { justifyContent: 'center', alignItems: 'center' }]}>
-                <ActivityIndicator size="large" color={Colors.primary} />
+                <ActivityIndicator size="large" color={colors.primary} />
             </View>
         );
     }
@@ -169,13 +174,13 @@ export default function TicketChatScreen() {
 
     return (
         <View style={[styles.screen, { paddingBottom: bottomPadding }]}>
-            <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
-            <StatusBar style="light" backgroundColor={Colors.primary} />
+            <View style={{ backgroundColor: colors.primary, height: insets.top }} />
+            <StatusBar style="light" backgroundColor={colors.primary} />
 
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
+                    <Ionicons name="arrow-back" size={24} color={colors.textWhite} />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
                     <Text style={styles.headerTitle} numberOfLines={1}>{ticket?.subject || 'Ticket'}</Text>
@@ -207,7 +212,7 @@ export default function TicketChatScreen() {
                 }
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Ionicons name="chatbubbles-outline" size={48} color={Colors.textMuted} />
+                        <Ionicons name="chatbubbles-outline" size={48} color={colors.textMuted} />
                         <Text style={styles.emptyText}>No messages yet. Start the conversation below.</Text>
                     </View>
                 }
@@ -223,7 +228,7 @@ export default function TicketChatScreen() {
                     <TextInput
                         style={styles.textInput}
                         placeholder="Type your message..."
-                        placeholderTextColor={Colors.textMuted}
+                        placeholderTextColor={colors.textMuted}
                         value={messageText}
                         onChangeText={setMessageText}
                         multiline
@@ -247,28 +252,33 @@ export default function TicketChatScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: Colors.bgScreen },
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.bgScreen },
 
     header: {
         flexDirection: 'row', alignItems: 'center',
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         paddingHorizontal: Spacing.md, paddingBottom: Spacing.md, paddingTop: Spacing.sm,
     },
     backButton: { padding: Spacing.xs },
     headerCenter: { flex: 1, marginHorizontal: Spacing.sm },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textWhite },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textWhite },
     headerSubtitle: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
     statusBadge: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 },
     statusText: { fontFamily: Fonts.semiBold, fontSize: 10, color: '#fff', textTransform: 'capitalize' },
 
     descriptionCard: {
-        backgroundColor: '#fff', marginBottom: Spacing.md,
-        borderRadius: Radius.md, padding: Spacing.md, ...Shadow.card,
+        backgroundColor: colors.bgCard, marginBottom: Spacing.md,
+        borderRadius: Radius.md, padding: Spacing.md,
+        shadowColor: colors.shadowColor,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
     },
-    descLabel: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: Colors.textMuted, marginBottom: 4 },
-    descText: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textDark, lineHeight: 22 },
-    descMeta: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textMuted, marginTop: Spacing.sm, textTransform: 'capitalize' },
+    descLabel: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: colors.textMuted, marginBottom: 4 },
+    descText: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textDark, lineHeight: 22 },
+    descMeta: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: colors.textMuted, marginTop: Spacing.sm, textTransform: 'capitalize' },
 
     messagesList: { paddingHorizontal: Spacing.md, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
 
@@ -277,40 +287,45 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.sm, maxWidth: '85%',
     },
     userBubble: {
-        backgroundColor: '#E8F5E9', alignSelf: 'flex-end',
+        backgroundColor: isDarkMode ? 'rgba(52, 199, 89, 0.15)' : '#E8F5E9', alignSelf: 'flex-end',
         borderBottomRightRadius: 4,
     },
     adminBubble: {
-        backgroundColor: '#fff', alignSelf: 'flex-start',
-        borderBottomLeftRadius: 4, ...Shadow.card,
+        backgroundColor: colors.bgCard, alignSelf: 'flex-start',
+        borderBottomLeftRadius: 4,
+        shadowColor: colors.shadowColor,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
     },
     senderRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
     senderLabel: { fontFamily: Fonts.semiBold, fontSize: FontSize.caption },
-    messageText: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textDark, lineHeight: 21 },
-    messageTime: { fontFamily: Fonts.regular, fontSize: 10, color: Colors.textMuted, marginTop: 4, textAlign: 'right' },
+    messageText: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textDark, lineHeight: 21 },
+    messageTime: { fontFamily: Fonts.regular, fontSize: 10, color: colors.textMuted, marginTop: 4, textAlign: 'right' },
 
     emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.xl * 2 },
-    emptyText: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textMuted, marginTop: Spacing.md, textAlign: 'center' },
+    emptyText: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textMuted, marginTop: Spacing.md, textAlign: 'center' },
 
     inputBar: {
         flexDirection: 'row', alignItems: 'flex-end',
         paddingHorizontal: Spacing.md, paddingTop: Spacing.sm,
-        backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: Colors.borderLight,
+        backgroundColor: colors.bgCard, borderTopWidth: 1, borderTopColor: colors.borderLight,
     },
     textInput: {
-        flex: 1, backgroundColor: Colors.bgScreen, borderRadius: Radius.md,
+        flex: 1, backgroundColor: colors.bgCardMuted, borderRadius: Radius.md,
         paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
-        fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textDark,
+        fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textDark,
         maxHeight: 100, marginRight: Spacing.sm,
-        borderWidth: 1, borderColor: Colors.borderLight,
+        borderWidth: 1, borderColor: colors.borderLight,
     },
     sendBtn: {
         width: 44, height: 44, borderRadius: 22,
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         justifyContent: 'center', alignItems: 'center',
         marginBottom: 2,
     },
     sendBtnDisabled: { opacity: 0.5 },
 
-    closedText: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textMuted, textAlign: 'center' },
+    closedText: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textMuted, textAlign: 'center' },
 });

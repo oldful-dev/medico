@@ -8,74 +8,70 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
+import { meetupService } from '@/services/api/meetupService';
+import type { Meetup } from '@/services/api/meetupService';
+import { locationService } from '@/services/device/locationService';
 
 const PRIMARY = '#02743F';
 const BG = '#F5FAF7';
 
-// ─── Mock data (replace with API) ─────────────────────────
-const MOCK_MEETUPS = [
-    {
-        id: '1',
-        title: 'Morning Wellness Meetup at the Park',
-        description: 'Join us for a refreshing morning of light activities, wellness, social interaction and senior friendly games.',
-        date: '25 Jun 2026',
-        dayOfWeek: 'Thursday',
-        timeStart: '07:30 AM',
-        timeEnd: '10:30 AM',
-        venue: 'Cubbon Park, Bengaluru',
-        pinCode: '560038',
-        organizer: 'Ayuxa Senior Community',
-        serviceCharge: 299,
-        seatsTotal: 60,
-        seatsAvailable: 15,
-        featured: true,
-        image: null,
-        includes: [
-            'Meetup coordination',
-            'Event management support',
-            'Basic assistance support',
-            'Registration handling',
-        ],
-    },
-    {
-        id: '2',
-        title: 'Morning Walk & Talk',
-        description: 'A gentle morning walk followed by a group discussion session at the botanical garden.',
-        date: '28 Jun 2026',
-        dayOfWeek: 'Sunday',
-        timeStart: '07:00 AM',
-        timeEnd: '09:00 AM',
-        venue: 'Lalbagh Botanical Garden',
-        pinCode: '560027',
-        organizer: 'Ayuxa Senior Community',
-        serviceCharge: 199,
-        seatsTotal: 30,
-        seatsAvailable: 8,
-        featured: false,
-        image: null,
-        includes: [
-            'Walk coordination',
-            'Basic assistance support',
-        ],
-    },
-];
+function formatMeetupDate(dateStr: string) {
+    const d = new Date(dateStr);
+    return {
+        date: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+        dayOfWeek: d.toLocaleDateString('en-IN', { weekday: 'long' }),
+    };
+}
 
 export default function MeetupsListScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const [meetups, setMeetups] = useState(MOCK_MEETUPS);
-    const [loading, setLoading] = useState(false);
+    const [meetups, setMeetups] = useState<Meetup[]>([]);
+    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const featuredMeetup = meetups.find(m => m.featured);
-    const upcomingMeetups = meetups.filter(m => !m.featured);
+    const featuredMeetup = meetups.find(m => m.isFeatured);
+    const upcomingMeetups = meetups.filter(m => m !== featuredMeetup);
+
+    const fetchMeetups = useCallback(async (silent = false) => {
+        if (!silent) setLoading(true);
+        setError(null);
+        try {
+            // Detect user's pincode from GPS to filter meetups by location
+            let pinCode: string | undefined;
+            try {
+                const coords = await locationService.getCurrentLocation();
+                const address = await locationService.getAddressFromCoordinates(coords);
+                const detected = await locationService.getPincodeFromAddress(coords, address);
+                pinCode = detected ?? undefined;
+            } catch {
+                // If GPS fails, show all meetups (no filter)
+            }
+
+            const res = await meetupService.getMeetups({ pinCode });
+            if (res.success && res.data) {
+                setMeetups(res.data);
+            } else {
+                setError(res.message ?? 'Failed to load meetups');
+            }
+        } catch (e: any) {
+            setError(e?.message ?? 'Network error');
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    }, []);
+
+    useFocusEffect(useCallback(() => { fetchMeetups(); }, [fetchMeetups]));
 
     const onRefresh = async () => {
         setRefreshing(true);
-        setTimeout(() => setRefreshing(false), 800);
+        fetchMeetups(true);
     };
 
-    const seatsLabel = (available: number, total: number) => {
+    const seatsLabel = (available: number | undefined, total: number) => {
+        if (!total || available === undefined) return { text: 'Seats Available', color: PRIMARY, bg: '#D1FAE5' };
         const pct = available / total;
         if (pct <= 0.2) return { text: 'Almost Full', color: '#DC2626', bg: '#FEE2E2' };
         if (pct <= 0.4) return { text: 'Limited Seats', color: '#D97706', bg: '#FEF3C7' };
@@ -108,7 +104,8 @@ export default function MeetupsListScreen() {
             >
                 {/* ── Featured banner ── */}
                 {featuredMeetup && (() => {
-                    const seats = seatsLabel(featuredMeetup.seatsAvailable, featuredMeetup.seatsTotal);
+                    const seats = seatsLabel(featuredMeetup.availableSeats, featuredMeetup.capacity);
+                    const { date, dayOfWeek } = formatMeetupDate(featuredMeetup.eventDate);
                     return (
                         <View style={styles.featuredCard}>
                             {/* Banner image / placeholder */}
@@ -130,11 +127,11 @@ export default function MeetupsListScreen() {
                                 <View style={styles.metaRow}>
                                     <View style={styles.metaItem}>
                                         <Ionicons name="calendar-outline" size={14} color={PRIMARY} />
-                                        <Text style={styles.metaText}>{featuredMeetup.date}, {featuredMeetup.dayOfWeek}</Text>
+                                        <Text style={styles.metaText}>{date}, {dayOfWeek}</Text>
                                     </View>
                                     <View style={styles.metaItem}>
                                         <Ionicons name="time-outline" size={14} color={PRIMARY} />
-                                        <Text style={styles.metaText}>{featuredMeetup.timeStart} Onwards</Text>
+                                        <Text style={styles.metaText}>{featuredMeetup.startTime} Onwards</Text>
                                     </View>
                                     <View style={styles.metaItem}>
                                         <Ionicons name="location-outline" size={14} color={PRIMARY} />
@@ -165,13 +162,11 @@ export default function MeetupsListScreen() {
                     <View style={styles.upcomingSection}>
                         <View style={styles.sectionHeaderRow}>
                             <Text style={styles.sectionTitle}>Upcoming Local Meetups</Text>
-                            <TouchableOpacity>
-                                <Text style={styles.viewAll}>View All</Text>
-                            </TouchableOpacity>
                         </View>
 
                         {upcomingMeetups.map(meetup => {
-                            const seats = seatsLabel(meetup.seatsAvailable, meetup.seatsTotal);
+                            const seats = seatsLabel(meetup.availableSeats, meetup.capacity);
+                            const { date } = formatMeetupDate(meetup.eventDate);
                             return (
                                 <TouchableOpacity
                                     key={meetup.id}
@@ -186,7 +181,7 @@ export default function MeetupsListScreen() {
                                         <Text style={styles.upcomingTitle} numberOfLines={2}>{meetup.title}</Text>
                                         <View style={styles.upcomingMeta}>
                                             <Ionicons name="calendar-outline" size={12} color={Colors.textMuted} />
-                                            <Text style={styles.upcomingMetaText}>{meetup.date}, {meetup.timeStart}</Text>
+                                            <Text style={styles.upcomingMetaText}>{date}, {meetup.startTime}</Text>
                                         </View>
                                         <View style={styles.upcomingMeta}>
                                             <Ionicons name="location-outline" size={12} color={Colors.textMuted} />
@@ -208,7 +203,38 @@ export default function MeetupsListScreen() {
 
                 {loading && (
                     <View style={styles.loader}>
-                        <ActivityIndicator color={PRIMARY} />
+                        <ActivityIndicator size="large" color={PRIMARY} />
+                        <Text style={{ fontFamily: Fonts.regular, fontSize: 13, color: Colors.textMuted, marginTop: 12 }}>
+                            Loading meetups...
+                        </Text>
+                    </View>
+                )}
+                {!loading && error && (
+                    <View style={styles.loader}>
+                        <Ionicons name="wifi-outline" size={40} color={Colors.textMuted} />
+                        <Text style={{ fontFamily: Fonts.semiBold, fontSize: 15, color: Colors.textDark, marginTop: 12 }}>
+                            Couldn't load meetups
+                        </Text>
+                        <Text style={{ fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, marginTop: 4, textAlign: 'center' }}>
+                            {error}
+                        </Text>
+                        <TouchableOpacity
+                            onPress={fetchMeetups}
+                            style={{ marginTop: 16, backgroundColor: PRIMARY, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10 }}
+                        >
+                            <Text style={{ fontFamily: Fonts.semiBold, fontSize: 14, color: '#fff' }}>Retry</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+                {!loading && !error && meetups.length === 0 && (
+                    <View style={styles.loader}>
+                        <Ionicons name="calendar-outline" size={40} color={Colors.textMuted} />
+                        <Text style={{ fontFamily: Fonts.semiBold, fontSize: 15, color: Colors.textDark, marginTop: 12 }}>
+                            No meetups available
+                        </Text>
+                        <Text style={{ fontFamily: Fonts.regular, fontSize: 13, color: Colors.textMuted, marginTop: 6, textAlign: 'center' }}>
+                            Check back soon for upcoming community events
+                        </Text>
                     </View>
                 )}
                 <View style={{ height: 40 }} />

@@ -8,26 +8,10 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
+import { meetupService } from '@/services/api/meetupService';
+import type { MeetupRegistration } from '@/services/api/meetupService';
 
 const PRIMARY = '#02743F';
-
-const MOCK_BOOKINGS = [
-    {
-        id: 'MB001',
-        meetupId: '1',
-        title: 'Morning Wellness Meetup at the Park',
-        date: '25 Jun 2026',
-        time: '07:30 AM',
-        venue: 'Cubbon Park, Bengaluru',
-        pinCode: '560038',
-        status: 'confirmed',
-        paymentStatus: 'paid',
-        amount: 299,
-        pickupEnabled: true,
-        pickupAddress: '12, MG Road, Bengaluru',
-        createdAt: '2026-05-23T10:00:00Z',
-    },
-];
 
 type Tab = 'upcoming' | 'past';
 
@@ -42,19 +26,31 @@ export default function MeetupMyBookingsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [activeTab, setActiveTab] = useState<Tab>('upcoming');
-    const [bookings, setBookings] = useState(MOCK_BOOKINGS);
-    const [loading, setLoading] = useState(false);
+    const [bookings, setBookings] = useState<MeetupRegistration[]>([]);
+    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
-    const now = new Date();
-    const upcomingBookings = bookings.filter(b => new Date(b.createdAt) && b.status !== 'cancelled' && b.status !== 'attended');
-    const pastBookings = bookings.filter(b => b.status === 'attended' || b.status === 'cancelled');
-
+    const upcomingBookings = bookings.filter(b => b.status !== 'CANCELLED' && b.status !== 'ATTENDED');
+    const pastBookings = bookings.filter(b => b.status === 'ATTENDED' || b.status === 'CANCELLED');
     const displayed = activeTab === 'upcoming' ? upcomingBookings : pastBookings;
+
+    const fetchBookings = async () => {
+        try {
+            const res = await meetupService.getMyRegistrations();
+            if (res.success && res.data) setBookings(res.data);
+        } catch (e) {
+            // keep empty state
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    useFocusEffect(useCallback(() => { fetchBookings(); }, []));
 
     const onRefresh = async () => {
         setRefreshing(true);
-        setTimeout(() => setRefreshing(false), 800);
+        fetchBookings();
     };
 
     return (
@@ -132,10 +128,15 @@ export default function MeetupMyBookingsScreen() {
                         </View>
                     ) : (
                         displayed.map(booking => {
-                            const status = STATUS_CONFIG[booking.status] ?? STATUS_CONFIG.pending;
+                            const statusKey = booking.status.toLowerCase() as string;
+                            const status = STATUS_CONFIG[statusKey] ?? STATUS_CONFIG.pending;
+                            const meetup = booking.meetup;
+                            const eventDate = meetup?.eventDate
+                                ? new Date(meetup.eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                                : '—';
                             return (
                                 <View key={booking.id} style={styles.bookingCard}>
-                                    {/* Image placeholder + Upcoming tag */}
+                                    {/* Image placeholder + status tag */}
                                     <View style={styles.cardBanner}>
                                         <Ionicons name="people" size={32} color="rgba(255,255,255,0.45)" />
                                         <View style={[styles.statusTag, { backgroundColor: status.bg }]}>
@@ -144,27 +145,32 @@ export default function MeetupMyBookingsScreen() {
                                     </View>
 
                                     <View style={styles.cardBody}>
-                                        <Text style={styles.cardTitle}>{booking.title}</Text>
+                                        <Text style={styles.cardTitle}>{meetup?.title ?? 'Meetup'}</Text>
+                                        <Text style={{ fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted, marginBottom: 8 }}>
+                                            Booking: {booking.bookingCode}
+                                        </Text>
 
                                         <View style={styles.cardMeta}>
                                             <View style={styles.metaItem}>
                                                 <Ionicons name="calendar-outline" size={13} color={PRIMARY} />
-                                                <Text style={styles.metaText}>{booking.date}</Text>
+                                                <Text style={styles.metaText}>{eventDate}</Text>
                                             </View>
                                             <View style={styles.metaItem}>
                                                 <Ionicons name="time-outline" size={13} color={PRIMARY} />
-                                                <Text style={styles.metaText}>{booking.time}</Text>
+                                                <Text style={styles.metaText}>{meetup?.startTime ?? '—'}</Text>
                                             </View>
                                         </View>
                                         <View style={styles.cardMeta}>
                                             <View style={styles.metaItem}>
                                                 <Ionicons name="location-outline" size={13} color={PRIMARY} />
-                                                <Text style={styles.metaText}>{booking.venue}</Text>
+                                                <Text style={styles.metaText}>{meetup?.venue ?? '—'}</Text>
                                             </View>
-                                            <View style={styles.metaItem}>
-                                                <Ionicons name="keypad-outline" size={13} color={PRIMARY} />
-                                                <Text style={styles.metaText}>PIN: {booking.pinCode}</Text>
-                                            </View>
+                                            {meetup?.pinCode && (
+                                                <View style={styles.metaItem}>
+                                                    <Ionicons name="keypad-outline" size={13} color={PRIMARY} />
+                                                    <Text style={styles.metaText}>PIN: {meetup.pinCode}</Text>
+                                                </View>
+                                            )}
                                         </View>
 
                                         {booking.pickupEnabled && (
@@ -176,7 +182,7 @@ export default function MeetupMyBookingsScreen() {
 
                                         <View style={styles.cardFooter}>
                                             <View style={styles.amountBadge}>
-                                                <Text style={styles.amountText}>₹{booking.amount} • {booking.paymentStatus === 'paid' ? '✓ Paid' : 'Pending'}</Text>
+                                                <Text style={styles.amountText}>₹{booking.amountPaid} • {booking.paymentStatus === 'PAID' ? '✓ Paid' : 'Pending'}</Text>
                                             </View>
                                             <TouchableOpacity
                                                 style={styles.viewBtn}

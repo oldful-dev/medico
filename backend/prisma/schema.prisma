@@ -86,6 +86,7 @@ model User {
   subscriptions         Subscription[]
   city                  City                   @relation(fields: [cityId], references: [id])
   waitlistEntries       WaitlistEntry[]
+  meetupRegistrations   MeetupRegistration[]
 
   @@map("users")
 }
@@ -973,4 +974,69 @@ enum LabStatus {
 enum LabBookingType {
   HOME
   DROP_OFF
+}
+
+model Meetup {
+  id               String              @id @default(uuid())
+  title            String
+  description      String?
+  venue            String
+  venueAddress     String?
+  city             String
+  pinCode          String?
+  eventDate        DateTime
+  startTime        String
+  endTime          String?
+  capacity         Int                 @default(50)
+  serviceCharge    Float               @default(299)
+  isActive         Boolean             @default(true)
+  isFeatured       Boolean             @default(false)
+  organizerName    String?
+  organizerContact String?
+  includedItems    String[]            @default([])
+  extraCharges     String[]            @default([])
+  imageUrl         String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  registrations    MeetupRegistration[]
+
+  @@map("meetups")
+}
+
+model MeetupRegistration {
+  id               String               @id @default(uuid())
+  meetupId         String
+  userId           String
+  bookingCode      String               @unique
+  fullName         String
+  mobile           String
+  age              Int
+  gender           String
+  assistanceJson   Json?
+  specialNotes     String?
+  pickupEnabled    Boolean              @default(false)
+  pickupAddress    String?
+  pickupLandmark   String?
+  pickupContact    String?
+  preferredPickupTime String?
+  status           MeetupRegistrationStatus @default(CONFIRMED)
+  paymentStatus    String               @default("PAID")
+  amountPaid       Float                @default(299)
+  razorpayOrderId  String?
+  razorpayPaymentId String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  meetup           Meetup               @relation(fields: [meetupId], references: [id])
+  user             User                 @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([meetupId])
+  @@map("meetup_registrations")
+}
+
+enum MeetupRegistrationStatus {
+  CONFIRMED
+  PENDING
+  ATTENDED
+  CANCELLED
 }

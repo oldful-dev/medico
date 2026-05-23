@@ -7,11 +7,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
 import { useUser } from '@/context/UserContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { storeService } from '@/services/api/storeService';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 
 // ─── Category Mapping ────────────────────────────────────────
 type ServiceCategory = 'blood-test' | 'wellness' | 'service' | 'doctor' | 'nurse' | 'other';
@@ -90,6 +92,9 @@ function categorizeItem(serviceType: string): ServiceCategory {
 export default function CartScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(colors, isDarkMode);
     const { items, removeItem, clearCategory } = useCart();
     const { profile } = useUser();
     const [showMixedCartInfo, setShowMixedCartInfo] = useState(false);
@@ -360,7 +365,7 @@ export default function CartScreen() {
                         { icon: 'flash-outline', label: 'Quick' },
                     ].map(({ icon, label }) => (
                         <View key={label} style={styles.trustItem}>
-                            <Ionicons name={icon as any} size={16} color={Colors.primary} />
+                            <Ionicons name={icon as any} size={16} color={colors.primary} />
                             <Text style={styles.trustLabel}>{label}</Text>
                         </View>
                     ))}
@@ -370,24 +375,24 @@ export default function CartScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: '#F7F8FA' },
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.bgScreen },
 
     // Empty state
     emptyHeader: {
         paddingHorizontal: Spacing.lg,
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: '#EBEBEB',
-        backgroundColor: '#fff',
+        borderBottomColor: colors.borderLight,
+        backgroundColor: colors.bgCard,
     },
-    emptyHeaderTitle: { fontFamily: Fonts.semiBold, fontSize: 20, color: Colors.textBody },
+    emptyHeaderTitle: { fontFamily: Fonts.semiBold, fontSize: 20, color: colors.textDark },
     emptyBody: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40, gap: 10 },
-    emptyTitle: { fontFamily: Fonts.semiBold, fontSize: 20, color: Colors.textBody, marginTop: 12 },
-    emptySubtitle: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textMuted },
+    emptyTitle: { fontFamily: Fonts.semiBold, fontSize: 20, color: colors.textDark, marginTop: 12 },
+    emptySubtitle: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textMuted },
     browseBtn: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: Colors.primary, borderRadius: Radius.lg,
+        backgroundColor: colors.primary, borderRadius: Radius.lg,
         paddingVertical: 14, paddingHorizontal: 28, marginTop: 16,
     },
     browseBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: '#fff' },
@@ -396,23 +401,23 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: Spacing.lg, paddingVertical: 14,
-        backgroundColor: '#fff',
-        borderBottomWidth: 1, borderBottomColor: '#EBEBEB',
+        backgroundColor: colors.bgCard,
+        borderBottomWidth: 1, borderBottomColor: colors.borderLight,
     },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: 20, color: Colors.textBody },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: 20, color: colors.textDark },
     headerBadge: {
-        backgroundColor: 'rgba(4,131,87,0.1)',
+        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(4,131,87,0.1)',
         paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
     },
-    headerBadgeText: { fontFamily: Fonts.semiBold, fontSize: 12, color: Colors.primary },
+    headerBadgeText: { fontFamily: Fonts.semiBold, fontSize: 12, color: colors.primary },
 
     scroll: { paddingTop: Spacing.md, paddingHorizontal: Spacing.md, gap: Spacing.md },
 
     // Active plan benefit banner
     benefitBanner: {
-        backgroundColor: '#F0FDF4',
+        backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : '#F0FDF4',
         borderWidth: 1,
-        borderColor: '#DCFCE7',
+        borderColor: isDarkMode ? 'rgba(52,199,89,0.2)' : '#DCFCE7',
         borderRadius: Radius.lg,
         padding: Spacing.md,
         marginBottom: Spacing.sm,
@@ -422,8 +427,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: Spacing.sm,
     },
-    benefitTitle: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#065F46' },
-    benefitText: { fontFamily: Fonts.regular, fontSize: 12, color: '#047857' },
+    benefitTitle: { fontFamily: Fonts.semiBold, fontSize: 14, color: isDarkMode ? '#4FD485' : '#065F46' },
+    benefitText: { fontFamily: Fonts.regular, fontSize: 12, color: isDarkMode ? '#AEF5C0' : '#047857' },
     benefitBadge: {
         backgroundColor: '#10B981',
         paddingHorizontal: 8,
@@ -434,9 +439,9 @@ const styles = StyleSheet.create({
 
     // Mixed cart banner
     mixedCartBanner: {
-        backgroundColor: '#FFFBEB',
+        backgroundColor: isDarkMode ? 'rgba(245,158,11,0.1)' : '#FFFBEB',
         borderWidth: 1,
-        borderColor: '#FEF3C7',
+        borderColor: isDarkMode ? 'rgba(245,158,11,0.2)' : '#FEF3C7',
         borderRadius: Radius.lg,
         padding: Spacing.md,
         marginBottom: Spacing.sm,
@@ -446,16 +451,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: Spacing.sm,
     },
-    mixedCartTitle: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#92400E' },
-    mixedCartText: { fontFamily: Fonts.regular, fontSize: 12, color: '#B45309' },
+    mixedCartTitle: { fontFamily: Fonts.semiBold, fontSize: 14, color: isDarkMode ? '#FFC107' : '#92400E' },
+    mixedCartText: { fontFamily: Fonts.regular, fontSize: 12, color: isDarkMode ? '#FFE0B2' : '#B45309' },
 
     // Category Section
     categorySection: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.bgCard,
         borderRadius: Radius.lg,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: '#EBEBEB',
+        borderColor: colors.borderLight,
         ...Shadow.card,
     },
     categoryHeader: {
@@ -464,7 +469,7 @@ const styles = StyleSheet.create({
         gap: Spacing.md,
         padding: Spacing.md,
         borderLeftWidth: 4,
-        backgroundColor: '#FAFAFA',
+        backgroundColor: colors.bgCardMuted,
     },
     categoryIcon: {
         width: 40,
@@ -473,9 +478,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    categoryTitle: { fontFamily: Fonts.semiBold, fontSize: 15, color: Colors.textBody },
-    categoryItemCount: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted },
-    categoryTotal: { fontFamily: Fonts.semiBold, fontSize: 16, color: Colors.textBody },
+    categoryTitle: { fontFamily: Fonts.semiBold, fontSize: 15, color: colors.textDark },
+    categoryItemCount: { fontFamily: Fonts.regular, fontSize: 12, color: colors.textMuted },
+    categoryTotal: { fontFamily: Fonts.semiBold, fontSize: 16, color: colors.textDark },
 
     // Items container
     itemsContainer: {
@@ -486,11 +491,11 @@ const styles = StyleSheet.create({
     cartItem: {
         paddingVertical: Spacing.sm,
         borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
+        borderBottomColor: colors.borderLight,
         position: 'relative',
     },
     cartItemDisabled: {
-        backgroundColor: '#FAFAFA',
+        backgroundColor: colors.bgCardMuted,
     },
     disabledOverlay: {
         position: 'absolute',
@@ -523,13 +528,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    itemTitle: { fontFamily: Fonts.medium, fontSize: 13, color: Colors.textBody },
-    itemMeta: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted, marginTop: 2 },
+    itemTitle: { fontFamily: Fonts.medium, fontSize: 13, color: colors.textDark },
+    itemMeta: { fontFamily: Fonts.regular, fontSize: 11, color: colors.textMuted, marginTop: 2 },
     itemPrice: {
         paddingLeft: 40,
         paddingBottom: Spacing.xs,
     },
-    itemPriceText: { fontFamily: Fonts.semiBold, fontSize: 13, color: Colors.primary },
+    itemPriceText: { fontFamily: Fonts.semiBold, fontSize: 13, color: colors.primary },
 
     // Category Checkout Button
     categoryCheckoutBtn: {
@@ -548,13 +553,13 @@ const styles = StyleSheet.create({
     trustRow: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        backgroundColor: '#fff',
+        backgroundColor: colors.bgCard,
         borderRadius: Radius.lg,
         paddingVertical: Spacing.md,
         borderWidth: 1,
-        borderColor: '#EBEBEB',
+        borderColor: colors.borderLight,
         marginTop: Spacing.sm,
     },
     trustItem: { alignItems: 'center', gap: 4 },
-    trustLabel: { fontFamily: Fonts.regular, fontSize: 10, color: Colors.textMuted, textAlign: 'center' },
+    trustLabel: { fontFamily: Fonts.regular, fontSize: 10, color: colors.textMuted, textAlign: 'center' },
 });

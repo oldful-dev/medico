@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
     TextInput, Modal, Alert, ActivityIndicator, Linking,
@@ -8,14 +8,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { supportService, SupportTicket, TicketCategory } from '@/services/api/supportService';
 import { useAppConfig } from '@/context/AppConfigContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function HelpSupportScreen() {
     const router      = useRouter();
     const insets      = useSafeAreaInsets();
     const { helpSupportConfig } = useAppConfig();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(colors, isDarkMode);
 
     // Derive sorted lists from SDUI config
     const faqs       = [...helpSupportConfig.faqs].sort((a, b) => a.sort_order - b.sort_order);
@@ -76,7 +81,7 @@ export default function HelpSupportScreen() {
             } else {
                 Alert.alert('Error', res.message || 'Failed to create ticket. Try again.');
             }
-        } catch {
+        } catch (err) {
             Alert.alert('Error', 'Network error. Please try again.');
         } finally {
             setSubmitting(false);
@@ -85,13 +90,13 @@ export default function HelpSupportScreen() {
 
     return (
         <View style={styles.screen}>
-            <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
-            <StatusBar style="light" backgroundColor={Colors.primary} />
+            <View style={{ backgroundColor: colors.primary, height: insets.top }} />
+            <StatusBar style="light" backgroundColor={colors.primary} />
 
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
+                    <Ionicons name="arrow-back" size={24} color={colors.textWhite} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Help & Support</Text>
             </View>
@@ -100,10 +105,11 @@ export default function HelpSupportScreen() {
                 {/* Search Bar */}
                 <View style={styles.searchWrapper}>
                     <View style={styles.searchContainer}>
-                        <Ionicons name="search-outline" size={20} color={Colors.textMuted} />
+                        <Ionicons name="search-outline" size={20} color={colors.textMuted} />
                         <TextInput
                             style={styles.searchInput}
                             placeholder="Search FAQs..."
+                            placeholderTextColor={colors.textMuted}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                         />
@@ -136,41 +142,41 @@ export default function HelpSupportScreen() {
 
                             <TouchableOpacity style={styles.contactCard} activeOpacity={0.7} onPress={handleCall}>
                                 <View style={styles.iconBoxCall}>
-                                    <Ionicons name="call" size={22} color={Colors.textWhite} />
+                                    <Ionicons name="call" size={22} color={colors.textWhite} />
                                 </View>
                                 <View style={styles.contactTextGroup}>
                                     <Text style={styles.contactTitle}>Call Us</Text>
                                     <Text style={styles.contactDesc}>Speak directly with our support team.</Text>
                                 </View>
-                                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+                                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
                             </TouchableOpacity>
 
                             <TouchableOpacity style={styles.contactCard} activeOpacity={0.7} onPress={handleWhatsApp}>
                                 <View style={styles.iconBoxWhatsapp}>
-                                    <Ionicons name="logo-whatsapp" size={24} color={Colors.textWhite} />
+                                    <Ionicons name="logo-whatsapp" size={24} color={colors.textWhite} />
                                 </View>
                                 <View style={styles.contactTextGroup}>
                                     <Text style={styles.contactTitle}>WhatsApp Us</Text>
                                     <Text style={styles.contactDesc}>Get quick help through WhatsApp chat.</Text>
                                 </View>
-                                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+                                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
                             </TouchableOpacity>
 
                             <TouchableOpacity style={styles.contactCard} activeOpacity={0.7} onPress={() => setShowModal(true)}>
                                 <View style={styles.iconBoxTicket}>
-                                    <Ionicons name="chatbubbles" size={22} color={Colors.textWhite} />
+                                    <Ionicons name="chatbubbles" size={22} color={colors.textWhite} />
                                 </View>
                                 <View style={styles.contactTextGroup}>
                                     <Text style={styles.contactTitle}>Raise a Ticket</Text>
                                     <Text style={styles.contactDesc}>Submit a request and we&apos;ll respond shortly.</Text>
                                 </View>
-                                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+                                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
                             </TouchableOpacity>
 
                             {/* My Tickets */}
                             <Text style={styles.sectionTitle}>My Tickets</Text>
                             {loadingTickets ? (
-                                <ActivityIndicator color={Colors.primary} style={{ marginBottom: Spacing.xl }} />
+                                <ActivityIndicator color={colors.primary} style={{ marginBottom: Spacing.xl }} />
                             ) : myTickets.length === 0 ? (
                                 <View style={styles.infoCard}>
                                     <Text style={styles.noResults}>No tickets yet. Raise one above if you need help.</Text>
@@ -194,7 +200,7 @@ export default function HelpSupportScreen() {
                                             <Text style={styles.ticketMeta}>
                                                 {ticket.category} · {ticket._count?.messages ?? 0} message{(ticket._count?.messages ?? 0) !== 1 ? 's' : ''}
                                             </Text>
-                                            <Ionicons name="chatbubble-ellipses-outline" size={16} color={Colors.primary} />
+                                            <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.primary} />
                                         </View>
                                     </TouchableOpacity>
                                 ))
@@ -205,7 +211,7 @@ export default function HelpSupportScreen() {
                             <View style={styles.infoCard}>
                                 {helpSupportConfig.support_promise.map(item => (
                                     <View key={item.id} style={styles.listItem}>
-                                        <Ionicons name={item.ionicon as any} size={18} color={Colors.primary} />
+                                        <Ionicons name={item.ionicon as any} size={18} color={colors.primary} />
                                         <Text style={styles.listText}>{item.text}</Text>
                                     </View>
                                 ))}
@@ -247,7 +253,7 @@ export default function HelpSupportScreen() {
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Raise a Support Ticket</Text>
                             <TouchableOpacity onPress={() => setShowModal(false)}>
-                                <Ionicons name="close" size={24} color={Colors.textDark} />
+                                <Ionicons name="close" size={24} color={colors.textDark} />
                             </TouchableOpacity>
                         </View>
 
@@ -256,6 +262,7 @@ export default function HelpSupportScreen() {
                             <TextInput
                                 style={styles.fieldInput}
                                 placeholder="Brief summary of your issue"
+                                placeholderTextColor={colors.textMuted}
                                 value={subject}
                                 onChangeText={setSubject}
                                 maxLength={100}
@@ -280,6 +287,7 @@ export default function HelpSupportScreen() {
                             <TextInput
                                 style={[styles.fieldInput, styles.fieldInputMulti]}
                                 placeholder="Describe your issue in detail..."
+                                placeholderTextColor={colors.textMuted}
                                 value={description}
                                 onChangeText={setDescription}
                                 multiline
@@ -306,85 +314,109 @@ export default function HelpSupportScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: Colors.primary },
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.primary },
     header: {
         flexDirection: 'row', alignItems: 'center',
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         paddingHorizontal: Spacing.md, paddingBottom: Spacing.xl, paddingTop: Spacing.sm,
     },
     backButton:  { padding: Spacing.xs },
     headerTitle: {
         flex: 1, fontFamily: Fonts.semiBold, fontSize: FontSize.heading2,
-        color: Colors.textWhite, textAlign: "left", marginLeft: 12, letterSpacing: -0.24,
+        color: colors.textWhite, textAlign: "left", marginLeft: 12, letterSpacing: -0.24,
     },
     contentCard: {
-        flex: 1, backgroundColor: Colors.bgScreen,
+        flex: 1, backgroundColor: colors.bgScreen,
         borderTopLeftRadius: Radius.xl * 2, borderTopRightRadius: Radius.xl * 2, overflow: 'hidden',
     },
     scrollContent: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.xl, paddingBottom: Spacing.xl },
     pageDescription: {
-        fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textBody,
+        fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textBody,
         textAlign: 'center', lineHeight: 22, marginBottom: Spacing.xl,
     },
     sectionTitle: {
-        fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: Colors.textDark,
+        fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: colors.textDark,
         marginBottom: Spacing.md, marginTop: Spacing.sm,
     },
     contactCard: {
-        backgroundColor: Colors.bgCard, borderRadius: Radius.md, padding: Spacing.md,
-        flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md, ...Shadow.card,
+        backgroundColor: colors.bgCard, borderRadius: Radius.md, padding: Spacing.md,
+        flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md,
+        shadowColor: colors.shadowColor,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
     },
     iconBoxCall:     { width: 44, height: 44, borderRadius: 22, backgroundColor: '#4A90E2', justifyContent: 'center', alignItems: 'center', marginRight: Spacing.md },
     iconBoxWhatsapp: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#25D366', justifyContent: 'center', alignItems: 'center', marginRight: Spacing.md },
     iconBoxTicket:   { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F5A623', justifyContent: 'center', alignItems: 'center', marginRight: Spacing.md },
     contactTextGroup: { flex: 1 },
-    contactTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark, marginBottom: 2 },
-    contactDesc:  { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textMuted },
+    contactTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textDark, marginBottom: 2 },
+    contactDesc:  { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textMuted },
     // Ticket cards
     ticketCard: {
-        backgroundColor: Colors.bgCard, borderRadius: Radius.md, padding: Spacing.md,
-        marginBottom: Spacing.md, ...Shadow.card,
+        backgroundColor: colors.bgCard, borderRadius: Radius.md, padding: Spacing.md,
+        marginBottom: Spacing.md,
+        shadowColor: colors.shadowColor,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
     },
     ticketRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-    ticketCode:   { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: Colors.textMuted },
-    ticketSubject:{ fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark, marginBottom: 4 },
-    ticketMeta:   { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textMuted, textTransform: 'capitalize', flex: 1 },
+    ticketCode:   { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: colors.textMuted },
+    ticketSubject:{ fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textDark, marginBottom: 4 },
+    ticketMeta:   { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textMuted, textTransform: 'capitalize', flex: 1 },
     ticketBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     statusBadge:  { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 },
     statusText:   { fontFamily: Fonts.semiBold, fontSize: 10, color: '#fff', textTransform: 'capitalize' },
     // Info cards
-    infoCard: { backgroundColor: Colors.bgCard, borderRadius: Radius.md, padding: Spacing.lg, marginBottom: Spacing.xl, ...Shadow.card },
+    infoCard: {
+        backgroundColor: colors.bgCard, borderRadius: Radius.md, padding: Spacing.lg, marginBottom: Spacing.xl,
+        shadowColor: colors.shadowColor,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+    },
     listItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: Spacing.sm, gap: Spacing.sm },
-    listText: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textBody, lineHeight: 20 },
-    contactHeader: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark, marginBottom: 4 },
-    contactDetail: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textBody, marginBottom: 2 },
-    divider:       { height: 1, backgroundColor: Colors.borderLight, marginVertical: Spacing.md },
+    listText: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textBody, lineHeight: 20 },
+    contactHeader: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textDark, marginBottom: 4 },
+    contactDetail: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textBody, marginBottom: 2 },
+    divider:       { height: 1, backgroundColor: colors.borderLight, marginVertical: Spacing.md },
     // FAQ
     faqResults: { marginTop: Spacing.sm },
-    faqItem:    { marginBottom: Spacing.lg, borderBottomWidth: 1, borderBottomColor: Colors.borderLight, paddingBottom: Spacing.md },
-    faqCard:    { backgroundColor: Colors.bgCard, borderRadius: Radius.md, padding: Spacing.md, marginBottom: Spacing.md, ...Shadow.card },
-    faqQuestion:{ fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark, marginBottom: 4 },
-    faqAnswer:  { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textBody, lineHeight: 20 },
-    noResults:  { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textMuted, textAlign: 'center', marginTop: Spacing.xl },
+    faqItem:    { marginBottom: Spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.borderLight, paddingBottom: Spacing.md },
+    faqCard:    {
+        backgroundColor: colors.bgCard, borderRadius: Radius.md, padding: Spacing.md, marginBottom: Spacing.md,
+        shadowColor: colors.shadowColor,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    faqQuestion:{ fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textDark, marginBottom: 4 },
+    faqAnswer:  { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textBody, lineHeight: 20 },
+    noResults:  { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textMuted, textAlign: 'center', marginTop: Spacing.xl },
     bottomSpacer: { height: 60 },
     // Search
-    searchWrapper:   { paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md, backgroundColor: Colors.primary, paddingBottom: Spacing.lg },
-    searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: Radius.lg, paddingHorizontal: Spacing.md, height: 44 },
-    searchInput:     { flex: 1, marginLeft: Spacing.xs, fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textDark },
+    searchWrapper:   { paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md, backgroundColor: colors.primary, paddingBottom: Spacing.lg },
+    searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: isDarkMode ? colors.bgCardMuted : '#FFF', borderRadius: Radius.lg, paddingHorizontal: Spacing.md, height: 44 },
+    searchInput:     { flex: 1, marginLeft: Spacing.xs, fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textDark },
     // Modal
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modalSheet:   { backgroundColor: Colors.bgScreen, borderTopLeftRadius: Radius.xl * 2, borderTopRightRadius: Radius.xl * 2, padding: Spacing.xl, maxHeight: '90%' },
+    modalSheet:   { backgroundColor: colors.bgScreen, borderTopLeftRadius: Radius.xl * 2, borderTopRightRadius: Radius.xl * 2, padding: Spacing.xl, maxHeight: '90%' },
     modalHeader:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl },
-    modalTitle:   { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: Colors.textDark },
-    fieldLabel:   { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: Colors.textDark, marginBottom: Spacing.xs },
-    fieldInput:   { backgroundColor: Colors.bgCard, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textDark, marginBottom: Spacing.lg, borderWidth: 1, borderColor: Colors.borderLight },
+    modalTitle:   { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: colors.textDark },
+    fieldLabel:   { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: colors.textDark, marginBottom: Spacing.xs },
+    fieldInput:   { backgroundColor: colors.bgCard, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textDark, marginBottom: Spacing.lg, borderWidth: 1, borderColor: colors.borderLight },
     fieldInputMulti: { height: 120, paddingTop: Spacing.sm },
     categoryRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.lg },
-    categoryChip: { borderRadius: 20, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderWidth: 1, borderColor: Colors.borderLight, backgroundColor: Colors.bgCard },
-    categoryChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-    categoryChipText:   { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textBody },
+    categoryChip: { borderRadius: 20, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderWidth: 1, borderColor: colors.borderLight, backgroundColor: colors.bgCard },
+    categoryChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    categoryChipText:   { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textBody },
     categoryChipTextActive: { color: '#fff', fontFamily: Fonts.semiBold },
-    submitBtn:    { backgroundColor: Colors.primary, borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.sm, marginBottom: Spacing.xl },
+    submitBtn:    { backgroundColor: colors.primary, borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.sm, marginBottom: Spacing.xl },
     submitBtnText:{ fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: '#fff' },
 });
