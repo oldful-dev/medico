@@ -8,6 +8,8 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { labService, LabOrderListItem } from '@/services/api/labService';
+import { bookingService, Booking as ServiceBooking } from '@/services/api/bookingService';
+import { meetupService } from '@/services/api/meetupService';
 import { useCart } from '@/context/CartContext';
 
 const PRIMARY_GREEN = '#02743F';
@@ -36,7 +38,7 @@ interface Booking {
     createdAt: string;
 }
 
-type FilterTab = 'wellness' | 'health' | 'concierge' | 'upcoming' | 'completed' | 'cancelled' | 'rescheduled';
+type FilterTab = 'all' | 'health' | 'services' | 'meetup' | 'upcoming' | 'completed' | 'cancelled';
 
 // Mapper functions to normalize LabOrder → Booking
 function mapLabStatus(s: string): Booking['status'] {
@@ -69,6 +71,49 @@ function normalizeLabOrder(order: LabOrderListItem): Booking {
     };
 }
 
+function mapServiceStatus(s: string): Booking['status'] {
+    if (s === 'COMPLETED' || s === 'IN_PROGRESS') return 'completed';
+    if (s === 'CANCELLED' || s === 'PAYMENT_FAILED') return 'cancelled';
+    if (s === 'CONFIRMED' || s === 'ASSIGNED') return 'confirmed';
+    return 'pending';
+}
+
+function normalizeServiceBooking(b: ServiceBooking): Booking {
+    return {
+        id: b.id,
+        serviceType: 'service',
+        packageName: b.service?.name || 'Service',
+        packageCode: '',
+        bookingId: b.bookingCode,
+        scheduledDate: b.scheduledDate ? String(b.scheduledDate) : '',
+        scheduledTime: b.scheduledTime ?? undefined,
+        collectionType: b.addressLine ? 'home' : undefined,
+        status: mapServiceStatus(b.status),
+        paymentStatus: (b as any).paymentStatus === 'SUCCESS' ? 'paid' : (b as any).paymentStatus === 'FAILED' ? 'failed' : 'pending',
+        reportReady: false,
+        assignedPersonnel: b.caregiver?.name ?? undefined,
+        createdAt: b.createdAt ? String(b.createdAt) : '',
+    };
+}
+
+function normalizeMeetupRegistration(reg: any): Booking {
+    return {
+        id: reg.id,
+        serviceType: 'meetup',
+        packageName: reg.meetup?.title || 'Local Meetup',
+        packageCode: '',
+        bookingId: reg.bookingCode,
+        scheduledDate: reg.meetup?.eventDate || '',
+        scheduledTime: reg.meetup?.startTime ?? undefined,
+        collectionType: reg.pickupEnabled ? 'pickup' : undefined,
+        status: reg.status === 'CONFIRMED' || reg.status === 'ATTENDED' ? 'confirmed'
+            : reg.status === 'CANCELLED' ? 'cancelled' : 'pending',
+        paymentStatus: reg.paymentStatus === 'PAID' ? 'paid' : 'pending',
+        reportReady: false,
+        createdAt: reg.createdAt,
+    };
+}
+
 export default function MyBookingsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -77,7 +122,7 @@ export default function MyBookingsScreen() {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [activeTab, setActiveTab] = useState<FilterTab>((tab as FilterTab) || 'health');
+    const [activeTab, setActiveTab] = useState<FilterTab>((tab as FilterTab) || 'all');
     const scrollViewRef = useRef<ScrollView>(null);
 
     useFocusEffect(
@@ -95,11 +140,26 @@ export default function MyBookingsScreen() {
     const fetchBookings = async () => {
         try {
             setLoading(true);
-            const res = await labService.getUserLabOrders();
-            if (res.success && res.data && Array.isArray(res.data)) {
-                const normalizedBookings = (res.data as LabOrderListItem[]).map(normalizeLabOrder);
-                setBookings(normalizedBookings);
+            const [labRes, serviceRes, meetupRes] = await Promise.allSettled([
+                labService.getUserLabOrders(),
+                bookingService.getMyBookings(),
+                meetupService.getMyRegistrations(),
+            ]);
+
+            const all: Booking[] = [];
+
+            if (labRes.status === 'fulfilled' && labRes.value.success && Array.isArray(labRes.value.data)) {
+                all.push(...(labRes.value.data as LabOrderListItem[]).map(normalizeLabOrder));
             }
+            if (serviceRes.status === 'fulfilled' && serviceRes.value.success && Array.isArray(serviceRes.value.data)) {
+                all.push(...(serviceRes.value.data as ServiceBooking[]).map(normalizeServiceBooking));
+            }
+            if (meetupRes.status === 'fulfilled' && meetupRes.value.success && Array.isArray(meetupRes.value.data)) {
+                all.push(...(meetupRes.value.data as any[]).map(normalizeMeetupRegistration));
+            }
+
+            all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setBookings(all);
         } catch (error) {
             console.error('Failed to fetch bookings:', error);
         } finally {
@@ -121,13 +181,13 @@ export default function MyBookingsScreen() {
     const getFilteredBookings = (): Booking[] => {
         const now = new Date();
         return bookings.filter(b => {
+            if (activeTab === 'all') return true;
             if (activeTab === 'health') return b.serviceType === 'blood-test';
-            if (activeTab === 'wellness') return b.serviceType === 'wellness';
-            if (activeTab === 'concierge') return b.serviceType === 'concierge';
-            if (activeTab === 'upcoming') return new Date(b.scheduledDate) > now && !['cancelled', 'rescheduled'].includes(b.status);
+            if (activeTab === 'services') return b.serviceType === 'service';
+            if (activeTab === 'meetup') return b.serviceType === 'meetup';
+            if (activeTab === 'upcoming') return new Date(b.scheduledDate) > now && b.status !== 'cancelled';
             if (activeTab === 'completed') return b.status === 'completed';
             if (activeTab === 'cancelled') return b.status === 'cancelled';
-            if (activeTab === 'rescheduled') return b.status === 'rescheduled';
             return false;
         });
     };
@@ -135,7 +195,10 @@ export default function MyBookingsScreen() {
     const getGroupedBookings = () => {
         const filtered = getFilteredBookings();
         const now = new Date();
-        const upcoming = filtered.filter(b => new Date(b.scheduledDate) > now && b.status !== 'cancelled');
+        const upcoming = filtered.filter(b => {
+            const d = new Date(b.scheduledDate);
+            return !isNaN(d.getTime()) && d > now && b.status !== 'cancelled';
+        });
         const completed = filtered.filter(b => !upcoming.includes(b));
 
         const sections = [];
@@ -149,23 +212,34 @@ export default function MyBookingsScreen() {
         return sections;
     };
 
-    const upcomingCount = bookings.filter(b => new Date(b.scheduledDate) > new Date() && b.status !== 'cancelled').length;
+    const upcomingCount = bookings.filter(b => {
+        const d = new Date(b.scheduledDate);
+        return !isNaN(d.getTime()) && d > new Date() && b.status !== 'cancelled';
+    }).length;
     const completedCount = bookings.filter(b => b.status === 'completed').length;
 
     const renderBookingCard = (booking: Booking) => (
         <TouchableOpacity
             style={styles.bookingCard}
-            onPress={() => router.push({
-                pathname: '/booking-details',
-                params: { bookingId: booking.id, type: 'lab' },
-            } as any)}
+            onPress={() => {
+                if (booking.serviceType === 'blood-test') {
+                    router.push({ pathname: '/booking-details', params: { bookingId: booking.id, type: 'lab' } } as any);
+                } else if (booking.serviceType === 'service') {
+                    router.push({ pathname: '/service-confirmation', params: { bookingId: booking.id } } as any);
+                }
+                // meetup type: no detail page yet, tap is no-op
+            }}
             activeOpacity={0.7}
         >
             {/* Service name + Status badge */}
             <View style={styles.cardTop}>
                 <View style={{ flex: 1 }}>
                     <Text style={styles.bookingName} numberOfLines={1}>{booking.packageName}</Text>
-                    <Text style={styles.bookingId}>Booking ID: #{booking.bookingId}</Text>
+                    <Text style={styles.bookingId}>
+                        {booking.serviceType === 'meetup' ? '🎪 Meetup' :
+                         booking.serviceType === 'blood-test' ? '🩸 Blood Test' : '🏥 Service'}
+                        {'  ·  '}#{booking.bookingId}
+                    </Text>
                 </View>
                 <View style={[
                     styles.statusBadge,
@@ -272,8 +346,8 @@ export default function MyBookingsScreen() {
                     </TouchableOpacity>
                 )}
 
-                {/* Rebook for Completed / Cancelled bookings */}
-                {(booking.status === 'completed' || booking.status === 'cancelled') && (
+                {/* Rebook for Completed / Cancelled blood tests only */}
+                {booking.serviceType === 'blood-test' && (booking.status === 'completed' || booking.status === 'cancelled') && (
                     <TouchableOpacity
                         style={[styles.actionBtn, styles.rebookBtn]}
                         onPress={(e) => {
@@ -293,16 +367,13 @@ export default function MyBookingsScreen() {
                     </TouchableOpacity>
                 )}
 
-                {/* View Details for Upcoming / Rescheduled bookings */}
-                {(booking.status === 'confirmed' || booking.status === 'pending' || booking.status === 'rescheduled') && (
+                {/* View Details for blood test upcoming bookings */}
+                {booking.serviceType === 'blood-test' && (booking.status === 'confirmed' || booking.status === 'pending') && (
                     <TouchableOpacity
                         style={[styles.actionBtn, styles.viewDetailsBtn]}
                         onPress={(e) => {
                             e.stopPropagation();
-                            router.push({
-                                pathname: '/booking-details',
-                                params: { bookingId: booking.id, type: 'lab' },
-                            } as any);
+                            router.push({ pathname: '/booking-details', params: { bookingId: booking.id, type: 'lab' } } as any);
                         }}
                     >
                         <Ionicons name="information-circle-outline" size={13} color={PRIMARY_GREEN} />
@@ -310,8 +381,8 @@ export default function MyBookingsScreen() {
                     </TouchableOpacity>
                 )}
 
-                {/* Cancel Booking (only for confirmed/upcoming) */}
-                {booking.status === 'confirmed' && (
+                {/* Cancel Booking (only for confirmed/pending) */}
+                {(booking.status === 'confirmed' || booking.status === 'pending') && (
                     <TouchableOpacity
                         style={[styles.actionBtn, styles.cancelBtn]}
                         onPress={(e) => {
@@ -326,7 +397,14 @@ export default function MyBookingsScreen() {
                                         style: 'destructive',
                                         onPress: async () => {
                                             try {
-                                                const res = await labService.cancelLabOrder(booking.id);
+                                                let res;
+                                                if (booking.serviceType === 'blood-test') {
+                                                    res = await labService.cancelLabOrder(booking.id);
+                                                } else if (booking.serviceType === 'meetup') {
+                                                    res = await meetupService.cancelRegistration(booking.id);
+                                                } else {
+                                                    res = await bookingService.cancelBooking(booking.id);
+                                                }
                                                 if (res.success) {
                                                     Alert.alert('Success', 'Booking cancelled successfully');
                                                     fetchBookings();
@@ -335,7 +413,6 @@ export default function MyBookingsScreen() {
                                                 }
                                             } catch (error) {
                                                 Alert.alert('Error', 'Failed to cancel booking');
-                                                console.error('Cancel error:', error);
                                             }
                                         }
                                     }
@@ -436,37 +513,34 @@ export default function MyBookingsScreen() {
                 contentContainerStyle={styles.tabsContent}
             >
                 <View style={styles.tabsContainer}>
-                    {(['wellness', 'health', 'concierge', 'upcoming', 'completed', 'cancelled', 'rescheduled'] as FilterTab[]).map((tab) => {
+                    {(['all', 'health', 'services', 'meetup', 'upcoming', 'completed', 'cancelled'] as FilterTab[]).map((t) => {
                         const tabCounts: Record<FilterTab, number> = {
-                            wellness: bookings.filter(b => b.serviceType === 'wellness').length,
+                            all: bookings.length,
                             health: bookings.filter(b => b.serviceType === 'blood-test').length,
-                            concierge: bookings.filter(b => b.serviceType === 'concierge').length,
+                            services: bookings.filter(b => b.serviceType === 'service').length,
+                            meetup: bookings.filter(b => b.serviceType === 'meetup').length,
                             upcoming: upcomingCount,
                             completed: completedCount,
                             cancelled: bookings.filter(b => b.status === 'cancelled').length,
-                            rescheduled: bookings.filter(b => b.status === 'rescheduled').length,
                         };
-                        const count = tabCounts[tab];
+                        const count = tabCounts[t];
+                        const labels: Record<FilterTab, string> = {
+                            all: `All (${count})`,
+                            health: `Blood Tests (${count})`,
+                            services: `Services (${count})`,
+                            meetup: `Meetups (${count})`,
+                            upcoming: `Upcoming (${count})`,
+                            completed: `Completed (${count})`,
+                            cancelled: `Cancelled (${count})`,
+                        };
                         return (
                             <TouchableOpacity
-                                key={tab}
-                                onPress={() => setActiveTab(tab)}
-                                style={[
-                                    styles.tab,
-                                    activeTab === tab && styles.tabActive,
-                                ]}
+                                key={t}
+                                onPress={() => setActiveTab(t)}
+                                style={[styles.tab, activeTab === t && styles.tabActive]}
                             >
-                                <Text style={[
-                                    styles.tabText,
-                                    activeTab === tab && styles.tabTextActive,
-                                ]}>
-                                    {tab === 'health' ? 'Health' :
-                                        tab === 'wellness' ? 'Wellness' :
-                                            tab === 'concierge' ? 'Concierge' :
-                                                tab === 'upcoming' ? `Upcoming (${count})` :
-                                                    tab === 'completed' ? `Completed (${count})` :
-                                                        tab === 'cancelled' ? `Cancelled (${count})` :
-                                                            `Rescheduled (${count})`}
+                                <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>
+                                    {labels[t]}
                                 </Text>
                             </TouchableOpacity>
                         );
