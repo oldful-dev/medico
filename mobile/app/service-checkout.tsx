@@ -390,6 +390,7 @@ export default function ServiceCheckoutScreen() {
                 if (params.meetupId && params.bookingPayload) {
                     try {
                         const payload = JSON.parse(params.bookingPayload as string);
+                        console.log('Registering for meetup:', params.meetupId, 'with payload:', payload);
                         const regRes = await meetupService.registerForMeetup(params.meetupId, {
                             fullName: payload.fullName,
                             mobile: payload.mobile,
@@ -404,6 +405,7 @@ export default function ServiceCheckoutScreen() {
                             preferredPickupTime: payload.preferredPickupTime,
                         });
 
+                        console.log('Meetup registration response:', regRes);
                         if (regRes.success && regRes.data) {
                             const meetupParams = params.meetupParams ? JSON.parse(params.meetupParams as string) : {};
                             router.replace({
@@ -418,9 +420,12 @@ export default function ServiceCheckoutScreen() {
                                 },
                             });
                             return;
+                        } else {
+                            Alert.alert('Registration Failed', regRes.message || 'Could not register for meetup. Please try again.');
                         }
-                    } catch (e) {
-                        console.warn('Meetup registration failed:', e);
+                    } catch (e: any) {
+                        console.error('Meetup registration error:', e);
+                        Alert.alert('Error', e?.message || 'Failed to register for meetup');
                     }
                 }
 
