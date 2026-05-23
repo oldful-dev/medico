@@ -23,10 +23,18 @@ export default function MeetupConfirmationScreen() {
         ]).start();
     }, []);
 
-    const meetupDate = '25 Jun 2026, Thursday';
-    const meetupTime = '07:30 AM – 10:30 AM';
-    const meetupVenue = 'Cubbon Park, Bengaluru';
-    const meetupPinCode = '560038';
+    const meetupDate = (() => {
+        if (!params.meetupEventDate) return '—';
+        const d = new Date(params.meetupEventDate);
+        const date = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        const day = d.toLocaleDateString('en-IN', { weekday: 'long' });
+        return `${date}, ${day}`;
+    })();
+    const meetupTime = params.meetupEndTime
+        ? `${params.meetupStartTime} – ${params.meetupEndTime}`
+        : (params.meetupStartTime ?? '—');
+    const meetupVenue = params.meetupVenue ?? '—';
+    const meetupPinCode = params.meetupPinCode ?? '';
 
     return (
         <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -45,6 +53,9 @@ export default function MeetupConfirmationScreen() {
                     <Animated.View style={{ opacity: fadeAnim, alignItems: 'center' }}>
                         <Text style={styles.successTitle}>Registration Confirmed!</Text>
                         <Text style={styles.successSub}>You have successfully joined the Local Meet Up.</Text>
+                        {params.bookingCode && (
+                            <Text style={styles.bookingCodeText}>Booking Code: {params.bookingCode}</Text>
+                        )}
                     </Animated.View>
                 </View>
 
@@ -56,7 +67,7 @@ export default function MeetupConfirmationScreen() {
                         { icon: 'calendar-outline', label: 'Date', value: meetupDate },
                         { icon: 'time-outline', label: 'Time', value: meetupTime },
                         { icon: 'location-outline', label: 'Venue', value: meetupVenue },
-                        { icon: 'keypad-outline', label: 'PIN Code', value: meetupPinCode },
+                        ...(meetupPinCode ? [{ icon: 'keypad-outline', label: 'PIN Code', value: meetupPinCode }] : []),
                     ].map((row, i) => (
                         <View key={i} style={styles.detailRow}>
                             <View style={styles.detailIcon}>
@@ -146,6 +157,7 @@ const styles = StyleSheet.create({
     },
     successTitle: { fontFamily: Fonts.semiBold, fontSize: 22, color: Colors.textDark, marginBottom: 8, textAlign: 'center' },
     successSub: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted, textAlign: 'center', lineHeight: 20 },
+    bookingCodeText: { fontFamily: Fonts.semiBold, fontSize: 13, color: PRIMARY, marginTop: 12 },
     detailsCard: {
         backgroundColor: '#fff', borderRadius: 16, padding: 18, marginBottom: 14,
         shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
