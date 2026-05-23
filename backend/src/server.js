@@ -62,6 +62,7 @@ const whatsappTestRoutes = require('./routes/whatsapp-test.routes');
 const serviceChargeRoutes = require('./routes/serviceCharge.routes');
 const activityRoutes = require('./routes/activity.routes');
 const familyMemberRoutes = require('./routes/familyMember.routes');
+const meetupRoutes = require('./routes/meetup.routes');
 
 // Initialize cron jobs
 const { initCronJobs } = require('./cron');
@@ -250,6 +251,9 @@ app.use('/api/waitlist', waitlistRoutes);
 
 // Banners (public + admin)
 app.use('/api/banners', bannerRoutes);
+
+// Local Meetups
+app.use('/api/meetups', meetupRoutes);
 
 
 // ═══ ERROR HANDLING ═════════════════════════════════════════

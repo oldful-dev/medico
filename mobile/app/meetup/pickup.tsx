@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
+import { AddressPickerSection, AddressData } from '@/components/AddressPickerSection';
 
 const PRIMARY = '#02743F';
 
@@ -22,26 +23,49 @@ export default function MeetupPickupScreen() {
     const params = useLocalSearchParams<any>();
 
     const [pickupEnabled, setPickupEnabled] = useState(true);
-    const [pickupAddress, setPickupAddress] = useState('');
-    const [landmark, setLandmark] = useState('');
+    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
     const [alternateContact, setAlternateContact] = useState('');
     const [preferredTime, setPreferredTime] = useState('');
     const [showTimePicker, setShowTimePicker] = useState(false);
 
     const handleSave = () => {
         if (pickupEnabled) {
-            if (!pickupAddress.trim()) { Alert.alert('Required', 'Please enter pickup address'); return; }
+            if (!selectedAddress) { Alert.alert('Required', 'Please select pickup address'); return; }
             if (!preferredTime) { Alert.alert('Required', 'Please select preferred pickup time'); return; }
         }
+
+        const serviceCharge = params.meetupServiceCharge ? parseFloat(params.meetupServiceCharge) : 299;
+
+        let assistanceJson: Record<string, boolean> | undefined;
+        try {
+            assistanceJson = params.assistanceJson ? JSON.parse(params.assistanceJson) : undefined;
+        } catch {
+            assistanceJson = undefined;
+        }
+
+        const registrationPayload = {
+            fullName: params.fullName,
+            mobile: params.mobile,
+            age: params.age,
+            gender: params.gender,
+            assistanceJson,
+            specialNotes: params.specialNotes,
+            pickupEnabled: pickupEnabled ? 'true' : 'false',
+            pickupAddress: selectedAddress ? `${selectedAddress.line1}${selectedAddress.line2 ? ', ' + selectedAddress.line2 : ''}` : '',
+            pickupLandmark: selectedAddress?.landmark || '',
+            pickupContact: alternateContact,
+            preferredPickupTime: preferredTime,
+        };
+
         router.push({
-            pathname: '/meetup/payment',
+            pathname: '/service-checkout',
             params: {
-                ...params,
-                pickupEnabled: pickupEnabled ? 'true' : 'false',
-                pickupAddress,
-                landmark,
-                alternateContact,
-                preferredTime,
+                bookingPayload: JSON.stringify(registrationPayload),
+                amount: String(serviceCharge),
+                label: 'Local Meetup',
+                meetupId: params.id,
+                meetupParams: JSON.stringify(params),
+                pickupAddress: selectedAddress ? `${selectedAddress.line1}${selectedAddress.line2 ? ', ' + selectedAddress.line2 : ''}` : '',
             },
         } as any);
     };
@@ -61,7 +85,7 @@ export default function MeetupPickupScreen() {
 
             {/* Step indicator */}
             <View style={styles.stepBar}>
-                {['Registration', 'Pickup', 'Payment', 'Confirm'].map((step, i) => (
+                {['Registration', 'Pickup', 'Checkout'].map((step, i) => (
                     <React.Fragment key={step}>
                         <View style={styles.stepItem}>
                             <View style={[styles.stepDot, i <= 1 && styles.stepDotActive]}>
@@ -69,12 +93,12 @@ export default function MeetupPickupScreen() {
                                     ? <Ionicons name="checkmark" size={12} color="#fff" />
                                     : i === 1
                                         ? <Ionicons name="car-outline" size={11} color="#fff" />
-                                        : <Text style={styles.stepNum}>{i + 1}</Text>
+                                        : <Ionicons name="card-outline" size={11} color={i <= 1 ? '#fff' : 'rgba(255,255,255,0.6)'} />
                                 }
                             </View>
                             <Text style={[styles.stepLabel, i <= 1 && styles.stepLabelActive]}>{step}</Text>
                         </View>
-                        {i < 3 && <View style={[styles.stepLine, i < 1 && styles.stepLineActive]} />}
+                        {i < 2 && <View style={[styles.stepLine, i < 1 && styles.stepLineActive]} />}
                     </React.Fragment>
                 ))}
             </View>
@@ -99,27 +123,43 @@ export default function MeetupPickupScreen() {
 
                 {pickupEnabled && (
                     <>
-                        <View style={styles.section}>
-                            <Text style={styles.fieldLabel}>Pickup Address <Text style={styles.required}>*</Text></Text>
-                            <TextInput
-                                style={[styles.input, styles.textArea]}
-                                placeholder="Enter pickup address"
-                                placeholderTextColor={Colors.textLight}
-                                value={pickupAddress}
-                                onChangeText={setPickupAddress}
-                                multiline
-                                numberOfLines={3}
-                                textAlignVertical="top"
-                            />
+                        <AddressPickerSection
+                            selectedAddress={selectedAddress}
+                            onAddressChange={setSelectedAddress}
+                            title="Pickup Address"
+                            showPhoneField={false}
+                            showLandmarkField={true}
+                            landmark={selectedAddress?.landmark || ''}
+                            onLandmarkChange={(newLandmark) => {
+                                if (selectedAddress) {
+                                    setSelectedAddress({ ...selectedAddress, landmark: newLandmark });
+                                }
+                            }}
+                            allowManualEntry={true}
+                        />
 
-                            <Text style={styles.fieldLabel}>Landmark</Text>
+                        <View style={styles.section}>
+                            <Text style={styles.fieldLabel}>Landmark (Optional)</Text>
                             <TextInput
                                 style={styles.input}
                                 placeholder="Enter landmark"
                                 placeholderTextColor={Colors.textLight}
-                                value={landmark}
-                                onChangeText={setLandmark}
+                                value={selectedAddress?.landmark || ''}
+                                onChangeText={(newLandmark) => {
+                                    if (selectedAddress) {
+                                        setSelectedAddress({ ...selectedAddress, landmark: newLandmark });
+                                    }
+                                }}
                             />
+
+                            {selectedAddress?.pincode && (
+                                <>
+                                    <Text style={styles.fieldLabel}>PIN Code</Text>
+                                    <View style={[styles.input, styles.readOnlyInput]}>
+                                        <Text style={styles.readOnlyText}>{selectedAddress.pincode}</Text>
+                                    </View>
+                                </>
+                            )}
 
                             <Text style={styles.fieldLabel}>Alternate Contact Number</Text>
                             <TextInput
@@ -229,6 +269,8 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.regular, fontSize: 14, color: Colors.textDark,
     },
     textArea: { height: 80, textAlignVertical: 'top', paddingTop: 12 },
+    readOnlyInput: { backgroundColor: '#F0FDF4', borderColor: PRIMARY },
+    readOnlyText: { fontFamily: Fonts.semiBold, fontSize: 14, color: PRIMARY },
     selectInput: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     selectText: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textDark },
     placeholderText: { color: Colors.textLight },

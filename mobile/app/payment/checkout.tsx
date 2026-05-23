@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import RazorpayCheckout from 'react-native-razorpay';
-import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
+import { Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { paymentService, PaymentMethod } from '@/services/api/paymentService';
 import { bookingService } from '@/services/api/bookingService';
 import { labService, type LabSlot } from '@/services/api/labService';
@@ -20,6 +20,8 @@ import { storageService, STORAGE_KEYS } from '@/services/device/storageService';
 import { useUser } from '@/context/UserContext';
 import { useCart } from '@/context/CartContext';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 
 // ─── Payment Flow States (for debugging & recovery) ──────
 type PaymentFlowState = 'idle' | 'creating_booking' | 'initiating_order' | 'checkout_opened' | 'verifying' | 'success' | 'failed' | 'cancelled';
@@ -54,6 +56,10 @@ export default function CheckoutScreen() {
     const router = useRouter();
     const { profile, refreshData, isLoading } = useUser();
     const { items, clearCategory } = useCart();
+
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(colors, isDarkMode);
     const params = useLocalSearchParams<{
         // ─── Existing booking ID (legacy: service screens pre-created the booking)
         bookingId?: string;
@@ -560,7 +566,7 @@ export default function CheckoutScreen() {
                     email:   params.email    || '',
                     method:  selectedMethod.toLowerCase(),
                 },
-                theme: { color: Colors.primary },
+                theme: { color: colors.primary },
                 config: {
                     display: {
                         blocks: {
@@ -733,7 +739,7 @@ export default function CheckoutScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
+                    <Ionicons name="arrow-back" size={24} color={colors.textWhite} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Checkout</Text>
             </View>
@@ -759,7 +765,7 @@ export default function CheckoutScreen() {
                                 <Text style={styles.breakdownLabel}>Booking Fee</Text>
                                 {benefitApplied ? (
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                        <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: Colors.textMuted }]}>₹{originalBookingFee}</Text>
+                                        <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>₹{originalBookingFee}</Text>
                                         <Text style={[styles.breakdownValue, { color: '#2e7d32', fontFamily: Fonts.semiBold }]}> FREE</Text>
                                     </View>
                                 ) : (
@@ -770,7 +776,7 @@ export default function CheckoutScreen() {
                                 <Text style={styles.breakdownLabel}>Platform Fee</Text>
                                 {benefitApplied ? (
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                        <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: Colors.textMuted }]}>₹{originalPlatformFee}</Text>
+                                        <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>₹{originalPlatformFee}</Text>
                                         <Text style={[styles.breakdownValue, { color: '#2e7d32', fontFamily: Fonts.semiBold }]}> FREE</Text>
                                     </View>
                                 ) : (
@@ -837,7 +843,7 @@ export default function CheckoutScreen() {
                                 disabled={!couponCode.trim() || couponLoading}
                             >
                                 {couponLoading
-                                    ? <ActivityIndicator size="small" color={Colors.textWhite} />
+                                    ? <ActivityIndicator size="small" color={colors.textWhite} />
                                     : <Text style={styles.couponBtnText}>Apply</Text>
                                 }
                             </TouchableOpacity>
@@ -881,7 +887,7 @@ export default function CheckoutScreen() {
 
                         <Text style={[styles.sectionLabel, { marginTop: Spacing.md }]}>Collection Time</Text>
                         {slotsLoading ? (
-                            <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: Spacing.md }} />
+                            <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: Spacing.md }} />
                         ) : slots.length > 0 ? (
                             <View style={styles.slotsGrid}>
                                 {slots.map((slot, idx) => (
@@ -920,24 +926,24 @@ export default function CheckoutScreen() {
                             onPress={() => setCollectionType('HOME')}
                             activeOpacity={0.75}
                         >
-                            <Ionicons name="home" size={20} color={collectionType === 'HOME' ? Colors.primary : Colors.textLight} style={{ marginRight: 12 }} />
+                            <Ionicons name="home" size={20} color={collectionType === 'HOME' ? colors.primary : colors.textLight} style={{ marginRight: 12 }} />
                             <View style={{ flex: 1 }}>
-                                <Text style={[styles.collectionOptionTitle, collectionType === 'HOME' && { color: Colors.textDark }]}>Home Collection</Text>
+                                <Text style={[styles.collectionOptionTitle, collectionType === 'HOME' && { color: colors.textDark }]}>Home Collection</Text>
                                 <Text style={styles.collectionOptionDesc}>We'll collect sample from your home</Text>
                             </View>
-                            <Ionicons name={collectionType === 'HOME' ? 'checkmark-circle' : 'radio-button-off'} size={22} color={collectionType === 'HOME' ? Colors.primary : '#D1D5DB'} />
+                            <Ionicons name={collectionType === 'HOME' ? 'checkmark-circle' : 'radio-button-off'} size={22} color={collectionType === 'HOME' ? colors.primary : '#D1D5DB'} />
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.collectionOption, collectionType === 'LAB' && styles.collectionOptionActive]}
                             onPress={() => setCollectionType('LAB')}
                             activeOpacity={0.75}
                         >
-                            <Ionicons name="business" size={20} color={collectionType === 'LAB' ? Colors.primary : Colors.textLight} style={{ marginRight: 12 }} />
+                            <Ionicons name="business" size={20} color={collectionType === 'LAB' ? colors.primary : colors.textLight} style={{ marginRight: 12 }} />
                             <View style={{ flex: 1 }}>
-                                <Text style={[styles.collectionOptionTitle, collectionType === 'LAB' && { color: Colors.textDark }]}>Lab Visit</Text>
+                                <Text style={[styles.collectionOptionTitle, collectionType === 'LAB' && { color: colors.textDark }]}>Lab Visit</Text>
                                 <Text style={styles.collectionOptionDesc}>Drop your sample at the nearest lab</Text>
                             </View>
-                            <Ionicons name={collectionType === 'LAB' ? 'checkmark-circle' : 'radio-button-off'} size={22} color={collectionType === 'LAB' ? Colors.primary : '#D1D5DB'} />
+                            <Ionicons name={collectionType === 'LAB' ? 'checkmark-circle' : 'radio-button-off'} size={22} color={collectionType === 'LAB' ? colors.primary : '#D1D5DB'} />
                         </TouchableOpacity>
                     </View>
                 )}
@@ -999,14 +1005,14 @@ export default function CheckoutScreen() {
                             onPress={() => setSelectedMethod(m.type)}
                             activeOpacity={0.8}
                         >
-                            <Ionicons name={m.icon} size={20} color={selectedMethod === m.type ? Colors.primary : Colors.textLight} />
+                            <Ionicons name={m.icon} size={20} color={selectedMethod === m.type ? colors.primary : colors.textLight} />
                             <Text style={[styles.methodLabel, selectedMethod === m.type && styles.methodLabelActive]}>
                                 {m.label}
                             </Text>
                             <Ionicons
                                 name={selectedMethod === m.type ? 'radio-button-on' : 'radio-button-off'}
                                 size={20}
-                                color={selectedMethod === m.type ? Colors.primary : Colors.textLight}
+                                color={selectedMethod === m.type ? colors.primary : colors.textLight}
                                 style={{ marginLeft: 'auto' }}
                             />
                         </TouchableOpacity>
@@ -1048,9 +1054,9 @@ export default function CheckoutScreen() {
                     activeOpacity={0.85}
                 >
                     {payLoading
-                        ? <ActivityIndicator color={Colors.textWhite} />
+                        ? <ActivityIndicator color={colors.textWhite} />
                         : <>
-                            <Ionicons name={selectedMethod === 'CASH' ? "checkmark-circle-outline" : "lock-closed-outline"} size={18} color={Colors.textWhite} />
+                            <Ionicons name={selectedMethod === 'CASH' ? "checkmark-circle-outline" : "lock-closed-outline"} size={18} color={colors.textWhite} />
                             <Text style={styles.payBtnText}>
                                 {selectedMethod === 'CASH'
                                     ? `Confirm Booking (₹${finalAmount.toLocaleString('en-IN')})`
@@ -1073,14 +1079,14 @@ export default function CheckoutScreen() {
                             <View style={styles.modalSummary}>
                                 {bloodTestItems.map((item, idx) => (
                                     <View key={idx} style={styles.modalRow}>
-                                        <Ionicons name="flask-outline" size={15} color={Colors.primary} style={{ marginRight: 8 }} />
+                                        <Ionicons name="flask-outline" size={15} color={colors.primary} style={{ marginRight: 8 }} />
                                         <Text style={styles.modalRowLabel} numberOfLines={1}>{item.title}</Text>
                                         <Text style={styles.modalRowValue}>₹{item.price}</Text>
                                     </View>
                                 ))}
 
                                 <View style={[styles.modalRow, styles.modalDivider]}>
-                                    <Ionicons name="calendar-outline" size={15} color={Colors.primary} style={{ marginRight: 8 }} />
+                                    <Ionicons name="calendar-outline" size={15} color={colors.primary} style={{ marginRight: 8 }} />
                                     <Text style={styles.modalRowLabel}>Date & Time</Text>
                                     <Text style={styles.modalRowValue} numberOfLines={1}>
                                         {selectedDate?.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}, {selectedTime}
@@ -1088,23 +1094,23 @@ export default function CheckoutScreen() {
                                 </View>
 
                                 <View style={[styles.modalRow, styles.modalDivider]}>
-                                    <Ionicons name={collectionType === 'LAB' ? 'business-outline' : 'home-outline'} size={15} color={Colors.primary} style={{ marginRight: 8 }} />
+                                    <Ionicons name={collectionType === 'LAB' ? 'business-outline' : 'home-outline'} size={15} color={colors.primary} style={{ marginRight: 8 }} />
                                     <Text style={styles.modalRowLabel}>Collection</Text>
                                     <Text style={styles.modalRowValue}>{collectionType === 'LAB' ? 'Lab Visit' : 'Home Collection'}</Text>
                                 </View>
 
                                 {collectionType === 'HOME' && selectedAddress?.line1 && (
                                     <View style={[styles.modalRow, styles.modalDivider]}>
-                                        <Ionicons name="location-outline" size={15} color={Colors.primary} style={{ marginRight: 8 }} />
+                                        <Ionicons name="location-outline" size={15} color={colors.primary} style={{ marginRight: 8 }} />
                                         <Text style={styles.modalRowLabel}>Address</Text>
                                         <Text style={[styles.modalRowValue, { maxWidth: '55%' }]} numberOfLines={2}>{selectedAddress.line1}</Text>
                                     </View>
                                 )}
 
                                 <View style={[styles.modalRow, styles.modalDivider, { marginTop: 4 }]}>
-                                    <Ionicons name="cash-outline" size={15} color={Colors.primary} style={{ marginRight: 8 }} />
-                                    <Text style={[styles.modalRowLabel, { fontFamily: Fonts.semiBold, color: Colors.textDark }]}>Total Payable</Text>
-                                    <Text style={[styles.modalRowValue, { fontFamily: Fonts.semiBold, fontSize: 16, color: Colors.primary }]}>
+                                    <Ionicons name="cash-outline" size={15} color={colors.primary} style={{ marginRight: 8 }} />
+                                    <Text style={[styles.modalRowLabel, { fontFamily: Fonts.semiBold, color: colors.textDark }]}>Total Payable</Text>
+                                    <Text style={[styles.modalRowValue, { fontFamily: Fonts.semiBold, fontSize: 16, color: colors.primary }]}>
                                         ₹{finalAmount.toLocaleString('en-IN')}
                                     </Text>
                                 </View>
@@ -1140,8 +1146,8 @@ export default function CheckoutScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: Colors.primary },
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.primary },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start',
         paddingHorizontal: Spacing.xl, paddingVertical: Spacing.lg,
@@ -1150,25 +1156,25 @@ const styles = StyleSheet.create({
     headerTitle: { 
         fontFamily: Fonts.semiBold, 
         fontSize: FontSize.heading2, 
-        color: Colors.textWhite,
+        color: colors.textWhite,
         marginLeft: 12,
     },
 
-    body: { flex: 1, backgroundColor: Colors.bgScreen ?? '#FAFAF0', borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+    body: { flex: 1, backgroundColor: colors.bgScreen ?? '#FAFAF0', borderTopLeftRadius: 24, borderTopRightRadius: 24 },
     bodyContent: { padding: Spacing.xl, paddingBottom: 100, gap: Spacing.lg },
 
     card: {
-        backgroundColor: '#FFFFFF', borderRadius: Radius.lg ?? 12, padding: Spacing.xl, gap: Spacing.md,
-        elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3,
+        backgroundColor: colors.bgCard, borderRadius: Radius.lg ?? 12, padding: Spacing.xl, gap: Spacing.md,
+        elevation: 1, shadowColor: colors.shadowColor, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3,
     },
-    cardTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark, marginBottom: Spacing.xs ?? 4 },
+    cardTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textDark, marginBottom: Spacing.xs ?? 4 },
 
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    rowLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textLight },
-    rowValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark },
+    rowLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textLight },
+    rowValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: colors.textDark },
 
     breakdownSection: {
-        backgroundColor: '#FAFAFA',
+        backgroundColor: colors.bgCardMuted,
         borderRadius: Radius.md,
         paddingVertical: Spacing.md,
         paddingHorizontal: Spacing.md,
@@ -1184,28 +1190,29 @@ const styles = StyleSheet.create({
     breakdownLabel: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.caption ?? 12,
-        color: '#666'
+        color: colors.textMuted
     },
     breakdownValue: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.caption ?? 12,
-        color: Colors.textDark
+        color: colors.textDark
     },
 
-    totalRow: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
-    totalLabel: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark },
-    totalValue: { fontFamily: Fonts.semiBold, fontSize: 20, color: Colors.primary },
-    gstNote: { fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: '#999' },
+    totalRow: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: colors.borderLight },
+    totalLabel: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textDark },
+    totalValue: { fontFamily: Fonts.semiBold, fontSize: 20, color: colors.primary },
+    gstNote: { fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: colors.textMuted },
 
     couponRow: { flexDirection: 'row', gap: Spacing.sm },
     couponInput: {
-        flex: 1, height: 44, borderWidth: 1.5, borderColor: '#E5E5E5', borderRadius: Radius.md,
-        paddingHorizontal: Spacing.md, fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark,
+        flex: 1, height: 44, borderWidth: 1.5, borderColor: colors.borderLight, borderRadius: Radius.md,
+        paddingHorizontal: Spacing.md, fontFamily: Fonts.medium, fontSize: FontSize.body, color: colors.textDark,
+        backgroundColor: colors.bgCardMuted,
     },
-    couponBtn: { paddingHorizontal: Spacing.lg, height: 44, backgroundColor: Colors.primary, borderRadius: Radius.md, justifyContent: 'center', alignItems: 'center' },
+    couponBtn: { paddingHorizontal: Spacing.lg, height: 44, backgroundColor: colors.primary, borderRadius: Radius.md, justifyContent: 'center', alignItems: 'center' },
     couponBtnDisabled: { opacity: 0.45 },
-    couponBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textWhite },
-    couponApplied: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#E8F5E9', padding: Spacing.md, borderRadius: Radius.sm },
+    couponBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textWhite },
+    couponApplied: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: isDarkMode ? 'rgba(46,125,50,0.1)' : '#E8F5E9', padding: Spacing.md, borderRadius: Radius.sm },
     couponAppliedText: { flex: 1, fontFamily: Fonts.medium, fontSize: FontSize.caption ?? 13, color: '#2e7d32' },
 
     methodRow: { 
@@ -1216,25 +1223,26 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg, 
         borderRadius: Radius.md, 
         borderWidth: 1.5, 
-        borderColor: '#EEEEEE' 
+        borderColor: colors.borderLight,
+        backgroundColor: colors.bgCard,
     },
-    methodRowActive: { borderColor: Colors.primary, backgroundColor: '#F0FAF4' },
-    methodLabel: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textLight },
-    methodLabelActive: { color: Colors.textDark, fontFamily: Fonts.medium },
+    methodRowActive: { borderColor: colors.primary, backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : '#F0FAF4' },
+    methodLabel: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textLight },
+    methodLabelActive: { color: colors.textDark, fontFamily: Fonts.medium },
 
     securityNote: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: Spacing.md },
-    securityText: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: '#888', lineHeight: 18 },
+    securityText: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: colors.textMuted, lineHeight: 18 },
 
     footer: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        backgroundColor: Colors.bgScreen ?? '#FAFAF0',
+        backgroundColor: colors.bgScreen ?? '#FAFAF0',
         padding: Spacing.xl,
         paddingBottom: Platform.OS === 'ios' ? Spacing.xl + 16 : Spacing.xl,
-        borderTopWidth: 1, borderTopColor: '#E5E5E5',
+        borderTopWidth: 1, borderTopColor: colors.borderLight,
     },
-    payBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.primary, paddingVertical: 16, borderRadius: Radius.lg ?? 12 },
+    payBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.primary, paddingVertical: 16, borderRadius: Radius.lg ?? 12 },
     payBtnLoading: { opacity: 0.7 },
-    payBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textWhite },
+    payBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textWhite },
     warningBanner: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -1260,7 +1268,7 @@ const styles = StyleSheet.create({
         marginTop: -2,
     },
     savingsBadge: {
-        backgroundColor: '#E8F5E9',
+        backgroundColor: isDarkMode ? 'rgba(46,125,50,0.1)' : '#E8F5E9',
         borderRadius: Radius.sm ?? 6,
         paddingVertical: 10,
         paddingHorizontal: Spacing.md,
@@ -1282,33 +1290,34 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
         borderRadius: Radius.md,
         borderWidth: 1.5,
-        borderColor: '#EEEEEE',
+        borderColor: colors.borderLight,
+        backgroundColor: colors.bgCard,
     },
     addressCardActive: {
-        borderColor: Colors.primary,
-        backgroundColor: '#F0FAF4',
+        borderColor: colors.primary,
+        backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : '#F0FAF4',
     },
     addressLabel: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
-        color: Colors.textDark,
+        color: colors.textDark,
     },
     addressSub: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.caption ?? 12,
-        color: Colors.textMuted,
+        color: colors.textMuted,
         marginTop: 4,
     },
     defaultBadge: {
         fontFamily: Fonts.semiBold,
         fontSize: 10,
-        color: Colors.primary,
+        color: colors.primary,
         marginTop: 4,
     },
     noAddressText: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
-        color: Colors.textMuted,
+        color: colors.textMuted,
         textAlign: 'center',
         paddingVertical: Spacing.lg,
     },
@@ -1317,7 +1326,7 @@ const styles = StyleSheet.create({
     sectionLabel: {
         fontFamily: Fonts.semiBold,
         fontSize: 13,
-        color: Colors.textDark,
+        color: colors.textDark,
         marginBottom: Spacing.sm,
     },
     daysScroll: { marginBottom: Spacing.md },
@@ -1326,26 +1335,26 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         borderRadius: Radius.md,
         borderWidth: 1,
-        borderColor: Colors.borderLight,
+        borderColor: colors.borderLight,
         marginRight: 8,
         minWidth: 90,
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
-        shadowColor: '#000',
+        backgroundColor: colors.bgCard,
+        shadowColor: colors.shadowColor,
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,
         shadowRadius: 1,
         elevation: 1,
     },
     dayCardActive: {
-        backgroundColor: Colors.primary,
-        borderColor: Colors.primary,
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
         shadowOpacity: 0.1,
     },
     dayText: {
         fontFamily: Fonts.medium,
         fontSize: 13,
-        color: Colors.textDark,
+        color: colors.textDark,
     },
     dayTextActive: { color: '#fff' },
     slotsGrid: {
@@ -1360,45 +1369,45 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         borderRadius: Radius.md,
         borderWidth: 1,
-        borderColor: Colors.borderLight,
+        borderColor: colors.borderLight,
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
-        shadowColor: '#000',
+        backgroundColor: colors.bgCard,
+        shadowColor: colors.shadowColor,
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,
         shadowRadius: 1,
         elevation: 1,
     },
     slotCardActive: {
-        backgroundColor: Colors.primary,
-        borderColor: Colors.primary,
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
         shadowOpacity: 0.1,
     },
     slotTime: {
         fontFamily: Fonts.medium,
         fontSize: 12,
-        color: Colors.textDark,
+        color: colors.textDark,
     },
     slotTimeActive: { color: '#fff' },
     noSlotsText: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
-        color: Colors.textMuted,
+        color: colors.textMuted,
         textAlign: 'center',
         paddingVertical: Spacing.lg,
     },
     input: {
         borderWidth: 1,
-        borderColor: Colors.borderLight,
+        borderColor: colors.borderLight,
         borderRadius: Radius.md,
         paddingVertical: 10,
         paddingHorizontal: 12,
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
-        color: Colors.textDark,
+        color: colors.textDark,
         marginTop: Spacing.md,
-        backgroundColor: '#FFFFFF',
-        shadowColor: '#000',
+        backgroundColor: colors.bgCard,
+        shadowColor: colors.shadowColor,
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.03,
         shadowRadius: 1,
@@ -1419,24 +1428,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 14,
         borderWidth: 1,
-        borderColor: Colors.borderLight,
+        borderColor: colors.borderLight,
         borderRadius: Radius.md,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.bgCard,
         marginBottom: 8,
     },
     collectionOptionActive: {
-        borderColor: Colors.primary,
-        backgroundColor: '#F0FAF4',
+        borderColor: colors.primary,
+        backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : '#F0FAF4',
     },
     collectionOptionTitle: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
-        color: Colors.textMuted,
+        color: colors.textMuted,
     },
     collectionOptionDesc: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.caption ?? 12,
-        color: Colors.textMuted,
+        color: colors.textMuted,
         marginTop: 2,
     },
 
@@ -1447,7 +1456,7 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     modalSheet: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.bgCard,
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         padding: 20,
@@ -1456,7 +1465,7 @@ const styles = StyleSheet.create({
     modalHandle: {
         width: 40,
         height: 4,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: colors.borderLight,
         borderRadius: 2,
         alignSelf: 'center',
         marginBottom: 16,
@@ -1464,11 +1473,11 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontFamily: Fonts.semiBold,
         fontSize: 16,
-        color: Colors.textDark,
+        color: colors.textDark,
         marginBottom: 16,
     },
     modalSummary: {
-        backgroundColor: '#F9FAFB',
+        backgroundColor: colors.bgCardMuted,
         borderRadius: 12,
         padding: 14,
         marginBottom: 16,
@@ -1480,19 +1489,19 @@ const styles = StyleSheet.create({
     },
     modalDivider: {
         borderTopWidth: 1,
-        borderTopColor: '#E5E7EB',
+        borderTopColor: colors.borderLight,
         marginTop: 4,
     },
     modalRowLabel: {
         flex: 1,
         fontFamily: Fonts.regular,
         fontSize: 13,
-        color: Colors.textMuted,
+        color: colors.textMuted,
     },
     modalRowValue: {
         fontFamily: Fonts.medium,
         fontSize: 13,
-        color: Colors.textDark,
+        color: colors.textDark,
         textAlign: 'right',
     },
     modalActions: {
@@ -1504,17 +1513,17 @@ const styles = StyleSheet.create({
         paddingVertical: 13,
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: Colors.primary,
+        borderColor: colors.primary,
         alignItems: 'center',
     },
     modalCancelText: {
         fontFamily: Fonts.semiBold,
         fontSize: 14,
-        color: Colors.primary,
+        color: colors.primary,
     },
     modalConfirmBtn: {
         flex: 1,
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         paddingVertical: 13,
         borderRadius: 10,
         alignItems: 'center',

@@ -1,59 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView,
+    View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
+import { meetupService } from '@/services/api/meetupService';
+import type { Meetup } from '@/services/api/meetupService';
 
 const PRIMARY = '#02743F';
-
-const MOCK_MEETUPS: Record<string, any> = {
-    '1': {
-        id: '1',
-        title: 'Morning Wellness Meetup at the Park',
-        description: 'Join us for a refreshing morning of light activities, wellness, social interaction and senior friendly games.',
-        date: '25 Jun 2026', dayOfWeek: 'Thursday',
-        timeStart: '07:30 AM', timeEnd: '10:30 AM',
-        venue: 'Cubbon Park, Bengaluru',
-        pinCode: '560038',
-        organizer: 'Ayuxa Senior Community',
-        serviceCharge: 299,
-        seatsTotal: 60, seatsAvailable: 15,
-        includes: [
-            'Meetup coordination',
-            'Event management support',
-            'Basic assistance support',
-            'Registration handling',
-        ],
-    },
-    '2': {
-        id: '2',
-        title: 'Morning Walk & Talk',
-        description: 'A gentle morning walk followed by a group discussion session at the botanical garden.',
-        date: '28 Jun 2026', dayOfWeek: 'Sunday',
-        timeStart: '07:00 AM', timeEnd: '09:00 AM',
-        venue: 'Lalbagh Botanical Garden',
-        pinCode: '560027',
-        organizer: 'Ayuxa Senior Community',
-        serviceCharge: 199,
-        seatsTotal: 30, seatsAvailable: 8,
-        includes: ['Walk coordination', 'Basic assistance support'],
-    },
-};
 
 export default function MeetupDetailsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { id } = useLocalSearchParams<{ id: string }>();
-    const meetup = MOCK_MEETUPS[id ?? '1'];
+    const [meetup, setMeetup] = useState<Meetup | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!id) return;
+        meetupService.getMeetupById(id).then(res => {
+            if (res.success && res.data) setMeetup(res.data);
+        }).finally(() => setLoading(false));
+    }, [id]);
+
+    if (loading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5FAF7' }}>
+                <ActivityIndicator size="large" color={PRIMARY} />
+            </View>
+        );
+    }
 
     if (!meetup) return null;
 
-    const seatsLeft = meetup.seatsAvailable;
+    const seatsLeft = meetup.availableSeats;
     const seatsLow = seatsLeft <= 15;
+    const eventDate = new Date(meetup.eventDate);
+    const dateStr = eventDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dayOfWeek = eventDate.toLocaleDateString('en-IN', { weekday: 'long' });
 
     return (
         <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -69,11 +56,15 @@ export default function MeetupDetailsScreen() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                {/* Banner */}
-                <View style={styles.banner}>
-                    <Ionicons name="people" size={56} color="rgba(255,255,255,0.35)" />
-                    <Text style={styles.bannerLabel}>Community Meetup</Text>
-                </View>
+                {/* Banner with Image */}
+                {meetup.imageUrl ? (
+                    <Image source={{ uri: meetup.imageUrl }} style={styles.bannerImage} resizeMode="cover" />
+                ) : (
+                    <View style={styles.banner}>
+                        <Ionicons name="people" size={56} color="rgba(255,255,255,0.35)" />
+                        <Text style={styles.bannerLabel}>Community Meetup</Text>
+                    </View>
+                )}
 
                 {/* Main card */}
                 <View style={styles.card}>
@@ -91,11 +82,11 @@ export default function MeetupDetailsScreen() {
 
                     {/* Details */}
                     {[
-                        { icon: 'calendar-outline', label: 'Date', value: `${meetup.date}, ${meetup.dayOfWeek}` },
-                        { icon: 'time-outline', label: 'Time', value: `${meetup.timeStart} – ${meetup.timeEnd}` },
+                        { icon: 'calendar-outline', label: 'Date', value: `${dateStr}, ${dayOfWeek}` },
+                        { icon: 'time-outline', label: 'Time', value: meetup.endTime ? `${meetup.startTime} – ${meetup.endTime}` : meetup.startTime },
                         { icon: 'location-outline', label: 'Venue', value: meetup.venue },
-                        { icon: 'keypad-outline', label: 'PIN Code', value: `${meetup.pinCode}  (Only for this area)` },
-                        { icon: 'person-outline', label: 'Organizer', value: meetup.organizer },
+                        { icon: 'keypad-outline', label: 'PIN Code', value: meetup.pinCode ? `${meetup.pinCode}  (Only for this area)` : '—' },
+                        { icon: 'person-outline', label: 'Organizer', value: meetup.organizerName ?? 'Ayuxa Senior Community' },
                     ].map((row, i) => (
                         <View key={i} style={styles.detailRow}>
                             <View style={styles.detailIcon}>
@@ -111,15 +102,19 @@ export default function MeetupDetailsScreen() {
                     <View style={styles.divider} />
 
                     {/* What's included */}
-                    <Text style={styles.sectionLabel}>What's Included</Text>
-                    <View style={styles.includesBox}>
-                        {meetup.includes.map((item: string, i: number) => (
-                            <View key={i} style={styles.includeRow}>
-                                <Ionicons name="checkmark" size={14} color={PRIMARY} />
-                                <Text style={styles.includeText}>{item}</Text>
+                    {meetup.includedItems.length > 0 && (
+                        <>
+                            <Text style={styles.sectionLabel}>What's Included</Text>
+                            <View style={styles.includesBox}>
+                                {meetup.includedItems.map((item: string, i: number) => (
+                                    <View key={i} style={styles.includeRow}>
+                                        <Ionicons name="checkmark" size={14} color={PRIMARY} />
+                                        <Text style={styles.includeText}>{item}</Text>
+                                    </View>
+                                ))}
                             </View>
-                        ))}
-                    </View>
+                        </>
+                    )}
                 </View>
 
                 <View style={{ height: 100 }} />
@@ -129,11 +124,22 @@ export default function MeetupDetailsScreen() {
             <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
                 <View>
                     <Text style={styles.footerLabel}>Service Charge</Text>
-                    <Text style={styles.footerPrice}>₹{meetup.serviceCharge}</Text>
+                    <Text style={styles.footerPrice}>₹{meetup.serviceCharge ?? 299}</Text>
                 </View>
                 <TouchableOpacity
                     style={styles.joinBtn}
-                    onPress={() => router.push({ pathname: '/meetup/register', params: { id: meetup.id } } as any)}
+                    onPress={() => router.push({
+                        pathname: '/meetup/register',
+                        params: {
+                            id: meetup.id,
+                            meetupEventDate: meetup.eventDate,
+                            meetupStartTime: meetup.startTime,
+                            meetupEndTime: meetup.endTime ?? '',
+                            meetupVenue: meetup.venue,
+                            meetupPinCode: meetup.pinCode ?? '',
+                            meetupServiceCharge: String(meetup.serviceCharge ?? 299),
+                        },
+                    } as any)}
                     activeOpacity={0.85}
                 >
                     <Text style={styles.joinBtnText}>Join Now</Text>
@@ -154,6 +160,9 @@ const styles = StyleSheet.create({
     backBtn: { padding: 4 },
     headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: '#fff' },
     scrollContent: { paddingBottom: 20 },
+    bannerImage: {
+        width: '100%', height: 200,
+    },
     banner: {
         height: 180, backgroundColor: PRIMARY,
         justifyContent: 'center', alignItems: 'center', gap: 8,

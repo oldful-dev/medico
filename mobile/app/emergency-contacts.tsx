@@ -10,7 +10,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useUser } from '@/context/UserContext';
 import { userService } from '@/services/api/userService';
-
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
+import { Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 
 interface EmergencyContact {
     id: string;
@@ -24,6 +26,10 @@ const RELATIONSHIPS = ['Son', 'Daughter', 'Spouse', 'Neighbour', 'Sibling', 'Fri
 export default function EmergencyContactsScreen() {
     const router = useRouter();
     const { profile, setProfile } = useUser();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(colors, isDarkMode);
+
     const [showAddForm, setShowAddForm] = useState(false);
     const [saving, setSaving] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -129,7 +135,7 @@ export default function EmergencyContactsScreen() {
 
                 {contacts.length === 0 && !showAddForm && (
                     <View style={styles.emptyState}>
-                        <Ionicons name="people-outline" size={56} color="#AAAEAC" />
+                        <Ionicons name="people-outline" size={56} color={colors.textMuted} />
                         <Text style={styles.emptyTitle}>No Emergency Contacts</Text>
                         <Text style={styles.emptyDesc}>Add your son, daughter, or neighbour as an emergency contact.</Text>
                     </View>
@@ -140,7 +146,7 @@ export default function EmergencyContactsScreen() {
                         <View style={styles.cardTop}>
                             <View style={styles.contactInfo}>
                                 <View style={styles.relIconCircle}>
-                                    <Ionicons name={getRelIcon(contact.relationship)} size={20} color="#048357" />
+                                    <Ionicons name={getRelIcon(contact.relationship)} size={20} color={colors.primary} />
                                 </View>
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.contactName}>{contact.name}</Text>
@@ -190,9 +196,9 @@ export default function EmergencyContactsScreen() {
                             <Text style={styles.notifyDesc}>Emergency contacts will receive a notification for each service booking.</Text>
                         </View>
                         <Switch
-                            trackColor={{ false: '#AAAEAC', true: '#048357' }}
+                            trackColor={{ false: colors.textMuted, true: colors.primary }}
                             thumbColor="#FFFFFF"
-                            ios_backgroundColor="#AAAEAC"
+                            ios_backgroundColor={colors.textMuted}
                             onValueChange={setNotifyEnabled}
                             value={notifyEnabled}
                         />
@@ -202,8 +208,8 @@ export default function EmergencyContactsScreen() {
                 {showAddForm && (
                     <View style={styles.addForm}>
                         <Text style={styles.formTitle}>Add Emergency Contact</Text>
-                        <TextInput style={styles.input} placeholder="Full Name *" placeholderTextColor="#898989" value={newName} onChangeText={setNewName} />
-                        <TextInput style={styles.input} placeholder="Phone Number *" placeholderTextColor="#898989" keyboardType="phone-pad" value={newPhone} onChangeText={setNewPhone} />
+                        <TextInput style={styles.input} placeholder="Full Name *" placeholderTextColor={colors.textMuted} value={newName} onChangeText={setNewName} />
+                        <TextInput style={styles.input} placeholder="Phone Number *" placeholderTextColor={colors.textMuted} keyboardType="phone-pad" value={newPhone} onChangeText={setNewPhone} />
 
                         <Text style={styles.relLabel}>Relationship *</Text>
                         <View style={styles.relRow}>
@@ -226,7 +232,7 @@ export default function EmergencyContactsScreen() {
                 )}
 
                 <TouchableOpacity style={styles.addButton} onPress={() => setShowAddForm(!showAddForm)} activeOpacity={0.7}>
-                    <Ionicons name="add-circle-outline" size={22} color="#048357" />
+                    <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
                     <Text style={styles.addButtonText}>Add Emergency Contact</Text>
                 </TouchableOpacity>
             </KeyboardAwareScrollView>
@@ -234,9 +240,9 @@ export default function EmergencyContactsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: '#048357' },
-    headerSafe: { backgroundColor: '#048357' },
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.primary },
+    headerSafe: { backgroundColor: colors.primary },
     headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
     backBtn: { padding: 4, marginRight: 8 },
     headerTitle: {
@@ -244,104 +250,104 @@ const styles = StyleSheet.create({
         fontSize: 20, color: '#FFFFFF',
         flex: 1,
     },
-    scrollView: { flex: 1, backgroundColor: '#FFFFE3', borderTopLeftRadius: 30, borderTopRightRadius: 30 },
+    scrollView: { flex: 1, backgroundColor: colors.bgScreen, borderTopLeftRadius: 30, borderTopRightRadius: 30 },
     scrollContent: { padding: 20, paddingBottom: 50 },
 
     emptyState: { alignItems: 'center', marginTop: 50, marginBottom: 30 },
     emptyTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 18, color: '#2F2F2F', marginTop: 14,
+        fontSize: 18, color: colors.textDark, marginTop: 14,
     },
     emptyDesc: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 14, color: '#898989', marginTop: 4, textAlign: 'center',
+        fontSize: 14, color: colors.textMuted, marginTop: 4, textAlign: 'center',
     },
 
     card: {
-        backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, marginBottom: 12,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+        backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 12,
+        shadowColor: colors.shadowColor, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
     },
     cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
     contactInfo: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-    relIconCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center' },
+    relIconCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : '#E8F5E9', justifyContent: 'center', alignItems: 'center' },
     contactName: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 14, color: '#2F2F2F',
+        fontSize: 14, color: colors.textDark,
     },
     contactRel: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 12, color: '#898989', marginTop: 1,
+        fontSize: 12, color: colors.textMuted, marginTop: 1,
     },
     contactPhone: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 13, color: '#048357',
+        fontSize: 13, color: colors.primary,
     },
-    contactActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, borderTopWidth: 1, borderTopColor: '#F0F0F0', paddingTop: 10 },
-    callBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, backgroundColor: '#048357' },
+    contactActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, borderTopWidth: 1, borderTopColor: colors.borderLight, paddingTop: 10 },
+    callBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, backgroundColor: colors.primary },
     waBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, backgroundColor: '#25D366' },
     callBtnText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 12, color: '#FFFFFF',
     },
-    removeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, borderWidth: 1, borderColor: '#FFCDD2' },
+    removeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, borderWidth: 1, borderColor: isDarkMode ? '#EF4444' : '#FFCDD2' },
     removeBtnText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 12, color: '#FF3B30',
     },
 
     notifyCard: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(4, 131, 87, 0.05)',
-        borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#E8F5E9',
+        flexDirection: 'row', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(52,199,89,0.05)' : 'rgba(4, 131, 87, 0.05)',
+        borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.borderLight,
     },
     notifyTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 14, color: '#2F2F2F', marginBottom: 4,
+        fontSize: 14, color: colors.textDark, marginBottom: 4,
     },
     notifyDesc: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 12, color: '#898989',
+        fontSize: 12, color: colors.textMuted,
     },
 
-    addForm: { backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: '#048357' },
+    addForm: { backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: colors.primary },
     formTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 16, color: '#2F2F2F', marginBottom: 12,
+        fontSize: 16, color: colors.textDark, marginBottom: 12,
     },
     input: {
-        backgroundColor: '#F9F9F9', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
+        backgroundColor: colors.bgCardMuted, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 14, color: '#2F2F2F', borderWidth: 1, borderColor: '#E5E5E5', marginBottom: 10,
+        fontSize: 14, color: colors.textDark, borderWidth: 1, borderColor: colors.borderLight, marginBottom: 10,
     },
     relLabel: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 13, color: '#2F2F2F', marginBottom: 8,
+        fontSize: 13, color: colors.textDark, marginBottom: 8,
     },
     relRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
-    relChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#E5E5E5', backgroundColor: '#FFF' },
-    relChipActive: { borderColor: '#048357', backgroundColor: 'rgba(4, 131, 87, 0.08)' },
+    relChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: colors.borderLight, backgroundColor: colors.bgCardMuted },
+    relChipActive: { borderColor: colors.primary, backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : 'rgba(4, 131, 87, 0.08)' },
     relChipText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 13, color: '#898989',
+        fontSize: 13, color: colors.textMuted,
     },
-    relChipTextActive: { color: '#048357' },
+    relChipTextActive: { color: colors.primary },
     formActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 4 },
-    cancelBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#E5E5E5' },
+    cancelBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: colors.borderLight },
     cancelBtnText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 14, color: '#555555',
+        fontSize: 14, color: colors.textDark,
     },
-    saveBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: '#048357' },
+    saveBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: colors.primary },
     saveBtnText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 14, color: '#FFFFFF',
     },
     addButton: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-        paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#048357',
-        backgroundColor: '#F0FFF4', marginTop: 4,
+        paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.primary,
+        backgroundColor: isDarkMode ? 'rgba(52,199,89,0.05)' : '#F0FFF4', marginTop: 4,
     },
     addButtonText: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 15, color: '#048357',
+        fontSize: 15, color: colors.primary,
     },
 });

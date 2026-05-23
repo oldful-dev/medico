@@ -12,7 +12,9 @@ import {
   useWindowDimensions,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
+import * as Location from 'expo-location';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +31,7 @@ import { getAssetUrl } from '@/utils/getAssetUrl';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BannerSlider } from '@/components/BannerSlider';
 import { bannerService, Banner } from '@/services/api/bannerService';
+import { meetupService } from '@/services/api/meetupService';
 
 const logoSmall = require('@/assets/images/onlylogo.png');
 
@@ -178,8 +181,8 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGr
 export default function HomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const { profile } = useUser();
-  const { cities, setSelectedCity, selectedCity } = useAppConfig() as any;
+  const { profile, selectedCity, setSelectedCity } = useUser();
+  const { cities } = useAppConfig();
   const colors = useThemeColors();
   const { isDarkMode } = useTheme();
 
@@ -187,17 +190,115 @@ export default function HomeScreen() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [currentLocationStr, setCurrentLocationStr] = useState('Loading...');
   const [isCitySupported, setIsCitySupported] = useState(true);
+  const [featuredMeetup, setFeaturedMeetup] = useState<any>(null);
+  const [userPinCode, setUserPinCode] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      await sduiService.init();
-      setHomeConfig(sduiService.getHomeConfig());
+  const fetchFeaturedMeetup = useCallback(async () => {
+    try {
+      const coords = await locationService.getCurrentLocation();
+      const pinCode = await locationService.getPincodeFromAddress(coords);
+      if (pinCode) {
+        const res = await meetupService.getMeetups({ pinCode });
+        if (res.success && res.data?.length > 0) {
+          const featured = res.data.find((m: any) => m.isFeatured);
+          setFeaturedMeetup(featured ?? null);
+        } else {
+          setFeaturedMeetup(null);
+        }
+      }
+    } catch {
+      // Silently fail if GPS/meetup fetch fails
+    }
+  }, []);
 
-      // Fetch banners from admin API
+  const refetchAllHomeData = useCallback(async () => {
+    // Re-init SDUI config
+    await sduiService.init();
+    setHomeConfig(sduiService.getHomeConfig());
+
+    // Refetch banners
+    try {
       const homeBanners = await bannerService.getHomeBanners();
       setBanners(homeBanners);
-    })();
-  }, []);
+    } catch {
+      // Silently fail on banner fetch
+    }
+
+    // Refetch location and featured meetup
+    let detectedPinCode: string | null = null;
+    try {
+      const coords = await locationService.getCurrentLocation();
+      const address = await locationService.getAddressFromCoordinates(coords);
+      const locality = address.split(',')[0] || 'Unknown Location';
+      setCurrentLocationStr(locality);
+
+      // Detect pincode
+      const pinCode = await locationService.getPincodeFromAddress(coords, address);
+      detectedPinCode = pinCode ?? null;
+      setUserPinCode(detectedPinCode);
+
+      const CITY_SYNONYMS: Record<string, string[]> = {
+        'Bangalore': ['bengaluru', 'bangalore urban', 'bangalore rural'],
+        'Gurgaon': ['gurugram'],
+        'Delhi NCR': ['new delhi', 'delhi', 'noida', 'gurgaon', 'gurugram', 'faridabad', 'ghaziabad'],
+        'Mumbai': ['bombay', 'navi mumbai', 'thane'],
+      };
+
+      const isMatch = (cityName: string, addressStr: string) => {
+        const addr = addressStr.toLowerCase();
+        const primary = cityName.toLowerCase();
+        if (addr.includes(primary)) return true;
+        const synonyms = CITY_SYNONYMS[cityName] || [];
+        return synonyms.some(s => addr.includes(s));
+      };
+
+      const detectedCityMatch = cities.find((c: any) => isMatch(c.name, address));
+      if (detectedCityMatch) {
+        setSelectedCity(detectedCityMatch.name);
+        setIsCitySupported(true);
+      } else {
+        setIsCitySupported(false);
+      }
+    } catch {
+      setCurrentLocationStr('Location Unavailable');
+      setUserPinCode(null);
+      setFeaturedMeetup(null);
+      return;
+    }
+
+    // Refetch featured meetup only if pincode is detected
+    if (detectedPinCode) {
+      try {
+        const res = await meetupService.getMeetups({ pinCode: detectedPinCode });
+        if (res.success && res.data?.length > 0) {
+          const featured = res.data.find((m: any) => m.isFeatured);
+          // Only show if meetup's pincode matches user's pincode
+          if (featured && featured.pinCode === detectedPinCode) {
+            setFeaturedMeetup(featured);
+          } else {
+            setFeaturedMeetup(null);
+          }
+        } else {
+          setFeaturedMeetup(null);
+        }
+      } catch {
+        setFeaturedMeetup(null);
+      }
+    } else {
+      setFeaturedMeetup(null);
+    }
+  }, [cities, setSelectedCity]);
+
+  useEffect(() => {
+    refetchAllHomeData();
+  }, [refetchAllHomeData]);
+
+  // Strict refetch ALL data when home screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refetchAllHomeData();
+    }, [refetchAllHomeData])
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -211,8 +312,28 @@ export default function HomeScreen() {
           }
 
           setCurrentLocationStr('Loading...');
-          const hasPermission = await locationService.requestPermission();
-          if (hasPermission) {
+
+          const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync();
+
+          if (status !== 'granted') {
+            if (!canAskAgain) {
+              // Permanently denied — user must enable in Settings
+              setCurrentLocationStr('Enable in Settings');
+              Alert.alert(
+                'Location Permission Required',
+                'Location access was denied. Please enable it in App Settings to auto-detect your city.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Open Settings', onPress: () => Linking.openSettings() },
+                ],
+              );
+            } else {
+              setCurrentLocationStr('Location Required');
+            }
+            return;
+          }
+
+          try {
             const coords = await locationService.getCurrentLocation();
             const address = await locationService.getAddressFromCoordinates(coords);
             const locality = address.split(',')[0] || 'Unknown Location';
@@ -240,11 +361,11 @@ export default function HomeScreen() {
             } else {
               setIsCitySupported(false);
             }
-          } else {
-            setCurrentLocationStr('Location Required');
+          } catch (e) {
+            setCurrentLocationStr('Location Unavailable');
           }
         } catch (e) {
-          setCurrentLocationStr('Permission Required');
+          setCurrentLocationStr('Location Unavailable');
         }
       })();
     }, [selectedCity, cities, setSelectedCity])
@@ -337,6 +458,55 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
+
+        {/* Featured Meetup Card */}
+        {featuredMeetup && (() => {
+          const { date } = (() => {
+            const d = new Date(featuredMeetup.eventDate);
+            return {
+              date: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+            };
+          })();
+          return (
+            <TouchableOpacity
+              style={s.featuredMeetupCard}
+              onPress={() => router.push({ pathname: '/meetup/details', params: { id: featuredMeetup.id } } as any)}
+              activeOpacity={0.85}
+            >
+              {featuredMeetup.imageUrl && (
+                <Image
+                  source={{ uri: featuredMeetup.imageUrl }}
+                  style={s.featuredMeetupImage}
+                  resizeMode="cover"
+                />
+              )}
+              <View style={s.featuredMeetupOverlay}>
+                <View style={s.featuredMeetupHeader}>
+                  <Text style={s.featuredMeetupBadge}>Featured Event</Text>
+                </View>
+                <Text style={s.featuredMeetupTitle} numberOfLines={2}>{featuredMeetup.title}</Text>
+                <View style={s.featuredMeetupMeta}>
+                  <View style={s.featuredMeetupMetaItem}>
+                    <Ionicons name="calendar-outline" size={13} color="#fff" />
+                    <Text style={s.featuredMeetupMetaText}>{date}</Text>
+                  </View>
+                  <View style={s.featuredMeetupMetaItem}>
+                    <Ionicons name="time-outline" size={13} color="#fff" />
+                    <Text style={s.featuredMeetupMetaText}>{featuredMeetup.startTime}</Text>
+                  </View>
+                  <View style={s.featuredMeetupMetaItem}>
+                    <Ionicons name="location-outline" size={13} color="#fff" />
+                    <Text style={s.featuredMeetupMetaText}>{featuredMeetup.venue}</Text>
+                  </View>
+                </View>
+                <View style={s.featuredMeetupFooter}>
+                  <Text style={s.featuredMeetupPrice}>₹{featuredMeetup.serviceCharge}</Text>
+                  <Ionicons name="arrow-forward" size={16} color="#fff" />
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        })()}
 
         {/* Banner Slider — Option 1: After Greeting (Admin-Managed) */}
         {banners.length > 0 && (
@@ -473,6 +643,39 @@ function makeStyles(c: ThemeColors) {
     greetingAvatarContainer: { width: 90, height: 90, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
     greetingAvatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#FFFFFF' },
     greetingAvatarPlaceholder: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center' },
+
+    featuredMeetupCard: {
+      marginHorizontal: Spacing.cardMargin,
+      marginTop: Spacing.md,
+      marginBottom: Spacing.md,
+      borderRadius: Radius.lg,
+      overflow: 'hidden',
+      height: 220,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 5,
+    },
+    featuredMeetupImage: {
+      position: 'absolute',
+      width: '100%',
+      height: '100%',
+    },
+    featuredMeetupOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(2, 116, 63, 0.85)',
+      padding: 14,
+      justifyContent: 'space-between',
+    },
+    featuredMeetupHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    featuredMeetupBadge: { fontFamily: Fonts.semiBold, fontSize: 10, color: '#FFFFFF', backgroundColor: 'rgba(255,255,255,0.25)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+    featuredMeetupTitle: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#FFFFFF', marginTop: 6, lineHeight: 18 },
+    featuredMeetupMeta: { gap: 8 },
+    featuredMeetupMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    featuredMeetupMetaText: { fontFamily: Fonts.regular, fontSize: 11, color: 'rgba(255,255,255,0.85)' },
+    featuredMeetupFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.2)' },
+    featuredMeetupPrice: { fontFamily: Fonts.bold, fontSize: 16, color: '#FFFFFF' },
 
     quickServiceCard: {
       marginHorizontal: Spacing.cardMargin,

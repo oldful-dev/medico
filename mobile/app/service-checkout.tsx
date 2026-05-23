@@ -479,6 +479,27 @@ export default function ServiceCheckoutScreen() {
 
             <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} showsVerticalScrollIndicator={false}>
 
+                {/* Meetup Service & Pickup Details */}
+                {params.meetupId && params.pickupAddress && (
+                    <View style={styles.card}>
+                        <Text style={styles.cardTitle}>Service & Pickup Details</Text>
+                        <View style={styles.detailRow}>
+                            <Ionicons name="list-outline" size={16} color={Colors.primary} />
+                            <View style={{ flex: 1, marginLeft: 8 }}>
+                                <Text style={styles.detailLabel}>Service</Text>
+                                <Text style={styles.detailValue}>{label}</Text>
+                            </View>
+                        </View>
+                        <View style={styles.detailRow}>
+                            <Ionicons name="location-outline" size={16} color={Colors.primary} />
+                            <View style={{ flex: 1, marginLeft: 8 }}>
+                                <Text style={styles.detailLabel}>Pickup Address</Text>
+                                <Text style={styles.detailValue}>{params.pickupAddress}</Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
+
                 {/* Order Summary */}
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>Service Summary</Text>
@@ -707,6 +728,10 @@ const styles = StyleSheet.create({
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     rowLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textLight },
     rowValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark },
+
+    detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, paddingVertical: Spacing.sm },
+    detailLabel: { fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: Colors.textLight },
+    detailValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark, marginTop: 4 },
 
     breakdownSection: {
         backgroundColor: '#FAFAFA',

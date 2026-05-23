@@ -4,10 +4,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
+import { Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function PaymentSuccessScreen() {
     const router = useRouter();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(colors, isDarkMode);
     const params = useLocalSearchParams<{
         invoiceNumber?: string;
         invoicePdfUrl?: string;
@@ -40,7 +45,7 @@ export default function PaymentSuccessScreen() {
 
     return (
         <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-            <StatusBar style="dark" />
+            <StatusBar style={isDarkMode ? "light" : "dark"} />
 
             <View style={styles.container}>
                 {/* Success icon */}
@@ -116,7 +121,7 @@ export default function PaymentSuccessScreen() {
 
                 {!isSubscriptionSuccess && (
                     <View style={styles.infoBox}>
-                        <Ionicons name="information-circle-outline" size={18} color={Colors.primary} />
+                        <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
                         <Text style={styles.infoText}>
                             A receipt has been sent to your registered email and WhatsApp.
                         </Text>
@@ -156,8 +161,8 @@ export default function PaymentSuccessScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: '#fff' },
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.bgScreen },
     container: {
         flex: 1,
         alignItems: 'center',
@@ -167,10 +172,10 @@ const styles = StyleSheet.create({
     },
     iconCircle: {
         width: 100, height: 100, borderRadius: 50,
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         alignItems: 'center', justifyContent: 'center',
         marginBottom: Spacing.md,
-        shadowColor: Colors.primary,
+        shadowColor: colors.primary,
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.3,
         shadowRadius: 16,
@@ -183,18 +188,18 @@ const styles = StyleSheet.create({
     title: {
         fontFamily: Fonts.semiBold,
         fontSize: 24,
-        color: Colors.textDark,
+        color: colors.textDark,
         textAlign: 'center',
     },
     subtitle: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
-        color: Colors.textLight,
+        color: colors.textLight,
         textAlign: 'center',
         lineHeight: 22,
     },
     amountBadge: {
-        backgroundColor: '#E8F5E9',
+        backgroundColor: isDarkMode ? 'rgba(46,125,50,0.1)' : '#E8F5E9',
         paddingHorizontal: Spacing.xl,
         paddingVertical: Spacing.sm,
         borderRadius: Radius.full ?? 999,
@@ -207,18 +212,18 @@ const styles = StyleSheet.create({
     },
     benefitsCard: {
         width: '100%',
-        backgroundColor: '#F9F9F9',
+        backgroundColor: colors.bgCardMuted,
         borderRadius: Radius.lg ?? 12,
         padding: Spacing.lg,
         borderWidth: 1,
-        borderColor: '#EEEEEE',
+        borderColor: colors.borderLight,
         marginTop: Spacing.sm,
         gap: Spacing.md,
     },
     benefitsTitle: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.textDark,
+        color: colors.textDark,
         marginBottom: Spacing.xs,
     },
     benefitRow: {
@@ -235,24 +240,24 @@ const styles = StyleSheet.create({
     benefitName: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.caption ?? 13,
-        color: Colors.textDark,
+        color: colors.textDark,
     },
     benefitDesc: {
         fontFamily: Fonts.regular,
         fontSize: 11,
-        color: Colors.textLight,
+        color: colors.textLight,
         marginTop: 1,
     },
     invoiceText: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.small ?? 13,
-        color: Colors.textLight,
+        color: colors.textLight,
     },
     infoBox: {
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: 8,
-        backgroundColor: '#F0FAF4',
+        backgroundColor: isDarkMode ? 'rgba(46,125,50,0.1)' : '#F0FAF4',
         padding: Spacing.md,
         borderRadius: Radius.md,
         marginTop: Spacing.sm,
@@ -261,12 +266,12 @@ const styles = StyleSheet.create({
         flex: 1,
         fontFamily: Fonts.regular,
         fontSize: FontSize.small ?? 13,
-        color: Colors.textDark,
+        color: colors.textDark,
         lineHeight: 20,
     },
     primaryBtn: {
         width: '100%',
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         paddingVertical: 16,
         borderRadius: Radius.lg ?? 12,
         alignItems: 'center',
@@ -286,23 +291,23 @@ const styles = StyleSheet.create({
         borderRadius: Radius.lg ?? 12,
         alignItems: 'center',
         borderWidth: 1.5,
-        borderColor: Colors.primary,
+        borderColor: colors.primary,
     },
     secondaryBtnText: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
-        color: Colors.primary,
+        color: colors.primary,
     },
     tertiaryBtn: {
         width: '100%',
         paddingVertical: 12,
         borderRadius: Radius.lg ?? 12,
         alignItems: 'center',
-        backgroundColor: '#F3F4F6',
+        backgroundColor: colors.bgCardMuted,
     },
     tertiaryBtnText: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
-        color: Colors.textDark,
+        color: colors.textDark,
     },
 });

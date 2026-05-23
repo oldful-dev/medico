@@ -328,6 +328,16 @@ export default function AccountScreen() {
                     colors={colors}
                 />
 
+                <MenuRow
+                    icon="people-outline"
+                    iconBg="#D1FAE5"
+                    iconColor="#02743F"
+                    title="Local Meetups"
+                    subtitle="Senior community events & meetups near you"
+                    onPress={() => router.push('/meetup' as any)}
+                    colors={colors}
+                />
+
                 <SectionHeading title="Addresses & People" colors={colors} />
                 <MenuRow
                     icon="location-outline"
@@ -474,7 +484,57 @@ export default function AccountScreen() {
                 )}
 
                 {/* ═══════════════════════════════════════
-                    SECTION 8 — Social Media
+                    SECTION 8 — Help & Support
+                   ═══════════════════════════════════════ */}
+                <SectionHeading title="Help & Support" colors={colors} />
+
+                {/* Help & Support Dropdown */}
+                <TouchableOpacity
+                    style={[styles.docDropdownHeader, { borderColor: colors.border }]}
+                    onPress={() => setDocsExpanded(!docsExpanded)}
+                    activeOpacity={0.7}
+                >
+                    <View style={styles.docDropdownLeft}>
+                        <View style={[styles.docDropdownIcon, { backgroundColor: '#F3F3F3' }]}>
+                            <Ionicons name="help-circle-outline" size={18} color="#616161" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.docDropdownTitle}>Get Help</Text>
+                            <Text style={styles.docDropdownSub}>{docsExpanded ? 'Tap to collapse' : 'Support options'}</Text>
+                        </View>
+                    </View>
+                    <Ionicons name={docsExpanded ? "chevron-up" : "chevron-down"} size={20} color={colors.text} />
+                </TouchableOpacity>
+
+                {/* Expanded Help Content */}
+                {docsExpanded && (
+                    <View style={[styles.docDropdownContent, { borderColor: colors.border }]}>
+                        <MenuRow icon="call-outline" iconBg="#DCF3FF" iconColor="#0284C7" title="Call Support" subtitle="Speak to our support team" onPress={() => Linking.openURL('tel:+918001234567')} colors={colors} />
+                        <MenuRow icon="mail-outline" iconBg="#FFF3E0" iconColor="#F57C00" title="Email Support" subtitle="Get help via email" onPress={() => router.push('/profile/email-support' as any)} colors={colors} />
+                        <MenuRow icon="chatbubble-outline" iconBg="#F3E5F5" iconColor="#7C3AED" title="Live Chat" subtitle="Chat with us now" onPress={() => router.push('/profile/live-chat' as any)} colors={colors} />
+                        <MenuRow icon="ticket-outline" iconBg="#FCE4EC" iconColor="#EC4899" title="Raise Ticket" subtitle="Create a support ticket" onPress={() => router.push('/profile/raise-ticket' as any)} colors={colors} />
+                        <MenuRow icon="help-outline" iconBg="#E8F5E9" iconColor="#2E7D32" title="FAQ" subtitle="Frequently asked questions" onPress={() => router.push('/profile/faq' as any)} colors={colors} />
+                        <TouchableOpacity
+                            style={[styles.emergencyBtn, { borderColor: colors.bgCard }]}
+                            onPress={() => Alert.alert('Emergency Assistance', 'Connecting you to emergency support...')}
+                            activeOpacity={0.7}
+                        >
+                            <View style={styles.emergencyIcon}>
+                                <Ionicons name="alert-circle-outline" size={18} color="#DC2626" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={styles.emergencyTitle}>Emergency Assistance</Text>
+                                <Text style={styles.emergencySub}>Urgent help - 24/7 available</Text>
+                            </View>
+                            <View style={styles.emergencyPulse}>
+                                <View style={styles.emergencyPulseDot} />
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* ═══════════════════════════════════════
+                    SECTION 9 — Social Media
                    ═══════════════════════════════════════ */}
                 <SectionHeading title="Follow Us" colors={colors} />
                 <View style={styles.socialRow}>
@@ -734,6 +794,52 @@ function makeStyles(c: ThemeColors) {
             borderTopRightRadius: 0,
             overflow: 'hidden',
             marginBottom: Spacing.lg,
+        },
+
+        emergencyBtn: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            borderWidth: 2,
+            borderColor: '#FEE2E2',
+            backgroundColor: '#FEF2F2',
+            borderRadius: Radius.md,
+            padding: Spacing.md,
+            marginHorizontal: Spacing.md,
+            marginBottom: Spacing.md,
+            gap: Spacing.md,
+        },
+        emergencyIcon: {
+            width: 40,
+            height: 40,
+            borderRadius: Radius.sm,
+            backgroundColor: '#FFE4E6',
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        emergencyTitle: {
+            fontFamily: Fonts.semiBold,
+            fontSize: FontSize.body,
+            color: '#DC2626',
+            marginBottom: 2,
+        },
+        emergencySub: {
+            fontFamily: Fonts.regular,
+            fontSize: FontSize.caption,
+            color: '#991B1B',
+        },
+        emergencyPulse: {
+            width: 28,
+            height: 28,
+            borderRadius: 14,
+            backgroundColor: '#FCA5A5',
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        emergencyPulseDot: {
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: '#DC2626',
         },
     });
 }

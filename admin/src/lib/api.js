@@ -293,6 +293,17 @@ export const waitlistAPI = {
     getAll: () => api.get('/waitlist'),
 };
 
+// ── Meetups ──────────────────────────────────────────
+export const meetupAPI = {
+    getAll: (params) => api.get('/meetups', { params }),
+    getById: (id) => api.get(`/meetups/${id}`),
+    create: (data) => api.post('/meetups/admin', data),
+    update: (id, data) => api.put(`/meetups/admin/${id}`, data),
+    delete: (id) => api.delete(`/meetups/admin/${id}`),
+    getRegistrations: (id) => api.get(`/meetups/admin/${id}/registrations`),
+    updateRegistrationStatus: (meetupId, regId, status) => api.put(`/meetups/admin/registrations/${regId}`, { status }),
+};
+
 // ── Activity Updates ──────────────────────────
 export const activityAPI = {
     // Admin: all updates across all orders (feed)

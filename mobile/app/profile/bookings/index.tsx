@@ -6,11 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { labService } from '@/services/api/labService';
 import { useUser } from '@/context/UserContext';
-
-const PRIMARY_GREEN = '#02743F';
-const TEXT_DARK = '#2F2F2F';
-const TEXT_MUTED = '#888888';
-const CARD_BORDER = '#E5E7EB';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 
 const TABS = ['Upcoming', 'Completed', 'Wellness', 'Health', 'Concierge'];
 
@@ -32,6 +29,9 @@ export default function BookingsScreen() {
     const router = useRouter();
     const { profile } = useUser();
     const insets = useSafeAreaInsets(); // eslint-disable-line @typescript-eslint/no-unused-vars
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(colors, isDarkMode);
     
     const [activeTab, setActiveTab] = useState(0);
     const [bookings, setBookings] = useState<UnifiedBooking[]>([]);
@@ -200,7 +200,7 @@ export default function BookingsScreen() {
                         ) : null}
                         {item.status === 'COMPLETED' && (
                             <TouchableOpacity style={styles.rebookBtn} onPress={() => handleRebook(item)}>
-                                <Ionicons name="refresh-outline" size={14} color={PRIMARY_GREEN} />
+                                <Ionicons name="refresh-outline" size={14} color={colors.primary} />
                                 <Text style={styles.rebookBtnText}>Rebook</Text>
                             </TouchableOpacity>
                         )}
@@ -223,11 +223,11 @@ export default function BookingsScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            <StatusBar backgroundColor="#FFFFFF" />
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} />
             
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color={TEXT_DARK} />
+                    <Ionicons name="arrow-back" size={24} color={colors.textDark} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>My Bookings</Text>
                 <View style={{ width: 24 }} />
@@ -256,7 +256,7 @@ export default function BookingsScreen() {
 
             {loading ? (
                 <View style={styles.center}>
-                    <ActivityIndicator size="large" color={PRIMARY_GREEN} />
+                    <ActivityIndicator size="large" color={colors.primary} />
                 </View>
             ) : (
                 <FlatList
@@ -267,7 +267,7 @@ export default function BookingsScreen() {
                     showsVerticalScrollIndicator={false}
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <Ionicons name="calendar-clear-outline" size={64} color="#E5E7EB" />
+                            <Ionicons name="calendar-clear-outline" size={64} color={colors.textLight} />
                             <Text style={styles.emptyTitle}>No bookings found</Text>
                             <Text style={styles.emptySubtitle}>You don't have any bookings in this section yet.</Text>
                         </View>
@@ -278,45 +278,45 @@ export default function BookingsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FAFAFA' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: CARD_BORDER },
-    headerTitle: { fontSize: 16, fontWeight: '600', color: TEXT_DARK, flex: 1, textAlign: 'center' },
-    tabsScroll: { backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: CARD_BORDER },
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.bgScreen },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+    headerTitle: { fontSize: 16, fontWeight: '600', color: colors.textDark, flex: 1, textAlign: 'center' },
+    tabsScroll: { backgroundColor: colors.bgCard, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
     tabsContent: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
-    tab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F3F4F6' },
-    tabActive: { backgroundColor: PRIMARY_GREEN },
-    tabText: { fontSize: 13, fontWeight: '500', color: TEXT_MUTED },
+    tab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.bgCardMuted },
+    tabActive: { backgroundColor: colors.primary },
+    tabText: { fontSize: 13, fontWeight: '500', color: colors.textMuted },
     tabTextActive: { color: '#FFFFFF', fontWeight: '600' },
     listContent: { padding: 16, paddingBottom: 40 },
-    card: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: CARD_BORDER, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-    badge: { backgroundColor: '#F0FDF4', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-    badgeText: { fontSize: 11, fontWeight: '600', color: PRIMARY_GREEN, textTransform: 'uppercase' },
+    card: { backgroundColor: colors.bgCard, borderRadius: 12, borderWidth: 1, borderColor: colors.borderLight, marginBottom: 16, shadowColor: colors.shadowColor, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+    badge: { backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : '#F0FDF4', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+    badgeText: { fontSize: 11, fontWeight: '600', color: colors.primary, textTransform: 'uppercase' },
     statusPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
     statusText: { fontSize: 11, fontWeight: '700' },
     cardBody: { padding: 14 },
-    bookingTitle: { fontSize: 15, fontWeight: '600', color: TEXT_DARK, marginBottom: 4 },
-    bookingId: { fontSize: 12, color: TEXT_MUTED, marginBottom: 10 },
+    bookingTitle: { fontSize: 15, fontWeight: '600', color: colors.textDark, marginBottom: 4 },
+    bookingId: { fontSize: 12, color: colors.textMuted, marginBottom: 10 },
     detailRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 5, gap: 8 },
-    detailText: { fontSize: 13, color: TEXT_DARK, flex: 1 },
-    staffRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, backgroundColor: '#F0FDF4', padding: 8, borderRadius: 8 },
-    staffAvatar: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#D1FAE5', justifyContent: 'center', alignItems: 'center' },
-    staffText: { fontSize: 12, color: TEXT_MUTED, flex: 1 },
-    staffName: { fontWeight: '600', color: TEXT_DARK },
-    cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#F9FAFB', borderBottomLeftRadius: 12, borderBottomRightRadius: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
-    amount: { fontSize: 15, fontWeight: '700', color: TEXT_DARK },
+    detailText: { fontSize: 13, color: colors.textDark, flex: 1 },
+    staffRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : '#F0FDF4', padding: 8, borderRadius: 8 },
+    staffAvatar: { width: 22, height: 22, borderRadius: 11, backgroundColor: isDarkMode ? 'rgba(52,199,89,0.2)' : '#D1FAE5', justifyContent: 'center', alignItems: 'center' },
+    staffText: { fontSize: 12, color: colors.textMuted, flex: 1 },
+    staffName: { fontWeight: '600', color: colors.textDark },
+    cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: colors.bgCardMuted, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, borderTopWidth: 1, borderTopColor: colors.borderLight },
+    amount: { fontSize: 15, fontWeight: '700', color: colors.textDark },
     footerActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-    actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: PRIMARY_GREEN, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 6 },
+    actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 6 },
     actionBtnText: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
-    rebookBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderColor: PRIMARY_GREEN, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 6 },
-    rebookBtnText: { color: PRIMARY_GREEN, fontSize: 12, fontWeight: '600' },
+    rebookBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderColor: colors.primary, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 6 },
+    rebookBtnText: { color: colors.primary, fontSize: 12, fontWeight: '600' },
     cancelBtn: { borderWidth: 1, borderColor: '#FCA5A5', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 6 },
     cancelBtnText: { color: '#DC2626', fontSize: 12, fontWeight: '600' },
-    outlineBtn: { borderWidth: 1, borderColor: CARD_BORDER, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 6, backgroundColor: '#FFFFFF' },
-    outlineBtnText: { color: TEXT_DARK, fontSize: 12, fontWeight: '600' },
+    outlineBtn: { borderWidth: 1, borderColor: colors.borderLight, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 6, backgroundColor: colors.bgCard },
+    outlineBtnText: { color: colors.textDark, fontSize: 12, fontWeight: '600' },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
-    emptyTitle: { fontSize: 16, fontWeight: '600', color: TEXT_DARK, marginTop: 16, marginBottom: 8 },
-    emptySubtitle: { fontSize: 14, color: TEXT_MUTED, textAlign: 'center' },
+    emptyTitle: { fontSize: 16, fontWeight: '600', color: colors.textDark, marginTop: 16, marginBottom: 8 },
+    emptySubtitle: { fontSize: 14, color: colors.textMuted, textAlign: 'center' },
 });

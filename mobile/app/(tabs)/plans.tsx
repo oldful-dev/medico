@@ -171,7 +171,7 @@ export default function PlansScreen() {
         } finally {
             setInitiating(null);
         }
-    };
+    }, [profile, activeCycle, userActiveSubscription, router, params]);
 
     if (isLoading) {
         return (

@@ -23,14 +23,17 @@ export const locationService = {
      * Get current GPS coordinates
      */
     getCurrentLocation: async (): Promise<LocationCoordinates> => {
-        const hasPermission = await locationService.requestPermission();
-        if (!hasPermission) {
-            throw new Error('Location permission denied');
+        let location: Location.LocationObject;
+        try {
+            location = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+            });
+        } catch {
+            // Fall back to last known position if fresh fix times out
+            const last = await Location.getLastKnownPositionAsync();
+            if (!last) throw new Error('Unable to get location');
+            location = last;
         }
-
-        const location = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.High,
-        });
 
         return {
             latitude: location.coords.latitude,

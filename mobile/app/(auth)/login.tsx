@@ -23,6 +23,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { OTPInput, GoogleIcon } from '@/components/common';
 import { Colors, Fonts, FontSize, Radius } from '@/constants/theme';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 import { authService, ApiError } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -41,6 +43,9 @@ export default function LoginScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const { login } = useAuth();
+    const colors = useThemeColors();
+    const { isDarkMode } = useTheme();
+    const styles = makeStyles(colors, isDarkMode);
 
     // ─── State ───
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -234,7 +239,7 @@ export default function LoginScreen() {
 
     return (
         <SafeAreaView style={styles.screen} edges={['top']}>
-            <StatusBar style="dark" />
+            <StatusBar style={isDarkMode ? "light" : "dark"} />
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -263,7 +268,7 @@ export default function LoginScreen() {
                         <TextInput
                             style={styles.input}
                             placeholder={t('auth.phone_placeholder')}
-                            placeholderTextColor="#999999"
+                            placeholderTextColor={colors.textMuted}
                             keyboardType="phone-pad"
                             maxLength={10}
                             value={phoneNumber}
@@ -329,7 +334,7 @@ export default function LoginScreen() {
                             {/* Auto-verifying indicator */}
                             {isLoading && (
                                 <View style={styles.verifyingRow}>
-                                    <ActivityIndicator size="small" color={Colors.primary} />
+                                    <ActivityIndicator size="small" color={colors.primary} />
                                     <Text style={styles.verifyingText}>{t('auth.verifying')}</Text>
                                 </View>
                             )}
@@ -354,14 +359,14 @@ export default function LoginScreen() {
                             disabled={isGoogleLoading}
                         >
                             {isGoogleLoading ? (
-                                <ActivityIndicator size="small" color={Colors.primary} />
+                                <ActivityIndicator size="small" color={colors.primary} />
                             ) : (
                                 <GoogleIcon size={24} />
                             )}
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.socialIconButton} activeOpacity={0.7}>
-                            <Ionicons name="logo-apple" size={24} color="#000000" />
+                            <Ionicons name="logo-apple" size={24} color={colors.textDark} />
                         </TouchableOpacity>
                     </View>
 
@@ -378,11 +383,11 @@ export default function LoginScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
     /* ─── Screen ─── */
     screen: {
         flex: 1,
-        backgroundColor: '#FFFFEE',
+        backgroundColor: isDarkMode ? colors.bgScreen : '#FFFFEE',
     },
     scrollView: {
         flex: 1,
@@ -394,8 +399,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 28,
         paddingVertical: 40,
     },
-
-
 
     /* ─── Logo ─── */
     logoContainer: {
@@ -412,7 +415,7 @@ const styles = StyleSheet.create({
     welcomeText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.heading2,
-        color: Colors.primary,
+        color: colors.primary,
         textAlign: 'center',
         marginBottom: 28,
     },
@@ -422,31 +425,31 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 55,
         borderWidth: 1,
-        borderColor: Colors.primaryDark,
+        borderColor: isDarkMode ? colors.borderLight : colors.primaryDark,
         borderRadius: Radius.md,
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 14,
         marginBottom: 16,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.bgCard,
     },
     countryCode: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
-        color: '#2F2F2F',
+        color: colors.textDark,
         marginRight: 8,
     },
     inputDivider: {
         width: 1,
         height: 24,
-        backgroundColor: '#D0D0D0',
+        backgroundColor: colors.borderLight,
         marginRight: 10,
     },
     input: {
         flex: 1,
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
-        color: '#2F2F2F',
+        color: colors.textDark,
         height: '100%',
     },
 
@@ -455,9 +458,9 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 50,
         borderRadius: Radius.md,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? colors.bgCard : '#FFFFFF',
         borderWidth: 1.5,
-        borderColor: Colors.primaryDark,
+        borderColor: isDarkMode ? colors.borderLight : colors.primaryDark,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 20,
@@ -468,7 +471,7 @@ const styles = StyleSheet.create({
     requestOtpButtonText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.button,
-        color: '#2F2F2F',
+        color: colors.textDark,
     },
 
     /* ─── OTP Section ─── */
@@ -480,7 +483,7 @@ const styles = StyleSheet.create({
     otpLabel: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.bodySmall,
-        color: '#777777',
+        color: colors.textMuted,
         marginBottom: 12,
         textAlign: 'center',
     },
@@ -503,17 +506,17 @@ const styles = StyleSheet.create({
     resendText: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.bodySmall,
-        color: Colors.textLight,
+        color: colors.textLight,
     },
     resendLink: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.bodySmall,
-        color: Colors.primaryDark,
+        color: colors.primary,
     },
     timerText: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.bodySmall,
-        color: '#9C9C9C',
+        color: colors.textMuted,
     },
 
     /* ─── Verifying indicator ─── */
@@ -528,7 +531,7 @@ const styles = StyleSheet.create({
     verifyingText: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
-        color: Colors.primary,
+        color: colors.primary,
     },
 
     /* ─── OR Divider ─── */
@@ -542,18 +545,18 @@ const styles = StyleSheet.create({
     dividerLine: {
         flex: 1,
         height: 1,
-        backgroundColor: '#1E1E1E',
+        backgroundColor: colors.textDark,
         opacity: 0.15,
     },
     dividerTextContainer: {
-        backgroundColor: '#FFFFEE',
+        backgroundColor: isDarkMode ? colors.bgScreen : '#FFFFEE',
         paddingHorizontal: 12,
     },
     dividerText: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.bodySmall,
-        color: '#1E1E1E',
-        opacity: 0.5,
+        color: colors.textMuted,
+        opacity: 0.8,
         textAlign: 'center',
     },
 
@@ -570,17 +573,16 @@ const styles = StyleSheet.create({
         height: 54,
         borderRadius: 27,
         borderWidth: 1,
-        borderColor: '#E0E0E0',
-        backgroundColor: '#FFFFFF',
+        borderColor: colors.borderLight,
+        backgroundColor: isDarkMode ? colors.bgCard : '#FFFFFF',
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000000',
+        shadowColor: colors.shadowColor,
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
         shadowRadius: 3,
         elevation: 2,
     },
-
 
     /* ─── Sign Up ─── */
     signupRow: {
@@ -592,11 +594,11 @@ const styles = StyleSheet.create({
     signupText: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
-        color: '#545454',
+        color: colors.textMuted,
     },
     signupLink: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.primary,
+        color: colors.primary,
     },
 });

@@ -7,15 +7,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { storeService, Product } from '@/services/api/storeService';
 import { useCart } from '@/context/CartContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function WellnessProductScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { addItem, items } = useCart();
+
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(colors);
 
     const [product, setProduct] = useState<Product | null>(null);
     const [related, setRelated] = useState<Product[]>([]);
@@ -65,14 +71,14 @@ export default function WellnessProductScreen() {
     if (loading) {
         return (
             <View style={[styles.screen, { paddingTop: insets.top }]}>
-                <StatusBar style="dark" />
+                <StatusBar style={isDarkMode ? 'light' : 'dark'} />
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                        <Ionicons name="arrow-back" size={22} color={Colors.textBody} />
+                        <Ionicons name="arrow-back" size={22} color={colors.textBody} />
                     </TouchableOpacity>
                 </View>
                 <View style={styles.loadingBox}>
-                    <ActivityIndicator size="large" color={Colors.primary} />
+                    <ActivityIndicator size="large" color={colors.primary} />
                 </View>
             </View>
         );
@@ -81,14 +87,14 @@ export default function WellnessProductScreen() {
     if (!product) {
         return (
             <View style={[styles.screen, { paddingTop: insets.top }]}>
-                <StatusBar style="dark" />
+                <StatusBar style={isDarkMode ? 'light' : 'dark'} />
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                        <Ionicons name="arrow-back" size={22} color={Colors.textBody} />
+                        <Ionicons name="arrow-back" size={22} color={colors.textBody} />
                     </TouchableOpacity>
                 </View>
                 <View style={styles.notFoundBox}>
-                    <Ionicons name="cube-outline" size={64} color={Colors.borderLight} />
+                    <Ionicons name="cube-outline" size={64} color={colors.borderLight} />
                     <Text style={styles.notFoundText}>Product not found</Text>
                     <TouchableOpacity onPress={() => router.back()}>
                         <Text style={styles.backLink}>← Back to Wellness Store</Text>
@@ -103,21 +109,20 @@ export default function WellnessProductScreen() {
         : 0;
     const savings = product.mrp > product.price ? product.mrp - product.price : 0;
     const stockStatus = product.stock === 0 ? 'out' : product.stock <= 5 ? 'low' : 'ok';
-
     return (
         <View style={[styles.screen, { paddingTop: insets.top }]}>
-            <StatusBar style="dark" />
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} />
 
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                    <Ionicons name="arrow-back" size={22} color={Colors.textBody} />
+                    <Ionicons name="arrow-back" size={22} color={colors.textBody} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle} numberOfLines={1}>
                     {product.category?.name ?? 'Product'}
                 </Text>
                 <TouchableOpacity onPress={() => router.push('/(tabs)/cart' as any)} style={styles.cartBtn}>
-                    <Ionicons name="cart-outline" size={22} color={Colors.textBody} />
+                    <Ionicons name="cart-outline" size={22} color={colors.textBody} />
                     {items.length > 0 && (
                         <View style={styles.cartBadge}>
                             <Text style={styles.cartBadgeText}>{items.length}</Text>
@@ -139,7 +144,7 @@ export default function WellnessProductScreen() {
                         />
                     ) : (
                         <View style={styles.imageFallback}>
-                            <Ionicons name="cube-outline" size={72} color={Colors.borderLight} />
+                            <Ionicons name="cube-outline" size={72} color={colors.borderLight} />
                         </View>
                     )}
                     {discount > 0 && (
@@ -147,67 +152,73 @@ export default function WellnessProductScreen() {
                             <Text style={styles.discountText}>{discount}% OFF</Text>
                         </View>
                     )}
+                    {stockStatus === 'out' && (
+                        <View style={styles.outBadge}>
+                            <Text style={styles.outText}>Sold Out</Text>
+                        </View>
+                    )}
                     {stockStatus === 'low' && (
                         <View style={styles.lowStockBadge}>
                             <Text style={styles.lowStockText}>Only {product.stock} left</Text>
                         </View>
                     )}
-                    {stockStatus === 'out' && (
-                        <View style={styles.outBadge}>
-                            <Text style={styles.outText}>Out of Stock</Text>
-                        </View>
-                    )}
                 </View>
 
-                {/* Product Details */}
+                {/* Details */}
                 <View style={styles.detailsContainer}>
-
-                    {product.category && (
-                        <Text style={styles.categoryLabel}>{product.category.name}</Text>
-                    )}
+                    <Text style={styles.categoryLabel}>{product.category?.name}</Text>
                     <Text style={styles.productName}>{product.name}</Text>
 
-                    {/* Stars (static quality badge) */}
+                    {/* Ratings */}
                     <View style={styles.starsRow}>
-                        {[1,2,3,4,5].map(s => (
-                            <Ionicons key={s} name="star" size={14} color="#f59e0b" />
+                        {[1, 2, 3, 4, 5].map((s) => (
+                            <Ionicons
+                                key={s}
+                                name={s <= Math.round(product.rating || 4) ? 'star' : 'star-outline'}
+                                size={14}
+                                color="#FFB000"
+                            />
                         ))}
-                        <Text style={styles.verifiedText}>Verified Quality</Text>
+                        <Text style={styles.verifiedText}>
+                            ({product.rating || 4.0}) · 100% Genuine Product
+                        </Text>
                     </View>
 
-                    {/* Price Block */}
+                    {/* Price Card */}
                     <View style={styles.priceCard}>
                         <View style={styles.priceRow}>
                             <Text style={styles.price}>₹{product.price.toLocaleString('en-IN')}</Text>
                             {product.mrp > product.price && (
-                                <Text style={styles.mrp}>₹{product.mrp.toLocaleString('en-IN')}</Text>
-                            )}
-                            {discount > 0 && (
-                                <View style={styles.discountPill}>
-                                    <Text style={styles.discountPillText}>{discount}% off</Text>
-                                </View>
+                                <>
+                                    <Text style={styles.mrp}>MRP ₹{product.mrp.toLocaleString('en-IN')}</Text>
+                                    <View style={styles.discountPill}>
+                                        <Text style={styles.discountPillText}>{discount}% OFF</Text>
+                                    </View>
+                                </>
                             )}
                         </View>
                         {savings > 0 && (
                             <Text style={styles.savingsText}>
-                                You save ₹{savings.toLocaleString('en-IN')} on this order
+                                You Save ₹{savings.toLocaleString('en-IN')}!
                             </Text>
                         )}
                         <Text style={styles.taxText}>Inclusive of all taxes</Text>
                     </View>
 
-                    {/* Stock Status */}
+                    {/* Stock Status details */}
                     <View style={styles.stockRow}>
                         {stockStatus === 'ok' && (
                             <>
                                 <Ionicons name="checkmark-circle" size={16} color="#10b981" />
-                                <Text style={[styles.stockText, { color: '#059669' }]}>In Stock</Text>
+                                <Text style={[styles.stockText, { color: '#059669' }]}>In Stock & Ready to Ship</Text>
                             </>
                         )}
                         {stockStatus === 'low' && (
                             <>
-                                <Ionicons name="warning" size={16} color="#f59e0b" />
-                                <Text style={[styles.stockText, { color: '#d97706' }]}>Only {product.stock} units left</Text>
+                                <Ionicons name="alert-circle" size={16} color="#f59e0b" />
+                                <Text style={[styles.stockText, { color: '#d97706' }]}>
+                                    Hurry, only {product.stock} units left!
+                                </Text>
                             </>
                         )}
                         {stockStatus === 'out' && (
@@ -226,7 +237,7 @@ export default function WellnessProductScreen() {
                             { icon: 'refresh-outline', label: 'Easy Returns' },
                         ].map(({ icon, label }) => (
                             <View key={label} style={styles.trustItem}>
-                                <Ionicons name={icon as any} size={18} color={Colors.primary} />
+                                <Ionicons name={icon as any} size={18} color={colors.primary} />
                                 <Text style={styles.trustLabel}>{label}</Text>
                             </View>
                         ))}
@@ -265,7 +276,7 @@ export default function WellnessProductScreen() {
                                                 {rel.imageUrl ? (
                                                     <Image source={{ uri: rel.imageUrl }} style={styles.relatedImage} resizeMode="cover" />
                                                 ) : (
-                                                    <Ionicons name="cube-outline" size={28} color={Colors.borderLight} />
+                                                    <Ionicons name="cube-outline" size={28} color={colors.borderLight} />
                                                 )}
                                                 {relDiscount > 0 && (
                                                     <View style={styles.relatedBadge}>
@@ -304,25 +315,25 @@ export default function WellnessProductScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: Colors.bgScreen,
+        backgroundColor: colors.bgScreen,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: Spacing.md,
         paddingVertical: 10,
-        backgroundColor: Colors.bgScreen,
+        backgroundColor: colors.bgScreen,
         borderBottomWidth: 1,
-        borderBottomColor: Colors.borderLight,
+        borderBottomColor: colors.borderLight,
     },
     backBtn: {
         width: 38,
         height: 38,
         borderRadius: 19,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.bgCardMuted,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -330,7 +341,7 @@ const styles = StyleSheet.create({
         width: 38,
         height: 38,
         borderRadius: 19,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.bgCardMuted,
         justifyContent: 'center',
         alignItems: 'center',
         position: 'relative',
@@ -346,7 +357,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2,
-        borderColor: '#fff',
+        borderColor: colors.bgCard,
     },
     cartBadgeText: {
         fontFamily: Fonts.semiBold,
@@ -358,7 +369,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.textBody,
+        color: colors.textBody,
         marginHorizontal: Spacing.sm,
     },
     loadingBox: {
@@ -375,18 +386,18 @@ const styles = StyleSheet.create({
     notFoundText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.textMuted,
+        color: colors.textMuted,
     },
     backLink: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.primary,
+        color: colors.primary,
     },
 
     // Image
     imageContainer: {
         aspectRatio: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.bgCardMuted,
         position: 'relative',
     },
     productImage: {
@@ -449,14 +460,14 @@ const styles = StyleSheet.create({
     categoryLabel: {
         fontFamily: Fonts.semiBold,
         fontSize: 11,
-        color: Colors.primary,
+        color: colors.primary,
         textTransform: 'uppercase',
         letterSpacing: 0.8,
     },
     productName: {
         fontFamily: Fonts.semiBold,
         fontSize: 22,
-        color: Colors.textBody,
+        color: colors.textBody,
         lineHeight: 30,
     },
     starsRow: {
@@ -467,14 +478,14 @@ const styles = StyleSheet.create({
     verifiedText: {
         fontFamily: Fonts.regular,
         fontSize: 12,
-        color: Colors.textMuted,
+        color: colors.textMuted,
         marginLeft: 4,
     },
     priceCard: {
-        backgroundColor: Colors.bgCard,
+        backgroundColor: colors.bgCard,
         borderRadius: Radius.lg,
         borderWidth: 1,
-        borderColor: Colors.borderLight,
+        borderColor: colors.borderLight,
         padding: Spacing.md,
         gap: 4,
     },
@@ -487,16 +498,16 @@ const styles = StyleSheet.create({
     price: {
         fontFamily: Fonts.semiBold,
         fontSize: 28,
-        color: Colors.textBody,
+        color: colors.textBody,
     },
     mrp: {
         fontFamily: Fonts.regular,
         fontSize: 16,
-        color: Colors.textMuted,
+        color: colors.textMuted,
         textDecorationLine: 'line-through',
     },
     discountPill: {
-        backgroundColor: '#d1fae5',
+        backgroundColor: 'rgba(5,150,105,0.1)',
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 8,
@@ -514,7 +525,7 @@ const styles = StyleSheet.create({
     taxText: {
         fontFamily: Fonts.regular,
         fontSize: 11,
-        color: Colors.textMuted,
+        color: colors.textMuted,
     },
     stockRow: {
         flexDirection: 'row',
@@ -533,16 +544,16 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         gap: 5,
-        backgroundColor: Colors.bgCard,
+        backgroundColor: colors.bgCard,
         borderWidth: 1,
-        borderColor: Colors.borderLight,
+        borderColor: colors.borderLight,
         borderRadius: Radius.md,
         paddingVertical: Spacing.sm,
     },
     trustLabel: {
         fontFamily: Fonts.semiBold,
         fontSize: 10,
-        color: Colors.textMuted,
+        color: colors.textMuted,
         textTransform: 'uppercase',
         letterSpacing: 0.3,
         textAlign: 'center',
@@ -553,15 +564,15 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.heading2,
-        color: Colors.textBody,
+        color: colors.textBody,
         borderBottomWidth: 1,
-        borderBottomColor: Colors.borderLight,
+        borderBottomColor: colors.borderLight,
         paddingBottom: 8,
     },
     descText: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
-        color: Colors.textDark,
+        color: colors.textDark,
         lineHeight: 24,
     },
 
@@ -575,12 +586,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingBottom: 8,
         borderBottomWidth: 1,
-        borderBottomColor: Colors.borderLight,
+        borderBottomColor: colors.borderLight,
     },
     viewAllText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.bodySmall,
-        color: Colors.primary,
+        color: colors.primary,
     },
     relatedScroll: {
         marginTop: 4,
@@ -588,16 +599,16 @@ const styles = StyleSheet.create({
     relatedCard: {
         width: 140,
         marginRight: Spacing.sm,
-        backgroundColor: Colors.bgCard,
+        backgroundColor: colors.bgCard,
         borderRadius: Radius.md,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: Colors.borderLight,
+        borderColor: colors.borderLight,
         ...Shadow.card,
     },
     relatedImageBox: {
         aspectRatio: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.bgCardMuted,
         justifyContent: 'center',
         alignItems: 'center',
         position: 'relative',
@@ -627,13 +638,13 @@ const styles = StyleSheet.create({
     relatedName: {
         fontFamily: Fonts.semiBold,
         fontSize: 11,
-        color: Colors.textBody,
+        color: colors.textBody,
         lineHeight: 15,
     },
     relatedPrice: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.textBody,
+        color: colors.textBody,
     },
 
     // Sticky bar
@@ -642,9 +653,9 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: Colors.bgScreen,
+        backgroundColor: colors.bgScreen,
         borderTopWidth: 1,
-        borderTopColor: Colors.borderLight,
+        borderTopColor: colors.borderLight,
         paddingHorizontal: Spacing.lg,
         paddingTop: 12,
     },
@@ -653,12 +664,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         borderRadius: Radius.lg,
         paddingVertical: 16,
     },
     addBtnDisabled: {
-        backgroundColor: '#d1d5db',
+        backgroundColor: colors.bgCardMuted,
     },
     addBtnText: {
         fontFamily: Fonts.semiBold,

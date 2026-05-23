@@ -1,4 +1,4 @@
-﻿// Booking Confirmation Screen
+// Booking Confirmation Screen
 import React from 'react';
 import {
     View,
@@ -12,10 +12,16 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function ConfirmationScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const colors = useThemeColors();
+    const { isDarkMode } = useTheme();
+    const styles = makeStyles(colors, isDarkMode);
+
     const params = useLocalSearchParams<{
         visitType?: string;
         doctorType?: string;
@@ -36,13 +42,13 @@ export default function ConfirmationScreen() {
 
     return (
         <View style={styles.screen}>
-            <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
-            <StatusBar style="light" backgroundColor={Colors.primary} />
+            <View style={{ backgroundColor: colors.primary, height: insets.top }} />
+            <StatusBar style="light" backgroundColor={colors.primary} />
 
             {/* ─── Header ─── */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
+                    <Ionicons name="arrow-back" size={24} color={colors.textWhite} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Booking Confirmed</Text>
             </View>
@@ -82,7 +88,7 @@ export default function ConfirmationScreen() {
 
                         <View style={styles.detailRow}>
                             <View style={styles.detailIconBox}>
-                                <Ionicons name={visitType === 'Clinic Visit' ? "business-outline" : "home-outline"} size={16} color="#048357" />
+                                <Ionicons name={visitType === 'Clinic Visit' ? "business-outline" : "home-outline"} size={16} color={colors.primary} />
                             </View>
                             <View style={styles.detailTextGroup}>
                                 <Text style={styles.detailLabel}>Visit Type</Text>
@@ -94,7 +100,7 @@ export default function ConfirmationScreen() {
 
                         <View style={styles.detailRow}>
                             <View style={styles.detailIconBox}>
-                                <Ionicons name="medkit" size={16} color="#048357" />
+                                <Ionicons name="medkit" size={16} color={colors.primary} />
                             </View>
                             <View style={styles.detailTextGroup}>
                                 <Text style={styles.detailLabel}>Service</Text>
@@ -106,7 +112,7 @@ export default function ConfirmationScreen() {
 
                         <View style={styles.detailRow}>
                             <View style={styles.detailIconBox}>
-                                <Ionicons name="person" size={16} color="#048357" />
+                                <Ionicons name="person" size={16} color={colors.primary} />
                             </View>
                             <View style={styles.detailTextGroup}>
                                 <Text style={styles.detailLabel}>Doctor Type</Text>
@@ -118,7 +124,7 @@ export default function ConfirmationScreen() {
 
                         <View style={styles.detailRow}>
                             <View style={styles.detailIconBox}>
-                                <Ionicons name="calendar" size={16} color="#048357" />
+                                <Ionicons name="calendar" size={16} color={colors.primary} />
                             </View>
                             <View style={styles.detailTextGroup}>
                                 <Text style={styles.detailLabel}>Schedule</Text>
@@ -130,7 +136,7 @@ export default function ConfirmationScreen() {
 
                         <View style={styles.detailRow}>
                             <View style={styles.detailIconBox}>
-                                <Ionicons name="location" size={16} color="#048357" />
+                                <Ionicons name="location" size={16} color={colors.primary} />
                             </View>
                             <View style={styles.detailTextGroup}>
                                 <Text style={styles.detailLabel}>Address</Text>
@@ -142,7 +148,7 @@ export default function ConfirmationScreen() {
 
                         <View style={styles.detailRow}>
                             <View style={styles.detailIconBox}>
-                                <Ionicons name="alert-circle" size={16} color="#048357" />
+                                <Ionicons name="alert-circle" size={16} color={colors.primary} />
                             </View>
                             <View style={styles.detailTextGroup}>
                                 <Text style={styles.detailLabel}>Problem</Text>
@@ -153,7 +159,7 @@ export default function ConfirmationScreen() {
 
                     {/* Info Banner */}
                     <View style={styles.infoBanner}>
-                        <Ionicons name="information-circle" size={18} color="#02743F" />
+                        <Ionicons name="information-circle" size={18} color={colors.primary} />
                         <Text style={styles.infoBannerText}>
                             {visitType === 'Home Session'
                                 ? "You will receive a notification once a doctor accepts your request."
@@ -165,18 +171,18 @@ export default function ConfirmationScreen() {
                 {/* ─── Bottom Buttons ─── */}
                 <View style={styles.bottomBar}>
                     <TouchableOpacity style={[styles.actionButton, styles.rescheduleBtn]} activeOpacity={0.8}>
-                        <Ionicons name="map-outline" size={18} color={Colors.textWhite} style={{ marginRight: 8 }} />
+                        <Ionicons name="map-outline" size={18} color={colors.textWhite} style={{ marginRight: 8 }} />
                         <Text style={[styles.actionButtonText, styles.rescheduleText]}>Get Directions</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.actionButton, styles.cancelBtn]} activeOpacity={0.8}>
                         <Text style={[styles.actionButtonText, styles.cancelText]}>Cancel Appointment</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.actionButton, styles.callBtn]} activeOpacity={0.8}>
-                        <Ionicons name="call-outline" size={18} color={Colors.primaryDark} style={{ marginRight: 8 }} />
+                        <Ionicons name="call-outline" size={18} color={colors.primary} style={{ marginRight: 8 }} />
                         <Text style={[styles.actionButtonText, styles.callText]}>Call Support</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.homeButton} activeOpacity={0.8} onPress={() => router.replace('/(tabs)')}>
-                        <Ionicons name="home-outline" size={18} color={Colors.primaryDark} style={{ marginRight: 8 }} />
+                        <Ionicons name="home-outline" size={18} color={colors.primary} style={{ marginRight: 8 }} />
                         <Text style={styles.homeButtonText}>Back to Home</Text>
                     </TouchableOpacity>
                 </View>
@@ -185,17 +191,17 @@ export default function ConfirmationScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
     },
 
     /* ─── Header ─── */
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         paddingHorizontal: Spacing.lg,
         paddingBottom: 20,
         paddingTop: 10,
@@ -207,7 +213,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.heading2,
-        color: Colors.textWhite,
+        color: colors.textWhite,
         textAlign: "left", marginLeft: 12,
         letterSpacing: -0.24,
     },
@@ -215,7 +221,7 @@ const styles = StyleSheet.create({
     /* ─── Content Card ─── */
     contentCard: {
         flex: 1,
-        backgroundColor: Colors.bgScreen,
+        backgroundColor: colors.bgScreen,
         borderTopLeftRadius: Radius.xl * 2,
         borderTopRightRadius: Radius.xl * 2,
         overflow: 'hidden',
@@ -239,11 +245,11 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 16,
-        shadowColor: Colors.primary,
+        shadowColor: colors.primary,
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.3,
         shadowRadius: 12,
@@ -252,14 +258,14 @@ const styles = StyleSheet.create({
     successTitle: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.heading1,
-        color: Colors.primaryDark,
+        color: colors.primary,
         marginBottom: 6,
         letterSpacing: -0.24,
     },
     successSubtitle: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
-        color: Colors.textMuted,
+        color: colors.textMuted,
         textAlign: 'center',
         lineHeight: 20,
     },
@@ -269,43 +275,43 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: 'rgba(4, 131, 87, 0.08)',
+        backgroundColor: isDarkMode ? 'rgba(52, 199, 89, 0.1)' : 'rgba(4, 131, 87, 0.08)',
         borderRadius: Radius.md,
         paddingHorizontal: Spacing.lg,
         paddingVertical: 12,
         marginBottom: 16,
         borderWidth: 0.8,
-        borderColor: 'rgba(4, 131, 87, 0.2)',
+        borderColor: isDarkMode ? 'rgba(52, 199, 89, 0.25)' : 'rgba(4, 131, 87, 0.2)',
         borderStyle: 'dashed',
     },
     bookingIdLabel: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.caption,
-        color: Colors.textMuted,
+        color: colors.textMuted,
     },
     bookingIdValue: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.primaryDark,
+        color: colors.primary,
         letterSpacing: 0.5,
     },
 
     /* ─── Details Card ─── */
     statusBadge: {
-        backgroundColor: '#E8F5E9',
+        backgroundColor: isDarkMode ? 'rgba(52, 199, 89, 0.15)' : '#E8F5E9',
         paddingHorizontal: Spacing.md,
         paddingVertical: 6,
         borderRadius: Radius.xl,
         borderWidth: 1,
-        borderColor: Colors.primary,
+        borderColor: colors.primary,
     },
     statusBadgeText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.caption,
-        color: Colors.primaryDark,
+        color: colors.primary,
     },
     detailsCard: {
-        backgroundColor: Colors.bgCard,
+        backgroundColor: colors.bgCard,
         borderRadius: Radius.lg,
         padding: Spacing.lg,
         marginBottom: 16,
@@ -314,7 +320,7 @@ const styles = StyleSheet.create({
     detailsCardTitle: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.primaryDark,
+        color: colors.primary,
         marginBottom: 16,
         letterSpacing: -0.24,
     },
@@ -327,7 +333,7 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: Radius.sm,
-        backgroundColor: 'rgba(4, 131, 87, 0.08)',
+        backgroundColor: isDarkMode ? 'rgba(52, 199, 89, 0.15)' : 'rgba(4, 131, 87, 0.08)',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: Spacing.md,
@@ -338,24 +344,24 @@ const styles = StyleSheet.create({
     detailLabel: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.caption,
-        color: Colors.textLight,
+        color: colors.textLight,
         marginBottom: 2,
     },
     detailValue: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.bodySmall,
-        color: Colors.textDark,
+        color: colors.textDark,
     },
     detailDivider: {
         height: 0.5,
-        backgroundColor: 'rgba(0,0,0,0.06)',
+        backgroundColor: colors.borderLight,
     },
 
     /* ─── Info Banner ─── */
     infoBanner: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(4, 131, 87, 0.08)',
+        backgroundColor: isDarkMode ? 'rgba(52, 199, 89, 0.15)' : 'rgba(4, 131, 87, 0.08)',
         borderRadius: Radius.md,
         paddingHorizontal: Spacing.md,
         paddingVertical: 12,
@@ -365,7 +371,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontFamily: Fonts.regular,
         fontSize: FontSize.caption,
-        color: Colors.primaryDark,
+        color: colors.primary,
         lineHeight: 16,
     },
 
@@ -375,14 +381,14 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: Colors.bgScreen,
+        backgroundColor: colors.bgScreen,
         paddingHorizontal: Spacing.xl,
         paddingTop: 16,
         paddingBottom: 36,
         alignItems: 'center',
         gap: Spacing.md,
         borderTopWidth: 1,
-        borderTopColor: 'rgba(0,0,0,0.05)',
+        borderTopColor: colors.borderLight,
     },
     actionButton: {
         width: '100%',
@@ -398,26 +404,26 @@ const styles = StyleSheet.create({
         fontSize: FontSize.body,
     },
     rescheduleBtn: {
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
     },
     rescheduleText: {
-        color: Colors.textWhite,
+        color: colors.textWhite,
     },
     cancelBtn: {
-        backgroundColor: '#FFF0F0',
+        backgroundColor: isDarkMode ? 'rgba(255, 59, 48, 0.1)' : '#FFF0F0',
         borderWidth: 1,
-        borderColor: '#FFCCCC',
+        borderColor: isDarkMode ? 'rgba(255, 59, 48, 0.25)' : '#FFCCCC',
     },
     cancelText: {
-        color: Colors.sosRed,
+        color: colors.sosRed,
     },
     callBtn: {
-        backgroundColor: '#E8F5E9',
+        backgroundColor: isDarkMode ? 'rgba(52, 199, 89, 0.15)' : '#E8F5E9',
         borderWidth: 1,
-        borderColor: '#A5D6A7',
+        borderColor: isDarkMode ? 'rgba(52, 199, 89, 0.25)' : '#A5D6A7',
     },
     callText: {
-        color: Colors.primaryDark,
+        color: colors.primary,
     },
     homeButton: {
         width: '100%',
@@ -432,7 +438,7 @@ const styles = StyleSheet.create({
     homeButtonText: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
-        color: Colors.primaryDark,
+        color: colors.primary,
         textDecorationLine: 'underline',
     },
 });

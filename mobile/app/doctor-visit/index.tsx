@@ -22,7 +22,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
-import { useThemeColors } from '@/hooks/use-theme-colors';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 import { locationService } from '@/services/device/locationService';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { useUser } from '@/context/UserContext';
@@ -67,6 +68,8 @@ export default function DoctorVisitScreen() {
     const { width } = useWindowDimensions();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const colors = useThemeColors();
+    const { isDarkMode } = useTheme();
+    const styles = makeStyles(colors, isDarkMode);
 
     // ─── Global State ───
     const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, isLoading: isLoadingInit } = useServiceInitialization('doctor-home-visit');
@@ -344,7 +347,7 @@ export default function DoctorVisitScreen() {
             <SafeAreaView style={[styles.headerSafe, { backgroundColor: colors.primary }]} edges={['top']}>
                 <View style={styles.headerRow}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
+                        <Ionicons name="arrow-back" size={24} color={colors.textWhite} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{t('doctor_visit.header')}</Text>
                 </View>
@@ -470,7 +473,7 @@ export default function DoctorVisitScreen() {
                             style={styles.radioOption}
                             onPress={() => setSelectedWhen('ASAP')}
                         >
-                            <Ionicons name={selectedWhen === 'ASAP' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedWhen === 'ASAP' ? Colors.primary : Colors.textLight} />
+                            <Ionicons name={selectedWhen === 'ASAP' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedWhen === 'ASAP' ? colors.primary : colors.textLight} />
                             <Text style={styles.radioLabelMain}>{t('booking.come_asap')} <Text style={styles.radioLabelSub}>{t('booking.urgent')}</Text></Text>
                         </TouchableOpacity>
 
@@ -481,7 +484,7 @@ export default function DoctorVisitScreen() {
                                 applyDateTimeSelection(selectedDateIdx, selectedTimeSlot);
                             }}
                         >
-                            <Ionicons name={selectedWhen === 'Later' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedWhen === 'Later' ? Colors.primary : Colors.textLight} />
+                            <Ionicons name={selectedWhen === 'Later' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedWhen === 'Later' ? colors.primary : colors.textLight} />
                             <Text style={styles.radioLabelMainGreen}>{t('booking.schedule_later')} <Text style={styles.radioLabelSub}>{t('booking.date_time_picker')}</Text></Text>
                         </TouchableOpacity>
 
@@ -545,12 +548,12 @@ export default function DoctorVisitScreen() {
                         <Text style={styles.sectionTitle}>{t('booking.confirm_address')}</Text>
 
                         <View style={styles.addressBox}>
-                            <Ionicons name="location-outline" size={16} color="#2F2F2F" style={styles.addressIcon} />
+                            <Ionicons name="location-outline" size={16} color={colors.textDark} style={styles.addressIcon} />
                             <TextInput
                                 value={address}
                                 onChangeText={setAddress}
                                 placeholder="Enter your full address"
-                                placeholderTextColor={Colors.textMuted}
+                                placeholderTextColor={colors.textMuted}
                                 multiline
                                 numberOfLines={2}
                                 style={styles.addressText}
@@ -560,7 +563,7 @@ export default function DoctorVisitScreen() {
                         {/* Landmark field */}
                         <TextInput
                             placeholder="Landmark (optional, e.g. Near Apollo Hospital)"
-                            placeholderTextColor={Colors.textMuted}
+                            placeholderTextColor={colors.textMuted}
                             value={landmark}
                             onChangeText={setLandmark}
                             style={styles.landmarkInput}
@@ -587,7 +590,7 @@ export default function DoctorVisitScreen() {
                     onPress={handleBookService}
                 >
                     {isBooking ? (
-                        <ActivityIndicator color={Colors.textWhite} />
+                        <ActivityIndicator color={colors.textWhite} />
                     ) : (
                         <Text style={styles.bookButtonText}>
                             {isLoadingInit ? t('common.initializing') : t('booking.book_now')}
@@ -599,16 +602,16 @@ export default function DoctorVisitScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
     /* ─── Screen Base ─── */
     screen: {
         flex: 1,
-        backgroundColor: Colors.primary, // Hero green background
+        backgroundColor: colors.primary, // Hero green background
     },
 
     /* ─── Header ─── */
     headerSafe: {
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
     },
     headerRow: {
         flexDirection: 'row',
@@ -624,7 +627,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.heading2,
-        color: Colors.textWhite,
+        color: colors.textWhite,
         letterSpacing: -0.24,
         marginLeft: 12,
     },
@@ -635,7 +638,7 @@ const styles = StyleSheet.create({
     /* ─── Main Content Card ─── */
     contentCard: {
         flex: 1,
-        backgroundColor: Colors.bgScreen, // Off-white cream
+        backgroundColor: colors.bgScreen, // Off-white cream or dark background
         borderTopLeftRadius: Radius.xl * 2,
         borderTopRightRadius: Radius.xl * 2,
         ...Shadow.card,
@@ -652,7 +655,7 @@ const styles = StyleSheet.create({
 
     /* ─── Description Card ─── */
     descCard: {
-        backgroundColor: 'rgba(255,255,255,0.43)',
+        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.43)',
         borderRadius: 12,
         paddingHorizontal: 16,
         paddingVertical: 14,
@@ -661,7 +664,6 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 5,
-        // elevation: 2,
     },
     descText: {
         textAlign: 'center',
@@ -670,54 +672,55 @@ const styles = StyleSheet.create({
     descTextBold: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
-        color: Colors.textDark,
+        color: colors.textDark,
     },
     descTextGreen: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
-        color: Colors.primary,
+        color: colors.primary,
     },
     descTextNormal: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontWeight: '400',
         fontSize: 14,
-        color: '#777777',
+        color: colors.textMuted,
     },
 
-    /* ─── Repeat Order Banner ─── */
+    /* ─── Repeat Banner ─── */
     repeatBanner: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#E8F9F2',
+        gap: 10,
+        backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : 'rgba(4,131,87,0.07)',
         borderWidth: 1,
-        borderColor: Colors.primary,
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 20,
-        gap: 12,
+        borderColor: isDarkMode ? 'rgba(52,199,89,0.25)' : 'rgba(4,131,87,0.25)',
+        borderRadius: Radius.md,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: 12,
+        marginBottom: Spacing.md,
     },
     repeatBannerTitle: {
         fontFamily: Fonts.semiBold,
-        fontSize: FontSize.body,
-        color: Colors.textDark,
-        marginBottom: 2,
+        fontSize: FontSize.bodySmall,
+        color: colors.primary,
     },
     repeatBannerSub: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.caption,
-        color: Colors.textBody,
+        color: colors.textMuted,
+        marginTop: 1,
     },
 
     /* ─── Generic Section Styling ─── */
     sectionCard: {
-        backgroundColor: Colors.bgCard,
+        backgroundColor: colors.bgCard,
         borderRadius: Radius.md,
         padding: Spacing.lg,
         marginBottom: Spacing.lg,
         ...Shadow.card,
     },
     sectionCardSmall: {
-        backgroundColor: Colors.bgCard,
+        backgroundColor: colors.bgCard,
         borderRadius: Radius.md,
         paddingHorizontal: Spacing.lg,
         paddingVertical: Spacing.lg,
@@ -727,7 +730,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.heading3,
-        color: Colors.primary,
+        color: colors.primary,
         marginBottom: Spacing.lg,
         letterSpacing: -0.24,
     },
@@ -740,22 +743,21 @@ const styles = StyleSheet.create({
     },
     problemItem: {
         // Width is handled dynamically inline
-        backgroundColor: Colors.bgScreen,
+        backgroundColor: colors.bgScreen,
         borderRadius: Radius.md,
         ...Shadow.card,
         marginBottom: 10, // Replaces gap: 10 for wrapping rows securely
     },
     problemItemActive: {
-        borderColor: Colors.primary,
+        borderColor: colors.primary,
         borderWidth: 2,
-        // backgroundColor: 'rgba(4, 131, 87, 0.05)',
     },
     problemIconContainer: {
         // Height is handled dynamically inline
         borderTopLeftRadius: 10,
         borderTopRightRadius: 10,
         overflow: 'hidden',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
     },
     problemIcon: {
         width: '100%',
@@ -764,7 +766,7 @@ const styles = StyleSheet.create({
     problemLabel: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.caption,
-        color: Colors.textDark,
+        color: colors.textDark,
         textAlign: 'center',
         paddingVertical: 8,
         paddingHorizontal: 2,
@@ -772,7 +774,7 @@ const styles = StyleSheet.create({
         letterSpacing: -0.24,
     },
     problemLabelActive: {
-        color: Colors.primary,
+        color: colors.primary,
         fontFamily: Fonts.semiBold,
     },
 
@@ -784,7 +786,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 4,
     },
     smartTag: {
-        backgroundColor: 'rgba(97,172,102,0.6)',
+        backgroundColor: isDarkMode ? 'rgba(52,199,89,0.2)' : 'rgba(97,172,102,0.6)',
         borderRadius: 6,
         paddingHorizontal: 6,
         paddingVertical: 2,
@@ -793,13 +795,13 @@ const styles = StyleSheet.create({
     smartTagText: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.caption,
-        color: Colors.textDark,
+        color: colors.textDark,
     },
     smartBannerText: {
         flex: 1,
         fontFamily: Fonts.regular,
         fontSize: FontSize.caption,
-        color: Colors.primary,
+        color: colors.primary,
         lineHeight: 14,
     },
 
@@ -817,12 +819,12 @@ const styles = StyleSheet.create({
         height: 42, // Increased slightly to comfortably hold wrapped text on 320px screens
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: 'rgba(143,143,143,0.54)',
+        borderColor: isDarkMode ? colors.borderLight : 'rgba(143,143,143,0.54)',
         paddingHorizontal: 6,
     },
     doctorTypeActive: {
-        borderColor: Colors.primary,
-        backgroundColor: 'rgba(2,116,63,0.05)',
+        borderColor: colors.primary,
+        backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : 'rgba(2,116,63,0.05)',
     },
     doctorTypeIconGP: {
         width: 23,
@@ -838,13 +840,13 @@ const styles = StyleSheet.create({
         flexShrink: 1, // Stops text pushing out of the button on extremely small devices
         fontFamily: Fonts.medium,
         fontSize: FontSize.caption,
-        color: Colors.primary,
+        color: colors.primary,
     },
     doctorTypeInactiveText: {
         flexShrink: 1, // Stops text pushing out of the button on extremely small devices
         fontFamily: Fonts.medium,
         fontSize: FontSize.caption,
-        color: Colors.textMuted,
+        color: colors.textMuted,
     },
 
     /* ─── Visit Type Selection ─── */
@@ -860,20 +862,20 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: 'rgba(143,143,143,0.3)',
+        borderColor: colors.borderLight,
         gap: 8,
     },
     visitTypeOptionActive: {
-        borderColor: '#048357',
-        backgroundColor: 'rgba(4, 131, 87, 0.05)',
+        borderColor: colors.primary,
+        backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : 'rgba(4, 131, 87, 0.05)',
     },
     visitTypeText: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.bodySmall,
-        color: Colors.textMuted,
+        color: colors.textMuted,
     },
     visitTypeTextActive: {
-        color: Colors.primary,
+        color: colors.primary,
         fontFamily: Fonts.semiBold,
     },
 
@@ -887,26 +889,26 @@ const styles = StyleSheet.create({
     radioLabelMain: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.bodySmall,
-        color: Colors.primaryDark,
+        color: colors.textDark,
     },
     radioLabelMainGreen: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.bodySmall,
-        color: Colors.primaryDark,
+        color: colors.textDark,
     },
     radioLabelSub: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.caption,
-        color: Colors.textMuted,
+        color: colors.textMuted,
     },
 
     /* ─── Confirm Address ─── */
     addressBox: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        backgroundColor: 'rgba(217,217,217,0.29)',
+        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(217,217,217,0.29)',
         borderWidth: 1,
-        borderColor: 'rgba(143,143,143,0.15)',
+        borderColor: colors.borderLight,
         borderRadius: 7,
         minHeight: 42,
         paddingHorizontal: 12,
@@ -921,32 +923,32 @@ const styles = StyleSheet.create({
         flex: 1,
         fontFamily: Fonts.regular,
         fontSize: FontSize.bodySmall,
-        color: Colors.textDark,
+        color: colors.textDark,
         padding: 0,
         textAlignVertical: 'top',
     },
     addressEdit: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.bodySmall,
-        color: Colors.primary,
+        color: colors.primary,
         marginLeft: 8,
     },
     addressHelper: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.caption,
-        color: Colors.primary,
+        color: colors.primary,
         marginLeft: 4,
     },
     landmarkInput: {
         borderWidth: 1,
-        borderColor: Colors.borderLight,
+        borderColor: colors.borderLight,
         borderRadius: Radius.md,
         paddingHorizontal: Spacing.md,
         paddingVertical: 8,
         fontFamily: Fonts.regular,
         fontSize: FontSize.bodySmall,
-        color: Colors.textDark,
-        backgroundColor: '#fff',
+        color: colors.textDark,
+        backgroundColor: colors.bgCard,
         marginTop: 6,
     },
 
@@ -959,13 +961,13 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: Colors.bgHeader,
+        backgroundColor: colors.bgHeader,
         height: 111,
         borderTopLeftRadius: 10,
         borderTopRightRadius: 10,
-        shadowColor: '#000000',
+        shadowColor: colors.shadowColor,
         shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
+        shadowOpacity: isDarkMode ? 0.3 : 0.1,
         shadowRadius: 20,
         elevation: 10,
         alignItems: 'center',
@@ -974,7 +976,7 @@ const styles = StyleSheet.create({
     bookButton: {
         width: 230,
         height: 48,
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         borderRadius: Radius.full,
         justifyContent: 'center',
         alignItems: 'center',
@@ -982,56 +984,30 @@ const styles = StyleSheet.create({
     bookButtonText: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.button,
-        color: Colors.textWhite,
-    },
-
-    /* ─── Repeat Order Banner ─── */
-    repeatBanner: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        backgroundColor: 'rgba(4,131,87,0.07)',
-        borderWidth: 1,
-        borderColor: 'rgba(4,131,87,0.25)',
-        borderRadius: Radius.md,
-        paddingHorizontal: Spacing.md,
-        paddingVertical: 12,
-        marginBottom: Spacing.md,
-    },
-    repeatBannerTitle: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.bodySmall,
-        color: Colors.primary,
-    },
-    repeatBannerSub: {
-        fontFamily: Fonts.regular,
-        fontSize: FontSize.caption,
-        color: Colors.textMuted,
-        marginTop: 1,
+        color: colors.textWhite,
     },
 
     /* ─── Other Problem Input ─── */
     otherInput: {
         borderWidth: 1,
-        borderColor: Colors.borderLight,
+        borderColor: colors.borderLight,
         borderRadius: Radius.md,
         paddingHorizontal: Spacing.md,
         paddingVertical: 10,
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
-        color: Colors.textBody,
-        backgroundColor: '#fff',
+        color: colors.textDark,
+        backgroundColor: colors.bgCard,
         marginBottom: Spacing.sm,
         minHeight: 72,
         textAlignVertical: 'top',
     },
 
-    /* ─── Date Picker Box ─── */
     /* ─── Inline Date/Time Picker ─── */
     slotSectionLabel: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.caption,
-        color: Colors.textMuted,
+        color: colors.textMuted,
         marginTop: 12,
         marginBottom: 8,
         letterSpacing: 0.2,
@@ -1045,29 +1021,29 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 8,
         borderWidth: 1,
-        borderColor: 'rgba(143,143,143,0.3)',
+        borderColor: colors.borderLight,
         borderRadius: Radius.md,
         marginHorizontal: 4,
-        backgroundColor: '#fff',
+        backgroundColor: colors.bgCard,
         minWidth: 56,
     },
     chipActive: {
-        borderColor: Colors.primary,
-        backgroundColor: 'rgba(2,116,63,0.06)',
+        borderColor: colors.primary,
+        backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : 'rgba(2,116,63,0.06)',
     },
     chipLabel: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.caption,
-        color: Colors.textMuted,
+        color: colors.textMuted,
     },
     chipSub: {
         fontFamily: Fonts.regular,
         fontSize: 10,
-        color: Colors.textMuted,
+        color: colors.textMuted,
         marginTop: 2,
     },
     chipLabelActive: {
-        color: Colors.primary,
+        color: colors.primary,
     },
     timeSlotsGrid: {
         flexDirection: 'row',
@@ -1078,22 +1054,21 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 8,
         borderWidth: 1,
-        borderColor: 'rgba(143,143,143,0.3)',
+        borderColor: colors.borderLight,
         borderRadius: Radius.md,
-        backgroundColor: '#fff',
+        backgroundColor: colors.bgCard,
     },
     timeSlotActive: {
-        borderColor: Colors.primary,
-        backgroundColor: 'rgba(2,116,63,0.06)',
+        borderColor: colors.primary,
+        backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : 'rgba(2,116,63,0.06)',
     },
     timeSlotText: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.caption,
-        color: Colors.textMuted,
+        color: colors.textMuted,
     },
     timeSlotTextActive: {
-        color: Colors.primary,
+        color: colors.primary,
         fontFamily: Fonts.semiBold,
     },
-
 });
