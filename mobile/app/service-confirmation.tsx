@@ -1,4 +1,4 @@
-﻿import React from 'react';
+﻿import React, { useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -8,6 +8,7 @@ import {
     ScrollView,
     ActivityIndicator,
     Alert,
+    Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -21,7 +22,17 @@ export default function ServiceConfirmationScreen() {
     const insets = useSafeAreaInsets();
 
     const params = useLocalSearchParams<{
-        bookingId: string;
+        bookingId?: string;
+        // Meetup mode params
+        bookingCode?: string;
+        meetupEventDate?: string;
+        meetupStartTime?: string;
+        meetupEndTime?: string;
+        meetupVenue?: string;
+        meetupPinCode?: string;
+        pickupEnabled?: string;
+        pickupAddress?: string;
+        preferredTime?: string;
         // Fallbacks for direct navigation or old flows
         serviceName?: string;
         requestId?: string;
@@ -31,14 +42,29 @@ export default function ServiceConfirmationScreen() {
         fee?: string;
     }>();
 
+    const isMeetup = !!params.bookingCode && !!params.meetupEventDate;
+
+    // Meetup animation refs
+    const scaleAnim = useRef(new Animated.Value(0)).current;
+    const fadeAnim  = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        if (isMeetup) {
+            Animated.sequence([
+                Animated.spring(scaleAnim, { toValue: 1, tension: 60, friction: 6, useNativeDriver: true }),
+                Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+            ]).start();
+        }
+    }, [isMeetup]);
+
     const [booking, setBooking] = React.useState<Booking | null>(null);
-    const [loading, setLoading] = React.useState(!!params.bookingId);
+    const [loading, setLoading] = React.useState(!isMeetup && !!params.bookingId);
 
     React.useEffect(() => {
-        if (params.bookingId) {
+        if (!isMeetup && params.bookingId) {
             fetchBooking(params.bookingId);
         }
-    }, [params.bookingId]);
+    }, [params.bookingId, isMeetup]);
 
     const fetchBooking = async (id: string) => {
         try {
@@ -165,6 +191,107 @@ export default function ServiceConfirmationScreen() {
         return urls;
     };
 
+    // ─── Meetup mode render ────────────────────────────────────────────
+    if (isMeetup) {
+        const meetupDate = (() => {
+            if (!params.meetupEventDate) return '—';
+            const d = new Date(params.meetupEventDate);
+            return `${d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}, ${d.toLocaleDateString('en-IN', { weekday: 'long' })}`;
+        })();
+        const meetupTime = params.meetupEndTime
+            ? `${params.meetupStartTime} – ${params.meetupEndTime}`
+            : (params.meetupStartTime ?? '—');
+
+        return (
+            <View style={[styles.screen, { paddingTop: insets.top }]}>
+                <StatusBar style="light" backgroundColor={Colors.primary} />
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.meetupScrollContent}>
+
+                    {/* Success animation */}
+                    <View style={styles.meetupSuccessSection}>
+                        <Animated.View style={[styles.meetupCheckOuter, { transform: [{ scale: scaleAnim }] }]}>
+                            <View style={styles.meetupCheckInner}>
+                                <Ionicons name="checkmark" size={44} color="#fff" />
+                            </View>
+                        </Animated.View>
+                        <Animated.View style={{ opacity: fadeAnim, alignItems: 'center' }}>
+                            <Text style={styles.meetupSuccessTitle}>Registration Confirmed!</Text>
+                            <Text style={styles.meetupSuccessSub}>You have successfully joined the Local Meet Up.</Text>
+                            {params.bookingCode && (
+                                <Text style={styles.meetupBookingCode}>Booking Code: {params.bookingCode}</Text>
+                            )}
+                        </Animated.View>
+                    </View>
+
+                    {/* Meeting details */}
+                    <Animated.View style={[styles.meetupDetailsCard, { opacity: fadeAnim }]}>
+                        <Text style={styles.meetupDetailsHeading}>Meeting Details</Text>
+                        {[
+                            { icon: 'calendar-outline', label: 'Date', value: meetupDate },
+                            { icon: 'time-outline', label: 'Time', value: meetupTime },
+                            { icon: 'location-outline', label: 'Venue', value: params.meetupVenue ?? '—' },
+                            ...(params.meetupPinCode ? [{ icon: 'keypad-outline', label: 'PIN Code', value: params.meetupPinCode }] : []),
+                        ].map((row, i) => (
+                            <View key={i} style={styles.meetupDetailRow}>
+                                <View style={styles.meetupDetailIcon}>
+                                    <Ionicons name={row.icon as any} size={16} color={Colors.primary} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.meetupDetailLabel}>{row.label}</Text>
+                                    <Text style={styles.meetupDetailValue}>{row.value}</Text>
+                                </View>
+                            </View>
+                        ))}
+                        {params.pickupEnabled === 'true' && (
+                            <View style={styles.meetupPickupBox}>
+                                <Ionicons name="car-outline" size={16} color={Colors.primary} />
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.meetupPickupLabel}>Pickup Arranged</Text>
+                                    {params.pickupAddress ? <Text style={styles.meetupPickupValue}>{params.pickupAddress}</Text> : null}
+                                    {params.preferredTime ? <Text style={styles.meetupPickupValue}>At {params.preferredTime}</Text> : null}
+                                </View>
+                            </View>
+                        )}
+                        <View style={styles.meetupNotice}>
+                            <Ionicons name="information-circle-outline" size={16} color={Colors.primary} />
+                            <Text style={styles.meetupNoticeText}>We will contact you soon with more details.</Text>
+                        </View>
+                    </Animated.View>
+
+                    {/* What's next */}
+                    <Animated.View style={[styles.meetupNextCard, { opacity: fadeAnim }]}>
+                        <Text style={styles.meetupNextHeading}>What's Next?</Text>
+                        {[
+                            { icon: 'phone-portrait-outline', text: "You'll receive a confirmation SMS" },
+                            { icon: 'people-outline', text: 'Our team will call you 1 day before the event' },
+                            { icon: 'car-outline', text: params.pickupEnabled === 'true' ? 'Pickup will be arranged at your address' : 'Please reach the venue on time' },
+                        ].map((item, i) => (
+                            <View key={i} style={styles.meetupNextRow}>
+                                <View style={styles.meetupNextIcon}>
+                                    <Ionicons name={item.icon as any} size={15} color={Colors.primary} />
+                                </View>
+                                <Text style={styles.meetupNextText}>{item.text}</Text>
+                            </View>
+                        ))}
+                    </Animated.View>
+
+                    <View style={{ height: 20 }} />
+                </ScrollView>
+
+                <View style={[styles.meetupFooter, { paddingBottom: insets.bottom + 12 }]}>
+                    <TouchableOpacity style={styles.meetupBookingsBtn} onPress={() => router.replace('/meetup/my-bookings' as any)} activeOpacity={0.85}>
+                        <Ionicons name="calendar-outline" size={18} color="#fff" />
+                        <Text style={styles.meetupBookingsBtnText}>Go to My Bookings</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.meetupHomeBtn} onPress={() => router.replace('/(tabs)' as any)} activeOpacity={0.85}>
+                        <Text style={styles.meetupHomeBtnText}>Back to Home</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
+
+    // ─── Standard service booking render ──────────────────────────────────
     // Derive display values
     const dispName = booking?.service?.name || params.serviceName || 'Service';
     const dispId = booking?.bookingCode || params.requestId || 'REQ-PENDING';
@@ -634,4 +761,67 @@ const styles = StyleSheet.create({
         color: Colors.primaryDark,
         textDecorationLine: 'underline',
     },
+
+    // ─── Meetup mode styles ────────────────────────────────────────────
+    meetupScrollContent: { padding: Spacing.lg, paddingTop: 32 },
+    meetupSuccessSection: { alignItems: 'center', marginBottom: 28 },
+    meetupCheckOuter: {
+        width: 110, height: 110, borderRadius: 55,
+        backgroundColor: 'rgba(2,116,63,0.12)', justifyContent: 'center', alignItems: 'center', marginBottom: 20,
+    },
+    meetupCheckInner: {
+        width: 80, height: 80, borderRadius: 40,
+        backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center',
+    },
+    meetupSuccessTitle: { fontFamily: Fonts.semiBold, fontSize: 22, color: Colors.textDark ?? '#1F2937', marginBottom: 8, textAlign: 'center' },
+    meetupSuccessSub: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted, textAlign: 'center', lineHeight: 20 },
+    meetupBookingCode: { fontFamily: Fonts.semiBold, fontSize: 13, color: Colors.primary, marginTop: 12 },
+    meetupDetailsCard: {
+        backgroundColor: '#fff', borderRadius: 16, padding: 18, marginBottom: 14,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
+    },
+    meetupDetailsHeading: { fontFamily: Fonts.semiBold, fontSize: 15, color: Colors.textDark ?? '#1F2937', marginBottom: 16 },
+    meetupDetailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
+    meetupDetailIcon: {
+        width: 34, height: 34, borderRadius: 10, backgroundColor: '#EDF7F1',
+        justifyContent: 'center', alignItems: 'center',
+    },
+    meetupDetailLabel: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted, marginBottom: 2 },
+    meetupDetailValue: { fontFamily: Fonts.semiBold, fontSize: 14, color: Colors.textDark ?? '#1F2937' },
+    meetupPickupBox: {
+        flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+        backgroundColor: '#EDF7F1', borderRadius: 10, padding: 12, marginBottom: 12,
+    },
+    meetupPickupLabel: { fontFamily: Fonts.semiBold, fontSize: 12, color: Colors.primary, marginBottom: 2 },
+    meetupPickupValue: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textBody },
+    meetupNotice: {
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        backgroundColor: '#F0FAF4', borderRadius: 10, padding: 12,
+    },
+    meetupNoticeText: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, flex: 1, lineHeight: 18 },
+    meetupNextCard: {
+        backgroundColor: '#fff', borderRadius: 16, padding: 18, marginBottom: 14,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
+    },
+    meetupNextHeading: { fontFamily: Fonts.semiBold, fontSize: 14, color: Colors.textDark ?? '#1F2937', marginBottom: 14 },
+    meetupNextRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+    meetupNextIcon: {
+        width: 32, height: 32, borderRadius: 8, backgroundColor: '#EDF7F1',
+        justifyContent: 'center', alignItems: 'center',
+    },
+    meetupNextText: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textBody, flex: 1 },
+    meetupFooter: {
+        backgroundColor: '#fff', paddingHorizontal: 20, paddingTop: 14,
+        borderTopWidth: 1, borderTopColor: Colors.borderLight, gap: 10,
+    },
+    meetupBookingsBtn: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+        backgroundColor: Colors.primary, borderRadius: 14, paddingVertical: 14,
+    },
+    meetupBookingsBtnText: { fontFamily: Fonts.semiBold, fontSize: 16, color: '#fff' },
+    meetupHomeBtn: {
+        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1.5, borderColor: Colors.borderLight, borderRadius: 14, paddingVertical: 13,
+    },
+    meetupHomeBtnText: { fontFamily: Fonts.semiBold, fontSize: 15, color: Colors.textMuted },
 });

@@ -409,8 +409,9 @@ export default function ServiceCheckoutScreen() {
                         console.log('Meetup registration response:', regRes);
                         if (regRes.success && regRes.data) {
                             const meetupParams = params.meetupParams ? JSON.parse(params.meetupParams as string) : {};
+                            const bookingPayload = params.bookingPayload ? JSON.parse(params.bookingPayload as string) : {};
                             router.replace({
-                                pathname: '/meetup/confirmation',
+                                pathname: '/service-confirmation',
                                 params: {
                                     bookingCode: regRes.data.bookingCode,
                                     meetupEventDate: meetupParams.meetupEventDate || '',
@@ -418,6 +419,9 @@ export default function ServiceCheckoutScreen() {
                                     meetupEndTime: meetupParams.meetupEndTime || '',
                                     meetupVenue: meetupParams.meetupVenue || '',
                                     meetupPinCode: meetupParams.meetupPinCode || '',
+                                    pickupEnabled: bookingPayload.pickupEnabled ? 'true' : 'false',
+                                    pickupAddress: bookingPayload.pickupAddress || '',
+                                    preferredTime: bookingPayload.preferredPickupTime || '',
                                 },
                             });
                             return;
