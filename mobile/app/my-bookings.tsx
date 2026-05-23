@@ -476,33 +476,19 @@ export default function MyBookingsScreen() {
 
                 {/* Stats Row */}
                 <View style={styles.statsRow}>
-                    <View style={styles.statCard}>
-                        <View style={styles.statIcon}>
-                            <Ionicons name="calendar" size={18} color={PRIMARY_GREEN} />
+                    {[
+                        { icon: 'calendar-outline', value: upcomingCount, label: 'Upcoming' },
+                        { icon: 'checkmark-circle-outline', value: completedCount, label: 'Completed' },
+                        { icon: 'layers-outline', value: bookings.length, label: 'Total' },
+                    ].map((s) => (
+                        <View key={s.label} style={styles.statCard}>
+                            <View style={styles.statIcon}>
+                                <Ionicons name={s.icon as any} size={16} color="#fff" />
+                            </View>
+                            <Text style={styles.statValue}>{s.value}</Text>
+                            <Text style={styles.statLabel}>{s.label}</Text>
                         </View>
-                        <View>
-                            <Text style={styles.statValue}>{upcomingCount}</Text>
-                            <Text style={styles.statLabel}>Upcoming</Text>
-                        </View>
-                    </View>
-                    <View style={styles.statCard}>
-                        <View style={styles.statIcon}>
-                            <Ionicons name="checkmark-circle" size={18} color={PRIMARY_GREEN} />
-                        </View>
-                        <View>
-                            <Text style={styles.statValue}>{completedCount}</Text>
-                            <Text style={styles.statLabel}>Completed</Text>
-                        </View>
-                    </View>
-                    <View style={styles.statCard}>
-                        <View style={styles.statIcon}>
-                            <Ionicons name="layers" size={18} color={PRIMARY_GREEN} />
-                        </View>
-                        <View>
-                            <Text style={styles.statValue}>{bookings.length}</Text>
-                            <Text style={styles.statLabel}>Total</Text>
-                        </View>
-                    </View>
+                    ))}
                 </View>
             </View>
 
@@ -639,102 +625,97 @@ const styles = StyleSheet.create({
     heroHeader: {
         backgroundColor: PRIMARY_GREEN,
         paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 24,
+        paddingTop: 12,
+        paddingBottom: 20,
     },
     heroContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 24,
+        marginBottom: 16,
     },
     backBtn: {
-        width: 40,
-        height: 40,
+        width: 36,
+        height: 36,
         justifyContent: 'center',
         alignItems: 'center',
     },
     heroTitleWrap: {
         flex: 1,
-        alignItems: 'center',
+        paddingHorizontal: 8,
     },
     heroTitle: {
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: '700',
         color: '#FFFFFF',
-        marginBottom: 2,
+        marginBottom: 1,
     },
     heroSubtitle: {
-        fontSize: 12,
+        fontSize: 11,
         color: 'rgba(255,255,255,0.7)',
-        fontWeight: '500',
+        fontWeight: '400',
     },
     statsRow: {
         flexDirection: 'row',
-        gap: 10,
+        gap: 8,
     },
     statCard: {
         flex: 1,
-        backgroundColor: 'rgba(255,255,255,0.12)',
-        borderRadius: 12,
-        padding: 12,
-        flexDirection: 'row',
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        borderRadius: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 10,
         alignItems: 'center',
-        gap: 10,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.2)',
+        gap: 4,
     },
     statIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: PRIMARY_LIGHT,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: 'rgba(255,255,255,0.2)',
         justifyContent: 'center',
         alignItems: 'center',
     },
     statValue: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '700',
         color: '#FFFFFF',
+        lineHeight: 22,
     },
     statLabel: {
         fontSize: 10,
-        color: 'rgba(255,255,255,0.75)',
+        color: 'rgba(255,255,255,0.8)',
         fontWeight: '500',
-        marginTop: 2,
+        textAlign: 'center',
     },
     tabsScroll: {
-        paddingHorizontal: 16,
-        marginBottom: 0,
-        marginTop: 16,
         flexGrow: 0,
-        height: 44,
-        minHeight: 44,
-        maxHeight: 44,
+        marginTop: 12,
+        marginBottom: 4,
     },
     tabsContent: {
-        paddingRight: 16,
-        paddingBottom: 0,
-        gap: 10,
+        paddingHorizontal: 16,
+        paddingVertical: 4,
+        gap: 8,
     },
     tabsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        gap: 8,
     },
     tab: {
-        paddingVertical: 9,
-        paddingHorizontal: 15,
-        borderRadius: 8,
+        paddingVertical: 7,
+        paddingHorizontal: 14,
+        borderRadius: 20,
         backgroundColor: '#F0F0F0',
-        height: 36,
         justifyContent: 'center',
     },
     tabActive: {
         backgroundColor: PRIMARY_GREEN,
     },
     tabText: {
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: '500',
         color: TEXT_MUTED,
     },
