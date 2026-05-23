@@ -28,6 +28,7 @@ export interface InitiatePaymentPayload {
     bookingId?: string;
     labOrderId?: string;
     subscriptionId?: string;
+    meetupId?: string;
     amount: number;
     paymentMethod?: PaymentMethod;
     couponCode?: string;

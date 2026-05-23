@@ -57,7 +57,7 @@ const getPayments = async (req, res, next) => {
 // POST /api/payments/initiate  (Create Razorpay order)
 const initiatePayment = async (req, res, next) => {
     try {
-        const { userId, bookingId, labOrderId, subscriptionId, productOrderId, amount, couponCode } = req.body;
+        const { userId, bookingId, labOrderId, subscriptionId, productOrderId, meetupId, amount, couponCode } = req.body;
 
         let discountAmount = 0;
         let finalAmount = amount;
@@ -66,7 +66,7 @@ const initiatePayment = async (req, res, next) => {
         // Prevent a client from sending amount: 1 and completing a payment for ₹1.
         // The client sends total (base + GST + optional service fee), so we check
         // that it is at least 90% of the service basePrice (no GST floor).
-        // EXCEPTION: Skip validation for BLOOD_TEST (uses dynamic Redcliffe pricing).
+        // EXCEPTION: Skip validation for BLOOD_TEST (uses dynamic Redcliffe pricing) and MEETUP.
         if (bookingId && finalAmount > 0) {
             const linkedBooking = await prisma.booking.findUnique({
                 where: { id: bookingId },
@@ -92,6 +92,19 @@ const initiatePayment = async (req, res, next) => {
                 return res.status(400).json({
                     success: false,
                     message: 'Invalid lab order. Please refresh and try again.'
+                });
+            }
+        }
+
+        // For meetups, validate against meetup
+        if (meetupId && finalAmount > 0) {
+            const linkedMeetup = await prisma.meetup.findUnique({
+                where: { id: meetupId }
+            });
+            if (!linkedMeetup) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid meetup. Please refresh and try again.'
                 });
             }
         }
@@ -125,7 +138,7 @@ const initiatePayment = async (req, res, next) => {
             const razorpayOrder = await razorpay.createOrder(finalAmount, `receipt_${Date.now()}`);
 
             // Create payment record
-            // For blood tests, use labOrderId; for other services, use bookingId
+            // For blood tests, use labOrderId; for meetups, don't link to booking; for other services, use bookingId
             const payment = await prisma.payment.create({
                 data: {
                     userId: userId || req.user.id,
@@ -155,8 +168,8 @@ const initiatePayment = async (req, res, next) => {
         const payment = await prisma.payment.create({
             data: {
                 userId: userId || req.user.id,
-                bookingId,
-                subscriptionId,
+                ...(bookingId && { bookingId }),
+                ...(subscriptionId && { subscriptionId }),
                 amount: finalAmount,
                 status: 'SUCCESS',
                 paymentMethod: 'CASH', // Default for free/zero-amount

@@ -283,7 +283,8 @@ export default function ServiceCheckoutScreen() {
             // ─── STEP 3: Create Razorpay order on backend ──────────────
             setFlowState('initiating_order');
             const initiateRes = await paymentService.initiatePayment({
-                bookingId:      sessionBookingId.current ?? undefined,
+                ...(params.meetupId && { meetupId: params.meetupId }),
+                ...(sessionBookingId.current && !params.meetupId && { bookingId: sessionBookingId.current }),
                 subscriptionId: params.subscriptionId,
                 amount:         finalAmount,
                 paymentMethod:  selectedMethod,
