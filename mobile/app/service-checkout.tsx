@@ -239,8 +239,8 @@ export default function ServiceCheckoutScreen() {
     const handlePay = useCallback(async () => {
         if (payLoading) return;
 
-        // ─── Validate address ──────────────────────────────────────────
-        if (!selectedAddress) {
+        // ─── Validate address (skip for meetup) ────────────────────────
+        if (!params.meetupId && !selectedAddress) {
             Alert.alert('Address Required', 'Please select a service address.');
             return;
         }
@@ -255,8 +255,8 @@ export default function ServiceCheckoutScreen() {
                     ...payload,
                     amount: finalAmount,
                     paymentMethod: selectedMethod,
-                    addressId: selectedAddress.id,
-                    addressLine: selectedAddress.line1,
+                    addressId: selectedAddress?.id,
+                    addressLine: selectedAddress?.line1,
                 });
                 if (!bookingRes.success || !bookingRes.data) {
                     setFlowState('failed');
@@ -617,7 +617,8 @@ export default function ServiceCheckoutScreen() {
                     )}
                 </View>
 
-                {/* Service Address */}
+                {/* Service Address — hide for meetup */}
+                {!params.meetupId && (
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>Service Address</Text>
                     {profile?.addresses && profile.addresses.length > 0 ? (
@@ -653,6 +654,7 @@ export default function ServiceCheckoutScreen() {
                         <Text style={styles.noAddressText}>No saved addresses. Please add one in your profile.</Text>
                     )}
                 </View>
+                )}
 
                 {/* Coupon */}
                 <View style={styles.card}>
