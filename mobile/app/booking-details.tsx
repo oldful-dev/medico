@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { bookingService } from '@/services/api/bookingService';
 import { labService, LabOrderListItem } from '@/services/api/labService';
+import { meetupService } from '@/services/api/meetupService';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -81,6 +82,56 @@ function normalizeLabOrderDetail(order: LabOrderListItem): BookingDetail {
     };
 }
 
+function normalizeMeetupDetail(reg: any): BookingDetail {
+    const meetup = reg.meetup || {};
+    return {
+        id: reg.id,
+        bookingId: reg.bookingCode,
+        packageName: meetup.title || 'Local Meetup',
+        packageCode: '',
+        serviceType: 'meetup',
+        status: reg.status === 'CONFIRMED' || reg.status === 'ATTENDED' ? 'confirmed'
+            : reg.status === 'CANCELLED' ? 'cancelled' : 'pending',
+        paymentStatus: reg.paymentStatus === 'PAID' ? 'paid' : 'pending',
+        scheduledDate: meetup.eventDate || '',
+        scheduledTime: meetup.startTime,
+        collectionType: reg.pickupEnabled ? 'home' : 'lab',
+        address: reg.pickupEnabled ? reg.pickupAddress || '' : meetup.venue || '',
+        pincode: meetup.pinCode || '',
+        landmark: reg.pickupLandmark || '',
+        reportReady: false,
+        createdAt: reg.createdAt,
+        amount: reg.amountPaid || 0,
+        assignedPersonnel: reg.pickupEnabled && reg.preferredPickupTime ? `Pickup at ${reg.preferredPickupTime}` : undefined,
+    };
+}
+
+function normalizeServiceDetail(b: any): BookingDetail {
+    const mapStatus = (s: string): BookingDetail['status'] => {
+        if (s === 'COMPLETED' || s === 'IN_PROGRESS') return 'completed';
+        if (s === 'CANCELLED' || s === 'PAYMENT_FAILED') return 'cancelled';
+        if (s === 'CONFIRMED' || s === 'ASSIGNED') return 'confirmed';
+        return 'pending';
+    };
+    return {
+        id: b.id,
+        bookingId: b.bookingCode,
+        packageName: b.service?.name || 'Service',
+        packageCode: b.service?.slug || '',
+        serviceType: 'service',
+        status: mapStatus(b.status),
+        paymentStatus: b.paymentStatus === 'SUCCESS' ? 'paid' : b.paymentStatus === 'FAILED' ? 'failed' : 'pending',
+        scheduledDate: b.scheduledDate ? String(b.scheduledDate) : '',
+        scheduledTime: b.scheduledTime,
+        collectionType: 'home',
+        address: b.addressLine || '',
+        reportReady: false,
+        createdAt: b.createdAt ? String(b.createdAt) : '',
+        amount: b.amount || 0,
+        assignedPersonnel: b.caregiver?.name,
+    };
+}
+
 export default function BookingDetailsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -102,15 +153,21 @@ export default function BookingDetailsScreen() {
             if (type === 'lab') {
                 const res = await labService.getLabOrderById(bookingId || '');
                 if (res.success && res.data) {
-                    const normalized = normalizeLabOrderDetail(res.data as LabOrderListItem);
-                    setBooking(normalized);
+                    setBooking(normalizeLabOrderDetail(res.data as LabOrderListItem));
                 } else {
                     Alert.alert('Error', 'Failed to load booking details');
                 }
-            } else {
-                const res = await bookingService.getBookingDetails(bookingId || '');
+            } else if (type === 'meetup') {
+                const res = await meetupService.getRegistrationById(bookingId || '');
                 if (res.success && res.data) {
-                    setBooking(res.data);
+                    setBooking(normalizeMeetupDetail(res.data));
+                } else {
+                    Alert.alert('Error', 'Failed to load meetup details');
+                }
+            } else {
+                const res = await bookingService.getBookingById(bookingId || '');
+                if (res.success && res.data) {
+                    setBooking(normalizeServiceDetail(res.data));
                 } else {
                     Alert.alert('Error', 'Failed to load booking details');
                 }
@@ -157,6 +214,8 @@ export default function BookingDetailsScreen() {
                             let res;
                             if (type === 'lab') {
                                 res = await labService.cancelLabOrder(booking?.id || '');
+                            } else if (type === 'meetup') {
+                                res = await meetupService.cancelRegistration(booking?.id || '');
                             } else {
                                 res = await bookingService.cancelBooking(booking?.id || '');
                             }

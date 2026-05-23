@@ -5,6 +5,7 @@ const ctrl = require('../controllers/meetup.controller');
 
 // ─── User (auth required) — must come before /:id ────────────────
 router.get('/my-registrations',                  authenticateUser, ctrl.getMyRegistrations);
+router.get('/registrations/:regId',              authenticateUser, ctrl.getRegistrationById);
 router.post('/registrations/:regId/cancel',      authenticateUser, ctrl.cancelRegistration);
 
 // ─── Admin — must come before /:id ───────────────────────────────

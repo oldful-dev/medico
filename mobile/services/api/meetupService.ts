@@ -86,4 +86,7 @@ export const meetupService = {
 
     cancelRegistration: (regId: string) =>
         apiClient.post<MeetupRegistration>(`/meetups/registrations/${regId}/cancel`, {}),
+
+    getRegistrationById: (regId: string) =>
+        apiClient.get<MeetupRegistration>(`/meetups/registrations/${regId}`),
 };
