@@ -15,7 +15,7 @@ async function hasActiveSubscription(userId) {
         where: {
             userId,
             status: 'ACTIVE',
-            endDate: { gt: new Date() }, // Not expired
+            expiryDate: { gt: new Date() }, // Not expired
         },
     });
     return !!activeSub;
