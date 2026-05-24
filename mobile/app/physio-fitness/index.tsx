@@ -15,6 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTheme } from '@react-navigation/native';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 
@@ -31,6 +33,8 @@ export default function PhysioFitnessScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
+    const { dark: isDarkMode } = useTheme();
+    const colors = useThemeColors();
 
     // State
     const [selectedService, setSelectedService] = useState<'pain' | 'fitness'>('pain');
@@ -88,88 +92,92 @@ export default function PhysioFitnessScreen() {
             setIsBooking(false);
         }
     };
+    const dynamicStyles = makeStyles(isDarkMode);
+
     return (
-        <View style={styles.screen}>
+        <View style={dynamicStyles.screen}>
             {/* Header extension */}
             <View style={{ backgroundColor: '#048357', height: insets.top }} />
             <StatusBar style="light" backgroundColor="#048357" />
 
             {/* ─── Header ─── */}
-            <View style={styles.headerRow}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <View style={dynamicStyles.headerRow}>
+                <TouchableOpacity onPress={() => router.back()} style={dynamicStyles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <View style={styles.headerTextCol}>
-                    <Text style={styles.headerTitle}>Physio & Fitness</Text>
-                    <Text style={styles.headerSubtitle}>Pain relief therapy and yoga.</Text>
+                <View style={dynamicStyles.headerTextCol}>
+                    <Text style={dynamicStyles.headerTitle}>Physio & Fitness</Text>
+                    <Text style={dynamicStyles.headerSubtitle}>Pain relief therapy and yoga.</Text>
                 </View>
             </View>
 
             {/* Main Content Area (Rounded Cream Box) */}
-            <View style={styles.contentContainer}>
-                <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
+            <View style={dynamicStyles.contentContainer}>
+                <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* ─── Select Service ─── */}
-                    <Text style={styles.sectionTitle}>Select Service</Text>
+                    <Text style={dynamicStyles.sectionTitle}>Select Service</Text>
 
                     {/* Option: Pain Relief */}
                     <TouchableOpacity
                         style={[
-                            styles.serviceCard,
-                            styles.painCardVertical,
-                            selectedService === 'pain' && styles.selectedServiceCard
+                            dynamicStyles.serviceCard,
+                            dynamicStyles.painCardVertical,
+                            selectedService === 'pain' && dynamicStyles.selectedServiceCard
                         ]}
                         activeOpacity={0.8}
                         onPress={() => setSelectedService('pain')}
                     >
                         {/* Discount Badge */}
-                        <View style={styles.discountBadgeTopRight}>
-                            <Text style={styles.discountText}>+10% OFF</Text>
+                        <View style={dynamicStyles.discountBadgeTopRight}>
+                            <Text style={dynamicStyles.discountText}>+10% OFF</Text>
                         </View>
 
-                        <Image source={imgPainRelief} style={styles.painIllustration} resizeMode="contain" />
+                        <Image source={imgPainRelief} style={dynamicStyles.painIllustration} resizeMode="contain" />
 
-                        <View style={styles.serviceTextGroupCentered}>
-                            <Text style={styles.serviceTitle}>Pain Relief</Text>
-                            <Text style={styles.serviceSubtitle}>(Physiotherapy)</Text>
-                            <Text style={styles.serviceDesc}>For back pain, frozen shoulder, recovery</Text>
+                        <View style={dynamicStyles.serviceTextGroupCentered}>
+                            <Text style={dynamicStyles.serviceTitle}>Pain Relief</Text>
+                            <Text style={dynamicStyles.serviceSubtitle}>(Physiotherapy)</Text>
+                            <Text style={dynamicStyles.serviceDesc}>For back pain, frozen shoulder, recovery</Text>
                         </View>
                     </TouchableOpacity>
 
                     {/* Option: Senior Fitness */}
                     <TouchableOpacity
                         style={[
-                            styles.serviceCard,
-                            styles.fitnessCardVertical,
-                            selectedService === 'fitness' && styles.selectedServiceCard
+                            dynamicStyles.serviceCard,
+                            dynamicStyles.fitnessCardVertical,
+                            selectedService === 'fitness' && dynamicStyles.selectedServiceCard
                         ]}
                         activeOpacity={0.8}
                         onPress={() => setSelectedService('fitness')}
                     >
-                        <View style={styles.fitnessIllustrationRow}>
-                            <Image source={imgSeniorFitnessLeft} style={styles.fitnessIllustrationLeft} resizeMode="contain" />
-                            <Image source={imgSeniorFitnessRight} style={styles.fitnessIllustrationRight} resizeMode="contain" />
+                        <View style={dynamicStyles.fitnessIllustrationRow}>
+                            <Image source={imgSeniorFitnessLeft} style={dynamicStyles.fitnessIllustrationLeft} resizeMode="contain" />
+                            <Image source={imgSeniorFitnessRight} style={dynamicStyles.fitnessIllustrationRight} resizeMode="contain" />
                         </View>
 
-                        <View style={styles.serviceTextGroupCentered}>
-                            <Text style={styles.serviceTitle}>Senior Fitness</Text>
-                            <Text style={styles.serviceSubtitle}>(Yoga/Exercise)</Text>
-                            <Text style={styles.serviceDesc}>To stay active and mobile</Text>
+                        <View style={dynamicStyles.serviceTextGroupCentered}>
+                            <Text style={dynamicStyles.serviceTitle}>Senior Fitness</Text>
+                            <Text style={dynamicStyles.serviceSubtitle}>(Yoga/Exercise)</Text>
+                            <Text style={dynamicStyles.serviceDesc}>To stay active and mobile</Text>
                         </View>
                     </TouchableOpacity>
 
                     {/* ─── Select Body Part ─── */}
-                    <Text style={styles.sectionTitle}>Select Body Part</Text>
-                    <View style={styles.bodyPartGrid}>
+                    <Text style={dynamicStyles.sectionTitle}>Select Body Part</Text>
+                    <View style={dynamicStyles.bodyPartGrid}>
                         {BODY_PARTS.map((part) => {
                             const isSelected = selectedBodyPart === part;
+    const dynamicStyles = makeStyles(isDarkMode);
+
                             return (
                                 <TouchableOpacity
                                     key={part}
-                                    style={[styles.bodyPartPill, isSelected && styles.bodyPartPillSelected]}
+                                    style={[dynamicStyles.bodyPartPill, isSelected && dynamicStyles.bodyPartPillSelected]}
                                     onPress={() => setSelectedBodyPart(part)}
                                 >
-                                    <Text style={[styles.bodyPartText, isSelected && styles.bodyPartTextSelected]}>
+                                    <Text style={[dynamicStyles.bodyPartText, isSelected && dynamicStyles.bodyPartTextSelected]}>
                                         {part}
                                     </Text>
                                 </TouchableOpacity>
@@ -178,16 +186,16 @@ export default function PhysioFitnessScreen() {
                     </View>
 
                     {/* ─── Other Issue ─── */}
-                    <Text style={styles.sectionTitle}>Other Issue</Text>
-                    <View style={styles.inputCard}>
+                    <Text style={dynamicStyles.sectionTitle}>Other Issue</Text>
+                    <View style={dynamicStyles.inputCard}>
                         {/* Light cyan icon box */}
-                        <View style={styles.issueIconBox}>
-                            <View style={styles.issueIconLine} />
-                            <View style={styles.issueIconLine} />
+                        <View style={dynamicStyles.issueIconBox}>
+                            <View style={dynamicStyles.issueIconLine} />
+                            <View style={dynamicStyles.issueIconLine} />
                         </View>
                         <TextInput
                             placeholder="Describe your issue"
-                            style={styles.textInput}
+                            style={dynamicStyles.textInput}
                             placeholderTextColor="#555"
                             multiline
                             value={otherIssue}
@@ -204,17 +212,17 @@ export default function PhysioFitnessScreen() {
 
                     {/* ─── Book Appointment Button ─── */}
                     <TouchableOpacity
-                        style={[styles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                        style={[dynamicStyles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
                         activeOpacity={0.8}
                         disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
                         {isLoadingInit ? (
-                            <Text style={styles.submitButtonText}>Initializing...</Text>
+                            <Text style={dynamicStyles.submitButtonText}>Initializing...</Text>
                         ) : isBooking ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text style={styles.submitButtonText}>Book Appointment</Text>
+                            <Text style={dynamicStyles.submitButtonText}>Book Appointment</Text>
                         )}
                     </TouchableOpacity>
 
@@ -224,7 +232,7 @@ export default function PhysioFitnessScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
         backgroundColor: '#048357', // Solid dark green from Figma behind
@@ -249,7 +257,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#FFFFFF',
+        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         letterSpacing: -0.24,
     },
     headerSubtitle: {
@@ -389,7 +397,7 @@ const styles = StyleSheet.create({
     },
     discountText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        color: '#FFFFFF',
+        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         fontSize: 11,
     },
 
@@ -410,7 +418,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 12,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
     },
     bodyPartPillSelected: {
         backgroundColor: 'rgba(4, 131, 87, 0.74)', // Teal/Green
@@ -422,14 +430,14 @@ const styles = StyleSheet.create({
         color: '#555555',
     },
     bodyPartTextSelected: {
-        color: '#FFFFFF',
+        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
     },
 
     /* ─── Input & Calendar Cards ─── */
     inputCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         borderRadius: 12,
         paddingHorizontal: 15,
         minHeight: 59,
@@ -491,7 +499,7 @@ const styles = StyleSheet.create({
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: '#FFFFFF',
+        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         fontSize: 14,
     },
 });

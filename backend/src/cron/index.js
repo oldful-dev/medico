@@ -6,8 +6,9 @@ const cron = require('node-cron');
 const prisma = require('../config/database');
 const { logger } = require('../config/logger');
 const { sendExpiryReminder } = require('../utils/notifications');
-const { sendPlanExpiryAdmin } = require('../services/whatsapp');
+const { sendPlanExpiryFamily, sendHealthCheckFamily } = require('../services/whatsapp');
 const { calculateExpiryDate } = require('../utils/helpers');
+const { sendSMS } = require('../services/sms');
 
 const initCronJobs = () => {
     // ─── 1. Plan Expiry Reminder (Daily at 9 AM) ─────────
@@ -28,7 +29,7 @@ const initCronJobs = () => {
                         lt: new Date(new Date(sevenDaysFromNow.getTime() + 24 * 60 * 60 * 1000).toDateString()),
                     },
                 },
-                include: { user: true, plan: true },
+                include: { user: { select: { id: true, name: true, phone: true, email: true, uniqueUserId: true, whatsappEnabled: true, smsEnabled: true, emailMarketingEnabled: true } }, plan: true },
             });
 
             for (const sub of expiringSoon7) {
@@ -38,10 +39,17 @@ const initCronJobs = () => {
                     daysLeft: 7,
                     expiryDate: sub.expiryDate,
                 });
-                // Alert ops console (AYUXA_CONSOLE WABA) — non-fatal
-                if (process.env.ADMIN_OPS_PHONE) {
-                    await sendPlanExpiryAdmin({ phone: process.env.ADMIN_OPS_PHONE, name: sub.user.name }).catch(() => {});
-                }
+                // Notify emergency contacts (AYUXA_FAMILY WABA) — non-fatal
+                try {
+                    const contacts = await prisma.emergencyContact.findMany({ where: { userId: sub.userId } });
+                    for (const contact of contacts) {
+                        await sendPlanExpiryFamily({
+                            phone: contact.phone,
+                            familyName: contact.name,
+                            ayuxaId: sub.user.uniqueUserId || sub.userId,
+                        }).catch(() => {});
+                    }
+                } catch { /* non-fatal */ }
             }
 
             // 3-day reminders
@@ -53,7 +61,7 @@ const initCronJobs = () => {
                         lt: new Date(new Date(threeDaysFromNow.getTime() + 24 * 60 * 60 * 1000).toDateString()),
                     },
                 },
-                include: { user: true, plan: true },
+                include: { user: { select: { id: true, name: true, phone: true, uniqueUserId: true } }, plan: true },
             });
 
             for (const sub of expiringSoon3) {
@@ -63,10 +71,17 @@ const initCronJobs = () => {
                     daysLeft: 3,
                     expiryDate: sub.expiryDate,
                 });
-                // 3-day alert also goes to ops console — non-fatal
-                if (process.env.ADMIN_OPS_PHONE) {
-                    await sendPlanExpiryAdmin({ phone: process.env.ADMIN_OPS_PHONE, name: sub.user.name }).catch(() => {});
-                }
+                // 3-day alert also goes to family contacts — non-fatal
+                try {
+                    const contacts = await prisma.emergencyContact.findMany({ where: { userId: sub.userId } });
+                    for (const contact of contacts) {
+                        await sendPlanExpiryFamily({
+                            phone: contact.phone,
+                            familyName: contact.name,
+                            ayuxaId: sub.user.uniqueUserId || sub.userId,
+                        }).catch(() => {});
+                    }
+                } catch { /* non-fatal */ }
             }
 
             // Update status of expiring subscriptions
@@ -178,6 +193,69 @@ const initCronJobs = () => {
             logger.info(`⏰ CRON: ${result.count} subscriptions marked as expired`);
         } catch (error) {
             logger.error('CRON subscription cleanup error:', error);
+        }
+    });
+
+    // ─── 5. Daily Wellness Check-in SMS (Every day at 8 AM) ──
+    // Sends WELLNESS_CHECKIN (215397) to all active subscribers
+    cron.schedule('0 8 * * *', async () => {
+        logger.info('⏰ CRON: Running wellness check-in SMS...');
+        try {
+            const activeUsers = await prisma.subscription.findMany({
+                where: { status: 'ACTIVE' },
+                include: { user: { select: { id: true, name: true, phone: true, smsEnabled: true } } },
+                distinct: ['userId'],
+            });
+
+            let sent = 0;
+            for (const sub of activeUsers) {
+                const user = sub.user;
+                if (!user?.phone || user.smsEnabled === false) continue;
+                try {
+                    await sendSMS({
+                        template: 'WELLNESS_CHECKIN',
+                        mobile: user.phone,
+                        variables: [user.name],
+                        userId: user.id,
+                    });
+                    sent++;
+                } catch (err) {
+                    logger.warn(`[CRON] WELLNESS_CHECKIN failed for ${user.phone}: ${err.message}`);
+                }
+            }
+            logger.info(`⏰ CRON: Sent ${sent} wellness check-in SMS`);
+        } catch (error) {
+            logger.error('CRON wellness check-in error:', error);
+        }
+    });
+
+    // ─── 6. Weekly Health Check Reminder to Family (Every Sunday at 9 AM) ──
+    // Sends HEALTH_CHECK_FAMILY WA to emergency contacts of all active subscribers
+    cron.schedule('0 9 * * 0', async () => {
+        logger.info('⏰ CRON: Running weekly family health check reminder...');
+        try {
+            const activeSubs = await prisma.subscription.findMany({
+                where: { status: 'ACTIVE' },
+                include: { user: { select: { id: true, name: true } } },
+                distinct: ['userId'],
+            });
+
+            let sent = 0;
+            for (const sub of activeSubs) {
+                try {
+                    const contacts = await prisma.emergencyContact.findMany({ where: { userId: sub.userId } });
+                    for (const contact of contacts) {
+                        await sendHealthCheckFamily({
+                            phone: contact.phone,
+                            clientName: sub.user.name,
+                        }).catch(() => {});
+                        sent++;
+                    }
+                } catch { /* non-fatal */ }
+            }
+            logger.info(`⏰ CRON: Sent ${sent} family health check reminders`);
+        } catch (error) {
+            logger.error('CRON family health check error:', error);
         }
     });
 

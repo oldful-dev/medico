@@ -10,6 +10,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { bookingService } from '@/services/api/bookingService';
 import { labService, LabOrderListItem } from '@/services/api/labService';
 import { meetupService } from '@/services/api/meetupService';
+import { useTheme } from '@/context/ThemeContext';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -136,6 +138,9 @@ export default function BookingDetailsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { bookingId, type } = useLocalSearchParams<{ bookingId?: string; type?: string }>();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(isDarkMode, colors);
     const [booking, setBooking] = useState<BookingDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [downloading, setDownloading] = useState(false);
@@ -260,8 +265,8 @@ export default function BookingDetailsScreen() {
 
     if (loading) {
         return (
-            <View style={[styles.container, { paddingTop: insets.top }]}>
-                <StatusBar backgroundColor="#FFFFFF" />
+            <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}>
+                <StatusBar backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
                 <View style={styles.centerContainer}>
                     <ActivityIndicator size="large" color={PRIMARY_GREEN} />
                 </View>
@@ -271,25 +276,25 @@ export default function BookingDetailsScreen() {
 
     if (!booking) {
         return (
-            <View style={[styles.container, { paddingTop: insets.top }]}>
-                <StatusBar backgroundColor="#FFFFFF" />
+            <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}>
+                <StatusBar backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
                 <View style={styles.centerContainer}>
-                    <Text style={styles.errorText}>Booking not found</Text>
+                    <Text style={[styles.errorText, { color: isDarkMode ? '#E0E0E0' : '#000000' }]}>Booking not found</Text>
                 </View>
             </View>
         );
     }
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar backgroundColor="#FFFFFF" />
+        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}>
+            <StatusBar backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
 
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: isDarkMode ? '#252525' : '#FFFFFF' }]}>
                 <TouchableOpacity onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color={TEXT_DARK} />
+                    <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#E0E0E0' : TEXT_DARK} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Booking Details</Text>
+                <Text style={[styles.headerTitle, { color: isDarkMode ? '#E0E0E0' : TEXT_DARK }]}>Booking Details</Text>
                 <View
                     style={[
                         styles.statusBadge,
@@ -517,10 +522,9 @@ export default function BookingDetailsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean, colors: any) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
     },
     header: {
         flexDirection: 'row',
@@ -529,12 +533,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: CARD_BORDER,
+        borderBottomColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
     },
     headerTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: TEXT_DARK,
         flex: 1,
         textAlign: 'center',
     },
@@ -556,9 +559,9 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
     },
     card: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF',
         borderWidth: 1,
-        borderColor: CARD_BORDER,
+        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         borderRadius: 12,
         padding: 14,
         marginBottom: 12,
@@ -576,12 +579,12 @@ const styles = StyleSheet.create({
     packageName: {
         fontSize: 14,
         fontWeight: '700',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#E0E0E0' : TEXT_DARK,
         marginBottom: 4,
     },
     bookingId: {
         fontSize: 11,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#A0A0A0' : TEXT_MUTED,
         fontWeight: '500',
     },
     detailsGrid: {
@@ -598,21 +601,21 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: '#F0FDF4',
+        backgroundColor: isDarkMode ? 'rgba(52,199,89,0.15)' : '#F0FDF4',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 8,
     },
     gridLabel: {
         fontSize: 10,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#A0A0A0' : TEXT_MUTED,
         fontWeight: '500',
         marginBottom: 2,
     },
     gridValue: {
         fontSize: 12,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#E0E0E0' : TEXT_DARK,
         textAlign: 'center',
     },
     sectionHeader: {
@@ -624,22 +627,22 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 13,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#E0E0E0' : TEXT_DARK,
     },
     addressText: {
         fontSize: 13,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#E0E0E0' : TEXT_DARK,
         marginBottom: 4,
     },
     pincodeText: {
         fontSize: 12,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#A0A0A0' : TEXT_MUTED,
         marginBottom: 4,
     },
     landmarkText: {
         fontSize: 12,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#A0A0A0' : TEXT_MUTED,
         fontStyle: 'italic',
     },
     paymentRow: {
@@ -650,7 +653,7 @@ const styles = StyleSheet.create({
     paymentLabel: {
         fontSize: 13,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#E0E0E0' : TEXT_DARK,
     },
     paymentAmount: {
         flexDirection: 'row',
@@ -682,18 +685,18 @@ const styles = StyleSheet.create({
     reportTitle: {
         fontSize: 14,
         fontWeight: '700',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#E0E0E0' : TEXT_DARK,
         marginBottom: 2,
     },
     reportDate: {
         fontSize: 11,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#A0A0A0' : TEXT_MUTED,
     },
     reportBadge: {
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: '#F0FDF4',
+        backgroundColor: isDarkMode ? 'rgba(52,199,89,0.15)' : '#F0FDF4',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -702,7 +705,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 10,
-        backgroundColor: '#F0FDF4',
+        backgroundColor: isDarkMode ? 'rgba(52,199,89,0.15)' : '#F0FDF4',
         borderRadius: 8,
         borderWidth: 1,
         borderColor: PRIMARY_GREEN,
@@ -721,15 +724,15 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
         gap: 10,
         padding: 12,
-        backgroundColor: '#FFFBEB',
+        backgroundColor: isDarkMode ? 'rgba(217,119,6,0.15)' : '#FFFBEB',
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: '#FEF3C7',
+        borderColor: isDarkMode ? 'rgba(217,119,6,0.3)' : '#FEF3C7',
         marginBottom: 12,
     },
     infoText: {
         fontSize: 12,
-        color: '#92400E',
+        color: isDarkMode ? '#D4A574' : '#92400E',
         flex: 1,
         lineHeight: 17,
         paddingTop: 2,
@@ -741,7 +744,6 @@ const styles = StyleSheet.create({
     },
     errorText: {
         fontSize: 14,
-        color: TEXT_DARK,
     },
     footer: {
         flexDirection: 'row',
@@ -749,8 +751,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderTopWidth: 1,
-        borderTopColor: CARD_BORDER,
-        backgroundColor: '#FFFFFF',
+        borderTopColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
     },
     actionBtn: {
         flex: 1,
@@ -761,7 +763,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     cancelBtn: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? 'rgba(239,68,68,0.1)' : '#FFFFFF',
         borderWidth: 1,
         borderColor: '#EF4444',
     },
@@ -776,8 +778,8 @@ const styles = StyleSheet.create({
         color: '#EF4444',
     },
     rescheduleCard: {
-        backgroundColor: '#F5F3FF',
-        borderColor: '#E9D5FF',
+        backgroundColor: isDarkMode ? 'rgba(139,92,246,0.15)' : '#F5F3FF',
+        borderColor: isDarkMode ? 'rgba(139,92,246,0.3)' : '#E9D5FF',
     },
     rescheduleHeader: {
         flexDirection: 'row',
@@ -797,14 +799,14 @@ const styles = StyleSheet.create({
     },
     rescheduleLabel: {
         fontSize: 10,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#A0A0A0' : TEXT_MUTED,
         fontWeight: '500',
         marginBottom: 4,
     },
     rescheduleValueOld: {
         fontSize: 12,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#E0E0E0' : TEXT_DARK,
         textDecorationLine: 'line-through',
     },
     rescheduleValueNew: {

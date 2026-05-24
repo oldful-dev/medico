@@ -20,6 +20,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@react-navigation/native';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
@@ -42,6 +44,8 @@ const INITIAL_RECIPIENTS = [
 export default function InsuranceScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { dark: isDarkMode } = useTheme();
+    const colors = useThemeColors();
 
     // UI State
     const [recipients, setRecipients] = React.useState(INITIAL_RECIPIENTS);
@@ -142,47 +146,49 @@ export default function InsuranceScreen() {
         setConditions(newConditions);
     };
 
+    const dynamicStyles = makeStyles(isDarkMode);
+
     return (
-        <View style={styles.screen}>
+        <View style={dynamicStyles.screen}>
             <View style={{ backgroundColor: '#048357', height: insets.top }} />
             <StatusBar style="light" backgroundColor="#048357" />
 
             {/* ─── Header ─── */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <View style={dynamicStyles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={dynamicStyles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Insurance Plan</Text>
+                <Text style={dynamicStyles.headerTitle}>Insurance Plan</Text>
             </View>
 
             {/* ─── Content Card ─── */}
-            <View style={styles.contentCard}>
+            <View style={dynamicStyles.contentCard}>
                 <KeyboardAwareScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.scrollContent}
+                    style={dynamicStyles.scrollView}
+                    contentContainerStyle={dynamicStyles.scrollContent}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                     enableOnAndroid
                     extraScrollHeight={20}
                 >
                     {/* ─── Main Form Card (matches Figma Rectangle 157) ─── */}
-                    <View style={styles.formWrapper}>
+                    <View style={dynamicStyles.formWrapper}>
                         {/* Title */}
-                        <Text style={styles.pageTitle}>Get an Insurance Plan</Text>
-                        <Text style={styles.pageSubtitle}>
+                        <Text style={dynamicStyles.pageTitle}>Get an Insurance Plan</Text>
+                        <Text style={dynamicStyles.pageSubtitle}>
                             Find the best health insurance plan tailored for you or your parents.
                         </Text>
 
                         {/* ─── Who Is It For? ─── */}
-                        <View style={styles.sectionCard}>
-                            <Text style={styles.sectionTitle}>Who is it for?</Text>
-                            <View style={styles.recipientRow}>
+                        <View style={dynamicStyles.sectionCard}>
+                            <Text style={dynamicStyles.sectionTitle}>Who is it for?</Text>
+                            <View style={dynamicStyles.recipientRow}>
                                 {recipients.map((item, index) => (
                                     <TouchableOpacity
                                         key={index}
                                         style={[
-                                            styles.recipientButton,
-                                            item.selected && styles.recipientButtonSelected,
+                                            dynamicStyles.recipientButton,
+                                            item.selected && dynamicStyles.recipientButtonSelected,
                                         ]}
                                         onPress={() => selectRecipient(index)}
                                     >
@@ -194,13 +200,13 @@ export default function InsuranceScreen() {
                                         {item.label === 'Parents' && (
                                             <Image
                                                 source={familyIcon}
-                                                style={styles.familyIcon}
+                                                style={dynamicStyles.familyIcon}
                                                 resizeMode="contain"
                                             />
                                         )}
                                         <Text style={[
-                                            styles.recipientText,
-                                            item.selected && styles.recipientTextSelected,
+                                            dynamicStyles.recipientText,
+                                            item.selected && dynamicStyles.recipientTextSelected,
                                         ]}>
                                             {item.label}
                                         </Text>
@@ -210,28 +216,28 @@ export default function InsuranceScreen() {
                         </View>
 
                         {/* ─── Pre-existing Conditions ─── */}
-                        <Text style={styles.conditionHeader}>
+                        <Text style={dynamicStyles.conditionHeader}>
                             Do you existing have diseases?{'\n'}
-                            <Text style={styles.conditionSubHeader}>(Crucial for premium calculation)</Text>
+                            <Text style={dynamicStyles.conditionSubHeader}>(Crucial for premium calculation)</Text>
                         </Text>
 
                         {conditions.map((cond, index) => (
                             <TouchableOpacity
                                 key={index}
-                                style={styles.conditionItem}
+                                style={dynamicStyles.conditionItem}
                                 onPress={() => toggleCondition(index)}
                             >
                                 <View style={[
-                                    styles.conditionCheckbox,
-                                    cond.selected && styles.conditionCheckboxSelected,
+                                    dynamicStyles.conditionCheckbox,
+                                    cond.selected && dynamicStyles.conditionCheckboxSelected,
                                 ]}>
                                     {cond.selected && (
                                         <Ionicons name="checkmark" size={14} color="#FFFFFF" />
                                     )}
                                 </View>
                                 <Text style={[
-                                    styles.conditionLabel,
-                                    cond.selected && styles.conditionLabelSelected,
+                                    dynamicStyles.conditionLabel,
+                                    cond.selected && dynamicStyles.conditionLabelSelected,
                                 ]}>
                                     {cond.label}
                                 </Text>
@@ -239,10 +245,10 @@ export default function InsuranceScreen() {
                         ))}
 
                         {/* ─── Requirements Text Area ─── */}
-                        <Text style={styles.requirementsLabel}>Write what you&apos;re looking for</Text>
-                        <View style={styles.textAreaCard}>
+                        <Text style={dynamicStyles.requirementsLabel}>Write what you&apos;re looking for</Text>
+                        <View style={dynamicStyles.textAreaCard}>
                             <TextInput
-                                style={styles.textArea}
+                                style={dynamicStyles.textArea}
                                 placeholder="Describe your requirements or preferences....."
                                 placeholderTextColor="#AAAEAC"
                                 multiline
@@ -254,19 +260,19 @@ export default function InsuranceScreen() {
                         </View>
 
                         {/* ─── Submit Button ─── */}
-                        <View style={styles.submitContainer}>
+                        <View style={dynamicStyles.submitContainer}>
                             <TouchableOpacity
-                                style={[styles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                                style={[dynamicStyles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
                                 activeOpacity={0.8}
                                 disabled={isBooking || isLoadingInit}
                                 onPress={handleBookService}
                             >
                                 {isLoadingInit ? (
-                                    <Text style={styles.submitButtonText}>Initializing...</Text>
+                                    <Text style={dynamicStyles.submitButtonText}>Initializing...</Text>
                                 ) : isBooking ? (
                                     <ActivityIndicator color="#FFFFFF" />
                                 ) : (
-                                    <Text style={styles.submitButtonText}>Submit Request</Text>
+                                    <Text style={dynamicStyles.submitButtonText}>Submit Request</Text>
                                 )}
                             </TouchableOpacity>
                         </View>
@@ -277,7 +283,7 @@ export default function InsuranceScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
         backgroundColor: '#048357',
@@ -299,7 +305,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#FFFFFF',
+        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         textAlign: 'left', marginLeft: 12,
         letterSpacing: -0.24,
     },
@@ -323,7 +329,7 @@ const styles = StyleSheet.create({
 
     /* ─── Form Wrapper (Figma Rectangle 157) ─── */
     formWrapper: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         borderRadius: 14,
         padding: 18,
         shadowColor: '#000000',
@@ -483,6 +489,6 @@ const styles = StyleSheet.create({
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 14,
-        color: '#FFFFFF',
+        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
     },
 });

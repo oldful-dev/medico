@@ -236,13 +236,19 @@ const sendBookingConfirmation = async ({ user, bookingCode, booking = null }) =>
         userId: fullUser.id,
     });
 
-    // Also send DLT SMS if template is configured AND user allows SMS
-    if (process.env.FAST2SMS_ORDER_TEMPLATE_ID && fullUser.smsEnabled !== false) {
-        await fast2smsUtils.sendDLTSMS(
-            fullUser.phone,
-            process.env.FAST2SMS_ORDER_TEMPLATE_ID,
-            [fullUser.name, bookingCode, process.env.ADMIN_EMERGENCY_PHONE || '9480198108']
-        );
+    // DLT SMS — ORDER_CONFIRMED (215239) — Var1=name, Var2=orderId, Var3=support
+    if (fullUser.smsEnabled !== false) {
+        const { sendSMS } = require('../services/sms');
+        await sendSMS({
+            template: 'ORDER_CONFIRMED',
+            mobile: fullUser.phone,
+            variables: [
+                fullUser.name,
+                bookingCode || '-',
+                process.env.SUPPORT_PHONE || '9480198108',
+            ],
+            userId: fullUser.id,
+        }).catch(err => logger.warn('ORDER_CONFIRMED SMS failed (non-fatal):', err.message));
     }
 };
 
@@ -283,9 +289,30 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
 // ─── OTP (Fast2SMS SMS — unchanged) ───────────────────────
 // OTP delivery remains on Fast2SMS SMS. Do not route to Interakt.
 
+// Android SMS Retriever hash for com.ayuxacare.app.
+// Run `keytool` on the release keystore to regenerate if the signing key changes.
+// Generate with: https://developers.google.com/identity/sms-retriever/verify#computing_your_app_hash_string
+const ANDROID_SMS_HASH = process.env.ANDROID_SMS_HASH || 'REPLACE_WITH_HASH';
+
 const requestFast2SMSOTP = async (phoneNumber) => {
-    const otp = Math.floor(1000 + Math.random() * 9000).toString();
-    const success = await fast2smsUtils.sendSMS(phoneNumber, `Your Ayuxa verification code is: ${otp}`);
+    const otp = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit OTP
+    const { sendSMS } = require('../services/sms');
+
+    let success = false;
+    try {
+        // Append Android SMS Retriever hash so the OS auto-reads the message.
+        // Format: "<#> {otp} {hash}" — the <#> prefix and 11-char hash at end
+        // are required by the SMS Retriever API. The DLT {#var#} slot receives
+        // the full string; carriers deliver it verbatim.
+        const otpWithHash = `<#> ${otp} ${ANDROID_SMS_HASH}`;
+        success = await sendSMS({
+            template: 'OTP_USER',
+            mobile: phoneNumber,
+            variables: [otpWithHash],
+        });
+    } catch (err) {
+        logger.warn(`[OTP] DLT SMS failed: ${err.message}`);
+    }
 
     if (success) {
         await prisma.otpLog.create({

@@ -76,4 +76,12 @@ export const planService = {
     checkActiveSubscription: async (): Promise<ApiResponse<any>> => {
         return apiClient.get('/subscriptions/me/active');
     },
+
+    /**
+     * PUT /api/subscriptions/:id/cancel
+     * Cancel an active subscription — backend fires PLAN_CANCELLED_WITH_CONTACT SMS (215602).
+     */
+    cancelSubscription: async (subscriptionId: string): Promise<ApiResponse<any>> => {
+        return apiClient.put(`/subscriptions/${subscriptionId}/cancel`);
+    },
 };

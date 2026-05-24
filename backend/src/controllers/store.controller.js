@@ -4,6 +4,7 @@
 
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/helpers');
+const { logger } = require('../config/logger');
 
 // ═══════════════════════════════════════════
 //  PRODUCTS
@@ -170,8 +171,85 @@ const deleteCategory = async (req, res, next) => {
     }
 };
 
+// ═══════════════════════════════════════════
+//  ADMIN: ORDER MANAGEMENT
+// ═══════════════════════════════════════════
+
+// GET /api/products/admin/orders — list all product orders
+const getAdminOrders = async (req, res, next) => {
+    try {
+        const { page, limit, skip } = paginate(req.query);
+        const { status } = req.query;
+        const where = status ? { status } : {};
+        const [orders, total] = await Promise.all([
+            prisma.productOrder.findMany({
+                where,
+                skip,
+                take: limit,
+                include: {
+                    product: { select: { name: true, imageUrl: true } },
+                    user: { select: { name: true, phone: true, uniqueUserId: true } },
+                },
+                orderBy: { createdAt: 'desc' },
+            }),
+            prisma.productOrder.count({ where }),
+        ]);
+        sendPaginatedResponse(res, orders, total, page, limit);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// PUT /api/products/admin/orders/:id/status — update order status, fires MEDICINE_OUT_FOR_DELIVERY SMS
+const updateOrderStatus = async (req, res, next) => {
+    try {
+        const { status, estimatedDelivery } = req.body;
+        const validStatuses = ['PENDING', 'CONFIRMED', 'DISPATCHED', 'DELIVERED', 'CANCELLED'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ success: false, message: 'Invalid status' });
+        }
+
+        const order = await prisma.productOrder.update({
+            where: { id: req.params.id },
+            data: { status, ...(estimatedDelivery && { estimatedDelivery }) },
+            include: {
+                user: { select: { id: true, name: true, phone: true, smsEnabled: true } },
+                product: { select: { name: true } },
+            },
+        });
+
+        // DLT SMS — MEDICINE_OUT_FOR_DELIVERY (215398) when status changes to DISPATCHED
+        // Var1=name, Var2=orderId, Var3=estimatedDelivery
+        if (status === 'DISPATCHED' && order.user?.phone) {
+            try {
+                const { sendSMS } = require('../services/sms');
+                if (order.user.smsEnabled !== false) {
+                    await sendSMS({
+                        template: 'MEDICINE_OUT_FOR_DELIVERY',
+                        mobile: order.user.phone,
+                        variables: [
+                            order.user.name,
+                            order.orderCode || order.id,
+                            estimatedDelivery || 'today',
+                        ],
+                        userId: order.user.id,
+                    });
+                    logger.info(`[SMS] MEDICINE_OUT_FOR_DELIVERY sent → ${order.user.phone}`);
+                }
+            } catch (smsErr) {
+                logger.warn('MEDICINE_OUT_FOR_DELIVERY SMS failed (non-fatal):', smsErr.message);
+            }
+        }
+
+        sendResponse(res, 200, order, 'Order status updated');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getProducts, getProductById, createProduct, updateProduct, deleteProduct,
     createProductOrder, joinWaitlist,
     getCategories, createCategory, updateCategory, deleteCategory,
+    getAdminOrders, updateOrderStatus,
 };

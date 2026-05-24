@@ -13,21 +13,40 @@
 const { sendWhatsApp } = require('./whatsapp.service');
 const { WHATSAPP_TEMPLATES, WABA_ACCOUNTS } = require('./templates');
 
-// Named event helpers
 const {
+    // Auth
     sendOTP,
+    sendFamilyOTP,
+    sendEmpOTP,
+
+    // Onboarding / marketing
     sendWelcome,
+    sendWellnessReminder,
+    sendBirthdayWishes,
+
+    // Transactional — client
     sendBookingConfirmed,
     sendPaymentReceived,
     sendOrderCancelled,
     sendPrescriptionReceived,
     sendLabReportReady,
     sendPlanExpiryReminder,
-    sendPlanExpiryAdmin,
-    sendWellnessReminder,
-    sendBirthdayWishes,
-    sendSOSAlert,
-    sendSOSAlertAdmin,
+    sendSOSAlertClient,
+
+    // Family
+    sendSOSAlertFamily,
+    sendPlanExpiredFamily,
+    sendPlanExpiryFamily,
+    sendHealthCheckFamily,
+    sendPrescriptionUploadedFamily,
+
+    // Employee / caregiver
+    sendShiftAssigned,
+    sendSOSDispatch,
+    sendShiftCancelledWA,
+
+    // Ops / emergency
+    sendSOSAlertOps,
 } = require('./router');
 
 module.exports = {
@@ -36,18 +55,37 @@ module.exports = {
     WHATSAPP_TEMPLATES,
     WABA_ACCOUNTS,
 
-    // Event helpers
+    // Auth
     sendOTP,
+    sendFamilyOTP,
+    sendEmpOTP,
+
+    // Onboarding / marketing
     sendWelcome,
+    sendWellnessReminder,
+    sendBirthdayWishes,
+
+    // Transactional — client
     sendBookingConfirmed,
     sendPaymentReceived,
     sendOrderCancelled,
     sendPrescriptionReceived,
     sendLabReportReady,
     sendPlanExpiryReminder,
-    sendPlanExpiryAdmin,
-    sendWellnessReminder,
-    sendBirthdayWishes,
-    sendSOSAlert,
-    sendSOSAlertAdmin,
+    sendSOSAlertClient,
+
+    // Family
+    sendSOSAlertFamily,
+    sendPlanExpiredFamily,
+    sendPlanExpiryFamily,
+    sendHealthCheckFamily,
+    sendPrescriptionUploadedFamily,
+
+    // Employee / caregiver
+    sendShiftAssigned,
+    sendSOSDispatch,
+    sendShiftCancelledWA,
+
+    // Ops / emergency
+    sendSOSAlertOps,
 };

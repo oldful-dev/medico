@@ -147,7 +147,7 @@ const cancelSubscription = async (req, res, next) => {
         const subscription = await prisma.subscription.update({
             where: { id: req.params.id },
             data: { status: 'CANCELLED', cancelledAt: new Date() },
-            include: { user: { select: { name: true, phone: true, smsEnabled: true } }, plan: true },
+            include: { user: { select: { id: true, name: true, phone: true, uniqueUserId: true, smsEnabled: true } }, plan: true },
         });
 
         // Notify user of plan cancellation — non-fatal
@@ -155,15 +155,22 @@ const cancelSubscription = async (req, res, next) => {
             if (subscription.user?.phone) {
                 const { sendSMS } = require('../services/sms');
                 const supportPhone = process.env.SUPPORT_PHONE || '9480198108';
+                // DLT SMS 215602: PLAN_CANCELLED_WITH_CONTACT — Var1=name, Var2=support
                 await sendSMS({
-                    template: 'PLAN_EXPIRED_USER',
+                    template: 'PLAN_CANCELLED_WITH_CONTACT',
                     mobile: subscription.user.phone,
                     variables: [subscription.user.name, supportPhone],
                 });
-                // Alert admin ops (AYUXA_CONSOLE WABA)
-                if (process.env.ADMIN_OPS_PHONE) {
-                    const { sendPlanExpiryAdmin } = require('../services/whatsapp');
-                    await sendPlanExpiryAdmin({ phone: process.env.ADMIN_OPS_PHONE, name: subscription.user.name });
+                // WA: notify family emergency contacts (AYUXA_FAMILY — PLAN_EXPIRED_FAMILY)
+                const { sendPlanExpiredFamily } = require('../services/whatsapp');
+                const contacts = await prisma.emergencyContact.findMany({ where: { userId: subscription.userId } });
+                for (const contact of contacts) {
+                    await sendPlanExpiredFamily({
+                        phone: contact.phone,
+                        familyName: contact.name,
+                        clientName: subscription.user.name,
+                        ayuxaId: subscription.user.uniqueUserId || subscription.userId,
+                    }).catch(() => {});
                 }
             }
         } catch (notifErr) {

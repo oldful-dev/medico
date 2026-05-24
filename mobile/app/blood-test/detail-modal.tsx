@@ -5,6 +5,8 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { labService, type LabPackage } from '@/services/api/labService';
+import { useTheme } from '@/context/ThemeContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -22,6 +24,8 @@ interface DetailModalProps {
 export function BloodTestDetailModal({ visible, packageCode, onClose, onAddToCart, onBookNow }: DetailModalProps) {
     const [pkg, setPkg] = useState<LabPackage | null>(null);
     const [loading, setLoading] = useState(false);
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
 
     useEffect(() => {
         if (visible && packageCode) {
@@ -211,7 +215,7 @@ export function BloodTestDetailModal({ visible, packageCode, onClose, onAddToCar
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
@@ -220,7 +224,7 @@ const styles = StyleSheet.create({
     container: {
         minHeight: '50%',
         maxHeight: '90%',
-        backgroundColor: '#fff',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#fff',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         overflow: 'hidden',
@@ -233,12 +237,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 18,
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
+        borderBottomColor: isDarkMode ? '#3A3A3A' : '#F0F0F0',
     },
     headerTitle: {
         fontSize: 15,
         fontWeight: '700',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         flex: 1,
         marginRight: 12,
         lineHeight: 22,
@@ -257,17 +261,17 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
         paddingBottom: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
+        borderBottomColor: isDarkMode ? '#3A3A3A' : '#F0F0F0',
         marginBottom: 16,
     },
     price: {
         fontSize: 28,
         fontWeight: '900',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
     },
     originalPrice: {
         fontSize: 13,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
         textDecorationLine: 'line-through',
         marginTop: 4,
     },
@@ -290,7 +294,7 @@ const styles = StyleSheet.create({
     },
     descText: {
         fontSize: 13,
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         lineHeight: 19,
     },
     infoGrid: {
@@ -300,23 +304,23 @@ const styles = StyleSheet.create({
     },
     infoItem: {
         flex: 1,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: isDarkMode ? '#252525' : '#F9FAFB',
         padding: 12,
         borderRadius: 10,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#F0F0F0',
+        borderColor: isDarkMode ? '#3A3A3A' : '#F0F0F0',
     },
     infoLabel: {
         fontSize: 10,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
         marginTop: 6,
         fontWeight: '500',
     },
     infoValue: {
         fontSize: 12,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         marginTop: 2,
     },
     section: {
@@ -331,10 +335,10 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 14,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
     },
     testsList: {
-        backgroundColor: '#F9FAFB',
+        backgroundColor: isDarkMode ? '#252525' : '#F9FAFB',
         padding: 12,
         borderRadius: 10,
         gap: 8,
@@ -346,7 +350,7 @@ const styles = StyleSheet.create({
     },
     testName: {
         fontSize: 12,
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         flex: 1,
         paddingTop: 2,
     },
@@ -367,7 +371,7 @@ const styles = StyleSheet.create({
     },
     prepText: {
         fontSize: 12,
-        color: '#92400E',
+        color: isDarkMode ? '#E8D4A0' : '#92400E',
         flex: 1,
         lineHeight: 18,
     },
@@ -400,7 +404,7 @@ const styles = StyleSheet.create({
     },
     noteText: {
         fontSize: 12,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
         flex: 1,
         paddingTop: 2,
     },
@@ -409,8 +413,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderTopWidth: 1,
-        borderTopColor: '#F0F0F0',
-        backgroundColor: '#fff',
+        borderTopColor: isDarkMode ? '#3A3A3A' : '#F0F0F0',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#fff',
         gap: 10,
     },
     cartBtn: {
@@ -422,7 +426,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderWidth: 1.5,
         borderColor: PRIMARY_GREEN,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
     },
     cartBtnText: {
         color: PRIMARY_GREEN,
@@ -445,16 +449,17 @@ const styles = StyleSheet.create({
     parametersBox: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F9FAFB',
+        backgroundColor: isDarkMode ? '#252525' : '#F9FAFB',
         padding: 12,
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: '#F0F0F0',
+        borderColor: isDarkMode ? '#3A3A3A' : '#F0F0F0',
     },
     parametersText: {
         fontSize: 12,
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         flex: 1,
         lineHeight: 18,
     },
 });
+const styles = makeStyles(false, {} as ThemeColors);

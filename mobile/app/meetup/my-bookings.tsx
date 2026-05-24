@@ -8,6 +8,8 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { meetupService } from '@/services/api/meetupService';
 import type { MeetupRegistration } from '@/services/api/meetupService';
 
@@ -25,6 +27,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
 export default function MeetupMyBookingsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
     const [activeTab, setActiveTab] = useState<Tab>('upcoming');
     const [bookings, setBookings] = useState<MeetupRegistration[]>([]);
     const [loading, setLoading] = useState(true);
@@ -54,38 +58,38 @@ export default function MeetupMyBookingsScreen() {
     };
 
     return (
-        <View style={[styles.screen, { paddingTop: insets.top }]}>
-            <StatusBar style="light" backgroundColor={PRIMARY} />
+        <View style={[makeStyles(isDarkMode, colors).screen, { paddingTop: insets.top }]}>
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={PRIMARY} />
 
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <View style={makeStyles(isDarkMode, colors).header}>
+                <TouchableOpacity onPress={() => router.back()} style={makeStyles(isDarkMode, colors).backBtn}>
                     <Ionicons name="arrow-back" size={22} color="#fff" />
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
-                    <Text style={styles.headerTitle}>My Bookings</Text>
-                    <Text style={styles.headerSub}>Local meetup registrations</Text>
+                    <Text style={makeStyles(isDarkMode, colors).headerTitle}>My Bookings</Text>
+                    <Text style={makeStyles(isDarkMode, colors).headerSub}>Local meetup registrations</Text>
                 </View>
-                <View style={styles.countBadge}>
-                    <Text style={styles.countText}>{upcomingBookings.length}</Text>
+                <View style={makeStyles(isDarkMode, colors).countBadge}>
+                    <Text style={makeStyles(isDarkMode, colors).countText}>{upcomingBookings.length}</Text>
                 </View>
             </View>
 
             {/* Tabs */}
-            <View style={styles.tabsRow}>
+            <View style={makeStyles(isDarkMode, colors).tabsRow}>
                 {(['upcoming', 'past'] as Tab[]).map(tab => (
                     <TouchableOpacity
                         key={tab}
-                        style={[styles.tab, activeTab === tab && styles.tabActive]}
+                        style={[makeStyles(isDarkMode, colors).tab, activeTab === tab && styles.tabActive]}
                         onPress={() => setActiveTab(tab)}
                         activeOpacity={0.8}
                     >
-                        <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                        <Text style={[makeStyles(isDarkMode, colors).tabText, activeTab === tab && styles.tabTextActive]}>
                             {tab === 'upcoming' ? 'Upcoming' : 'Past'}
                         </Text>
                         {tab === 'upcoming' && upcomingBookings.length > 0 && (
-                            <View style={[styles.tabBadge, activeTab === tab && styles.tabBadgeActive]}>
-                                <Text style={[styles.tabBadgeText, activeTab === tab && styles.tabBadgeTextActive]}>
+                            <View style={[makeStyles(isDarkMode, colors).tabBadge, activeTab === tab && styles.tabBadgeActive]}>
+                                <Text style={[makeStyles(isDarkMode, colors).tabBadgeText, activeTab === tab && styles.tabBadgeTextActive]}>
                                     {upcomingBookings.length}
                                 </Text>
                             </View>
@@ -95,7 +99,7 @@ export default function MeetupMyBookingsScreen() {
             </View>
 
             {loading ? (
-                <View style={styles.center}>
+                <View style={makeStyles(isDarkMode, colors).center}>
                     <ActivityIndicator size="large" color={PRIMARY} />
                 </View>
             ) : (
@@ -105,24 +109,24 @@ export default function MeetupMyBookingsScreen() {
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={PRIMARY} colors={[PRIMARY]} />}
                 >
                     {displayed.length === 0 ? (
-                        <View style={styles.emptyState}>
-                            <View style={styles.emptyIcon}>
+                        <View style={makeStyles(isDarkMode, colors).emptyState}>
+                            <View style={makeStyles(isDarkMode, colors).emptyIcon}>
                                 <Ionicons name="calendar-outline" size={40} color={Colors.textMuted} />
                             </View>
-                            <Text style={styles.emptyTitle}>
+                            <Text style={makeStyles(isDarkMode, colors).emptyTitle}>
                                 {activeTab === 'upcoming' ? 'No upcoming meetups' : 'No past meetups'}
                             </Text>
-                            <Text style={styles.emptySub}>
+                            <Text style={makeStyles(isDarkMode, colors).emptySub}>
                                 {activeTab === 'upcoming'
                                     ? 'Browse and join a local meetup near you'
                                     : 'Your attended meetups will appear here'}
                             </Text>
                             {activeTab === 'upcoming' && (
                                 <TouchableOpacity
-                                    style={styles.browseBtn}
+                                    style={makeStyles(isDarkMode, colors).browseBtn}
                                     onPress={() => router.push('/meetup' as any)}
                                 >
-                                    <Text style={styles.browseBtnText}>Browse Meetups</Text>
+                                    <Text style={makeStyles(isDarkMode, colors).browseBtnText}>Browse Meetups</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -135,60 +139,60 @@ export default function MeetupMyBookingsScreen() {
                                 ? new Date(meetup.eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
                                 : '—';
                             return (
-                                <View key={booking.id} style={styles.bookingCard}>
+                                <View key={booking.id} style={makeStyles(isDarkMode, colors).bookingCard}>
                                     {/* Image placeholder + status tag */}
-                                    <View style={styles.cardBanner}>
+                                    <View style={makeStyles(isDarkMode, colors).cardBanner}>
                                         <Ionicons name="people" size={32} color="rgba(255,255,255,0.45)" />
-                                        <View style={[styles.statusTag, { backgroundColor: status.bg }]}>
-                                            <Text style={[styles.statusTagText, { color: status.color }]}>{status.label}</Text>
+                                        <View style={[makeStyles(isDarkMode, colors).statusTag, { backgroundColor: status.bg }]}>
+                                            <Text style={[makeStyles(isDarkMode, colors).statusTagText, { color: status.color }]}>{status.label}</Text>
                                         </View>
                                     </View>
 
-                                    <View style={styles.cardBody}>
-                                        <Text style={styles.cardTitle}>{meetup?.title ?? 'Meetup'}</Text>
+                                    <View style={makeStyles(isDarkMode, colors).cardBody}>
+                                        <Text style={makeStyles(isDarkMode, colors).cardTitle}>{meetup?.title ?? 'Meetup'}</Text>
                                         <Text style={{ fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted, marginBottom: 8 }}>
                                             Booking: {booking.bookingCode}
                                         </Text>
 
-                                        <View style={styles.cardMeta}>
-                                            <View style={styles.metaItem}>
+                                        <View style={makeStyles(isDarkMode, colors).cardMeta}>
+                                            <View style={makeStyles(isDarkMode, colors).metaItem}>
                                                 <Ionicons name="calendar-outline" size={13} color={PRIMARY} />
-                                                <Text style={styles.metaText}>{eventDate}</Text>
+                                                <Text style={makeStyles(isDarkMode, colors).metaText}>{eventDate}</Text>
                                             </View>
-                                            <View style={styles.metaItem}>
+                                            <View style={makeStyles(isDarkMode, colors).metaItem}>
                                                 <Ionicons name="time-outline" size={13} color={PRIMARY} />
-                                                <Text style={styles.metaText}>{meetup?.startTime ?? '—'}</Text>
+                                                <Text style={makeStyles(isDarkMode, colors).metaText}>{meetup?.startTime ?? '—'}</Text>
                                             </View>
                                         </View>
-                                        <View style={styles.cardMeta}>
-                                            <View style={styles.metaItem}>
+                                        <View style={makeStyles(isDarkMode, colors).cardMeta}>
+                                            <View style={makeStyles(isDarkMode, colors).metaItem}>
                                                 <Ionicons name="location-outline" size={13} color={PRIMARY} />
-                                                <Text style={styles.metaText}>{meetup?.venue ?? '—'}</Text>
+                                                <Text style={makeStyles(isDarkMode, colors).metaText}>{meetup?.venue ?? '—'}</Text>
                                             </View>
                                             {meetup?.pinCode && (
-                                                <View style={styles.metaItem}>
+                                                <View style={makeStyles(isDarkMode, colors).metaItem}>
                                                     <Ionicons name="keypad-outline" size={13} color={PRIMARY} />
-                                                    <Text style={styles.metaText}>PIN: {meetup.pinCode}</Text>
+                                                    <Text style={makeStyles(isDarkMode, colors).metaText}>PIN: {meetup.pinCode}</Text>
                                                 </View>
                                             )}
                                         </View>
 
                                         {booking.pickupEnabled && (
-                                            <View style={styles.pickupRow}>
+                                            <View style={makeStyles(isDarkMode, colors).pickupRow}>
                                                 <Ionicons name="car-outline" size={13} color={PRIMARY} />
-                                                <Text style={styles.pickupText}>Pickup: {booking.pickupAddress}</Text>
+                                                <Text style={makeStyles(isDarkMode, colors).pickupText}>Pickup: {booking.pickupAddress}</Text>
                                             </View>
                                         )}
 
-                                        <View style={styles.cardFooter}>
-                                            <View style={styles.amountBadge}>
-                                                <Text style={styles.amountText}>₹{booking.amountPaid} • {booking.paymentStatus === 'PAID' ? '✓ Paid' : 'Pending'}</Text>
+                                        <View style={makeStyles(isDarkMode, colors).cardFooter}>
+                                            <View style={makeStyles(isDarkMode, colors).amountBadge}>
+                                                <Text style={makeStyles(isDarkMode, colors).amountText}>₹{booking.amountPaid} • {booking.paymentStatus === 'PAID' ? '✓ Paid' : 'Pending'}</Text>
                                             </View>
                                             <TouchableOpacity
-                                                style={styles.viewBtn}
+                                                style={makeStyles(isDarkMode, colors).viewBtn}
                                                 onPress={() => router.push({ pathname: '/meetup/details', params: { id: booking.meetupId } } as any)}
                                             >
-                                                <Text style={styles.viewBtnText}>View Details</Text>
+                                                <Text style={makeStyles(isDarkMode, colors).viewBtnText}>View Details</Text>
                                                 <Ionicons name="arrow-forward" size={13} color={PRIMARY} />
                                             </TouchableOpacity>
                                         </View>
@@ -203,19 +207,27 @@ export default function MeetupMyBookingsScreen() {
 
             {/* FAB — browse more */}
             <TouchableOpacity
-                style={[styles.fab, { bottom: insets.bottom + 20 }]}
+                style={[makeStyles(isDarkMode, colors).fab, { bottom: insets.bottom + 20 }]}
                 onPress={() => router.push('/meetup' as any)}
                 activeOpacity={0.85}
             >
                 <Ionicons name="add" size={22} color="#fff" />
-                <Text style={styles.fabText}>Join Meetup</Text>
+                <Text style={makeStyles(isDarkMode, colors).fabText}>Join Meetup</Text>
             </TouchableOpacity>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: '#F5FAF7' },
+    tabActive: { borderBottomColor: PRIMARY },
+    tabTextActive: { fontFamily: Fonts.semiBold, color: PRIMARY },
+    tabBadgeActive: { backgroundColor: '#D1FAE5' },
+    tabBadgeTextActive: { color: PRIMARY },
+    scrollContent: { padding: Spacing.lg, paddingBottom: 80 },
+});
+
+const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: isDarkMode ? '#1A1A1A' : '#F5FAF7' },
     header: {
         flexDirection: 'row', alignItems: 'center',
         backgroundColor: PRIMARY, paddingHorizontal: Spacing.lg, paddingVertical: 14,
@@ -230,7 +242,7 @@ const styles = StyleSheet.create({
     countText: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#fff' },
     tabsRow: {
         flexDirection: 'row',
-        backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: Colors.borderLight,
+        backgroundColor: isDarkMode ? '#252525' : '#fff', borderBottomWidth: 1, borderBottomColor: isDarkMode ? '#3A3A3A' : Colors.borderLight,
         paddingHorizontal: Spacing.lg,
     },
     tab: {
@@ -239,29 +251,29 @@ const styles = StyleSheet.create({
         borderBottomWidth: 3, borderBottomColor: 'transparent',
     },
     tabActive: { borderBottomColor: PRIMARY },
-    tabText: { fontFamily: Fonts.medium, fontSize: 14, color: Colors.textMuted },
+    tabText: { fontFamily: Fonts.medium, fontSize: 14, color: isDarkMode ? '#999999' : Colors.textMuted },
     tabTextActive: { fontFamily: Fonts.semiBold, color: PRIMARY },
     tabBadge: {
-        backgroundColor: Colors.borderLight, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10,
+        backgroundColor: isDarkMode ? '#3A3A3A' : Colors.borderLight, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10,
     },
     tabBadgeActive: { backgroundColor: '#D1FAE5' },
-    tabBadgeText: { fontFamily: Fonts.semiBold, fontSize: 11, color: Colors.textMuted },
+    tabBadgeText: { fontFamily: Fonts.semiBold, fontSize: 11, color: isDarkMode ? '#666666' : Colors.textMuted },
     tabBadgeTextActive: { color: PRIMARY },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     scrollContent: { padding: Spacing.lg, paddingBottom: 80 },
     emptyState: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 32 },
     emptyIcon: {
-        width: 80, height: 80, borderRadius: 40, backgroundColor: '#F3F4F6',
+        width: 80, height: 80, borderRadius: 40, backgroundColor: isDarkMode ? '#3A3A3A' : '#F3F4F6',
         justifyContent: 'center', alignItems: 'center', marginBottom: 16,
     },
-    emptyTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: Colors.textDark, marginBottom: 8, textAlign: 'center' },
-    emptySub: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textMuted, textAlign: 'center', lineHeight: 19, marginBottom: 20 },
+    emptyTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: isDarkMode ? '#FFFFFF' : Colors.textDark, marginBottom: 8, textAlign: 'center' },
+    emptySub: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#999999' : Colors.textMuted, textAlign: 'center', lineHeight: 19, marginBottom: 20 },
     browseBtn: {
         backgroundColor: PRIMARY, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12,
     },
     browseBtnText: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#fff' },
     bookingCard: {
-        backgroundColor: '#fff', borderRadius: 16, marginBottom: 16,
+        backgroundColor: isDarkMode ? '#252525' : '#fff', borderRadius: 16, marginBottom: 16,
         shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 4,
         overflow: 'hidden',
     },
@@ -275,10 +287,10 @@ const styles = StyleSheet.create({
     },
     statusTagText: { fontFamily: Fonts.semiBold, fontSize: 11 },
     cardBody: { padding: 14 },
-    cardTitle: { fontFamily: Fonts.semiBold, fontSize: 15, color: Colors.textDark, marginBottom: 10, lineHeight: 21 },
+    cardTitle: { fontFamily: Fonts.semiBold, fontSize: 15, color: isDarkMode ? '#FFFFFF' : Colors.textDark, marginBottom: 10, lineHeight: 21 },
     cardMeta: { flexDirection: 'row', gap: 16, marginBottom: 6 },
     metaItem: { flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 },
-    metaText: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textBody, flex: 1 },
+    metaText: { fontFamily: Fonts.regular, fontSize: 12, color: isDarkMode ? '#CCCCCC' : Colors.textBody, flex: 1 },
     pickupRow: {
         flexDirection: 'row', alignItems: 'center', gap: 6,
         backgroundColor: '#EDF7F1', borderRadius: 8, padding: 8, marginVertical: 8,
@@ -286,7 +298,7 @@ const styles = StyleSheet.create({
     pickupText: { fontFamily: Fonts.regular, fontSize: 12, color: PRIMARY, flex: 1 },
     cardFooter: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: Colors.borderLight,
+        marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: isDarkMode ? '#3A3A3A' : Colors.borderLight,
     },
     amountBadge: {
         backgroundColor: '#EDF7F1', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8,

@@ -2,12 +2,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
 import { userService, UserProfile, Booking } from '@/services/api/userService';
 import { notificationService, Notification } from '@/services/api/notificationService';
+import { labService } from '@/services/api/labService';
 
 export const USER_QUERY_KEYS = {
     profile: ['user', 'profile'] as const,
     addresses: ['user', 'addresses'] as const,
     members: ['user', 'members'] as const,
     bookings: ['user', 'bookings'] as const,
+    labOrders: ['user', 'lab-orders'] as const,
     notifications: ['user', 'notifications'] as const,
 };
 
@@ -117,13 +119,38 @@ export const useUserHooks = () => {
         });
     };
 
+    const useLabOrders = () => {
+        return useQuery({
+            queryKey: USER_QUERY_KEYS.labOrders,
+            queryFn: async () => {
+                const res = await labService.getUserLabOrders();
+                return res.data;
+            },
+            enabled: isAuthenticated,
+            staleTime: 5 * 60 * 1000,
+        });
+    };
+
+    const useCancelLabOrder = () => {
+        return useMutation({
+            mutationFn: async (id: string) => {
+                return labService.cancelLabOrder(id);
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.labOrders });
+            }
+        });
+    };
+
     return {
         useProfile,
         useUpdateProfile,
         useBookings,
+        useLabOrders,
         useNotifications,
         useMarkNotificationAsRead,
         useMarkAllNotificationsAsRead,
         useCancelBooking,
+        useCancelLabOrder,
     };
 };

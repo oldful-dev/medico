@@ -26,6 +26,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useUser } from '@/context/UserContext';
 import { useTranslation } from 'react-i18next';
 import { locationService } from '@/services/device/locationService';
+import { useTheme } from '@/context/ThemeContext';
 
 // Figma-exported assets
 const logoImage = require('@/assets/images/nameandlogo.png');
@@ -53,6 +54,8 @@ export default function ProfileSetupScreen() {
     const googlePhoto = typeof params.googlePhoto === 'string' ? params.googlePhoto : '';
     const { login } = useAuth();
     const { selectedCityId: contextCityId } = useUser();
+    const { isDarkMode } = useTheme();
+    const styles = makeStyles(isDarkMode);
 
     // isGoogleFlow: user came from Google Sign-In with no OTP-verified phone
     const isGoogleFlow = !passedPhone && !!googleEmail;
@@ -322,8 +325,8 @@ export default function ProfileSetupScreen() {
     };
 
     return (
-        <View style={styles.screen}>
-            <StatusBar style="dark" />
+        <View style={[styles.screen, { backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFEE' }]}>
+            <StatusBar style={isDarkMode ? "light" : "dark"} />
             <KeyboardAwareScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
@@ -336,8 +339,8 @@ export default function ProfileSetupScreen() {
                 <View style={styles.header}>
                     <Image source={logoImage} style={styles.headerLogo} resizeMode="contain" />
                     <View style={styles.headerRight}>
-                        <Text style={styles.headerSubtitle}>Let&apos;s Create your</Text>
-                        <Text style={styles.headerTitle}>PROFILE</Text>
+                        <Text style={[styles.headerSubtitle, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>Let&apos;s Create your</Text>
+                        <Text style={[styles.headerTitle, { color: isDarkMode ? '#2FFF89' : '#0EDD94' }]}>PROFILE</Text>
                     </View>
                 </View>
 
@@ -518,7 +521,7 @@ export default function ProfileSetupScreen() {
                 {/* ─── Checkbox: Policies ─── */}
                 <View style={styles.checkboxRow}>
                     <TouchableOpacity
-                        style={styles.checkboxContainer}
+                        style={[styles.checkboxContainer, { borderColor: '#02743F', backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF' }]}
                         activeOpacity={0.8}
                         onPress={() => setAgreed(!agreed)}
                     >
@@ -526,9 +529,9 @@ export default function ProfileSetupScreen() {
                     </TouchableOpacity>
 
                     <Text style={styles.policyText}>
-                        <Text style={styles.policyTextNormal}>I have Read and agreed to the </Text>
+                        <Text style={[styles.policyTextNormal, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}>I have Read and agreed to the </Text>
                         <Text
-                            style={styles.policyTextUnderline}
+                            style={[styles.policyTextUnderline, { color: isDarkMode ? '#E0E0E0' : '#000000' }]}
                             onPress={() => router.push('/terms-policy')}
                         >
                             policies
@@ -550,9 +553,9 @@ export default function ProfileSetupScreen() {
 
                 {/* ─── Already a member? Login ─── */}
                 <View style={styles.loginRow}>
-                    <Text style={styles.loginText}>Already a member? </Text>
+                    <Text style={[styles.loginText, { color: isDarkMode ? '#A0A0A0' : '#848484' }]}>Already a member? </Text>
                     <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-                        <Text style={styles.loginLink}>Login</Text>
+                        <Text style={[styles.loginLink, { color: '#02743F' }]}>Login</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -561,12 +564,11 @@ export default function ProfileSetupScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     /* ─── Screen ─── */
 
     screen: {
         flex: 1,
-        backgroundColor: '#FFFFEE',
     },
     scrollView: {
         flex: 1,
@@ -731,12 +733,10 @@ const styles = StyleSheet.create({
         width: 26,
         height: 26,
         borderWidth: 1.5,
-        borderColor: '#02743F',
         borderRadius: 6,
         marginRight: 10,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
     },
     checkmark: {
         width: 18,
@@ -752,13 +752,11 @@ const styles = StyleSheet.create({
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontWeight: '600',
         fontSize: 14,
-        color: '#2F2F2F',
     },
     policyTextUnderline: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontWeight: '600',
         fontSize: 14,
-        color: '#000000',
         textDecorationLine: 'underline',
     },
 
@@ -792,12 +790,10 @@ const styles = StyleSheet.create({
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontWeight: '500',
         fontSize: 14,
-        color: '#848484',
     },
     loginLink: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontWeight: '500',
         fontSize: 14,
-        color: '#02743F',
     },
 });

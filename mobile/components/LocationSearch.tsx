@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 import { useLocationSearch, type LocationPrediction } from '@/hooks/useLocationSearch';
 
 interface LocationSearchProps {
@@ -16,10 +17,20 @@ export const LocationSearch = ({
     onSelectLocation,
     showRecentSearches = true,
 }: LocationSearchProps) => {
+    const { isDarkMode } = useTheme();
     const { predictions, loading, error, search, clear, getPlaceDetails } = useLocationSearch();
     const [searchText, setSearchText] = useState('');
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
     const [selecting, setSelecting] = useState(false);
+
+    const bg = isDarkMode ? '#1A1A1A' : '#FFFFFF';
+    const cardBg = isDarkMode ? '#252525' : '#F8F9FA';
+    const iconBg = isDarkMode ? '#2A3A2A' : '#F0FAF4';
+    const recentIconBg = isDarkMode ? '#2A2A2A' : '#F5F5F5';
+    const tipBg = isDarkMode ? '#252525' : '#F8F9FA';
+    const tipIconBg = isDarkMode ? '#2A3A2A' : '#E8F5EE';
+    const textColor = isDarkMode ? '#FFFFFF' : Colors.textDark;
+    const borderColor = isDarkMode ? '#3A3A3A' : Colors.borderLight;
 
     const handleSearch = (text: string) => {
         setSearchText(text);
@@ -78,17 +89,17 @@ export const LocationSearch = ({
     const showRecent = showHelp && showRecentSearches && recentSearches.length > 0;
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: bg }]}>
             {/* Search bar */}
-            <View style={styles.searchWrap}>
-                <View style={styles.searchBar}>
+            <View style={[styles.searchWrap, { borderBottomColor: borderColor }]}>
+                <View style={[styles.searchBar, { backgroundColor: cardBg, borderColor: borderColor }]}>
                     <Ionicons name="search-outline" size={17} color={Colors.textMuted} style={{ marginRight: 8 }} />
                     <TextInput
                         placeholder="Search area, street, landmark..."
                         placeholderTextColor={Colors.textLight}
                         value={searchText}
                         onChangeText={handleSearch}
-                        style={styles.searchInput}
+                        style={[styles.searchInput, { color: textColor }]}
                         autoFocus
                         returnKeyType="search"
                     />
@@ -127,15 +138,15 @@ export const LocationSearch = ({
                     contentContainerStyle={{ paddingTop: 4 }}
                     renderItem={({ item }) => (
                         <TouchableOpacity
-                            style={styles.resultRow}
+                            style={[styles.resultRow, { borderBottomColor: borderColor }]}
                             onPress={() => handleSelectPrediction(item)}
                             activeOpacity={0.75}
                         >
-                            <View style={styles.resultIcon}>
+                            <View style={[styles.resultIcon, { backgroundColor: iconBg }]}>
                                 <Ionicons name="location" size={16} color={Colors.primaryDark} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.resultMain} numberOfLines={1}>{item.main_text}</Text>
+                                <Text style={[styles.resultMain, { color: textColor }]} numberOfLines={1}>{item.main_text}</Text>
                                 {item.secondary_text ? (
                                     <Text style={styles.resultSub} numberOfLines={1}>{item.secondary_text}</Text>
                                 ) : null}
@@ -156,14 +167,14 @@ export const LocationSearch = ({
                     {recentSearches.map((loc, i) => (
                         <TouchableOpacity
                             key={`${loc}-${i}`}
-                            style={styles.recentRow}
+                            style={[styles.recentRow, { borderBottomColor: borderColor }]}
                             onPress={() => handleSelectRecent(loc)}
                             activeOpacity={0.75}
                         >
-                            <View style={styles.recentIcon}>
+                            <View style={[styles.recentIcon, { backgroundColor: recentIconBg }]}>
                                 <Ionicons name="time" size={14} color={Colors.textMuted} />
                             </View>
-                            <Text style={styles.recentText} numberOfLines={1}>{loc}</Text>
+                            <Text style={[styles.recentText, { color: textColor }]} numberOfLines={1}>{loc}</Text>
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -172,10 +183,10 @@ export const LocationSearch = ({
             {/* Empty state */}
             {showEmpty && (
                 <View style={styles.centerBox}>
-                    <View style={styles.emptyIconWrap}>
+                    <View style={[styles.emptyIconWrap, { backgroundColor: iconBg }]}>
                         <Ionicons name="location-outline" size={32} color={Colors.primaryDark} />
                     </View>
-                    <Text style={styles.emptyTitle}>No results found</Text>
+                    <Text style={[styles.emptyTitle, { color: textColor }]}>No results found</Text>
                     <Text style={styles.emptySub}>Try a different area or landmark name</Text>
                 </View>
             )}
@@ -189,11 +200,11 @@ export const LocationSearch = ({
                             { icon: 'flag-outline' as const,     text: 'Try a landmark or street' },
                             { icon: 'pin-outline' as const,      text: 'Enter full address or pincode' },
                         ].map((tip, i) => (
-                            <View key={i} style={styles.tipRow}>
-                                <View style={styles.tipIcon}>
+                            <View key={i} style={[styles.tipRow, { backgroundColor: tipBg, borderColor: borderColor }]}>
+                                <View style={[styles.tipIcon, { backgroundColor: tipIconBg }]}>
                                     <Ionicons name={tip.icon} size={15} color={Colors.primaryDark} />
                                 </View>
-                                <Text style={styles.tipText}>{tip.text}</Text>
+                                <Text style={[styles.tipText, { color: textColor }]}>{tip.text}</Text>
                             </View>
                         ))}
                     </View>

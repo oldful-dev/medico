@@ -410,19 +410,19 @@ export default function ManageAddressesScreen() {
                    ═════════════════════════════════════════ */}
                 {!showAddForm && (
                     <View style={styles.detectSection}>
-                        <View style={styles.detectCard}>
+                        <View style={dynamicStyles.detectCard}>
                             <View style={styles.detectHeader}>
-                                <View style={styles.detectIconContainer}>
+                                <View style={dynamicStyles.detectIconContainer}>
                                     {detectingLocation ? (
-                                        <ActivityIndicator size="small" color="#048357" />
+                                        <ActivityIndicator size="small" color={colors.primary} />
                                     ) : (
-                                        <Ionicons name="location" size={22} color="#048357" />
+                                        <Ionicons name="location" size={22} color={colors.primary} />
                                     )}
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.detectTitle}>Detect Current Location</Text>
+                                    <Text style={dynamicStyles.detectTitle}>Detect Current Location</Text>
                                     {detectedAddress ? (
-                                        <Text style={styles.detectSubtitle} numberOfLines={1}>{detectedAddress}</Text>
+                                        <Text style={dynamicStyles.detectSubtitle} numberOfLines={1}>{detectedAddress}</Text>
                                     ) : (
                                         <Text style={styles.detectSubtitleEmpty}>
                                             {detectingLocation ? 'Finding your location...' : 'Tap to auto-detect your current address'}
@@ -434,36 +434,36 @@ export default function ManageAddressesScreen() {
                                     disabled={detectingLocation}
                                     style={styles.detectRefreshBtn}
                                 >
-                                    <Ionicons name="refresh" size={18} color="#048357" />
+                                    <Ionicons name="refresh" size={18} color={colors.primary} />
                                 </TouchableOpacity>
                             </View>
 
                             {detectedAddress && !showAddForm && (
                                 <View style={styles.detectActions}>
                                     <TouchableOpacity
-                                        style={styles.detectAddBtn}
+                                        style={dynamicStyles.detectAddBtn}
                                         onPress={startAddFromDetected}
                                     >
                                         <Ionicons name="add-circle" size={18} color="#FFFFFF" />
                                         <Text style={styles.detectAddBtnText}>Save This Address</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
-                                        style={styles.detectSearchBtn}
+                                        style={dynamicStyles.detectSearchBtn}
                                         onPress={() => setShowLocationPicker(true)}
                                     >
-                                        <Ionicons name="search" size={18} color="#048357" />
-                                        <Text style={styles.detectSearchBtnText}>Search Location</Text>
+                                        <Ionicons name="search" size={18} color={colors.primary} />
+                                        <Text style={dynamicStyles.detectSearchBtnText}>Search Location</Text>
                                     </TouchableOpacity>
                                 </View>
                             )}
 
                             {!detectedAddress && locationDetectionAttempted && !showAddForm && (
                                 <TouchableOpacity
-                                    style={styles.detectSearchBtn}
+                                    style={dynamicStyles.detectSearchBtn}
                                     onPress={() => setShowLocationPicker(true)}
                                 >
-                                    <Ionicons name="search" size={18} color="#048357" />
-                                    <Text style={styles.detectSearchBtnText}>Search & Pick Location</Text>
+                                    <Ionicons name="search" size={18} color={colors.primary} />
+                                    <Text style={dynamicStyles.detectSearchBtnText}>Search & Pick Location</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -476,17 +476,17 @@ export default function ManageAddressesScreen() {
                 {addresses.length === 0 && !showAddForm && (
                     <View style={styles.emptyState}>
                         <Ionicons name="bookmark-outline" size={56} color="#AAAEAC" />
-                        <Text style={styles.emptyTitle}>No Saved Addresses</Text>
-                        <Text style={styles.emptyDesc}>Start by detecting or searching your location above.</Text>
+                        <Text style={dynamicStyles.emptyTitle}>No Saved Addresses</Text>
+                        <Text style={dynamicStyles.emptyDesc}>Start by detecting or searching your location above.</Text>
                     </View>
                 )}
 
-                {addresses.length > 0 && <Text style={styles.savedAddressesTitle}>Saved Addresses</Text>}
+                {addresses.length > 0 && <Text style={dynamicStyles.savedAddressesTitle}>Saved Addresses</Text>}
 
                 {addresses.map((item) => (
-                    <View key={item.id} style={[styles.card, item.isDefault && styles.cardDefault]}>
+                    <View key={item.id} style={[dynamicStyles.card, item.isDefault && dynamicStyles.cardDefault]}>
                         <View style={styles.cardHeader}>
-                            <View style={styles.labelBadge}>
+                            <View style={dynamicStyles.labelBadge}>
                                 <Ionicons
                                     name={
                                         item.label === 'Home' ? 'home' :
@@ -505,44 +505,44 @@ export default function ManageAddressesScreen() {
                             )}
                         </View>
 
-                        <Text style={styles.addressText}>
+                        <Text style={dynamicStyles.addressText}>
                             {[item.line1, item.line2, item.landmark].filter(Boolean).join(', ')}
                         </Text>
-                        <Text style={styles.phoneText}>{item.cityName}, {item.state} — {item.pincode}</Text>
+                        <Text style={dynamicStyles.phoneText}>{item.cityName}, {item.state} — {item.pincode}</Text>
 
                         <View style={styles.cardActions}>
                             {!item.isDefault && (
-                                <TouchableOpacity style={styles.actionBtn} onPress={() => setDefault(item)}>
-                                    <Ionicons name="checkmark-circle-outline" size={16} color="#048357" />
-                                    <Text style={styles.actionBtnText}>Set Default</Text>
+                                <TouchableOpacity style={dynamicStyles.actionBtn} onPress={() => setDefault(item)}>
+                                    <Ionicons name="checkmark-circle-outline" size={16} color={colors.primary} />
+                                    <Text style={dynamicStyles.actionBtnText}>Set Default</Text>
                                 </TouchableOpacity>
                             )}
-                            <TouchableOpacity style={styles.actionBtn} onPress={() => startEdit(item)}>
-                                <Ionicons name="pencil-outline" size={16} color="#048357" />
-                                <Text style={styles.actionBtnText}>Edit</Text>
+                            <TouchableOpacity style={dynamicStyles.actionBtn} onPress={() => startEdit(item)}>
+                                <Ionicons name="pencil-outline" size={16} color={colors.primary} />
+                                <Text style={dynamicStyles.actionBtnText}>Edit</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => deleteAddress(item)}>
+                            <TouchableOpacity style={[dynamicStyles.actionBtn, styles.deleteBtn]} onPress={() => deleteAddress(item)}>
                                 <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                                <Text style={[styles.actionBtnText, { color: '#EF4444' }]}>Delete</Text>
+                                <Text style={[dynamicStyles.actionBtnText, { color: '#EF4444' }]}>Delete</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 ))}
 
                 {showAddForm && (
-                    <View style={styles.addForm}>
-                        <Text style={styles.formTitle}>{editingId ? 'Edit Address' : 'Save Address'}</Text>
+                    <View style={dynamicStyles.addForm}>
+                        <Text style={dynamicStyles.formTitle}>{editingId ? 'Edit Address' : 'Save Address'}</Text>
 
                         {/* Label Selection */}
-                        <Text style={styles.fieldLabel}>Address Label *</Text>
+                        <Text style={dynamicStyles.fieldLabel}>Address Label *</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.labelChips}>
                             {LABEL_OPTIONS.map((label) => (
                                 <TouchableOpacity
                                     key={label}
-                                    style={[styles.labelChip, newLabel === label && styles.labelChipActive]}
+                                    style={[dynamicStyles.labelChip, newLabel === label && dynamicStyles.labelChipActive]}
                                     onPress={() => setNewLabel(label)}
                                 >
-                                    <Text style={[styles.labelChipText, newLabel === label && styles.labelChipTextActive]}>
+                                    <Text style={[dynamicStyles.labelChipText, newLabel === label && styles.labelChipTextActive]}>
                                         {label}
                                     </Text>
                                 </TouchableOpacity>
@@ -550,83 +550,83 @@ export default function ManageAddressesScreen() {
                         </ScrollView>
 
                         {/* Address Fields */}
-                        <Text style={styles.fieldLabel}>Address Line 1 *</Text>
+                        <Text style={dynamicStyles.fieldLabel}>Address Line 1 *</Text>
                         <View style={styles.inputWithButton}>
                             <TextInput
-                                style={[styles.input, { flex: 1 }]}
+                                style={[dynamicStyles.input, { flex: 1 }]}
                                 placeholder="Street address"
-                                placeholderTextColor="#898989"
+                                placeholderTextColor={colors.textMuted}
                                 multiline
                                 numberOfLines={2}
                                 value={newLine1}
                                 onChangeText={setNewLine1}
                             />
                             <TouchableOpacity
-                                style={styles.mapBtn}
+                                style={dynamicStyles.mapBtn}
                                 onPress={() => setShowLocationPicker(true)}
                             >
-                                <Ionicons name="map" size={20} color="#048357" />
+                                <Ionicons name="map" size={20} color={colors.primary} />
                             </TouchableOpacity>
                         </View>
 
-                        <Text style={styles.fieldLabel}>Address Line 2 (Optional)</Text>
+                        <Text style={dynamicStyles.fieldLabel}>Address Line 2 (Optional)</Text>
                         <TextInput
-                            style={styles.input}
+                            style={dynamicStyles.input}
                             placeholder="Apartment, suite, etc."
-                            placeholderTextColor="#898989"
+                            placeholderTextColor={colors.textMuted}
                             value={newLine2}
                             onChangeText={setNewLine2}
                         />
 
                         <View style={styles.twoColRow}>
                             <View style={styles.twoColField}>
-                                <Text style={styles.fieldLabel}>City *</Text>
+                                <Text style={dynamicStyles.fieldLabel}>City *</Text>
                                 <TextInput
-                                    style={styles.input}
+                                    style={dynamicStyles.input}
                                     placeholder="City"
-                                    placeholderTextColor="#898989"
+                                    placeholderTextColor={colors.textMuted}
                                     value={newCity}
                                     onChangeText={setNewCity}
                                 />
                             </View>
                             <View style={styles.twoColField}>
-                                <Text style={styles.fieldLabel}>State *</Text>
+                                <Text style={dynamicStyles.fieldLabel}>State *</Text>
                                 <TextInput
-                                    style={styles.input}
+                                    style={dynamicStyles.input}
                                     placeholder="State"
-                                    placeholderTextColor="#898989"
+                                    placeholderTextColor={colors.textMuted}
                                     value={newState}
                                     onChangeText={setNewState}
                                 />
                             </View>
                         </View>
 
-                        <Text style={styles.fieldLabel}>Pincode *</Text>
+                        <Text style={dynamicStyles.fieldLabel}>Pincode *</Text>
                         <TextInput
-                            style={styles.input}
+                            style={dynamicStyles.input}
                             placeholder="6-digit pincode"
-                            placeholderTextColor="#898989"
+                            placeholderTextColor={colors.textMuted}
                             keyboardType="numeric"
                             maxLength={6}
                             value={newPincode}
                             onChangeText={setNewPincode}
                         />
 
-                        <Text style={styles.fieldLabel}>Landmark (Optional)</Text>
+                        <Text style={dynamicStyles.fieldLabel}>Landmark (Optional)</Text>
                         <TextInput
-                            style={styles.input}
+                            style={dynamicStyles.input}
                             placeholder="e.g. Near Apollo Hospital, Opposite Park"
-                            placeholderTextColor="#898989"
+                            placeholderTextColor={colors.textMuted}
                             value={newLandmark}
                             onChangeText={setNewLandmark}
                         />
 
                         <View style={styles.formActions}>
-                            <TouchableOpacity style={styles.cancelFormBtn} onPress={resetForm}>
-                                <Text style={styles.cancelFormText}>Cancel</Text>
+                            <TouchableOpacity style={dynamicStyles.cancelFormBtn} onPress={resetForm}>
+                                <Text style={dynamicStyles.cancelFormText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.saveFormBtn, saving && { opacity: 0.6 }]}
+                                style={[dynamicStyles.saveFormBtn, saving && { opacity: 0.6 }]}
                                 onPress={saveAddress}
                                 disabled={saving}
                             >
@@ -642,7 +642,7 @@ export default function ManageAddressesScreen() {
 
                 {!showAddForm && (
                     <TouchableOpacity
-                        style={styles.addButton}
+                        style={dynamicStyles.addButton}
                         onPress={() => {
                             setEditingId(null);
                             setNewLabel('Home');
@@ -656,8 +656,8 @@ export default function ManageAddressesScreen() {
                         }}
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="add-circle-outline" size={22} color="#048357" />
-                        <Text style={styles.addButtonText}>Add New Address</Text>
+                        <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+                        <Text style={dynamicStyles.addButtonText}>Add New Address</Text>
                     </TouchableOpacity>
                 )}
 

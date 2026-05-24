@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { 
     ChevronLeft, Clock, MapPin, Package, ShieldCheck, 
@@ -44,14 +44,17 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
 export default function BookingDetailsPage() {
    const router = useRouter();
    const { id } = useParams<{ id: string }>();
+   const searchParams = useSearchParams();
+   const isLabType = searchParams.get('type') === 'lab';
    const [isDownloading, setIsDownloading] = React.useState(false);
    const { user, isAuthenticated } = useAuthStore();
    const [isProcessingPayment, setIsProcessingPayment] = React.useState(false);
    const [showCancelModal, setShowCancelModal] = React.useState(false);
    const pendingOrderId = React.useRef<string | null>(null);
 
-   const { useCancelBooking } = useUserHooks();
+   const { useCancelBooking, useCancelLabOrder } = useUserHooks();
    const cancelBookingMutation = useCancelBooking();
+   const cancelLabMutation = useCancelLabOrder();
 
    React.useEffect(() => {
       const script = document.createElement('script');
@@ -69,14 +72,28 @@ export default function BookingDetailsPage() {
       }
    };
 
-   const { data: res, isLoading, error } = useQuery({
+   const { data: res, isLoading: isLoadingService, error: serviceError } = useQuery({
       queryKey: ['booking', id],
       queryFn: () => bookingService.getBookingById(id as string),
-      enabled: !!id && isAuthenticated,
+      enabled: !!id && isAuthenticated && !isLabType,
    });
-   
+
+   const { data: labRes, isLoading: isLoadingLab, error: labError } = useQuery({
+      queryKey: ['lab-order', id],
+      queryFn: () => labService.getLabOrderById(id as string),
+      enabled: !!id && isAuthenticated && isLabType,
+   });
+
+   const isLoading = isLabType ? isLoadingLab : isLoadingService;
+   const error = isLabType ? labError : serviceError;
+
    const booking = res?.data;
    const rcId = booking?.formDataJson?.redcliffeBookingId;
+
+   // For lab orders — build a unified display
+   const labOrder = labRes?.data;
+   const labPkg = labOrder?.packages?.[0];
+   const labPayment = labOrder?.payments?.[0];
 
    const { data: labRes, isLoading: isLabLoading } = useQuery({
       queryKey: ['lab-status', rcId],
@@ -189,7 +206,11 @@ export default function BookingDetailsPage() {
 
    const handleCancelBooking = async () => {
       try {
-         await cancelBookingMutation.mutateAsync(id as string);
+         if (isLabType) {
+            await cancelLabMutation.mutateAsync(id as string);
+         } else {
+            await cancelBookingMutation.mutateAsync(id as string);
+         }
          toast.success('Booking cancelled successfully');
          setShowCancelModal(false);
       } catch (err: unknown) {
@@ -200,6 +221,127 @@ export default function BookingDetailsPage() {
 
    if (isLoading) {
       return <BookingDetailsSkeleton />;
+   }
+
+   // ─── Lab order detail view ───────────────────────────────────────────────
+   if (isLabType) {
+      if (error || !labOrder) {
+         return (
+            <div className="min-h-screen bg-white p-6 flex flex-col items-center justify-center text-center">
+               <AlertCircle className="w-16 h-16 text-red-200 mb-4" />
+               <h1 className="text-xl font-bold text-gray-900">Lab order not found</h1>
+               <p className="text-gray-500 mt-2 max-w-xs">We couldn&apos;t retrieve the details for this order.</p>
+               <button onClick={() => router.back()} className="mt-6 px-6 py-3 bg-[var(--color-primary)] text-white font-bold rounded-2xl">Go Back</button>
+            </div>
+         );
+      }
+      const labUiStatus = labOrder.status === 'REPORT_GENERATED' || labOrder.status === 'SAMPLE_COLLECTED' ? 'COMPLETED'
+         : labOrder.status === 'CANCELLED' || labOrder.status === 'FAILED' ? 'CANCELLED'
+         : labOrder.status === 'CONFIRMED' || labOrder.status === 'HOLD_CREATED' ? 'CONFIRMED'
+         : 'PENDING';
+      const labStatusCfg = STATUS_CONFIG[labUiStatus] || STATUS_CONFIG.PENDING;
+      const isLabUpcoming = ['PENDING', 'CONFIRMED'].includes(labUiStatus);
+      return (
+         <div className="min-h-screen bg-gray-50 pb-24">
+            <div className="bg-white px-6 py-6 sticky top-0 z-10 border-b border-gray-100 flex items-center gap-4">
+               <button onClick={() => router.back()} className="w-11 h-11 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-900 border border-gray-100 transition-transform active:scale-95">
+                  <ChevronLeft className="w-6 h-6" />
+               </button>
+               <div>
+                  <h1 className="text-lg font-bold text-gray-900">Lab Order Details</h1>
+                  <p className="text-xs text-gray-500 font-mono">#{labOrder.clientRefId}</p>
+               </div>
+            </div>
+            <div className="max-w-2xl mx-auto p-6 space-y-6">
+               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex items-center justify-between p-5 rounded-3xl border ${labStatusCfg.color}`}>
+                  <div className="flex items-center gap-4">
+                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${labStatusCfg.color.split(' ')[0]} border shadow-sm`}>
+                        <labStatusCfg.icon className="w-6 h-6" />
+                     </div>
+                     <div>
+                        <p className="text-xs opacity-70 font-bold uppercase tracking-widest mb-0.5">Status</p>
+                        <h3 className="text-lg font-bold">{labStatusCfg.label}</h3>
+                     </div>
+                  </div>
+               </motion.div>
+
+               <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-4">
+                  <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">🩸 {labPkg?.name || labPkg?.packageName || 'Blood Test'}</h2>
+                  <div className="grid gap-4">
+                     <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400"><Calendar className="w-5 h-5" /></div>
+                        <div>
+                           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Scheduled Date</p>
+                           <p className="text-sm font-bold text-gray-800">
+                              {labOrder.slot?.date ? new Date(labOrder.slot.date).toLocaleDateString('en-IN', { dateStyle: 'long' }) : 'TBD'}
+                              {labOrder.slot?.time ? ` · ${labOrder.slot.time}` : ''}
+                           </p>
+                        </div>
+                     </div>
+                     <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400"><MapPin className="w-5 h-5" /></div>
+                        <div className="flex-1">
+                           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Collection Address</p>
+                           <p className="text-sm font-bold text-gray-800">{labOrder.address?.line1 || 'No address'}</p>
+                           {labOrder.address?.landmark && <p className="text-xs text-gray-400">Landmark: {labOrder.address.landmark}</p>}
+                        </div>
+                     </div>
+                     {labOrder.assignedStaff && (
+                        <div className="flex items-center gap-3">
+                           <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 text-lg">🤵</div>
+                           <div>
+                              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Phlebotomist</p>
+                              <p className="text-sm font-bold text-gray-800">{labOrder.assignedStaff.name}</p>
+                              {labOrder.assignedStaff.phone && (
+                                 <a href={`tel:${labOrder.assignedStaff.phone}`} className="text-xs text-emerald-600 font-semibold">{labOrder.assignedStaff.phone}</a>
+                              )}
+                           </div>
+                        </div>
+                     )}
+                  </div>
+               </div>
+
+               {labPayment && (
+                  <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                     <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2"><CreditCard className="w-4 h-4 text-emerald-500" /> Payment</h3>
+                     <div className="flex justify-between items-center text-lg font-bold text-gray-900">
+                        <span>Total Paid</span>
+                        <span className="text-emerald-700">₹{labPayment.amount}</span>
+                     </div>
+                     <div className="mt-2">
+                        <span className={`text-[10px] font-bold px-2 py-1 rounded border ${labPayment.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                           {labPayment.status === 'SUCCESS' ? 'PAID' : labPayment.status}
+                        </span>
+                     </div>
+                  </div>
+               )}
+
+               {labOrder.status === 'REPORT_GENERATED' && labOrder.reportUrl && (
+                  <a href={labOrder.reportUrl} target="_blank" rel="noopener noreferrer"
+                     className="w-full h-14 bg-emerald-700 text-white rounded-2xl font-black shadow-xl shadow-emerald-900/20 flex items-center justify-center gap-2 active:scale-95 transition-all">
+                     <Download className="w-5 h-5" /> Download Report
+                  </a>
+               )}
+
+               {isLabUpcoming && (
+                  <button onClick={() => setShowCancelModal(true)} className="w-full py-3 bg-white text-red-500 border border-red-200 rounded-2xl font-bold text-sm hover:bg-red-50 transition-colors">
+                     Cancel Order
+                  </button>
+               )}
+            </div>
+
+            <ConfirmationModal
+               isOpen={showCancelModal}
+               onClose={() => setShowCancelModal(false)}
+               onConfirm={handleCancelBooking}
+               isLoading={cancelLabMutation.isPending}
+               title="Cancel Lab Order?"
+               message="Are you sure you want to cancel this lab order?"
+               confirmText="Yes, Cancel"
+               type="danger"
+            />
+         </div>
+      );
    }
 
    if (error || !booking) {

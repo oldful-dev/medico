@@ -60,7 +60,7 @@ const SMS_TEMPLATES = {
         text: 'Dear {#var#}, Welcome to Ayuxa! Thrilled to be your healthcare partner. Team Ayuxa.',
     },
     SOS_FAMILY: {
-        senderId: 'AYUXA',
+        senderId: 'AYUXHO',
         templateId: '215594',
         variables: 2,
         text: 'Dear {#var#}, SOS triggered by {#var#} in Ayuxa. Please act immediately. Team Ayuxa.',
@@ -84,8 +84,14 @@ const SMS_TEMPLATES = {
         text: 'Dear {#var#}, care plan cancelled/expired. Contact {#var#}. Team Ayuxa.',
     },
 
-    // ── Sender: AYUXAH (Partner/HQ) ──────────────────────────────────────
+    // ── Sender: AYUXAH (Employees / Caregivers) ──────────────────────────
 
+    CAREGIVER_OTP: {
+        senderId: 'AYUXAH',
+        templateId: '215671',
+        variables: 1,
+        text: '{#var#} is your Ayuxa Platform login code. Never share this code with anyone. Ayuxa HQ.',
+    },
     SOS_PARTNER: {
         senderId: 'AYUXAH',
         templateId: '215598',
@@ -99,25 +105,28 @@ const SMS_TEMPLATES = {
         text: 'Dear {#var#}, shift with client {#var#} ID {#var#} on {#var#} cancelled. Ayuxa HQ.',
     },
 
-    // ── Sender: AYUXHO (Admin/HQ Operations) ─────────────────────────────
+    // ── Sender: AYUXHO (Client Families + SOS contacts) ──────────────────
+
+    SOS_ADMIN: {
+        senderId: 'AYUXHO',
+        templateId: '215601',
+        variables: 2,
+        text: 'Dear {#var#}, SOS triggered by {#var#} in Ayuxa. Please take immediate action. Team Ayuxa.',
+    },
+
+    // ── Sender: AYUXAH continued (Admin staff = employees) ────────────────
 
     ADMIN_LOGIN_OTP: {
-        senderId: 'AYUXHO',
+        senderId: 'AYUXAH',
         templateId: '215596',
         variables: 1,
         text: '{#var#} is your Ayuxa platform login code. Do not share. Team Ayuxa.',
     },
     PLAN_CANCELLED_ADMIN: {
-        senderId: 'AYUXHO',
+        senderId: 'AYUXAH',
         templateId: '215597',
         variables: 3,
         text: 'Dear {#var#}, care plan for {#var#} cancelled/expired. Contact {#var#}. Team Ayuxa.',
-    },
-    SOS_ADMIN: {
-        senderId: 'AYUXHO',
-        templateId: '215601',
-        variables: 2,
-        text: 'Dear {#var#}, SOS triggered by {#var#} in Ayuxa. Please act immediately. Team Ayuxa.',
     },
 };
 

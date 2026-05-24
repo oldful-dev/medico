@@ -929,7 +929,7 @@ export default function CheckoutScreen() {
                             <Ionicons name="home" size={20} color={collectionType === 'HOME' ? colors.primary : colors.textLight} style={{ marginRight: 12 }} />
                             <View style={{ flex: 1 }}>
                                 <Text style={[styles.collectionOptionTitle, collectionType === 'HOME' && { color: colors.textDark }]}>Home Collection</Text>
-                                <Text style={styles.collectionOptionDesc}>We'll collect sample from your home</Text>
+                                <Text style={styles.collectionOptionDesc}>We&apos;ll collect sample from your home</Text>
                             </View>
                             <Ionicons name={collectionType === 'HOME' ? 'checkmark-circle' : 'radio-button-off'} size={22} color={collectionType === 'HOME' ? colors.primary : '#D1D5DB'} />
                         </TouchableOpacity>

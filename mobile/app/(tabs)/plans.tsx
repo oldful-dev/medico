@@ -181,7 +181,7 @@ export default function PlansScreen() {
         );
     }
 
-    const activeSub = getActiveSub();
+    const activeSub = userActiveSubscription;
     const cycleInfo = BILLING_CYCLES.find(c => c.key === activeCycle)!;
 
     return (
@@ -219,7 +219,7 @@ export default function PlansScreen() {
                         </View>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.activeSubLabel}>Your Active Plan</Text>
-                            <Text style={styles.activeSubName}>{activeSub.plan?.name ?? 'Care Plan'}</Text>
+                            <Text style={styles.activeSubName}>{activeSub.planName ?? activeSub.plan?.name ?? 'Care Plan'}</Text>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
                             <Text style={styles.activeSubExpLabel}>Expires</Text>
@@ -257,7 +257,7 @@ export default function PlansScreen() {
                         const accent = planAccents[idx % planAccents.length];
                         const price = getPriceForCycle(plan, activeCycle);
                         const isPro = idx === 1;
-                        const isActivePlan = activeSub?.plan?.name === plan.name;
+                        const isActivePlan = (activeSub?.planName ?? activeSub?.plan?.name) === plan.name;
                         const isInitiating = initiating === plan.id;
 
                         return (

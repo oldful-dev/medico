@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@react-navigation/native';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { bookingService } from '@/services/api/bookingService';
@@ -27,9 +29,7 @@ const PRIMARY_MID = '#03924F';
 const TEXT_DARK = '#1A1A1A';
 const TEXT_MUTED = '#9CA3AF';
 const TEXT_LABEL = '#374151';
-const BORDER = '#E5E7EB';
 const BG = '#F8FAF9';
-const WHITE = '#FFFFFF';
 const RED = '#EF4444';
 
 const purposes = [
@@ -47,6 +47,11 @@ const travellerCounts = Array.from({ length: 10 }, (_, i) => (i + 1).toString())
 export default function TripTravelsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { dark: isDarkMode } = useTheme();
+    const colors = useThemeColors();
+
+    const BORDER = isDarkMode ? '#3A3A3A' : '#E5E7EB';
+    const WHITE = isDarkMode ? '#1A1A1A' : '#FFFFFF';
 
     const [destination, setDestination]             = useState('');
     const [travelDates, setTravelDates]             = useState<Date | undefined>(undefined);
@@ -105,50 +110,52 @@ export default function TripTravelsScreen() {
         }
     };
 
+    const dynamicStyles = makeStyles(isDarkMode);
+
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={[dynamicStyles.container, { paddingTop: insets.top }]}>
             <StatusBar style="light" backgroundColor={PRIMARY} />
 
             {/* ── Green Header ── */}
-            <View style={styles.header}>
+            <View style={dynamicStyles.header}>
                 <TouchableOpacity
                     onPress={() => router.back()}
                     hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                    style={styles.backBtn}
+                    style={dynamicStyles.backBtn}
                 >
                     <Ionicons name="arrow-back" size={22} color={WHITE} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Trip & Travel</Text>
+                <Text style={dynamicStyles.headerTitle}>Trip & Travel</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             {/* ── Hero Banner (still part of green area) ── */}
-            <View style={styles.heroBanner}>
-                <View style={styles.heroIconCircle}>
+            <View style={dynamicStyles.heroBanner}>
+                <View style={dynamicStyles.heroIconCircle}>
                     <Ionicons name="airplane" size={32} color={PRIMARY} />
                 </View>
-                <Text style={styles.heroTitle}>Where do you want to go?</Text>
-                <Text style={styles.heroSubtitle}>
-                    Share your travel plan and we'll assist you better.
+                <Text style={dynamicStyles.heroTitle}>Where do you want to go?</Text>
+                <Text style={dynamicStyles.heroSubtitle}>
+                    Share your travel plan and we&apos;ll assist you better.
                 </Text>
             </View>
 
             {/* ── Scrollable Form Card ── */}
             <KeyboardAwareScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={dynamicStyles.scrollContent}
                 enableOnAndroid
                 extraScrollHeight={24}
                 keyboardShouldPersistTaps="handled"
             >
-                <View style={styles.formCard}>
+                <View style={dynamicStyles.formCard}>
 
                     {/* Destination */}
                     <FormField label="Destination (Preferred)" required>
-                        <View style={styles.inputRow}>
-                            <Ionicons name="location-outline" size={18} color={PRIMARY} style={styles.inputIcon} />
+                        <View style={dynamicStyles.inputRow}>
+                            <Ionicons name="location-outline" size={18} color={PRIMARY} style={dynamicStyles.inputIcon} />
                             <TextInput
-                                style={styles.inputText}
+                                style={dynamicStyles.inputText}
                                 placeholder="Enter destination"
                                 placeholderTextColor={TEXT_MUTED}
                                 value={destination}
@@ -162,12 +169,12 @@ export default function TripTravelsScreen() {
                     {/* Travel Dates */}
                     <FormField label="Travel Dates" required>
                         <TouchableOpacity
-                            style={styles.inputRow}
+                            style={dynamicStyles.inputRow}
                             onPress={() => setShowDatePicker(true)}
                             activeOpacity={0.7}
                         >
-                            <Ionicons name="calendar-outline" size={18} color={PRIMARY} style={styles.inputIcon} />
-                            <Text style={[styles.inputText, !formattedDate && styles.placeholder]}>
+                            <Ionicons name="calendar-outline" size={18} color={PRIMARY} style={dynamicStyles.inputIcon} />
+                            <Text style={[dynamicStyles.inputText, !formattedDate && dynamicStyles.placeholder]}>
                                 {formattedDate || 'Select travel dates'}
                             </Text>
                             <Ionicons name="chevron-forward" size={16} color={TEXT_MUTED} />
@@ -175,16 +182,16 @@ export default function TripTravelsScreen() {
                     </FormField>
 
                     {/* Two-column row: Travellers + Purpose */}
-                    <View style={styles.rowTwo}>
+                    <View style={dynamicStyles.rowTwo}>
                         <View style={{ flex: 1, marginRight: 8 }}>
                             <FormField label="Travellers" required compact>
                                 <TouchableOpacity
-                                    style={styles.inputRow}
+                                    style={dynamicStyles.inputRow}
                                     onPress={() => setShowTravellerPicker(true)}
                                     activeOpacity={0.7}
                                 >
-                                    <Ionicons name="people-outline" size={18} color={PRIMARY} style={styles.inputIcon} />
-                                    <Text style={[styles.inputText, !numTravellers && styles.placeholder]} numberOfLines={1}>
+                                    <Ionicons name="people-outline" size={18} color={PRIMARY} style={dynamicStyles.inputIcon} />
+                                    <Text style={[dynamicStyles.inputText, !numTravellers && dynamicStyles.placeholder]} numberOfLines={1}>
                                         {numTravellers ? `${numTravellers} ${numTravellers === '1' ? 'person' : 'people'}` : 'Select'}
                                     </Text>
                                     <Ionicons name="chevron-down" size={14} color={TEXT_MUTED} />
@@ -194,7 +201,7 @@ export default function TripTravelsScreen() {
                         <View style={{ flex: 1, marginLeft: 8 }}>
                             <FormField label="Purpose" required compact>
                                 <TouchableOpacity
-                                    style={styles.inputRow}
+                                    style={dynamicStyles.inputRow}
                                     onPress={() => setShowPurposePicker(true)}
                                     activeOpacity={0.7}
                                 >
@@ -202,9 +209,9 @@ export default function TripTravelsScreen() {
                                         name={(selectedPurpose?.icon as any) || 'compass-outline'}
                                         size={18}
                                         color={PRIMARY}
-                                        style={styles.inputIcon}
+                                        style={dynamicStyles.inputIcon}
                                     />
-                                    <Text style={[styles.inputText, !purposeOfTravel && styles.placeholder]} numberOfLines={1}>
+                                    <Text style={[dynamicStyles.inputText, !purposeOfTravel && dynamicStyles.placeholder]} numberOfLines={1}>
                                         {purposeOfTravel ? purposeOfTravel.split(' ')[0] : 'Select'}
                                     </Text>
                                     <Ionicons name="chevron-down" size={14} color={TEXT_MUTED} />
@@ -214,14 +221,14 @@ export default function TripTravelsScreen() {
                     </View>
 
                     {/* Divider */}
-                    <View style={styles.divider} />
+                    <View style={dynamicStyles.divider} />
 
                     {/* Special Requirements */}
                     <FormField label="Special Requirements / Assistance">
-                        <View style={[styles.inputRow, styles.textareaRow]}>
-                            <Ionicons name="list-outline" size={18} color={PRIMARY} style={[styles.inputIcon, { alignSelf: 'flex-start', marginTop: 2 }]} />
+                        <View style={[dynamicStyles.inputRow, dynamicStyles.textareaRow]}>
+                            <Ionicons name="list-outline" size={18} color={PRIMARY} style={[dynamicStyles.inputIcon, { alignSelf: 'flex-start', marginTop: 2 }]} />
                             <TextInput
-                                style={[styles.inputText, styles.textareaText]}
+                                style={[dynamicStyles.inputText, dynamicStyles.textareaText]}
                                 placeholder="Wheelchair access, dietary needs, medical equipment…"
                                 placeholderTextColor={TEXT_MUTED}
                                 value={specialRequirements}
@@ -236,10 +243,10 @@ export default function TripTravelsScreen() {
 
                     {/* Additional Details */}
                     <FormField label="Additional Details" optional>
-                        <View style={[styles.inputRow, styles.textareaRow]}>
-                            <Ionicons name="create-outline" size={18} color={PRIMARY} style={[styles.inputIcon, { alignSelf: 'flex-start', marginTop: 2 }]} />
+                        <View style={[dynamicStyles.inputRow, dynamicStyles.textareaRow]}>
+                            <Ionicons name="create-outline" size={18} color={PRIMARY} style={[dynamicStyles.inputIcon, { alignSelf: 'flex-start', marginTop: 2 }]} />
                             <TextInput
-                                style={[styles.inputText, styles.textareaText]}
+                                style={[dynamicStyles.inputText, dynamicStyles.textareaText]}
                                 placeholder="Preferred airlines, seat preferences, hotel tier…"
                                 placeholderTextColor={TEXT_MUTED}
                                 value={additionalDetails}
@@ -254,7 +261,7 @@ export default function TripTravelsScreen() {
 
                     {/* Submit */}
                     <TouchableOpacity
-                        style={[styles.submitBtn, (isBooking || isLoadingInit) && styles.submitBtnDisabled]}
+                        style={[dynamicStyles.submitBtn, (isBooking || isLoadingInit) && dynamicStyles.submitBtnDisabled]}
                         onPress={handleSubmit}
                         disabled={isBooking || isLoadingInit}
                         activeOpacity={0.85}
@@ -264,12 +271,12 @@ export default function TripTravelsScreen() {
                         ) : (
                             <>
                                 <Ionicons name="paper-plane-outline" size={18} color={WHITE} style={{ marginRight: 8 }} />
-                                <Text style={styles.submitBtnText}>Submit Enquiry</Text>
+                                <Text style={dynamicStyles.submitBtnText}>Submit Enquiry</Text>
                             </>
                         )}
                     </TouchableOpacity>
 
-                    <Text style={styles.footerNote}>
+                    <Text style={dynamicStyles.footerNote}>
                         Our team will contact you within 24 hours to confirm your travel plan.
                     </Text>
                 </View>
@@ -278,8 +285,8 @@ export default function TripTravelsScreen() {
             {/* ── Date Picker Modal ── */}
             {showDatePicker && (
                 <Modal transparent visible={showDatePicker} animationType="slide">
-                    <View style={styles.modalOverlay}>
-                        <View style={[styles.modal, styles.datePickerModal]}>
+                    <View style={dynamicStyles.modalOverlay}>
+                        <View style={[dynamicStyles.modal, dynamicStyles.datePickerModal]}>
                             <ModalHeader title="Select Travel Date" onClose={() => setShowDatePicker(false)} />
                             <ScrollView
                                 showsVerticalScrollIndicator={false}
@@ -302,25 +309,27 @@ export default function TripTravelsScreen() {
 
             {/* ── Travellers Picker Modal ── */}
             <Modal transparent visible={showTravellerPicker} animationType="slide">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modal}>
+                <View style={dynamicStyles.modalOverlay}>
+                    <View style={dynamicStyles.modal}>
                         <ModalHeader title="Number of Travellers" onClose={() => setShowTravellerPicker(false)} />
                         <FlatList
                             data={travellerCounts}
                             keyExtractor={(item) => item}
                             renderItem={({ item }) => {
                                 const active = numTravellers === item;
+    const dynamicStyles = makeStyles(isDarkMode);
+
                                 return (
                                     <TouchableOpacity
-                                        style={[styles.optionItem, active && styles.optionItemActive]}
+                                        style={[dynamicStyles.optionItem, active && dynamicStyles.optionItemActive]}
                                         onPress={() => { setNumTravellers(item); setShowTravellerPicker(false); }}
                                         activeOpacity={0.7}
                                     >
-                                        <View style={styles.optionLeft}>
-                                            <View style={[styles.optionDot, active && styles.optionDotActive]}>
-                                                <Text style={[styles.optionDotText, active && { color: WHITE }]}>{item}</Text>
+                                        <View style={dynamicStyles.optionLeft}>
+                                            <View style={[dynamicStyles.optionDot, active && dynamicStyles.optionDotActive]}>
+                                                <Text style={[dynamicStyles.optionDotText, active && { color: WHITE }]}>{item}</Text>
                                             </View>
-                                            <Text style={[styles.optionLabel, active && styles.optionLabelActive]}>
+                                            <Text style={[dynamicStyles.optionLabel, active && dynamicStyles.optionLabelActive]}>
                                                 {item === '1' ? '1 person' : `${item} people`}
                                             </Text>
                                         </View>
@@ -335,25 +344,27 @@ export default function TripTravelsScreen() {
 
             {/* ── Purpose Picker Modal ── */}
             <Modal transparent visible={showPurposePicker} animationType="slide">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modal}>
+                <View style={dynamicStyles.modalOverlay}>
+                    <View style={dynamicStyles.modal}>
                         <ModalHeader title="Purpose of Travel" onClose={() => setShowPurposePicker(false)} />
                         <FlatList
                             data={purposes}
                             keyExtractor={(item) => item.id}
                             renderItem={({ item }) => {
                                 const active = purposeOfTravel === item.label;
+    const dynamicStyles = makeStyles(isDarkMode);
+
                                 return (
                                     <TouchableOpacity
-                                        style={[styles.optionItem, active && styles.optionItemActive]}
+                                        style={[dynamicStyles.optionItem, active && dynamicStyles.optionItemActive]}
                                         onPress={() => { setPurposeOfTravel(item.label); setShowPurposePicker(false); }}
                                         activeOpacity={0.7}
                                     >
-                                        <View style={styles.optionLeft}>
-                                            <View style={[styles.purposeIconBox, active && styles.purposeIconBoxActive]}>
+                                        <View style={dynamicStyles.optionLeft}>
+                                            <View style={[dynamicStyles.purposeIconBox, active && dynamicStyles.purposeIconBoxActive]}>
                                                 <Ionicons name={item.icon as any} size={16} color={active ? WHITE : PRIMARY} />
                                             </View>
-                                            <Text style={[styles.optionLabel, active && styles.optionLabelActive]}>
+                                            <Text style={[dynamicStyles.optionLabel, active && dynamicStyles.optionLabelActive]}>
                                                 {item.label}
                                             </Text>
                                         </View>
@@ -376,12 +387,14 @@ function FormField({
 }: {
     label: string; required?: boolean; optional?: boolean; compact?: boolean; children: React.ReactNode;
 }) {
+    const dynamicStyles = makeStyles(isDarkMode);
+
     return (
         <View style={{ marginBottom: compact ? 0 : 20 }}>
-            <View style={styles.labelRow}>
-                <Text style={styles.label}>{label}</Text>
-                {required && <Text style={styles.requiredDot}> *</Text>}
-                {optional && <Text style={styles.optionalTag}> Optional</Text>}
+            <View style={dynamicStyles.labelRow}>
+                <Text style={dynamicStyles.label}>{label}</Text>
+                {required && <Text style={dynamicStyles.requiredDot}> *</Text>}
+                {optional && <Text style={dynamicStyles.optionalTag}> Optional</Text>}
             </View>
             {children}
         </View>
@@ -389,11 +402,13 @@ function FormField({
 }
 
 function ModalHeader({ title, onClose }: { title: string; onClose: () => void }) {
+    const dynamicStyles = makeStyles(isDarkMode);
+
     return (
-        <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{title}</Text>
+        <View style={dynamicStyles.modalHeader}>
+            <Text style={dynamicStyles.modalTitle}>{title}</Text>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <View style={styles.closeBtn}>
+                <View style={dynamicStyles.closeBtn}>
                     <Ionicons name="close" size={16} color={TEXT_DARK} />
                 </View>
             </TouchableOpacity>
@@ -403,7 +418,7 @@ function ModalHeader({ title, onClose }: { title: string; onClose: () => void })
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: PRIMARY,

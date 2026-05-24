@@ -17,6 +17,8 @@ import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTheme } from '@react-navigation/native';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 import * as ImagePicker from 'expo-image-picker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
@@ -33,6 +35,8 @@ export default function OrderMedicinesScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
+    const { dark: isDarkMode } = useTheme();
+    const colors = useThemeColors();
     const [duration, setDuration] = useState('1 Month');
     const [autoRefill, setAutoRefill] = useState(true);
     const [isManualEntry, setIsManualEntry] = useState(false);
@@ -148,70 +152,72 @@ export default function OrderMedicinesScreen() {
         }
     };
 
+    const dynamicStyles = makeStyles(isDarkMode);
+
     return (
-        <View style={styles.screen}>
+        <View style={dynamicStyles.screen}>
             {/* Dark green background covers top half */}
-            <SafeAreaView style={styles.headerBackground} edges={['top']}>
+            <SafeAreaView style={dynamicStyles.headerBackground} edges={['top']}>
                 <StatusBar style="light" backgroundColor="#048357" />
-                <View style={styles.headerRow}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <View style={dynamicStyles.headerRow}>
+                    <TouchableOpacity onPress={() => router.back()} style={dynamicStyles.backButton}>
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <View style={styles.headerTextCol}>
-                        <Text style={styles.headerTitle}>{t('order_medicines.header')}</Text>
-                        <Text style={styles.headerSubtitle}>{t('order_medicines.header_subtitle')}</Text>
+                    <View style={dynamicStyles.headerTextCol}>
+                        <Text style={dynamicStyles.headerTitle}>{t('order_medicines.header')}</Text>
+                        <Text style={dynamicStyles.headerSubtitle}>{t('order_medicines.header_subtitle')}</Text>
                     </View>
                 </View>
             </SafeAreaView>
 
             {/* Main Content Area (Rounded Cream Box) */}
-            <View style={styles.contentContainer}>
+            <View style={dynamicStyles.contentContainer}>
                 {/* ─── ScrollView Added for Small Screens ─── */}
                 <KeyboardAwareScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.scrollContent}
+                    style={dynamicStyles.scrollView}
+                    contentContainerStyle={dynamicStyles.scrollContent}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                     enableOnAndroid
                     extraScrollHeight={20}
                 >
-                    <Text style={styles.sectionTitle}>{t('order_medicines.upload_prescription')}</Text>
+                    <Text style={dynamicStyles.sectionTitle}>{t('order_medicines.upload_prescription')}</Text>
 
                     {/* ─── Options Card 1: Camera ─── */}
                     <TouchableOpacity
-                        style={[styles.uploadOptionCard, selectedImages.length > 0 && styles.uploadOptionCardActive]}
+                        style={[dynamicStyles.uploadOptionCard, selectedImages.length > 0 && dynamicStyles.uploadOptionCardActive]}
                         activeOpacity={0.7}
                         onPress={() => handleCapture('camera')}
                     >
-                        <Image source={cameraIcon} style={styles.uploadIcon} resizeMode="contain" />
-                        <View style={styles.uploadTextContainer}>
-                            <Text style={styles.uploadMainText}>{t('order_medicines.camera')}</Text>
-                            <Text style={styles.uploadSubText}>{t('order_medicines.camera_take_photo')}</Text>
+                        <Image source={cameraIcon} style={dynamicStyles.uploadIcon} resizeMode="contain" />
+                        <View style={dynamicStyles.uploadTextContainer}>
+                            <Text style={dynamicStyles.uploadMainText}>{t('order_medicines.camera')}</Text>
+                            <Text style={dynamicStyles.uploadSubText}>{t('order_medicines.camera_take_photo')}</Text>
                         </View>
                         <Ionicons name={selectedImages.length > 0 ? "checkmark-circle" : "chevron-forward"} size={20} color={selectedImages.length > 0 ? "#048357" : "#898989"} />
                     </TouchableOpacity>
 
                     {/* ─── Options Card 2: Gallery ─── */}
                     <TouchableOpacity
-                        style={[styles.uploadOptionCard, selectedImages.length > 0 && styles.uploadOptionCardActive]}
+                        style={[dynamicStyles.uploadOptionCard, selectedImages.length > 0 && dynamicStyles.uploadOptionCardActive]}
                         activeOpacity={0.7}
                         onPress={() => handleCapture('gallery')}
                     >
-                        <Image source={galleryIcon} style={styles.uploadIcon} resizeMode="contain" />
-                        <View style={styles.uploadTextContainer}>
-                            <Text style={styles.uploadMainText}>{t('order_medicines.gallery')}</Text>
-                            <Text style={styles.uploadSubText}>{t('order_medicines.gallery_choose')}</Text>
+                        <Image source={galleryIcon} style={dynamicStyles.uploadIcon} resizeMode="contain" />
+                        <View style={dynamicStyles.uploadTextContainer}>
+                            <Text style={dynamicStyles.uploadMainText}>{t('order_medicines.gallery')}</Text>
+                            <Text style={dynamicStyles.uploadSubText}>{t('order_medicines.gallery_choose')}</Text>
                         </View>
                         <Ionicons name={selectedImages.length > 0 ? "checkmark-circle" : "chevron-forward"} size={20} color={selectedImages.length > 0 ? "#048357" : "#898989"} />
                     </TouchableOpacity>
 
                     {/* ─── Selected Images Preview ─── */}
                     {selectedImages.length > 0 && (
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.previewScroll} contentContainerStyle={styles.previewContent}>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={dynamicStyles.previewScroll} contentContainerStyle={dynamicStyles.previewContent}>
                             {selectedImages.map((uri, index) => (
-                                <View key={index} style={styles.previewThumbWrapper}>
-                                    <Image source={{ uri }} style={styles.previewThumb} />
-                                    <TouchableOpacity style={styles.removePreviewBtn} onPress={() => removeImage(index)}>
+                                <View key={index} style={dynamicStyles.previewThumbWrapper}>
+                                    <Image source={{ uri }} style={dynamicStyles.previewThumb} />
+                                    <TouchableOpacity style={dynamicStyles.removePreviewBtn} onPress={() => removeImage(index)}>
                                         <Ionicons name="close-circle" size={20} color="#FF6B6B" />
                                     </TouchableOpacity>
                                 </View>
@@ -221,26 +227,26 @@ export default function OrderMedicinesScreen() {
 
                     {/* ─── Options Card 3: Manual Entry ─── */}
                     <TouchableOpacity
-                        style={[styles.uploadOptionCard, isManualEntry && styles.uploadOptionCardActive]}
+                        style={[dynamicStyles.uploadOptionCard, isManualEntry && dynamicStyles.uploadOptionCardActive]}
                         activeOpacity={0.7}
                         onPress={() => setIsManualEntry(!isManualEntry)}
                     >
                        {/* Simulated "Type" Icon (lines) */}
-                        <View style={styles.typeIconBox}>
-                            <View style={styles.typeIconLine} />
-                            <View style={styles.typeIconLine} />
+                        <View style={dynamicStyles.typeIconBox}>
+                            <View style={dynamicStyles.typeIconLine} />
+                            <View style={dynamicStyles.typeIconLine} />
                         </View>
-                        <View style={styles.uploadTextContainer}>
-                            <Text style={styles.uploadMainText}>{t('order_medicines.type')}</Text>
-                            <Text style={styles.uploadSubText}>{t('order_medicines.manual_entry')}</Text>
+                        <View style={dynamicStyles.uploadTextContainer}>
+                            <Text style={dynamicStyles.uploadMainText}>{t('order_medicines.type')}</Text>
+                            <Text style={dynamicStyles.uploadSubText}>{t('order_medicines.manual_entry')}</Text>
                         </View>
                         <Ionicons name={isManualEntry ? "close-circle" : "chevron-forward"} size={20} color={isManualEntry ? "#048357" : "#898989"} />
                     </TouchableOpacity>
 
                     {isManualEntry && (
-                        <View style={styles.manualEntryContainer}>
+                        <View style={dynamicStyles.manualEntryContainer}>
                             <TextInput
-                                style={styles.manualInput}
+                                style={dynamicStyles.manualInput}
                                 placeholder={t('order_medicines.manual_placeholder')}
                                 placeholderTextColor="#898989"
                                 multiline
@@ -251,33 +257,33 @@ export default function OrderMedicinesScreen() {
                     )}
 
                     {/* ─── Address Section ─── */}
-                    <Text style={styles.addressLabel}>
-                        <Text style={styles.addressLabelBold}>{t('order_medicines.address_label')}</Text>
+                    <Text style={dynamicStyles.addressLabel}>
+                        <Text style={dynamicStyles.addressLabelBold}>{t('order_medicines.address_label')}</Text>
                         {t('order_medicines.address_update')}
                     </Text>
 
-                    <View style={[styles.uploadOptionCard, { marginBottom: 15 }]}>
+                    <View style={[dynamicStyles.uploadOptionCard, { marginBottom: 15 }]}>
                         <Ionicons name="location" size={24} color="#85C3A8" style={{ marginLeft: 2, marginRight: 15 }} />
-                        <View style={styles.uploadTextContainer}>
+                        <View style={dynamicStyles.uploadTextContainer}>
                             {locationDenied ? (
                                 <TextInput
-                                    style={[styles.addressText, { flex: 1 }]}
+                                    style={[dynamicStyles.addressText, { flex: 1 }]}
                                     placeholder={t('order_medicines.address_manual_placeholder')}
                                     placeholderTextColor="#898989"
                                     value={address}
                                     onChangeText={setAddress}
                                 />
                             ) : (
-                                <Text style={styles.addressText} numberOfLines={1}>{address}</Text>
+                                <Text style={dynamicStyles.addressText} numberOfLines={1}>{address}</Text>
                             )}
                         </View>
-                        <TouchableOpacity style={styles.editAddressButton} onPress={() => setIsManualAddress(true)}>
+                        <TouchableOpacity style={dynamicStyles.editAddressButton} onPress={() => setIsManualAddress(true)}>
                             <Ionicons name="pencil-outline" size={14} color="#2F2F2F" />
                         </TouchableOpacity>
                     </View>
 
                     <TextInput
-                        style={[styles.addressText, { marginBottom: 15, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#FFF', borderRadius: 8, borderWidth: 1, borderColor: '#E5E7EB', fontFamily: 'LexendDeca_400Regular', fontSize: 12 }]}
+                        style={[dynamicStyles.addressText, { marginBottom: 15, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#FFF', borderRadius: 8, borderWidth: 1, borderColor: isDarkMode ? '#3A3A3A' : '#E5E7EB', fontFamily: 'LexendDeca_400Regular', fontSize: 12 }]}
                         placeholder="Landmark (optional, e.g. Near Apollo Hospital)"
                         placeholderTextColor="#898989"
                         value={landmark}
@@ -286,45 +292,45 @@ export default function OrderMedicinesScreen() {
 
                     {/* ─── Auto-Refill Card ─── */}
                     <TouchableOpacity
-                        style={[styles.autoRefillCard, !autoRefill && { opacity: 0.6, borderColor: '#AAAEAC' }]}
+                        style={[dynamicStyles.autoRefillCard, !autoRefill && { opacity: 0.6, borderColor: '#AAAEAC' }]}
                         activeOpacity={0.7}
                         onPress={() => setAutoRefill(!autoRefill)}
                     >
                         <Ionicons name="notifications" size={30} color={autoRefill ? "#048357" : "#555555"} style={{ marginRight: 15 }} />
-                        <View style={styles.uploadTextContainer}>
+                        <View style={dynamicStyles.uploadTextContainer}>
                             <View>
-                                <Text style={styles.autoRefillTitle}>{t('order_medicines.auto_refill')}</Text>
-                                <Text style={styles.autoRefillDesc}>{autoRefill ? t('order_medicines.auto_refill_on') : t('order_medicines.auto_refill_off')}</Text>
+                                <Text style={dynamicStyles.autoRefillTitle}>{t('order_medicines.auto_refill')}</Text>
+                                <Text style={dynamicStyles.autoRefillDesc}>{autoRefill ? t('order_medicines.auto_refill_on') : t('order_medicines.auto_refill_off')}</Text>
                             </View>
                         </View>
                         <Ionicons name={autoRefill ? "checkbox" : "square-outline"} size={20} color={autoRefill ? "#048357" : "#898989"} />
                     </TouchableOpacity>
 
                     {/* ─── Duration Selection ─── */}
-                    <Text style={styles.addressLabel}>
-                        <Text style={styles.addressLabelBold}>{t('order_medicines.duration_label')}</Text>
+                    <Text style={dynamicStyles.addressLabel}>
+                        <Text style={dynamicStyles.addressLabelBold}>{t('order_medicines.duration_label')}</Text>
                         {t('order_medicines.duration_select')}
                     </Text>
-                    <View style={styles.durationContainer}>
+                    <View style={dynamicStyles.durationContainer}>
                         <TouchableOpacity
-                            style={[styles.durationButton, duration === '1 Month' && styles.durationButtonActive]}
+                            style={[dynamicStyles.durationButton, duration === '1 Month' && dynamicStyles.durationButtonActive]}
                             onPress={() => setDuration('1 Month')}
                             activeOpacity={0.7}
                         >
-                            <Text style={[styles.durationText, duration === '1 Month' && styles.durationTextActive]}>{t('order_medicines.one_month')}</Text>
+                            <Text style={[dynamicStyles.durationText, duration === '1 Month' && dynamicStyles.durationTextActive]}>{t('order_medicines.one_month')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[styles.durationButton, duration === '3 Months' && styles.durationButtonActive]}
+                            style={[dynamicStyles.durationButton, duration === '3 Months' && dynamicStyles.durationButtonActive]}
                             onPress={() => setDuration('3 Months')}
                             activeOpacity={0.7}
                         >
-                            <Text style={[styles.durationText, duration === '3 Months' && styles.durationTextActive]}>{t('order_medicines.three_months')}</Text>
+                            <Text style={[dynamicStyles.durationText, duration === '3 Months' && dynamicStyles.durationTextActive]}>{t('order_medicines.three_months')}</Text>
                         </TouchableOpacity>
                     </View>
 
                     {/* ─── Place Order Button ─── */}
                     <TouchableOpacity
-                        style={[styles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                        style={[dynamicStyles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
                         activeOpacity={0.8}
                         disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
@@ -332,7 +338,7 @@ export default function OrderMedicinesScreen() {
                         {isBooking ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text style={styles.submitButtonText}>
+                            <Text style={dynamicStyles.submitButtonText}>
                                 {isLoadingInit ? t('common.initializing') : t('booking.place_order')}
                             </Text>
                         )}
@@ -344,7 +350,7 @@ export default function OrderMedicinesScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
         backgroundColor: '#048357', // Solid dark green from Figma behind
@@ -369,13 +375,13 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#FFFFFF',
+        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         letterSpacing: -0.24,
     },
     headerSubtitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 13,
-        color: '#FFFFFF',
+        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         letterSpacing: -0.24,
         zIndex: 10,
     },
@@ -414,7 +420,7 @@ const styles = StyleSheet.create({
     uploadOptionCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         borderRadius: 12,
         paddingHorizontal: 15,
         height: 59,
@@ -498,7 +504,7 @@ const styles = StyleSheet.create({
     autoRefillCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         borderWidth: 1,
         borderColor: '#02743F',
         borderRadius: 12,
@@ -540,7 +546,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         paddingVertical: 12,
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
     },
     durationButtonActive: {
         borderColor: '#048357',
@@ -568,7 +574,7 @@ const styles = StyleSheet.create({
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: '#FFFFFF',
+        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         fontSize: 15,
     },
     /* ─── New Interactive Styles ─── */
@@ -578,7 +584,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F0FFF4',
     },
     manualEntryContainer: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         borderRadius: 12,
         padding: 10,
         marginBottom: 15,
@@ -614,7 +620,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: -8,
         right: -8,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         borderRadius: 10,
     },
 });

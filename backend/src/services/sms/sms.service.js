@@ -125,8 +125,16 @@ const sendSMS = async ({ template, mobile, variables = [], userId = null }) => {
 
     if (result.success) {
         logger.info(`[SMS] ✅ Sent ${template} → +91${cleanMobile} [reqId: ${result.requestId || 'n/a'}]`);
+        console.log(
+            `[SMS ✅] ${template}` +
+            ` | sender: ${tmpl.senderId}` +
+            ` | to: +91${cleanMobile}` +
+            ` | vars: [${variables.map(v => String(v).substring(0, 40)).join(', ')}]` +
+            ` | reqId: ${result.requestId || 'n/a'}`
+        );
     } else {
         logger.error(`[SMS] ❌ Failed ${template} → +91${cleanMobile}: ${result.error}`);
+        console.log(`[SMS ❌] ${template} | to: +91${cleanMobile} | error: ${result.error}`);
     }
 
     return result.success;

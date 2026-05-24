@@ -30,14 +30,14 @@ const MEMBERSHIP_CONFIG: Record<string, { label: string; color: string; bg: stri
     free:     { label: 'Free',          color: '#6B7280', bg: '#F3F4F6', icon: 'person-circle',    border: '#E5E7EB' },
 };
 
-// ─── Social links ────────────────────────────────────
+// ─── Social links (order per spec: Instagram, Facebook, LinkedIn, YouTube, X, WhatsApp)
 const SOCIAL_LINKS = [
-    { icon: 'logo-instagram', color: '#E1306C', url: 'https://instagram.com/ayuxacare' },
-    { icon: 'logo-facebook', color: '#1877F2', url: 'https://facebook.com/ayuxacare' },
-    { icon: 'logo-linkedin', color: '#0A66C2', url: 'https://linkedin.com/company/ayuxacare' },
-    { icon: 'logo-youtube', color: '#FF0000', url: 'https://youtube.com/@ayuxacare' },
-    { icon: 'logo-x', color: '#000000', url: 'https://x.com/ayuxacare' },
-    { icon: 'logo-whatsapp', color: '#25D366', url: 'https://wa.me/918012345678' },
+    { key: 'instagram', icon: 'logo-instagram', color: '#E1306C', label: 'Instagram',        handle: '@ayuxacare',             url: 'https://www.instagram.com/ayuxacare' },
+    { key: 'facebook',  icon: 'logo-facebook',  color: '#1877F2', label: 'Facebook',         handle: 'facebook.com/ayuxacare', url: 'https://www.facebook.com/ayuxacare' },
+    { key: 'linkedin',  icon: 'logo-linkedin',  color: '#0A66C2', label: 'LinkedIn',         handle: 'AYUXA Care',             url: 'https://www.linkedin.com/company/ayuxacare' },
+    { key: 'youtube',   icon: 'logo-youtube',   color: '#FF0000', label: 'YouTube',          handle: '@ayuxacare',             url: 'https://youtube.com/@ayuxacare' },
+    { key: 'twitter',   icon: 'logo-x',         color: '#000000', label: 'X (Twitter)',      handle: '@ayuxacare',             url: 'https://x.com/ayuxacare' },
+    { key: 'whatsapp',  icon: 'logo-whatsapp',  color: '#25D366', label: 'WhatsApp Channel', handle: 'Join our channel',       url: 'https://whatsapp.com/channel/ayuxacare' },
 ];
 
 export default function AccountScreen() {
@@ -55,6 +55,8 @@ export default function AccountScreen() {
     const [langModalVisible, setLangModalVisible] = useState(false);
     const [savingLang, setSavingLang] = useState(false);
     const [docsExpanded, setDocsExpanded] = useState(false);
+    const [supportExpanded, setSupportExpanded] = useState(false);
+    const [socialExpanded, setSocialExpanded] = useState(false);
 
     const handleToggle = async (key: string, value: boolean) => {
         if (!profile) return;
@@ -188,7 +190,7 @@ export default function AccountScreen() {
     // ─── Render ───
     return (
         <View style={styles.screen}>
-            <StatusBar style={isDarkMode ? 'light' : 'light'} />
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} />
 
             {/* ─── Green Header Bar ─── */}
             <SafeAreaView style={styles.headerSafe} edges={['top']}>
@@ -421,8 +423,8 @@ export default function AccountScreen() {
                 <SectionHeading title="Preferences" colors={colors} />
                 <TouchableOpacity style={styles.menuRow} activeOpacity={0.7} onPress={() => setLangModalVisible(true)}>
                     <View style={styles.menuLeft}>
-                        <View style={[styles.menuIcon, { backgroundColor: '#E8EAF6' }]}>
-                            <Ionicons name="language-outline" size={20} color="#3F51B5" />
+                        <View style={[styles.menuIcon, { backgroundColor: isDarkMode ? '#3F51B515' : '#E8EAF6' }]}>
+                            <Ionicons name="language-outline" size={20} color={isDarkMode ? '#7986CB' : '#3F51B5'} />
                         </View>
                         <Text style={styles.menuTitle}>Language</Text>
                     </View>
@@ -441,114 +443,125 @@ export default function AccountScreen() {
                 <ToggleRow icon="megaphone-outline" iconBg="#FFF8E1" iconColor="#FFA000" title="Promotional Offers" value={!!profile?.emailMarketingEnabled} onToggle={v => handleToggle('emailMarketingEnabled', v)} colors={colors} />
 
                 {/* ═══════════════════════════════════════
-                    SECTION 6 — Help & Support
+                    SECTION 6 — Help & Support (dropdown)
                    ═══════════════════════════════════════ */}
                 <SectionHeading title="Help & Support" colors={colors} />
-                <MenuRow icon="headset-outline" iconBg="#E1F5FE" iconColor="#0288D1" title="Help & Support" subtitle="Call, WhatsApp, email, raise a ticket" onPress={() => router.push('/help-support' as any)} colors={colors} />
-                <MenuRow icon="star-outline" iconBg="#FFF9C4" iconColor="#FFC107" title="Rate Us" subtitle="Share your experience with AYUXA" onPress={() => router.push('/rate-us' as any)} colors={colors} />
+                <DropdownSection
+                    icon="headset-outline"
+                    iconBg={isDarkMode ? '#0C3547' : '#E0F4FF'}
+                    iconColor="#0284C7"
+                    title="Help & Support"
+                    subtitle="Call, chat, raise a ticket & more"
+                    expanded={supportExpanded}
+                    onToggle={() => setSupportExpanded(v => !v)}
+                    colors={colors}
+                    isDarkMode={isDarkMode}
+                >
+                    <MenuRow icon="call-outline" iconBg={isDarkMode ? '#0C3547' : '#DCF3FF'} iconColor="#0284C7"
+                        title="Call Support" subtitle="Speak to our support team directly"
+                        onPress={() => Linking.openURL('tel:+918001234567')} colors={colors} />
+                    <MenuRow icon="mail-outline" iconBg={isDarkMode ? '#2D1F0A' : '#FFF3E0'} iconColor="#F57C00"
+                        title="Email Support" subtitle="support@ayuxacare.com"
+                        onPress={() => Linking.openURL('mailto:support@ayuxacare.com')} colors={colors} />
+                    <MenuRow icon="chatbubble-ellipses-outline" iconBg={isDarkMode ? '#1E1340' : '#F3E5F5'} iconColor="#7C3AED"
+                        title="Live Chat" subtitle="Chat with us in real time"
+                        onPress={() => router.push('/help-support' as any)} colors={colors} />
+                    <MenuRow icon="ticket-outline" iconBg={isDarkMode ? '#2D0A1A' : '#FCE4EC'} iconColor="#EC4899"
+                        title="Raise Ticket" subtitle="Log and track a support request"
+                        onPress={() => router.push('/ticket-chat' as any)} colors={colors} />
+                    <MenuRow icon="help-circle-outline" iconBg={isDarkMode ? '#0A2010' : '#E8F5E9'} iconColor="#2E7D32"
+                        title="FAQ" subtitle="Frequently asked questions"
+                        onPress={() => router.push('/help-support' as any)} colors={colors} />
+
+                    {/* Emergency Assistance — full-width red CTA */}
+                    <TouchableOpacity
+                        style={[styles.emergencyBtn, {
+                            borderColor: isDarkMode ? '#7F1D1D' : '#FEE2E2',
+                            backgroundColor: isDarkMode ? '#450A0A' : '#FEF2F2',
+                        }]}
+                        onPress={() => Alert.alert('Emergency Assistance', 'Connecting you to our 24/7 emergency team…\n\nTap OK to call immediately.', [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'Call Now', onPress: () => Linking.openURL('tel:+918001234567') },
+                        ])}
+                        activeOpacity={0.75}
+                    >
+                        <View style={[styles.emergencyIcon, { backgroundColor: isDarkMode ? '#7F1D1D' : '#FFE4E6' }]}>
+                            <Ionicons name="alert-circle" size={20} color={isDarkMode ? '#FCA5A5' : '#DC2626'} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={[styles.emergencyTitle, { color: isDarkMode ? '#FCA5A5' : '#DC2626' }]}>Emergency Assistance</Text>
+                            <Text style={[styles.emergencySub, { color: isDarkMode ? '#FECACA' : '#991B1B' }]}>24/7 urgent help — tap to call now</Text>
+                        </View>
+                        <View style={[styles.emergencyPulse, { backgroundColor: isDarkMode ? '#7F1D1D' : '#FCA5A5' }]}>
+                            <View style={[styles.emergencyDot, { backgroundColor: isDarkMode ? '#FCA5A5' : '#DC2626' }]} />
+                        </View>
+                    </TouchableOpacity>
+                </DropdownSection>
 
                 {/* ═══════════════════════════════════════
-                    SECTION 7 — Legal & Documents
+                    SECTION 7 — Terms, Conditions & Documents (dropdown)
                    ═══════════════════════════════════════ */}
                 <SectionHeading title="Terms, Conditions & Documents" colors={colors} />
-
-                {/* Collapsible Documents Dropdown */}
-                <TouchableOpacity
-                    style={[styles.docDropdownHeader, { borderColor: colors.border }]}
-                    onPress={() => setDocsExpanded(!docsExpanded)}
-                    activeOpacity={0.7}
+                <DropdownSection
+                    icon="documents-outline"
+                    iconBg={isDarkMode ? '#1A1000' : '#FFF8E1'}
+                    iconColor="#F57C00"
+                    title="Documents & Policies"
+                    subtitle="Legal, consent & downloadable files"
+                    expanded={docsExpanded}
+                    onToggle={() => setDocsExpanded(v => !v)}
+                    colors={colors}
+                    isDarkMode={isDarkMode}
                 >
-                    <View style={styles.docDropdownLeft}>
-                        <View style={[styles.docDropdownIcon, { backgroundColor: '#F3F3F3' }]}>
-                            <Ionicons name="documents-outline" size={18} color="#616161" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.docDropdownTitle}>Documents & Policies</Text>
-                            <Text style={styles.docDropdownSub}>{docsExpanded ? 'Tap to collapse' : 'View all documents'}</Text>
-                        </View>
-                    </View>
-                    <Ionicons name={docsExpanded ? "chevron-up" : "chevron-down"} size={20} color={colors.text} />
-                </TouchableOpacity>
-
-                {/* Expanded Content */}
-                {docsExpanded && (
-                    <View style={[styles.docDropdownContent, { borderColor: colors.border }]}>
-                        <MenuRow icon="document-text-outline" iconBg="#FFF3E0" iconColor="#F57C00" title="Terms & Conditions" onPress={() => router.push('/terms-policy' as any)} colors={colors} />
-                        <MenuRow icon="shield-outline" iconBg="#E8F5E9" iconColor="#2E7D32" title="Privacy Policy" onPress={() => router.push('/privacy-policy' as any)} colors={colors} />
-                        <MenuRow icon="receipt-outline" iconBg="#FCE4EC" iconColor="#C2185B" title="Refund Policy" onPress={() => router.push('/refund-policy' as any)} colors={colors} />
-                        <MenuRow icon="checkmark-circle-outline" iconBg="#F3E5F5" iconColor="#6A1B9A" title="Consent Forms" onPress={() => router.push('/profile/consent-forms' as any)} colors={colors} />
-                        <MenuRow icon="contract-outline" iconBg="#E0F2F1" iconColor="#00796B" title="Service Agreements" onPress={() => router.push('/profile/service-agreements' as any)} colors={colors} />
-                        <MenuRow icon="eye-outline" iconBg="#EFF7F6" iconColor="#004D40" title="View Documents" onPress={() => router.push('/profile/view-documents' as any)} colors={colors} />
-                        <MenuRow icon="download-outline" iconBg="#F1F8E9" iconColor="#558B2F" title="Download Documents" onPress={() => router.push('/profile/download-documents' as any)} colors={colors} />
-                    </View>
-                )}
+                    <MenuRow icon="document-text-outline" iconBg={isDarkMode ? '#2D1F0A' : '#FFF3E0'} iconColor="#F57C00"
+                        title="Terms & Conditions" onPress={() => router.push('/terms-policy' as any)} colors={colors} />
+                    <MenuRow icon="shield-checkmark-outline" iconBg={isDarkMode ? '#0A2010' : '#E8F5E9'} iconColor="#2E7D32"
+                        title="Privacy Policy" onPress={() => router.push('/privacy-policy' as any)} colors={colors} />
+                    <MenuRow icon="receipt-outline" iconBg={isDarkMode ? '#2D0A1A' : '#FCE4EC'} iconColor="#C2185B"
+                        title="Refund Policy" onPress={() => router.push('/refund-policy' as any)} colors={colors} />
+                    <MenuRow icon="checkmark-done-circle-outline" iconBg={isDarkMode ? '#1E1340' : '#F3E5F5'} iconColor="#6A1B9A"
+                        title="Consent Forms" onPress={() => router.push('/profile/consent-forms' as any)} colors={colors} />
+                    <MenuRow icon="clipboard-outline" iconBg={isDarkMode ? '#001A18' : '#E0F2F1'} iconColor="#00796B"
+                        title="Service Agreements" onPress={() => router.push('/profile/service-agreements' as any)} colors={colors} />
+                    <MenuRow icon="eye-outline" iconBg={isDarkMode ? '#001A18' : '#EFF7F6'} iconColor="#004D40"
+                        title="View Documents" onPress={() => router.push('/profile/view-documents' as any)} colors={colors} />
+                    <MenuRow icon="download-outline" iconBg={isDarkMode ? '#0A1A00' : '#F1F8E9'} iconColor="#558B2F"
+                        title="Download Documents" onPress={() => router.push('/profile/download-documents' as any)} colors={colors} />
+                </DropdownSection>
 
                 {/* ═══════════════════════════════════════
-                    SECTION 8 — Help & Support
+                    SECTION 8 — Social Media (dropdown)
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Help & Support" colors={colors} />
-
-                {/* Help & Support Dropdown */}
-                <TouchableOpacity
-                    style={[styles.docDropdownHeader, { borderColor: colors.border }]}
-                    onPress={() => setDocsExpanded(!docsExpanded)}
-                    activeOpacity={0.7}
+                <SectionHeading title="Social Media" colors={colors} />
+                <DropdownSection
+                    icon="share-social-outline"
+                    iconBg={isDarkMode ? '#0C1A2E' : '#E8F4FF'}
+                    iconColor="#0284C7"
+                    title="Follow AYUXA"
+                    subtitle="Instagram, Facebook, YouTube & more"
+                    expanded={socialExpanded}
+                    onToggle={() => setSocialExpanded(v => !v)}
+                    colors={colors}
+                    isDarkMode={isDarkMode}
                 >
-                    <View style={styles.docDropdownLeft}>
-                        <View style={[styles.docDropdownIcon, { backgroundColor: '#F3F3F3' }]}>
-                            <Ionicons name="help-circle-outline" size={18} color="#616161" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.docDropdownTitle}>Get Help</Text>
-                            <Text style={styles.docDropdownSub}>{docsExpanded ? 'Tap to collapse' : 'Support options'}</Text>
-                        </View>
-                    </View>
-                    <Ionicons name={docsExpanded ? "chevron-up" : "chevron-down"} size={20} color={colors.text} />
-                </TouchableOpacity>
-
-                {/* Expanded Help Content */}
-                {docsExpanded && (
-                    <View style={[styles.docDropdownContent, { borderColor: colors.border }]}>
-                        <MenuRow icon="call-outline" iconBg="#DCF3FF" iconColor="#0284C7" title="Call Support" subtitle="Speak to our support team" onPress={() => Linking.openURL('tel:+918001234567')} colors={colors} />
-                        <MenuRow icon="mail-outline" iconBg="#FFF3E0" iconColor="#F57C00" title="Email Support" subtitle="Get help via email" onPress={() => router.push('/profile/email-support' as any)} colors={colors} />
-                        <MenuRow icon="chatbubble-outline" iconBg="#F3E5F5" iconColor="#7C3AED" title="Live Chat" subtitle="Chat with us now" onPress={() => router.push('/profile/live-chat' as any)} colors={colors} />
-                        <MenuRow icon="ticket-outline" iconBg="#FCE4EC" iconColor="#EC4899" title="Raise Ticket" subtitle="Create a support ticket" onPress={() => router.push('/profile/raise-ticket' as any)} colors={colors} />
-                        <MenuRow icon="help-outline" iconBg="#E8F5E9" iconColor="#2E7D32" title="FAQ" subtitle="Frequently asked questions" onPress={() => router.push('/profile/faq' as any)} colors={colors} />
+                    {SOCIAL_LINKS.map((s) => (
                         <TouchableOpacity
-                            style={[styles.emergencyBtn, { borderColor: colors.bgCard }]}
-                            onPress={() => Alert.alert('Emergency Assistance', 'Connecting you to emergency support...')}
-                            activeOpacity={0.7}
-                        >
-                            <View style={styles.emergencyIcon}>
-                                <Ionicons name="alert-circle-outline" size={18} color="#DC2626" />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.emergencyTitle}>Emergency Assistance</Text>
-                                <Text style={styles.emergencySub}>Urgent help - 24/7 available</Text>
-                            </View>
-                            <View style={styles.emergencyPulse}>
-                                <View style={styles.emergencyPulseDot} />
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                {/* ═══════════════════════════════════════
-                    SECTION 9 — Social Media
-                   ═══════════════════════════════════════ */}
-                <SectionHeading title="Follow Us" colors={colors} />
-                <View style={styles.socialRow}>
-                    {SOCIAL_LINKS.map((s, i) => (
-                        <TouchableOpacity
-                            key={i}
-                            style={[styles.socialBtn, { backgroundColor: `${s.color}15` }]}
+                            key={s.key}
+                            style={[styles.socialMenuRow, { backgroundColor: isDarkMode ? '#1F2937' : '#fff' }]}
                             onPress={() => Linking.openURL(s.url)}
                             activeOpacity={0.7}
                         >
-                            <Ionicons name={s.icon as any} size={22} color={s.color} />
+                            <View style={[styles.socialIconWrap, { backgroundColor: `${s.color}18` }]}>
+                                <Ionicons name={s.icon as any} size={20} color={s.color} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={[styles.socialLabel, { color: isDarkMode ? '#F9FAFB' : '#1F2937' }]}>{s.label}</Text>
+                                <Text style={[styles.socialHandle, { color: isDarkMode ? '#6B7280' : '#9CA3AF' }]}>{s.handle}</Text>
+                            </View>
+                            <Ionicons name="open-outline" size={15} color={isDarkMode ? '#6B7280' : '#9CA3AF'} />
                         </TouchableOpacity>
                     ))}
-                </View>
+                </DropdownSection>
 
                 <View style={{ height: 100 }} />
             </KeyboardAwareScrollView>
@@ -642,6 +655,47 @@ function ToggleRow({
                 onValueChange={onToggle}
                 value={value}
             />
+        </View>
+    );
+}
+
+function DropdownSection({
+    icon, iconBg, iconColor, title, subtitle, expanded, onToggle, colors, isDarkMode, children,
+}: {
+    icon: string; iconBg: string; iconColor: string;
+    title: string; subtitle?: string;
+    expanded: boolean; onToggle: () => void;
+    colors: ThemeColors; isDarkMode: boolean;
+    children: React.ReactNode;
+}) {
+    const s = makeStyles(colors);
+    return (
+        <View style={{ marginBottom: 8 }}>
+            <TouchableOpacity
+                style={[s.docDropdownHeader, { borderColor: colors.borderLight }]}
+                onPress={onToggle}
+                activeOpacity={0.75}
+            >
+                <View style={s.docDropdownLeft}>
+                    <View style={[s.docDropdownIcon, { backgroundColor: iconBg }]}>
+                        <Ionicons name={icon as any} size={20} color={iconColor} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <Text style={s.docDropdownTitle}>{title}</Text>
+                        {subtitle ? <Text style={s.docDropdownSub}>{subtitle}</Text> : null}
+                    </View>
+                </View>
+                <Ionicons
+                    name={expanded ? 'chevron-up' : 'chevron-down'}
+                    size={18}
+                    color={colors.textLight}
+                />
+            </TouchableOpacity>
+            {expanded && (
+                <View style={[s.docDropdownContent, { borderColor: colors.borderLight, backgroundColor: colors.bgCard }]}>
+                    {children}
+                </View>
+            )}
         </View>
     );
 }
@@ -800,8 +854,6 @@ function makeStyles(c: ThemeColors) {
             flexDirection: 'row',
             alignItems: 'center',
             borderWidth: 2,
-            borderColor: '#FEE2E2',
-            backgroundColor: '#FEF2F2',
             borderRadius: Radius.md,
             padding: Spacing.md,
             marginHorizontal: Spacing.md,
@@ -811,35 +863,56 @@ function makeStyles(c: ThemeColors) {
         emergencyIcon: {
             width: 40,
             height: 40,
-            borderRadius: Radius.sm,
-            backgroundColor: '#FFE4E6',
+            borderRadius: 20,
             justifyContent: 'center',
             alignItems: 'center',
         },
         emergencyTitle: {
             fontFamily: Fonts.semiBold,
             fontSize: FontSize.body,
-            color: '#DC2626',
-            marginBottom: 2,
         },
         emergencySub: {
             fontFamily: Fonts.regular,
             fontSize: FontSize.caption,
-            color: '#991B1B',
+            marginTop: 2,
         },
         emergencyPulse: {
-            width: 28,
-            height: 28,
-            borderRadius: 14,
-            backgroundColor: '#FCA5A5',
+            width: 24,
+            height: 24,
+            borderRadius: 12,
             justifyContent: 'center',
             alignItems: 'center',
         },
-        emergencyPulseDot: {
-            width: 8,
-            height: 8,
-            borderRadius: 4,
-            backgroundColor: '#DC2626',
+        emergencyDot: {
+            width: 10,
+            height: 10,
+            borderRadius: 5,
+        },
+
+        socialMenuRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 14,
+            paddingVertical: 12,
+            gap: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: c.borderLight,
+        },
+        socialIconWrap: {
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        socialLabel: {
+            fontFamily: Fonts.medium,
+            fontSize: FontSize.body,
+        },
+        socialHandle: {
+            fontFamily: Fonts.regular,
+            fontSize: FontSize.caption,
+            marginTop: 1,
         },
     });
 }

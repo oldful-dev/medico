@@ -7,6 +7,8 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { meetupService } from '@/services/api/meetupService';
 import type { Meetup } from '@/services/api/meetupService';
 
@@ -15,6 +17,8 @@ const PRIMARY = '#02743F';
 export default function MeetupDetailsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
     const { id } = useLocalSearchParams<{ id: string }>();
     const [meetup, setMeetup] = useState<Meetup | null>(null);
     const [loading, setLoading] = useState(true);
@@ -42,7 +46,7 @@ export default function MeetupDetailsScreen() {
 
     if (loading) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5FAF7' }}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDarkMode ? '#1A1A1A' : '#F5FAF7' }}>
                 <ActivityIndicator size="large" color={PRIMARY} />
             </View>
         );
@@ -57,42 +61,42 @@ export default function MeetupDetailsScreen() {
     const dayOfWeek = eventDate.toLocaleDateString('en-IN', { weekday: 'long' });
 
     return (
-        <View style={[styles.screen, { paddingTop: insets.top }]}>
-            <StatusBar style="light" backgroundColor={PRIMARY} />
+        <View style={[makeStyles(isDarkMode, colors).screen, { paddingTop: insets.top }]}>
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={PRIMARY} />
 
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <View style={makeStyles(isDarkMode, colors).header}>
+                <TouchableOpacity onPress={() => router.back()} style={makeStyles(isDarkMode, colors).backBtn}>
                     <Ionicons name="arrow-back" size={22} color="#fff" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Local Meet Up Details</Text>
+                <Text style={makeStyles(isDarkMode, colors).headerTitle}>Local Meet Up Details</Text>
                 <View style={{ width: 30 }} />
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={makeStyles(isDarkMode, colors).scrollContent}>
                 {/* Banner with Image */}
                 {meetup.imageUrl ? (
                     <Image source={{ uri: meetup.imageUrl }} style={styles.bannerImage} resizeMode="cover" />
                 ) : (
-                    <View style={styles.banner}>
+                    <View style={makeStyles(isDarkMode, colors).banner}>
                         <Ionicons name="people" size={56} color="rgba(255,255,255,0.35)" />
-                        <Text style={styles.bannerLabel}>Community Meetup</Text>
+                        <Text style={makeStyles(isDarkMode, colors).bannerLabel}>Community Meetup</Text>
                     </View>
                 )}
 
                 {/* Main card */}
-                <View style={styles.card}>
+                <View style={makeStyles(isDarkMode, colors).card}>
                     {seatsLow && (
-                        <View style={styles.limitedBadge}>
+                        <View style={makeStyles(isDarkMode, colors).limitedBadge}>
                             <Ionicons name="alert-circle" size={13} color="#D97706" />
-                            <Text style={styles.limitedText}>Limited Seats Available — {seatsLeft} left</Text>
+                            <Text style={makeStyles(isDarkMode, colors).limitedText}>Limited Seats Available — {seatsLeft} left</Text>
                         </View>
                     )}
 
-                    <Text style={styles.title}>{meetup.title}</Text>
-                    <Text style={styles.desc}>{meetup.description}</Text>
+                    <Text style={makeStyles(isDarkMode, colors).title}>{meetup.title}</Text>
+                    <Text style={makeStyles(isDarkMode, colors).desc}>{meetup.description}</Text>
 
-                    <View style={styles.divider} />
+                    <View style={makeStyles(isDarkMode, colors).divider} />
 
                     {/* Details */}
                     {[
@@ -102,28 +106,28 @@ export default function MeetupDetailsScreen() {
                         { icon: 'keypad-outline', label: 'PIN Code', value: meetup.pinCode ? `${meetup.pinCode}  (Only for this area)` : '—' },
                         { icon: 'person-outline', label: 'Organizer', value: meetup.organizerName ?? 'Ayuxa Senior Community' },
                     ].map((row, i) => (
-                        <View key={i} style={styles.detailRow}>
-                            <View style={styles.detailIcon}>
+                        <View key={i} style={makeStyles(isDarkMode, colors).detailRow}>
+                            <View style={makeStyles(isDarkMode, colors).detailIcon}>
                                 <Ionicons name={row.icon as any} size={16} color={PRIMARY} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.detailLabel}>{row.label}</Text>
-                                <Text style={styles.detailValue}>{row.value}</Text>
+                                <Text style={makeStyles(isDarkMode, colors).detailLabel}>{row.label}</Text>
+                                <Text style={makeStyles(isDarkMode, colors).detailValue}>{row.value}</Text>
                             </View>
                         </View>
                     ))}
 
-                    <View style={styles.divider} />
+                    <View style={makeStyles(isDarkMode, colors).divider} />
 
                     {/* What's included */}
                     {meetup.includedItems.length > 0 && (
                         <>
-                            <Text style={styles.sectionLabel}>What's Included</Text>
-                            <View style={styles.includesBox}>
+                            <Text style={makeStyles(isDarkMode, colors).sectionLabel}>What&apos;s Included</Text>
+                            <View style={makeStyles(isDarkMode, colors).includesBox}>
                                 {meetup.includedItems.map((item: string, i: number) => (
-                                    <View key={i} style={styles.includeRow}>
+                                    <View key={i} style={makeStyles(isDarkMode, colors).includeRow}>
                                         <Ionicons name="checkmark" size={14} color={PRIMARY} />
-                                        <Text style={styles.includeText}>{item}</Text>
+                                        <Text style={makeStyles(isDarkMode, colors).includeText}>{item}</Text>
                                     </View>
                                 ))}
                             </View>
@@ -135,13 +139,13 @@ export default function MeetupDetailsScreen() {
             </ScrollView>
 
             {/* Sticky footer */}
-            <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+            <View style={[makeStyles(isDarkMode, colors).footer, { paddingBottom: insets.bottom + 12 }]}>
                 <View>
-                    <Text style={styles.footerLabel}>Service Charge</Text>
-                    <Text style={styles.footerPrice}>₹{meetup.serviceCharge ?? 299}</Text>
+                    <Text style={makeStyles(isDarkMode, colors).footerLabel}>Service Charge</Text>
+                    <Text style={makeStyles(isDarkMode, colors).footerPrice}>₹{meetup.serviceCharge ?? 299}</Text>
                 </View>
                 <TouchableOpacity
-                    style={[styles.joinBtn, !canBook && styles.joinBtnDisabled]}
+                    style={[makeStyles(isDarkMode, colors).joinBtn, !canBook && makeStyles(isDarkMode, colors).joinBtnDisabled]}
                     onPress={() => {
                         if (!canBook) {
                             const statusLabel = userRegistrationForThisMeetup?.status === 'CANCELLED' ? 'Cancelled' : userRegistrationForThisMeetup?.status;
@@ -170,7 +174,7 @@ export default function MeetupDetailsScreen() {
                     activeOpacity={0.85}
                     disabled={!canBook}
                 >
-                    <Text style={styles.joinBtnText}>
+                    <Text style={makeStyles(isDarkMode, colors).joinBtnText}>
                         {canBook ? 'Join Now' : 'Already Registered'}
                     </Text>
                     {canBook && <Ionicons name="arrow-forward" size={18} color="#fff" />}
@@ -181,7 +185,11 @@ export default function MeetupDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: '#F5FAF7' },
+    bannerImage: { width: '100%', height: 200 },
+});
+
+const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: isDarkMode ? '#1A1A1A' : '#F5FAF7' },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         backgroundColor: PRIMARY,
@@ -199,7 +207,7 @@ const styles = StyleSheet.create({
     },
     bannerLabel: { fontFamily: Fonts.semiBold, fontSize: 13, color: 'rgba(255,255,255,0.5)' },
     card: {
-        backgroundColor: '#fff', marginHorizontal: 16, marginTop: -20,
+        backgroundColor: isDarkMode ? '#252525' : '#fff', marginHorizontal: 16, marginTop: -20,
         borderRadius: 20, padding: 20,
         shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08, shadowRadius: 12, elevation: 5,
@@ -209,30 +217,30 @@ const styles = StyleSheet.create({
         backgroundColor: '#FEF3C7', borderRadius: 8, padding: 10, marginBottom: 14,
     },
     limitedText: { fontFamily: Fonts.semiBold, fontSize: 12, color: '#D97706' },
-    title: { fontFamily: Fonts.semiBold, fontSize: 18, color: Colors.textDark, lineHeight: 26, marginBottom: 8 },
-    desc: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textMuted, lineHeight: 20 },
-    divider: { height: 1, backgroundColor: Colors.borderLight, marginVertical: 16 },
+    title: { fontFamily: Fonts.semiBold, fontSize: 18, color: isDarkMode ? '#FFFFFF' : Colors.textDark, lineHeight: 26, marginBottom: 8 },
+    desc: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#CCCCCC' : Colors.textMuted, lineHeight: 20 },
+    divider: { height: 1, backgroundColor: isDarkMode ? '#3A3A3A' : Colors.borderLight, marginVertical: 16 },
     detailRow: {
         flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14,
     },
     detailIcon: {
-        width: 34, height: 34, borderRadius: 10, backgroundColor: '#EDF7F1',
+        width: 34, height: 34, borderRadius: 10, backgroundColor: isDarkMode ? '#3A3A3A' : '#EDF7F1',
         justifyContent: 'center', alignItems: 'center',
     },
-    detailLabel: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted, marginBottom: 2 },
-    detailValue: { fontFamily: Fonts.semiBold, fontSize: 14, color: Colors.textDark },
-    sectionLabel: { fontFamily: Fonts.semiBold, fontSize: 14, color: Colors.textDark, marginBottom: 12 },
-    includesBox: { backgroundColor: '#F5FAF7', borderRadius: 12, padding: 14, gap: 10 },
+    detailLabel: { fontFamily: Fonts.regular, fontSize: 11, color: isDarkMode ? '#999999' : Colors.textMuted, marginBottom: 2 },
+    detailValue: { fontFamily: Fonts.semiBold, fontSize: 14, color: isDarkMode ? '#FFFFFF' : Colors.textDark },
+    sectionLabel: { fontFamily: Fonts.semiBold, fontSize: 14, color: isDarkMode ? '#FFFFFF' : Colors.textDark, marginBottom: 12 },
+    includesBox: { backgroundColor: isDarkMode ? '#2A2A2A' : '#F5FAF7', borderRadius: 12, padding: 14, gap: 10 },
     includeRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    includeText: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textBody, flex: 1 },
+    includeText: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#CCCCCC' : Colors.textBody, flex: 1 },
     footer: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        backgroundColor: '#fff', paddingHorizontal: 20, paddingTop: 14,
-        borderTopWidth: 1, borderTopColor: Colors.borderLight,
+        backgroundColor: isDarkMode ? '#252525' : '#fff', paddingHorizontal: 20, paddingTop: 14,
+        borderTopWidth: 1, borderTopColor: isDarkMode ? '#3A3A3A' : Colors.borderLight,
         shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.06, elevation: 8,
     },
-    footerLabel: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted },
-    footerPrice: { fontFamily: Fonts.semiBold, fontSize: 22, color: Colors.textDark },
+    footerLabel: { fontFamily: Fonts.regular, fontSize: 12, color: isDarkMode ? '#999999' : Colors.textMuted },
+    footerPrice: { fontFamily: Fonts.semiBold, fontSize: 22, color: isDarkMode ? '#FFFFFF' : Colors.textDark },
     joinBtn: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
         backgroundColor: PRIMARY, borderRadius: 14,

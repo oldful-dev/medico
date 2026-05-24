@@ -399,6 +399,17 @@ const verifyPayment = async (req, res, next) => {
                 userId: payment.userId,
             });
 
+            // DLT SMS — PAYMENT_RECEIVED (215352) — Var1=name, Var2=amount
+            if (payment.user.phone && payment.user.smsEnabled !== false) {
+                const { sendSMS } = require('../services/sms');
+                await sendSMS({
+                    template: 'PAYMENT_RECEIVED',
+                    mobile: payment.user.phone,
+                    variables: [payment.user.name, parseFloat(payment.amount).toFixed(2)],
+                    userId: payment.userId,
+                }).catch(err => logger.warn('PAYMENT_RECEIVED SMS failed (non-fatal):', err.message));
+            }
+
             await prisma.invoice.update({
                 where: { id: invoice.id },
                 data: { emailSentAt: new Date() },

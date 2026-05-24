@@ -5,6 +5,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 import { LocationSearch } from './LocationSearch';
 import { LocationMapConfirm } from './LocationMapConfirm';
 
@@ -32,6 +33,7 @@ export const LocationPickerModal = ({
     initialLng = 77.1025,
 }: LocationPickerModalProps) => {
     const insets = useSafeAreaInsets();
+    const { isDarkMode } = useTheme();
     const [step, setStep] = useState<LocationPickerStep>('search');
     const [selectedLocation, setSelectedLocation] = useState<{
         placeId: string;
@@ -71,10 +73,12 @@ export const LocationPickerModal = ({
         setSelectedLocation(null);
     };
 
+    const bg = isDarkMode ? '#1A1A1A' : '#FFFFFF';
+
     return (
         <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={handleClose}>
             <View style={[styles.safeTopPadding, { height: insets.top, backgroundColor: Colors.primaryDark }]} />
-            <SafeAreaView style={styles.container}>
+            <SafeAreaView style={[styles.container, { backgroundColor: bg }]}>
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity
@@ -119,7 +123,7 @@ export const LocationPickerModal = ({
                 </View>
 
                 {/* Content */}
-                <View style={styles.content}>
+                <View style={[styles.content, { backgroundColor: bg }]}>
                     {step === 'search' && (
                         <LocationSearch
                             onSelectLocation={handleSelectLocation}
@@ -236,10 +240,9 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.medium,
     },
 
-    // Content area — white rounded top, no negative margin
+    // Content area — bg set dynamically via isDarkMode inline style
     content: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
         borderTopLeftRadius: 28,
         borderTopRightRadius: 28,
         overflow: 'hidden',

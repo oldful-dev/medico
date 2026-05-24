@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
+import { useTheme } from '@/context/ThemeContext';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.ayuxacare.com/api';
 
@@ -34,6 +35,7 @@ export const LocationMapConfirm = ({
     onConfirm,
     onCancel,
 }: LocationMapConfirmProps) => {
+    const { isDarkMode } = useTheme();
     const mapRef = useRef<MapView>(null);
     const [region, setRegion] = useState({
         latitude: initialLat,
@@ -106,8 +108,13 @@ export const LocationMapConfirm = ({
         console.log('🗺️ LocationMapConfirm: onConfirm callback executed');
     };
 
+    const bg = isDarkMode ? '#1A1A1A' : '#FFFFFF';
+    const cardBg = isDarkMode ? '#252525' : '#F9FAFB';
+    const textColor = isDarkMode ? '#FFFFFF' : TEXT_DARK;
+    const borderColor = isDarkMode ? '#3A3A3A' : CARD_BORDER;
+
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: bg }]}>
             {/* Map */}
             <MapView
                 ref={mapRef}
@@ -130,12 +137,12 @@ export const LocationMapConfirm = ({
             </View>
 
             {/* Current Location Button */}
-            <TouchableOpacity style={styles.currentLocationBtn} onPress={handleCurrentLocation}>
+            <TouchableOpacity style={[styles.currentLocationBtn, { backgroundColor: bg }]} onPress={handleCurrentLocation}>
                 <Ionicons name="locate" size={20} color={PRIMARY_GREEN} />
             </TouchableOpacity>
 
             {/* Bottom Sheet - Address Info */}
-            <View style={styles.bottomSheet}>
+            <View style={[styles.bottomSheet, { backgroundColor: bg }]}>
                 <View style={styles.dragHandle} />
 
                 {/* Loading State */}
@@ -153,19 +160,19 @@ export const LocationMapConfirm = ({
                             <Ionicons name="location" size={20} color={PRIMARY_GREEN} style={{ marginRight: 12 }} />
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.addressTitle}>Drop pin to confirm</Text>
-                                <Text style={styles.addressText} numberOfLines={3}>{address}</Text>
+                                <Text style={[styles.addressText, { color: textColor }]} numberOfLines={3}>{address}</Text>
                             </View>
                         </View>
 
                         {/* Coordinates Info */}
-                        <View style={styles.coordsContainer}>
+                        <View style={[styles.coordsContainer, { backgroundColor: cardBg, borderColor: borderColor }]}>
                             <View style={styles.coordRow}>
                                 <Text style={styles.coordLabel}>Latitude:</Text>
-                                <Text style={styles.coordValue}>{markerCoord.latitude.toFixed(6)}</Text>
+                                <Text style={[styles.coordValue, { color: textColor }]}>{markerCoord.latitude.toFixed(6)}</Text>
                             </View>
                             <View style={styles.coordRow}>
                                 <Text style={styles.coordLabel}>Longitude:</Text>
-                                <Text style={styles.coordValue}>{markerCoord.longitude.toFixed(6)}</Text>
+                                <Text style={[styles.coordValue, { color: textColor }]}>{markerCoord.longitude.toFixed(6)}</Text>
                             </View>
                         </View>
                     </>

@@ -13,6 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTheme } from '@react-navigation/native';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
@@ -42,6 +44,8 @@ export default function TechHelperScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
+    const { dark: isDarkMode } = useTheme();
+    const colors = useThemeColors();
 
     // State for multi-select checkboxes
     const [selectedIssues, setSelectedIssues] = useState<string[]>([]);
@@ -153,57 +157,61 @@ export default function TechHelperScreen() {
         );
     };
 
+    const dynamicStyles = makeStyles(isDarkMode);
+
     return (
-        <View style={styles.screen}>
+        <View style={dynamicStyles.screen}>
             {/* Header extension */}
             <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
             <StatusBar style="light" backgroundColor={Colors.primary} />
 
             {/* ─── Header ─── */}
-            <View style={styles.headerContainer}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <View style={dynamicStyles.headerContainer}>
+                <TouchableOpacity onPress={() => router.back()} style={dynamicStyles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Tech Helper</Text>
+                <Text style={dynamicStyles.headerTitle}>Tech Helper</Text>
             </View>
 
             {/* ─── Main Content Container ─── */}
-            <View style={styles.contentContainer}>
-                <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
+            <View style={dynamicStyles.contentContainer}>
+                <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* Hero Title & Tagline */}
-                    <Text style={styles.mainTitle}>Tech Helper</Text>
-                    <Text style={styles.subTitle}>We fix phones, Wi-Fi, and TV remotes.</Text>
-                    <View style={styles.divider} />
+                    <Text style={dynamicStyles.mainTitle}>Tech Helper</Text>
+                    <Text style={dynamicStyles.subTitle}>We fix phones, Wi-Fi, and TV remotes.</Text>
+                    <View style={dynamicStyles.divider} />
 
                     {/* ─── What's the issue? (Multi-select) ─── */}
-                    <Text style={styles.sectionTitle}>What&apos;s the issue?</Text>
+                    <Text style={dynamicStyles.sectionTitle}>What&apos;s the issue?</Text>
 
                     {ISSUES.map((issue) => {
                         const isSelected = selectedIssues.includes(issue.id);
+    const dynamicStyles = makeStyles(isDarkMode);
+
                         return (
                             <TouchableOpacity
                                 key={issue.id}
-                                style={[styles.checkboxCard, isSelected && styles.checkboxCardSelected]}
+                                style={[dynamicStyles.checkboxCard, isSelected && dynamicStyles.checkboxCardSelected]}
                                 activeOpacity={0.7}
                                 onPress={() => toggleIssue(issue.id)}
                             >
-                                <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                                <View style={[dynamicStyles.checkbox, isSelected && dynamicStyles.checkboxSelected]}>
                                     {isSelected && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
                                 </View>
-                                <View style={styles.checkboxTextGroup}>
-                                    <Text style={[styles.issueTitle, isSelected && styles.issueTitleSelected]}>{issue.title}</Text>
-                                    <Text style={styles.issueSubTitle}>{issue.sub}</Text>
+                                <View style={dynamicStyles.checkboxTextGroup}>
+                                    <Text style={[dynamicStyles.issueTitle, isSelected && dynamicStyles.issueTitleSelected]}>{issue.title}</Text>
+                                    <Text style={dynamicStyles.issueSubTitle}>{issue.sub}</Text>
                                 </View>
                             </TouchableOpacity>
                         )
                     })}
 
                     {/* ─── Something Else? (Text Box) ─── */}
-                    <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Something Else?</Text>
-                    <View style={styles.textInputBox}>
+                    <Text style={[dynamicStyles.sectionTitle, { marginTop: 10 }]}>Something Else?</Text>
+                    <View style={dynamicStyles.textInputBox}>
                         <TextInput
-                            style={styles.textInput}
+                            style={dynamicStyles.textInput}
                             placeholder="Describe the problem you are facing..."
                             placeholderTextColor="#898989"
                             multiline
@@ -216,14 +224,14 @@ export default function TechHelperScreen() {
 
                     {/* ─── Date & Time Picker ─── */}
                     <View style={{ marginTop: 20, marginBottom: 20 }}>
-                        <Text style={styles.sectionTitle}>Preferred Date & Time</Text>
+                        <Text style={dynamicStyles.sectionTitle}>Preferred Date & Time</Text>
                         <TouchableOpacity
-                            style={styles.dateTimeButton}
+                            style={dynamicStyles.dateTimeButton}
                             onPress={() => setShowDatePicker(true)}
                             activeOpacity={0.7}
                         >
                             <Ionicons name="calendar-outline" size={20} color={Colors.primary} />
-                            <Text style={[styles.dateTimeText, selectedDate && styles.dateTimeTextSelected]}>
+                            <Text style={[dynamicStyles.dateTimeText, selectedDate && dynamicStyles.dateTimeTextSelected]}>
                                 {selectedDate
                                     ? selectedDate.toLocaleDateString('en-IN', {
                                         day: '2-digit',
@@ -285,52 +293,52 @@ export default function TechHelperScreen() {
                         />
                     </View>
 
-                    <View style={styles.divider} />
+                    <View style={dynamicStyles.divider} />
 
                     {/* ─── Select Mode & Price (Radio Buttons) ─── */}
-                    <Text style={styles.sectionTitle}>Select Mode</Text>
+                    <Text style={dynamicStyles.sectionTitle}>Select Mode</Text>
 
                     {/* Mode: Home Visit */}
                     <TouchableOpacity
-                        style={[styles.radioCard, selectedMode === 'home' && styles.radioCardSelected]}
+                        style={[dynamicStyles.radioCard, selectedMode === 'home' && dynamicStyles.radioCardSelected]}
                         activeOpacity={0.7}
                         onPress={() => setSelectedMode('home')}
                     >
-                        <View style={[styles.radioCircle, selectedMode === 'home' && styles.radioCircleSelected]} />
-                        <View style={styles.radioTextGroup}>
-                            <Text style={styles.radioTitle}>Home Visit</Text>
-                            <Text style={styles.radioSubTitle}>A buddy comes to teach</Text>
+                        <View style={[dynamicStyles.radioCircle, selectedMode === 'home' && dynamicStyles.radioCircleSelected]} />
+                        <View style={dynamicStyles.radioTextGroup}>
+                            <Text style={dynamicStyles.radioTitle}>Home Visit</Text>
+                            <Text style={dynamicStyles.radioSubTitle}>A buddy comes to teach</Text>
                         </View>
-                        <Text style={styles.radioPrice}>
+                        <Text style={dynamicStyles.radioPrice}>
                                 {servicePrice > 0 ? `₹${servicePrice}` : '...'}
                             </Text>
                     </TouchableOpacity>
 
                     {/* Mode: Phone Call */}
                     <TouchableOpacity
-                        style={[styles.radioCard, selectedMode === 'phone' && styles.radioCardSelected]}
+                        style={[dynamicStyles.radioCard, selectedMode === 'phone' && dynamicStyles.radioCardSelected]}
                         activeOpacity={0.7}
                         onPress={() => setSelectedMode('phone')}
                     >
-                        <View style={[styles.radioCircle, selectedMode === 'phone' && styles.radioCircleSelected]} />
-                        <View style={styles.radioTextGroup}>
-                            <Text style={styles.radioTitle}>Phone Call</Text>
-                            <Text style={styles.radioSubTitle}>Remote help</Text>
+                        <View style={[dynamicStyles.radioCircle, selectedMode === 'phone' && dynamicStyles.radioCircleSelected]} />
+                        <View style={dynamicStyles.radioTextGroup}>
+                            <Text style={dynamicStyles.radioTitle}>Phone Call</Text>
+                            <Text style={dynamicStyles.radioSubTitle}>Remote help</Text>
                         </View>
-                        <Text style={styles.radioPrice}>
+                        <Text style={dynamicStyles.radioPrice}>
                                 {servicePrice > 0 ? `₹${Math.round(servicePrice * 0.66)}` : '...'}
                             </Text>
                     </TouchableOpacity>
 
                     {/* ─── Book Support Button ─── */}
-                    <View style={styles.footerSpacing} />
+                    <View style={dynamicStyles.footerSpacing} />
                     <TouchableOpacity
-                        style={[styles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.7 }]}
+                        style={[dynamicStyles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.7 }]}
                         activeOpacity={0.8}
                         disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
-                        <Text style={styles.submitButtonText}>{isLoadingInit ? 'Initializing...' : isBooking ? 'Processing...' : 'Book Tech Support'}</Text>
+                        <Text style={dynamicStyles.submitButtonText}>{isLoadingInit ? 'Initializing...' : isBooking ? 'Processing...' : 'Book Tech Support'}</Text>
                     </TouchableOpacity>
 
                 </KeyboardAwareScrollView>
@@ -339,7 +347,7 @@ export default function TechHelperScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
         backgroundColor: Colors.primary,

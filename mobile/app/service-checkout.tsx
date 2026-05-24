@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity,
-    TextInput, ActivityIndicator, StyleSheet, Platform, Alert, NativeModules,
+    TextInput, ActivityIndicator, StyleSheet, Platform, Alert, NativeModules, useColorScheme,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -52,6 +52,7 @@ const mapLabelToCategory = (label: string): string => {
 export default function ServiceCheckoutScreen() {
     const router = useRouter();
     const { profile, refreshData } = useUser();
+    const isDarkMode = useColorScheme() === 'dark';
     const params = useLocalSearchParams<{
         bookingPayload?: string;
         subscriptionId?: string;
@@ -487,8 +488,8 @@ export default function ServiceCheckoutScreen() {
     }, [payLoading, finalAmount, selectedMethod, couponApplied, couponCode, params, label, router, refreshData, selectedAddress]);
 
     return (
-        <SafeAreaView style={styles.screen} edges={['top']}>
-            <StatusBar style="light" />
+        <SafeAreaView style={[styles.screen, { backgroundColor: isDarkMode ? Colors.primary : Colors.primary }]} edges={['top']}>
+            <StatusBar style={isDarkMode ? "light" : "light"} />
 
             {/* Header */}
             <View style={styles.header}>
@@ -790,40 +791,40 @@ const styles = StyleSheet.create({
         marginLeft: 12,
     },
 
-    body: { flex: 1, backgroundColor: Colors.bgScreen ?? '#FAFAF0', borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+    body: { flex: 1, backgroundColor: isDarkMode ? '#1A1A1A' : (Colors.bgScreen ?? '#FAFAF0'), borderTopLeftRadius: 24, borderTopRightRadius: 24 },
     bodyContent: { padding: Spacing.xl, paddingBottom: 100, gap: Spacing.lg },
 
     card: {
-        backgroundColor: '#FFFFFF', borderRadius: Radius.lg ?? 12, padding: Spacing.xl, gap: Spacing.md,
-        elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3,
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF', borderRadius: Radius.lg ?? 12, padding: Spacing.xl, gap: Spacing.md,
+        elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkMode ? 0.2 : 0.06, shadowRadius: 3,
     },
-    cardTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark, marginBottom: Spacing.xs ?? 4 },
+    cardTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: isDarkMode ? '#E8E8E8' : Colors.textDark, marginBottom: Spacing.xs ?? 4 },
 
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    rowLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textLight },
-    rowValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark },
+    rowLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: isDarkMode ? '#A0A0A0' : Colors.textLight },
+    rowValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: isDarkMode ? '#E8E8E8' : Colors.textDark },
 
     detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, paddingVertical: Spacing.sm },
-    detailLabel: { fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: Colors.textLight },
-    detailValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark, marginTop: 4 },
+    detailLabel: { fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: isDarkMode ? '#A0A0A0' : Colors.textLight },
+    detailValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: isDarkMode ? '#E8E8E8' : Colors.textDark, marginTop: 4 },
 
     meetupCard: { gap: 0 },
-    divider: { height: 1, backgroundColor: Colors.borderLight, marginVertical: 10 },
-    subHeading: { fontFamily: Fonts.semiBold, fontSize: 13, color: Colors.textDark, marginBottom: 10 },
+    divider: { height: 1, backgroundColor: isDarkMode ? '#3A3A3A' : Colors.borderLight, marginVertical: 10 },
+    subHeading: { fontFamily: Fonts.semiBold, fontSize: 13, color: isDarkMode ? '#E8E8E8' : Colors.textDark, marginBottom: 10 },
     extraHeading: { fontFamily: Fonts.semiBold, fontSize: 13, color: '#DC2626', marginBottom: 10 },
 
     includeRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
-    includeText: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textBody, flex: 1 },
+    includeText: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#D1D5DB' : Colors.textBody, flex: 1 },
 
     extraRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
-    extraText: { fontFamily: Fonts.regular, fontSize: 13, color: '#DC2626', flex: 1 },
+    extraText: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#F87171' : '#DC2626', flex: 1 },
 
     pickupDetailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 8 },
-    pickupLabel: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, minWidth: 60 },
-    pickupValue: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textDark, flex: 1 },
+    pickupLabel: { fontFamily: Fonts.regular, fontSize: 12, color: isDarkMode ? '#A0A0A0' : Colors.textMuted, minWidth: 60 },
+    pickupValue: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#E8E8E8' : Colors.textDark, flex: 1 },
 
     breakdownSection: {
-        backgroundColor: '#FAFAFA',
+        backgroundColor: isDarkMode ? '#2D2D2D' : '#FAFAFA',
         borderRadius: Radius.md,
         padding: Spacing.md,
         gap: Spacing.sm,
@@ -838,16 +839,16 @@ const styles = StyleSheet.create({
     breakdownLabel: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.caption ?? 12,
-        color: '#666'
+        color: isDarkMode ? '#A0A0A0' : '#666'
     },
     breakdownValue: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.caption ?? 12,
-        color: Colors.textDark
+        color: isDarkMode ? '#E8E8E8' : Colors.textDark
     },
 
-    totalRow: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
-    totalLabel: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textDark },
+    totalRow: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: isDarkMode ? '#3A3A3A' : '#F0F0F0' },
+    totalLabel: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: isDarkMode ? '#E8E8E8' : Colors.textDark },
     totalValue: { fontFamily: Fonts.semiBold, fontSize: 20, color: Colors.primary },
 
     addressCard: {
@@ -858,21 +859,21 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
         borderRadius: Radius.md,
         borderWidth: 1.5,
-        borderColor: '#EEEEEE',
+        borderColor: isDarkMode ? '#3A3A3A' : '#EEEEEE',
     },
     addressCardActive: {
         borderColor: Colors.primary,
-        backgroundColor: '#F0FAF4',
+        backgroundColor: isDarkMode ? '#1A4A32' : '#F0FAF4',
     },
     addressLabel: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
-        color: Colors.textDark,
+        color: isDarkMode ? '#E8E8E8' : Colors.textDark,
     },
     addressSub: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.caption ?? 12,
-        color: Colors.textMuted,
+        color: isDarkMode ? '#A0A0A0' : Colors.textMuted,
         marginTop: 4,
     },
     defaultBadge: {
@@ -884,21 +885,21 @@ const styles = StyleSheet.create({
     noAddressText: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
-        color: Colors.textMuted,
+        color: isDarkMode ? '#A0A0A0' : Colors.textMuted,
         textAlign: 'center',
         paddingVertical: Spacing.lg,
     },
 
     couponRow: { flexDirection: 'row', gap: Spacing.sm },
     couponInput: {
-        flex: 1, height: 44, borderWidth: 1.5, borderColor: '#E5E5E5', borderRadius: Radius.md,
-        paddingHorizontal: Spacing.md, fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark,
+        flex: 1, height: 44, borderWidth: 1.5, borderColor: isDarkMode ? '#404040' : '#E5E5E5', borderRadius: Radius.md,
+        paddingHorizontal: Spacing.md, fontFamily: Fonts.medium, fontSize: FontSize.body, color: isDarkMode ? '#E8E8E8' : Colors.textDark, backgroundColor: isDarkMode ? '#303030' : '#FFFFFF',
     },
     couponBtn: { paddingHorizontal: Spacing.lg, height: 44, backgroundColor: Colors.primary, borderRadius: Radius.md, justifyContent: 'center', alignItems: 'center' },
     couponBtnDisabled: { opacity: 0.45 },
     couponBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textWhite },
-    couponApplied: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#E8F5E9', padding: Spacing.md, borderRadius: Radius.sm },
-    couponAppliedText: { flex: 1, fontFamily: Fonts.medium, fontSize: FontSize.caption ?? 13, color: '#2e7d32' },
+    couponApplied: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: isDarkMode ? '#1A4A32' : '#E8F5E9', padding: Spacing.md, borderRadius: Radius.sm },
+    couponAppliedText: { flex: 1, fontFamily: Fonts.medium, fontSize: FontSize.caption ?? 13, color: isDarkMode ? '#68D391' : '#2e7d32' },
 
     methodRow: {
         flexDirection: 'row',
@@ -908,21 +909,21 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
         borderRadius: Radius.md,
         borderWidth: 1.5,
-        borderColor: '#EEEEEE'
+        borderColor: isDarkMode ? '#3A3A3A' : '#EEEEEE'
     },
-    methodRowActive: { borderColor: Colors.primary, backgroundColor: '#F0FAF4' },
-    methodLabel: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textLight },
-    methodLabelActive: { color: Colors.textDark, fontFamily: Fonts.medium },
+    methodRowActive: { borderColor: Colors.primary, backgroundColor: isDarkMode ? '#1A4A32' : '#F0FAF4' },
+    methodLabel: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.body, color: isDarkMode ? '#A0A0A0' : Colors.textLight },
+    methodLabelActive: { color: isDarkMode ? '#E8E8E8' : Colors.textDark, fontFamily: Fonts.medium },
 
     securityNote: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: Spacing.md },
-    securityText: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: '#888', lineHeight: 18 },
+    securityText: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: isDarkMode ? '#A0A0A0' : '#888', lineHeight: 18 },
 
     footer: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        backgroundColor: Colors.bgScreen ?? '#FAFAF0',
+        backgroundColor: isDarkMode ? '#1A1A1A' : (Colors.bgScreen ?? '#FAFAF0'),
         padding: Spacing.xl,
         paddingBottom: Platform.OS === 'ios' ? Spacing.xl + 16 : Spacing.xl,
-        borderTopWidth: 1, borderTopColor: '#E5E5E5',
+        borderTopWidth: 1, borderTopColor: isDarkMode ? '#3A3A3A' : '#E5E5E5',
     },
     payBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.primary, paddingVertical: 16, borderRadius: Radius.lg ?? 12 },
     payBtnLoading: { opacity: 0.7 },
@@ -936,7 +937,7 @@ const styles = StyleSheet.create({
         marginTop: -2,
     },
     savingsBadge: {
-        backgroundColor: '#E8F5E9',
+        backgroundColor: isDarkMode ? '#1A4A32' : '#E8F5E9',
         borderRadius: Radius.sm ?? 6,
         paddingVertical: 10,
         paddingHorizontal: Spacing.md,
@@ -947,6 +948,6 @@ const styles = StyleSheet.create({
     savingsText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.caption ?? 12,
-        color: '#2e7d32',
+        color: isDarkMode ? '#68D391' : '#2e7d32',
     },
 });

@@ -6,7 +6,7 @@ export const validators = {
     return /^[6-9]\d{9}$/.test(phone.replace(/\D/g, ''));
   },
 
-  otp: (otp: string, length: number = 6): boolean => {
+  otp: (otp: string, length: number = 4): boolean => {
     return /^\d+$/.test(otp) && otp.length === length;
   },
 
@@ -32,7 +32,7 @@ export const getValidationError = (field: string, value: string): string | null 
     case 'phoneNumber':
       return validators.phoneNumber(value) ? null : 'Please enter a valid 10-digit phone number';
     case 'otp':
-      return validators.otp(value) ? null : 'Please enter a valid 6-digit OTP';
+      return validators.otp(value) ? null : 'Please enter a valid 4-digit OTP';
     case 'email':
       return validators.email(value) ? null : 'Please enter a valid email address';
     case 'pincode':

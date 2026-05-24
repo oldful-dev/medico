@@ -11,6 +11,8 @@ import RazorpayCheckout from 'react-native-razorpay';
 import { paymentService } from '@/services/api/paymentService';
 import { labService } from '@/services/api/labService';
 import { useUser } from '@/context/UserContext';
+import { useTheme } from '@/context/ThemeContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -28,6 +30,8 @@ export default function BloodTestOrderSummaryScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { profile } = useUser();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
     const params = useLocalSearchParams<{
         bookingPayload?: string;
         amount?: string;
@@ -208,8 +212,8 @@ export default function BloodTestOrderSummaryScreen() {
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar backgroundColor="#FFFFFF" />
+        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}>
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} />
 
             {/* Header */}
             <View style={styles.header}>
@@ -388,10 +392,10 @@ export default function BloodTestOrderSummaryScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
     },
     header: {
         flexDirection: 'row',
@@ -400,12 +404,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: CARD_BORDER,
+        borderBottomColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
     },
     headerTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         flex: 1,
         textAlign: 'center',
     },
@@ -416,9 +420,9 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
     },
     card: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
         borderWidth: 1,
-        borderColor: CARD_BORDER,
+        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         borderRadius: 12,
         padding: 14,
         marginBottom: 12,
@@ -436,12 +440,12 @@ const styles = StyleSheet.create({
     testName: {
         fontSize: 14,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         marginBottom: 4,
     },
     parametersText: {
         fontSize: 12,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
     },
     priceTag: {
         backgroundColor: LIGHT_GREEN_BG,
@@ -449,7 +453,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#D1FAE5',
+        borderColor: isDarkMode ? '#2A5A47' : '#D1FAE5',
     },
     priceAmount: {
         fontSize: 14,
@@ -472,18 +476,18 @@ const styles = StyleSheet.create({
     },
     detailLabel: {
         fontSize: 12,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
         fontWeight: '500',
         marginBottom: 2,
     },
     detailValue: {
         fontSize: 13,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
     },
     divider: {
         height: 1,
-        backgroundColor: CARD_BORDER,
+        backgroundColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         marginVertical: 10,
     },
     breakdownRow: {
@@ -494,17 +498,17 @@ const styles = StyleSheet.create({
     },
     breakdownLabel: {
         fontSize: 13,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
         fontWeight: '500',
     },
     breakdownValue: {
         fontSize: 13,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
     },
     breakdownDivider: {
         height: 1,
-        backgroundColor: CARD_BORDER,
+        backgroundColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         marginVertical: 10,
     },
     totalRow: {
@@ -515,7 +519,7 @@ const styles = StyleSheet.create({
     totalLabel: {
         fontSize: 14,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
     },
     totalValue: {
         fontSize: 16,
@@ -525,7 +529,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 13,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         marginBottom: 10,
     },
     couponRow: {
@@ -535,12 +539,13 @@ const styles = StyleSheet.create({
     couponInput: {
         flex: 1,
         borderWidth: 1,
-        borderColor: CARD_BORDER,
+        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 10,
         fontSize: 13,
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
     },
     applyBtn: {
         paddingHorizontal: 16,
@@ -564,8 +569,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderTopWidth: 1,
-        borderTopColor: CARD_BORDER,
-        backgroundColor: '#FFFFFF',
+        borderTopColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
     },
     payBtn: {
         paddingVertical: 14,
@@ -582,18 +587,20 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#FFFFFF',
     },
-    methodRow: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        gap: 12, 
-        paddingVertical: 12, 
-        paddingHorizontal: 16, 
-        borderRadius: 8, 
-        borderWidth: 1.5, 
-        borderColor: CARD_BORDER,
+    methodRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        borderWidth: 1.5,
+        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         marginBottom: 8,
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
     },
     methodRowActive: { borderColor: PRIMARY_GREEN, backgroundColor: LIGHT_GREEN_BG },
-    methodLabel: { flex: 1, fontSize: 13, color: TEXT_MUTED, fontWeight: '400' },
-    methodLabelActive: { color: TEXT_DARK, fontWeight: '600' },
+    methodLabel: { flex: 1, fontSize: 13, color: isDarkMode ? '#AAAAAA' : TEXT_MUTED, fontWeight: '400' },
+    methodLabelActive: { color: isDarkMode ? '#FFFFFF' : TEXT_DARK, fontWeight: '600' },
 });
+const styles = makeStyles(false, {} as ThemeColors);
