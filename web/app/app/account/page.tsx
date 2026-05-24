@@ -14,6 +14,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
 import { userService, UserProfile, Address, EmergencyContact, MedicalCard, Booking, HealthReport } from '@/services/api/userService';
+import { labService, LabOrderListItem } from '@/services/api/labService';
 import { useUserHooks, USER_QUERY_KEYS } from '@/hooks/useUserHooks';
 import { getServiceConfig } from '@/lib/services-config';
 import { getAssetUrl } from '@/utils/getAssetUrl';
@@ -203,36 +204,95 @@ function ProfileTab({ profile }: { profile: UserProfile }) {
   );
 }
 
+// ─── Unified booking row type ─────────────────────────────────────────────
+interface UnifiedBooking {
+  id: string;
+  kind: 'service' | 'lab';
+  displayId: string;
+  name: string;
+  scheduledDate: string;
+  scheduledTime?: string;
+  status: string;
+  amount: number;
+  paid: boolean;
+  reportUrl?: string;
+  reportReady: boolean;
+  createdAt: string;
+}
+
+function normalizeLabOrder(o: LabOrderListItem): UnifiedBooking {
+  const pkg = o.packages?.[0];
+  const payment = o.payments?.[0];
+  const isCompleted = o.status === 'REPORT_GENERATED' || o.status === 'SAMPLE_COLLECTED';
+  const isCancelled = o.status === 'CANCELLED' || o.status === 'FAILED';
+  const isConfirmed = o.status === 'CONFIRMED' || o.status === 'HOLD_CREATED';
+  const uiStatus = isCompleted ? 'COMPLETED' : isCancelled ? 'CANCELLED' : isConfirmed ? 'CONFIRMED' : 'PENDING';
+  return {
+    id: o.id,
+    kind: 'lab',
+    displayId: o.clientRefId,
+    name: pkg?.name || pkg?.packageName || 'Blood Test',
+    scheduledDate: o.slot?.date || '',
+    scheduledTime: o.slot?.time,
+    status: uiStatus,
+    amount: payment?.amount || 0,
+    paid: payment?.status === 'SUCCESS',
+    reportUrl: o.reportUrl,
+    reportReady: o.status === 'REPORT_GENERATED' && !!o.reportUrl,
+    createdAt: o.createdAt,
+  };
+}
+
 // ─── Bookings Tab ────────────────────────────────────────────────────────────
 function BookingsTab() {
   const router = useRouter();
-  const qc = useQueryClient();
-  const { useBookings, useCancelBooking } = useUserHooks();
-  const { data: bookingsData, isLoading } = useBookings();
+  const { useBookings, useCancelBooking, useLabOrders, useCancelLabOrder } = useUserHooks();
+  const { data: bookingsData, isLoading: isLoadingService } = useBookings();
+  const { data: labOrdersData, isLoading: isLoadingLab } = useLabOrders();
+  const isLoading = isLoadingService || isLoadingLab;
 
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelId, setCancelId] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<{ id: string; kind: 'service' | 'lab' } | null>(null);
 
-  const cancelMut = useCancelBooking();
+  const cancelServiceMut = useCancelBooking();
+  const cancelLabMut = useCancelLabOrder();
+  const cancelMutPending = cancelServiceMut.isPending || cancelLabMut.isPending;
 
-  const handleCancelClick = (id: string) => {
-    setCancelId(id);
+  const handleCancelClick = (id: string, kind: 'service' | 'lab') => {
+    setCancelTarget({ id, kind });
     setShowCancelModal(true);
   };
 
-  const bookings: Booking[] = (bookingsData || []).filter((b: Booking) => {
-    const s = b.status?.toUpperCase();
-    return s !== 'PAYMENT_PENDING' && s !== 'PAYMENT_FAILED';
-  });
+  const serviceBookings: UnifiedBooking[] = ((bookingsData || []) as Booking[])
+    .filter(b => b.status !== 'PAYMENT_PENDING' && b.status !== 'PAYMENT_FAILED')
+    .map(b => ({
+      id: b.id,
+      kind: 'service' as const,
+      displayId: b.bookingCode,
+      name: b.service?.name || 'Healthcare Service',
+      scheduledDate: b.scheduledDate,
+      scheduledTime: b.scheduledTime,
+      status: b.status,
+      amount: b.amount,
+      paid: b.payments?.some(p => p.status === 'SUCCESS') ?? false,
+      reportReady: false,
+      createdAt: b.createdAt,
+    }));
 
-  const upcoming = bookings.filter(b => ['PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'].includes(b.status));
-  const past = bookings.filter(b => ['COMPLETED', 'CANCELLED'].includes(b.status));
+  const labBookings: UnifiedBooking[] = ((labOrdersData || []) as LabOrderListItem[]).map(normalizeLabOrder);
+
+  const allBookings = [...serviceBookings, ...labBookings].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  const upcoming = allBookings.filter(b => ['PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'].includes(b.status));
+  const past = allBookings.filter(b => ['COMPLETED', 'CANCELLED'].includes(b.status));
 
   return (
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-2">
         {[
-          { label: 'Total', value: bookings.length, icon: Package, color: 'text-gray-700 bg-gray-50' },
+          { label: 'Total', value: allBookings.length, icon: Package, color: 'text-gray-700 bg-gray-50' },
           { label: 'Upcoming', value: upcoming.length, icon: Clock, color: 'text-emerald-700 bg-emerald-50' },
           { label: 'Completed', value: past.filter(b => b.status === 'COMPLETED').length, icon: CheckCircle2, color: 'text-blue-700 bg-blue-50' },
         ].map(s => (
@@ -250,42 +310,37 @@ function BookingsTab() {
         <div className="flex flex-col gap-3">
           {[1, 2, 3].map(i => <div key={i} className="h-24 bg-gray-50 animate-pulse rounded-2xl" />)}
         </div>
-      ) : bookings.length === 0 ? (
+      ) : allBookings.length === 0 ? (
         <SectionCard>
           <EmptyState icon={Package} text="No bookings yet. Book your first service!" />
         </SectionCard>
       ) : (
         <div className="flex flex-col gap-3">
-          {bookings.map(booking => (
-            <SectionCard key={booking.id} className="hover:shadow-md transition-all !p-0 overflow-hidden">
+          {allBookings.map(booking => (
+            <SectionCard key={`${booking.kind}-${booking.id}`} className="hover:shadow-md transition-all !p-0 overflow-hidden">
               <div className="p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-4">
                     <div className="w-11 h-11 bg-[var(--color-bg-screen)] rounded-xl flex items-center justify-center shrink-0">
-                      {booking.service?.slug && getServiceConfig(booking.service.slug) ? (
-                        <Image 
-                          src={getAssetUrl(getServiceConfig(booking.service.slug)!.icon)}
-                          alt={booking.service.name} 
-                          width={24} height={24} className="object-contain" 
-                        />
+                      {booking.kind === 'lab' ? (
+                        <span className="text-lg">🩸</span>
                       ) : (
                         <Stethoscope className="w-5 h-5 text-[var(--color-primary)]" />
                       )}
                     </div>
                     <div>
-                      <div className="font-bold text-gray-900 text-sm">{booking.service?.name || 'Healthcare Service'}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-bold text-gray-900 text-sm">{booking.name}</div>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${booking.kind === 'lab' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                          {booking.kind === 'lab' ? 'Blood Test' : 'Service'}
+                        </span>
+                      </div>
                       <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {booking.scheduledDate
-                          ? new Date(booking.scheduledDate).toLocaleDateString('en-IN', { dateStyle: 'medium' }) + ' · ' + (booking.scheduledTime || 'TBD')
+                          ? new Date(booking.scheduledDate).toLocaleDateString('en-IN', { dateStyle: 'medium' }) + (booking.scheduledTime ? ' · ' + booking.scheduledTime : '')
                           : 'Time TBD'}
                       </div>
-                      {booking.addressLine && (
-                        <div className="text-[10px] sm:text-xs text-gray-400 mt-1 flex items-start gap-1 leading-normal max-w-[180px] sm:max-w-none break-words">
-                          <MapPin className="w-3 h-3 shrink-0 mt-0.5" />
-                          <span>{booking.addressLine}</span>
-                        </div>
-                      )}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2 shrink-0">
@@ -293,22 +348,14 @@ function BookingsTab() {
                       {booking.status}
                     </span>
                     <div className="flex flex-col items-end">
-                      {booking.amount && <span className="text-sm font-bold text-gray-900">₹{formatPrice(booking.amount)}</span>}
-                      {booking.payments?.some((p) => p.status === 'SUCCESS') ? (
+                      {booking.amount > 0 && <span className="text-sm font-bold text-gray-900">₹{formatPrice(booking.amount)}</span>}
+                      {booking.paid ? (
                         <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 mt-1 flex items-center gap-0.5">
                           <CheckCircle2 className="w-2.5 h-2.5" /> PAID
                         </span>
-                      ) : booking.payments?.some((p) => p.status === 'REFUND_INITIATED') ? (
-                        <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 mt-1 flex items-center gap-0.5">
-                          <Clock className="w-2.5 h-2.5" /> REFUND PROCESSING
-                        </span>
-                      ) : booking.payments?.some((p) => p.status === 'REFUNDED') ? (
-                        <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 mt-1 flex items-center gap-0.5">
-                          <CheckCircle2 className="w-2.5 h-2.5" /> REFUNDED
-                        </span>
                       ) : (
                         <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 mt-1">
-                           PAY ON ARRIVAL
+                          PENDING
                         </span>
                       )}
                     </div>
@@ -316,19 +363,35 @@ function BookingsTab() {
                 </div>
               </div>
               <div className="px-5 pb-4 flex items-center justify-between border-t border-gray-50 pt-3">
-                <span className="text-xs font-mono text-gray-400">{booking.bookingCode || booking.id.slice(0, 8).toUpperCase()}</span>
+                <span className="text-xs font-mono text-gray-400">#{booking.displayId || booking.id.slice(0, 8).toUpperCase()}</span>
                 <div className="flex items-center gap-3">
+                  {booking.reportReady && booking.reportUrl && (
+                    <a
+                      href={booking.reportUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-semibold text-emerald-600 flex items-center gap-0.5 hover:underline"
+                    >
+                      Report <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
                   {['CONFIRMED', 'PENDING', 'ASSIGNED'].includes(booking.status) && (
                     <button
-                      onClick={() => handleCancelClick(booking.id)}
-                      disabled={cancelMut.isPending && cancelId === booking.id}
+                      onClick={() => handleCancelClick(booking.id, booking.kind)}
+                      disabled={cancelMutPending && cancelTarget?.id === booking.id}
                       className="text-xs font-semibold text-red-500 hover:underline disabled:opacity-50"
                     >
-                      {cancelMut.isPending && cancelId === booking.id ? 'Cancelling...' : 'Cancel'}
+                      {cancelMutPending && cancelTarget?.id === booking.id ? 'Cancelling...' : 'Cancel'}
                     </button>
                   )}
-                  <button 
-                    onClick={() => router.push(`/app/account/bookings/${booking.id}`)}
+                  <button
+                    onClick={() => {
+                      if (booking.kind === 'lab') {
+                        router.push(`/app/account/bookings/${booking.id}?type=lab`);
+                      } else {
+                        router.push(`/app/account/bookings/${booking.id}`);
+                      }
+                    }}
                     className="text-xs font-semibold text-[var(--color-primary)] flex items-center gap-0.5 hover:underline"
                   >
                     Details <ChevronRight className="w-3 h-3" />
@@ -344,11 +407,12 @@ function BookingsTab() {
         isOpen={showCancelModal}
         onClose={() => setShowCancelModal(false)}
         onConfirm={() => {
-          if (!cancelId) return;
-          cancelMut.mutate(cancelId, {
+          if (!cancelTarget) return;
+          const mut = cancelTarget.kind === 'lab' ? cancelLabMut : cancelServiceMut;
+          mut.mutate(cancelTarget.id, {
             onSuccess: () => {
               setShowCancelModal(false);
-              setCancelId(null);
+              setCancelTarget(null);
               toast.success('Booking cancelled successfully');
             },
             onError: (err: unknown) => {
@@ -362,7 +426,7 @@ function BookingsTab() {
         confirmText="Yes, Cancel"
         cancelText="No, Keep It"
         type="danger"
-        isLoading={cancelMut.isPending}
+        isLoading={cancelMutPending}
       />
     </div>
   );

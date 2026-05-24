@@ -42,8 +42,8 @@ const LEGACY_NAME_MAP = {
     ayuxa_remember:         'WELLNESS_REMINDER',
     birthday_wishes:        'BIRTHDAY_WISHES',
     followup_feedback:      'WELLNESS_REMINDER',
-    sos_alert_admin:        'SOS_ALERT_ADMIN',
-    sos_alert_family:       'SOS_ALERT',
+    sos_alert_admin:        'SOS_ALERT_OPS',
+    sos_alert_family:       'SOS_ALERT_CLIENT',
 };
 
 const _legacyTemplateNameToKey = (name) => LEGACY_NAME_MAP[name] || name;
@@ -63,6 +63,6 @@ module.exports = {
     sendPrescriptionReminder: ({ phone, name }) => wa.sendWellnessReminder({ phone, name }),
     sendPlanExpiryReminder:   wa.sendPlanExpiryReminder,
     sendFeedbackSurvey:       ({ phone, name }) => wa.sendWellnessReminder({ phone, name }),
-    sendSOSAlertAdmin:        wa.sendSOSAlertAdmin,
-    sendSOSAlertFamily:       ({ phone, name, contactName }) => wa.sendSOSAlert({ phone, userName: name, ayuxaId: contactName }),
+    sendSOSAlertAdmin:        wa.sendSOSAlertOps,
+    sendSOSAlertFamily:       ({ phone, name, contactName }) => wa.sendSOSAlertClient({ phone, userName: name, ayuxaId: contactName }),
 };

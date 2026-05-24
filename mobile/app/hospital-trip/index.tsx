@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -16,12 +16,14 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '@react-navigation/native';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { FormInput } from '@/components/common';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 
 
-// ─── Figma Assets ───
+// --- Figma Assets ---
 const imgEye = require('@/assets/images/e9d68d0206e443ceceadd7907cd94f1c86fcacd4.png');
 const imgBrain = require('@/assets/images/2e6febd890c9753178f23a84a8293d0b79e606b6.png');
 const imgKidney = require('@/assets/images/bc2188e6d87da62a1af90ead7f0bf3503c62395c.png');
@@ -48,6 +50,8 @@ export default function HospitalTripScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
+    const { dark: isDarkMode } = useTheme();
+    const colors = useThemeColors();
 
     const [selectedSpecialist, setSelectedSpecialist] = useState<string | null>(null);
     const [hospitalPreference, setHospitalPreference] = useState<'preferred' | 'recommend' | null>(null);
@@ -108,7 +112,7 @@ export default function HospitalTripScreen() {
         try {
             setIsBooking(true);
 
-            // Navigate to checkout — booking created inside checkout after payment succeeds
+            // Navigate to checkout � booking created inside checkout after payment succeeds
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
@@ -137,41 +141,44 @@ export default function HospitalTripScreen() {
             setIsBooking(false);
         }
     };
+
+    const dynamicStyles = makeStyles(isDarkMode);
+
     return (
-        <View style={styles.screen}>
+        <View style={dynamicStyles.screen}>
             {/* Dark green background covers top half */}
             <View style={{ backgroundColor: '#048357', height: insets.top }} />
             <StatusBar style="light" backgroundColor="#048357" />
 
-            <View style={styles.headerRow}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <View style={dynamicStyles.headerRow}>
+                <TouchableOpacity onPress={() => router.back()} style={dynamicStyles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle} numberOfLines={1}>{t('hospital_trip.header')}</Text>
+                <Text style={dynamicStyles.headerTitle} numberOfLines={1}>{t('hospital_trip.header')}</Text>
             </View>
 
             {/* Main Content Area (Rounded Cream Box) */}
-            <View style={styles.contentContainer}>
-                <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
+            <View style={dynamicStyles.contentContainer}>
+                <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
-                    {/* ─── Hero / Titles ─── */}
-                    <Text style={styles.mainTitle}>Hospital Trip</Text>
-                    <Text style={styles.subTitle}>Select a specialist. You can only select one.</Text>
-                    <View style={styles.divider} />
+                    {/* --- Hero / Titles --- */}
+                    <Text style={dynamicStyles.mainTitle}>Hospital Trip</Text>
+                    <Text style={dynamicStyles.subTitle}>Select a specialist. You can only select one.</Text>
+                    <View style={dynamicStyles.divider} />
 
-                    {/* ─── Specialists Grid ─── */}
-                    <View style={styles.specialistGrid}>
+                    {/* --- Specialists Grid --- */}
+                    <View style={dynamicStyles.specialistGrid}>
                         {SPECIALISTS.map((item) => {
                             const isSelected = selectedSpecialist === item.id;
                             return (
                                 <TouchableOpacity
                                     key={item.id}
-                                    style={[styles.specialistCard, isSelected && styles.specialistCardSelected]}
+                                    style={[dynamicStyles.specialistCard, isSelected && dynamicStyles.specialistCardSelected]}
                                     activeOpacity={0.7}
                                     onPress={() => setSelectedSpecialist(item.id)}
                                 >
-                                    <Image source={item.icon} style={styles.specialistIcon} resizeMode="contain" />
-                                    <Text style={[styles.specialistLabel, isSelected && styles.specialistLabelSelected]}>
+                                    <Image source={item.icon} style={dynamicStyles.specialistIcon} resizeMode="contain" />
+                                    <Text style={[dynamicStyles.specialistLabel, isSelected && dynamicStyles.specialistLabelSelected]}>
                                         {item.label}
                                     </Text>
                                 </TouchableOpacity>
@@ -179,27 +186,27 @@ export default function HospitalTripScreen() {
                         })}
                     </View>
 
-                    <View style={styles.divider} />
+                    <View style={dynamicStyles.divider} />
 
-                    {/* ─── Destination Details ─── */}
-                    <View style={styles.sectionHeaderRow}>
-                        <Image source={imgRadioIcon} style={styles.sectionHeaderIcon} resizeMode="contain" />
-                        <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Destination Details</Text>
+                    {/* --- Destination Details --- */}
+                    <View style={dynamicStyles.sectionHeaderRow}>
+                        <Image source={imgRadioIcon} style={dynamicStyles.sectionHeaderIcon} resizeMode="contain" />
+                        <Text style={[dynamicStyles.sectionTitle, { marginBottom: 0 }]}>Destination Details</Text>
                     </View>
 
                     <TouchableOpacity
-                        style={styles.doctorOptionRow}
+                        style={dynamicStyles.doctorOptionRow}
                         activeOpacity={0.7}
                         onPress={() => setHospitalPreference('preferred')}
                     >
-                        <View style={[styles.radioCircle, hospitalPreference === 'preferred' && styles.radioCircleSelected]} />
-                        <Text style={styles.doctorOptionText}>I have a preferred Hospital</Text>
+                        <View style={[dynamicStyles.radioCircle, hospitalPreference === 'preferred' && dynamicStyles.radioCircleSelected]} />
+                        <Text style={dynamicStyles.doctorOptionText}>I have a preferred Hospital</Text>
                     </TouchableOpacity>
 
                     {hospitalPreference === 'preferred' && (
-                        <View style={styles.doctorNameInput}>
+                        <View style={dynamicStyles.doctorNameInput}>
                             <TextInput
-                                style={styles.doctorTextInput}
+                                style={dynamicStyles.doctorTextInput}
                                 placeholder="Enter hospital name"
                                 placeholderTextColor="#2F2F2F"
                                 value={hospitalQuery}
@@ -209,32 +216,32 @@ export default function HospitalTripScreen() {
                     )}
 
                     <TouchableOpacity
-                        style={styles.doctorOptionRow}
+                        style={dynamicStyles.doctorOptionRow}
                         activeOpacity={0.7}
                         onPress={() => setHospitalPreference('recommend')}
                     >
-                        <View style={[styles.radioCircle, hospitalPreference === 'recommend' && styles.radioCircleSelected]} />
-                        <Text style={styles.doctorOptionText}>Recommend a hospital for me</Text>
+                        <View style={[dynamicStyles.radioCircle, hospitalPreference === 'recommend' && dynamicStyles.radioCircleSelected]} />
+                        <Text style={dynamicStyles.doctorOptionText}>Recommend a hospital for me</Text>
                     </TouchableOpacity>
 
-                    <View style={styles.divider} />
+                    <View style={dynamicStyles.divider} />
 
-                    {/* ─── Select Doctor ─── */}
-                    <Text style={[styles.sectionTitle, { marginLeft: 0 }]}>Select Doctor</Text>
+                    {/* --- Select Doctor --- */}
+                    <Text style={[dynamicStyles.sectionTitle, { marginLeft: 0 }]}>Select Doctor</Text>
 
                     <TouchableOpacity
-                        style={styles.doctorOptionRow}
+                        style={dynamicStyles.doctorOptionRow}
                         activeOpacity={0.7}
                         onPress={() => setSelectedDoctorType('preferred')}
                     >
-                        <View style={[styles.radioCircle, selectedDoctorType === 'preferred' && styles.radioCircleSelected]} />
-                        <Text style={styles.doctorOptionText}>I have a preferred Doctor</Text>
+                        <View style={[dynamicStyles.radioCircle, selectedDoctorType === 'preferred' && dynamicStyles.radioCircleSelected]} />
+                        <Text style={dynamicStyles.doctorOptionText}>I have a preferred Doctor</Text>
                     </TouchableOpacity>
 
                     {selectedDoctorType === 'preferred' && (
-                        <View style={styles.doctorNameInput}>
+                        <View style={dynamicStyles.doctorNameInput}>
                             <TextInput
-                                style={styles.doctorTextInput}
+                                style={dynamicStyles.doctorTextInput}
                                 placeholder="Enter doctor name"
                                 placeholderTextColor="#2F2F2F"
                                 value={preferredDoctor}
@@ -245,81 +252,81 @@ export default function HospitalTripScreen() {
 
 
                     <TouchableOpacity
-                        style={styles.doctorOptionRow}
+                        style={dynamicStyles.doctorOptionRow}
                         activeOpacity={0.7}
                         onPress={() => setSelectedDoctorType('recommend')}
                     >
-                        <View style={[styles.radioCircle, selectedDoctorType === 'recommend' && styles.radioCircleSelected]} />
-                        <Text style={styles.doctorOptionText}>Recommend a doctor for me</Text>
+                        <View style={[dynamicStyles.radioCircle, selectedDoctorType === 'recommend' && dynamicStyles.radioCircleSelected]} />
+                        <Text style={dynamicStyles.doctorOptionText}>Recommend a doctor for me</Text>
                     </TouchableOpacity>
 
-                    <View style={styles.divider} />
+                    <View style={dynamicStyles.divider} />
 
-                    {/* ─── Schedule ─── */}
+                    {/* --- Schedule --- */}
                     <CustomDateTimePicker
                         label="When?"
                         value={selectedDate}
                         onDateChange={setSelectedDate}
                     />
 
-                    {/* ─── Service Add-ons ─── */}
-                    <View style={styles.addonsContainer}>
-                        <Text style={styles.sectionTitle}>Service Add-ons</Text>
+                    {/* --- Service Add-ons --- */}
+                    <View style={dynamicStyles.addonsContainer}>
+                        <Text style={dynamicStyles.sectionTitle}>Service Add-ons</Text>
 
                         {/* Addon: Transport */}
                         <TouchableOpacity
-                            style={styles.addonRow}
+                            style={dynamicStyles.addonRow}
                             activeOpacity={0.7}
                             onPress={() => setTransportAddon(!transportAddon)}
                         >
                             {transportAddon ? (
-                                <View style={styles.checkedBoxBig}>
+                                <View style={dynamicStyles.checkedBoxBig}>
                                     <Ionicons name="checkmark" size={14} color="#FFFFFF" />
                                 </View>
                             ) : (
-                                <View style={styles.uncheckedCircle} />
+                                <View style={dynamicStyles.uncheckedCircle} />
                             )}
-                            <Text style={styles.addonText}>
-                                <Text style={styles.addonBold}>Transport: </Text>Arrange Cab for me?
+                            <Text style={dynamicStyles.addonText}>
+                                <Text style={dynamicStyles.addonBold}>Transport: </Text>Arrange Cab for me?
                             </Text>
                             <Ionicons name="chevron-forward" size={18} color="#555" style={{ marginLeft: 'auto' }} />
                         </TouchableOpacity>
 
                         {/* Addon: Support */}
                         <TouchableOpacity
-                            style={styles.addonRow}
+                            style={dynamicStyles.addonRow}
                             activeOpacity={0.7}
                             onPress={() => setSupportAddon(!supportAddon)}
                         >
                             {supportAddon ? (
-                                <View style={styles.checkedBoxBig}>
+                                <View style={dynamicStyles.checkedBoxBig}>
                                     <Ionicons name="checkmark" size={14} color="#FFFFFF" />
                                 </View>
                             ) : (
-                                <View style={styles.uncheckedCircle} />
+                                <View style={dynamicStyles.uncheckedCircle} />
                             )}
-                            <Text style={styles.addonText}>
-                                <Text style={styles.addonBold}>Support: </Text>Send an Ayuxa Care Buddy to{'\n'}assist me at the hospital?
+                            <Text style={dynamicStyles.addonText}>
+                                <Text style={dynamicStyles.addonBold}>Support: </Text>Send an Ayuxa Care Buddy to{'\n'}assist me at the hospital?
                             </Text>
                         </TouchableOpacity>
 
-                        <View style={styles.addonDivider} />
+                        <View style={dynamicStyles.addonDivider} />
 
                         {/* Cost Summary */}
-                        <View style={styles.costRow}>
+                        <View style={dynamicStyles.costRow}>
                             {/* In Figma, there's a small car icon here, using car icon from Ionicons for now */}
                             <Ionicons name="car" size={20} color="#C42A2A" style={{ marginRight: 6 }} />
-                            <Text style={styles.costText}>
-                                <Text style={styles.costAmount}>$500</Text>
-                                <Text style={styles.costLabel}> Booking </Text>
-                                <Text style={styles.costActuals}>Fee + Actuals</Text>
+                            <Text style={dynamicStyles.costText}>
+                                <Text style={dynamicStyles.costAmount}>$500</Text>
+                                <Text style={dynamicStyles.costLabel}> Booking </Text>
+                                <Text style={dynamicStyles.costActuals}>Fee + Actuals</Text>
                             </Text>
                         </View>
                     </View>
 
-                    {/* ─── Confirm Pickup Address ─── */}
-                    <View style={styles.addonsContainer}>
-                        <Text style={styles.sectionTitle}>Confirm Pickup Address</Text>
+                    {/* --- Confirm Pickup Address --- */}
+                    <View style={dynamicStyles.addonsContainer}>
+                        <Text style={dynamicStyles.sectionTitle}>Confirm Pickup Address</Text>
 
                         {locationDenied ? (
                             <FormInput
@@ -330,7 +337,7 @@ export default function HospitalTripScreen() {
                                 style={{ elevation: 0, borderWidth: 1, borderColor: '#D9D9D9' }}
                             />
                         ) : (
-                            <View style={[styles.inputCard, { marginBottom: 5, backgroundColor: 'rgba(217, 217, 217, 0.2)' }]}>
+                            <View style={[dynamicStyles.inputCard, { marginBottom: 5, backgroundColor: 'rgba(217, 217, 217, 0.2)' }]}>
                                 <Ionicons name="location-outline" size={18} color="#2F2F2F" style={{ marginRight: 10 }} />
                                 <Text style={{ flex: 1, fontFamily: 'LexendDeca_400Regular', color: '#2F2F2F' }} numberOfLines={1}>
                                     {address}
@@ -351,19 +358,19 @@ export default function HospitalTripScreen() {
                         />
                     </View>
 
-                    {/* ─── Confirm Button ─── */}
+                    {/* --- Confirm Button --- */}
                     <TouchableOpacity
-                        style={[styles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                        style={[dynamicStyles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
                         activeOpacity={0.8}
                         disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
                         {isLoadingInit ? (
-                            <Text style={styles.submitButtonText}>Initializing...</Text>
+                            <Text style={dynamicStyles.submitButtonText}>Initializing...</Text>
                         ) : isBooking ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text style={styles.submitButtonText}>Confirm & Request Trip</Text>
+                            <Text style={dynamicStyles.submitButtonText}>Confirm & Request Trip</Text>
                         )}
                     </TouchableOpacity>
 
@@ -373,13 +380,13 @@ export default function HospitalTripScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
         backgroundColor: '#048357',
     },
 
-    /* ─── Header ─── */
+    /* --- Header --- */
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -395,12 +402,12 @@ const styles = StyleSheet.create({
         flex: 1,
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#FFFFFF',
+        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         marginLeft: 12,
         letterSpacing: -0.24,
     },
 
-    /* ─── Main Content Container (Cream Box) ─── */
+    /* --- Main Content Container (Cream Box) --- */
     contentContainer: {
         flex: 1,
         backgroundColor: '#FDFDE8',
@@ -418,7 +425,7 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
 
-    /* ─── Hero ─── */
+    /* --- Hero --- */
     mainTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 18,
@@ -439,7 +446,7 @@ const styles = StyleSheet.create({
         marginVertical: 15,
     },
 
-    /* ─── Specialists Grid ─── */
+    /* --- Specialists Grid --- */
     specialistGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -477,7 +484,7 @@ const styles = StyleSheet.create({
         color: '#02743F',
     },
 
-    /* ─── Destination Details ─── */
+    /* --- Destination Details --- */
     sectionHeaderRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -498,7 +505,7 @@ const styles = StyleSheet.create({
     inputCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         borderRadius: 10,
         paddingHorizontal: 15,
         height: 57,
@@ -542,7 +549,7 @@ const styles = StyleSheet.create({
         color: '#2F2F2F',
     },
 
-    /* ─── Select Doctor ─── */
+    /* --- Select Doctor --- */
     doctorOptionRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -585,7 +592,7 @@ const styles = StyleSheet.create({
         color: '#2F2F2F',
     },
 
-    /* ─── Schedule ─── */
+    /* --- Schedule --- */
     scheduleRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -637,9 +644,9 @@ const styles = StyleSheet.create({
         fontSize: 12,
     },
 
-    /* ─── Add-ons Container ─── */
+    /* --- Add-ons Container --- */
     addonsContainer: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         borderRadius: 11,
         padding: 20,
         paddingBottom: 15,
@@ -714,7 +721,7 @@ const styles = StyleSheet.create({
         color: '#2F2F2F',
     },
 
-    /* ─── Submit Button ─── */
+    /* --- Submit Button --- */
     submitButton: {
         backgroundColor: '#02743F',
         height: 45,
@@ -726,7 +733,7 @@ const styles = StyleSheet.create({
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: '#FFFFFF',
+        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         fontSize: 14,
     },
 });

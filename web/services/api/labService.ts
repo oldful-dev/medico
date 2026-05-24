@@ -65,6 +65,23 @@ export interface LabBookingPayload {
     };
 }
 
+export interface LabOrderListItem {
+    id: string;
+    clientRefId: string;
+    status: string;           // PENDING|HOLD_CREATED|CONFIRMED|RESCHEDULED|SAMPLE_COLLECTED|REPORT_GENERATED|FAILED
+    bookingType: string;      // 'HOME' | 'DROP_OFF'
+    patient: { name: string; age: number; gender: string; phone: string };
+    packages: Array<{ code?: string; name?: string; packageCode?: string; packageName?: string }>;
+    slot: { date: string; time: string };
+    rescheduledDate?: string;
+    rescheduledTime?: string;
+    address: { line1?: string; pincode?: string; landmark?: string };
+    assignedStaff?: { name: string; phone?: string };
+    reportUrl?: string;
+    createdAt: string;
+    payments?: Array<{ status: string; amount: number }>;
+}
+
 export const labService = {
     searchPackages: async (query: string = ''): Promise<ApiResponse<LabPackage[]>> => {
         return apiClient.get<LabPackage[]>(`/labs/packages?search=${encodeURIComponent(query)}`);
@@ -92,5 +109,17 @@ export const labService = {
 
     downloadReport: async (bookingId: string): Promise<Blob> => {
         return apiClient.download(`/labs/booking/${bookingId}/report`);
-    }
+    },
+
+    getUserLabOrders: async (): Promise<ApiResponse<LabOrderListItem[]>> => {
+        return apiClient.get<LabOrderListItem[]>('/labs/my-orders');
+    },
+
+    getLabOrderById: async (id: string): Promise<ApiResponse<LabOrderListItem>> => {
+        return apiClient.get<LabOrderListItem>(`/labs/booking/${id}`);
+    },
+
+    cancelLabOrder: async (id: string): Promise<ApiResponse> => {
+        return apiClient.post(`/labs/booking/${id}/cancel`, {});
+    },
 };

@@ -9,6 +9,8 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useUser } from '@/context/UserContext';
 
 const PRIMARY = '#02743F';
@@ -27,6 +29,8 @@ const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
 export default function MeetupRegisterScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
     const {
         id,
         meetupEventDate,
@@ -113,32 +117,32 @@ export default function MeetupRegisterScreen() {
     };
 
     return (
-        <View style={[styles.screen, { paddingTop: insets.top }]}>
-            <StatusBar style="light" backgroundColor={PRIMARY} />
+        <View style={[makeStyles(isDarkMode, colors).screen, { paddingTop: insets.top }]}>
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={PRIMARY} />
 
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <View style={makeStyles(isDarkMode, colors).header}>
+                <TouchableOpacity onPress={() => router.back()} style={makeStyles(isDarkMode, colors).backBtn}>
                     <Ionicons name="arrow-back" size={22} color="#fff" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Join Local Meet Up</Text>
+                <Text style={makeStyles(isDarkMode, colors).headerTitle}>Join Local Meet Up</Text>
                 <View style={{ width: 30 }} />
             </View>
 
             {/* Step indicator */}
-            <View style={styles.stepBar}>
+            <View style={makeStyles(isDarkMode, colors).stepBar}>
                 {['Registration', 'Pickup', 'Checkout'].map((step, i) => (
                     <React.Fragment key={step}>
-                        <View style={styles.stepItem}>
-                            <View style={[styles.stepDot, i === 0 && styles.stepDotActive]}>
+                        <View style={makeStyles(isDarkMode, colors).stepItem}>
+                            <View style={[makeStyles(isDarkMode, colors).stepDot, i === 0 && styles.stepDotActive]}>
                                 {i === 0
                                     ? <Ionicons name="create-outline" size={11} color="#fff" />
-                                    : <Text style={styles.stepNum}>{i + 1}</Text>
+                                    : <Text style={makeStyles(isDarkMode, colors).stepNum}>{i + 1}</Text>
                                 }
                             </View>
-                            <Text style={[styles.stepLabel, i === 0 && styles.stepLabelActive]}>{step}</Text>
+                            <Text style={[makeStyles(isDarkMode, colors).stepLabel, i === 0 && styles.stepLabelActive]}>{step}</Text>
                         </View>
-                        {i < 2 && <View style={styles.stepLine} />}
+                        {i < 2 && <View style={makeStyles(isDarkMode, colors).stepLine} />}
                     </React.Fragment>
                 ))}
             </View>
@@ -146,21 +150,21 @@ export default function MeetupRegisterScreen() {
             <KeyboardAwareScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                 {/* Personal Details */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Personal Details</Text>
+                <View style={makeStyles(isDarkMode, colors).section}>
+                    <Text style={makeStyles(isDarkMode, colors).sectionTitle}>Personal Details</Text>
 
-                    <Text style={styles.label}>Full Name <Text style={styles.required}>*</Text></Text>
+                    <Text style={makeStyles(isDarkMode, colors).label}>Full Name <Text style={makeStyles(isDarkMode, colors).required}>*</Text></Text>
                     <TextInput
-                        style={styles.input}
+                        style={makeStyles(isDarkMode, colors).input}
                         placeholder="Enter your full name"
                         placeholderTextColor={Colors.textLight}
                         value={fullName}
                         onChangeText={setFullName}
                     />
 
-                    <Text style={styles.label}>Mobile Number <Text style={styles.required}>*</Text></Text>
+                    <Text style={makeStyles(isDarkMode, colors).label}>Mobile Number <Text style={makeStyles(isDarkMode, colors).required}>*</Text></Text>
                     <TextInput
-                        style={styles.input}
+                        style={makeStyles(isDarkMode, colors).input}
                         placeholder="Enter mobile number"
                         placeholderTextColor={Colors.textLight}
                         value={mobile}
@@ -169,9 +173,9 @@ export default function MeetupRegisterScreen() {
                         maxLength={13}
                     />
 
-                    <Text style={styles.label}>Age <Text style={styles.required}>*</Text></Text>
+                    <Text style={makeStyles(isDarkMode, colors).label}>Age <Text style={makeStyles(isDarkMode, colors).required}>*</Text></Text>
                     <TextInput
-                        style={styles.input}
+                        style={makeStyles(isDarkMode, colors).input}
                         placeholder="Enter your age"
                         placeholderTextColor={Colors.textLight}
                         value={age}
@@ -180,46 +184,46 @@ export default function MeetupRegisterScreen() {
                         maxLength={3}
                     />
 
-                    <Text style={styles.label}>Gender <Text style={styles.required}>*</Text></Text>
-                    <View style={styles.genderRow}>
+                    <Text style={makeStyles(isDarkMode, colors).label}>Gender <Text style={makeStyles(isDarkMode, colors).required}>*</Text></Text>
+                    <View style={makeStyles(isDarkMode, colors).genderRow}>
                         {GENDER_OPTIONS.map(g => (
                             <TouchableOpacity
                                 key={g}
-                                style={[styles.genderOption, gender === g && styles.genderOptionActive]}
+                                style={[makeStyles(isDarkMode, colors).genderOption, gender === g && styles.genderOptionActive]}
                                 onPress={() => setGender(g)}
                                 activeOpacity={0.8}
                             >
-                                <View style={[styles.radio, gender === g && styles.radioActive]}>
-                                    {gender === g && <View style={styles.radioDot} />}
+                                <View style={[makeStyles(isDarkMode, colors).radio, gender === g && styles.radioActive]}>
+                                    {gender === g && <View style={makeStyles(isDarkMode, colors).radioDot} />}
                                 </View>
-                                <Text style={[styles.genderLabel, gender === g && styles.genderLabelActive]}>{g}</Text>
+                                <Text style={[makeStyles(isDarkMode, colors).genderLabel, gender === g && styles.genderLabelActive]}>{g}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>
                 </View>
 
                 {/* Health / Assistance */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Health / Assistance Information</Text>
-                    <Text style={styles.sectionSub}>Select if applicable</Text>
+                <View style={makeStyles(isDarkMode, colors).section}>
+                    <Text style={makeStyles(isDarkMode, colors).sectionTitle}>Health / Assistance Information</Text>
+                    <Text style={makeStyles(isDarkMode, colors).sectionSub}>Select if applicable</Text>
 
                     {ASSISTANCE_OPTIONS.map(opt => (
                         <TouchableOpacity
                             key={opt.key}
-                            style={styles.checkRow}
+                            style={makeStyles(isDarkMode, colors).checkRow}
                             onPress={() => toggleAssistance(opt.key)}
                             activeOpacity={0.7}
                         >
-                            <View style={[styles.checkbox, assistance[opt.key] && styles.checkboxActive]}>
+                            <View style={[makeStyles(isDarkMode, colors).checkbox, assistance[opt.key] && styles.checkboxActive]}>
                                 {assistance[opt.key] && <Ionicons name="checkmark" size={13} color="#fff" />}
                             </View>
-                            <Text style={[styles.checkLabel, assistance[opt.key] && styles.checkLabelActive]}>
+                            <Text style={[makeStyles(isDarkMode, colors).checkLabel, assistance[opt.key] && styles.checkLabelActive]}>
                                 {opt.label}
                             </Text>
                             {opt.key === 'requiresPickupSupport' && (
-                                <View style={styles.pickupTag}>
+                                <View style={makeStyles(isDarkMode, colors).pickupTag}>
                                     <Ionicons name="car-outline" size={11} color={PRIMARY} />
-                                    <Text style={styles.pickupTagText}>Extra step</Text>
+                                    <Text style={makeStyles(isDarkMode, colors).pickupTagText}>Extra step</Text>
                                 </View>
                             )}
                         </TouchableOpacity>
@@ -227,11 +231,11 @@ export default function MeetupRegisterScreen() {
                 </View>
 
                 {/* Special Notes */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Special Notes</Text>
-                    <Text style={styles.sectionSub}>Any other information</Text>
+                <View style={makeStyles(isDarkMode, colors).section}>
+                    <Text style={makeStyles(isDarkMode, colors).sectionTitle}>Special Notes</Text>
+                    <Text style={makeStyles(isDarkMode, colors).sectionSub}>Any other information</Text>
                     <TextInput
-                        style={[styles.input, styles.textArea]}
+                        style={[makeStyles(isDarkMode, colors).input, styles.textArea]}
                         placeholder="Write here..."
                         placeholderTextColor={Colors.textLight}
                         value={specialNotes}
@@ -243,10 +247,10 @@ export default function MeetupRegisterScreen() {
                 </View>
 
                 {assistance['requiresPickupSupport'] && (
-                    <View style={styles.pickupNotice}>
+                    <View style={makeStyles(isDarkMode, colors).pickupNotice}>
                         <Ionicons name="car-outline" size={18} color={PRIMARY} />
-                        <Text style={styles.pickupNoticeText}>
-                            You'll be asked for pickup details in the next step.
+                        <Text style={makeStyles(isDarkMode, colors).pickupNoticeText}>
+                            You&apos;ll be asked for pickup details in the next step.
                         </Text>
                     </View>
                 )}
@@ -255,9 +259,9 @@ export default function MeetupRegisterScreen() {
             </KeyboardAwareScrollView>
 
             {/* Continue button */}
-            <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
-                <TouchableOpacity style={styles.continueBtn} onPress={handleContinue} activeOpacity={0.85}>
-                    <Text style={styles.continueBtnText}>Continue</Text>
+            <View style={[makeStyles(isDarkMode, colors).footer, { paddingBottom: insets.bottom + 12 }]}>
+                <TouchableOpacity style={makeStyles(isDarkMode, colors).continueBtn} onPress={handleContinue} activeOpacity={0.85}>
+                    <Text style={makeStyles(isDarkMode, colors).continueBtnText}>Continue</Text>
                     <Ionicons name="arrow-forward" size={18} color="#fff" />
                 </TouchableOpacity>
             </View>
@@ -266,7 +270,19 @@ export default function MeetupRegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: '#F5FAF7' },
+    stepDotActive: { backgroundColor: Colors.accent },
+    stepLabelActive: { color: '#fff', fontFamily: Fonts.semiBold },
+    scrollContent: { padding: Spacing.lg, paddingBottom: 20 },
+    genderOptionActive: { borderColor: PRIMARY, backgroundColor: '#EDF7F1' },
+    radioActive: { borderColor: PRIMARY },
+    genderLabelActive: { fontFamily: Fonts.semiBold, color: PRIMARY },
+    checkboxActive: { backgroundColor: PRIMARY, borderColor: PRIMARY },
+    checkLabelActive: { fontFamily: Fonts.semiBold, color: '#2F2F2F' },
+    textArea: { height: 100, textAlignVertical: 'top', paddingTop: 12 },
+});
+
+const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: isDarkMode ? '#1A1A1A' : '#F5FAF7' },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         backgroundColor: PRIMARY,
@@ -290,46 +306,46 @@ const styles = StyleSheet.create({
     stepLabelActive: { color: '#fff', fontFamily: Fonts.semiBold },
     scrollContent: { padding: Spacing.lg, paddingBottom: 20 },
     section: {
-        backgroundColor: '#fff', borderRadius: 16, padding: 16,
+        backgroundColor: isDarkMode ? '#252525' : '#fff', borderRadius: 16, padding: 16,
         marginBottom: 16, shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
     },
-    sectionTitle: { fontFamily: Fonts.semiBold, fontSize: 15, color: Colors.textDark, marginBottom: 4 },
-    sectionSub: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, marginBottom: 14 },
-    label: { fontFamily: Fonts.semiBold, fontSize: 13, color: Colors.textBody, marginBottom: 6, marginTop: 12 },
+    sectionTitle: { fontFamily: Fonts.semiBold, fontSize: 15, color: isDarkMode ? '#FFFFFF' : Colors.textDark, marginBottom: 4 },
+    sectionSub: { fontFamily: Fonts.regular, fontSize: 12, color: isDarkMode ? '#999999' : Colors.textMuted, marginBottom: 14 },
+    label: { fontFamily: Fonts.semiBold, fontSize: 13, color: isDarkMode ? '#CCCCCC' : Colors.textBody, marginBottom: 6, marginTop: 12 },
     required: { color: '#DC2626' },
     input: {
-        backgroundColor: '#F9FAFB', borderWidth: 1.5, borderColor: Colors.borderLight,
+        backgroundColor: isDarkMode ? '#3A3A3A' : '#F9FAFB', borderWidth: 1.5, borderColor: isDarkMode ? '#4A4A4A' : Colors.borderLight,
         borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
-        fontFamily: Fonts.regular, fontSize: 14, color: Colors.textDark,
+        fontFamily: Fonts.regular, fontSize: 14, color: isDarkMode ? '#FFFFFF' : Colors.textDark,
     },
     textArea: { height: 100, textAlignVertical: 'top', paddingTop: 12 },
     genderRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
     genderOption: {
         flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8,
-        borderWidth: 1.5, borderColor: Colors.borderLight, borderRadius: 10,
+        borderWidth: 1.5, borderColor: isDarkMode ? '#4A4A4A' : Colors.borderLight, borderRadius: 10,
         padding: 10,
     },
     genderOptionActive: { borderColor: PRIMARY, backgroundColor: '#EDF7F1' },
     radio: {
-        width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: Colors.borderLight,
+        width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: isDarkMode ? '#4A4A4A' : Colors.borderLight,
         justifyContent: 'center', alignItems: 'center',
     },
     radioActive: { borderColor: PRIMARY },
     radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: PRIMARY },
-    genderLabel: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textMuted },
+    genderLabel: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#999999' : Colors.textMuted },
     genderLabelActive: { fontFamily: Fonts.semiBold, color: PRIMARY },
     checkRow: {
         flexDirection: 'row', alignItems: 'center', gap: 12,
-        paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+        paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: isDarkMode ? '#3A3A3A' : '#F3F4F6',
     },
     checkbox: {
         width: 22, height: 22, borderRadius: 6, borderWidth: 2,
-        borderColor: Colors.borderLight, justifyContent: 'center', alignItems: 'center',
+        borderColor: isDarkMode ? '#4A4A4A' : Colors.borderLight, justifyContent: 'center', alignItems: 'center',
     },
     checkboxActive: { backgroundColor: PRIMARY, borderColor: PRIMARY },
-    checkLabel: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, color: Colors.textBody },
-    checkLabelActive: { fontFamily: Fonts.semiBold, color: Colors.textDark },
+    checkLabel: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#CCCCCC' : Colors.textBody },
+    checkLabelActive: { fontFamily: Fonts.semiBold, color: isDarkMode ? '#FFFFFF' : Colors.textDark },
     pickupTag: {
         flexDirection: 'row', alignItems: 'center', gap: 3,
         backgroundColor: '#EDF7F1', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6,
@@ -342,8 +358,8 @@ const styles = StyleSheet.create({
     },
     pickupNoticeText: { fontFamily: Fonts.medium, fontSize: 13, color: PRIMARY, flex: 1 },
     footer: {
-        backgroundColor: '#fff', paddingHorizontal: 20, paddingTop: 14,
-        borderTopWidth: 1, borderTopColor: Colors.borderLight,
+        backgroundColor: isDarkMode ? '#252525' : '#fff', paddingHorizontal: 20, paddingTop: 14,
+        borderTopWidth: 1, borderTopColor: isDarkMode ? '#3A3A3A' : Colors.borderLight,
     },
     continueBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,

@@ -15,6 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTheme } from '@react-navigation/native';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 
 
@@ -24,20 +26,20 @@ const imgCheckmark = require('@/assets/images/019640d27de157c119b045c46aae6a6559
 
 // Radio button mock components for the static layout
 const CheckedRadio = () => (
-    <View style={styles.radioContainer}>
-        <Image source={imgCheckmark} style={styles.checkedRadioIcon} />
+    <View style={dynamicStyles.radioContainer}>
+        <Image source={imgCheckmark} style={dynamicStyles.checkedRadioIcon} />
     </View>
 );
 
 const UncheckedRadio = () => (
-    <View style={styles.radioContainer}>
-        <View style={styles.uncheckedRadioCircle} />
+    <View style={dynamicStyles.radioContainer}>
+        <View style={dynamicStyles.uncheckedRadioCircle} />
     </View>
 );
 
 const CheckedSolidRadio = () => (
-    <View style={styles.radioContainer}>
-        <View style={styles.solidCheckedRadio} />
+    <View style={dynamicStyles.radioContainer}>
+        <View style={dynamicStyles.solidCheckedRadio} />
     </View>
 );
 
@@ -45,6 +47,8 @@ export default function MealServiceScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
+    const { dark: isDarkMode } = useTheme();
+    const colors = useThemeColors();
 
     const [mealType, setMealType] = useState('Home Style');
     const [subMode, setSubMode] = useState('Monthly Subscription');
@@ -102,106 +106,108 @@ export default function MealServiceScreen() {
             setIsBooking(false);
         }
     };
+    const dynamicStyles = makeStyles(isDarkMode);
+
     return (
-        <View style={styles.screen}>
+        <View style={dynamicStyles.screen}>
             {/* Header extension */}
             <View style={{ backgroundColor: '#048357', height: insets.top }} />
             <StatusBar style="light" backgroundColor="#048357" />
 
             {/* ─── Header ─── */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <View style={dynamicStyles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={dynamicStyles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Select Meal Plan</Text>
+                <Text style={dynamicStyles.headerTitle}>Select Meal Plan</Text>
             </View>
 
-            <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
+            <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                 {/* ─── Top Meal Selection Card ─── */}
-                <View style={styles.mealSelectionCard}>
-                    <View style={styles.mealOptionsContainer}>
+                <View style={dynamicStyles.mealSelectionCard}>
+                    <View style={dynamicStyles.mealOptionsContainer}>
 
-                        <TouchableOpacity style={styles.mealOptionItem} onPress={() => setMealType('Diabetic Friendly')} activeOpacity={0.7}>
+                        <TouchableOpacity style={dynamicStyles.mealOptionItem} onPress={() => setMealType('Diabetic Friendly')} activeOpacity={0.7}>
                             {mealType === 'Diabetic Friendly' ? <CheckedRadio /> : <UncheckedRadio />}
                             <View>
-                                <Text style={styles.mealOptionTitle}>Diabetic Friendly</Text>
-                                <Text style={styles.mealOptionDesc}>(Low GI, Less rice)</Text>
+                                <Text style={dynamicStyles.mealOptionTitle}>Diabetic Friendly</Text>
+                                <Text style={dynamicStyles.mealOptionDesc}>(Low GI, Less rice)</Text>
                             </View>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.mealOptionItem} onPress={() => setMealType('Home Style')} activeOpacity={0.7}>
+                        <TouchableOpacity style={dynamicStyles.mealOptionItem} onPress={() => setMealType('Home Style')} activeOpacity={0.7}>
                             {mealType === 'Home Style' ? <CheckedRadio /> : <UncheckedRadio />}
                             <View>
-                                <Text style={styles.mealOptionTitle}>Home Style</Text>
-                                <Text style={styles.mealOptionDesc}>(Roti,Dal, Sabzi)</Text>
+                                <Text style={dynamicStyles.mealOptionTitle}>Home Style</Text>
+                                <Text style={dynamicStyles.mealOptionDesc}>(Roti,Dal, Sabzi)</Text>
                             </View>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.mealOptionItem} onPress={() => setMealType('Soft Food')} activeOpacity={0.7}>
+                        <TouchableOpacity style={dynamicStyles.mealOptionItem} onPress={() => setMealType('Soft Food')} activeOpacity={0.7}>
                             {mealType === 'Soft Food' ? <CheckedRadio /> : <UncheckedRadio />}
                             <View>
-                                <Text style={styles.mealOptionTitle}>Soft Food</Text>
-                                <Text style={styles.mealOptionDesc}>(Khichdi/porridge - for{'\n'}recovering patients)</Text>
+                                <Text style={dynamicStyles.mealOptionTitle}>Soft Food</Text>
+                                <Text style={dynamicStyles.mealOptionDesc}>(Khichdi/porridge - for{'\n'}recovering patients)</Text>
                             </View>
                         </TouchableOpacity>
 
                     </View>
 
                     {/* Right side Image & Decoration */}
-                    <View style={styles.mealImageContainer}>
-                        <Image source={imgThali} style={styles.mealImage} resizeMode="contain" />
+                    <View style={dynamicStyles.mealImageContainer}>
+                        <Image source={imgThali} style={dynamicStyles.mealImage} resizeMode="contain" />
                     </View>
 
                     {/* Dots indicator at bottom */}
-                    <View style={styles.paginationDots}>
-                        <View style={[styles.dot, mealType === 'Diabetic Friendly' ? styles.dotActive : styles.dotInactive]} />
-                        <View style={[styles.dot, mealType === 'Home Style' ? styles.dotActive : styles.dotInactive]} />
-                        <View style={[styles.dot, mealType === 'Soft Food' ? styles.dotActive : styles.dotInactive]} />
+                    <View style={dynamicStyles.paginationDots}>
+                        <View style={[dynamicStyles.dot, mealType === 'Diabetic Friendly' ? dynamicStyles.dotActive : dynamicStyles.dotInactive]} />
+                        <View style={[dynamicStyles.dot, mealType === 'Home Style' ? dynamicStyles.dotActive : dynamicStyles.dotInactive]} />
+                        <View style={[dynamicStyles.dot, mealType === 'Soft Food' ? dynamicStyles.dotActive : dynamicStyles.dotInactive]} />
                     </View>
                 </View>
 
                 {/* ─── Subscription Mode ─── */}
-                <Text style={styles.sectionTitle}>Subscription Mode</Text>
-                <View style={styles.sectionCard}>
-                    <TouchableOpacity style={styles.optionRow} onPress={() => setSubMode('Trial')} activeOpacity={0.7}>
+                <Text style={dynamicStyles.sectionTitle}>Subscription Mode</Text>
+                <View style={dynamicStyles.sectionCard}>
+                    <TouchableOpacity style={dynamicStyles.optionRow} onPress={() => setSubMode('Trial')} activeOpacity={0.7}>
                         {subMode === 'Trial' ? <CheckedSolidRadio /> : <UncheckedRadio />}
-                        <Text style={styles.optionMainText}>Trial<Text style={styles.optionSubText}>(3 Days)</Text></Text>
+                        <Text style={dynamicStyles.optionMainText}>Trial<Text style={dynamicStyles.optionSubText}>(3 Days)</Text></Text>
                     </TouchableOpacity>
                     <View style={{ height: 18 }} />
-                    <TouchableOpacity style={styles.optionRow} onPress={() => setSubMode('Monthly Subscription')} activeOpacity={0.7}>
+                    <TouchableOpacity style={dynamicStyles.optionRow} onPress={() => setSubMode('Monthly Subscription')} activeOpacity={0.7}>
                         {subMode === 'Monthly Subscription' ? <CheckedSolidRadio /> : <UncheckedRadio />}
-                        <Text style={styles.optionMainText}>Monthly Subscription</Text>
+                        <Text style={dynamicStyles.optionMainText}>Monthly Subscription</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* ─── Dietary Preferences ─── */}
-                <Text style={styles.sectionTitle}>Dietary Preferences</Text>
-                <View style={styles.sectionCard}>
+                <Text style={dynamicStyles.sectionTitle}>Dietary Preferences</Text>
+                <View style={dynamicStyles.sectionCard}>
 
-                    <TouchableOpacity style={styles.preferenceRow} onPress={() => setNoOnionGarlic(!noOnionGarlic)} activeOpacity={0.7}>
-                        <View style={styles.switchBox}>
-                            {noOnionGarlic ? <Image source={imgCheckmark} style={styles.checkedSwitchIcon} /> : <View style={styles.uncheckedRadioCircle} />}
+                    <TouchableOpacity style={dynamicStyles.preferenceRow} onPress={() => setNoOnionGarlic(!noOnionGarlic)} activeOpacity={0.7}>
+                        <View style={dynamicStyles.switchBox}>
+                            {noOnionGarlic ? <Image source={imgCheckmark} style={dynamicStyles.checkedSwitchIcon} /> : <View style={dynamicStyles.uncheckedRadioCircle} />}
                         </View>
-                        <Text style={styles.preferenceText}>No Onion/Garlic?</Text>
+                        <Text style={dynamicStyles.preferenceText}>No Onion/Garlic?</Text>
                     </TouchableOpacity>
 
                     <View style={{ height: 16 }} />
 
-                    <TouchableOpacity style={styles.preferenceRow} onPress={() => setSpicy(!spicy)} activeOpacity={0.7}>
-                        <View style={styles.switchBox}>
-                            {spicy ? <Image source={imgCheckmark} style={styles.checkedSwitchIcon} /> : <View style={styles.uncheckedRadioCircle} />}
+                    <TouchableOpacity style={dynamicStyles.preferenceRow} onPress={() => setSpicy(!spicy)} activeOpacity={0.7}>
+                        <View style={dynamicStyles.switchBox}>
+                            {spicy ? <Image source={imgCheckmark} style={dynamicStyles.checkedSwitchIcon} /> : <View style={dynamicStyles.uncheckedRadioCircle} />}
                         </View>
-                        <Text style={styles.preferenceText}>Spicy / Non-Spicy?</Text>
+                        <Text style={dynamicStyles.preferenceText}>Spicy / Non-Spicy?</Text>
                     </TouchableOpacity>
 
                 </View>
 
                 {/* ─── Something Else? ─── */}
-                <Text style={styles.sectionTitle}>Something Else?</Text>
-                <View style={[styles.textAreaContainer, { paddingHorizontal: 0 }]}>
+                <Text style={dynamicStyles.sectionTitle}>Something Else?</Text>
+                <View style={[dynamicStyles.textAreaContainer, { paddingHorizontal: 0 }]}>
                     <TextInput
-                        style={[styles.textAreaPlaceholder, { flex: 1, paddingHorizontal: 15 }]}
+                        style={[dynamicStyles.textAreaPlaceholder, { flex: 1, paddingHorizontal: 15 }]}
                         placeholder="Enter any other requirement (e.g. No Salt)"
                         placeholderTextColor="#898989"
                         value={otherReq}
@@ -211,17 +217,17 @@ export default function MealServiceScreen() {
 
                 {/* ─── Action Button ─── */}
                 <TouchableOpacity
-                    style={[styles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                    style={[dynamicStyles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
                     activeOpacity={0.8}
                     disabled={isBooking || isLoadingInit}
                     onPress={handleBookService}
                 >
                     {isLoadingInit ? (
-                        <Text style={styles.submitButtonText}>Initializing...</Text>
+                        <Text style={dynamicStyles.submitButtonText}>Initializing...</Text>
                     ) : isBooking ? (
                         <ActivityIndicator color="#FFFFFF" />
                     ) : (
-                        <Text style={styles.submitButtonText}>Request Tiffin</Text>
+                        <Text style={dynamicStyles.submitButtonText}>Request Tiffin</Text>
                     )}
                 </TouchableOpacity>
 
@@ -230,7 +236,7 @@ export default function MealServiceScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
         backgroundColor: '#FDFDE8', // Cream color matches Figma
@@ -250,7 +256,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#FFFFFF',
+        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         textAlign: 'left', marginLeft: 12,
         letterSpacing: -0.24,
     },
@@ -262,7 +268,7 @@ const styles = StyleSheet.create({
 
     /* ─── Top Meal Selection Card ─── */
     mealSelectionCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         borderRadius: 10,
         padding: 18,
         paddingTop: 20,
@@ -344,7 +350,7 @@ const styles = StyleSheet.create({
 
     /* ─── Outlined Cards ─── */
     sectionCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         borderWidth: 1,
         borderColor: '#048357',
         borderRadius: 10,
@@ -442,7 +448,7 @@ const styles = StyleSheet.create({
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: '#FFFFFF',
+        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         fontSize: 14,
     },
 });

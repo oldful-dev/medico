@@ -330,6 +330,51 @@ const assignCaregiver = async (req, res, next) => {
             data: { type: 'caregiver_assigned', bookingId: booking.id },
         });
 
+        // DLT SMS — BUDDY_ASSIGNED (215395) — Var1=user name
+        try {
+            const user = await prisma.user.findUnique({
+                where: { id: booking.userId },
+                select: { name: true, phone: true, smsEnabled: true },
+            });
+            if (user?.phone && user.smsEnabled !== false) {
+                const { sendSMS } = require('../services/sms');
+                await sendSMS({
+                    template: 'BUDDY_ASSIGNED',
+                    mobile: user.phone,
+                    variables: [user.name],
+                    userId: booking.userId,
+                });
+                logger.info(`[SMS] BUDDY_ASSIGNED sent → ${user.phone}`);
+            }
+        } catch (smsErr) {
+            logger.warn('BUDDY_ASSIGNED SMS failed (non-fatal):', smsErr.message);
+        }
+
+        // WhatsApp — SHIFT_ASSIGNED to caregiver via AYUXA_HQ — non-fatal
+        if (booking.caregiver?.phone) {
+            try {
+                const { sendShiftAssigned } = require('../services/whatsapp');
+                const scheduledDate = booking.scheduledDate
+                    ? new Date(booking.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : '-';
+                const scheduledTime = booking.scheduledDate
+                    ? new Date(booking.scheduledDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+                    : '-';
+                const bookingUser = await prisma.user.findUnique({ where: { id: booking.userId }, select: { name: true, uniqueUserId: true } });
+                await sendShiftAssigned({
+                    phone: booking.caregiver.phone,
+                    empName: booking.caregiver.name,
+                    clientName: bookingUser?.name || 'Client',
+                    clientId: bookingUser?.uniqueUserId || booking.userId,
+                    date: scheduledDate,
+                    time: scheduledTime,
+                });
+                logger.info(`[WA] SHIFT_ASSIGNED sent → ${booking.caregiver.phone}`);
+            } catch (waErr) {
+                logger.warn('SHIFT_ASSIGNED WhatsApp failed (non-fatal):', waErr.message);
+            }
+        }
+
         // Emit real-time event to admins
         emitToAdmins('booking_assigned', {
             bookingId: booking.id,
@@ -368,7 +413,10 @@ const updateBookingStatus = async (req, res, next) => {
         const booking = await prisma.booking.update({
             where: { id: req.params.id },
             data,
-            include: { user: { select: { name: true } } }
+            include: {
+                user: { select: { name: true } },
+                caregiver: { select: { name: true, phone: true } },
+            }
         });
 
         // Emit real-time event to admins
@@ -406,6 +454,31 @@ const updateBookingStatus = async (req, res, next) => {
                 }
             } catch (notifErr) {
                 logger.warn(`updateBookingStatus (${status}): notification failed (non-fatal):`, notifErr.message);
+            }
+
+            // Notify assigned caregiver of shift cancellation — non-fatal
+            if (status === 'CANCELLED' && booking.caregiver?.phone) {
+                try {
+                    const { sendSMS } = require('../services/sms');
+                    const { sendShiftCancelledWA } = require('../services/whatsapp');
+                    const scheduledDate = booking.scheduledDate
+                        ? new Date(booking.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                        : 'TBD';
+                    await sendSMS({
+                        template: 'SHIFT_CANCELLED_PARTNER',
+                        mobile: booking.caregiver.phone,
+                        variables: [booking.caregiver.name, booking.user?.name || 'Client', booking.bookingCode || booking.id, scheduledDate],
+                    });
+                    await sendShiftCancelledWA({
+                        phone: booking.caregiver.phone,
+                        empName: booking.caregiver.name,
+                        clientName: booking.user?.name || 'Client',
+                        clientId: booking.bookingCode || booking.id,
+                        date: scheduledDate,
+                    });
+                } catch (caregiverNotifErr) {
+                    logger.warn(`updateBookingStatus: caregiver shift notification failed (non-fatal):`, caregiverNotifErr.message);
+                }
             }
         }
 
@@ -497,8 +570,9 @@ const getMyBookings = async (req, res, next) => {
                 skip,
                 take: limit,
                 include: {
-                    service: { select: { name: true, slug: true, icon: true, pricingText: true } },
-                    payments: true,
+                    service: { select: { name: true, slug: true, icon: true, pricingText: true, serviceType: true } },
+                    caregiver: { select: { name: true, phone: true } },
+                    payments: { select: { status: true, amount: true }, orderBy: { createdAt: 'desc' }, take: 1 },
                 },
                 orderBy: { createdAt: 'desc' },
             }),
@@ -553,6 +627,41 @@ const cancelBooking = async (req, res, next) => {
             }
         } catch (notifErr) {
             logger.warn('cancelBooking: notification failed (non-fatal):', notifErr.message);
+        }
+
+        // Notify assigned caregiver of shift cancellation — non-fatal
+        if (booking.caregiverId) {
+            try {
+                const { sendSMS } = require('../services/sms');
+                const caregiver = await prisma.caregiver.findUnique({
+                    where: { id: booking.caregiverId },
+                    select: { name: true, phone: true },
+                });
+                const bookingUser = await prisma.user.findUnique({
+                    where: { id: booking.userId },
+                    select: { name: true },
+                });
+                if (caregiver?.phone) {
+                    const scheduledDate = booking.scheduledDate
+                        ? new Date(booking.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                        : 'TBD';
+                    await sendSMS({
+                        template: 'SHIFT_CANCELLED_PARTNER',
+                        mobile: caregiver.phone,
+                        variables: [caregiver.name, bookingUser?.name || 'Client', booking.bookingCode || req.params.id, scheduledDate],
+                    });
+                    const { sendShiftCancelledWA } = require('../services/whatsapp');
+                    await sendShiftCancelledWA({
+                        phone: caregiver.phone,
+                        empName: caregiver.name,
+                        clientName: bookingUser?.name || 'Client',
+                        clientId: booking.bookingCode || req.params.id,
+                        date: scheduledDate,
+                    });
+                }
+            } catch (caregiverNotifErr) {
+                logger.warn('cancelBooking: caregiver shift notification failed (non-fatal):', caregiverNotifErr.message);
+            }
         }
 
         sendResponse(res, 200, updated, 'Booking cancelled');

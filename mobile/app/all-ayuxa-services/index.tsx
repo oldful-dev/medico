@@ -9,9 +9,12 @@ import {
     useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Fonts } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 
 // Service grid images
 const doctorVisitImg = require('@/assets/images/32a4661f97e2fa2dd2c85c403a7c530b7214e7f7.png');
@@ -41,6 +44,9 @@ const SERVICE_GRID = [
 export default function AllAyuxaServicesScreen() {
     const router = useRouter();
     const { width } = useWindowDimensions();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(isDarkMode, colors, Fonts);
 
     // Screen padding corresponds to marginHorizontal of the card mapping on Home Screen
     const availableWidth = width - 40; // 20px padding on each side
@@ -57,13 +63,14 @@ export default function AllAyuxaServicesScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bgScreen }]} edges={['top']}>
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} />
             {/* ─── Header ─── */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#2F2F2F" />
+                    <Ionicons name="arrow-back" size={24} color={colors.textDark} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>All Ayuxa Services</Text>
+                <Text style={[styles.headerTitle, { color: colors.textDark }]}>All Ayuxa Services</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -75,7 +82,7 @@ export default function AllAyuxaServicesScreen() {
                         return (
                             <TouchableOpacity
                                 key={`service-${i}`}
-                                style={[styles.gridItem, { width: exactItemWidth, height: exactCardHeight }]}
+                                style={[styles.gridItem, { width: exactItemWidth, height: exactCardHeight, backgroundColor: colors.bgCard }]}
                                 onPress={() => router.push(item.route as any)}
                             >
                                 <Image
@@ -84,8 +91,8 @@ export default function AllAyuxaServicesScreen() {
                                     resizeMode="cover"
                                 />
                                 <View style={styles.gridLabelContainer}>
-                                    <Text style={styles.gridLabel}>{item.label1}</Text>
-                                    {item.label2 ? <Text style={styles.gridLabel}>{item.label2}</Text> : null}
+                                    <Text style={[styles.gridLabel, { color: colors.textDark }]}>{item.label1}</Text>
+                                    {item.label2 ? <Text style={[styles.gridLabel, { color: colors.textDark }]}>{item.label2}</Text> : null}
                                 </View>
                             </TouchableOpacity>
                         );
@@ -96,24 +103,27 @@ export default function AllAyuxaServicesScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean, colors: ThemeColors, fonts: typeof Fonts) => StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#FFFFE3',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFE3',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 20,
         paddingVertical: 15,
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
+        borderBottomWidth: 1,
+        borderBottomColor: isDarkMode ? '#3A3A3A' : '#E5E7EB',
     },
     backButton: {
         paddingRight: 15,
     },
     headerTitle: {
-        fontFamily: Fonts.bold,
+        fontFamily: fonts.bold,
         fontSize: 20,
-        color: '#034C2A',
+        color: isDarkMode ? '#E0E0E0' : '#034C2A',
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -128,12 +138,12 @@ const styles = StyleSheet.create({
     gridItem: {
         marginBottom: 15,
         borderRadius: 12,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
         overflow: 'hidden',
         alignItems: 'center',
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
+        shadowOpacity: isDarkMode ? 0.3 : 0.1,
         shadowRadius: 4,
         elevation: 3,
     },
@@ -149,9 +159,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     gridLabel: {
-        fontFamily: Fonts.medium,
+        fontFamily: fonts.medium,
         fontSize: 11,
-        color: '#085B34',
+        color: isDarkMode ? '#E0E0E0' : '#085B34',
         textAlign: 'center',
         lineHeight: 14,
     },

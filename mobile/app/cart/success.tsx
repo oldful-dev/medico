@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, BackHandler, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -12,6 +13,8 @@ const TEXT_MUTED = '#888888';
 export default function CartSuccessScreen() {
     const router = useRouter();
     const params = useLocalSearchParams<{ bookingId?: string; amount?: string; category?: string }>();
+    const isDarkMode = useColorScheme() === 'dark';
+    const colors = useThemeColors();
 
     useEffect(() => {
         // Prevent back button from going back to payment
@@ -22,66 +25,80 @@ export default function CartSuccessScreen() {
         return () => backHandler.remove();
     }, [router]);
 
+    const dynamicStyles = makeStyles(isDarkMode);
+
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-            <StatusBar backgroundColor="#FFFFFF" />
+        <SafeAreaView style={dynamicStyles.container} edges={['top', 'bottom']}>
+            <StatusBar backgroundColor={isDarkMode ? '#252525' : '#FFFFFF'} barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
             
-            <View style={styles.content}>
-                <View style={styles.iconContainer}>
+            <View style={dynamicStyles.content}>
+                <View style={dynamicStyles.iconContainer}>
                     <Ionicons name="checkmark-circle" size={80} color={PRIMARY_GREEN} />
                 </View>
                 
-                <Text style={styles.title}>Payment Successful!</Text>
-                <Text style={styles.subtitle}>
+                <Text style={dynamicStyles.title}>Payment Successful!</Text>
+                <Text style={dynamicStyles.subtitle}>
                     Your {params.category} booking has been confirmed.
                 </Text>
 
-                <View style={styles.detailsCard}>
-                    <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Booking ID</Text>
-                        <Text style={styles.detailValue}>#{params.bookingId?.slice(-8) || 'CONFIRMED'}</Text>
+                <View style={dynamicStyles.detailsCard}>
+                    <View style={dynamicStyles.detailRow}>
+                        <Text style={dynamicStyles.detailLabel}>Booking ID</Text>
+                        <Text style={dynamicStyles.detailValue}>#{params.bookingId?.slice(-8) || 'CONFIRMED'}</Text>
                     </View>
-                    <View style={styles.divider} />
-                    <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Amount Paid</Text>
-                        <Text style={styles.detailAmount}>₹{params.amount}</Text>
+                    <View style={dynamicStyles.divider} />
+                    <View style={dynamicStyles.detailRow}>
+                        <Text style={dynamicStyles.detailLabel}>Amount Paid</Text>
+                        <Text style={dynamicStyles.detailAmount}>₹{params.amount}</Text>
                     </View>
                 </View>
             </View>
 
-            <View style={styles.footer}>
+            <View style={dynamicStyles.footer}>
                 <TouchableOpacity 
-                    style={styles.primaryBtn}
+                    style={dynamicStyles.primaryBtn}
                     onPress={() => router.replace('/profile/bookings')}
                 >
-                    <Text style={styles.primaryBtnText}>View My Bookings</Text>
+                    <Text style={dynamicStyles.primaryBtnText}>View My Bookings</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                    style={styles.secondaryBtn}
+                    style={dynamicStyles.secondaryBtn}
                     onPress={() => router.replace('/(tabs)/home')}
                 >
-                    <Text style={styles.secondaryBtnText}>Back to Home</Text>
+                    <Text style={dynamicStyles.secondaryBtnText}>Back to Home</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FFFFFF' },
-    content: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
-    iconContainer: { marginBottom: 24, backgroundColor: '#ECFDF5', padding: 20, borderRadius: 60 },
-    title: { fontSize: 24, fontWeight: '700', color: TEXT_DARK, marginBottom: 8, textAlign: 'center' },
-    subtitle: { fontSize: 14, color: TEXT_MUTED, textAlign: 'center', marginBottom: 32, lineHeight: 20 },
-    detailsCard: { width: '100%', backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#E5E7EB' },
-    detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 },
-    divider: { height: 1, backgroundColor: '#E5E7EB', marginVertical: 4 },
-    detailLabel: { fontSize: 14, color: TEXT_MUTED, fontWeight: '500' },
-    detailValue: { fontSize: 14, color: TEXT_DARK, fontWeight: '600' },
-    detailAmount: { fontSize: 16, color: PRIMARY_GREEN, fontWeight: '700' },
-    footer: { padding: 24, paddingBottom: 40 },
-    primaryBtn: { backgroundColor: PRIMARY_GREEN, paddingVertical: 14, borderRadius: 10, alignItems: 'center', marginBottom: 12 },
-    primaryBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
-    secondaryBtn: { backgroundColor: '#F3F4F6', paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
-    secondaryBtnText: { color: TEXT_DARK, fontSize: 15, fontWeight: '600' },
-});
+const makeStyles = (isDarkMode: boolean) => {
+    const bgCard = isDarkMode ? '#252525' : '#FFFFFF';
+    const bgCardSecondary = isDarkMode ? '#2D2D2D' : '#F9FAFB';
+    const borderColor = isDarkMode ? '#3A3A3A' : '#E5E7EB';
+    const textPrimary = isDarkMode ? '#E8E8E8' : TEXT_DARK;
+    const textSecondary = isDarkMode ? '#A0A0A0' : TEXT_MUTED;
+    const iconBgDark = isDarkMode ? '#1A4A32' : '#ECFDF5';
+    const secondaryBg = isDarkMode ? '#303030' : '#F3F4F6';
+
+    return StyleSheet.create({
+        container: { flex: 1, backgroundColor: bgCard },
+        content: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
+        iconContainer: { marginBottom: 24, backgroundColor: iconBgDark, padding: 20, borderRadius: 60 },
+        title: { fontSize: 24, fontWeight: '700', color: textPrimary, marginBottom: 8, textAlign: 'center' },
+        subtitle: { fontSize: 14, color: textSecondary, textAlign: 'center', marginBottom: 32, lineHeight: 20 },
+        detailsCard: { width: '100%', backgroundColor: bgCardSecondary, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: borderColor },
+        detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 },
+        divider: { height: 1, backgroundColor: borderColor, marginVertical: 4 },
+        detailLabel: { fontSize: 14, color: textSecondary, fontWeight: '500' },
+        detailValue: { fontSize: 14, color: textPrimary, fontWeight: '600' },
+        detailAmount: { fontSize: 16, color: PRIMARY_GREEN, fontWeight: '700' },
+        footer: { padding: 24, paddingBottom: 40 },
+        primaryBtn: { backgroundColor: PRIMARY_GREEN, paddingVertical: 14, borderRadius: 10, alignItems: 'center', marginBottom: 12 },
+        primaryBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+        secondaryBtn: { backgroundColor: secondaryBg, paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
+        secondaryBtnText: { color: textPrimary, fontSize: 15, fontWeight: '600' },
+    });
+};
+
+const styles = makeStyles(false);

@@ -10,6 +10,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { labService, type LabPackage, type LabSlot } from '@/services/api/labService';
 import { locationService } from '@/services/device/locationService';
 import { useUser } from '@/context/UserContext';
+import { useTheme } from '@/context/ThemeContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { userService } from '@/services/api/userService';
 import { LocationPickerModal } from '@/components/LocationPickerModal';
 
@@ -23,6 +25,8 @@ export default function BloodTestScheduleScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { profile, setProfile } = useUser();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
     const params = useLocalSearchParams<{ packagePayload?: string }>();
 
     const [pkg, setPkg] = useState<LabPackage | null>(null);
@@ -390,7 +394,7 @@ export default function BloodTestScheduleScreen() {
                     <Ionicons name="home" size={20} color={collectionType === 'HOME' ? PRIMARY_GREEN : TEXT_MUTED} style={{ marginRight: 12 }} />
                     <View style={{ flex: 1 }}>
                         <Text style={styles.optionTitle}>Home Collection</Text>
-                        <Text style={styles.optionDesc}>We'll collect sample from your home</Text>
+                        <Text style={styles.optionDesc}>We&apos;ll collect sample from your home</Text>
                     </View>
                     <Ionicons
                         name={collectionType === 'HOME' ? 'checkmark-circle' : 'radio-button-off'}
@@ -690,8 +694,8 @@ export default function BloodTestScheduleScreen() {
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar backgroundColor="#FFFFFF" />
+        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}>
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} />
 
             {/* Header */}
             <View style={styles.header}>
@@ -794,10 +798,10 @@ export default function BloodTestScheduleScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
     },
     header: {
         flexDirection: 'row',
@@ -806,12 +810,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: CARD_BORDER,
+        borderBottomColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
     },
     headerTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         flex: 1,
         textAlign: 'center',
     },
@@ -827,10 +831,10 @@ const styles = StyleSheet.create({
         height: 40,
         borderRadius: 20,
         borderWidth: 2,
-        borderColor: '#E5E7EB',
+        borderColor: isDarkMode ? '#3A3A3A' : '#E5E7EB',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
     },
     stepDotActive: {
         backgroundColor: PRIMARY_GREEN,
@@ -839,7 +843,7 @@ const styles = StyleSheet.create({
     stepDotText: {
         fontSize: 14,
         fontWeight: '600',
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
     },
     stepDotTextActive: {
         color: '#FFFFFF',
@@ -847,7 +851,7 @@ const styles = StyleSheet.create({
     stepLine: {
         width: 2,
         height: 16,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: isDarkMode ? '#3A3A3A' : '#E5E7EB',
         marginTop: 4,
     },
     stepLineActive: {
@@ -861,7 +865,7 @@ const styles = StyleSheet.create({
     },
     stepLabel: {
         fontSize: 12,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
         fontWeight: '500',
         textAlign: 'center',
         flex: 1,
@@ -880,7 +884,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 14,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         marginBottom: 12,
     },
     datesScroll: {
@@ -891,10 +895,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 10,
         borderWidth: 1,
-        borderColor: CARD_BORDER,
+        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         borderRadius: 8,
         marginRight: 8,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
     },
     dateChipActive: {
         backgroundColor: PRIMARY_GREEN,
@@ -902,7 +906,7 @@ const styles = StyleSheet.create({
     },
     dateChipText: {
         fontSize: 12,
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         fontWeight: '500',
     },
     dateChipTextActive: {
@@ -919,10 +923,10 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: 10,
         borderWidth: 1,
-        borderColor: CARD_BORDER,
+        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         borderRadius: 8,
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
     },
     slotButtonActive: {
         backgroundColor: PRIMARY_GREEN,
@@ -930,7 +934,7 @@ const styles = StyleSheet.create({
     },
     slotButtonText: {
         fontSize: 13,
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         fontWeight: '500',
     },
     slotButtonTextActive: {
@@ -941,9 +945,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 14,
         borderWidth: 1,
-        borderColor: CARD_BORDER,
+        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         borderRadius: 10,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
         marginBottom: 12,
     },
     collectionOptionActive: {
@@ -953,11 +957,11 @@ const styles = StyleSheet.create({
     optionTitle: {
         fontSize: 14,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
     },
     optionDesc: {
         fontSize: 12,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
         marginTop: 2,
     },
     searchBox: {
@@ -975,14 +979,14 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         fontSize: 13,
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         padding: 0,
         minHeight: 40,
     },
     searchResultsContainer: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: isDarkMode ? '#252525' : '#F3F4F6',
         borderWidth: 1,
-        borderColor: CARD_BORDER,
+        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         borderRadius: 8,
         marginBottom: 12,
         maxHeight: 220,
@@ -990,7 +994,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     searchResults: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: isDarkMode ? '#252525' : '#F3F4F6',
         borderRadius: 8,
         maxHeight: 200,
         minHeight: 60,
@@ -1001,11 +1005,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 16,
         paddingHorizontal: 12,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: isDarkMode ? '#252525' : '#F3F4F6',
     },
     loadingText: {
         fontSize: 12,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
         marginLeft: 10,
     },
     noResultsContainer: {
@@ -1013,17 +1017,17 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 24,
         paddingHorizontal: 12,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: isDarkMode ? '#252525' : '#F3F4F6',
     },
     noResultsText: {
         fontSize: 14,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         marginBottom: 4,
     },
     noResultsSubtext: {
         fontSize: 12,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
     },
     searchResultItem: {
         flexDirection: 'row',
@@ -1031,27 +1035,28 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: CARD_BORDER,
-        backgroundColor: '#FFFFFF',
+        borderBottomColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
     },
     resultName: {
         fontSize: 13,
         fontWeight: '500',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
     },
     resultAddr: {
         fontSize: 11,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
         marginTop: 2,
     },
     addressInput: {
         borderWidth: 1,
-        borderColor: CARD_BORDER,
+        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 10,
         fontSize: 14,
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         height: 80,
         marginBottom: 10,
         textAlignVertical: 'top',
@@ -1063,17 +1068,18 @@ const styles = StyleSheet.create({
     },
     input: {
         borderWidth: 1,
-        borderColor: CARD_BORDER,
+        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 10,
         fontSize: 14,
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
     },
     summaryCard: {
         backgroundColor: LIGHT_GREEN_BG,
         borderWidth: 1,
-        borderColor: '#D1FAE5',
+        borderColor: isDarkMode ? '#2A5A47' : '#D1FAE5',
         borderRadius: 12,
         padding: 16,
         marginTop: 8,
@@ -1087,17 +1093,17 @@ const styles = StyleSheet.create({
     },
     summaryRowDivider: {
         borderBottomWidth: 1,
-        borderBottomColor: '#D1FAE5',
+        borderBottomColor: isDarkMode ? '#2A5A47' : '#D1FAE5',
     },
     summaryLabel: {
         fontSize: 12,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
         fontWeight: '500',
     },
     summaryValue: {
         fontSize: 13,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         maxWidth: '60%',
         textAlign: 'right',
     },
@@ -1112,8 +1118,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderTopWidth: 1,
-        borderTopColor: CARD_BORDER,
-        backgroundColor: '#FFFFFF',
+        borderTopColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
     },
     backButton: {
         flex: 1,
@@ -1122,6 +1128,7 @@ const styles = StyleSheet.create({
         borderColor: PRIMARY_GREEN,
         borderRadius: 10,
         alignItems: 'center',
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
     },
     backButtonText: {
         fontSize: 14,
@@ -1152,9 +1159,9 @@ const styles = StyleSheet.create({
     locationOptionBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
         borderWidth: 1,
-        borderColor: CARD_BORDER,
+        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         borderRadius: 10,
         padding: 14,
         justifyContent: 'center',
@@ -1162,20 +1169,20 @@ const styles = StyleSheet.create({
     locationOptionTitle: {
         fontSize: 13,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
     },
     locationOptionDesc: {
         fontSize: 11,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
         marginTop: 2,
     },
     divider: {
         height: 1,
-        backgroundColor: CARD_BORDER,
+        backgroundColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
     },
     subLabel: {
         fontSize: 12,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
         fontWeight: '500',
         marginBottom: 8,
     },
@@ -1187,7 +1194,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         borderWidth: 1,
         borderColor: PRIMARY_GREEN,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
         marginRight: 8,
         maxWidth: 160,
     },
@@ -1227,9 +1234,9 @@ const styles = StyleSheet.create({
         color: PRIMARY_GREEN,
     },
     newAddrBox: {
-        backgroundColor: '#F9FAFB',
+        backgroundColor: isDarkMode ? '#252525' : '#F9FAFB',
         borderWidth: 1,
-        borderColor: CARD_BORDER,
+        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         borderRadius: 12,
         padding: 14,
         marginBottom: 12,
@@ -1237,7 +1244,7 @@ const styles = StyleSheet.create({
     newAddrTitle: {
         fontSize: 13,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         marginBottom: 10,
     },
     labelRow: {
@@ -1250,8 +1257,8 @@ const styles = StyleSheet.create({
         paddingVertical: 7,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: CARD_BORDER,
-        backgroundColor: '#FFFFFF',
+        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
     },
     labelChipActive: {
         backgroundColor: PRIMARY_GREEN,
@@ -1260,7 +1267,7 @@ const styles = StyleSheet.create({
     labelChipText: {
         fontSize: 12,
         fontWeight: '600',
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
     },
     labelChipTextActive: {
         color: '#FFFFFF',
@@ -1273,7 +1280,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: PRIMARY_GREEN,
         borderRadius: 8,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
         marginBottom: 8,
     },
     pickLocationBtnText: {
@@ -1283,3 +1290,4 @@ const styles = StyleSheet.create({
         flex: 1,
     },
 });
+const styles = makeStyles(false, {} as ThemeColors);

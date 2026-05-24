@@ -83,7 +83,7 @@ export default function EditMedicalCardScreen() {
 
     return (
         <View style={styles.screen}>
-            <StatusBar style="light" />
+            <StatusBar style={isDarkMode ? "light" : "dark"} />
             <SafeAreaView style={styles.headerSafe} edges={['top']}>
                 <View style={styles.headerRow}>
                     <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>

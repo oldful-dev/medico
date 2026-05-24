@@ -14,6 +14,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTheme } from '@react-navigation/native';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 
@@ -30,6 +32,8 @@ export default function MedicalEquipmentScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
+    const { dark: isDarkMode } = useTheme();
+    const colors = useThemeColors();
     const [selectedEquipment, setSelectedEquipment] = useState('wheelchair');
     const [selectedDuration, setSelectedDuration] = useState('Monthly');
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -85,97 +89,99 @@ export default function MedicalEquipmentScreen() {
         }
     };
 
+    const dynamicStyles = makeStyles(isDarkMode);
+
     return (
-        <View style={styles.screen}>
+        <View style={dynamicStyles.screen}>
             <View style={{ height: insets.top, backgroundColor: '#FDFDE8' }} />
             <StatusBar style="dark" />
 
-            <View style={styles.container}>
-                <View style={styles.headerContainer}>
-                    <View style={styles.headerRow}>
-                        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <View style={dynamicStyles.container}>
+                <View style={dynamicStyles.headerContainer}>
+                    <View style={dynamicStyles.headerRow}>
+                        <TouchableOpacity onPress={() => router.back()} style={dynamicStyles.backButton}>
                             <Ionicons name="arrow-back" size={24} color="#02743F" />
                         </TouchableOpacity>
-                        <View style={styles.headerTextCol}>
-                            <Text style={styles.headerTitle}>Rent Medical Equipment</Text>
-                            <Text style={styles.headerSubtitle}>Wheelchairs, Beds, and Oxygen on rent.</Text>
+                        <View style={dynamicStyles.headerTextCol}>
+                            <Text style={dynamicStyles.headerTitle}>Rent Medical Equipment</Text>
+                            <Text style={dynamicStyles.headerSubtitle}>Wheelchairs, Beds, and Oxygen on rent.</Text>
                         </View>
                     </View>
                 </View>
 
-                <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
+                <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* ─── Select Equipment Section ─── */}
-                    <View style={styles.sectionCardTintedDark}>
-                        <Text style={styles.sectionTitle}>Select equipment set rental dyration</Text>
+                    <View style={dynamicStyles.sectionCardTintedDark}>
+                        <Text style={dynamicStyles.sectionTitle}>Select equipment set rental dyration</Text>
 
-                        <View style={styles.equipmentGrid}>
+                        <View style={dynamicStyles.equipmentGrid}>
                             {/* Wheelchair */}
                             <TouchableOpacity
-                                style={[styles.equipmentCard, selectedEquipment === 'wheelchair' && styles.equipmentCardActive]}
+                                style={[dynamicStyles.equipmentCard, selectedEquipment === 'wheelchair' && dynamicStyles.equipmentCardActive]}
                                 onPress={() => setSelectedEquipment('wheelchair')}
                                 activeOpacity={0.7}
                             >
-                                <Image source={imgWheelchair} style={styles.equipmentImage} resizeMode="contain" />
-                                <Text style={styles.equipmentName}>Wheelchair</Text>
-                                <Text style={styles.equipmentDesc}>Manual/Electric</Text>
+                                <Image source={imgWheelchair} style={dynamicStyles.equipmentImage} resizeMode="contain" />
+                                <Text style={dynamicStyles.equipmentName}>Wheelchair</Text>
+                                <Text style={dynamicStyles.equipmentDesc}>Manual/Electric</Text>
                             </TouchableOpacity>
 
                             {/* Hospital Bed */}
                             <TouchableOpacity
-                                style={[styles.equipmentCard, selectedEquipment === 'bed' && styles.equipmentCardActive]}
+                                style={[dynamicStyles.equipmentCard, selectedEquipment === 'bed' && dynamicStyles.equipmentCardActive]}
                                 onPress={() => setSelectedEquipment('bed')}
                                 activeOpacity={0.7}
                             >
-                                <Image source={imgHospitalBed} style={[styles.equipmentImage, styles.bedImage]} resizeMode="contain" />
-                                <Text style={styles.equipmentName}>Hospital Bed</Text>
-                                <Text style={styles.equipmentDesc}>Manual/Electric</Text>
+                                <Image source={imgHospitalBed} style={[dynamicStyles.equipmentImage, dynamicStyles.bedImage]} resizeMode="contain" />
+                                <Text style={dynamicStyles.equipmentName}>Hospital Bed</Text>
+                                <Text style={dynamicStyles.equipmentDesc}>Manual/Electric</Text>
                             </TouchableOpacity>
 
                             {/* Oxygen Concentrator */}
                             <TouchableOpacity
-                                style={[styles.equipmentCard, selectedEquipment === 'oxygen' && styles.equipmentCardActive]}
+                                style={[dynamicStyles.equipmentCard, selectedEquipment === 'oxygen' && dynamicStyles.equipmentCardActive]}
                                 onPress={() => setSelectedEquipment('oxygen')}
                                 activeOpacity={0.7}
                             >
-                                <Image source={imgOxygen} style={[styles.equipmentImage, styles.oxygenImage]} resizeMode="contain" />
-                                <Text style={[styles.equipmentName, styles.oxygenText]}>Oxygen Concentrator</Text>
+                                <Image source={imgOxygen} style={[dynamicStyles.equipmentImage, dynamicStyles.oxygenImage]} resizeMode="contain" />
+                                <Text style={[dynamicStyles.equipmentName, dynamicStyles.oxygenText]}>Oxygen Concentrator</Text>
                             </TouchableOpacity>
 
                             {/* Walker/stick */}
                             <TouchableOpacity
-                                style={[styles.equipmentCard, selectedEquipment === 'walker' && styles.equipmentCardActive]}
+                                style={[dynamicStyles.equipmentCard, selectedEquipment === 'walker' && dynamicStyles.equipmentCardActive]}
                                 onPress={() => setSelectedEquipment('walker')}
                                 activeOpacity={0.7}
                             >
-                                <Image source={imgWalker} style={[styles.equipmentImage, styles.walkerImage]} resizeMode="contain" />
-                                <Text style={styles.equipmentName}>Walker/stick</Text>
+                                <Image source={imgWalker} style={[dynamicStyles.equipmentImage, dynamicStyles.walkerImage]} resizeMode="contain" />
+                                <Text style={dynamicStyles.equipmentName}>Walker/stick</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
 
                     {/* ─── Set Rental Duration Section ─── */}
-                    <View style={styles.sectionCardTintedLight}>
-                        <Text style={styles.sectionTitle}>Set Rental Duration</Text>
+                    <View style={dynamicStyles.sectionCardTintedLight}>
+                        <Text style={dynamicStyles.sectionTitle}>Set Rental Duration</Text>
 
-                        <TouchableOpacity style={styles.radioRow} onPress={() => setSelectedDuration('Weekly')} activeOpacity={0.7}>
+                        <TouchableOpacity style={dynamicStyles.radioRow} onPress={() => setSelectedDuration('Weekly')} activeOpacity={0.7}>
                             <Ionicons name={selectedDuration === 'Weekly' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedDuration === 'Weekly' ? "#02743F" : "#02743F"} />
-                            <Text style={styles.radioLabel}>Weekly</Text>
+                            <Text style={dynamicStyles.radioLabel}>Weekly</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.radioRow} onPress={() => setSelectedDuration('Monthly')} activeOpacity={0.7}>
+                        <TouchableOpacity style={dynamicStyles.radioRow} onPress={() => setSelectedDuration('Monthly')} activeOpacity={0.7}>
                             <Ionicons name={selectedDuration === 'Monthly' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedDuration === 'Monthly' ? "#02743F" : "#02743F"} />
-                            <Text style={styles.radioLabel}>Monthly</Text>
+                            <Text style={dynamicStyles.radioLabel}>Monthly</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.radioRow} onPress={() => setSelectedDuration('Custom')} activeOpacity={0.7}>
+                        <TouchableOpacity style={dynamicStyles.radioRow} onPress={() => setSelectedDuration('Custom')} activeOpacity={0.7}>
                             <Ionicons name={selectedDuration === 'Custom' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedDuration === 'Custom' ? "#02743F" : "#02743F"} />
-                            <Text style={styles.radioLabel}>Custom</Text>
+                            <Text style={dynamicStyles.radioLabel}>Custom</Text>
                         </TouchableOpacity>
                     </View>
 
                     {/* ─── Schedule Pick-up Section ─── */}
-                    <View style={styles.sectionCardTransparent}>
+                    <View style={dynamicStyles.sectionCardTransparent}>
                         <CustomDateTimePicker
                             label="When?"
                             value={selectedDate}
@@ -184,19 +190,19 @@ export default function MedicalEquipmentScreen() {
                     </View>
 
                     {/* ─── Confirm Rental Button ─── */}
-                    <View style={styles.buttonContainer}>
+                    <View style={dynamicStyles.buttonContainer}>
                         <TouchableOpacity
-                            style={[styles.confirmButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                            style={[dynamicStyles.confirmButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
                             activeOpacity={0.8}
                             disabled={isBooking || isLoadingInit}
                             onPress={handleBookService}
                         >
                             {isLoadingInit ? (
-                                <Text style={styles.confirmButtonText}>Initializing...</Text>
+                                <Text style={dynamicStyles.confirmButtonText}>Initializing...</Text>
                             ) : isBooking ? (
                                 <ActivityIndicator color="#FFFFFF" />
                             ) : (
-                                <Text style={styles.confirmButtonText}>Confirm Rental</Text>
+                                <Text style={dynamicStyles.confirmButtonText}>Confirm Rental</Text>
                             )}
                         </TouchableOpacity>
                     </View>
@@ -207,7 +213,7 @@ export default function MedicalEquipmentScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
         backgroundColor: '#FDFDE8', // Light cream color matching header image
@@ -283,7 +289,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     equipmentCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         borderRadius: 8,
         width: '48%', // Allow wrapping nicely on narrow screens
         minWidth: 70,
@@ -421,6 +427,6 @@ const styles = StyleSheet.create({
     confirmButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 14,
-        color: '#FFFFFF',
+        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
     },
 });

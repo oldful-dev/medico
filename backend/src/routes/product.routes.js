@@ -15,5 +15,7 @@ router.post('/:id/waitlist', authenticate, ctrl.joinWaitlist);
 router.post('/', authenticateAdmin, ctrl.createProduct);
 router.put('/:id', authenticateAdmin, ctrl.updateProduct);
 router.delete('/:id', authenticateAdmin, ctrl.deleteProduct);
+router.get('/admin/orders', authenticateAdmin, ctrl.getAdminOrders);
+router.put('/admin/orders/:id/status', authenticateAdmin, ctrl.updateOrderStatus);
 
 module.exports = router;

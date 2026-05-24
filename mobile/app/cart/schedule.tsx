@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput,
-    ActivityIndicator
+    ActivityIndicator, useColorScheme
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -13,6 +13,7 @@ import { useUser } from '@/context/UserContext';
 import { userService } from '@/services/api/userService';
 import { LocationPickerModal } from '@/components/LocationPickerModal';
 import { useCart } from '@/context/CartContext';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -26,6 +27,8 @@ export default function CartScheduleScreen() {
     const { profile, setProfile } = useUser();
     const params = useLocalSearchParams<{ category?: string }>();
     const { groupedItems, getCategoryTotal } = useCart();
+    const isDarkMode = useColorScheme() === 'dark';
+    const colors = useThemeColors();
 
     const category = params.category || 'Bloodwork';
     const cartItems = groupedItems[category] || [];
@@ -344,7 +347,7 @@ export default function CartScheduleScreen() {
                     <Ionicons name="home" size={20} color={collectionType === 'HOME' ? PRIMARY_GREEN : TEXT_MUTED} style={{ marginRight: 12 }} />
                     <View style={{ flex: 1 }}>
                         <Text style={styles.optionTitle}>Home Collection</Text>
-                        <Text style={styles.optionDesc}>We'll collect sample from your home</Text>
+                        <Text style={styles.optionDesc}>We&apos;ll collect sample from your home</Text>
                     </View>
                     <Ionicons
                         name={collectionType === 'HOME' ? 'checkmark-circle' : 'radio-button-off'}
@@ -613,10 +616,12 @@ export default function CartScheduleScreen() {
         }
     };
 
+    const dynamicStyles = makeStyles(isDarkMode);
+
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <StatusBar backgroundColor="#FFFFFF" />
-            <View style={styles.header}>
+        <View style={[dynamicStyles.container, { paddingTop: insets.top }]}>
+            <StatusBar backgroundColor={isDarkMode ? '#252525' : '#FFFFFF'} barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+            <View style={dynamicStyles.header}>
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color={TEXT_DARK} />
                 </TouchableOpacity>
@@ -692,69 +697,83 @@ export default function CartScheduleScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FFFFFF' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: CARD_BORDER },
-    headerTitle: { fontSize: 16, fontWeight: '600', color: TEXT_DARK, flex: 1, textAlign: 'center' },
-    stepIndicator: { paddingHorizontal: 16, paddingVertical: 20, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-    stepDot: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' },
-    stepDotActive: { backgroundColor: PRIMARY_GREEN, borderColor: PRIMARY_GREEN },
-    stepDotText: { fontSize: 14, fontWeight: '600', color: TEXT_MUTED },
-    stepDotTextActive: { color: '#FFFFFF' },
-    stepLine: { width: 2, height: 16, backgroundColor: '#E5E7EB', marginTop: 4 },
-    stepLineActive: { backgroundColor: PRIMARY_GREEN },
-    stepLabels: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 16, marginBottom: 16 },
-    stepLabel: { fontSize: 12, color: TEXT_MUTED, fontWeight: '500', textAlign: 'center', flex: 1 },
-    stepLabelActive: { color: PRIMARY_GREEN, fontWeight: '600' },
-    stepContent: { flex: 1, paddingHorizontal: 16 },
-    section: { marginBottom: 20 },
-    sectionTitle: { fontSize: 14, fontWeight: '600', color: TEXT_DARK, marginBottom: 12 },
-    subLabel: { fontSize: 12, color: TEXT_MUTED, fontWeight: '500', marginBottom: 8 },
-    datesScroll: { marginHorizontal: -16, paddingHorizontal: 16 },
-    dateChip: { paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: CARD_BORDER, borderRadius: 8, marginRight: 8, backgroundColor: '#FFFFFF' },
-    dateChipActive: { backgroundColor: PRIMARY_GREEN, borderColor: PRIMARY_GREEN },
-    dateChipText: { fontSize: 12, color: TEXT_DARK, fontWeight: '500' },
-    dateChipTextActive: { color: '#FFFFFF' },
-    slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    slotButton: { flex: 1, minWidth: '45%', paddingVertical: 12, paddingHorizontal: 10, borderWidth: 1, borderColor: CARD_BORDER, borderRadius: 8, alignItems: 'center', backgroundColor: '#FFFFFF' },
-    slotButtonActive: { backgroundColor: PRIMARY_GREEN, borderColor: PRIMARY_GREEN },
-    slotButtonText: { fontSize: 13, color: TEXT_DARK, fontWeight: '500' },
-    slotButtonTextActive: { color: '#FFFFFF' },
-    collectionOption: { flexDirection: 'row', alignItems: 'center', padding: 14, borderWidth: 1, borderColor: CARD_BORDER, borderRadius: 10, backgroundColor: '#FFFFFF', marginBottom: 10 },
-    collectionOptionActive: { borderColor: PRIMARY_GREEN, backgroundColor: LIGHT_GREEN_BG },
-    optionTitle: { fontSize: 14, fontWeight: '600', color: TEXT_DARK },
-    optionDesc: { fontSize: 12, color: TEXT_MUTED, marginTop: 2 },
-    savedAddrChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: PRIMARY_GREEN, backgroundColor: '#FFFFFF', marginRight: 8, maxWidth: 160 },
-    savedAddrChipActive: { backgroundColor: PRIMARY_GREEN, borderColor: PRIMARY_GREEN },
-    savedAddrChipText: { fontSize: 12, color: PRIMARY_GREEN, fontWeight: '600' },
-    savedAddrChipTextActive: { color: '#FFFFFF' },
-    newAddrBox: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: CARD_BORDER, borderRadius: 12, padding: 14, marginBottom: 12 },
-    newAddrTitle: { fontSize: 13, fontWeight: '600', color: TEXT_DARK, marginBottom: 10 },
-    labelRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
-    labelChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: CARD_BORDER, backgroundColor: '#FFFFFF' },
-    labelChipActive: { backgroundColor: PRIMARY_GREEN, borderColor: PRIMARY_GREEN },
-    labelChipText: { fontSize: 12, fontWeight: '600', color: TEXT_MUTED },
-    labelChipTextActive: { color: '#FFFFFF' },
-    pickLocationBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: PRIMARY_GREEN, borderRadius: 8, backgroundColor: '#FFFFFF', marginBottom: 8 },
-    pickLocationBtnText: { fontSize: 13, color: PRIMARY_GREEN, fontWeight: '500', flex: 1 },
-    locationOptionsContainer: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-    locationOptionBtn: { backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: CARD_BORDER, borderRadius: 12, padding: 16 },
-    locationOptionTitle: { fontSize: 14, fontWeight: '600', color: TEXT_DARK, marginBottom: 4 },
-    locationOptionDesc: { fontSize: 12, color: TEXT_MUTED, textAlign: 'center' },
-    serviceabilityBanner: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 8, marginBottom: 12 },
-    addressInput: { borderWidth: 1, borderColor: CARD_BORDER, borderRadius: 8, padding: 12, minHeight: 80, textAlignVertical: 'top', fontSize: 14, color: TEXT_DARK, marginBottom: 12 },
-    row: { flexDirection: 'row', marginBottom: 12 },
-    input: { borderWidth: 1, borderColor: CARD_BORDER, borderRadius: 8, padding: 12, fontSize: 14, color: TEXT_DARK, marginBottom: 12 },
-    summaryCard: { borderWidth: 1, borderColor: CARD_BORDER, borderRadius: 12, padding: 16, backgroundColor: '#F9FAFB' },
-    summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
-    summaryRowDivider: { borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-    summaryLabel: { fontSize: 13, color: TEXT_MUTED, flex: 1 },
-    summaryValue: { fontSize: 13, color: TEXT_DARK, fontWeight: '500', flex: 2, textAlign: 'right' },
-    summaryAmount: { fontSize: 18, color: PRIMARY_GREEN, fontWeight: '700' },
-    footer: { flexDirection: 'row', padding: 16, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: CARD_BORDER, gap: 12 },
-    backButton: { paddingVertical: 14, paddingHorizontal: 24, borderRadius: 8, borderWidth: 1, borderColor: CARD_BORDER, alignItems: 'center', justifyContent: 'center' },
-    backButtonText: { fontSize: 14, fontWeight: '600', color: TEXT_DARK },
-    continueButton: { flex: 1, backgroundColor: PRIMARY_GREEN, paddingVertical: 14, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-    continueButtonDisabled: { backgroundColor: '#A7F3D0' },
-    continueButtonText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
-});
+const makeStyles = (isDarkMode: boolean) => {
+    const bgCard = isDarkMode ? '#252525' : '#FFFFFF';
+    const bgCardSecondary = isDarkMode ? '#2D2D2D' : '#F9FAFB';
+    const borderColor = isDarkMode ? '#3A3A3A' : CARD_BORDER;
+    const borderColorLight = isDarkMode ? '#404040' : '#F3F4F6';
+    const textPrimary = isDarkMode ? '#E8E8E8' : TEXT_DARK;
+    const textSecondary = isDarkMode ? '#A0A0A0' : TEXT_MUTED;
+    const inputBg = isDarkMode ? '#303030' : '#FFFFFF';
+    const inputBorder = isDarkMode ? '#404040' : CARD_BORDER;
+    const iconBg = isDarkMode ? '#2D2D2D' : LIGHT_GREEN_BG;
+
+    return StyleSheet.create({
+        container: { flex: 1, backgroundColor: bgCardSecondary },
+        header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: borderColor, backgroundColor: bgCard },
+        headerTitle: { fontSize: 16, fontWeight: '600', color: textPrimary, flex: 1, textAlign: 'center' },
+        stepIndicator: { paddingHorizontal: 16, paddingVertical: 20, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+        stepDot: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: borderColor, justifyContent: 'center', alignItems: 'center', backgroundColor: bgCard },
+        stepDotActive: { backgroundColor: PRIMARY_GREEN, borderColor: PRIMARY_GREEN },
+        stepDotText: { fontSize: 14, fontWeight: '600', color: textSecondary },
+        stepDotTextActive: { color: '#FFFFFF' },
+        stepLine: { width: 2, height: 16, backgroundColor: borderColor, marginTop: 4 },
+        stepLineActive: { backgroundColor: PRIMARY_GREEN },
+        stepLabels: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 16, marginBottom: 16 },
+        stepLabel: { fontSize: 12, color: textSecondary, fontWeight: '500', textAlign: 'center', flex: 1 },
+        stepLabelActive: { color: PRIMARY_GREEN, fontWeight: '600' },
+        stepContent: { flex: 1, paddingHorizontal: 16 },
+        section: { marginBottom: 20 },
+        sectionTitle: { fontSize: 14, fontWeight: '600', color: textPrimary, marginBottom: 12 },
+        subLabel: { fontSize: 12, color: textSecondary, fontWeight: '500', marginBottom: 8 },
+        datesScroll: { marginHorizontal: -16, paddingHorizontal: 16 },
+        dateChip: { paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: borderColor, borderRadius: 8, marginRight: 8, backgroundColor: bgCard },
+        dateChipActive: { backgroundColor: PRIMARY_GREEN, borderColor: PRIMARY_GREEN },
+        dateChipText: { fontSize: 12, color: textPrimary, fontWeight: '500' },
+        dateChipTextActive: { color: '#FFFFFF' },
+        slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+        slotButton: { flex: 1, minWidth: '45%', paddingVertical: 12, paddingHorizontal: 10, borderWidth: 1, borderColor: borderColor, borderRadius: 8, alignItems: 'center', backgroundColor: bgCard },
+        slotButtonActive: { backgroundColor: PRIMARY_GREEN, borderColor: PRIMARY_GREEN },
+        slotButtonText: { fontSize: 13, color: textPrimary, fontWeight: '500' },
+        slotButtonTextActive: { color: '#FFFFFF' },
+        collectionOption: { flexDirection: 'row', alignItems: 'center', padding: 14, borderWidth: 1, borderColor: borderColor, borderRadius: 10, backgroundColor: bgCard, marginBottom: 10 },
+        collectionOptionActive: { borderColor: PRIMARY_GREEN, backgroundColor: iconBg },
+        optionTitle: { fontSize: 14, fontWeight: '600', color: textPrimary },
+        optionDesc: { fontSize: 12, color: textSecondary, marginTop: 2 },
+        savedAddrChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: PRIMARY_GREEN, backgroundColor: bgCard, marginRight: 8, maxWidth: 160 },
+        savedAddrChipActive: { backgroundColor: PRIMARY_GREEN, borderColor: PRIMARY_GREEN },
+        savedAddrChipText: { fontSize: 12, color: PRIMARY_GREEN, fontWeight: '600' },
+        savedAddrChipTextActive: { color: '#FFFFFF' },
+        newAddrBox: { backgroundColor: bgCardSecondary, borderWidth: 1, borderColor: borderColor, borderRadius: 12, padding: 14, marginBottom: 12 },
+        newAddrTitle: { fontSize: 13, fontWeight: '600', color: textPrimary, marginBottom: 10 },
+        labelRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+        labelChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: borderColor, backgroundColor: bgCard },
+        labelChipActive: { backgroundColor: PRIMARY_GREEN, borderColor: PRIMARY_GREEN },
+        labelChipText: { fontSize: 12, fontWeight: '600', color: textSecondary },
+        labelChipTextActive: { color: '#FFFFFF' },
+        pickLocationBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: PRIMARY_GREEN, borderRadius: 8, backgroundColor: bgCard, marginBottom: 8 },
+        pickLocationBtnText: { fontSize: 13, color: PRIMARY_GREEN, fontWeight: '500', flex: 1 },
+        locationOptionsContainer: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+        locationOptionBtn: { backgroundColor: bgCardSecondary, borderWidth: 1, borderColor: borderColor, borderRadius: 12, padding: 16 },
+        locationOptionTitle: { fontSize: 14, fontWeight: '600', color: textPrimary, marginBottom: 4 },
+        locationOptionDesc: { fontSize: 12, color: textSecondary, textAlign: 'center' },
+        serviceabilityBanner: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 8, marginBottom: 12 },
+        addressInput: { borderWidth: 1, borderColor: inputBorder, borderRadius: 8, padding: 12, minHeight: 80, textAlignVertical: 'top', fontSize: 14, color: textPrimary, marginBottom: 12, backgroundColor: inputBg },
+        row: { flexDirection: 'row', marginBottom: 12 },
+        input: { borderWidth: 1, borderColor: inputBorder, borderRadius: 8, padding: 12, fontSize: 14, color: textPrimary, marginBottom: 12, backgroundColor: inputBg },
+        summaryCard: { borderWidth: 1, borderColor: borderColor, borderRadius: 12, padding: 16, backgroundColor: bgCardSecondary },
+        summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
+        summaryRowDivider: { borderBottomWidth: 1, borderBottomColor: borderColor },
+        summaryLabel: { fontSize: 13, color: textSecondary, flex: 1 },
+        summaryValue: { fontSize: 13, color: textPrimary, fontWeight: '500', flex: 2, textAlign: 'right' },
+        summaryAmount: { fontSize: 18, color: PRIMARY_GREEN, fontWeight: '700' },
+        footer: { flexDirection: 'row', padding: 16, backgroundColor: bgCard, borderTopWidth: 1, borderTopColor: borderColor, gap: 12 },
+        backButton: { paddingVertical: 14, paddingHorizontal: 24, borderRadius: 8, borderWidth: 1, borderColor: borderColor, alignItems: 'center', justifyContent: 'center' },
+        backButtonText: { fontSize: 14, fontWeight: '600', color: textPrimary },
+        continueButton: { flex: 1, backgroundColor: PRIMARY_GREEN, paddingVertical: 14, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+        continueButtonDisabled: { backgroundColor: '#A7F3D0' },
+        continueButtonText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
+    });
+};
+
+const styles = makeStyles(false);

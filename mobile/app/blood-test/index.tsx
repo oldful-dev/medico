@@ -11,7 +11,8 @@ import { labService } from '@/services/api/labService';
 import type { LabPackage } from '@/services/api/labService';
 import { BloodTestDetailModal } from './detail-modal';
 import { useCart } from '@/context/CartContext';
-import { useThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
 const CATEGORIES = ['All', 'Popular', 'Health Checks', 'Wellness'];
@@ -113,6 +114,7 @@ const PackageCard = memo(({
         </View>
     );
 });
+PackageCard.displayName = 'PackageCard';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export default function BloodTestScreen() {
@@ -120,6 +122,8 @@ export default function BloodTestScreen() {
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const themeColors = useThemeColors();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
 
     const [packages, setPackages] = useState<LabPackage[]>([]);
     const [loading, setLoading] = useState(false);
@@ -190,7 +194,7 @@ export default function BloodTestScreen() {
 
     return (
         <View style={[styles.screen, { backgroundColor: Colors.primaryDark, paddingTop: insets.top }]}>
-            <StatusBar style="light" backgroundColor={Colors.primaryDark} />
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={Colors.primaryDark} />
 
             {/* ── Green Header ── */}
             <View style={styles.header}>

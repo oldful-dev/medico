@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 // Figma-exported assets
 const logoImage = require('@/assets/images/nameandlogo.png');
 const isoBadgeImage = require('@/assets/images/727280010474dfd5bcb5f19d227968488ebee634.png');
@@ -15,7 +16,9 @@ const mandalaImage = require('@/assets/images/0b96a399f500dd9db46b7a473a511a23fa
  export default function SplashScreen() {
       const router = useRouter();
       const { isAuthenticated, isLoading } = useAuth();
+      const { isDarkMode } = useTheme();
      const [fadeAnim] = useState(new Animated.Value(0));
+     const styles = makeStyles(isDarkMode);
  
      useEffect(() => {
          // Simple fade-in animation
@@ -58,7 +61,7 @@ const mandalaImage = require('@/assets/images/0b96a399f500dd9db46b7a473a511a23fa
 
     return (
         <View style={styles.container}>
-            <StatusBar style="dark" />
+            <StatusBar style={isDarkMode ? "light" : "dark"} />
 
             <Animated.View style={{ opacity: fadeAnim, flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center' }}>
 
@@ -93,11 +96,11 @@ const mandalaImage = require('@/assets/images/0b96a399f500dd9db46b7a473a511a23fa
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     /* Root — Figma: #FFFFF0, overflow clip */
     container: {
         flex: 1,
-        backgroundColor: '#FFFFF0',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFF0',
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',

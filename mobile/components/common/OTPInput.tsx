@@ -10,37 +10,35 @@ export interface OTPInputRef {
 interface OTPInputProps {
     length?: number;
     disabled?: boolean;
+    autoFocus?: boolean;
     onComplete?: (otp: string) => void;
     onChange?: (otp: string) => void;
-    /**
-     * Optional ref-like prop to avoid forwardRef issues in some environments.
-     */
     otpRef?: React.RefObject<OTPInputRef | null>;
 }
 
-/**
- * OTPInput component with reliable auto-fill support.
- * Uses a single hidden TextInput to manage the string value and native auto-fill.
- */
-export default function OTPInput({ 
-    length = 4, 
-    disabled = false, 
-    onComplete, 
+export default function OTPInput({
+    length = 4,
+    disabled = false,
+    autoFocus = true,
+    onComplete,
     onChange,
-    otpRef 
+    otpRef
 }: OTPInputProps) {
     const [otp, setOtp] = useState('');
     const inputRef = useRef<TextInput>(null);
 
-    // Expose clear and focus methods to parent components via otpRef prop
     useImperativeHandle(otpRef, () => ({
-        clear: () => {
-            setOtp('');
-        },
-        focus: () => {
-            inputRef.current?.focus();
-        }
+        clear: () => { setOtp(''); },
+        focus: () => { inputRef.current?.focus(); },
     }), []);
+
+    // Focus the hidden input on mount so keyboard appears and SMS auto-fill triggers
+    useEffect(() => {
+        if (autoFocus && !disabled) {
+            const t = setTimeout(() => inputRef.current?.focus(), 100);
+            return () => clearTimeout(t);
+        }
+    }, [autoFocus, disabled]);
 
     const handleChangeText = (text: string) => {
         const cleaned = text.replace(/[^0-9]/g, '');
@@ -53,13 +51,16 @@ export default function OTPInput({
         }
     };
 
-    const handlePress = () => {
-        inputRef.current?.focus();
-    };
+    const handlePress = () => { inputRef.current?.focus(); };
 
     return (
         <View style={styles.container}>
-            {/* Hidden TextInput for native auto-fill and keyboard handling */}
+            {/*
+             * Off-screen TextInput — not opacity:0/size:1 which breaks Android auto-fill
+             * suggestion bar. Positioned absolutely off the left edge so it exists in the
+             * layout but is visually hidden. textContentType + autoComplete wire iOS/Android
+             * native OTP auto-fill (SMS Retriever on Android, QuickType on iOS).
+             */}
             <TextInput
                 ref={inputRef}
                 style={styles.hiddenInput}
@@ -72,6 +73,7 @@ export default function OTPInput({
                 importantForAutofill="yes"
                 caretHidden={true}
                 editable={!disabled}
+                autoFocus={autoFocus && !disabled}
             />
 
             {/* Visual Boxes */}
@@ -108,6 +110,7 @@ const styles = StyleSheet.create({
     },
     hiddenInput: {
         position: 'absolute',
+        left: -9999,
         width: 1,
         height: 1,
         opacity: 0,

@@ -12,6 +12,8 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { planService, Plan, BillingCycle } from '@/services/api/planService';
 import { useUser } from '@/context/UserContext';
+import { useTheme } from '@/context/ThemeContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 
 // ─── Tier config ──────────────────────────────────────────
 const TIER_CONFIG: Record<string, { color: string; bg: string; gradient: string; icon: string }> = {
@@ -62,13 +64,87 @@ function getPlanPrice(plan: Plan, cycle: CycleKey): number {
     return plan.yearlyPrice;
 }
 
+// ─── Styles ───────────────────────────────────────────────
+const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: isDarkMode ? '#1A1A1A' : '#F9FAFB' },
+    header: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingHorizontal: 16, paddingVertical: 14,
+        backgroundColor: isDarkMode ? '#252525' : '#fff', borderBottomWidth: 1, borderBottomColor: isDarkMode ? '#3A3A3A' : '#E5E7EB',
+    },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: colors.textDark },
+    scrollContent: { padding: 16 },
+    activeSubCard: {
+        backgroundColor: isDarkMode ? '#332400' : '#FFFBEB', borderRadius: 14, padding: 16,
+        marginBottom: 20, borderWidth: 1, borderColor: isDarkMode ? '#654321' : '#FDE68A',
+    },
+    activeSubTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+    activeSubLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    activeSubTitle: { fontFamily: Fonts.semiBold, fontSize: 15, color: colors.textDark },
+    activeSubMeta: { fontFamily: Fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 2 },
+    activeStatusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+    durationSection: { borderTopWidth: 1, borderTopColor: isDarkMode ? '#654321' : '#FEF3C7', paddingTop: 12, marginBottom: 12, gap: 10 },
+    durationBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+    daysRemainingBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+    durationLabel: { fontFamily: Fonts.regular, fontSize: 11, color: '#B45309', marginBottom: 2 },
+    durationValue: { fontFamily: Fonts.semiBold, fontSize: 13, color: '#92400E', lineHeight: 18 },
+    daysLabel: { fontFamily: Fonts.regular, fontSize: 11, color: '#B45309', marginBottom: 2 },
+    daysValue: { fontFamily: Fonts.semiBold, fontSize: 13, color: '#059669' },
+    daysValueWarning: { color: '#DC2626' },
+    renewalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: isDarkMode ? '#654321' : '#FEF3C7', paddingTop: 12, marginBottom: 12 },
+    renewalDateBlock: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    renewalLabel: { fontFamily: Fonts.regular, fontSize: 12, color: '#B45309' },
+    renewalDate: { fontFamily: Fonts.semiBold, fontSize: 13, color: '#92400E' },
+    renewBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#B45309', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
+    renewBtnText: { fontFamily: Fonts.medium, fontSize: 13, color: '#fff' },
+    restrictionNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: isDarkMode ? 'rgba(180, 83, 9, 0.2)' : 'rgba(180, 83, 9, 0.1)', borderRadius: 8, padding: 10, borderLeftWidth: 3, borderLeftColor: '#B45309' },
+    restrictionText: { fontFamily: Fonts.regular, fontSize: 12, color: '#92400E', flex: 1, lineHeight: 16 },
+    sectionLabel: { fontFamily: Fonts.semiBold, fontSize: 14, color: colors.textDark, marginBottom: 10 },
+    cycleSelector: { flexDirection: 'row', gap: 8, marginBottom: 20 },
+    cycleBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: isDarkMode ? '#3A3A3A' : '#F3F4F6', borderWidth: 1, borderColor: 'transparent' },
+    cycleBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+    cycleBtnText: { fontFamily: Fonts.medium, fontSize: 13, color: colors.textMuted },
+    cycleBtnTextActive: { color: '#fff' },
+    savingsBadge: { backgroundColor: isDarkMode ? '#654321' : '#FEF3C7', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1, marginTop: 2 },
+    savingsBadgeText: { fontFamily: Fonts.medium, fontSize: 9, color: '#B45309' },
+    planCard: { backgroundColor: isDarkMode ? '#252525' : '#fff', borderRadius: 16, marginBottom: 14, borderWidth: 1, overflow: 'hidden', ...Shadow.card },
+    planCardDisabled: { opacity: 0.5 },
+    activeBadge: { paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-end', borderBottomLeftRadius: 8 },
+    activeBadgeText: { fontFamily: Fonts.medium, fontSize: 11, color: '#fff' },
+    disabledOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: isDarkMode ? 'rgba(37, 37, 37, 0.85)' : 'rgba(255, 255, 255, 0.85)', justifyContent: 'center', alignItems: 'center', borderRadius: 16 },
+    disabledText: { fontFamily: Fonts.semiBold, fontSize: 13, color: colors.textMuted, textAlign: 'center' },
+    planHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingBottom: 12 },
+    planIconWrap: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    planName: { fontFamily: Fonts.semiBold, fontSize: 16 },
+    planDesc: { fontFamily: Fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 2, lineHeight: 16 },
+    planPriceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4, paddingHorizontal: 16, paddingBottom: 12 },
+    planPrice: { fontFamily: Fonts.semiBold, fontSize: 26 },
+    planCycleLabel: { fontFamily: Fonts.regular, fontSize: 13, color: colors.textMuted },
+    benefitsList: { paddingHorizontal: 16, paddingBottom: 16, gap: 6 },
+    benefitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+    benefitText: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#E0E0E0' : '#2F2F2F', flex: 1, lineHeight: 18 },
+    moreBenefits: { fontFamily: Fonts.medium, fontSize: 12, marginTop: 2 },
+    cardOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: isDarkMode ? 'rgba(37, 37, 37, 0.7)' : 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center', borderRadius: 16 },
+    center: { alignItems: 'center', paddingVertical: 40, gap: 12 },
+    loadingText: { fontFamily: Fonts.regular, fontSize: 14, color: colors.textMuted },
+    emptyText: { fontFamily: Fonts.regular, fontSize: 14, color: colors.textMuted },
+    cancelLink: { alignItems: 'center', marginTop: 8 },
+    cancelLinkText: { fontFamily: Fonts.regular, fontSize: 13, color: colors.textMuted, textDecorationLine: 'underline' },
+});
+
 // ─── Plan Card ────────────────────────────────────────────
 function PlanCard({
     plan, cycle, isActive, onSelect, isDisabled,
 }: {
     plan: Plan; cycle: CycleKey; isActive: boolean; onSelect: () => void; isDisabled?: boolean;
 }) {
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(isDarkMode, colors);
     const tier = getTierConfig(plan.name);
+    const cardBg = isDarkMode ? '#1E1E1E' : '#FFFFFF';
+    const headerBg = isDarkMode ? `${tier.color}22` : tier.gradient;
+    const iconBg = isDarkMode ? `${tier.color}33` : tier.bg;
     const price = getPlanPrice(plan, cycle);
     const benefits = parseBenefits(plan.benefits);
     const cycleLabel = CYCLES.find(c => c.key === cycle)?.label || '';
@@ -77,7 +153,7 @@ function PlanCard({
         <TouchableOpacity
             style={[
                 styles.planCard,
-                { borderColor: isActive ? tier.color : '#E5E7EB' },
+                { borderColor: isActive ? tier.color : isDarkMode ? '#3A3A3A' : '#E5E7EB', backgroundColor: cardBg },
                 isActive && { borderWidth: 2 },
                 isDisabled && !isActive && styles.planCardDisabled,
             ]}
@@ -91,8 +167,8 @@ function PlanCard({
                 </View>
             )}
 
-            <View style={[styles.planHeader, { backgroundColor: tier.gradient }]}>
-                <View style={[styles.planIconWrap, { backgroundColor: tier.bg }]}>
+            <View style={[styles.planHeader, { backgroundColor: headerBg }]}>
+                <View style={[styles.planIconWrap, { backgroundColor: iconBg }]}>
                     <Ionicons name={tier.icon as any} size={24} color={tier.color} />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -107,11 +183,11 @@ function PlanCard({
             </View>
 
             {benefits.length > 0 && (
-                <View style={styles.benefitsList}>
+                <View style={[styles.benefitsList, { backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF' }]}>
                     {benefits.slice(0, 4).map((b, i) => (
                         <View key={i} style={styles.benefitRow}>
                             <Ionicons name="checkmark-circle" size={14} color={tier.color} />
-                            <Text style={styles.benefitText}>{b}</Text>
+                            <Text style={[styles.benefitText, { color: colors.textBody }]}>{b}</Text>
                         </View>
                     ))}
                     {benefits.length > 4 && (
@@ -127,6 +203,9 @@ function PlanCard({
 export default function SubscriptionScreen() {
     const router = useRouter();
     const { profile } = useUser();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(isDarkMode, colors);
     const [plans, setPlans] = useState<Plan[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCycle, setSelectedCycle] = useState<CycleKey>('YEARLY');
@@ -261,7 +340,7 @@ export default function SubscriptionScreen() {
 
     return (
         <SafeAreaView style={styles.screen} edges={['top']}>
-            <StatusBar style="dark" />
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} />
 
             {/* Header */}
             <View style={styles.header}>
@@ -428,110 +507,3 @@ export default function SubscriptionScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: '#F9FAFB' },
-    header: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 16, paddingVertical: 14,
-        backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB',
-    },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: Colors.textDark },
-    scrollContent: { padding: 16 },
-
-    activeSubCard: {
-        backgroundColor: '#FFFBEB', borderRadius: 14, padding: 16,
-        marginBottom: 20, borderWidth: 1, borderColor: '#FDE68A',
-    },
-    activeSubTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-    activeSubLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    activeSubTitle: { fontFamily: Fonts.semiBold, fontSize: 15, color: Colors.textDark },
-    activeSubMeta: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-    activeStatusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-
-    // Duration and Days Remaining
-    durationSection: {
-        borderTopWidth: 1, borderTopColor: '#FEF3C7', paddingTop: 12, marginBottom: 12,
-        gap: 10,
-    },
-    durationBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-    daysRemainingBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-    durationLabel: { fontFamily: Fonts.regular, fontSize: 11, color: '#B45309', marginBottom: 2 },
-    durationValue: { fontFamily: Fonts.semiBold, fontSize: 13, color: '#92400E', lineHeight: 18 },
-    daysLabel: { fontFamily: Fonts.regular, fontSize: 11, color: '#B45309', marginBottom: 2 },
-    daysValue: { fontFamily: Fonts.semiBold, fontSize: 13, color: '#059669' },
-    daysValueWarning: { color: '#DC2626' },
-
-    renewalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#FEF3C7', paddingTop: 12, marginBottom: 12 },
-    renewalDateBlock: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    renewalLabel: { fontFamily: Fonts.regular, fontSize: 12, color: '#B45309' },
-    renewalDate: { fontFamily: Fonts.semiBold, fontSize: 13, color: '#92400E' },
-    renewBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#B45309', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
-    renewBtnText: { fontFamily: Fonts.medium, fontSize: 13, color: '#fff' },
-
-    // Restriction Notice
-    restrictionNotice: {
-        flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-        backgroundColor: 'rgba(180, 83, 9, 0.1)', borderRadius: 8, padding: 10,
-        borderLeftWidth: 3, borderLeftColor: '#B45309',
-    },
-    restrictionText: {
-        fontFamily: Fonts.regular, fontSize: 12, color: '#92400E',
-        flex: 1, lineHeight: 16,
-    },
-
-    sectionLabel: { fontFamily: Fonts.semiBold, fontSize: 14, color: Colors.textDark, marginBottom: 10 },
-
-    cycleSelector: { flexDirection: 'row', gap: 8, marginBottom: 20 },
-    cycleBtn: {
-        flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center',
-        backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: 'transparent',
-    },
-    cycleBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-    cycleBtnText: { fontFamily: Fonts.medium, fontSize: 13, color: Colors.textMuted },
-    cycleBtnTextActive: { color: '#fff' },
-    savingsBadge: { backgroundColor: '#FEF3C7', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1, marginTop: 2 },
-    savingsBadgeText: { fontFamily: Fonts.medium, fontSize: 9, color: '#B45309' },
-
-    planCard: {
-        backgroundColor: '#fff', borderRadius: 16, marginBottom: 14,
-        borderWidth: 1, overflow: 'hidden',
-        ...Shadow.card,
-    },
-    planCardDisabled: { opacity: 0.5 },
-    activeBadge: { paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-end', borderBottomLeftRadius: 8 },
-    activeBadgeText: { fontFamily: Fonts.medium, fontSize: 11, color: '#fff' },
-    disabledOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(255, 255, 255, 0.85)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 16,
-    },
-    disabledText: {
-        fontFamily: Fonts.semiBold,
-        fontSize: 13,
-        color: Colors.textMuted,
-        textAlign: 'center',
-    },
-    planHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingBottom: 12 },
-    planIconWrap: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-    planName: { fontFamily: Fonts.semiBold, fontSize: 16 },
-    planDesc: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, marginTop: 2, lineHeight: 16 },
-    planPriceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4, paddingHorizontal: 16, paddingBottom: 12 },
-    planPrice: { fontFamily: Fonts.semiBold, fontSize: 26 },
-    planCycleLabel: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textMuted },
-
-    benefitsList: { paddingHorizontal: 16, paddingBottom: 16, gap: 6 },
-    benefitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-    benefitText: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textBody, flex: 1, lineHeight: 18 },
-    moreBenefits: { fontFamily: Fonts.medium, fontSize: 12, marginTop: 2 },
-
-    cardOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center', borderRadius: 16 },
-
-    center: { alignItems: 'center', paddingVertical: 40, gap: 12 },
-    loadingText: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted },
-    emptyText: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted },
-
-    cancelLink: { alignItems: 'center', marginTop: 8 },
-    cancelLinkText: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textMuted, textDecorationLine: 'underline' },
-});

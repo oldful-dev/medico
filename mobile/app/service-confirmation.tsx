@@ -9,6 +9,7 @@ import {
     ActivityIndicator,
     Alert,
     Animated,
+    useColorScheme,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -20,6 +21,7 @@ import { bookingService, Booking } from '@/services/api/bookingService';
 export default function ServiceConfirmationScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const isDarkMode = useColorScheme() === 'dark';
 
     const params = useLocalSearchParams<{
         bookingId?: string;
@@ -204,7 +206,7 @@ export default function ServiceConfirmationScreen() {
 
         return (
             <View style={[styles.screen, { paddingTop: insets.top }]}>
-                <StatusBar style="light" backgroundColor={Colors.primary} />
+                <StatusBar style={isDarkMode ? "light" : "light"} backgroundColor={isDarkMode ? Colors.primary : Colors.primary} />
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.meetupScrollContent}>
 
                     {/* Success animation */}
@@ -258,9 +260,9 @@ export default function ServiceConfirmationScreen() {
                         </View>
                     </Animated.View>
 
-                    {/* What's next */}
+                    {/* What&apos;s next */}
                     <Animated.View style={[styles.meetupNextCard, { opacity: fadeAnim }]}>
-                        <Text style={styles.meetupNextHeading}>What's Next?</Text>
+                        <Text style={styles.meetupNextHeading}>What&apos;s Next?</Text>
                         {[
                             { icon: 'phone-portrait-outline', text: "You'll receive a confirmation SMS" },
                             { icon: 'people-outline', text: 'Our team will call you 1 day before the event' },
@@ -302,9 +304,9 @@ export default function ServiceConfirmationScreen() {
     const dispDate = booking?.scheduledDate ? new Date(booking.scheduledDate).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Date pending...';
 
     return (
-        <View style={styles.screen}>
+        <View style={[styles.screen, { backgroundColor: isDarkMode ? '#0F172A' : Colors.primary }]}>
             <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
-            <StatusBar style="light" backgroundColor={Colors.primary} />
+            <StatusBar style={isDarkMode ? "light" : "light"} backgroundColor={isDarkMode ? Colors.primary : Colors.primary} />
 
             {/* ─── Header ─── */}
             <View style={styles.header}>
@@ -516,7 +518,7 @@ const styles = StyleSheet.create({
     /* ─── Content Card ─── */
     contentCard: {
         flex: 1,
-        backgroundColor: Colors.bgScreen,
+        backgroundColor: isDarkMode ? '#1A1A1A' : Colors.bgScreen,
         borderTopLeftRadius: 45,
         borderTopRightRadius: 45,
         overflow: 'hidden',
@@ -552,14 +554,14 @@ const styles = StyleSheet.create({
     successTitle: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.heading1,
-        color: Colors.primaryDark,
+        color: isDarkMode ? '#E8E8E8' : Colors.primaryDark,
         marginBottom: Spacing.xs,
         letterSpacing: -0.24,
     },
     successSubtitle: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
-        color: Colors.textMuted,
+        color: isDarkMode ? '#A0A0A0' : Colors.textMuted,
         textAlign: 'center',
         lineHeight: 20,
     },
@@ -569,43 +571,43 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: 'rgba(4, 131, 87, 0.08)',
+        backgroundColor: isDarkMode ? 'rgba(4, 131, 87, 0.15)' : 'rgba(4, 131, 87, 0.08)',
         borderRadius: Radius.md,
         paddingHorizontal: Spacing.lg,
         paddingVertical: Spacing.md,
         marginBottom: Spacing.lg,
         borderWidth: 0.8,
-        borderColor: 'rgba(4, 131, 87, 0.2)',
+        borderColor: isDarkMode ? 'rgba(4, 131, 87, 0.4)' : 'rgba(4, 131, 87, 0.2)',
         borderStyle: 'dashed',
     },
     bookingIdLabel: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.bodySmall,
-        color: Colors.textMuted,
+        color: isDarkMode ? '#A0A0A0' : Colors.textMuted,
     },
     bookingIdValue: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.primaryDark,
+        color: isDarkMode ? '#68D391' : Colors.primaryDark,
         letterSpacing: 0.5,
     },
     statusBadge: {
-        backgroundColor: '#E8F5E9',
+        backgroundColor: isDarkMode ? '#1A4A32' : '#E8F5E9',
         paddingHorizontal: Spacing.md,
         paddingVertical: 6,
         borderRadius: Radius.xl,
         borderWidth: 1,
-        borderColor: Colors.primary,
+        borderColor: isDarkMode ? Colors.primary : Colors.primary,
     },
     statusBadgeText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.caption,
-        color: Colors.primaryDark,
+        color: isDarkMode ? '#68D391' : Colors.primaryDark,
     },
 
     /* ─── Details Card ─── */
     detailsCard: {
-        backgroundColor: Colors.bgCard,
+        backgroundColor: isDarkMode ? '#252525' : Colors.bgCard,
         borderRadius: Radius.lg,
         padding: Spacing.lg,
         marginBottom: Spacing.lg,
@@ -614,7 +616,7 @@ const styles = StyleSheet.create({
     detailsCardTitle: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.primaryDark,
+        color: isDarkMode ? '#E8E8E8' : Colors.primaryDark,
         marginBottom: Spacing.lg,
         letterSpacing: -0.24,
     },
@@ -638,24 +640,24 @@ const styles = StyleSheet.create({
     detailLabel: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.caption,
-        color: Colors.textLight,
+        color: isDarkMode ? '#A0A0A0' : Colors.textLight,
         marginBottom: 2,
     },
     detailValue: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
-        color: Colors.textBody,
+        color: isDarkMode ? '#E8E8E8' : Colors.textBody,
     },
     detailDivider: {
         height: 0.5,
-        backgroundColor: 'rgba(0,0,0,0.06)',
+        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
     },
 
     /* ─── Info Banner ─── */
     infoBanner: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(4, 131, 87, 0.08)',
+        backgroundColor: isDarkMode ? 'rgba(4, 131, 87, 0.15)' : 'rgba(4, 131, 87, 0.08)',
         borderRadius: Radius.md,
         paddingHorizontal: Spacing.lg,
         paddingVertical: Spacing.md,
@@ -665,7 +667,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontFamily: Fonts.regular,
         fontSize: FontSize.bodySmall,
-        color: Colors.primaryDark,
+        color: isDarkMode ? '#68D391' : Colors.primaryDark,
         lineHeight: 16,
     },
     /* ─── Attachments ─── */
@@ -701,14 +703,14 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: Colors.bgScreen,
+        backgroundColor: isDarkMode ? '#1A1A1A' : Colors.bgScreen,
         paddingHorizontal: Spacing.xl,
         paddingTop: Spacing.lg,
         paddingBottom: 36,
         alignItems: 'center',
         gap: Spacing.md,
         borderTopWidth: 1,
-        borderTopColor: 'rgba(0,0,0,0.05)',
+        borderTopColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
     },
     actionButton: {
         width: '100%',
@@ -758,12 +760,12 @@ const styles = StyleSheet.create({
     homeButtonText: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
-        color: Colors.primaryDark,
+        color: isDarkMode ? '#68D391' : Colors.primaryDark,
         textDecorationLine: 'underline',
     },
 
     // ─── Meetup mode styles ────────────────────────────────────────────
-    meetupScrollContent: { padding: Spacing.lg, paddingTop: 32 },
+    meetupScrollContent: { padding: Spacing.lg, paddingTop: 32, backgroundColor: isDarkMode ? '#1A1A1A' : Colors.bgScreen },
     meetupSuccessSection: { alignItems: 'center', marginBottom: 28 },
     meetupCheckOuter: {
         width: 110, height: 110, borderRadius: 55,
@@ -773,46 +775,46 @@ const styles = StyleSheet.create({
         width: 80, height: 80, borderRadius: 40,
         backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center',
     },
-    meetupSuccessTitle: { fontFamily: Fonts.semiBold, fontSize: 22, color: Colors.textDark ?? '#1F2937', marginBottom: 8, textAlign: 'center' },
-    meetupSuccessSub: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted, textAlign: 'center', lineHeight: 20 },
+    meetupSuccessTitle: { fontFamily: Fonts.semiBold, fontSize: 22, color: isDarkMode ? '#E8E8E8' : (Colors.textDark ?? '#1F2937'), marginBottom: 8, textAlign: 'center' },
+    meetupSuccessSub: { fontFamily: Fonts.regular, fontSize: 14, color: isDarkMode ? '#A0A0A0' : Colors.textMuted, textAlign: 'center', lineHeight: 20 },
     meetupBookingCode: { fontFamily: Fonts.semiBold, fontSize: 13, color: Colors.primary, marginTop: 12 },
     meetupDetailsCard: {
-        backgroundColor: '#fff', borderRadius: 16, padding: 18, marginBottom: 14,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
+        backgroundColor: isDarkMode ? '#252525' : '#fff', borderRadius: 16, padding: 18, marginBottom: 14,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDarkMode ? 0.2 : 0.06, shadowRadius: 8, elevation: 3,
     },
-    meetupDetailsHeading: { fontFamily: Fonts.semiBold, fontSize: 15, color: Colors.textDark ?? '#1F2937', marginBottom: 16 },
+    meetupDetailsHeading: { fontFamily: Fonts.semiBold, fontSize: 15, color: isDarkMode ? '#E8E8E8' : (Colors.textDark ?? '#1F2937'), marginBottom: 16 },
     meetupDetailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
     meetupDetailIcon: {
-        width: 34, height: 34, borderRadius: 10, backgroundColor: '#EDF7F1',
+        width: 34, height: 34, borderRadius: 10, backgroundColor: isDarkMode ? '#1A4A32' : '#EDF7F1',
         justifyContent: 'center', alignItems: 'center',
     },
-    meetupDetailLabel: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted, marginBottom: 2 },
-    meetupDetailValue: { fontFamily: Fonts.semiBold, fontSize: 14, color: Colors.textDark ?? '#1F2937' },
+    meetupDetailLabel: { fontFamily: Fonts.regular, fontSize: 11, color: isDarkMode ? '#A0A0A0' : Colors.textMuted, marginBottom: 2 },
+    meetupDetailValue: { fontFamily: Fonts.semiBold, fontSize: 14, color: isDarkMode ? '#E8E8E8' : (Colors.textDark ?? '#1F2937') },
     meetupPickupBox: {
         flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-        backgroundColor: '#EDF7F1', borderRadius: 10, padding: 12, marginBottom: 12,
+        backgroundColor: isDarkMode ? '#1A4A32' : '#EDF7F1', borderRadius: 10, padding: 12, marginBottom: 12,
     },
-    meetupPickupLabel: { fontFamily: Fonts.semiBold, fontSize: 12, color: Colors.primary, marginBottom: 2 },
-    meetupPickupValue: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textBody },
+    meetupPickupLabel: { fontFamily: Fonts.semiBold, fontSize: 12, color: isDarkMode ? '#68D391' : Colors.primary, marginBottom: 2 },
+    meetupPickupValue: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#D1D5DB' : Colors.textBody },
     meetupNotice: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: '#F0FAF4', borderRadius: 10, padding: 12,
+        backgroundColor: isDarkMode ? '#1A4A32' : '#F0FAF4', borderRadius: 10, padding: 12,
     },
-    meetupNoticeText: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, flex: 1, lineHeight: 18 },
+    meetupNoticeText: { fontFamily: Fonts.regular, fontSize: 12, color: isDarkMode ? '#A0A0A0' : Colors.textMuted, flex: 1, lineHeight: 18 },
     meetupNextCard: {
-        backgroundColor: '#fff', borderRadius: 16, padding: 18, marginBottom: 14,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
+        backgroundColor: isDarkMode ? '#252525' : '#fff', borderRadius: 16, padding: 18, marginBottom: 14,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDarkMode ? 0.2 : 0.05, shadowRadius: 6, elevation: 2,
     },
-    meetupNextHeading: { fontFamily: Fonts.semiBold, fontSize: 14, color: Colors.textDark ?? '#1F2937', marginBottom: 14 },
+    meetupNextHeading: { fontFamily: Fonts.semiBold, fontSize: 14, color: isDarkMode ? '#E8E8E8' : (Colors.textDark ?? '#1F2937'), marginBottom: 14 },
     meetupNextRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
     meetupNextIcon: {
-        width: 32, height: 32, borderRadius: 8, backgroundColor: '#EDF7F1',
+        width: 32, height: 32, borderRadius: 8, backgroundColor: isDarkMode ? '#1A4A32' : '#EDF7F1',
         justifyContent: 'center', alignItems: 'center',
     },
-    meetupNextText: { fontFamily: Fonts.regular, fontSize: 13, color: Colors.textBody, flex: 1 },
+    meetupNextText: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#D1D5DB' : Colors.textBody, flex: 1 },
     meetupFooter: {
-        backgroundColor: '#fff', paddingHorizontal: 20, paddingTop: 14,
-        borderTopWidth: 1, borderTopColor: Colors.borderLight, gap: 10,
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#fff', paddingHorizontal: 20, paddingTop: 14,
+        borderTopWidth: 1, borderTopColor: isDarkMode ? 'rgba(255,255,255,0.1)' : Colors.borderLight, gap: 10,
     },
     meetupBookingsBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -823,5 +825,5 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
         borderWidth: 1.5, borderColor: Colors.borderLight, borderRadius: 14, paddingVertical: 13,
     },
-    meetupHomeBtnText: { fontFamily: Fonts.semiBold, fontSize: 15, color: Colors.textMuted },
+    meetupHomeBtnText: { fontFamily: Fonts.semiBold, fontSize: 15, color: isDarkMode ? '#A0A0A0' : Colors.textMuted },
 });

@@ -1,6 +1,6 @@
 // OTP Verification Screen — Pixel-matched to Figma frame "OTP Verifiication" (4:4)
 // Layout: Back arrow + Help header, title/phone, OTP boxes, resend row
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View,
     Text,
@@ -13,10 +13,11 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { OTPInput } from '@/components/common';
+import { OTPInput, OTPInputRef } from '@/components/common';
 import { authService } from '@/services/api/authService';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '@/context/ThemeContext';
 
 const RESEND_TIMEOUT = 30; // seconds
 
@@ -25,10 +26,13 @@ export default function OtpVerificationScreen() {
     const router = useRouter();
     const { phoneNumber } = useLocalSearchParams<{ phoneNumber: string }>();
     const { login } = useAuth();
+    const { isDarkMode } = useTheme();
+    const styles = makeStyles(isDarkMode);
 
     const [isVerifying, setIsVerifying] = useState(false);
     const [timer, setTimer] = useState(RESEND_TIMEOUT);
     const [canResend, setCanResend] = useState(false);
+    const otpRef = useRef<OTPInputRef>(null);
 
     // Mask phone: +91 9876XXXX78 → +91 9876***078
     const maskedPhone = phoneNumber
@@ -70,6 +74,7 @@ export default function OtpVerificationScreen() {
             }
         } catch {
             Alert.alert('Error', 'Something went wrong. Please try again.');
+            otpRef.current?.clear();
         } finally {
             setIsVerifying(false);
         }
@@ -88,25 +93,25 @@ export default function OtpVerificationScreen() {
     }, [canResend, phoneNumber]);
 
     return (
-        <SafeAreaView style={styles.screen} edges={['top']}>
-            <StatusBar style="dark" />
+        <SafeAreaView style={[styles.screen, { backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFEE' }]} edges={['top']}>
+            <StatusBar style={isDarkMode ? "light" : "dark"} />
 
             {/* ─── Header: Back arrow + Help ─── */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={20} color="#2F2F2F" />
+                    <Ionicons name="arrow-back" size={20} color={isDarkMode ? '#E0E0E0' : '#2F2F2F'} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.helpButton} onPress={() => router.push('/help-support')}>
-                    <Ionicons name="help-circle-outline" size={15} color="#2F2F2F" />
-                    <Text style={styles.helpText}>Help</Text>
+                    <Ionicons name="help-circle-outline" size={15} color={isDarkMode ? '#E0E0E0' : '#2F2F2F'} />
+                    <Text style={[styles.helpText, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}>Help</Text>
                 </TouchableOpacity>
             </View>
 
             {/* ─── Title + Phone number ─── */}
             {/* Figma: Rubik Medium 20px #777, y=164 */}
             <View style={styles.titleContainer}>
-                <Text style={styles.titleText}>Enter the 4-digit OTP sent to</Text>
-                <Text style={styles.phoneText}>{maskedPhone || phoneNumber}</Text>
+                <Text style={[styles.titleText, { color: isDarkMode ? '#A0A0A0' : '#777777' }]}>Enter the 4-digit OTP sent to</Text>
+                <Text style={[styles.phoneText, { color: isDarkMode ? '#A0A0A0' : '#777777' }]}>{maskedPhone || phoneNumber}</Text>
             </View>
 
             {/* ─── OTP Input Boxes ─── */}
@@ -115,6 +120,8 @@ export default function OtpVerificationScreen() {
                 <OTPInput
                     length={4}
                     disabled={isVerifying}
+                    autoFocus
+                    otpRef={otpRef}
                     onComplete={handleOTPComplete}
                 />
             </View>
@@ -123,24 +130,23 @@ export default function OtpVerificationScreen() {
             {/* Figma: "Didn't receive the code?" #AAAEAC + "Resend" #02743F + timer #9C9C9C */}
             <View style={styles.resendRow}>
                 <View style={styles.resendLeft}>
-                    <Text style={styles.resendText}>Didn&apos;t receive the code?</Text>
+                    <Text style={[styles.resendText, { color: isDarkMode ? '#808080' : '#AAAEAC' }]}>Didn&apos;t receive the code?</Text>
                     <Text style={styles.resendSpacer}>  </Text>
                     <TouchableOpacity onPress={handleResend} disabled={!canResend}>
-                        <Text style={[styles.resendLink, !canResend && styles.resendLinkDisabled]}>{t('auth.resend_otp')}</Text>
+                        <Text style={[styles.resendLink, !canResend && styles.resendLinkDisabled, !canResend && { color: isDarkMode ? '#707070' : '#AAAEAC' }]}>{t('auth.resend_otp')}</Text>
                     </TouchableOpacity>
                 </View>
-                {!canResend && <Text style={styles.timerText}>{timerLabel}</Text>}
+                {!canResend && <Text style={[styles.timerText, { color: isDarkMode ? '#909090' : '#9C9C9C' }]}>{timerLabel}</Text>}
             </View>
 
         </SafeAreaView>
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     /* ─── Screen ─── */
     screen: {
         flex: 1,
-        backgroundColor: '#FFFFEE',
     },
 
     /* ─── Header: back at x=38,y=65 and Help at x=303,y=59 ─── */
@@ -167,7 +173,6 @@ const styles = StyleSheet.create({
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontWeight: '600',
         fontSize: 16,
-        color: '#2F2F2F',
     },
 
     /* ─── Title ─── */
@@ -182,7 +187,6 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         fontSize: 20,
         lineHeight: 28,
-        color: '#777777',
         letterSpacing: -0.24,
     },
     phoneText: {
@@ -190,7 +194,6 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         fontSize: 20,
         lineHeight: 28,
-        color: '#777777',
         letterSpacing: -0.24,
         marginTop: 7,
     },
@@ -217,7 +220,6 @@ const styles = StyleSheet.create({
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontWeight: '400',
         fontSize: 14,
-        color: '#AAAEAC',
         letterSpacing: -0.24,
     },
     resendSpacer: {
@@ -231,13 +233,11 @@ const styles = StyleSheet.create({
         letterSpacing: -0.24,
     },
     resendLinkDisabled: {
-        color: '#AAAEAC',
     },
     timerText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontWeight: '400',
         fontSize: 14,
-        color: '#9C9C9C',
         letterSpacing: -0.24,
     },
 });

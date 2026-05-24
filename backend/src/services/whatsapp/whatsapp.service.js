@@ -4,7 +4,7 @@
 //  Central sendWhatsApp() with:
 //    - template registry lookup
 //    - full validation
-//    - WABA routing (AYUXA / AYUXA_CONSOLE / AYUXA_BACKEND)
+//    - WABA routing (AYUXA / AYUXA_FAMILY / AYUXA_RELEASE / AYUXA_HQ / AYUXA_ALERT)
 //    - 30-second idempotency for OTP templates
 //    - in-memory rate limiting (per mobile, per template)
 //    - NotificationLog persistence (Prisma)
@@ -22,7 +22,7 @@ const _sendCache = new Map();
 const IDEMPOTENCY_TTL_MS = 30 * 1000;      // OTP dedup window
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;    // 1-minute window
 const RATE_LIMIT_MAX = 5;                  // max sends per mobile per template per minute
-const OTP_TEMPLATES = new Set(['OTP_USER']);
+const OTP_TEMPLATES = new Set(['OTP_USER', 'FAMILY_OTP', 'EMP_OTP']);
 
 const _cacheKey = (template, mobile) => `${template}:${mobile}`;
 
@@ -166,8 +166,17 @@ const sendWhatsApp = async ({ template, mobile, variables = [], userId = null, m
 
     if (result.success) {
         logger.info(`[WA Service] ✅ ${template} → +91${cleanMobile} via ${tmpl.waba} [reqId: ${result.requestId || 'n/a'}]`);
+        console.log(
+            `[WA ✅] ${template}` +
+            ` | waba: ${tmpl.waba}` +
+            ` | msgId: ${tmpl.messageId}` +
+            ` | to: +91${cleanMobile}` +
+            ` | vars: [${variables.map(v => String(v).substring(0, 40)).join(', ')}]` +
+            ` | reqId: ${result.requestId || 'n/a'}`
+        );
     } else {
         logger.error(`[WA Service] ❌ ${template} → +91${cleanMobile}: ${result.error}`);
+        console.log(`[WA ❌] ${template} | waba: ${tmpl.waba} | to: +91${cleanMobile} | error: ${result.error}`);
     }
 
     return result.success;

@@ -181,6 +181,17 @@ const notificationWorker = new Worker('notification-queue', async job => {
     const { sendLabReportReady } = require('../services/whatsapp');
     await sendLabReportReady({ phone: user.phone, name: displayName, userId: user.id });
 
+    // DLT SMS — LAB_REPORT_READY (215399) — Var1=name
+    if (user.phone) {
+        const { sendSMS } = require('../services/sms');
+        await sendSMS({
+            template: 'LAB_REPORT_READY',
+            mobile: user.phone,
+            variables: [displayName],
+            userId: user.id,
+        }).catch(err => logger.warn('LAB_REPORT_READY SMS failed (non-fatal):', err.message));
+    }
+
     // Email with report link
     if (user.email) {
         await sendEmail({

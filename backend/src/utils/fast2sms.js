@@ -12,8 +12,6 @@ const { logger } = require('../config/logger');
 const { sendSMS: sendTemplateSMS, SMS_TEMPLATES } = require('../services/sms');
 const prisma = require('../config/database');
 
-const WHATSAPP_URL = 'https://www.fast2sms.com/dev/whatsapp';
-
 // ─── sendSMS (legacy OTP helper) ─────────────────────────────────────────────
 // Kept for backward-compat. Internally routes through template OTP_USER.
 const sendSMS = async (phoneNumber, message) => {
@@ -83,8 +81,16 @@ const sendDLTSMS = async (phoneNumber, templateId, variablesArray = []) => {
 
         if (success) {
             logger.info(`[Fast2SMS DLT] ✅ Sent to ${cleanNumber} [Template: ${templateId}, reqId: ${reqId}]`);
+            console.log(
+                `[SMS ✅] templateId:${templateId}` +
+                ` | sender: ${senderId}` +
+                ` | to: +91${cleanNumber}` +
+                ` | vars: [${variablesArray.map(v => String(v).substring(0, 40)).join(', ')}]` +
+                ` | reqId: ${reqId}`
+            );
         } else {
             logger.error(`[Fast2SMS DLT] Rejected: ${JSON.stringify(resData)}`);
+            console.log(`[SMS ❌] templateId:${templateId} | to: +91${cleanNumber} | error: ${JSON.stringify(resData).substring(0, 120)}`);
         }
 
         prisma.notificationLog.create({
@@ -120,73 +126,10 @@ const sendDLTSMS = async (phoneNumber, templateId, variablesArray = []) => {
     }
 };
 
-// ─── WhatsApp WABA Templates ──────────────────────────────────────────────────
-
-const WABA_TEMPLATES = {
-    verification_code: 20515,
-    ayuxa_remember: 20510,
-    birthday_wishes: 20511,
-    plan_expiry_reminder: 20523,
-    feedback: 20525,
-    lab_test: 20512,
-    urgent_alert: 20513,
-    order_status: 20519,
-    payment_successful: 20520,
-    booking_confirmation: 20521,
-    prescription_received: 20522,
-    welcome_flow: 20514,
-};
-
-const sendWhatsAppMessage = async (phoneNumber, templateName, variableValues = [], mediaUrl = null, documentFilename = null) => {
-    try {
-        if (!process.env.FAST2SMS_API_KEY) {
-            logger.warn('[Fast2SMS WABA] FAST2SMS_API_KEY not set — simulating WhatsApp send.');
-            return true;
-        }
-
-        const cleanNumber = String(phoneNumber).replace(/\D/g, '').slice(-10);
-        const templateId = WABA_TEMPLATES[templateName];
-        if (!templateId) {
-            logger.warn(`[Fast2SMS WABA] Unknown template: ${templateName}`);
-            return false;
-        }
-
-        const params = new URLSearchParams({
-            authorization: process.env.FAST2SMS_API_KEY,
-            message_id: templateId,
-            phone_number_id: process.env.FAST2SMS_WABA_PHONE_NUMBER_ID || '1137788802753379',
-            numbers: cleanNumber,
-        });
-
-        if (variableValues.length > 0) {
-            params.append('variables_values', variableValues.map(String).join('|'));
-        }
-        if (mediaUrl) params.append('media_url', mediaUrl);
-        if (documentFilename) params.append('document_filename', documentFilename);
-
-        const response = await axios.get(`${WHATSAPP_URL}?${params.toString()}`, { timeout: 10000 });
-        const resData = response.data;
-
-        if (resData?.return === true || resData?.status === 'sent') {
-            logger.info(`[Fast2SMS WABA] ✅ WhatsApp → +91${cleanNumber} [${templateName} / ID:${templateId}]`);
-            return true;
-        }
-
-        logger.warn(`[Fast2SMS WABA] Rejected: ${JSON.stringify(resData)}`);
-        return false;
-
-    } catch (error) {
-        const errMsg = error.response?.data
-            ? JSON.stringify(error.response.data).substring(0, 200)
-            : error.message;
-        logger.error(`[Fast2SMS WABA] Error [${error.response?.status || 'network'}]: ${errMsg}`);
-        return false;
-    }
-};
+// WhatsApp WABA dispatch is handled via services/whatsapp/ (fast2sms.provider.js).
+// Do not add WABA send logic here.
 
 module.exports = {
     sendSMS,
     sendDLTSMS,
-    sendWhatsAppMessage,
-    WABA_TEMPLATES,
 };

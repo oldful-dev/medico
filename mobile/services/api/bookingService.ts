@@ -101,8 +101,9 @@ export interface Booking {
     createdAt: string;
 
     // Populated relations
-    service?: { name: string; slug: string; icon?: string };
+    service?: { name: string; slug: string; icon?: string; serviceType?: string };
     caregiver?: { name: string; phone: string; profileImageUrl?: string };
+    payments?: Array<{ status: string; amount: number }>;
 }
 
 // ─── Service ──────────────────────────────────

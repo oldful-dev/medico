@@ -312,6 +312,7 @@ export default function LoginScreen() {
                                 <OTPInput
                                     otpRef={otpRef}
                                     length={4}
+                                    autoFocus
                                     onComplete={handleOTPComplete}
                                 />
                             </View>

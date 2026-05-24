@@ -129,7 +129,7 @@ const triggerSOS = async (req, res) => {
     // 5. Notify admin via WhatsApp + SMS — non-fatal
     let adminNotified = false;
     try {
-        const waSent = await wa.sendSOSAlertAdmin({
+        const waSent = await wa.sendSOSAlertOps({
             phone: adminPhone,
             userName: user.name,
             ayuxaId: sosDetails,   // pack all details into Var2
@@ -189,9 +189,9 @@ const triggerSOS = async (req, res) => {
         logger.info(`[SOS] Notifying ${contacts.length} emergency contact(s)`);
 
         for (const contact of contacts) {
-            // WhatsApp
+            // WhatsApp — SOS_ALERT_CLIENT to each emergency contact (via AYUXA)
             try {
-                const waSent = await wa.sendSOSAlert({
+                const waSent = await wa.sendSOSAlertClient({
                     phone: contact.phone,
                     userName: user.name,
                     ayuxaId: sosDetails,   // pack location details into Var2
@@ -207,7 +207,7 @@ const triggerSOS = async (req, res) => {
                 logger.warn(`[SOS] Family WhatsApp error for ${contact.phone}: ${err.message}`);
             }
 
-            // SMS fallback (SOS_FAMILY — sender AYUXA)
+            // SMS fallback (SOS_FAMILY — sender AYUXHO)
             try {
                 const smsSent = await sendSMS({
                     template: 'SOS_FAMILY',
@@ -228,7 +228,44 @@ const triggerSOS = async (req, res) => {
         logger.warn(`[SOS] Family contacts fetch failed (non-fatal): ${err.message}`);
     }
 
-    // 8. Send push confirmation to user — non-fatal
+    // 8. Dispatch SOS to assigned caregiver (if user has active booking with caregiver) — non-fatal
+    try {
+        const activeBooking = await prisma.booking.findFirst({
+            where: {
+                userId: user.id,
+                status: { in: ['ASSIGNED', 'IN_PROGRESS'] },
+                caregiverId: { not: null },
+            },
+            include: { caregiver: { select: { name: true, phone: true } } },
+            orderBy: { createdAt: 'desc' },
+        });
+        if (activeBooking?.caregiver?.phone) {
+            // WhatsApp dispatch via AYUXA_HQ (SOS_DISPATCH)
+            try {
+                await wa.sendSOSDispatch({
+                    phone: activeBooking.caregiver.phone,
+                    empName: activeBooking.caregiver.name,
+                    clientName: user.name,
+                    clientId: user.uniqueUserId || user.id,
+                });
+                logger.info(`[SOS] Caregiver WhatsApp dispatch sent → ${activeBooking.caregiver.phone} (${activeBooking.caregiver.name})`);
+            } catch (waErr) {
+                logger.warn('[SOS] Caregiver WhatsApp dispatch failed (non-fatal):', waErr.message);
+            }
+
+            // SMS dispatch fallback (SOS_PARTNER — sender AYUXAH)
+            await sendSMS({
+                template: 'SOS_PARTNER',
+                mobile: activeBooking.caregiver.phone,
+                variables: [user.uniqueUserId || user.id],
+            });
+            logger.info(`[SOS] Caregiver dispatch SMS sent → ${activeBooking.caregiver.phone} (${activeBooking.caregiver.name})`);
+        }
+    } catch (err) {
+        logger.warn('[SOS] Caregiver dispatch failed (non-fatal):', err.message);
+    }
+
+    // 9. Send push confirmation to user — non-fatal
     try {
         await sendPushToUser(user.id, {
             title: 'SOS Alert Sent',
@@ -239,7 +276,7 @@ const triggerSOS = async (req, res) => {
         logger.warn('SOS push to user failed (non-fatal):', err.message);
     }
 
-    // 9. Update notification flags
+    // 10. Update notification flags
     try {
         await prisma.sOSAlert.update({
             where: { id: sosAlert.id },

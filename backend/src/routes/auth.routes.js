@@ -46,7 +46,7 @@ router.post('/request-otp', otpLimiter, [
 
 router.post('/verify-otp', [
     body('phoneNumber').notEmpty(),
-    body('otp').isLength({ min: 4, max: 6 }), // Allow 4 to 6 digits
+    body('otp').isLength({ min: 4, max: 4 }),
 ], validate, ctrl.verifyOTP);
 
 router.post('/google', [

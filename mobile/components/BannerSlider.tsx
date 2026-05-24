@@ -34,13 +34,11 @@ export function BannerSlider({ banners, colors }: BannerSliderProps) {
 
   const activeBanners = banners.filter((b: Banner) => b.isActive);
 
-  if (activeBanners.length === 0) return null;
-
   const BANNER_HEIGHT = 240;
 
   // Auto-scroll every 5 seconds
   useEffect(() => {
-    if (activeBanners.length === 1) return;
+    if (activeBanners.length <= 1) return;
 
     const startAutoScroll = () => {
       const timer = setInterval(() => {
@@ -73,6 +71,8 @@ export function BannerSlider({ banners, colors }: BannerSliderProps) {
     if (!banner?.ctaRoute) return;
     router.push(banner.ctaRoute as any);
   };
+
+  if (activeBanners.length === 0) return null;
 
   const s = makeStyles(colors, width, BANNER_HEIGHT);
 

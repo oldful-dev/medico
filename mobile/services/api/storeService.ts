@@ -32,6 +32,20 @@ export interface ProductCategory {
     isEnabled: boolean;
 }
 
+export interface ProductOrder {
+    id: string;
+    orderCode: string;
+    userId: string;
+    productId: string;
+    quantity: number;
+    amount: number;
+    address?: string;
+    status: 'PENDING' | 'CONFIRMED' | 'DISPATCHED' | 'DELIVERED' | 'CANCELLED';
+    estimatedDelivery?: string;
+    product?: Pick<Product, 'id' | 'name' | 'imageUrl'>;
+    createdAt: string;
+}
+
 // ─── Service ──────────────────────────────────
 
 export const storeService = {
@@ -61,6 +75,14 @@ export const storeService = {
      */
     getCategories: async (): Promise<ApiResponse<ProductCategory[]>> => {
         return apiClient.get<ProductCategory[]>('/categories');
+    },
+
+    /**
+     * POST /api/products/:id/order
+     * Place an order for a product — backend fires ORDER_CONFIRMED SMS (215239).
+     */
+    createOrder: async (productId: string, payload: { quantity?: number; address?: string }): Promise<ApiResponse<ProductOrder>> => {
+        return apiClient.post<ProductOrder>(`/products/${productId}/order`, payload);
     },
 
     /**

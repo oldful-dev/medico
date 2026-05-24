@@ -14,6 +14,8 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { apiClient } from '@/services/api/apiClient';
+import { useTheme } from '@/context/ThemeContext';
+import { useThemeColors } from '@/hooks/use-theme-colors';
 
 
 // ─── Types ───────────────────────────────────────────────
@@ -98,6 +100,9 @@ function isToday(date: Date): boolean {
 export default function NotificationsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(isDarkMode, colors);
 
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -167,32 +172,32 @@ export default function NotificationsScreen() {
                 key={item.id}
                 activeOpacity={0.7}
                 onPress={() => !item.read && handleMarkRead(item.id)}
-                style={[styles.notificationCard, !item.read && styles.notificationCardUnread]}
+                style={[styles.notificationCard, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FFFFFF' }, !item.read && styles.notificationCardUnread]}
             >
                 <View style={[styles.iconCircle, { backgroundColor: `${item.iconColor}15` }]}>
                     <Ionicons name={item.icon} size={22} color={item.iconColor} />
                 </View>
                 <View style={styles.notificationContent}>
                     <View style={styles.notificationHeader}>
-                        <Text style={styles.notificationTitle}>{item.title}</Text>
+                        <Text style={[styles.notificationTitle, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}>{item.title}</Text>
                         {!item.read && <View style={styles.unreadDot} />}
                     </View>
-                    <Text style={styles.notificationMessage} numberOfLines={2}>
+                    <Text style={[styles.notificationMessage, { color: isDarkMode ? '#A0A0A0' : '#777777' }]} numberOfLines={2}>
                         {item.message}
                     </Text>
-                    <Text style={styles.notificationTime}>{item.time}</Text>
+                    <Text style={[styles.notificationTime, { color: isDarkMode ? '#808080' : '#AAAEAC' }]}>{item.time}</Text>
                 </View>
             </TouchableOpacity>
         );
     };
 
     return (
-        <View style={styles.screen}>
+        <View style={[styles.screen, { backgroundColor: '#048357' }]}>
             <View style={{ backgroundColor: '#048357', height: insets.top }} />
             <StatusBar style="light" backgroundColor="#048357" />
 
             {/* ─── Header ─── */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: '#048357' }]}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
@@ -203,16 +208,16 @@ export default function NotificationsScreen() {
             </View>
 
             {/* ─── Content ─── */}
-            <View style={styles.contentCard}>
+            <View style={[styles.contentCard, { backgroundColor: isDarkMode ? '#252525' : '#FDFDE8' }]}>
                 {loading ? (
                     <View style={styles.centerState}>
                         <ActivityIndicator size="large" color="#048357" />
                     </View>
                 ) : notifications.length === 0 ? (
                     <View style={styles.centerState}>
-                        <Ionicons name="notifications-off-outline" size={48} color="#CCCCCC" />
-                        <Text style={styles.emptyTitle}>No notifications yet</Text>
-                        <Text style={styles.emptySubtitle}>You&apos;ll see booking updates, reminders, and offers here.</Text>
+                        <Ionicons name="notifications-off-outline" size={48} color={isDarkMode ? '#555555' : '#CCCCCC'} />
+                        <Text style={[styles.emptyTitle, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}>No notifications yet</Text>
+                        <Text style={[styles.emptySubtitle, { color: isDarkMode ? '#A0A0A0' : '#AAAEAC' }]}>You&apos;ll see booking updates, reminders, and offers here.</Text>
                     </View>
                 ) : (
                     <ScrollView
@@ -222,13 +227,13 @@ export default function NotificationsScreen() {
                     >
                         {todayItems.length > 0 && (
                             <>
-                                <Text style={styles.sectionLabel}>Today</Text>
+                                <Text style={[styles.sectionLabel, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>Today</Text>
                                 {todayItems.map(renderCard)}
                             </>
                         )}
                         {earlierItems.length > 0 && (
                             <>
-                                <Text style={styles.sectionLabel}>Earlier</Text>
+                                <Text style={[styles.sectionLabel, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>Earlier</Text>
                                 {earlierItems.map(renderCard)}
                             </>
                         )}
@@ -239,17 +244,15 @@ export default function NotificationsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean, colors: any) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: '#048357',
     },
 
     /* ─── Header ─── */
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#048357',
         paddingHorizontal: 16,
         paddingBottom: 20,
         paddingTop: 10,
@@ -273,7 +276,6 @@ const styles = StyleSheet.create({
     /* ─── Content Card ─── */
     contentCard: {
         flex: 1,
-        backgroundColor: '#FDFDE8',
         borderTopLeftRadius: 45,
         borderTopRightRadius: 45,
         overflow: 'hidden',
@@ -291,7 +293,6 @@ const styles = StyleSheet.create({
     sectionLabel: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 14,
-        color: '#02743F',
         marginBottom: 12,
         marginTop: 8,
         letterSpacing: -0.24,
@@ -300,7 +301,6 @@ const styles = StyleSheet.create({
     /* ─── Notification Card ─── */
     notificationCard: {
         flexDirection: 'row',
-        backgroundColor: '#FFFFFF',
         borderRadius: 14,
         padding: 14,
         marginBottom: 10,
@@ -334,7 +334,6 @@ const styles = StyleSheet.create({
     notificationTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 13,
-        color: '#2F2F2F',
         flex: 1,
         letterSpacing: -0.24,
     },
@@ -348,14 +347,12 @@ const styles = StyleSheet.create({
     notificationMessage: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 11,
-        color: '#777777',
         lineHeight: 16,
         marginBottom: 6,
     },
     notificationTime: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 10,
-        color: '#AAAEAC',
         letterSpacing: -0.24,
     },
 
@@ -371,13 +368,11 @@ const styles = StyleSheet.create({
     emptyTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 16,
-        color: '#2F2F2F',
         textAlign: 'center',
     },
     emptySubtitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 13,
-        color: '#AAAEAC',
         textAlign: 'center',
         lineHeight: 20,
     },

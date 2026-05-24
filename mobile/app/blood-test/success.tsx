@@ -6,6 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -15,6 +17,8 @@ const CARD_BORDER = '#E5E7EB';
 export default function BloodTestSuccessScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
     const params = useLocalSearchParams<{
         bookingId?: string;
         amount?: string;
@@ -22,8 +26,8 @@ export default function BloodTestSuccessScreen() {
     }>();
 
     return (
-        <View style={[styles.screen, { paddingTop: insets.top }]}>
-            <StatusBar backgroundColor="#FFFFFF" />
+        <View style={[styles.screen, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}>
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} />
 
             {/* Confetti Decorations */}
             <View style={styles.confettiContainer}>
@@ -66,9 +70,9 @@ export default function BloodTestSuccessScreen() {
                     You will receive a confirmation on your registered mobile number and email.
                 </Text>
 
-                {/* What's Next Steps */}
+                {/* What&apos;s Next Steps */}
                 <View style={styles.stepsContainer}>
-                    <Text style={styles.stepsTitle}>What's Next?</Text>
+                    <Text style={styles.stepsTitle}>What&apos;s Next?</Text>
 
                     <View style={styles.step}>
                         <View style={styles.stepNumber}>
@@ -88,7 +92,7 @@ export default function BloodTestSuccessScreen() {
                         <View style={styles.stepNumber}>
                             <Text style={styles.stepNumberText}>3</Text>
                         </View>
-                        <Text style={styles.stepText}>You'll receive your reports within 24 hours</Text>
+                        <Text style={styles.stepText}>You&apos;ll receive your reports within 24 hours</Text>
                     </View>
                 </View>
             </View>
@@ -112,10 +116,10 @@ export default function BloodTestSuccessScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
     },
     confettiContainer: {
         position: 'absolute',
@@ -152,24 +156,24 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 26,
         fontWeight: '700',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         textAlign: 'center',
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 14,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
         textAlign: 'center',
         marginBottom: 24,
     },
     detailsBox: {
         width: '100%',
-        backgroundColor: '#F9FAFB',
+        backgroundColor: isDarkMode ? '#252525' : '#F9FAFB',
         borderRadius: 12,
         padding: 16,
         marginBottom: 20,
         borderWidth: 1,
-        borderColor: CARD_BORDER,
+        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
     },
     detailRow: {
         flexDirection: 'row',
@@ -179,37 +183,37 @@ const styles = StyleSheet.create({
     },
     detailRowBorder: {
         borderTopWidth: 1,
-        borderTopColor: CARD_BORDER,
+        borderTopColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
     },
     detailLabel: {
         fontSize: 12,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
         fontWeight: '500',
     },
     detailValue: {
         fontSize: 14,
         fontWeight: '700',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
     },
     confirmText: {
         fontSize: 12,
-        color: TEXT_MUTED,
+        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
         textAlign: 'center',
         marginBottom: 24,
         lineHeight: 18,
     },
     stepsContainer: {
         width: '100%',
-        backgroundColor: '#F9FAFB',
+        backgroundColor: isDarkMode ? '#252525' : '#F9FAFB',
         borderRadius: 12,
         padding: 16,
         borderWidth: 1,
-        borderColor: CARD_BORDER,
+        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
     },
     stepsTitle: {
         fontSize: 14,
         fontWeight: '700',
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         marginBottom: 12,
     },
     step: {
@@ -235,7 +239,7 @@ const styles = StyleSheet.create({
     },
     stepText: {
         fontSize: 12,
-        color: TEXT_DARK,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         flex: 1,
         lineHeight: 17,
         paddingTop: 4,
@@ -246,7 +250,8 @@ const styles = StyleSheet.create({
         paddingTop: 12,
         gap: 10,
         borderTopWidth: 1,
-        borderTopColor: CARD_BORDER,
+        borderTopColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
     },
     viewBookingsBtn: {
         backgroundColor: PRIMARY_GREEN,
@@ -261,7 +266,7 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     backHomeBtn: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
         paddingVertical: 14,
         borderRadius: 10,
         alignItems: 'center',
@@ -275,3 +280,4 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
 });
+const styles = makeStyles(false, {} as ThemeColors);
