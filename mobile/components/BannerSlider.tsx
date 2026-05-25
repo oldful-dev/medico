@@ -30,7 +30,7 @@ export function BannerSlider({ banners, colors }: BannerSliderProps) {
   const scrollX = useRef(new Animated.Value(0)).current;
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [autoScrollTimer, setAutoScrollTimer] = useState<NodeJS.Timeout | null>(null);
+  const [autoScrollTimer, setAutoScrollTimer] = useState<any>(null);
 
   const activeBanners = banners.filter((b: Banner) => b.isActive);
 

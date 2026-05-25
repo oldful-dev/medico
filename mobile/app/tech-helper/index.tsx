@@ -13,8 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useTheme } from '@react-navigation/native';
-import { useThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
@@ -44,8 +43,7 @@ export default function TechHelperScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
-    const { dark: isDarkMode } = useTheme();
-    const colors = useThemeColors();
+    const { isDarkMode } = useTheme();
 
     // State for multi-select checkboxes
     const [selectedIssues, setSelectedIssues] = useState<string[]>([]);
@@ -187,7 +185,6 @@ export default function TechHelperScreen() {
 
                     {ISSUES.map((issue) => {
                         const isSelected = selectedIssues.includes(issue.id);
-    const dynamicStyles = makeStyles(isDarkMode);
 
                         return (
                             <TouchableOpacity
@@ -377,7 +374,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     /* ─── Content Area ─── */
     contentContainer: {
         flex: 1,
-        backgroundColor: Colors.bgScreen,
+        backgroundColor: isDarkMode ? '#0F172A' : Colors.bgScreen,
         borderTopLeftRadius: Radius.xl * 2,
         borderTopRightRadius: Radius.xl * 2,
         ...Shadow.card,
@@ -391,26 +388,46 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     mainTitle: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.heading1,
-        color: Colors.textDark,
+        color: isDarkMode ? '#F1F5F9' : Colors.textDark,
         marginBottom: 5,
         textAlign: 'center',
     },
     subTitle: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
-        color: Colors.textMuted,
+        color: isDarkMode ? '#94A3B8' : Colors.textMuted,
         textAlign: 'center',
         marginBottom: 20,
     },
     divider: {
         height: 1,
-        backgroundColor: '#D9D9D9',
+        backgroundColor: isDarkMode ? '#334155' : '#D9D9D9',
         marginVertical: 15,
+    },
+    dateTimeButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: isDarkMode ? '#1E293B' : Colors.bgCard,
+        borderRadius: Radius.md,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: isDarkMode ? '#334155' : Colors.borderLight,
+        marginBottom: 12,
+    },
+    dateTimeText: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: isDarkMode ? '#64748B' : Colors.textLight,
+        marginLeft: 10,
+    },
+    dateTimeTextSelected: {
+        color: isDarkMode ? '#F1F5F9' : Colors.textDark,
+        fontFamily: Fonts.medium,
     },
     sectionTitle: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.heading3,
-        color: Colors.textDark,
+        color: isDarkMode ? '#F1F5F9' : Colors.textDark,
         marginBottom: 15,
     },
 
@@ -418,12 +435,12 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     checkboxCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.bgCard,
+        backgroundColor: isDarkMode ? '#1E293B' : Colors.bgCard,
         borderRadius: Radius.md,
         padding: Spacing.lg,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: Colors.borderLight,
+        borderColor: isDarkMode ? '#334155' : Colors.borderLight,
         ...Shadow.card,
     },
     checkboxCardSelected: {
@@ -435,7 +452,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         height: 22,
         borderRadius: 4,
         borderWidth: 2,
-        borderColor: Colors.textLight,
+        borderColor: isDarkMode ? '#64748B' : Colors.textLight,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 15,
@@ -450,7 +467,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     issueTitle: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
-        color: Colors.textDark,
+        color: isDarkMode ? '#F1F5F9' : Colors.textDark,
     },
     issueTitleSelected: {
         color: Colors.primary,
@@ -458,23 +475,23 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     issueSubTitle: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.bodySmall,
-        color: Colors.textMuted,
+        color: isDarkMode ? '#94A3B8' : Colors.textMuted,
         marginTop: 2,
     },
 
     /* ─── Text Input ─── */
     textInputBox: {
-        backgroundColor: Colors.bgCard,
+        backgroundColor: isDarkMode ? '#1E293B' : Colors.bgCard,
         borderRadius: Radius.md,
         borderWidth: 1,
-        borderColor: Colors.borderLight,
+        borderColor: isDarkMode ? '#334155' : Colors.borderLight,
         padding: Spacing.lg,
         minHeight: 100,
     },
     textInput: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
-        color: Colors.textDark,
+        color: isDarkMode ? '#F1F5F9' : Colors.textDark,
         flex: 1,
     },
 
@@ -482,12 +499,12 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     radioCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.bgCard,
+        backgroundColor: isDarkMode ? '#1E293B' : Colors.bgCard,
         borderRadius: Radius.md,
         padding: 18,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: Colors.borderLight,
+        borderColor: isDarkMode ? '#334155' : Colors.borderLight,
     },
     radioCardSelected: {
         borderColor: Colors.primary,
@@ -499,7 +516,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         height: 20,
         borderRadius: 10,
         borderWidth: 2,
-        borderColor: Colors.textLight,
+        borderColor: isDarkMode ? '#64748B' : Colors.textLight,
         marginRight: 15,
         justifyContent: 'center',
         alignItems: 'center',
@@ -514,12 +531,12 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     radioTitle: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
-        color: Colors.textDark,
+        color: isDarkMode ? '#F1F5F9' : Colors.textDark,
     },
     radioSubTitle: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.bodySmall,
-        color: Colors.textMuted,
+        color: isDarkMode ? '#94A3B8' : Colors.textMuted,
         marginTop: 2,
     },
     radioPrice: {

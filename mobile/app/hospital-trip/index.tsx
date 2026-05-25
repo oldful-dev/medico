@@ -16,7 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { FormInput } from '@/components/common';
@@ -50,7 +50,7 @@ export default function HospitalTripScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
-    const { dark: isDarkMode } = useTheme();
+    const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
     const [selectedSpecialist, setSelectedSpecialist] = useState<string | null>(null);
@@ -208,7 +208,7 @@ export default function HospitalTripScreen() {
                             <TextInput
                                 style={dynamicStyles.doctorTextInput}
                                 placeholder="Enter hospital name"
-                                placeholderTextColor="#2F2F2F"
+                                placeholderTextColor={isDarkMode ? '#64748B' : '#888888'}
                                 value={hospitalQuery}
                                 onChangeText={setHospitalQuery}
                             />
@@ -243,7 +243,7 @@ export default function HospitalTripScreen() {
                             <TextInput
                                 style={dynamicStyles.doctorTextInput}
                                 placeholder="Enter doctor name"
-                                placeholderTextColor="#2F2F2F"
+                                placeholderTextColor={isDarkMode ? '#64748B' : '#888888'}
                                 value={preferredDoctor}
                                 onChangeText={setPreferredDoctor}
                             />
@@ -337,9 +337,9 @@ export default function HospitalTripScreen() {
                                 style={{ elevation: 0, borderWidth: 1, borderColor: '#D9D9D9' }}
                             />
                         ) : (
-                            <View style={[dynamicStyles.inputCard, { marginBottom: 5, backgroundColor: 'rgba(217, 217, 217, 0.2)' }]}>
-                                <Ionicons name="location-outline" size={18} color="#2F2F2F" style={{ marginRight: 10 }} />
-                                <Text style={{ flex: 1, fontFamily: 'LexendDeca_400Regular', color: '#2F2F2F' }} numberOfLines={1}>
+                            <View style={[dynamicStyles.inputCard, { marginBottom: 5, backgroundColor: isDarkMode ? 'rgba(30,41,59,0.8)' : 'rgba(217, 217, 217, 0.2)' }]}>
+                                <Ionicons name="location-outline" size={18} color={isDarkMode ? '#94A3B8' : '#2F2F2F'} style={{ marginRight: 10 }} />
+                                <Text style={{ flex: 1, fontFamily: 'LexendDeca_400Regular', color: isDarkMode ? '#E2E8F0' : '#2F2F2F' }} numberOfLines={1}>
                                     {address}
                                 </Text>
                                 <TouchableOpacity onPress={() => router.push('/(auth)/city-selection')}>
@@ -402,7 +402,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         flex: 1,
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        color: '#FFFFFF',
         marginLeft: 12,
         letterSpacing: -0.24,
     },
@@ -410,7 +410,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     /* --- Main Content Container (Cream Box) --- */
     contentContainer: {
         flex: 1,
-        backgroundColor: '#FDFDE8',
+        backgroundColor: isDarkMode ? '#0F172A' : '#FDFDE8',
         borderTopLeftRadius: 45,
         borderTopRightRadius: 45,
         shadowColor: '#000',
@@ -429,7 +429,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     mainTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 18,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         marginBottom: 5,
         textAlign: 'left',
     },
@@ -442,7 +442,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     divider: {
         height: 1,
-        backgroundColor: '#D9D9D9',
+        backgroundColor: isDarkMode ? '#334155' : '#D9D9D9',
         marginVertical: 15,
     },
 
@@ -498,7 +498,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     sectionTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 18,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         marginBottom: 15,
     },
 
@@ -573,23 +573,24 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     doctorOptionText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 15,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#E2E8F0' : '#2F2F2F',
     },
     doctorNameInput: {
         height: 53,
         borderWidth: 1,
-        borderColor: '#777',
+        borderColor: isDarkMode ? '#475569' : '#777',
         borderRadius: 10,
         justifyContent: 'center',
         paddingHorizontal: 15,
         marginLeft: 20,
         marginRight: 10,
         marginBottom: 15,
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
     },
     doctorTextInput: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 15,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
     },
 
     /* --- Schedule --- */
@@ -733,7 +734,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        color: '#FFFFFF',
         fontSize: 14,
     },
 });

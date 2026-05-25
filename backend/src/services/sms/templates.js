@@ -60,7 +60,7 @@ const SMS_TEMPLATES = {
         text: 'Dear {#var#}, Welcome to Ayuxa! Thrilled to be your healthcare partner. Team Ayuxa.',
     },
     SOS_FAMILY: {
-        senderId: 'AYUXHO',
+        senderId: 'AYUXA',
         templateId: '215594',
         variables: 2,
         text: 'Dear {#var#}, SOS triggered by {#var#} in Ayuxa. Please act immediately. Team Ayuxa.',

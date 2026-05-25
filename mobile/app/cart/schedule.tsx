@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput,
-    ActivityIndicator, useColorScheme
+    ActivityIndicator
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -14,6 +14,7 @@ import { userService } from '@/services/api/userService';
 import { LocationPickerModal } from '@/components/LocationPickerModal';
 import { useCart } from '@/context/CartContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -27,7 +28,7 @@ export default function CartScheduleScreen() {
     const { profile, setProfile } = useUser();
     const params = useLocalSearchParams<{ category?: string }>();
     const { groupedItems, getCategoryTotal } = useCart();
-    const isDarkMode = useColorScheme() === 'dark';
+    const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
     const category = params.category || 'Bloodwork';
@@ -620,7 +621,7 @@ export default function CartScheduleScreen() {
 
     return (
         <View style={[dynamicStyles.container, { paddingTop: insets.top }]}>
-            <StatusBar backgroundColor={isDarkMode ? '#252525' : '#FFFFFF'} barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#252525' : '#FFFFFF'} />
             <View style={dynamicStyles.header}>
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color={TEXT_DARK} />

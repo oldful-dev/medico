@@ -4,7 +4,8 @@
 
 const prisma = require('../config/database');
 const { logger } = require('../config/logger');
-const { sendEmail, sendPushToUser } = require('../utils/notifications');
+const { sendPushToUser } = require('../utils/notifications');
+const emailService = require('../services/email');
 const wa = require('../services/whatsapp');
 const { sendSMS } = require('../services/sms');
 const { reverseGeocode } = require('../utils/geocoding.service');
@@ -163,18 +164,11 @@ const triggerSOS = async (req, res) => {
 
     // 6. Notify admin via email — non-fatal
     try {
-        await sendEmail({
-            to: process.env.ADMIN_EMAIL || 'admin@ayuxa.com',
-            subject: `🚨 EMERGENCY: SOS triggered by ${user.name}`,
-            html: `
-                <h2 style="color:red">🚨 SOS Alert Triggered</h2>
-                <p><strong>Client Name:</strong> ${user.name} (${user.uniqueUserId})</p>
-                <p><strong>Mobile:</strong> ${user.phone}</p>
-                <p><strong>Address:</strong> ${addressDisplay}</p>
-                <p><strong>Live Location:</strong> <a href="${locationLink}">${locationLink}</a></p>
-                <p><strong>Date &amp; Time:</strong> ${triggeredAt}</p>
-                <p style="color:red;font-weight:bold">Please take immediate action.</p>
-            `,
+        await emailService.sendSOSAlertAdmin({
+            userName: user.name,
+            userUniqueId: user.uniqueUserId,
+            phone: user.phone,
+            location: `${addressDisplay} — ${locationLink}`,
         });
         adminNotified = true;
         logger.info(`[SOS] Admin email sent → ${process.env.ADMIN_EMAIL || 'admin@ayuxa.com'}`);

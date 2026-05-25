@@ -11,45 +11,12 @@
 const { logger } = require('../config/logger');
 const prisma = require('../config/database');
 
-// ─── Email (ZeptoMail) ──────────────────────
+// ─── Email (ZeptoMail via email service) ──────────────────────
 
-const zeptoMail = require('./zeptomail');
+const emailService = require('../services/email');
 
-const sendEmail = async ({ to, subject, html, attachments = [], userId = null, isMarketing = false }) => {
-    try {
-        if (userId) {
-            const user = await prisma.user.findUnique({ where: { id: userId }, select: { emailMarketingEnabled: true } });
-            if (isMarketing && user && !user.emailMarketingEnabled) {
-                logger.info(`🚫 Skipping marketing email to ${to} (Unsubscribed)`);
-                return false;
-            }
-        }
-
-        const success = await zeptoMail.sendEmail({ to, subject, html });
-
-        if (success) {
-            logger.info(`📧 Email sent to ${to}: ${subject}`);
-        }
-
-        await prisma.notificationLog.create({
-            data: {
-                channel: 'EMAIL',
-                recipientId: userId,
-                recipientType: userId ? 'user' : 'anonymous',
-                subject,
-                body: html,
-                isSent: success,
-                sentAt: success ? new Date() : null,
-                errorMessage: success ? null : 'ZeptoMail failed',
-            },
-        });
-
-        return success;
-    } catch (error) {
-        logger.error('Email send error:', error);
-        return false;
-    }
-};
+// Backwards-compatible wrapper — all existing callers (sendEmail({to,subject,html,...})) continue to work.
+const sendEmail = emailService.sendEmail;
 
 // ─── WhatsApp (Fast2SMS WABA) ───────────────
 // WhatsApp is now handled via Fast2SMS WABA templates.
@@ -148,26 +115,29 @@ const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [], userId
 
 const sendWelcomeNotifications = async (user) => {
     // Welcome Email
-    await sendEmail({
+    await emailService.sendWelcome({
         to: user.email,
-        subject: `Welcome to Ayuxa, ${user.name}! 🎉`,
+        name: user.name,
+        uniqueUserId: user.uniqueUserId,
         userId: user.id,
-        html: `
-      <h1>Welcome to Ayuxa Healthcare!</h1>
-      <p>Dear ${user.name},</p>
-      <p>Your Ayuxa ID is: <strong>${user.uniqueUserId}</strong></p>
-      <p>You now have access to premium healthcare services at your doorstep.</p>
-      <p>Download the Ayuxa app and start booking services today!</p>
-      <p>Best regards,<br>Team Ayuxa</p>
-    `,
     });
 
     // Welcome SMS — DLT template WELCOME_USER (215420, sender AYUXA) — Var1=name
-    // WhatsApp welcome template requires a document attachment which we don't have at signup.
-    // Falling back to SMS which is always available.
     const { sendSMS } = require('../services/sms');
     await sendSMS({ template: 'WELCOME_USER', mobile: user.phone, variables: [user.name], userId: user.id })
         .catch(err => logger.warn('Welcome SMS failed (non-fatal):', err.message));
+
+    // Welcome WhatsApp — WELCOME_USER (AYUXA_RELEASE, msgId 20828) — no body vars, doc required
+    // Only send if we have a welcome document URL configured
+    const welcomeDocUrl = process.env.WELCOME_DOC_URL;
+    if (welcomeDocUrl) {
+        await wa.sendWelcome({
+            phone: user.phone,
+            userId: user.id,
+            mediaUrl: welcomeDocUrl,
+            docFilename: 'Ayuxa_Welcome.pdf',
+        }).catch(err => logger.warn('Welcome WhatsApp failed (non-fatal):', err.message));
+    }
 };
 
 // ─── SOS Notifications ────────────────────
@@ -180,16 +150,11 @@ const sendSOSNotifications = async ({ user, location, familyContacts }) => {
     //   3. SMS fallback via Fast2SMS (if DLT template configured)
 
     // Admin — Email alert with location
-    await sendEmail({
-        to: process.env.ADMIN_EMERGENCY_EMAIL || 'sos@ayuxa.com',
-        subject: `🚨 SOS ALERT — ${user.name} (${user.uniqueUserId})`,
-        html: `
-      <h1 style="color:red">🚨 SOS Emergency Alert</h1>
-      <p><strong>User:</strong> ${user.name} (${user.uniqueUserId})</p>
-      <p><strong>Phone:</strong> ${user.phone}</p>
-      <p><strong>Location:</strong> ${location || 'Unknown'}</p>
-      <p><strong>Time:</strong> ${new Date().toLocaleString('en-IN')}</p>
-    `,
+    await emailService.sendSOSAlertAdmin({
+        userName: user.name,
+        userUniqueId: user.uniqueUserId,
+        phone: user.phone,
+        location: location || 'Unknown',
     });
 
     // Admin — SMS fallback
@@ -264,17 +229,13 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
         }) || user;
     }
 
-    await sendEmail({
+    await emailService.sendPlanExpiryReminder({
         to: fullUser.email,
-        subject: `Your ${plan.name} plan expires in ${daysLeft} days`,
+        name: fullUser.name,
+        planName: plan.name,
+        daysLeft,
+        expiryDate: new Date(expiryDate).toLocaleDateString('en-IN'),
         userId: fullUser.id,
-        html: `
-      <h2>Plan Expiry Reminder</h2>
-      <p>Dear ${fullUser.name},</p>
-      <p>Your <strong>${plan.name}</strong> plan expires on <strong>${new Date(expiryDate).toLocaleDateString('en-IN')}</strong> (${daysLeft} days remaining).</p>
-      <p>Renew now to continue enjoying uninterrupted healthcare services.</p>
-      <p>Best regards,<br>Team Ayuxa</p>
-    `,
     });
 
     // WhatsApp — Template: PLAN_EXPIRY_REMINDER — Var1=name only
@@ -284,15 +245,19 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
         parameters: [fullUser.name],
         userId: fullUser.id,
     });
+
+    // DLT SMS — PLAN_EXPIRED_USER (215595) — Var1=name, Var2=support
+    const { sendSMS } = require('../services/sms');
+    await sendSMS({
+        template: 'PLAN_EXPIRED_USER',
+        mobile: fullUser.phone,
+        variables: [fullUser.name, process.env.SUPPORT_PHONE || '9480198108'],
+        userId: fullUser.id,
+    }).catch(err => logger.warn('PLAN_EXPIRED_USER SMS failed (non-fatal):', err.message));
 };
 
 // ─── OTP (Fast2SMS SMS — unchanged) ───────────────────────
 // OTP delivery remains on Fast2SMS SMS. Do not route to Interakt.
-
-// Android SMS Retriever hash for com.ayuxacare.app.
-// Run `keytool` on the release keystore to regenerate if the signing key changes.
-// Generate with: https://developers.google.com/identity/sms-retriever/verify#computing_your_app_hash_string
-const ANDROID_SMS_HASH = process.env.ANDROID_SMS_HASH || 'REPLACE_WITH_HASH';
 
 const requestFast2SMSOTP = async (phoneNumber) => {
     const otp = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit OTP
@@ -300,15 +265,10 @@ const requestFast2SMSOTP = async (phoneNumber) => {
 
     let success = false;
     try {
-        // Append Android SMS Retriever hash so the OS auto-reads the message.
-        // Format: "<#> {otp} {hash}" — the <#> prefix and 11-char hash at end
-        // are required by the SMS Retriever API. The DLT {#var#} slot receives
-        // the full string; carriers deliver it verbatim.
-        const otpWithHash = `<#> ${otp} ${ANDROID_SMS_HASH}`;
         success = await sendSMS({
             template: 'OTP_USER',
             mobile: phoneNumber,
-            variables: [otpWithHash],
+            variables: [otp],
         });
     } catch (err) {
         logger.warn(`[OTP] DLT SMS failed: ${err.message}`);

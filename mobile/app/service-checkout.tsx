@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity,
-    TextInput, ActivityIndicator, StyleSheet, Platform, Alert, NativeModules, useColorScheme,
+    TextInput, ActivityIndicator, StyleSheet, Platform, Alert, NativeModules,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import RazorpayCheckout from 'react-native-razorpay';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 import { paymentService, PaymentMethod } from '@/services/api/paymentService';
 import { bookingService } from '@/services/api/bookingService';
 import { meetupService } from '@/services/api/meetupService';
@@ -52,7 +54,9 @@ const mapLabelToCategory = (label: string): string => {
 export default function ServiceCheckoutScreen() {
     const router = useRouter();
     const { profile, refreshData } = useUser();
-    const isDarkMode = useColorScheme() === 'dark';
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(colors, isDarkMode);
     const params = useLocalSearchParams<{
         bookingPayload?: string;
         subscriptionId?: string;
@@ -63,7 +67,17 @@ export default function ServiceCheckoutScreen() {
         userName?: string;
         meetupId?: string;
         meetupParams?: string;
+        refreshProfileOnSuccess?: string;
+        pickupAddress?: string;
     }>();
+
+    React.useEffect(() => {
+        console.log('💳 [SERVICE CHECKOUT] Screen loaded');
+        console.log('💳 [SERVICE CHECKOUT] Label:', params.label);
+        console.log('💳 [SERVICE CHECKOUT] Amount:', params.amount);
+        console.log('💳 [SERVICE CHECKOUT] MeetupId:', params.meetupId);
+        console.log('💳 [SERVICE CHECKOUT] Profile:', !!profile);
+    }, [params.label, params.amount, params.meetupId, profile]);
 
     const baseAmount = parseFloat(params.amount ?? '0');
     const label  = params.label ?? 'Service Booking';
@@ -72,7 +86,6 @@ export default function ServiceCheckoutScreen() {
     const meetupParamsObj = params.meetupParams ? (() => {
         try {
             const obj = JSON.parse(params.meetupParams);
-            // Parse includedItems and extraCharges if they're strings
             if (typeof obj.includedItems === 'string') obj.includedItems = JSON.parse(obj.includedItems);
             if (typeof obj.extraCharges === 'string') obj.extraCharges = JSON.parse(obj.extraCharges);
             return obj;
@@ -157,9 +170,9 @@ export default function ServiceCheckoutScreen() {
     useEffect(() => {
         const checkPendingOrder = async () => {
             try {
-                const pendingOrderId = await storageService.getItem(STORAGE_KEYS.PENDING_ORDER_ID);
+                const pendingOrderIdStr = await storageService.getItem(STORAGE_KEYS.PENDING_ORDER_ID);
                 const pendingBookingId = await storageService.getItem(STORAGE_KEYS.PENDING_BOOKING_ID);
-                if (pendingOrderId && pendingBookingId) {
+                if (pendingOrderIdStr && pendingBookingId) {
                     setPendingRecovery(true);
                     sessionBookingId.current = pendingBookingId;
                     Alert.alert(
@@ -240,7 +253,6 @@ export default function ServiceCheckoutScreen() {
     const handlePay = useCallback(async () => {
         if (payLoading) return;
 
-        // ─── Validate address (skip for meetup) ────────────────────────
         if (!params.meetupId && !selectedAddress) {
             Alert.alert('Address Required', 'Please select a service address.');
             return;
@@ -248,7 +260,6 @@ export default function ServiceCheckoutScreen() {
 
         setPayLoading(true);
         try {
-            // ─── STEP 1: Create booking if not already created (skip for meetups) ────────
             setFlowState('creating_booking');
             if (!params.meetupId && !sessionBookingId.current && params.bookingPayload) {
                 const payload = JSON.parse(params.bookingPayload as string);
@@ -267,7 +278,6 @@ export default function ServiceCheckoutScreen() {
                 sessionBookingId.current = bookingRes.data.id;
             }
 
-            // ─── STEP 2: Handle COD (Cash on Delivery) ─────────────────
             if (selectedMethod === 'CASH') {
                 setFlowState('success');
                 Alert.alert(
@@ -281,7 +291,6 @@ export default function ServiceCheckoutScreen() {
                 return;
             }
 
-            // ─── STEP 3: Create Razorpay order on backend ──────────────
             setFlowState('initiating_order');
             const initiateRes = await paymentService.initiatePayment({
                 ...(params.meetupId && { meetupId: params.meetupId }),
@@ -301,7 +310,6 @@ export default function ServiceCheckoutScreen() {
             const { orderId, amount: orderAmount, key: backendKey, paymentNotRequired } = initiateRes.data as any;
             pendingOrderId.current = orderId;
 
-            // ─── STEP 4: Handle Zero Amount Booking ────────────────────
             if (paymentNotRequired) {
                 setFlowState('success');
                 router.replace({
@@ -317,7 +325,6 @@ export default function ServiceCheckoutScreen() {
                 return;
             }
 
-            // ─── STEP 5: Guard — native module must exist ──────────────
             if (!NativeModules.RNRazorpayCheckout) {
                 Alert.alert(
                     'Build Required',
@@ -326,13 +333,11 @@ export default function ServiceCheckoutScreen() {
                 return;
             }
 
-            // ─── STEP 6: Persist pending order for crash recovery ─────
             await storageService.setItem(STORAGE_KEYS.PENDING_ORDER_ID, orderId);
             if (sessionBookingId.current) {
                 await storageService.setItem(STORAGE_KEYS.PENDING_BOOKING_ID, sessionBookingId.current);
             }
 
-            // ─── STEP 7: Open Razorpay native checkout sheet ──────────
             setFlowState('checkout_opened');
             const options: any = {
                 description:  label,
@@ -348,7 +353,7 @@ export default function ServiceCheckoutScreen() {
                     email:   params.email    || '',
                     method:  selectedMethod.toLowerCase(),
                 },
-                theme: { color: Colors.primary },
+                theme: { color: colors.primary },
                 config: {
                     display: {
                         blocks: {
@@ -371,7 +376,6 @@ export default function ServiceCheckoutScreen() {
 
             const data = await RazorpayCheckout.open(options);
 
-            // ─── STEP 8: Verify signature on backend ───────────────────
             setFlowState('verifying');
             const verifyRes = await paymentService.verifyPayment({
                 razorpayPaymentId: data.razorpay_payment_id,
@@ -388,7 +392,6 @@ export default function ServiceCheckoutScreen() {
                     try { await refreshData(); } catch { /* non-blocking */ }
                 }
 
-                // ─── MEETUP: Register after payment verified ──────────────
                 if (params.meetupId && params.bookingPayload) {
                     try {
                         const payload = JSON.parse(params.bookingPayload as string);
@@ -410,7 +413,7 @@ export default function ServiceCheckoutScreen() {
                         console.log('Meetup registration response:', regRes);
                         if (regRes.success && regRes.data) {
                             const meetupParams = params.meetupParams ? JSON.parse(params.meetupParams as string) : {};
-                            const bookingPayload = params.bookingPayload ? JSON.parse(params.bookingPayload as string) : {};
+                            const bookingPayloadObj = params.bookingPayload ? JSON.parse(params.bookingPayload as string) : {};
                             router.replace({
                                 pathname: '/service-confirmation',
                                 params: {
@@ -420,9 +423,9 @@ export default function ServiceCheckoutScreen() {
                                     meetupEndTime: meetupParams.meetupEndTime || '',
                                     meetupVenue: meetupParams.meetupVenue || '',
                                     meetupPinCode: meetupParams.meetupPinCode || '',
-                                    pickupEnabled: bookingPayload.pickupEnabled ? 'true' : 'false',
-                                    pickupAddress: bookingPayload.pickupAddress || '',
-                                    preferredTime: bookingPayload.preferredPickupTime || '',
+                                    pickupEnabled: bookingPayloadObj.pickupEnabled ? 'true' : 'false',
+                                    pickupAddress: bookingPayloadObj.pickupAddress || '',
+                                    preferredTime: bookingPayloadObj.preferredPickupTime || '',
                                 },
                             });
                             return;
@@ -485,16 +488,16 @@ export default function ServiceCheckoutScreen() {
         } finally {
             setPayLoading(false);
         }
-    }, [payLoading, finalAmount, selectedMethod, couponApplied, couponCode, params, label, router, refreshData, selectedAddress]);
+    }, [payLoading, finalAmount, selectedMethod, couponApplied, couponCode, params, label, router, refreshData, selectedAddress, colors.primary, colors.textWhite]);
 
     return (
-        <SafeAreaView style={[styles.screen, { backgroundColor: isDarkMode ? Colors.primary : Colors.primary }]} edges={['top']}>
-            <StatusBar style={isDarkMode ? "light" : "light"} />
+        <SafeAreaView style={[styles.screen, { backgroundColor: colors.primary }]} edges={['top']}>
+            <StatusBar style="light" />
 
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
+                    <Ionicons name="arrow-back" size={24} color={colors.textWhite} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Checkout</Text>
             </View>
@@ -510,7 +513,7 @@ export default function ServiceCheckoutScreen() {
                                 <Text style={styles.subHeading}>Included in Service Charge</Text>
                                 {meetupParamsObj.includedItems.map((item: string, i: number) => (
                                     <View key={i} style={styles.includeRow}>
-                                        <Ionicons name="checkmark-circle" size={15} color={Colors.primary} />
+                                        <Ionicons name="checkmark-circle" size={15} color={colors.primary} />
                                         <Text style={styles.includeText}>{item}</Text>
                                     </View>
                                 ))}
@@ -581,7 +584,7 @@ export default function ServiceCheckoutScreen() {
                             <Text style={styles.breakdownLabel}>Booking Fee</Text>
                             {benefitApplied ? (
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                    <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: Colors.textMuted }]}>₹{originalBookingFee}</Text>
+                                    <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>₹{originalBookingFee}</Text>
                                     <Text style={[styles.breakdownValue, { color: '#2e7d32', fontFamily: Fonts.semiBold }]}> FREE</Text>
                                 </View>
                             ) : (
@@ -592,7 +595,7 @@ export default function ServiceCheckoutScreen() {
                             <Text style={styles.breakdownLabel}>Platform Fee</Text>
                             {benefitApplied ? (
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                    <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: Colors.textMuted }]}>₹{originalPlatformFee}</Text>
+                                    <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>₹{originalPlatformFee}</Text>
                                     <Text style={[styles.breakdownValue, { color: '#2e7d32', fontFamily: Fonts.semiBold }]}> FREE</Text>
                                 </View>
                             ) : (
@@ -647,7 +650,7 @@ export default function ServiceCheckoutScreen() {
                                     <Ionicons
                                         name={selectedAddress?.id === addr.id ? 'radio-button-on' : 'radio-button-off'}
                                         size={20}
-                                        color={selectedAddress?.id === addr.id ? Colors.primary : Colors.textLight}
+                                        color={selectedAddress?.id === addr.id ? colors.primary : colors.textLight}
                                     />
                                     <View style={{ flex: 1, marginLeft: 12 }}>
                                         <Text style={styles.addressLabel}>
@@ -665,7 +668,7 @@ export default function ServiceCheckoutScreen() {
                         <View>
                             <Text style={styles.noAddressText}>No saved addresses. Please add one in your profile.</Text>
                             <TouchableOpacity
-                                style={[styles.payBtn, { marginTop: 12, backgroundColor: Colors.primary }]}
+                                style={[styles.payBtn, { marginTop: 12, backgroundColor: colors.primary }]}
                                 onPress={() => router.push('/manage-addresses')}
                                 activeOpacity={0.85}
                             >
@@ -693,7 +696,7 @@ export default function ServiceCheckoutScreen() {
                             <TextInput
                                 style={styles.couponInput}
                                 placeholder="Enter coupon code"
-                                placeholderTextColor="#AAAAAA"
+                                placeholderTextColor={colors.textMuted}
                                 value={couponCode}
                                 onChangeText={setCouponCode}
                                 autoCapitalize="characters"
@@ -706,7 +709,7 @@ export default function ServiceCheckoutScreen() {
                                 disabled={!couponCode.trim() || couponLoading}
                             >
                                 {couponLoading
-                                    ? <ActivityIndicator size="small" color={Colors.textWhite} />
+                                    ? <ActivityIndicator size="small" color={colors.textWhite} />
                                     : <Text style={styles.couponBtnText}>Apply</Text>
                                 }
                             </TouchableOpacity>
@@ -724,14 +727,14 @@ export default function ServiceCheckoutScreen() {
                             onPress={() => setSelectedMethod(m.type)}
                             activeOpacity={0.8}
                         >
-                            <Ionicons name={m.icon} size={20} color={selectedMethod === m.type ? Colors.primary : Colors.textLight} />
+                            <Ionicons name={m.icon} size={20} color={selectedMethod === m.type ? colors.primary : colors.textLight} />
                             <Text style={[styles.methodLabel, selectedMethod === m.type && styles.methodLabelActive]}>
                                 {m.label}
                             </Text>
                             <Ionicons
                                 name={selectedMethod === m.type ? 'radio-button-on' : 'radio-button-off'}
                                 size={20}
-                                color={selectedMethod === m.type ? Colors.primary : Colors.textLight}
+                                color={selectedMethod === m.type ? colors.primary : colors.textLight}
                                 style={{ marginLeft: 'auto' }}
                             />
                         </TouchableOpacity>
@@ -740,7 +743,7 @@ export default function ServiceCheckoutScreen() {
 
                 {/* Security note */}
                 <View style={styles.securityNote}>
-                    <Ionicons name={selectedMethod === 'CASH' ? "information-circle-outline" : "shield-checkmark-outline"} size={16} color="#666" />
+                    <Ionicons name={selectedMethod === 'CASH' ? "information-circle-outline" : "shield-checkmark-outline"} size={16} color={colors.textMuted} />
                     <Text style={styles.securityText}>
                         {selectedMethod === 'CASH'
                             ? 'Please prepare exact change if possible. Our provider will collect the amount upon arrival.'
@@ -760,9 +763,9 @@ export default function ServiceCheckoutScreen() {
                     activeOpacity={0.85}
                 >
                     {payLoading
-                        ? <ActivityIndicator color={Colors.textWhite} />
+                        ? <ActivityIndicator color={colors.textWhite} />
                         : <>
-                            <Ionicons name={selectedMethod === 'CASH' ? "checkmark-circle-outline" : "lock-closed-outline"} size={18} color={Colors.textWhite} />
+                            <Ionicons name={selectedMethod === 'CASH' ? "checkmark-circle-outline" : "lock-closed-outline"} size={18} color={colors.textWhite} />
                             <Text style={styles.payBtnText}>
                                 {selectedMethod === 'CASH'
                                     ? `Confirm Booking (₹${finalAmount.toLocaleString('en-IN')})`
@@ -777,8 +780,8 @@ export default function ServiceCheckoutScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: Colors.primary },
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.primary },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start',
         paddingHorizontal: Spacing.xl, paddingVertical: Spacing.lg,
@@ -787,44 +790,44 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.heading2,
-        color: Colors.textWhite,
+        color: colors.textWhite,
         marginLeft: 12,
     },
 
-    body: { flex: 1, backgroundColor: isDarkMode ? '#1A1A1A' : (Colors.bgScreen ?? '#FAFAF0'), borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+    body: { flex: 1, backgroundColor: isDarkMode ? '#111827' : (colors.bgScreen ?? '#FAFAF0'), borderTopLeftRadius: 24, borderTopRightRadius: 24 },
     bodyContent: { padding: Spacing.xl, paddingBottom: 100, gap: Spacing.lg },
 
     card: {
-        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF', borderRadius: Radius.lg ?? 12, padding: Spacing.xl, gap: Spacing.md,
-        elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkMode ? 0.2 : 0.06, shadowRadius: 3,
+        backgroundColor: colors.bgCard, borderRadius: Radius.lg ?? 12, padding: Spacing.xl, gap: Spacing.md,
+        elevation: 1, shadowColor: colors.shadowColor, shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDarkMode ? 0.2 : 0.06, shadowRadius: 3,
     },
-    cardTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: isDarkMode ? '#E8E8E8' : Colors.textDark, marginBottom: Spacing.xs ?? 4 },
+    cardTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textDark, marginBottom: Spacing.xs ?? 4 },
 
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    rowLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: isDarkMode ? '#A0A0A0' : Colors.textLight },
-    rowValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: isDarkMode ? '#E8E8E8' : Colors.textDark },
+    rowLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textLight },
+    rowValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: colors.textDark },
 
     detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, paddingVertical: Spacing.sm },
-    detailLabel: { fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: isDarkMode ? '#A0A0A0' : Colors.textLight },
-    detailValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: isDarkMode ? '#E8E8E8' : Colors.textDark, marginTop: 4 },
+    detailLabel: { fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: colors.textLight },
+    detailValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: colors.textDark, marginTop: 4 },
 
     meetupCard: { gap: 0 },
-    divider: { height: 1, backgroundColor: isDarkMode ? '#3A3A3A' : Colors.borderLight, marginVertical: 10 },
-    subHeading: { fontFamily: Fonts.semiBold, fontSize: 13, color: isDarkMode ? '#E8E8E8' : Colors.textDark, marginBottom: 10 },
+    divider: { height: 1, backgroundColor: colors.borderLight, marginVertical: 10 },
+    subHeading: { fontFamily: Fonts.semiBold, fontSize: 13, color: colors.textDark, marginBottom: 10 },
     extraHeading: { fontFamily: Fonts.semiBold, fontSize: 13, color: '#DC2626', marginBottom: 10 },
 
     includeRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
-    includeText: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#D1D5DB' : Colors.textBody, flex: 1 },
+    includeText: { fontFamily: Fonts.regular, fontSize: 13, color: colors.textBody, flex: 1 },
 
     extraRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
-    extraText: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#F87171' : '#DC2626', flex: 1 },
+    extraText: { fontFamily: Fonts.regular, fontSize: 13, color: '#DC2626', flex: 1 },
 
     pickupDetailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 8 },
-    pickupLabel: { fontFamily: Fonts.regular, fontSize: 12, color: isDarkMode ? '#A0A0A0' : Colors.textMuted, minWidth: 60 },
-    pickupValue: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#E8E8E8' : Colors.textDark, flex: 1 },
+    pickupLabel: { fontFamily: Fonts.regular, fontSize: 12, color: colors.textMuted, minWidth: 60 },
+    pickupValue: { fontFamily: Fonts.regular, fontSize: 13, color: colors.textDark, flex: 1 },
 
     breakdownSection: {
-        backgroundColor: isDarkMode ? '#2D2D2D' : '#FAFAFA',
+        backgroundColor: colors.bgCardMuted,
         borderRadius: Radius.md,
         padding: Spacing.md,
         gap: Spacing.sm,
@@ -839,17 +842,17 @@ const styles = StyleSheet.create({
     breakdownLabel: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.caption ?? 12,
-        color: isDarkMode ? '#A0A0A0' : '#666'
+        color: colors.textMuted,
     },
     breakdownValue: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.caption ?? 12,
-        color: isDarkMode ? '#E8E8E8' : Colors.textDark
+        color: colors.textDark,
     },
 
-    totalRow: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: isDarkMode ? '#3A3A3A' : '#F0F0F0' },
-    totalLabel: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: isDarkMode ? '#E8E8E8' : Colors.textDark },
-    totalValue: { fontFamily: Fonts.semiBold, fontSize: 20, color: Colors.primary },
+    totalRow: { marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: colors.borderLight },
+    totalLabel: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textDark },
+    totalValue: { fontFamily: Fonts.semiBold, fontSize: 20, color: colors.primary },
 
     addressCard: {
         flexDirection: 'row',
@@ -859,47 +862,47 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
         borderRadius: Radius.md,
         borderWidth: 1.5,
-        borderColor: isDarkMode ? '#3A3A3A' : '#EEEEEE',
+        borderColor: colors.borderLight,
     },
     addressCardActive: {
-        borderColor: Colors.primary,
-        backgroundColor: isDarkMode ? '#1A4A32' : '#F0FAF4',
+        borderColor: colors.primary,
+        backgroundColor: isDarkMode ? 'rgba(52, 199, 89, 0.1)' : '#F0FAF4',
     },
     addressLabel: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.body,
-        color: isDarkMode ? '#E8E8E8' : Colors.textDark,
+        color: colors.textDark,
     },
     addressSub: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.caption ?? 12,
-        color: isDarkMode ? '#A0A0A0' : Colors.textMuted,
+        color: colors.textMuted,
         marginTop: 4,
     },
     defaultBadge: {
         fontFamily: Fonts.semiBold,
         fontSize: 10,
-        color: Colors.primary,
+        color: colors.primary,
         marginTop: 4,
     },
     noAddressText: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
-        color: isDarkMode ? '#A0A0A0' : Colors.textMuted,
+        color: colors.textMuted,
         textAlign: 'center',
         paddingVertical: Spacing.lg,
     },
 
     couponRow: { flexDirection: 'row', gap: Spacing.sm },
     couponInput: {
-        flex: 1, height: 44, borderWidth: 1.5, borderColor: isDarkMode ? '#404040' : '#E5E5E5', borderRadius: Radius.md,
-        paddingHorizontal: Spacing.md, fontFamily: Fonts.medium, fontSize: FontSize.body, color: isDarkMode ? '#E8E8E8' : Colors.textDark, backgroundColor: isDarkMode ? '#303030' : '#FFFFFF',
+        flex: 1, height: 44, borderWidth: 1.5, borderColor: colors.borderLight, borderRadius: Radius.md,
+        paddingHorizontal: Spacing.md, fontFamily: Fonts.medium, fontSize: FontSize.body, color: colors.textDark, backgroundColor: colors.bgCard,
     },
-    couponBtn: { paddingHorizontal: Spacing.lg, height: 44, backgroundColor: Colors.primary, borderRadius: Radius.md, justifyContent: 'center', alignItems: 'center' },
+    couponBtn: { paddingHorizontal: Spacing.lg, height: 44, backgroundColor: colors.primary, borderRadius: Radius.md, justifyContent: 'center', alignItems: 'center' },
     couponBtnDisabled: { opacity: 0.45 },
-    couponBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textWhite },
-    couponApplied: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: isDarkMode ? '#1A4A32' : '#E8F5E9', padding: Spacing.md, borderRadius: Radius.sm },
-    couponAppliedText: { flex: 1, fontFamily: Fonts.medium, fontSize: FontSize.caption ?? 13, color: isDarkMode ? '#68D391' : '#2e7d32' },
+    couponBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textWhite },
+    couponApplied: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: isDarkMode ? 'rgba(52, 199, 89, 0.1)' : '#E8F5E9', padding: Spacing.md, borderRadius: Radius.sm },
+    couponAppliedText: { flex: 1, fontFamily: Fonts.medium, fontSize: FontSize.caption ?? 13, color: isDarkMode ? '#34C759' : '#2e7d32' },
 
     methodRow: {
         flexDirection: 'row',
@@ -909,25 +912,25 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
         borderRadius: Radius.md,
         borderWidth: 1.5,
-        borderColor: isDarkMode ? '#3A3A3A' : '#EEEEEE'
+        borderColor: colors.borderLight,
     },
-    methodRowActive: { borderColor: Colors.primary, backgroundColor: isDarkMode ? '#1A4A32' : '#F0FAF4' },
-    methodLabel: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.body, color: isDarkMode ? '#A0A0A0' : Colors.textLight },
-    methodLabelActive: { color: isDarkMode ? '#E8E8E8' : Colors.textDark, fontFamily: Fonts.medium },
+    methodRowActive: { borderColor: colors.primary, backgroundColor: isDarkMode ? 'rgba(52, 199, 89, 0.1)' : '#F0FAF4' },
+    methodLabel: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textLight },
+    methodLabelActive: { color: colors.textDark, fontFamily: Fonts.medium },
 
     securityNote: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: Spacing.md },
-    securityText: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: isDarkMode ? '#A0A0A0' : '#888', lineHeight: 18 },
+    securityText: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: colors.textMuted, lineHeight: 18 },
 
     footer: {
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        backgroundColor: isDarkMode ? '#1A1A1A' : (Colors.bgScreen ?? '#FAFAF0'),
+        backgroundColor: colors.bgScreen,
         padding: Spacing.xl,
         paddingBottom: Platform.OS === 'ios' ? Spacing.xl + 16 : Spacing.xl,
-        borderTopWidth: 1, borderTopColor: isDarkMode ? '#3A3A3A' : '#E5E5E5',
+        borderTopWidth: 1, borderTopColor: colors.borderLight,
     },
-    payBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.primary, paddingVertical: 16, borderRadius: Radius.lg ?? 12 },
+    payBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.primary, paddingVertical: 16, borderRadius: Radius.lg ?? 12 },
     payBtnLoading: { opacity: 0.7 },
-    payBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: Colors.textWhite },
+    payBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textWhite },
 
     benefitNote: {
         fontFamily: Fonts.medium,
@@ -937,7 +940,7 @@ const styles = StyleSheet.create({
         marginTop: -2,
     },
     savingsBadge: {
-        backgroundColor: isDarkMode ? '#1A4A32' : '#E8F5E9',
+        backgroundColor: isDarkMode ? 'rgba(52, 199, 89, 0.1)' : '#E8F5E9',
         borderRadius: Radius.sm ?? 6,
         paddingVertical: 10,
         paddingHorizontal: Spacing.md,
@@ -948,6 +951,6 @@ const styles = StyleSheet.create({
     savingsText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.caption ?? 12,
-        color: isDarkMode ? '#68D391' : '#2e7d32',
+        color: isDarkMode ? '#34C759' : '#2e7d32',
     },
 });

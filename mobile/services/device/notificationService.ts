@@ -8,6 +8,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { storageService, STORAGE_KEYS } from './storageService';
+import { apiClient } from '../api/apiClient';
 
 export interface PushNotification {
     id: string;
@@ -18,13 +19,34 @@ export interface PushNotification {
     read: boolean;
 }
 
-// Configure notification display behavior
+// Notification types that warrant an alert banner + sound.
+// Everything else arrives silently (badge + inbox only).
+const ALERT_TYPES = new Set([
+    'booking_created',
+    'lab_booking_confirmed',
+    'subscription_activated',
+    'caregiver_assigned',
+    'booking_status',
+    'lab_rescheduled',
+    'ticket_created',
+    'ticket_reply',
+    'sos_confirmation',
+    'sos_responder_assigned',
+    'sos_resolved',
+]);
+
 Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-    }),
+    handleNotification: async (notification) => {
+        const type = notification.request.content.data?.type as string | undefined;
+        const isImportant = !!type && ALERT_TYPES.has(type);
+        return {
+            shouldShowAlert: isImportant,
+            shouldPlaySound: isImportant,
+            shouldSetBadge: true,
+            shouldShowBanner: isImportant,
+            shouldShowList: true,
+        };
+    },
 });
 
 export const notificationService = {
@@ -91,7 +113,7 @@ export const notificationService = {
     ): Promise<void> => {
         await Notifications.scheduleNotificationAsync({
             content: { title, body, sound: 'default' },
-            trigger: { seconds: triggerSeconds },
+            trigger: { seconds: triggerSeconds, type: 'timeInterval' } as any,
         });
     },
 
@@ -111,5 +133,41 @@ export const notificationService = {
         callback: (response: Notifications.NotificationResponse) => void
     ): Notifications.Subscription => {
         return Notifications.addNotificationResponseReceivedListener(callback);
+    },
+
+    /**
+     * Get notification history from backend
+     */
+    getNotifications: async (): Promise<PushNotification[]> => {
+        try {
+            const res = await apiClient.get<any>('/notifications/my?limit=50');
+            if (res.success && res.data) {
+                const rawList = Array.isArray(res.data) ? res.data : [];
+                return rawList.map((raw: any) => ({
+                    id: raw.id,
+                    title: raw.subject ?? raw.templateId ?? 'Notification',
+                    body: raw.body ?? '',
+                    read: raw.isRead,
+                    timestamp: new Date(raw.createdAt),
+                }));
+            }
+            return [];
+        } catch (e) {
+            console.error('getNotifications error:', e);
+            return [];
+        }
+    },
+
+    /**
+     * Mark a notification as read
+     */
+    markAsRead: async (id: string): Promise<boolean> => {
+        try {
+            const res = await apiClient.put(`/notifications/my/${id}/read`);
+            return res.success;
+        } catch (e) {
+            console.error('markAsRead error:', e);
+            return false;
+        }
     },
 };

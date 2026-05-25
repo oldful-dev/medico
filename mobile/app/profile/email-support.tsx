@@ -155,7 +155,7 @@ export default function EmailSupportScreen() {
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: Colors.bgPrimary,
+        backgroundColor: Colors.bgScreen,
     },
     header: {
         flexDirection: 'row',

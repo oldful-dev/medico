@@ -11,35 +11,37 @@ export default function ServiceAgreementsScreen() {
     const insets = useSafeAreaInsets();
     const [expandedAgreement, setExpandedAgreement] = useState<string | null>(null);
 
-    const agreements = [
-        {
-            id: 'active_care',
-            title: 'Active Care Plan Agreement',
-            description: 'Daily care and health monitoring services',
-            status: 'active',
-            startDate: '15 Jan 2026',
-            endDate: '14 Apr 2026',
-            duration: '90 days',
-        },
-        {
-            id: 'emergency_support',
-            title: 'Emergency Support Agreement',
-            description: 'Round-the-clock emergency response',
-            status: 'active',
-            startDate: '15 Jan 2026',
-            endDate: '14 Apr 2026',
-            duration: '90 days',
-        },
-        {
-            id: 'past_agreement',
-            title: 'Wellness Plan Agreement',
-            description: 'Monthly wellness check-ups',
-            status: 'expired',
-            startDate: '01 Oct 2025',
-            endDate: '31 Dec 2025',
-            duration: '92 days',
-        },
-    ];
+    // TODO: Fetch from backend
+    // const agreements = [
+    //     {
+    //         id: 'active_care',
+    //         title: 'Active Care Plan Agreement',
+    //         description: 'Daily care and health monitoring services',
+    //         status: 'active',
+    //         startDate: '15 Jan 2026',
+    //         endDate: '14 Apr 2026',
+    //         duration: '90 days',
+    //     },
+    //     {
+    //         id: 'emergency_support',
+    //         title: 'Emergency Support Agreement',
+    //         description: 'Round-the-clock emergency response',
+    //         status: 'active',
+    //         startDate: '15 Jan 2026',
+    //         endDate: '14 Apr 2026',
+    //         duration: '90 days',
+    //     },
+    //     {
+    //         id: 'past_agreement',
+    //         title: 'Wellness Plan Agreement',
+    //         description: 'Monthly wellness check-ups',
+    //         status: 'expired',
+    //         startDate: '01 Oct 2025',
+    //         endDate: '31 Dec 2025',
+    //         duration: '92 days',
+    //     },
+    // ];
+    const agreements: any[] = [];
 
     const handleViewAgreement = (agreementId: string) => {
         Alert.alert(
@@ -75,11 +77,19 @@ export default function ServiceAgreementsScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <Text style={styles.description}>
-                    View and manage your active service agreements and subscription plans.
-                </Text>
+                {agreements.length === 0 ? (
+                    <View style={styles.emptyState}>
+                        <Ionicons name="document-outline" size={64} color={Colors.textMuted} />
+                        <Text style={styles.emptyTitle}>Coming Soon</Text>
+                        <Text style={styles.emptySubtitle}>Service agreements will be available soon</Text>
+                    </View>
+                ) : (
+                    <>
+                        <Text style={styles.description}>
+                            View and manage your active service agreements and subscription plans.
+                        </Text>
 
-                {agreements.map((agreement) => (
+                        {agreements.map((agreement) => (
                     <View key={agreement.id} style={styles.agreementCard}>
                         <TouchableOpacity
                             style={styles.agreementHeader}
@@ -144,17 +154,19 @@ export default function ServiceAgreementsScreen() {
                             </View>
                         )}
                     </View>
-                ))}
+                        ))}
 
-                <View style={styles.infoBox}>
-                    <Ionicons name="information-circle-outline" size={20} color={Colors.primary} />
-                    <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={styles.infoTitle}>Service Agreements</Text>
-                        <Text style={styles.infoText}>
-                            These agreements outline the terms and conditions of your subscription plan. All active agreements are legally binding.
-                        </Text>
-                    </View>
-                </View>
+                        <View style={styles.infoBox}>
+                            <Ionicons name="information-circle-outline" size={20} color={Colors.primary} />
+                            <View style={{ flex: 1, marginLeft: 10 }}>
+                                <Text style={styles.infoTitle}>Service Agreements</Text>
+                                <Text style={styles.infoText}>
+                                    These agreements outline the terms and conditions of your subscription plan. All active agreements are legally binding.
+                                </Text>
+                            </View>
+                        </View>
+                    </>
+                )}
 
                 <View style={{ height: 40 }} />
             </ScrollView>
@@ -165,7 +177,7 @@ export default function ServiceAgreementsScreen() {
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: Colors.bgPrimary,
+        backgroundColor: Colors.bgScreen,
     },
     header: {
         flexDirection: 'row',
@@ -187,6 +199,25 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: Spacing.lg,
         paddingVertical: Spacing.lg,
+    },
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 100,
+    },
+    emptyTitle: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading2,
+        color: Colors.textDark,
+        marginTop: Spacing.lg,
+        marginBottom: Spacing.sm,
+    },
+    emptySubtitle: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textMuted,
+        textAlign: 'center',
     },
     description: {
         fontFamily: Fonts.regular,

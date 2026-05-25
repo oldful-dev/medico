@@ -40,6 +40,12 @@ const dispatch = async ({ mobile, messageId, phoneNumberId, variables, mediaUrl,
         return { success: true, requestId: 'dev-mode' };
     }
 
+    if (!phoneNumberId) {
+        const err = `phoneNumberId is undefined — check FAST2SMS_WABA_*_PHONE_NUMBER_ID env vars`;
+        logger.error(`[WA Provider] ${err}`);
+        return { success: false, error: err };
+    }
+
     // Build query string (Fast2SMS WABA uses GET with query params)
     const buildUrl = () => {
         const params = new URLSearchParams({

@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 
@@ -24,30 +24,11 @@ import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 const imgThali = require('@/assets/images/6fdd60a0eb22e90770fb958a6ddcf54c1c9dc6b6.png'); // Meal image
 const imgCheckmark = require('@/assets/images/019640d27de157c119b045c46aae6a6559dd3a79.png'); // Green Check Circle
 
-// Radio button mock components for the static layout
-const CheckedRadio = () => (
-    <View style={dynamicStyles.radioContainer}>
-        <Image source={imgCheckmark} style={dynamicStyles.checkedRadioIcon} />
-    </View>
-);
-
-const UncheckedRadio = () => (
-    <View style={dynamicStyles.radioContainer}>
-        <View style={dynamicStyles.uncheckedRadioCircle} />
-    </View>
-);
-
-const CheckedSolidRadio = () => (
-    <View style={dynamicStyles.radioContainer}>
-        <View style={dynamicStyles.solidCheckedRadio} />
-    </View>
-);
-
 export default function MealServiceScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
-    const { dark: isDarkMode } = useTheme();
+    const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
     const [mealType, setMealType] = useState('Home Style');
@@ -107,6 +88,24 @@ export default function MealServiceScreen() {
         }
     };
     const dynamicStyles = makeStyles(isDarkMode);
+
+    const CheckedRadio = () => (
+        <View style={dynamicStyles.radioContainer}>
+            <Image source={imgCheckmark} style={dynamicStyles.checkedRadioIcon} />
+        </View>
+    );
+
+    const UncheckedRadio = () => (
+        <View style={dynamicStyles.radioContainer}>
+            <View style={dynamicStyles.uncheckedRadioCircle} />
+        </View>
+    );
+
+    const CheckedSolidRadio = () => (
+        <View style={dynamicStyles.radioContainer}>
+            <View style={dynamicStyles.solidCheckedRadio} />
+        </View>
+    );
 
     return (
         <View style={dynamicStyles.screen}>
@@ -239,7 +238,7 @@ export default function MealServiceScreen() {
 const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: '#FDFDE8', // Cream color matches Figma
+        backgroundColor: isDarkMode ? '#0F172A' : '#FDFDE8',
     },
     header: {
         flexDirection: 'row',
@@ -256,7 +255,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         flex: 1,
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        color: '#FFFFFF',
         textAlign: 'left', marginLeft: 12,
         letterSpacing: -0.24,
     },
@@ -294,7 +293,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     mealOptionTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 15,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         lineHeight: 20,
     },
     mealOptionDesc: {
@@ -343,7 +342,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     sectionTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 16,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         marginLeft: 5,
         marginBottom: 12,
     },
@@ -365,7 +364,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     optionMainText: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 16,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
     },
     optionSubText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
@@ -402,11 +401,12 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         paddingHorizontal: 15,
         justifyContent: 'center',
         marginBottom: 35,
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
     },
     textAreaPlaceholder: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 15,
-        color: '#555555',
+        color: isDarkMode ? '#CBD5E1' : '#555555',
     },
 
     /* ─── Reusable Components ─── */
@@ -448,7 +448,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        color: '#FFFFFF',
         fontSize: 14,
     },
 });

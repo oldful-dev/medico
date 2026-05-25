@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, BackHandler, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -13,13 +14,13 @@ const TEXT_MUTED = '#888888';
 export default function CartSuccessScreen() {
     const router = useRouter();
     const params = useLocalSearchParams<{ bookingId?: string; amount?: string; category?: string }>();
-    const isDarkMode = useColorScheme() === 'dark';
+    const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
     useEffect(() => {
         // Prevent back button from going back to payment
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-            router.replace('/(tabs)/home');
+            router.replace('/(tabs)');
             return true;
         });
         return () => backHandler.remove();
@@ -29,7 +30,7 @@ export default function CartSuccessScreen() {
 
     return (
         <SafeAreaView style={dynamicStyles.container} edges={['top', 'bottom']}>
-            <StatusBar backgroundColor={isDarkMode ? '#252525' : '#FFFFFF'} barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#252525' : '#FFFFFF'} />
             
             <View style={dynamicStyles.content}>
                 <View style={dynamicStyles.iconContainer}>
@@ -55,15 +56,15 @@ export default function CartSuccessScreen() {
             </View>
 
             <View style={dynamicStyles.footer}>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={dynamicStyles.primaryBtn}
-                    onPress={() => router.replace('/profile/bookings')}
+                    onPress={() => router.replace('/my-bookings')}
                 >
                     <Text style={dynamicStyles.primaryBtnText}>View My Bookings</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={dynamicStyles.secondaryBtn}
-                    onPress={() => router.replace('/(tabs)/home')}
+                    onPress={() => router.replace('/(tabs)')}
                 >
                     <Text style={dynamicStyles.secondaryBtnText}>Back to Home</Text>
                 </TouchableOpacity>

@@ -75,7 +75,7 @@ BLOOD GROUP & EMERGENCY
 ═══════════════════════════════════════
 
 Blood Group: ${medicalCard?.bloodGroup || 'Not recorded'}
-Primary Doctor: ${medicalCard?.primaryDoctor || 'Not assigned'}
+Primary Doctor: ${(medicalCard as any)?.primaryDoctor || 'Not assigned'}
 
 ═══════════════════════════════════════
 MEDICAL HISTORY
@@ -101,7 +101,7 @@ ${addresses[0] ? `${addresses[0].line1}\n${addresses[0].cityName}, ${addresses[0
 INSURANCE INFORMATION
 ═══════════════════════════════════════
 
-${medicalCard?.insuranceInfo || 'Not recorded'}
+${(medicalCard as any)?.insuranceInfo || 'Not recorded'}
 
 ═══════════════════════════════════════
 Generated on ${new Date().toLocaleDateString('en-IN', {
@@ -338,11 +338,11 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
 
                 {/* Personal Information */}
                 <SectionCard title="Personal Information">
-                    <FieldRow label="Full Name" value={profile?.name} />
-                    <FieldRow label="Phone" value={profile?.phone} />
-                    <FieldRow label="Email" value={profile?.email} />
+                    <FieldRow label="Full Name" value={profile?.name || ''} />
+                    <FieldRow label="Phone" value={profile?.phone || ''} />
+                    <FieldRow label="Email" value={profile?.email || ''} />
                     <FieldRow label="Date of Birth" value={formatDate(profile?.dateOfBirth)} />
-                    <FieldRow label="Gender" value={profile?.gender} />
+                    <FieldRow label="Gender" value={profile?.gender || ''} />
                 </SectionCard>
 
                 {/* Blood Group & Emergency */}

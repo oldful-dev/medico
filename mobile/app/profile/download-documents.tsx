@@ -11,48 +11,50 @@ export default function DownloadDocumentsScreen() {
     const insets = useSafeAreaInsets();
     const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
 
-    const documents = [
-        {
-            id: '1',
-            name: 'Medical Report - January 2026',
-            category: 'medical',
-            type: 'PDF',
-            size: '2.4 MB',
-            date: '15 Jan 2026',
-        },
-        {
-            id: '2',
-            name: 'Lab Test Results',
-            category: 'lab',
-            type: 'PDF',
-            size: '1.8 MB',
-            date: '12 Jan 2026',
-        },
-        {
-            id: '3',
-            name: 'Prescription - Jan 2026',
-            category: 'prescription',
-            type: 'PDF',
-            size: '0.9 MB',
-            date: '10 Jan 2026',
-        },
-        {
-            id: '4',
-            name: 'Health Insurance Card',
-            category: 'insurance',
-            type: 'Image',
-            size: '3.1 MB',
-            date: '01 Jan 2026',
-        },
-        {
-            id: '5',
-            name: 'Discharge Summary',
-            category: 'medical',
-            type: 'PDF',
-            size: '1.2 MB',
-            date: '25 Dec 2025',
-        },
-    ];
+    // TODO: Fetch from backend
+    // const documents = [
+    //     {
+    //         id: '1',
+    //         name: 'Medical Report - January 2026',
+    //         category: 'medical',
+    //         type: 'PDF',
+    //         size: '2.4 MB',
+    //         date: '15 Jan 2026',
+    //     },
+    //     {
+    //         id: '2',
+    //         name: 'Lab Test Results',
+    //         category: 'lab',
+    //         type: 'PDF',
+    //         size: '1.8 MB',
+    //         date: '12 Jan 2026',
+    //     },
+    //     {
+    //         id: '3',
+    //         name: 'Prescription - Jan 2026',
+    //         category: 'prescription',
+    //         type: 'PDF',
+    //         size: '0.9 MB',
+    //         date: '10 Jan 2026',
+    //     },
+    //     {
+    //         id: '4',
+    //         name: 'Health Insurance Card',
+    //         category: 'insurance',
+    //         type: 'Image',
+    //         size: '3.1 MB',
+    //         date: '01 Jan 2026',
+    //     },
+    //     {
+    //         id: '5',
+    //         name: 'Discharge Summary',
+    //         category: 'medical',
+    //         type: 'PDF',
+    //         size: '1.2 MB',
+    //         date: '25 Dec 2025',
+    //     },
+    // ];
+    const documents: any[] = [];
 
     const toggleDocument = (docId: string) => {
         setSelectedDocs(prev =>
@@ -118,12 +120,20 @@ export default function DownloadDocumentsScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <Text style={styles.description}>
-                    Select documents to download. You can download multiple files at once.
-                </Text>
+                {documents.length === 0 ? (
+                    <View style={styles.emptyState}>
+                        <Ionicons name="document-outline" size={64} color={Colors.textMuted} />
+                        <Text style={styles.emptyTitle}>Coming Soon</Text>
+                        <Text style={styles.emptySubtext}>Documents will be available soon</Text>
+                    </View>
+                ) : (
+                    <>
+                        <Text style={styles.description}>
+                            Select documents to download. You can download multiple files at once.
+                        </Text>
 
-                {/* Select All */}
-                <TouchableOpacity
+                        {/* Select All */}
+                        <TouchableOpacity
                     style={styles.selectAllButton}
                     onPress={handleSelectAll}
                     activeOpacity={0.7}
@@ -170,33 +180,35 @@ export default function DownloadDocumentsScreen() {
                     );
                 })}
 
-                <View style={styles.divider} />
+                        <View style={styles.divider} />
 
-                {/* Summary */}
-                {selectedDocs.length > 0 && (
-                    <View style={styles.summaryBox}>
-                        <View style={styles.summaryItem}>
-                            <Text style={styles.summaryLabel}>Documents Selected</Text>
-                            <Text style={styles.summaryValue}>{selectedDocs.length}</Text>
-                        </View>
-                        <View style={styles.summaryItem}>
-                            <Text style={styles.summaryLabel}>Total Size</Text>
-                            <Text style={styles.summaryValue}>{totalSize.toFixed(1)} MB</Text>
-                        </View>
-                    </View>
+                        {/* Summary */}
+                        {selectedDocs.length > 0 && (
+                            <View style={styles.summaryBox}>
+                                <View style={styles.summaryItem}>
+                                    <Text style={styles.summaryLabel}>Documents Selected</Text>
+                                    <Text style={styles.summaryValue}>{selectedDocs.length}</Text>
+                                </View>
+                                <View style={styles.summaryItem}>
+                                    <Text style={styles.summaryLabel}>Total Size</Text>
+                                    <Text style={styles.summaryValue}>{totalSize.toFixed(1)} MB</Text>
+                                </View>
+                            </View>
+                        )}
+
+                        <TouchableOpacity
+                            style={[styles.downloadButton, selectedDocs.length === 0 && styles.downloadButtonDisabled]}
+                            onPress={handleDownload}
+                            disabled={selectedDocs.length === 0}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons name="download-outline" size={20} color="#FFFFFF" />
+                            <Text style={styles.downloadButtonText}>
+                                Download {selectedDocs.length > 0 ? `(${selectedDocs.length})` : ''}
+                            </Text>
+                        </TouchableOpacity>
+                    </>
                 )}
-
-                <TouchableOpacity
-                    style={[styles.downloadButton, selectedDocs.length === 0 && styles.downloadButtonDisabled]}
-                    onPress={handleDownload}
-                    disabled={selectedDocs.length === 0}
-                    activeOpacity={0.8}
-                >
-                    <Ionicons name="download-outline" size={20} color="#FFFFFF" />
-                    <Text style={styles.downloadButtonText}>
-                        Download {selectedDocs.length > 0 ? `(${selectedDocs.length})` : ''}
-                    </Text>
-                </TouchableOpacity>
 
                 <View style={{ height: 40 }} />
             </ScrollView>
@@ -205,9 +217,28 @@ export default function DownloadDocumentsScreen() {
 }
 
 const styles = StyleSheet.create({
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 100,
+    },
+    emptyTitle: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading2,
+        color: Colors.textDark,
+        marginTop: Spacing.lg,
+        marginBottom: Spacing.sm,
+    },
+    emptySubtext: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textMuted,
+        textAlign: 'center',
+    },
     screen: {
         flex: 1,
-        backgroundColor: Colors.bgPrimary,
+        backgroundColor: Colors.bgScreen,
     },
     header: {
         flexDirection: 'row',

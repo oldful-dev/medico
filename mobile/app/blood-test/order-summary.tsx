@@ -8,7 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import RazorpayCheckout from 'react-native-razorpay';
-import { paymentService } from '@/services/api/paymentService';
+import { paymentService, type PaymentMethod } from '@/services/api/paymentService';
 import { labService } from '@/services/api/labService';
 import { useUser } from '@/context/UserContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -44,7 +44,7 @@ export default function BloodTestOrderSummaryScreen() {
     const [couponCode, setCouponCode] = useState('');
     const [couponApplied, setCouponApplied] = useState(false);
     const [discount, setDiscount] = useState(0);
-    const [selectedMethod, setSelectedMethod] = useState<string>('UPI');
+    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('UPI');
 
     let bookingData: any = null;
     try {

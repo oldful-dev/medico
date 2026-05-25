@@ -131,7 +131,7 @@ export const paymentService = {
      * Verify Razorpay payment signature after completion.
      */
     verifyPayment: async (data: VerifyPaymentPayload): Promise<ApiResponse<VerifyPaymentResponse>> => {
-        const response = await apiClient.post<VerifyPaymentResponse>('/payments/verify', data);
+        const response = await apiClient.post<VerifyPaymentResponse>('/payments/verify', data, 30000);
         if (response.success && response.data?.payment) {
             AnalyticsEvents.trackPaymentSuccess(response.data.payment.amount);
         } else {

@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    ActivityIndicator, Alert, TextInput, useColorScheme,
+    ActivityIndicator, Alert, TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import RazorpayCheckout from 'react-native-razorpay';
-import { paymentService } from '@/services/api/paymentService';
+import { paymentService, type PaymentMethod } from '@/services/api/paymentService';
 import { labService } from '@/services/api/labService';
 import { useUser } from '@/context/UserContext';
 import { useCart } from '@/context/CartContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -31,7 +32,7 @@ export default function CartOrderSummaryScreen() {
     const insets = useSafeAreaInsets();
     const { profile } = useUser();
     const { clearCategory } = useCart();
-    const isDarkMode = useColorScheme() === 'dark';
+    const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     
     const params = useLocalSearchParams<{
@@ -47,7 +48,7 @@ export default function CartOrderSummaryScreen() {
     const [couponCode, setCouponCode] = useState('');
     const [couponApplied, setCouponApplied] = useState(false);
     const [discount, setDiscount] = useState(0);
-    const [selectedMethod, setSelectedMethod] = useState<string>('UPI');
+    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('UPI');
 
     let bookingData: any = null;
     try {
@@ -196,7 +197,7 @@ export default function CartOrderSummaryScreen() {
 
     return (
         <View style={[dynamicStyles.container, { paddingTop: insets.top }]}>
-            <StatusBar backgroundColor={isDarkMode ? '#252525' : '#FFFFFF'} barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#252525' : '#FFFFFF'} />
 
             <View style={dynamicStyles.header}>
                 <TouchableOpacity onPress={() => router.back()}>

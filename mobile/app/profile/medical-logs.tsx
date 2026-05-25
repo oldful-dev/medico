@@ -156,13 +156,10 @@ export default function MedicalLogsScreen() {
             {
                 text: 'Delete', style: 'destructive', onPress: async () => {
                     try {
-                        if (profile?.id) {
-                            await (userService as any).deleteHealthReport?.(profile.id, id);
-                        }
+                        await userService.deleteHealthReport(id);
                         setReports(prev => prev.filter(r => r.id !== id));
                     } catch {
-                        // Remove optimistically even if API doesn't have delete yet
-                        setReports(prev => prev.filter(r => r.id !== id));
+                        Alert.alert('Error', 'Failed to delete document');
                     }
                 }
             },

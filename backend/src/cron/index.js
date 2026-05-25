@@ -6,7 +6,7 @@ const cron = require('node-cron');
 const prisma = require('../config/database');
 const { logger } = require('../config/logger');
 const { sendExpiryReminder } = require('../utils/notifications');
-const { sendPlanExpiryFamily, sendHealthCheckFamily } = require('../services/whatsapp');
+const { sendPlanExpiryFamily, sendHealthCheckFamily, sendBookingConfirmed, sendSOSAlertOps } = require('../services/whatsapp');
 const { calculateExpiryDate } = require('../utils/helpers');
 const { sendSMS } = require('../services/sms');
 
@@ -112,7 +112,7 @@ const initCronJobs = () => {
                     autoRenew: true,
                     expiryDate: { lt: new Date() },
                 },
-                include: { plan: true, user: true },
+                include: { plan: true, user: { select: { id: true, name: true, phone: true, smsEnabled: true } } },
             });
 
             for (const sub of expired) {
@@ -128,7 +128,7 @@ const initCronJobs = () => {
                 }
 
                 // Create new subscription
-                await prisma.subscription.create({
+                const newSub = await prisma.subscription.create({
                     data: {
                         userId: sub.userId,
                         planId: sub.planId,
@@ -145,6 +145,24 @@ const initCronJobs = () => {
                     where: { id: sub.id },
                     data: { status: 'EXPIRED' },
                 });
+
+                // Notify user — WhatsApp BOOKING_CONFIRMED + DLT SMS ORDER_CONFIRMED
+                if (sub.user?.phone) {
+                    sendBookingConfirmed({
+                        phone: sub.user.phone,
+                        name: sub.user.name,
+                        orderId: newSub.id,
+                        userId: sub.userId,
+                    }).catch(() => {});
+                    if (sub.user.smsEnabled !== false) {
+                        sendSMS({
+                            template: 'ORDER_CONFIRMED',
+                            mobile: sub.user.phone,
+                            variables: [sub.user.name, newSub.id, process.env.SUPPORT_PHONE || '9480198108'],
+                            userId: sub.userId,
+                        }).catch(() => {});
+                    }
+                }
             }
 
             logger.info(`⏰ CRON: Auto-renewed ${expired.length} subscriptions`);
@@ -171,6 +189,18 @@ const initCronJobs = () => {
 
             if (breached.count > 0) {
                 logger.warn(`⏰ CRON: ${breached.count} bookings marked as SLA BREACH`);
+                // Alert ops team via WhatsApp SOS_ALERT_OPS + DLT SMS SOS_ADMIN
+                const adminPhone = process.env.ADMIN_OPS_PHONE || '9480198108';
+                sendSOSAlertOps({
+                    phone: adminPhone,
+                    userName: `${breached.count} booking(s)`,
+                    ayuxaId: 'SLA-BREACH',
+                }).catch(() => {});
+                sendSMS({
+                    template: 'SOS_ADMIN',
+                    mobile: adminPhone,
+                    variables: ['Ops', `${breached.count} SLA breach(es) detected`],
+                }).catch(() => {});
             }
         } catch (error) {
             logger.error('CRON SLA breach error:', error);

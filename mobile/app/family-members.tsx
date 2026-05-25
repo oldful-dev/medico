@@ -100,7 +100,7 @@ export default function FamilyMembersScreen() {
         setShowForm(true);
     };
 
-    const handleDateChange = (_, date: Date | undefined) => {
+    const handleDateChange = (_: any, date: Date | undefined) => {
         setShowDatePicker(false);
         if (date) {
             setDobDate(date);

@@ -223,7 +223,7 @@ export default function MeetupsListScreen() {
                             {error}
                         </Text>
                         <TouchableOpacity
-                            onPress={fetchMeetups}
+                            onPress={() => fetchMeetups()}
                             style={{ marginTop: 16, backgroundColor: PRIMARY, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10 }}
                         >
                             <Text style={{ fontFamily: Fonts.semiBold, fontSize: 14, color: '#fff' }}>Retry</Text>

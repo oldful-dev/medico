@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
@@ -32,7 +32,7 @@ export default function MedicalEquipmentScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
-    const { dark: isDarkMode } = useTheme();
+    const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     const [selectedEquipment, setSelectedEquipment] = useState('wheelchair');
     const [selectedDuration, setSelectedDuration] = useState('Monthly');
@@ -93,14 +93,14 @@ export default function MedicalEquipmentScreen() {
 
     return (
         <View style={dynamicStyles.screen}>
-            <View style={{ height: insets.top, backgroundColor: '#FDFDE8' }} />
-            <StatusBar style="dark" />
+            <View style={{ height: insets.top, backgroundColor: isDarkMode ? '#1E293B' : '#FDFDE8' }} />
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} />
 
             <View style={dynamicStyles.container}>
                 <View style={dynamicStyles.headerContainer}>
                     <View style={dynamicStyles.headerRow}>
                         <TouchableOpacity onPress={() => router.back()} style={dynamicStyles.backButton}>
-                            <Ionicons name="arrow-back" size={24} color="#02743F" />
+                            <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#F1F5F9' : '#02743F'} />
                         </TouchableOpacity>
                         <View style={dynamicStyles.headerTextCol}>
                             <Text style={dynamicStyles.headerTitle}>Rent Medical Equipment</Text>
@@ -216,7 +216,7 @@ export default function MedicalEquipmentScreen() {
 const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: '#FDFDE8', // Light cream color matching header image
+        backgroundColor: isDarkMode ? '#0F172A' : '#FDFDE8',
     },
     container: {
         flex: 1,
@@ -227,7 +227,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
 
     headerContainer: {
-        backgroundColor: '#FFFFE3', // Cream background for this one
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFE3',
     },
     headerRow: {
         flexDirection: 'row',
@@ -246,13 +246,13 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#02743F',
+        color: isDarkMode ? '#F1F5F9' : '#02743F',
         letterSpacing: -0.24,
     },
     headerSubtitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 12,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#94A3B8' : '#2F2F2F',
         letterSpacing: -0.24,
     },
 
@@ -276,7 +276,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     sectionTitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 13,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         marginBottom: 12,
     },
 
@@ -328,7 +328,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     equipmentName: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 10,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         textAlign: 'center',
     },
     oxygenText: {
@@ -351,7 +351,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     radioLabel: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 13,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         marginLeft: 12,
     },
 
@@ -427,6 +427,6 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     confirmButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 14,
-        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        color: '#FFFFFF',
     },
 });

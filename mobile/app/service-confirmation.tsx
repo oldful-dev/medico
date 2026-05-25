@@ -1,31 +1,26 @@
-﻿import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
-    ScrollView,
-    ActivityIndicator,
-    Alert,
-    Animated,
-    useColorScheme,
+    View, Text, TouchableOpacity, Image,
+    ScrollView, ActivityIndicator, Alert, Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 import { bookingService, Booking } from '@/services/api/bookingService';
+
+const PRIMARY = '#02743F';
+const PRIMARY_DARK = '#015C32';
+const PRIMARY_LIGHT = '#E8F5EE';
 
 export default function ServiceConfirmationScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const isDarkMode = useColorScheme() === 'dark';
+    const { isDarkMode } = useTheme();
 
     const params = useLocalSearchParams<{
         bookingId?: string;
-        // Meetup mode params
         bookingCode?: string;
         meetupEventDate?: string;
         meetupStartTime?: string;
@@ -35,7 +30,6 @@ export default function ServiceConfirmationScreen() {
         pickupEnabled?: string;
         pickupAddress?: string;
         preferredTime?: string;
-        // Fallbacks for direct navigation or old flows
         serviceName?: string;
         requestId?: string;
         description?: string;
@@ -46,7 +40,6 @@ export default function ServiceConfirmationScreen() {
 
     const isMeetup = !!params.bookingCode && !!params.meetupEventDate;
 
-    // Meetup animation refs
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const fadeAnim  = useRef(new Animated.Value(0)).current;
 
@@ -63,137 +56,110 @@ export default function ServiceConfirmationScreen() {
     const [loading, setLoading] = React.useState(!isMeetup && !!params.bookingId);
 
     React.useEffect(() => {
-        if (!isMeetup && params.bookingId) {
-            fetchBooking(params.bookingId);
-        }
+        if (!isMeetup && params.bookingId) fetchBooking(params.bookingId);
     }, [params.bookingId, isMeetup]);
 
     const fetchBooking = async (id: string) => {
         try {
             setLoading(true);
             const res = await bookingService.getBookingById(id);
-            if (res.success && res.data) {
-                setBooking(res.data);
-            }
+            if (res.success && res.data) setBooking(res.data);
         } catch {
-            console.error('Failed to fetch booking details');
+            /* silent */
         } finally {
             setLoading(false);
         }
     };
 
-    const handleCancelRequest = () => {
+    const handleCancel = () => {
         if (!booking?.id) return;
-
-        Alert.alert(
-            "Cancel Request",
-            "Are you sure you want to cancel this booking request?",
-            [
-                { text: "No, Keep It", style: "cancel" },
-                { 
-                    text: "Yes, Cancel", 
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            const res = await bookingService.cancelBooking(booking.id);
-                            if (res.success) {
-                                Alert.alert("Success", "Booking cancelled successfully");
-                                fetchBooking(booking.id); // Refresh
-                            } else {
-                                Alert.alert("Error", res.message || "Failed to cancel booking");
-                            }
-                        } catch (err) {
-                            Alert.alert("Error", "Something went wrong while cancelling");
+        Alert.alert('Cancel Request', 'Are you sure you want to cancel this booking?', [
+            { text: 'No, Keep It', style: 'cancel' },
+            {
+                text: 'Yes, Cancel', style: 'destructive',
+                onPress: async () => {
+                    try {
+                        const res = await bookingService.cancelBooking(booking.id);
+                        if (res.success) {
+                            Alert.alert('Cancelled', 'Booking cancelled successfully');
+                            fetchBooking(booking.id);
+                        } else {
+                            Alert.alert('Error', res.message || 'Failed to cancel');
                         }
+                    } catch {
+                        Alert.alert('Error', 'Something went wrong');
                     }
-                }
-            ]
-        );
+                },
+            },
+        ]);
     };
 
-    // Helper to format description from JSON
     const formatDescription = (b: Booking) => {
-        let lines: string[] = [];
-
-        if (b.symptoms && b.symptoms.length > 0) {
-            lines.push(`Primary: ${b.symptoms.join(', ')}`);
-        }
-        
-        let formData = b.formDataJson;
-        if (typeof formData === 'string') {
-            try {
-                formData = JSON.parse(formData);
-            } catch { }
-        }
-        
-        if (formData && typeof formData === 'object') {
-            // Fields to skip in text display (attachments, technical IDs, image fields)
-            const skipKeys = new Set(['attachments', 'serviceId', 'cityId']);
-
-            Object.entries(formData).forEach(([key, value]) => {
-                if (skipKeys.has(key)) return;
-                if (!value) return;
-
-                // Skip arrays of URLs (image upload fields)
-                if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') {
-                    const looksLikeUrls = value.every((v: string) =>
-                        v.startsWith('http://') || v.startsWith('https://') || v.startsWith('gs://')
-                    );
-                    if (looksLikeUrls) return; // These are image attachments — rendered separately
-                }
-
-                // Humanize keys
-                const label = key
-                    .replace(/_/g, ' ')
-                    .replace(/([A-Z])/g, ' $1')
-                    .replace(/^./, str => str.toUpperCase())
-                    .replace('Req ', 'Request ')
-                    .replace('Desc', 'Description');
-
-                if (Array.isArray(value)) {
-                    if (value.length > 0 && typeof value[0] === 'string') {
-                        lines.push(`${label}: ${value.join(', ')}`);
-                    }
-                } else if (typeof value === 'string') {
-                    // Skip values that look like URLs (single image fields)
-                    if (value.startsWith('http://') || value.startsWith('https://')) return;
-                    lines.push(`${label}: ${value}`);
-                } else if (typeof value === 'number' || typeof value === 'boolean') {
-                    lines.push(`${label}: ${value}`);
-                }
+        const lines: string[] = [];
+        if (b.symptoms?.length) lines.push(`Primary: ${b.symptoms.join(', ')}`);
+        let fd = b.formDataJson;
+        if (typeof fd === 'string') { try { fd = JSON.parse(fd); } catch { } }
+        if (fd && typeof fd === 'object') {
+            const skip = new Set(['attachments', 'serviceId', 'cityId']);
+            Object.entries(fd).forEach(([k, v]) => {
+                if (skip.has(k) || !v) return;
+                if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'string' &&
+                    v.every((s: string) => s.startsWith('http') || s.startsWith('gs://'))) return;
+                const label = k.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1')
+                    .replace(/^./, s => s.toUpperCase());
+                if (Array.isArray(v) && typeof v[0] === 'string') lines.push(`${label}: ${v.join(', ')}`);
+                else if (typeof v === 'string' && !v.startsWith('http')) lines.push(`${label}: ${v}`);
+                else if (typeof v === 'number' || typeof v === 'boolean') lines.push(`${label}: ${v}`);
             });
         }
-        
-        if (lines.length === 0) return 'Standard service request details';
-        return lines.join('\n');
+        return lines.length ? lines.join('\n') : 'Standard service request';
     };
 
-    // Helper to get attachments — collects URLs from 'attachments' key AND any image_upload field
     const getAttachments = (b: Booking): string[] => {
-        let formData = b.formDataJson;
-        if (typeof formData === 'string') {
-            try {
-                formData = JSON.parse(formData);
-            } catch { }
-        }
-        if (!formData || typeof formData !== 'object') return [];
-
+        let fd = b.formDataJson;
+        if (typeof fd === 'string') { try { fd = JSON.parse(fd); } catch { } }
+        if (!fd || typeof fd !== 'object') return [];
         const urls: string[] = [];
-        Object.values(formData).forEach((value: any) => {
-            if (typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://'))) {
-                urls.push(value);
-            } else if (Array.isArray(value)) {
-                value.forEach((v: any) => {
-                    if (typeof v === 'string' && (v.startsWith('http://') || v.startsWith('https://'))) {
-                        urls.push(v);
-                    }
-                });
-            }
+        Object.values(fd).forEach((v: any) => {
+            if (typeof v === 'string' && v.startsWith('http')) urls.push(v);
+            else if (Array.isArray(v)) v.forEach((s: any) => { if (typeof s === 'string' && s.startsWith('http')) urls.push(s); });
         });
         return urls;
     };
 
-    // ─── Meetup mode render ────────────────────────────────────────────
+    const getInfoText = (name: string) => {
+        const n = name.toLowerCase();
+        if (n.includes('driver') || n.includes('cab') || n.includes('hospital')) return 'A driver will be assigned shortly. You can track your cab location.';
+        if (n.includes('medicine') || n.includes('blood') || n.includes('order')) return 'Your order is being processed. Track delivery status here.';
+        if (n.includes('meal') || n.includes('tiffin')) return 'Our kitchen received your request. Track your tiffin delivery.';
+        if (n.includes('nurse') || n.includes('physio') || n.includes('doctor')) return 'A healthcare professional will be assigned to you shortly.';
+        if (n.includes('paper') || n.includes('legal') || n.includes('bank') || n.includes('bill')) return 'An Ayuxa concierge assistant will handle your request.';
+        if (n.includes('cleaning') || n.includes('repair') || n.includes('plumbing') || n.includes('tech')) return 'A certified technician is being prepared for your home visit.';
+        return 'A dedicated partner will be assigned to your request shortly.';
+    };
+
+    const getTrackLabel = (name: string) => {
+        const n = name.toLowerCase();
+        if (n.includes('driver') || n.includes('cab') || n.includes('hospital')) return 'Track Car/Cab';
+        if (n.includes('nurse') || n.includes('physio') || n.includes('doctor')) return 'Track Professional';
+        if (n.includes('medicine') || n.includes('blood')) return 'Track Order';
+        if (n.includes('meal') || n.includes('tiffin')) return 'Track Tiffin';
+        if (n.includes('cleaning') || n.includes('repair') || n.includes('plumbing') || n.includes('tech')) return 'Track Technician';
+        return 'Track Progress';
+    };
+
+    // ─── Theme tokens ─────────────────────────────────────────────────────────
+    const bg         = isDarkMode ? '#121212' : '#FFFFFF';
+    const cardBg     = isDarkMode ? '#1E1E1E' : '#FFFFFF';
+    const cardBorder = isDarkMode ? '#2A2A2A' : '#E9ECF0';
+    const textHigh   = isDarkMode ? '#F0F0F0' : '#1A1A1A';
+    const textMid    = isDarkMode ? '#A0A0A0' : '#6B7280';
+    const divider    = isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+    const greenBg    = isDarkMode ? '#0D2B1E' : PRIMARY_LIGHT;
+    const greenBorder= isDarkMode ? '#1A4A32' : '#C6E9D9';
+    const greenText  = isDarkMode ? '#7FD4A8' : PRIMARY_DARK;
+
+    // ─── Meetup mode ──────────────────────────────────────────────────────────
     if (isMeetup) {
         const meetupDate = (() => {
             if (!params.meetupEventDate) return '—';
@@ -204,626 +170,245 @@ export default function ServiceConfirmationScreen() {
             ? `${params.meetupStartTime} – ${params.meetupEndTime}`
             : (params.meetupStartTime ?? '—');
 
-        return (
-            <View style={[styles.screen, { paddingTop: insets.top }]}>
-                <StatusBar style={isDarkMode ? "light" : "light"} backgroundColor={isDarkMode ? Colors.primary : Colors.primary} />
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.meetupScrollContent}>
+        const meetupDetailRows = [
+            { icon: 'calendar-outline' as const, label: 'Date', value: meetupDate },
+            { icon: 'time-outline' as const, label: 'Time', value: meetupTime },
+            { icon: 'location-outline' as const, label: 'Venue', value: params.meetupVenue ?? '—' },
+            ...(params.meetupPinCode ? [{ icon: 'keypad-outline' as const, label: 'PIN Code', value: params.meetupPinCode }] : []),
+        ];
 
+        const nextSteps = [
+            { icon: 'phone-portrait-outline' as const, text: "You'll receive a confirmation SMS" },
+            { icon: 'people-outline' as const, text: 'Our team will call you 1 day before the event' },
+            { icon: 'car-outline' as const, text: params.pickupEnabled === 'true' ? 'Pickup will be arranged at your address' : 'Please reach the venue on time' },
+        ];
+
+        return (
+            <View style={{ flex: 1, backgroundColor: bg, paddingTop: insets.top }}>
+                <StatusBar style={isDarkMode ? 'light' : 'light'} backgroundColor={PRIMARY} />
+
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingTop: 32, paddingBottom: insets.bottom + 100 }}>
                     {/* Success animation */}
-                    <View style={styles.meetupSuccessSection}>
-                        <Animated.View style={[styles.meetupCheckOuter, { transform: [{ scale: scaleAnim }] }]}>
-                            <View style={styles.meetupCheckInner}>
+                    <View style={{ alignItems: 'center', marginBottom: 28 }}>
+                        <Animated.View style={{
+                            width: 110, height: 110, borderRadius: 55,
+                            backgroundColor: greenBg, justifyContent: 'center', alignItems: 'center',
+                            marginBottom: 20, transform: [{ scale: scaleAnim }],
+                        }}>
+                            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center' }}>
                                 <Ionicons name="checkmark" size={44} color="#fff" />
                             </View>
                         </Animated.View>
                         <Animated.View style={{ opacity: fadeAnim, alignItems: 'center' }}>
-                            <Text style={styles.meetupSuccessTitle}>Registration Confirmed!</Text>
-                            <Text style={styles.meetupSuccessSub}>You have successfully joined the Local Meet Up.</Text>
+                            <Text style={{ fontSize: 22, fontWeight: '700', color: textHigh, marginBottom: 8, textAlign: 'center' }}>Registration Confirmed!</Text>
+                            <Text style={{ fontSize: 14, color: textMid, textAlign: 'center', lineHeight: 20 }}>You have successfully joined the Local Meet Up.</Text>
                             {params.bookingCode && (
-                                <Text style={styles.meetupBookingCode}>Booking Code: {params.bookingCode}</Text>
+                                <Text style={{ fontSize: 13, fontWeight: '700', color: PRIMARY, marginTop: 12 }}>Booking Code: {params.bookingCode}</Text>
                             )}
                         </Animated.View>
                     </View>
 
-                    {/* Meeting details */}
-                    <Animated.View style={[styles.meetupDetailsCard, { opacity: fadeAnim }]}>
-                        <Text style={styles.meetupDetailsHeading}>Meeting Details</Text>
-                        {[
-                            { icon: 'calendar-outline', label: 'Date', value: meetupDate },
-                            { icon: 'time-outline', label: 'Time', value: meetupTime },
-                            { icon: 'location-outline', label: 'Venue', value: params.meetupVenue ?? '—' },
-                            ...(params.meetupPinCode ? [{ icon: 'keypad-outline', label: 'PIN Code', value: params.meetupPinCode }] : []),
-                        ].map((row, i) => (
-                            <View key={i} style={styles.meetupDetailRow}>
-                                <View style={styles.meetupDetailIcon}>
-                                    <Ionicons name={row.icon as any} size={16} color={Colors.primary} />
+                    {/* Details card */}
+                    <Animated.View style={{ opacity: fadeAnim, backgroundColor: cardBg, borderRadius: 16, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: cardBorder }}>
+                        <Text style={{ fontSize: 15, fontWeight: '700', color: textHigh, marginBottom: 16 }}>Meeting Details</Text>
+                        {meetupDetailRows.map((row, i) => (
+                            <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+                                <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: greenBg, justifyContent: 'center', alignItems: 'center' }}>
+                                    <Ionicons name={row.icon} size={16} color={PRIMARY} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.meetupDetailLabel}>{row.label}</Text>
-                                    <Text style={styles.meetupDetailValue}>{row.value}</Text>
+                                    <Text style={{ fontSize: 11, color: textMid, marginBottom: 2 }}>{row.label}</Text>
+                                    <Text style={{ fontSize: 14, fontWeight: '600', color: textHigh }}>{row.value}</Text>
                                 </View>
                             </View>
                         ))}
                         {params.pickupEnabled === 'true' && (
-                            <View style={styles.meetupPickupBox}>
-                                <Ionicons name="car-outline" size={16} color={Colors.primary} />
+                            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: greenBg, borderRadius: 10, padding: 12, marginBottom: 12 }}>
+                                <Ionicons name="car-outline" size={16} color={PRIMARY} />
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.meetupPickupLabel}>Pickup Arranged</Text>
-                                    {params.pickupAddress ? <Text style={styles.meetupPickupValue}>{params.pickupAddress}</Text> : null}
-                                    {params.preferredTime ? <Text style={styles.meetupPickupValue}>At {params.preferredTime}</Text> : null}
+                                    <Text style={{ fontSize: 12, fontWeight: '700', color: PRIMARY, marginBottom: 2 }}>Pickup Arranged</Text>
+                                    {params.pickupAddress ? <Text style={{ fontSize: 13, color: textMid }}>{params.pickupAddress}</Text> : null}
+                                    {params.preferredTime ? <Text style={{ fontSize: 13, color: textMid }}>At {params.preferredTime}</Text> : null}
                                 </View>
                             </View>
                         )}
-                        <View style={styles.meetupNotice}>
-                            <Ionicons name="information-circle-outline" size={16} color={Colors.primary} />
-                            <Text style={styles.meetupNoticeText}>We will contact you soon with more details.</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: greenBg, borderRadius: 10, padding: 12 }}>
+                            <Ionicons name="information-circle-outline" size={16} color={PRIMARY} />
+                            <Text style={{ fontSize: 12, color: textMid, flex: 1, lineHeight: 18 }}>We will contact you soon with more details.</Text>
                         </View>
                     </Animated.View>
 
-                    {/* What&apos;s next */}
-                    <Animated.View style={[styles.meetupNextCard, { opacity: fadeAnim }]}>
-                        <Text style={styles.meetupNextHeading}>What&apos;s Next?</Text>
-                        {[
-                            { icon: 'phone-portrait-outline', text: "You'll receive a confirmation SMS" },
-                            { icon: 'people-outline', text: 'Our team will call you 1 day before the event' },
-                            { icon: 'car-outline', text: params.pickupEnabled === 'true' ? 'Pickup will be arranged at your address' : 'Please reach the venue on time' },
-                        ].map((item, i) => (
-                            <View key={i} style={styles.meetupNextRow}>
-                                <View style={styles.meetupNextIcon}>
-                                    <Ionicons name={item.icon as any} size={15} color={Colors.primary} />
+                    {/* What's next */}
+                    <Animated.View style={{ opacity: fadeAnim, backgroundColor: cardBg, borderRadius: 16, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: cardBorder }}>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: textHigh, marginBottom: 14 }}>What&apos;s Next?</Text>
+                        {nextSteps.map((item, i) => (
+                            <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: i < nextSteps.length - 1 ? 12 : 0 }}>
+                                <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: greenBg, justifyContent: 'center', alignItems: 'center' }}>
+                                    <Ionicons name={item.icon} size={15} color={PRIMARY} />
                                 </View>
-                                <Text style={styles.meetupNextText}>{item.text}</Text>
+                                <Text style={{ fontSize: 13, color: textMid, flex: 1 }}>{item.text}</Text>
                             </View>
                         ))}
                     </Animated.View>
-
-                    <View style={{ height: 20 }} />
                 </ScrollView>
 
-                <View style={[styles.meetupFooter, { paddingBottom: insets.bottom + 12 }]}>
-                    <TouchableOpacity style={styles.meetupBookingsBtn} onPress={() => router.replace('/meetup/my-bookings' as any)} activeOpacity={0.85}>
+                <View style={{ backgroundColor: bg, paddingHorizontal: 20, paddingTop: 14, paddingBottom: insets.bottom + 12, borderTopWidth: 1, borderTopColor: cardBorder, gap: 10 }}>
+                    <TouchableOpacity
+                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: PRIMARY, borderRadius: 14, paddingVertical: 15 }}
+                        onPress={() => router.replace('/meetup/my-bookings' as any)} activeOpacity={0.85}
+                    >
                         <Ionicons name="calendar-outline" size={18} color="#fff" />
-                        <Text style={styles.meetupBookingsBtnText}>Go to My Bookings</Text>
+                        <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>Go to My Bookings</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.meetupHomeBtn} onPress={() => router.replace('/(tabs)' as any)} activeOpacity={0.85}>
-                        <Text style={styles.meetupHomeBtnText}>Back to Home</Text>
+                    <TouchableOpacity
+                        style={{ alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: cardBorder, borderRadius: 14, paddingVertical: 14 }}
+                        onPress={() => router.replace('/(tabs)' as any)} activeOpacity={0.85}
+                    >
+                        <Text style={{ fontSize: 15, fontWeight: '600', color: textMid }}>Back to Home</Text>
                     </TouchableOpacity>
                 </View>
             </View>
         );
     }
 
-    // ─── Standard service booking render ──────────────────────────────────
-    // Derive display values
-    const dispName = booking?.service?.name || params.serviceName || 'Service';
-    const dispId = booking?.bookingCode || params.requestId || 'REQ-PENDING';
-    const dispDesc = booking ? formatDescription(booking) : params.description || 'Details pending...';
-    const dispAddr = booking?.addressLine || params.address || 'Address pending...';
+    // ─── Standard service booking ─────────────────────────────────────────────
+    const dispName   = booking?.service?.name || params.serviceName || 'Service';
+    const dispId     = booking?.bookingCode || params.requestId || 'REQ-PENDING';
+    const dispDesc   = booking ? formatDescription(booking) : (params.description || 'Details pending...');
+    const dispAddr   = booking?.addressLine || params.address || 'Address pending...';
     const dispStatus = booking?.status || params.status || 'Confirmed';
-    const dispFee = booking?.amount ? `₹${booking.amount}` : params.fee || 'To be decided';
-    const dispDate = booking?.scheduledDate ? new Date(booking.scheduledDate).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Date pending...';
+    const dispFee    = booking?.amount ? `₹${booking.amount}` : (params.fee || 'To be decided');
+    const dispDate   = booking?.scheduledDate
+        ? new Date(booking.scheduledDate).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+        : 'Date pending...';
+    const attachments = booking ? getAttachments(booking) : [];
+
+    const serviceDetailRows = [
+        { icon: 'construct-outline' as const, label: 'Service', value: dispName },
+        { icon: 'information-circle-outline' as const, label: 'Additional Details', value: dispDesc },
+        { icon: 'location-outline' as const, label: 'Address', value: dispAddr },
+        { icon: 'calendar-outline' as const, label: 'Scheduled Date', value: dispDate },
+        { icon: 'wallet-outline' as const, label: 'Booking Fee / Estimate', value: dispFee },
+    ];
 
     return (
-        <View style={[styles.screen, { backgroundColor: isDarkMode ? '#0F172A' : Colors.primary }]}>
-            <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
-            <StatusBar style={isDarkMode ? "light" : "light"} backgroundColor={isDarkMode ? Colors.primary : Colors.primary} />
+        <View style={{ flex: 1, backgroundColor: bg, paddingTop: insets.top }}>
+            <View style={{ backgroundColor: PRIMARY, height: 0 }} />
+            <StatusBar style="light" backgroundColor={PRIMARY} />
 
-            {/* ─── Header ─── */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
+            {/* Header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: PRIMARY, paddingHorizontal: 16, paddingBottom: 20, paddingTop: 12 }}>
+                <TouchableOpacity onPress={() => router.back()} style={{ padding: 5 }}>
+                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{loading ? 'Fetching Booking...' : 'Booking Confirmed'}</Text>
+                <Text style={{ flex: 1, fontSize: 18, fontWeight: '700', color: '#FFFFFF', marginLeft: 12, letterSpacing: -0.3 }}>
+                    {loading ? 'Loading...' : 'Booking Confirmed'}
+                </Text>
             </View>
 
-            {/* ─── Content Card ─── */}
-            <View style={styles.contentCard}>
-                <ScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                >
-                    {/* Success Icon & Title */}
-                    <View style={styles.successSection}>
-                        <View style={styles.successCircle}>
-                            <Ionicons name="checkmark" size={48} color={Colors.textWhite} />
+            {/* White card with rounded top */}
+            <View style={{ flex: 1, backgroundColor: bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -12, overflow: 'hidden' }}>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 28, paddingBottom: insets.bottom + 100 }}>
+
+                    {/* Success icon + title */}
+                    <View style={{ alignItems: 'center', marginBottom: 24 }}>
+                        <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center', marginBottom: 16, shadowColor: PRIMARY, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6 }}>
+                            <Ionicons name="checkmark" size={38} color="#FFFFFF" />
                         </View>
-                        <Text style={styles.successTitle}>{loading ? 'Please wait...' : 'Booking Received!'}</Text>
-                        <Text style={styles.successSubtitle}>
-                            {booking ? 'Your service request has been successfully submitted.' : (loading ? 'Fetching your booking details...' : 'Successfully booked!')}
+                        <Text style={{ fontSize: 22, fontWeight: '700', color: textHigh, marginBottom: 6, letterSpacing: -0.3 }}>
+                            {loading ? 'Please wait...' : 'Booking Received!'}
+                        </Text>
+                        <Text style={{ fontSize: 14, color: textMid, textAlign: 'center', lineHeight: 20 }}>
+                            {loading ? 'Fetching your booking details...' : 'Your service request has been submitted successfully.'}
                         </Text>
                     </View>
 
-                    {loading && <ActivityIndicator size="large" color={Colors.primary} style={{ marginBottom: 20 }} />}
+                    {loading && <ActivityIndicator size="large" color={PRIMARY} style={{ marginBottom: 20 }} />}
 
-                    {/* Booking ID Card */}
-                    <View style={styles.bookingIdCard}>
+                    {/* Request ID + status badge */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: greenBg, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 16, borderWidth: 1, borderColor: greenBorder, borderStyle: 'dashed' }}>
                         <View>
-                            <Text style={styles.bookingIdLabel}>Request ID</Text>
-                            <Text style={styles.bookingIdValue}>{dispId}</Text>
+                            <Text style={{ fontSize: 11, color: textMid, fontWeight: '500', marginBottom: 2 }}>Request ID</Text>
+                            <Text style={{ fontSize: 15, fontWeight: '700', color: greenText, letterSpacing: 0.5 }}>{dispId}</Text>
                         </View>
-                        <View style={styles.statusBadge}>
-                            <Text style={styles.statusBadgeText}>{dispStatus}</Text>
+                        <View style={{ backgroundColor: isDarkMode ? '#1A4A32' : '#D4EDDA', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: isDarkMode ? PRIMARY : '#A8D5B8' }}>
+                            <Text style={{ fontSize: 12, fontWeight: '700', color: isDarkMode ? '#7FD4A8' : PRIMARY_DARK }}>{dispStatus}</Text>
                         </View>
                     </View>
 
-                    {/* Details Card */}
-                    <View style={styles.detailsCard}>
-                        <Text style={styles.detailsCardTitle}>Service Details</Text>
-
-                        <View style={styles.detailRow}>
-                            <View style={styles.detailIconBox}>
-                                <Ionicons name="construct-outline" size={16} color={Colors.primary} />
+                    {/* Service details card */}
+                    <View style={{ backgroundColor: cardBg, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: cardBorder }}>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: textHigh, marginBottom: 14, letterSpacing: -0.2 }}>Service Details</Text>
+                        {serviceDetailRows.map((row, i) => (
+                            <View key={row.label}>
+                                {i > 0 && <View style={{ height: 0.5, backgroundColor: divider, marginVertical: 2 }} />}
+                                <View style={{ flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10, gap: 12 }}>
+                                    <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: greenBg, justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 1 }}>
+                                        <Ionicons name={row.icon} size={15} color={PRIMARY} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{ fontSize: 11, color: textMid, marginBottom: 2, fontWeight: '500' }}>{row.label}</Text>
+                                        <Text style={{ fontSize: 13, color: textHigh, lineHeight: 18 }}>{row.value}</Text>
+                                    </View>
+                                </View>
                             </View>
-                             <View style={styles.detailTextGroup}>
-                                 <Text style={styles.detailLabel}>Service</Text>
-                                 <Text style={styles.detailValue}>{dispName}</Text>
-                             </View>
-                         </View>
- 
-                         <View style={styles.detailDivider} />
- 
-                         <View style={styles.detailRow}>
-                             <View style={styles.detailIconBox}>
-                                 <Ionicons name="information-circle-outline" size={16} color={Colors.primary} />
-                             </View>
-                             <View style={styles.detailTextGroup}>
-                                 <Text style={styles.detailLabel}>Additional Details</Text>
-                                 <Text style={styles.detailValue}>{dispDesc}</Text>
-                             </View>
-                         </View>
- 
-                         <View style={styles.detailDivider} />
+                        ))}
+                    </View>
 
-                         <View style={styles.detailRow}>
-                             <View style={styles.detailIconBox}>
-                                 <Ionicons name="location-outline" size={16} color={Colors.primary} />
-                             </View>
-                             <View style={styles.detailTextGroup}>
-                                 <Text style={styles.detailLabel}>Address</Text>
-                                 <Text style={styles.detailValue}>{dispAddr}</Text>
-                             </View>
-                         </View>
+                    {/* Attachments */}
+                    {attachments.length > 0 && (
+                        <View style={{ marginBottom: 16 }}>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: textHigh, marginBottom: 10 }}>Uploaded Photos / Documents</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+                                {attachments.map((url, idx) => (
+                                    <TouchableOpacity key={idx} activeOpacity={0.9}>
+                                        <Image source={{ uri: url }} style={{ width: 100, height: 100, borderRadius: 12, backgroundColor: '#eee' }} resizeMode="cover" />
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                            <Text style={{ fontSize: 11, color: textMid, marginTop: 6 }}>{attachments.length} file(s) uploaded</Text>
+                        </View>
+                    )}
 
-                         <View style={styles.detailDivider} />
-
-                         <View style={styles.detailRow}>
-                             <View style={styles.detailIconBox}>
-                                 <Ionicons name="calendar-outline" size={16} color={Colors.primary} />
-                             </View>
-                             <View style={styles.detailTextGroup}>
-                                 <Text style={styles.detailLabel}>Scheduled Date</Text>
-                                 <Text style={styles.detailValue}>{dispDate}</Text>
-                             </View>
-                         </View>
-
-                         <View style={styles.detailDivider} />
-
-                         <View style={styles.detailRow}>
-                             <View style={styles.detailIconBox}>
-                                 <Ionicons name="wallet-outline" size={16} color={Colors.primary} />
-                             </View>
-                             <View style={styles.detailTextGroup}>
-                                 <Text style={styles.detailLabel}>Booking Fee / Estimate</Text>
-                                 <Text style={styles.detailValue}>{dispFee}</Text>
-                             </View>
-                         </View>
-                     </View>
-
-                     {/* ─── Attachments Section ─── */}
-                     {booking && getAttachments(booking).length > 0 && (
-                         <View style={styles.attachmentsSection}>
-                             <Text style={styles.attachmentsTitle}>Uploaded Photos / Documents</Text>
-                             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.attachmentsScroll}>
-                                 {getAttachments(booking).map((url, idx) => (
-                                     <TouchableOpacity key={idx} activeOpacity={0.9} style={{ marginRight: 10 }}>
-                                        <Image source={{ uri: url }} style={styles.attachmentImage} resizeMode="cover" />
-                                     </TouchableOpacity>
-                                 ))}
-                             </ScrollView>
-                             <Text style={styles.attachmentsSubtitle}>{getAttachments(booking).length} file(s) uploaded</Text>
-                         </View>
-                     )}
- 
-                     {/* Info Banner */}
-                     <View style={styles.infoBanner}>
-                         <Ionicons name="information-circle" size={18} color={Colors.primaryDark} />
-                         <Text style={styles.infoBannerText}>
-                             {(() => {
-                                 const lower = dispName.toLowerCase();
-                                 if (lower.includes('driver') || lower.includes('cab') || lower.includes('hospital'))
-                                     return 'A driver will be assigned to your trip shortly. You can track your cab location.';
-                                 if (lower.includes('medicine') || lower.includes('blood') || lower.includes('order'))
-                                     return 'Your order is being processed. You can track the delivery status here.';
-                                 if (lower.includes('meal') || lower.includes('tiffin'))
-                                     return 'Our kitchen has received your request. You can track your tiffin delivery.';
-                                 if (lower.includes('nurse') || lower.includes('physio') || lower.includes('fitness') || lower.includes('doctor'))
-                                     return 'A healthcare professional or therapist will be assigned to you shortly.';
-                                 if (lower.includes('paper') || lower.includes('legal') || lower.includes('bank') || lower.includes('bill') || lower.includes('upgrade'))
-                                     return 'An Ayuxa concierge assistant will be assigned to handle your request.';
-                                 if (lower.includes('cleaning') || lower.includes('repair') || lower.includes('plumbing') || lower.includes('electrical') || lower.includes('tech'))
-                                     return 'A certified technician is being prepared for your home visit.';
-                                 return 'A dedicated partner will be assigned to your request shortly. You can track their status.';
-                             })()}
-                         </Text>
-                     </View>
+                    {/* Info banner */}
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: greenBg, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: greenBorder }}>
+                        <Ionicons name="information-circle" size={18} color={PRIMARY} style={{ marginTop: 1 }} />
+                        <Text style={{ flex: 1, fontSize: 13, color: greenText, lineHeight: 19 }}>{getInfoText(dispName)}</Text>
+                    </View>
                 </ScrollView>
 
-                {/* ─── Bottom Buttons ─── */}
-                <View style={styles.bottomBar}>
-                    <TouchableOpacity style={[styles.actionButton, styles.trackBtn]} activeOpacity={0.8}>
-                        <Text style={[styles.actionButtonText, styles.trackText]}>
-                            {(() => {
-                                const lower = dispName.toLowerCase();
-                                if (lower.includes('driver') || lower.includes('cab') || lower.includes('hospital')) return 'Track Car/Cab';
-                                if (lower.includes('nurse') || lower.includes('physio') || lower.includes('fitness') || lower.includes('doctor')) return 'Track Professional';
-                                if (lower.includes('medicine') || lower.includes('blood')) return 'Track Order';
-                                if (lower.includes('meal') || lower.includes('tiffin')) return 'Track Tiffin';
-                                if (lower.includes('cleaning') || lower.includes('repair') || lower.includes('plumbing') || lower.includes('electrical') || lower.includes('tech')) return 'Track Technician';
-                                if (lower.includes('paper') || lower.includes('legal') || lower.includes('bank') || lower.includes('bill') || lower.includes('anything') || lower.includes('travel') || lower.includes('upgrade')) return 'Track Assistant';
-                                return 'Track Progress';
-                            })()}
-                        </Text>
+                {/* Footer buttons — inside scroll flow via paddingBottom, not absolute */}
+                <View style={{ backgroundColor: bg, paddingHorizontal: 20, paddingTop: 14, paddingBottom: insets.bottom + 12, borderTopWidth: 1, borderTopColor: cardBorder, gap: 10 }}>
+                    <TouchableOpacity style={{ backgroundColor: PRIMARY, paddingVertical: 15, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.85}>
+                        <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '700' }}>{getTrackLabel(dispName)}</Text>
                     </TouchableOpacity>
-                    {booking && !['CANCELLED', 'COMPLETED'].includes(booking.status) && (
-                        <TouchableOpacity 
-                            style={[styles.actionButton, styles.cancelBtn]} 
-                            activeOpacity={0.8}
-                            onPress={handleCancelRequest}
+
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                        {booking && !['CANCELLED', 'COMPLETED'].includes(booking.status) && (
+                            <TouchableOpacity
+                                style={{ flex: 1, paddingVertical: 13, borderRadius: 14, alignItems: 'center', backgroundColor: isDarkMode ? '#2A1515' : '#FFF0F0', borderWidth: 1, borderColor: '#FFCCCC' }}
+                                onPress={handleCancel} activeOpacity={0.85}
+                            >
+                                <Text style={{ fontSize: 14, fontWeight: '600', color: '#E53E3E' }}>Cancel</Text>
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                            style={{ flex: 1, paddingVertical: 13, borderRadius: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6, backgroundColor: greenBg, borderWidth: 1, borderColor: greenBorder }}
+                            activeOpacity={0.85}
                         >
-                            <Text style={[styles.actionButtonText, styles.cancelText]}>Cancel Request</Text>
+                            <Ionicons name="call-outline" size={16} color={PRIMARY} />
+                            <Text style={{ fontSize: 14, fontWeight: '600', color: PRIMARY }}>Call Support</Text>
                         </TouchableOpacity>
-                    )}
-                    <TouchableOpacity style={[styles.actionButton, styles.callBtn]} activeOpacity={0.8}>
-                        <Ionicons name="call-outline" size={18} color={Colors.primaryDark} style={{ marginRight: 8 }} />
-                        <Text style={[styles.actionButtonText, styles.callText]}>Call Support</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.homeButton} activeOpacity={0.8} onPress={() => router.replace('/(tabs)')}>
-                        <Ionicons name="arrow-back-outline" size={18} color={Colors.primaryDark} style={{ marginRight: 8 }} />
-                        <Text style={styles.homeButtonText}>Back to Home</Text>
+                    </View>
+
+                    <TouchableOpacity
+                        style={{ alignItems: 'center', paddingVertical: 12 }}
+                        onPress={() => router.replace('/(tabs)' as any)} activeOpacity={0.8}
+                    >
+                        <Text style={{ fontSize: 14, color: textMid, fontWeight: '500', textDecorationLine: 'underline' }}>Back to Home</Text>
                     </TouchableOpacity>
                 </View>
             </View>
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    screen: {
-        flex: 1,
-        backgroundColor: Colors.primary,
-    },
-
-    /* ─── Header ─── */
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: Colors.primary,
-        paddingHorizontal: Spacing.lg,
-        paddingBottom: Spacing.xl,
-        paddingTop: Spacing.md,
-    },
-    backButton: {
-        padding: 5,
-    },
-    headerTitle: {
-        flex: 1,
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.heading2,
-        color: Colors.textWhite,
-        textAlign: "left", marginLeft: 12,
-        letterSpacing: -0.24,
-    },
-
-    /* ─── Content Card ─── */
-    contentCard: {
-        flex: 1,
-        backgroundColor: isDarkMode ? '#1A1A1A' : Colors.bgScreen,
-        borderTopLeftRadius: 45,
-        borderTopRightRadius: 45,
-        overflow: 'hidden',
-    },
-    scrollView: {
-        flex: 1,
-    },
-    scrollContent: {
-        paddingHorizontal: Spacing.xl,
-        paddingTop: 32,
-        paddingBottom: 220, // extra padding for bottom buttons
-    },
-
-    /* ─── Success Section ─── */
-    successSection: {
-        alignItems: 'center',
-        marginBottom: Spacing.xl,
-    },
-    successCircle: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: Colors.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: Spacing.lg,
-        shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-        elevation: 6,
-    },
-    successTitle: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.heading1,
-        color: isDarkMode ? '#E8E8E8' : Colors.primaryDark,
-        marginBottom: Spacing.xs,
-        letterSpacing: -0.24,
-    },
-    successSubtitle: {
-        fontFamily: Fonts.regular,
-        fontSize: FontSize.body,
-        color: isDarkMode ? '#A0A0A0' : Colors.textMuted,
-        textAlign: 'center',
-        lineHeight: 20,
-    },
-
-    /* ─── Booking ID Card ─── */
-    bookingIdCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: isDarkMode ? 'rgba(4, 131, 87, 0.15)' : 'rgba(4, 131, 87, 0.08)',
-        borderRadius: Radius.md,
-        paddingHorizontal: Spacing.lg,
-        paddingVertical: Spacing.md,
-        marginBottom: Spacing.lg,
-        borderWidth: 0.8,
-        borderColor: isDarkMode ? 'rgba(4, 131, 87, 0.4)' : 'rgba(4, 131, 87, 0.2)',
-        borderStyle: 'dashed',
-    },
-    bookingIdLabel: {
-        fontFamily: Fonts.medium,
-        fontSize: FontSize.bodySmall,
-        color: isDarkMode ? '#A0A0A0' : Colors.textMuted,
-    },
-    bookingIdValue: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.body,
-        color: isDarkMode ? '#68D391' : Colors.primaryDark,
-        letterSpacing: 0.5,
-    },
-    statusBadge: {
-        backgroundColor: isDarkMode ? '#1A4A32' : '#E8F5E9',
-        paddingHorizontal: Spacing.md,
-        paddingVertical: 6,
-        borderRadius: Radius.xl,
-        borderWidth: 1,
-        borderColor: isDarkMode ? Colors.primary : Colors.primary,
-    },
-    statusBadgeText: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.caption,
-        color: isDarkMode ? '#68D391' : Colors.primaryDark,
-    },
-
-    /* ─── Details Card ─── */
-    detailsCard: {
-        backgroundColor: isDarkMode ? '#252525' : Colors.bgCard,
-        borderRadius: Radius.lg,
-        padding: Spacing.lg,
-        marginBottom: Spacing.lg,
-        ...Shadow.card,
-    },
-    detailsCardTitle: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.body,
-        color: isDarkMode ? '#E8E8E8' : Colors.primaryDark,
-        marginBottom: Spacing.lg,
-        letterSpacing: -0.24,
-    },
-    detailRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: Spacing.sm,
-    },
-    detailIconBox: {
-        width: 32,
-        height: 32,
-        borderRadius: Radius.sm,
-        backgroundColor: 'rgba(4, 131, 87, 0.08)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: Spacing.md,
-    },
-    detailTextGroup: {
-        flex: 1,
-    },
-    detailLabel: {
-        fontFamily: Fonts.regular,
-        fontSize: FontSize.caption,
-        color: isDarkMode ? '#A0A0A0' : Colors.textLight,
-        marginBottom: 2,
-    },
-    detailValue: {
-        fontFamily: Fonts.medium,
-        fontSize: FontSize.body,
-        color: isDarkMode ? '#E8E8E8' : Colors.textBody,
-    },
-    detailDivider: {
-        height: 0.5,
-        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
-    },
-
-    /* ─── Info Banner ─── */
-    infoBanner: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: isDarkMode ? 'rgba(4, 131, 87, 0.15)' : 'rgba(4, 131, 87, 0.08)',
-        borderRadius: Radius.md,
-        paddingHorizontal: Spacing.lg,
-        paddingVertical: Spacing.md,
-        gap: Spacing.sm,
-    },
-    infoBannerText: {
-        flex: 1,
-        fontFamily: Fonts.regular,
-        fontSize: FontSize.bodySmall,
-        color: isDarkMode ? '#68D391' : Colors.primaryDark,
-        lineHeight: 16,
-    },
-    /* ─── Attachments ─── */
-    attachmentsSection: {
-        marginTop: Spacing.lg,
-        marginBottom: Spacing.md,
-    },
-    attachmentsTitle: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.bodySmall,
-        color: Colors.primaryDark,
-        marginBottom: Spacing.sm,
-    },
-    attachmentsSubtitle: {
-        fontFamily: Fonts.regular,
-        fontSize: 10,
-        color: Colors.textMuted,
-        marginTop: 4,
-    },
-    attachmentsScroll: {
-        paddingRight: 20,
-    },
-    attachmentImage: {
-        width: 120,
-        height: 120,
-        borderRadius: Radius.md,
-        backgroundColor: '#eee',
-    },
-
-    /* ─── Bottom Bar ─── */
-    bottomBar: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: isDarkMode ? '#1A1A1A' : Colors.bgScreen,
-        paddingHorizontal: Spacing.xl,
-        paddingTop: Spacing.lg,
-        paddingBottom: 36,
-        alignItems: 'center',
-        gap: Spacing.md,
-        borderTopWidth: 1,
-        borderTopColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-    },
-    actionButton: {
-        width: '100%',
-        maxWidth: 320,
-        height: 48,
-        borderRadius: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexDirection: 'row',
-    },
-    actionButtonText: {
-        fontFamily: Fonts.medium,
-        fontSize: FontSize.body,
-    },
-    trackBtn: {
-        backgroundColor: Colors.primaryDark,
-    },
-    trackText: {
-        color: Colors.textWhite,
-    },
-    cancelBtn: {
-        backgroundColor: '#FFF0F0',
-        borderWidth: 1,
-        borderColor: '#FFCCCC',
-    },
-    cancelText: {
-        color: Colors.sosRed,
-    },
-    callBtn: {
-        backgroundColor: '#E8F5E9',
-        borderWidth: 1,
-        borderColor: '#A5D6A7',
-    },
-    callText: {
-        color: Colors.primaryDark,
-    },
-    homeButton: {
-        width: '100%',
-        maxWidth: 320,
-        height: 48,
-        backgroundColor: 'transparent',
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexDirection: 'row',
-        marginTop: 4,
-    },
-    homeButtonText: {
-        fontFamily: Fonts.medium,
-        fontSize: FontSize.body,
-        color: isDarkMode ? '#68D391' : Colors.primaryDark,
-        textDecorationLine: 'underline',
-    },
-
-    // ─── Meetup mode styles ────────────────────────────────────────────
-    meetupScrollContent: { padding: Spacing.lg, paddingTop: 32, backgroundColor: isDarkMode ? '#1A1A1A' : Colors.bgScreen },
-    meetupSuccessSection: { alignItems: 'center', marginBottom: 28 },
-    meetupCheckOuter: {
-        width: 110, height: 110, borderRadius: 55,
-        backgroundColor: 'rgba(2,116,63,0.12)', justifyContent: 'center', alignItems: 'center', marginBottom: 20,
-    },
-    meetupCheckInner: {
-        width: 80, height: 80, borderRadius: 40,
-        backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center',
-    },
-    meetupSuccessTitle: { fontFamily: Fonts.semiBold, fontSize: 22, color: isDarkMode ? '#E8E8E8' : (Colors.textDark ?? '#1F2937'), marginBottom: 8, textAlign: 'center' },
-    meetupSuccessSub: { fontFamily: Fonts.regular, fontSize: 14, color: isDarkMode ? '#A0A0A0' : Colors.textMuted, textAlign: 'center', lineHeight: 20 },
-    meetupBookingCode: { fontFamily: Fonts.semiBold, fontSize: 13, color: Colors.primary, marginTop: 12 },
-    meetupDetailsCard: {
-        backgroundColor: isDarkMode ? '#252525' : '#fff', borderRadius: 16, padding: 18, marginBottom: 14,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDarkMode ? 0.2 : 0.06, shadowRadius: 8, elevation: 3,
-    },
-    meetupDetailsHeading: { fontFamily: Fonts.semiBold, fontSize: 15, color: isDarkMode ? '#E8E8E8' : (Colors.textDark ?? '#1F2937'), marginBottom: 16 },
-    meetupDetailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
-    meetupDetailIcon: {
-        width: 34, height: 34, borderRadius: 10, backgroundColor: isDarkMode ? '#1A4A32' : '#EDF7F1',
-        justifyContent: 'center', alignItems: 'center',
-    },
-    meetupDetailLabel: { fontFamily: Fonts.regular, fontSize: 11, color: isDarkMode ? '#A0A0A0' : Colors.textMuted, marginBottom: 2 },
-    meetupDetailValue: { fontFamily: Fonts.semiBold, fontSize: 14, color: isDarkMode ? '#E8E8E8' : (Colors.textDark ?? '#1F2937') },
-    meetupPickupBox: {
-        flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-        backgroundColor: isDarkMode ? '#1A4A32' : '#EDF7F1', borderRadius: 10, padding: 12, marginBottom: 12,
-    },
-    meetupPickupLabel: { fontFamily: Fonts.semiBold, fontSize: 12, color: isDarkMode ? '#68D391' : Colors.primary, marginBottom: 2 },
-    meetupPickupValue: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#D1D5DB' : Colors.textBody },
-    meetupNotice: {
-        flexDirection: 'row', alignItems: 'center', gap: 8,
-        backgroundColor: isDarkMode ? '#1A4A32' : '#F0FAF4', borderRadius: 10, padding: 12,
-    },
-    meetupNoticeText: { fontFamily: Fonts.regular, fontSize: 12, color: isDarkMode ? '#A0A0A0' : Colors.textMuted, flex: 1, lineHeight: 18 },
-    meetupNextCard: {
-        backgroundColor: isDarkMode ? '#252525' : '#fff', borderRadius: 16, padding: 18, marginBottom: 14,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDarkMode ? 0.2 : 0.05, shadowRadius: 6, elevation: 2,
-    },
-    meetupNextHeading: { fontFamily: Fonts.semiBold, fontSize: 14, color: isDarkMode ? '#E8E8E8' : (Colors.textDark ?? '#1F2937'), marginBottom: 14 },
-    meetupNextRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-    meetupNextIcon: {
-        width: 32, height: 32, borderRadius: 8, backgroundColor: isDarkMode ? '#1A4A32' : '#EDF7F1',
-        justifyContent: 'center', alignItems: 'center',
-    },
-    meetupNextText: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#D1D5DB' : Colors.textBody, flex: 1 },
-    meetupFooter: {
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#fff', paddingHorizontal: 20, paddingTop: 14,
-        borderTopWidth: 1, borderTopColor: isDarkMode ? 'rgba(255,255,255,0.1)' : Colors.borderLight, gap: 10,
-    },
-    meetupBookingsBtn: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-        backgroundColor: Colors.primary, borderRadius: 14, paddingVertical: 14,
-    },
-    meetupBookingsBtnText: { fontFamily: Fonts.semiBold, fontSize: 16, color: '#fff' },
-    meetupHomeBtn: {
-        alignItems: 'center', justifyContent: 'center',
-        borderWidth: 1.5, borderColor: Colors.borderLight, borderRadius: 14, paddingVertical: 13,
-    },
-    meetupHomeBtnText: { fontFamily: Fonts.semiBold, fontSize: 15, color: isDarkMode ? '#A0A0A0' : Colors.textMuted },
-});

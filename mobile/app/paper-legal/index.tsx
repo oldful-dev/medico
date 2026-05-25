@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
@@ -26,6 +27,7 @@ export default function PaperLegalScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
+    const { isDarkMode } = useTheme();
     const [selectedService, setSelectedService] = useState('Digital Life Certificate');
     const [details, setDetails] = useState('');
     
@@ -77,6 +79,8 @@ export default function PaperLegalScreen() {
             setIsBooking(false);
         }
     };
+
+    const styles = makeStyles(isDarkMode);
 
     return (
         <View style={styles.screen}>
@@ -189,10 +193,10 @@ export default function PaperLegalScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: '#048357', // Solid dark green from Figma behind
+        backgroundColor: '#048357',
     },
 
     /* ─── Header ─── */
@@ -232,7 +236,7 @@ const styles = StyleSheet.create({
     /* ─── Main Content Container (Cream Box) ─── */
     contentContainer: {
         flex: 1,
-        backgroundColor: '#FDFDE8', // Cream color
+        backgroundColor: isDarkMode ? '#0F172A' : '#FDFDE8',
         borderTopLeftRadius: 45,
         borderTopRightRadius: 45,
         paddingTop: 30, // Space from top inside cream box
@@ -251,14 +255,14 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         marginBottom: 15,
         marginLeft: 5,
     },
 
     /* ─── Options Card ─── */
     serviceCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
         borderRadius: 25,
         paddingVertical: 25,
         paddingHorizontal: 20,
@@ -282,7 +286,7 @@ const styles = StyleSheet.create({
     optionMainText: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 12,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         flex: 1,
         flexWrap: 'wrap',
         lineHeight: 18,
@@ -319,10 +323,10 @@ const styles = StyleSheet.create({
 
     /* ─── Inputs & UI Components ─── */
     textAreaContainer: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#E5E5E5',
+        borderColor: isDarkMode ? '#334155' : '#E5E5E5',
         marginBottom: 20,
         padding: 12,
         minHeight: 100,
@@ -330,7 +334,7 @@ const styles = StyleSheet.create({
     textArea: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 14,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
     },
 
     /* ─── Upload Card ─── */

@@ -17,8 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useTheme } from '@react-navigation/native';
-import { useThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { bookingService } from '@/services/api/bookingService';
@@ -47,10 +46,8 @@ const travellerCounts = Array.from({ length: 10 }, (_, i) => (i + 1).toString())
 export default function TripTravelsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { dark: isDarkMode } = useTheme();
-    const colors = useThemeColors();
+    const { isDarkMode } = useTheme();
 
-    const BORDER = isDarkMode ? '#3A3A3A' : '#E5E7EB';
     const WHITE = isDarkMode ? '#1A1A1A' : '#FFFFFF';
 
     const [destination, setDestination]             = useState('');
@@ -317,7 +314,6 @@ export default function TripTravelsScreen() {
                             keyExtractor={(item) => item}
                             renderItem={({ item }) => {
                                 const active = numTravellers === item;
-    const dynamicStyles = makeStyles(isDarkMode);
 
                                 return (
                                     <TouchableOpacity
@@ -352,7 +348,6 @@ export default function TripTravelsScreen() {
                             keyExtractor={(item) => item.id}
                             renderItem={({ item }) => {
                                 const active = purposeOfTravel === item.label;
-    const dynamicStyles = makeStyles(isDarkMode);
 
                                 return (
                                     <TouchableOpacity
@@ -387,6 +382,7 @@ function FormField({
 }: {
     label: string; required?: boolean; optional?: boolean; compact?: boolean; children: React.ReactNode;
 }) {
+    const { isDarkMode } = useTheme();
     const dynamicStyles = makeStyles(isDarkMode);
 
     return (
@@ -402,6 +398,7 @@ function FormField({
 }
 
 function ModalHeader({ title, onClose }: { title: string; onClose: () => void }) {
+    const { isDarkMode } = useTheme();
     const dynamicStyles = makeStyles(isDarkMode);
 
     return (
@@ -418,293 +415,296 @@ function ModalHeader({ title, onClose }: { title: string; onClose: () => void })
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 
-const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: PRIMARY,
-    },
+const makeStyles = (isDarkMode: boolean) => {
+    const BORDER = isDarkMode ? '#3A3A3A' : '#E5E7EB';
+    const WHITE = isDarkMode ? '#1A1A1A' : '#FFFFFF';
 
-    // Header
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingBottom: 12,
-        paddingTop: 4,
-        backgroundColor: PRIMARY,
-    },
-    backBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    headerTitle: {
-        flex: 1,
-        fontSize: 18,
-        fontWeight: '700',
-        color: WHITE,
-        textAlign: 'center',
-        letterSpacing: 0.3,
-    },
+    return StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: PRIMARY,
+        },
 
-    // Hero Banner
-    heroBanner: {
-        alignItems: 'center',
-        paddingHorizontal: 24,
-        paddingTop: 8,
-        paddingBottom: 32,
-        backgroundColor: PRIMARY,
-    },
-    heroIconCircle: {
-        width: 68,
-        height: 68,
-        borderRadius: 34,
-        backgroundColor: 'rgba(255,255,255,0.18)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 14,
-        borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.3)',
-    },
-    heroTitle: {
-        fontSize: 22,
-        fontWeight: '700',
-        color: WHITE,
-        textAlign: 'center',
-        marginBottom: 8,
-        letterSpacing: 0.2,
-    },
-    heroSubtitle: {
-        fontSize: 13,
-        color: 'rgba(255,255,255,0.82)',
-        textAlign: 'center',
-        lineHeight: 20,
-        fontWeight: '400',
-    },
+        // Header
+        header: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 16,
+            paddingBottom: 12,
+            paddingTop: 4,
+            backgroundColor: PRIMARY,
+        },
+        backBtn: {
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: 'rgba(255,255,255,0.15)',
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        headerTitle: {
+            flex: 1,
+            fontSize: 18,
+            fontWeight: '700',
+            color: WHITE,
+            textAlign: 'center',
+            letterSpacing: 0.3,
+        },
 
-    // Scroll + Card
-    scrollContent: {
-        flexGrow: 1,
-    },
-    formCard: {
-        backgroundColor: BG,
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        paddingHorizontal: 20,
-        paddingTop: 28,
-        paddingBottom: 40,
-        minHeight: '100%',
-        // shadow for iOS
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-    },
+        // Hero Banner
+        heroBanner: {
+            alignItems: 'center',
+            paddingHorizontal: 24,
+            paddingTop: 8,
+            paddingBottom: 32,
+            backgroundColor: PRIMARY,
+        },
+        heroIconCircle: {
+            width: 68,
+            height: 68,
+            borderRadius: 34,
+            backgroundColor: 'rgba(255,255,255,0.18)',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 14,
+            borderWidth: 2,
+            borderColor: 'rgba(255,255,255,0.3)',
+        },
+        heroTitle: {
+            fontSize: 22,
+            fontWeight: '700',
+            color: WHITE,
+            textAlign: 'center',
+            marginBottom: 8,
+            letterSpacing: 0.2,
+        },
+        heroSubtitle: {
+            fontSize: 13,
+            color: 'rgba(255,255,255,0.82)',
+            textAlign: 'center',
+            lineHeight: 20,
+            fontWeight: '400',
+        },
 
-    // Row of two fields
-    rowTwo: {
-        flexDirection: 'row',
-        marginBottom: 20,
-    },
+        // Scroll + Card
+        scrollContent: {
+            flexGrow: 1,
+        },
+        formCard: {
+            backgroundColor: isDarkMode ? '#111827' : BG,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingHorizontal: 20,
+            paddingTop: 28,
+            paddingBottom: 40,
+            minHeight: '100%',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 8,
+        },
 
-    // Form Fields
-    labelRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    label: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: TEXT_LABEL,
-    },
-    requiredDot: {
-        fontSize: 13,
-        fontWeight: '700',
-        color: RED,
-    },
-    optionalTag: {
-        fontSize: 11,
-        fontWeight: '500',
-        color: TEXT_MUTED,
-    },
+        // Row of two fields
+        rowTwo: {
+            flexDirection: 'row',
+            marginBottom: 20,
+        },
 
-    // Input rows
-    inputRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: WHITE,
-        borderWidth: 1,
-        borderColor: BORDER,
-        borderRadius: 12,
-        paddingHorizontal: 12,
-        paddingVertical: 12,
-        minHeight: 50,
-        // subtle shadow
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.04,
-        shadowRadius: 2,
-        elevation: 1,
-    },
-    textareaRow: {
-        alignItems: 'flex-start',
-        paddingTop: 12,
-        minHeight: 100,
-    },
-    inputIcon: {
-        marginRight: 10,
-    },
-    inputText: {
-        flex: 1,
-        fontSize: 14,
-        fontWeight: '500',
-        color: TEXT_DARK,
-        padding: 0,
-    },
-    textareaText: {
-        height: 80,
-        lineHeight: 20,
-    },
-    placeholder: {
-        color: TEXT_MUTED,
-        fontWeight: '400',
-    },
+        // Form Fields
+        labelRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 8,
+        },
+        label: {
+            fontSize: 13,
+            fontWeight: '600',
+            color: isDarkMode ? '#E5E7EB' : TEXT_LABEL,
+        },
+        requiredDot: {
+            fontSize: 13,
+            fontWeight: '700',
+            color: RED,
+        },
+        optionalTag: {
+            fontSize: 11,
+            fontWeight: '500',
+            color: TEXT_MUTED,
+        },
 
-    // Divider
-    divider: {
-        height: 1,
-        backgroundColor: BORDER,
-        marginVertical: 8,
-        marginBottom: 20,
-    },
+        // Input rows
+        inputRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: WHITE,
+            borderWidth: 1,
+            borderColor: BORDER,
+            borderRadius: 12,
+            paddingHorizontal: 12,
+            paddingVertical: 12,
+            minHeight: 50,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.04,
+            shadowRadius: 2,
+            elevation: 1,
+        },
+        textareaRow: {
+            alignItems: 'flex-start',
+            paddingTop: 12,
+            minHeight: 100,
+        },
+        inputIcon: {
+            marginRight: 10,
+        },
+        inputText: {
+            flex: 1,
+            fontSize: 14,
+            fontWeight: '500',
+            color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
+            padding: 0,
+        },
+        textareaText: {
+            height: 80,
+            lineHeight: 20,
+        },
+        placeholder: {
+            color: TEXT_MUTED,
+            fontWeight: '400',
+        },
 
-    // Submit button
-    submitBtn: {
-        backgroundColor: PRIMARY,
-        borderRadius: 14,
-        paddingVertical: 15,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 8,
-        shadowColor: PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    submitBtnDisabled: {
-        opacity: 0.6,
-    },
-    submitBtnText: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: WHITE,
-        letterSpacing: 0.3,
-    },
-    footerNote: {
-        textAlign: 'center',
-        fontSize: 12,
-        color: TEXT_MUTED,
-        marginTop: 16,
-        lineHeight: 18,
-        fontStyle: 'italic',
-    },
+        // Divider
+        divider: {
+            height: 1,
+            backgroundColor: BORDER,
+            marginVertical: 8,
+            marginBottom: 20,
+        },
 
-    // Modals
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.45)',
-        justifyContent: 'flex-end',
-    },
-    modal: {
-        backgroundColor: WHITE,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        maxHeight: '75%',
-        paddingBottom: Platform.OS === 'ios' ? 24 : 16,
-    },
-    datePickerModal: {
-        maxHeight: '85%',
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: BORDER,
-    },
-    modalTitle: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: TEXT_DARK,
-    },
-    closeBtn: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: '#F3F4F6',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    optionItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 13,
-        borderRadius: 10,
-        marginHorizontal: 8,
-        marginVertical: 2,
-    },
-    optionItemActive: {
-        backgroundColor: PRIMARY_LIGHT,
-    },
-    optionLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    optionDot: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#F3F4F6',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    optionDotActive: {
-        backgroundColor: PRIMARY,
-    },
-    optionDotText: {
-        fontSize: 13,
-        fontWeight: '700',
-        color: TEXT_DARK,
-    },
-    optionLabel: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: TEXT_DARK,
-    },
-    optionLabelActive: {
-        color: PRIMARY,
-        fontWeight: '600',
-    },
-    purposeIconBox: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        backgroundColor: PRIMARY_LIGHT,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    purposeIconBoxActive: {
-        backgroundColor: PRIMARY,
-    },
-});
+        // Submit button
+        submitBtn: {
+            backgroundColor: PRIMARY,
+            borderRadius: 14,
+            paddingVertical: 15,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: 8,
+            shadowColor: PRIMARY,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 4,
+        },
+        submitBtnDisabled: {
+            opacity: 0.6,
+        },
+        submitBtnText: {
+            fontSize: 16,
+            fontWeight: '700',
+            color: WHITE,
+            letterSpacing: 0.3,
+        },
+        footerNote: {
+            textAlign: 'center',
+            fontSize: 12,
+            color: TEXT_MUTED,
+            marginTop: 16,
+            lineHeight: 18,
+            fontStyle: 'italic',
+        },
+
+        // Modals
+        modalOverlay: {
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.45)',
+            justifyContent: 'flex-end',
+        },
+        modal: {
+            backgroundColor: WHITE,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            maxHeight: '75%',
+            paddingBottom: Platform.OS === 'ios' ? 24 : 16,
+        },
+        datePickerModal: {
+            maxHeight: '85%',
+        },
+        modalHeader: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 20,
+            paddingVertical: 16,
+            borderBottomWidth: 1,
+            borderBottomColor: BORDER,
+        },
+        modalTitle: {
+            fontSize: 16,
+            fontWeight: '700',
+            color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
+        },
+        closeBtn: {
+            width: 28,
+            height: 28,
+            borderRadius: 14,
+            backgroundColor: isDarkMode ? '#374151' : '#F3F4F6',
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        optionItem: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 20,
+            paddingVertical: 13,
+            borderRadius: 10,
+            marginHorizontal: 8,
+            marginVertical: 2,
+        },
+        optionItemActive: {
+            backgroundColor: PRIMARY_LIGHT,
+        },
+        optionLeft: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+        },
+        optionDot: {
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            backgroundColor: isDarkMode ? '#374151' : '#F3F4F6',
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        optionDotActive: {
+            backgroundColor: PRIMARY,
+        },
+        optionDotText: {
+            fontSize: 13,
+            fontWeight: '700',
+            color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
+        },
+        optionLabel: {
+            fontSize: 14,
+            fontWeight: '500',
+            color: isDarkMode ? '#E5E7EB' : TEXT_DARK,
+        },
+        optionLabelActive: {
+            color: PRIMARY,
+            fontWeight: '600',
+        },
+        purposeIconBox: {
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            backgroundColor: PRIMARY_LIGHT,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        purposeIconBoxActive: {
+            backgroundColor: PRIMARY,
+        },
+    });
+};

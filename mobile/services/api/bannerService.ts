@@ -34,7 +34,7 @@ class BannerService {
    */
   async getHomeBanners(): Promise<Banner[]> {
     try {
-      const response = await apiClient.get<BannerListResponse>('/banners/home');
+      const response = await apiClient.get<Banner[]>('/banners/home');
       if (response.success && Array.isArray(response.data)) {
         return response.data.sort((a, b) => a.order - b.order);
       }
@@ -50,8 +50,8 @@ class BannerService {
    */
   async getBannerById(id: string): Promise<Banner | null> {
     try {
-      const response = await apiClient.get<BannerResponse>(`/banners/${id}`);
-      return response.success ? response.data : null;
+      const response = await apiClient.get<Banner>(`/banners/${id}`);
+      return (response.success && response.data) ? response.data : null;
     } catch (error) {
       console.error(`Failed to fetch banner ${id}:`, error);
       return null;
@@ -67,8 +67,24 @@ class BannerService {
     isActive?: boolean;
   }): Promise<BannerListResponse> {
     try {
-      const response = await apiClient.get<BannerListResponse>('/banners', { params });
-      return response;
+      const queryParts: string[] = [];
+      if (params) {
+        if (params.page !== undefined) queryParts.push(`page=${params.page}`);
+        if (params.limit !== undefined) queryParts.push(`limit=${params.limit}`);
+        if (params.isActive !== undefined) queryParts.push(`isActive=${params.isActive}`);
+      }
+      const queryString = queryParts.join('&');
+      const endpoint = `/banners${queryString ? `?${queryString}` : ''}`;
+      
+      const response = await apiClient.get<Banner[]>(endpoint);
+      if (response.success && Array.isArray(response.data)) {
+        return {
+          success: true,
+          data: response.data,
+          total: (response as any).total ?? response.data.length,
+        };
+      }
+      return { success: false, data: [] };
     } catch (error) {
       console.error('Failed to fetch banners:', error);
       return { success: false, data: [] };
@@ -80,8 +96,8 @@ class BannerService {
    */
   async createBanner(data: Omit<Banner, 'id' | 'createdAt' | 'updatedAt'>): Promise<Banner | null> {
     try {
-      const response = await apiClient.post<BannerResponse>('/banners', data);
-      return response.success ? response.data : null;
+      const response = await apiClient.post<Banner>('/banners', data);
+      return (response.success && response.data) ? response.data : null;
     } catch (error) {
       console.error('Failed to create banner:', error);
       return null;
@@ -93,8 +109,8 @@ class BannerService {
    */
   async updateBanner(id: string, data: Partial<Omit<Banner, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Banner | null> {
     try {
-      const response = await apiClient.put<BannerResponse>(`/banners/${id}`, data);
-      return response.success ? response.data : null;
+      const response = await apiClient.put<Banner>(`/banners/${id}`, data);
+      return (response.success && response.data) ? response.data : null;
     } catch (error) {
       console.error(`Failed to update banner ${id}:`, error);
       return null;
@@ -119,8 +135,8 @@ class BannerService {
    */
   async toggleBannerStatus(id: string, isActive: boolean): Promise<Banner | null> {
     try {
-      const response = await apiClient.patch<BannerResponse>(`/banners/${id}/toggle`, { isActive });
-      return response.success ? response.data : null;
+      const response = await apiClient.patch<Banner>(`/banners/${id}/toggle`, { isActive });
+      return (response.success && response.data) ? response.data : null;
     } catch (error) {
       console.error(`Failed to toggle banner ${id}:`, error);
       return null;
