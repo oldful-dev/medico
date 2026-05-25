@@ -199,7 +199,7 @@ export default function HomeScreen() {
       const pinCode = await locationService.getPincodeFromAddress(coords);
       if (pinCode) {
         const res = await meetupService.getMeetups({ pinCode });
-        if (res.success && res.data?.length > 0) {
+        if (res.success && res.data && res.data.length > 0) {
           const featured = res.data.find((m: any) => m.isFeatured);
           setFeaturedMeetup(featured ?? null);
         } else {
@@ -270,7 +270,7 @@ export default function HomeScreen() {
     if (detectedPinCode) {
       try {
         const res = await meetupService.getMeetups({ pinCode: detectedPinCode });
-        if (res.success && res.data?.length > 0) {
+        if (res.success && res.data && res.data.length > 0) {
           const featured = res.data.find((m: any) => m.isFeatured);
           // Only show if meetup's pincode matches user's pincode
           if (featured && featured.pinCode === detectedPinCode) {

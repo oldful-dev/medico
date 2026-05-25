@@ -61,8 +61,28 @@ const createSubscription = async (req, res, next) => {
                 autoRenew: autoRenew || false,
                 status: status || 'ACTIVE',
             },
-            include: { plan: true, user: { select: { name: true } } },
+            include: { plan: true, user: { select: { id: true, name: true, phone: true, smsEnabled: true } } },
         });
+
+        // WhatsApp BOOKING_CONFIRMED + DLT SMS ORDER_CONFIRMED — non-fatal
+        if (subscription.user?.phone && (status || 'ACTIVE') === 'ACTIVE') {
+            const { sendBookingConfirmed } = require('../services/whatsapp');
+            const { sendSMS } = require('../services/sms');
+            sendBookingConfirmed({
+                phone: subscription.user.phone,
+                name: subscription.user.name,
+                orderId: subscription.id,
+                userId: subscription.userId,
+            }).catch(() => {});
+            if (subscription.user.smsEnabled !== false) {
+                sendSMS({
+                    template: 'ORDER_CONFIRMED',
+                    mobile: subscription.user.phone,
+                    variables: [subscription.user.name, subscription.id, process.env.SUPPORT_PHONE || '9480198108'],
+                    userId: subscription.userId,
+                }).catch(() => {});
+            }
+        }
 
         sendResponse(res, 201, subscription, 'Subscription activated');
     } catch (error) {
@@ -246,6 +266,30 @@ const verifyUserSubscription = async (req, res, next) => {
             await prisma.subscriptionUsage.createMany({
                 data: usageData
             });
+        }
+
+        // WhatsApp BOOKING_CONFIRMED + DLT SMS ORDER_CONFIRMED — non-fatal
+        const activatedUser = await prisma.user.findUnique({
+            where: { id: req.user?.id || subscription.userId },
+            select: { id: true, name: true, phone: true, smsEnabled: true },
+        }).catch(() => null);
+        if (activatedUser?.phone) {
+            const { sendBookingConfirmed } = require('../services/whatsapp');
+            const { sendSMS } = require('../services/sms');
+            sendBookingConfirmed({
+                phone: activatedUser.phone,
+                name: activatedUser.name,
+                orderId: subscription.id,
+                userId: activatedUser.id,
+            }).catch(() => {});
+            if (activatedUser.smsEnabled !== false) {
+                sendSMS({
+                    template: 'ORDER_CONFIRMED',
+                    mobile: activatedUser.phone,
+                    variables: [activatedUser.name, subscription.id, process.env.SUPPORT_PHONE || '9480198108'],
+                    userId: activatedUser.id,
+                }).catch(() => {});
+            }
         }
 
         sendResponse(res, 200, subscription, 'Subscription activated successfully');

@@ -1,4 +1,4 @@
-﻿import React, { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -70,7 +70,7 @@ export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
             // 2. Background: Fetch GPS + alert admin/family via API
             await Promise.allSettled([
                 Linking.openURL(HOTLINE_NUMBER),
-                sosService.triggerSOS('default').then((result) => {
+                sosService.triggerSOS(null).then((result) => {
                     if (!result.success) {
                         console.warn('SOS Backend Alert Failed:', result.message);
                     }

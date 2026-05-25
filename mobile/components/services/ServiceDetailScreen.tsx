@@ -31,6 +31,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
 import { Colors, Fonts, FontSize, Radius, Shadow } from '@/constants/theme';
 
 // ─── Shared static map thumbnail used across all service screens ───
@@ -94,17 +95,19 @@ export default function ServiceDetailScreen({
 }: ServiceDetailScreenProps) {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { isDarkMode } = useTheme();
 
     const buttonLabel = bookButtonLabel ?? (isLoading ? 'Processing...' : 'Book Service');
+    const dynamicStyles = makeStyles(isDarkMode);
 
     return (
-        <View style={styles.screen}>
+        <View style={dynamicStyles.screen}>
             {/* Status bar safe area — matches header bg */}
             <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
             <StatusBar style="light" backgroundColor={Colors.primary} />
 
             {/* ─── Header ─── */}
-            <View style={styles.header}>
+            <View style={dynamicStyles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
@@ -112,7 +115,7 @@ export default function ServiceDetailScreen({
             </View>
 
             <KeyboardAwareScrollView
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={dynamicStyles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
                 enableOnAndroid
@@ -120,42 +123,42 @@ export default function ServiceDetailScreen({
             >
                 {/* ─── Hero Row ─── */}
                 {/* Figma: 109×109 image left, title+subtitle right */}
-                <View style={styles.heroRow}>
-                    <Image source={heroImage} style={styles.heroImage} resizeMode="contain" />
-                    <View style={styles.heroText}>
-                        <Text style={styles.heroTitle}>{heroTitle}</Text>
-                        <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>
+                <View style={dynamicStyles.heroRow}>
+                    <Image source={heroImage} style={dynamicStyles.heroImage} resizeMode="contain" />
+                    <View style={dynamicStyles.heroText}>
+                        <Text style={dynamicStyles.heroTitle}>{heroTitle}</Text>
+                        <Text style={dynamicStyles.heroSubtitle}>{heroSubtitle}</Text>
                     </View>
                 </View>
 
                 {/* ─── Description ─── */}
-                <Text style={styles.heroDescription}>{description}</Text>
+                <Text style={dynamicStyles.heroDescription}>{description}</Text>
 
                 {/* ─── Pricing Card ─── */}
                 {!hidePricing && (
-                    <View style={styles.card}>
-                        <Text style={styles.cardTitle}>Pricing</Text>
+                    <View style={dynamicStyles.card}>
+                        <Text style={dynamicStyles.cardTitle}>Pricing</Text>
 
                         {/* Price chip — Figma: light grey rounded rect, ₹amount bold + rest regular */}
-                        <View style={styles.priceChip}>
-                            <Text style={styles.priceChipText}>{pricingLabel}</Text>
+                        <View style={dynamicStyles.priceChip}>
+                            <Text style={dynamicStyles.priceChipText}>{pricingLabel}</Text>
                         </View>
 
                         {/* Disclaimer — small italic muted text */}
                         {pricingNote && (
-                            <Text style={styles.priceNote}>{pricingNote}</Text>
+                            <Text style={dynamicStyles.priceNote}>{pricingNote}</Text>
                         )}
 
                         {/* Separator line */}
-                        <View style={styles.divider} />
+                        <View style={dynamicStyles.divider} />
 
                         {/* Bullet items — Figma: 15×15 green circle image with white check + text */}
                         {bulletItems.map((item, i) => (
-                            <View key={i} style={styles.bulletRow}>
-                                <View style={styles.bulletDot}>
+                            <View key={i} style={dynamicStyles.bulletRow}>
+                                <View style={dynamicStyles.bulletDot}>
                                     <Ionicons name="checkmark" size={9} color="#FFFFFF" />
                                 </View>
-                                <Text style={styles.bulletText}>{item}</Text>
+                                <Text style={dynamicStyles.bulletText}>{item}</Text>
                             </View>
                         ))}
                     </View>
@@ -164,23 +167,23 @@ export default function ServiceDetailScreen({
                 {/* ─── Location Card ─── */}
                 {/* Figma: white card, "Location" label, address input row (220w×38h), map thumbnail (69×69) right */}
                 {!hideLocation && (
-                    <View style={styles.card}>
-                        <Text style={styles.cardTitle}>Location</Text>
-                        <View style={styles.locationRow}>
+                    <View style={dynamicStyles.card}>
+                        <Text style={dynamicStyles.cardTitle}>Location</Text>
+                        <View style={dynamicStyles.locationRow}>
                             {/* Address input — Figma: 220px wide, 38px tall, 1px border, pin icon left */}
-                            <View style={styles.locationInputBox}>
+                            <View style={dynamicStyles.locationInputBox}>
                                 <Ionicons name="location-outline" size={15} color={Colors.primary} style={{ marginRight: 5 }} />
-                                <Text style={styles.locationText} numberOfLines={1}>
+                                <Text style={dynamicStyles.locationText} numberOfLines={1}>
                                     {address || 'Fetching location...'}
                                 </Text>
                             </View>
                             {/* Map — Figma: 69×69, border-radius ~12, right of input */}
-                            <Image source={imgMap} style={styles.mapThumb} />
+                            <Image source={imgMap} style={dynamicStyles.mapThumb} />
                         </View>
                         <TextInput
-                            style={styles.landmarkInput}
+                            style={dynamicStyles.landmarkInput}
                             placeholder="Landmark (optional, e.g. Near Apollo Hospital)"
-                            placeholderTextColor="#898989"
+                            placeholderTextColor={isDarkMode ? '#606060' : '#898989'}
                             value={landmark}
                             onChangeText={onLandmarkChange || (() => {})}
                         />
@@ -191,9 +194,9 @@ export default function ServiceDetailScreen({
                 {children}
 
                 {/* ─── Book Service Button ─── */}
-                <View style={styles.buttonWrap}>
+                <View style={dynamicStyles.buttonWrap}>
                     <TouchableOpacity
-                        style={[styles.bookButton, isLoading && { opacity: 0.65 }]}
+                        style={[dynamicStyles.bookButton, isLoading && { opacity: 0.65 }]}
                         activeOpacity={0.85}
                         disabled={isLoading}
                         onPress={onBook}
@@ -201,7 +204,7 @@ export default function ServiceDetailScreen({
                         {isLoading ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text style={styles.bookButtonText}>{buttonLabel}</Text>
+                            <Text style={dynamicStyles.bookButtonText}>{buttonLabel}</Text>
                         )}
                     </TouchableOpacity>
                 </View>
@@ -209,6 +212,203 @@ export default function ServiceDetailScreen({
         </View>
     );
 }
+
+const makeStyles = (isDarkMode: boolean) => {
+    const bgScreen = isDarkMode ? '#0F172A' : Colors.bgScreen;
+    const cardBg = isDarkMode ? '#1A2332' : '#FFFFFF';
+    const textPrimary = isDarkMode ? '#E8E8E8' : '#1A1A1A';
+    const textSecondary = isDarkMode ? '#A0A0A0' : '#555555';
+    const textMuted = isDarkMode ? '#707070' : '#848484';
+    const cardBorder = isDarkMode ? '#2A3F52' : '#E5E7EB';
+    const chipBg = isDarkMode ? '#1F3A4F' : '#EBEBEB';
+    const inputBg = isDarkMode ? '#172438' : '#FFFFFF';
+    const dividerColor = isDarkMode ? '#2A3F52' : '#EBEBEB';
+
+    return StyleSheet.create({
+        screen: {
+            flex: 1,
+            backgroundColor: bgScreen,
+        },
+        header: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: Colors.primary,
+            paddingHorizontal: 16,
+            paddingBottom: 14,
+            paddingTop: 10,
+        },
+        scrollContent: {
+            paddingHorizontal: 17,
+            paddingTop: 20,
+            paddingBottom: 40,
+        },
+        heroRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 14,
+            paddingHorizontal: 8,
+        },
+        heroImage: {
+            width: 109,
+            height: 109,
+            marginRight: 10,
+        },
+        heroText: {
+            flex: 1,
+        },
+        heroTitle: {
+            fontFamily: Fonts.semiBold,
+            fontSize: 18,
+            color: textSecondary,
+            marginBottom: 4,
+            letterSpacing: -0.24,
+        },
+        heroSubtitle: {
+            fontFamily: Fonts.regular,
+            fontSize: 14,
+            color: isDarkMode ? '#9CA3AF' : '#777777',
+            letterSpacing: -0.24,
+        },
+        heroDescription: {
+            fontFamily: Fonts.regular,
+            fontSize: 14,
+            color: textMuted,
+            textAlign: 'center',
+            lineHeight: 20,
+            marginBottom: 16,
+            paddingHorizontal: 4,
+            letterSpacing: -0.1,
+        },
+        card: {
+            backgroundColor: cardBg,
+            borderRadius: 13,
+            padding: 18,
+            marginBottom: 15,
+            borderWidth: isDarkMode ? 1 : 0,
+            borderColor: cardBorder,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: isDarkMode ? 0.3 : 0.06,
+            shadowRadius: 4,
+            elevation: 2,
+        },
+        cardTitle: {
+            fontFamily: Fonts.semiBold,
+            fontSize: 16,
+            color: textPrimary,
+            marginBottom: 12,
+            letterSpacing: -0.24,
+        },
+        priceChip: {
+            backgroundColor: chipBg,
+            borderRadius: 6,
+            paddingVertical: 10,
+            paddingHorizontal: 12,
+            marginBottom: 6,
+        },
+        priceChipText: {
+            fontFamily: Fonts.semiBold,
+            fontSize: 14,
+            color: textPrimary,
+            letterSpacing: -0.2,
+        },
+        priceNote: {
+            fontFamily: Fonts.regular,
+            fontSize: 11.5,
+            color: isDarkMode ? '#7A7A7A' : '#898989',
+            marginBottom: 4,
+            letterSpacing: -0.1,
+        },
+        divider: {
+            height: 1,
+            backgroundColor: dividerColor,
+            marginTop: 10,
+            marginBottom: 12,
+        },
+        bulletRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 14,
+        },
+        bulletDot: {
+            width: 15,
+            height: 15,
+            borderRadius: 7.5,
+            backgroundColor: Colors.primary,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginRight: 8,
+            flexShrink: 0,
+        },
+        bulletText: {
+            fontFamily: Fonts.regular,
+            fontSize: 13,
+            color: textPrimary,
+            flex: 1,
+            letterSpacing: -0.1,
+        },
+        locationRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+        },
+        locationInputBox: {
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: cardBorder,
+            borderRadius: 8,
+            height: 38,
+            paddingHorizontal: 10,
+            backgroundColor: inputBg,
+        },
+        locationText: {
+            flex: 1,
+            fontFamily: Fonts.regular,
+            fontSize: 13,
+            color: textPrimary,
+            letterSpacing: -0.1,
+        },
+        mapThumb: {
+            width: 69,
+            height: 69,
+            borderRadius: 12,
+            flexShrink: 0,
+        },
+        landmarkInput: {
+            marginTop: 12,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            borderWidth: 1,
+            borderColor: cardBorder,
+            borderRadius: 8,
+            fontFamily: Fonts.regular,
+            fontSize: 13,
+            color: textPrimary,
+            backgroundColor: inputBg,
+        },
+        buttonWrap: {
+            alignItems: 'center',
+            marginTop: 10,
+            marginBottom: 20,
+        },
+        bookButton: {
+            backgroundColor: Colors.primary,
+            width: 230,
+            height: 45,
+            borderRadius: 22.5,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        bookButtonText: {
+            fontFamily: Fonts.semiBold,
+            fontSize: 14,
+            color: '#FFFFFF',
+            letterSpacing: 0.1,
+        },
+    });
+};
 
 // ─── Shared Styles — used by per-screen form field children ─────────────────
 export const sharedStyles = StyleSheet.create({

@@ -67,18 +67,63 @@ export default function RootLayout() {
                   <Stack.Screen name="search" options={{ headerShown: false }} />
                   <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
 
-                  {/* Service Listing Screens */}
-                  <Stack.Screen name="all-home-essentials/index" options={{ headerShown: false }} />
-                  <Stack.Screen name="all-ayuxa-services/index" options={{ headerShown: false }} />
+                  {/* Checkout & Confirmation */}
+                  <Stack.Screen name="service-checkout" options={{ headerShown: false }} />
+                  <Stack.Screen name="service-confirmation" options={{ headerShown: false }} />
+
+                  {/* Bookings & History */}
+                  <Stack.Screen name="my-bookings" options={{ headerShown: false }} />
+                  <Stack.Screen name="booking-details" options={{ headerShown: false }} />
+                  <Stack.Screen name="my-prescriptions" options={{ headerShown: false }} />
+                  <Stack.Screen name="order-history" options={{ headerShown: false }} />
 
                   {/* Profile sub-screens */}
                   <Stack.Screen name="profile" options={{ headerShown: false }} />
+                  <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
                   <Stack.Screen name="family-members" options={{ headerShown: false }} />
                   <Stack.Screen name="emergency-contacts" options={{ headerShown: false }} />
                   <Stack.Screen name="medical-card" options={{ headerShown: false }} />
                   <Stack.Screen name="manage-addresses" options={{ headerShown: false }} />
+                  <Stack.Screen name="payments-wallet" options={{ headerShown: false }} />
+                  <Stack.Screen name="help-support" options={{ headerShown: false }} />
+                  <Stack.Screen name="ticket-chat" options={{ headerShown: false }} />
+                  <Stack.Screen name="terms-policy" options={{ headerShown: false }} />
+                  <Stack.Screen name="privacy-policy" options={{ headerShown: false }} />
+                  <Stack.Screen name="refund-policy" options={{ headerShown: false }} />
+                  <Stack.Screen name="rate-us" options={{ headerShown: false }} />
 
-                  {/* Unmapped Screens */}
+                  {/* Service Listing Screens */}
+                  <Stack.Screen name="all-home-essentials/index" options={{ headerShown: false }} />
+                  <Stack.Screen name="all-ayuxa-services/index" options={{ headerShown: false }} />
+
+                  {/* Service Flow Screens */}
+                  <Stack.Screen name="meetup" options={{ headerShown: false }} />
+                  <Stack.Screen name="meetup/index" options={{ headerShown: false }} />
+                  <Stack.Screen name="meetup/details" options={{ headerShown: false }} />
+                  <Stack.Screen name="meetup/register" options={{ headerShown: false }} />
+                  <Stack.Screen name="meetup/pickup" options={{ headerShown: false }} />
+                  <Stack.Screen name="meetup/my-bookings" options={{ headerShown: false }} />
+                  <Stack.Screen name="blood-test" options={{ headerShown: false }} />
+                  <Stack.Screen name="cart" options={{ headerShown: false }} />
+                  <Stack.Screen name="physio-fitness" options={{ headerShown: false }} />
+                  <Stack.Screen name="meal-service" options={{ headerShown: false }} />
+                  <Stack.Screen name="medical-equipment" options={{ headerShown: false }} />
+                  <Stack.Screen name="order-medicines" options={{ headerShown: false }} />
+                  <Stack.Screen name="paper-legal" options={{ headerShown: false }} />
+                  <Stack.Screen name="anything-else" options={{ headerShown: false }} />
+                  <Stack.Screen name="appliance-repair" options={{ headerShown: false }} />
+                  <Stack.Screen name="plumbing-electrical" options={{ headerShown: false }} />
+                  <Stack.Screen name="bill-payment" options={{ headerShown: false }} />
+                  <Stack.Screen name="bank-paperwork" options={{ headerShown: false }} />
+                  <Stack.Screen name="grocery-run" options={{ headerShown: false }} />
+                  <Stack.Screen name="deep-cleaning" options={{ headerShown: false }} />
+                  <Stack.Screen name="driving-cab" options={{ headerShown: false }} />
+                  <Stack.Screen name="trip-travels" options={{ headerShown: false }} />
+                  <Stack.Screen name="smart-upgrade" options={{ headerShown: false }} />
+                  <Stack.Screen name="hospital-trip" options={{ headerShown: false }} />
+                  <Stack.Screen name="tech-helper" options={{ headerShown: false }} />
+
+                  {/* Legacy index-based references (kept for compatibility) */}
                   <Stack.Screen name="smart-upgrade/index" options={{ headerShown: false }} />
                   <Stack.Screen name="hospital-trip/index" options={{ headerShown: false }} />
                   <Stack.Screen name="blood-test/index" options={{ headerShown: false }} />

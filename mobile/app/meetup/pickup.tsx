@@ -26,6 +26,10 @@ export default function MeetupPickupScreen() {
     const colors = useThemeColors();
     const params = useLocalSearchParams<any>();
 
+    React.useEffect(() => {
+        console.log('🚗 [MEETUP PICKUP] Screen loaded with params:', params);
+    }, []);
+
     const [pickupEnabled, setPickupEnabled] = useState(true);
     const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
     const [alternateContact, setAlternateContact] = useState('');
@@ -33,6 +37,7 @@ export default function MeetupPickupScreen() {
     const [showTimePicker, setShowTimePicker] = useState(false);
 
     const handleSave = () => {
+        console.log('🚗 [MEETUP PICKUP] handleSave called, pickupEnabled:', pickupEnabled);
         if (pickupEnabled) {
             if (!selectedAddress) { Alert.alert('Required', 'Please select pickup address'); return; }
             if (!preferredTime) { Alert.alert('Required', 'Please select preferred pickup time'); return; }
@@ -61,6 +66,7 @@ export default function MeetupPickupScreen() {
             preferredPickupTime: preferredTime,
         };
 
+        console.log('💳 [MEETUP PICKUP] Navigating to /service-checkout with payload:', registrationPayload);
         router.push({
             pathname: '/service-checkout',
             params: {
@@ -72,6 +78,7 @@ export default function MeetupPickupScreen() {
                 pickupAddress: selectedAddress ? `${selectedAddress.line1}${selectedAddress.line2 ? ', ' + selectedAddress.line2 : ''}` : '',
             },
         } as any);
+        console.log('💳 [MEETUP PICKUP] Router.push called for /service-checkout');
     };
 
     return (

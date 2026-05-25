@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { apiClient } from '../api/apiClient';
 
-const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || 'https://api.ayuxacare.com';
 
 let socket: Socket | null = null;
 let connectionPromise: Promise<Socket | null> | null = null;

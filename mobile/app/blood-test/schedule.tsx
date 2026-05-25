@@ -426,7 +426,7 @@ export default function BloodTestScheduleScreen() {
 
                 {/* Saved Addresses + Add New chip */}
                 <View style={{ marginBottom: 12 }}>
-                    {(profile?.addresses?.length > 0 || true) && (
+                    {((profile?.addresses?.length || 0) > 0 || true) && (
                         <Text style={styles.subLabel}>Saved Addresses</Text>
                     )}
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>

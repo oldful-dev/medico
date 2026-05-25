@@ -17,7 +17,7 @@ import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import * as ImagePicker from 'expo-image-picker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
@@ -35,7 +35,7 @@ export default function OrderMedicinesScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
-    const { dark: isDarkMode } = useTheme();
+    const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     const [duration, setDuration] = useState('1 Month');
     const [autoRefill, setAutoRefill] = useState(true);
@@ -283,7 +283,7 @@ export default function OrderMedicinesScreen() {
                     </View>
 
                     <TextInput
-                        style={[dynamicStyles.addressText, { marginBottom: 15, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#FFF', borderRadius: 8, borderWidth: 1, borderColor: isDarkMode ? '#3A3A3A' : '#E5E7EB', fontFamily: 'LexendDeca_400Regular', fontSize: 12 }]}
+                        style={[dynamicStyles.addressText, { marginBottom: 15, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: isDarkMode ? '#1E293B' : '#FFF', borderRadius: 8, borderWidth: 1, borderColor: isDarkMode ? '#334155' : '#E5E7EB', fontFamily: 'LexendDeca_400Regular', fontSize: 12, color: isDarkMode ? '#F1F5F9' : '#2F2F2F' }]}
                         placeholder="Landmark (optional, e.g. Near Apollo Hospital)"
                         placeholderTextColor="#898989"
                         value={landmark}
@@ -375,13 +375,13 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        color: '#FFFFFF',
         letterSpacing: -0.24,
     },
     headerSubtitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 13,
-        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        color: '#FFFFFF',
         letterSpacing: -0.24,
         zIndex: 10,
     },
@@ -389,7 +389,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     /* ─── Main Content Container (Cream Box) ─── */
     contentContainer: {
         flex: 1,
-        backgroundColor: '#FDFDE8', // Cream color
+        backgroundColor: isDarkMode ? '#0F172A' : '#FDFDE8',
         borderTopLeftRadius: 45,
         borderTopRightRadius: 45,
         shadowColor: '#000',
@@ -412,7 +412,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     sectionTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         marginBottom: 20,
     },
 
@@ -461,7 +461,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     uploadMainText: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 14,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         minWidth: 65,
         marginRight: 8,
     },
@@ -479,7 +479,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         marginBottom: 10,
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 15,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
     },
     addressLabelBold: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
@@ -521,7 +521,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     autoRefillTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 16,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         flexShrink: 1,
     },
     autoRefillDesc: {
@@ -574,7 +574,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        color: '#FFFFFF',
         fontSize: 15,
     },
     /* ─── New Interactive Styles ─── */
@@ -594,7 +594,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     manualInput: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 14,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         minHeight: 80,
         textAlignVertical: 'top',
     },

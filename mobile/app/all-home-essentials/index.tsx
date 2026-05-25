@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
 import { Fonts } from '@/constants/theme';
 
 import { apiClient } from '@/services/api/apiClient';
@@ -43,6 +44,7 @@ const ICON_MAPPING: Record<string, any> = {
 export default function AllHomeEssentialsScreen() {
     const router = useRouter();
     const { width } = useWindowDimensions();
+    const { isDarkMode } = useTheme();
     const [services, setServices] = React.useState<any[]>([]);
     const [loading, setLoading] = React.useState(true);
 
@@ -93,19 +95,21 @@ export default function AllHomeEssentialsScreen() {
         paddedGrid.push({ empty: true });
     }
 
+    const styles = makeStyles(isDarkMode);
+
     return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>
             {/* ─── Header ─── */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#2F2F2F" />
+                    <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#F1F5F9' : '#2F2F2F'} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>All Home Essentials</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {loading ? (
-                    <Text style={{ textAlign: 'center', marginTop: 20 }}>Loading services...</Text>
+                    <Text style={{ textAlign: 'center', marginTop: 20, color: isDarkMode ? '#94A3B8' : '#555' }}>Loading services...</Text>
                 ) : (
                     <View style={styles.gridContainer}>
                         {paddedGrid.map((item, i) => {
@@ -133,10 +137,10 @@ export default function AllHomeEssentialsScreen() {
 }
 
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#FFFFE3',
+        backgroundColor: isDarkMode ? '#0F172A' : '#FFFFE3',
     },
     header: {
         flexDirection: 'row',
@@ -150,7 +154,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontFamily: Fonts.bold,
         fontSize: 20,
-        color: '#034C2A',
+        color: isDarkMode ? '#F1F5F9' : '#034C2A',
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -168,14 +172,14 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-start',
     },
     essentialIconCircle: {
-        width: '80%', // Roughly matched from index.tsx scaling
+        width: '80%',
         aspectRatio: 1,
         borderRadius: 999,
         overflow: 'hidden',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 6,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
         borderWidth: 1,
         borderColor: '#34C759',
         shadowColor: '#000000',
@@ -191,7 +195,7 @@ const styles = StyleSheet.create({
     essentialLabel: {
         fontFamily: Fonts.medium,
         fontSize: 10,
-        color: '#333333',
+        color: isDarkMode ? '#CBD5E1' : '#333333',
         textAlign: 'center',
         lineHeight: 12,
     },

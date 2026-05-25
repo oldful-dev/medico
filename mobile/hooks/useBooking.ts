@@ -1,25 +1,26 @@
 // useBooking hook - Booking state and actions
 import { useState, useCallback } from 'react';
-import { bookingService, DoctorVisitBooking, NurseCareBooking, TripBooking, ServiceType } from '@/services/api/bookingService';
+import { bookingService, CreateBookingPayload, Booking } from '@/services/api/bookingService';
 
 interface UseBookingReturn {
   isLoading: boolean;
   error: string | null;
-  createDoctorVisit: (data: DoctorVisitBooking) => Promise<DoctorVisitBooking | null>;
-  createNurseCare: (data: NurseCareBooking) => Promise<NurseCareBooking | null>;
-  createTrip: (data: TripBooking) => Promise<TripBooking | null>;
-  cancelBooking: (bookingId: string, serviceType: ServiceType) => Promise<boolean>;
+  createDoctorVisit: (data: CreateBookingPayload) => Promise<Booking | null>;
+  createNurseCare: (data: CreateBookingPayload) => Promise<Booking | null>;
+  createTrip: (data: CreateBookingPayload) => Promise<Booking | null>;
+  cancelBooking: (bookingId: string, serviceType?: string) => Promise<boolean>;
 }
 
 export function useBookingActions(): UseBookingReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createDoctorVisit = useCallback(async (data: DoctorVisitBooking) => {
+  const createDoctorVisit = useCallback(async (data: CreateBookingPayload) => {
     setIsLoading(true);
     setError(null);
     try {
-      return await bookingService.createDoctorVisit(data);
+      const res = await bookingService.createBooking(data);
+      return res.success && res.data ? res.data : null;
     } catch (err: any) {
       setError(err.message);
       return null;
@@ -28,11 +29,12 @@ export function useBookingActions(): UseBookingReturn {
     }
   }, []);
 
-  const createNurseCare = useCallback(async (data: NurseCareBooking) => {
+  const createNurseCare = useCallback(async (data: CreateBookingPayload) => {
     setIsLoading(true);
     setError(null);
     try {
-      return await bookingService.createNurseCare(data);
+      const res = await bookingService.createBooking(data);
+      return res.success && res.data ? res.data : null;
     } catch (err: any) {
       setError(err.message);
       return null;
@@ -41,11 +43,12 @@ export function useBookingActions(): UseBookingReturn {
     }
   }, []);
 
-  const createTrip = useCallback(async (data: TripBooking) => {
+  const createTrip = useCallback(async (data: CreateBookingPayload) => {
     setIsLoading(true);
     setError(null);
     try {
-      return await bookingService.createTrip(data);
+      const res = await bookingService.createBooking(data);
+      return res.success && res.data ? res.data : null;
     } catch (err: any) {
       setError(err.message);
       return null;
@@ -54,12 +57,12 @@ export function useBookingActions(): UseBookingReturn {
     }
   }, []);
 
-  const cancelBooking = useCallback(async (bookingId: string, serviceType: ServiceType) => {
+  const cancelBooking = useCallback(async (bookingId: string, serviceType?: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      await bookingService.cancelBooking(bookingId, serviceType);
-      return true;
+      const res = await bookingService.cancelBooking(bookingId);
+      return res.success;
     } catch (err: any) {
       setError(err.message);
       return false;

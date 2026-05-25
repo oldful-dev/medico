@@ -15,7 +15,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 
 interface EmergencyContact {
-    id: string;
+    id?: string;
     name: string;
     phone: string;
     relationship: string;
@@ -165,14 +165,18 @@ export default function EmergencyContactsScreen() {
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.waBtn}
-                                onPress={() => Linking.openURL(`whatsapp://send?phone=91${contact.phone.replace(/\D/g, '')}`)}
+                                onPress={() => {
+                                    const digits = contact.phone.replace(/\D/g, '');
+                                    const normalized = digits.startsWith('91') && digits.length > 10 ? digits : `91${digits.slice(-10)}`;
+                                    Linking.openURL(`whatsapp://send?phone=${normalized}`);
+                                }}
                             >
                                 <Ionicons name="logo-whatsapp" size={15} color="#fff" />
                                 <Text style={styles.callBtnText}>WhatsApp</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.removeBtn}
-                                onPress={() => deleteContact(contact.id)}
+                                onPress={() => contact.id && deleteContact(contact.id)}
                                 disabled={deletingId === contact.id}
                             >
                                 {deletingId === contact.id ? (

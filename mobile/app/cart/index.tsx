@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCart } from '@/context/CartContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 
 const PRIMARY_GREEN = '#02743F';
 const CARD_BORDER = '#E5E7EB';
@@ -15,7 +16,7 @@ const TEXT_MUTED = '#888888';
 export default function CartScreen() {
     const router = useRouter();
     const { groupedItems, removeItem, itemCount, getCategoryTotal, getGrandTotal } = useCart();
-    const isDarkMode = useColorScheme() === 'dark';
+    const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
     const handleCheckoutCategory = (category: string) => {

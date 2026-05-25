@@ -218,23 +218,23 @@ const WHATSAPP_TEMPLATES = {
 const WABA_ACCOUNTS = {
     AYUXA: {
         label: 'Ayuxa (+918047280789)',
-        phoneNumberId: process.env.FAST2SMS_WABA_AYUXA_PHONE_NUMBER_ID || '1137788802753379',
+        phoneNumberId: process.env.FAST2SMS_WABA_AYUXA_PHONE_NUMBER_ID,
     },
     AYUXA_FAMILY: {
         label: 'Ayuxa Backend (+1555-973-5639)',
-        phoneNumberId: process.env.FAST2SMS_WABA_FAMILY_PHONE_NUMBER_ID || '1193813770471315',
+        phoneNumberId: process.env.FAST2SMS_WABA_FAMILY_PHONE_NUMBER_ID,
     },
     AYUXA_RELEASE: {
         label: 'Ayuxa Release (+1555-958-2674)',
-        phoneNumberId: process.env.FAST2SMS_WABA_RELEASE_PHONE_NUMBER_ID || '1104059199459456',
+        phoneNumberId: process.env.FAST2SMS_WABA_RELEASE_PHONE_NUMBER_ID,
     },
     AYUXA_HQ: {
         label: 'Ayuxa HQ (+918031619197)',
-        phoneNumberId: process.env.FAST2SMS_WABA_HQ_PHONE_NUMBER_ID || '1033856123155360',
+        phoneNumberId: process.env.FAST2SMS_WABA_HQ_PHONE_NUMBER_ID,
     },
     AYUXA_ALERT: {
         label: 'Ayuxa Alert (+919480198108)',
-        phoneNumberId: process.env.FAST2SMS_WABA_ALERT_PHONE_NUMBER_ID || '1159357623920509',
+        phoneNumberId: process.env.FAST2SMS_WABA_ALERT_PHONE_NUMBER_ID,
     },
 };
 

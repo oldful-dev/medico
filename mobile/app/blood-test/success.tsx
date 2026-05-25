@@ -1,283 +1,175 @@
 import React from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity,
+    View, Text, ScrollView, TouchableOpacity, StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
-import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 
-const PRIMARY_GREEN = '#02743F';
-const TEXT_DARK = '#2F2F2F';
-const TEXT_MUTED = '#888888';
-const CARD_BORDER = '#E5E7EB';
+const PRIMARY = '#02743F';
+const PRIMARY_LIGHT = '#E8F5EE';
+const PRIMARY_DARK = '#015C32';
 
 export default function BloodTestSuccessScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
-    const colors = useThemeColors();
     const params = useLocalSearchParams<{
         bookingId?: string;
         amount?: string;
         packageName?: string;
     }>();
 
+    const bg = isDarkMode ? '#121212' : '#FFFFFF';
+    const cardBg = isDarkMode ? '#1E1E1E' : '#F8FAF9';
+    const border = isDarkMode ? '#2A2A2A' : '#E5E7EB';
+    const textPrimary = isDarkMode ? '#F0F0F0' : '#1A1A1A';
+    const textMuted = isDarkMode ? '#909090' : '#6B7280';
+
+    const steps = [
+        { icon: 'bicycle-outline' as const, text: 'Our phlebotomist will visit your address on the selected date & time' },
+        { icon: 'flask-outline' as const, text: 'Sample collection typically takes 5–10 minutes' },
+        { icon: 'document-text-outline' as const, text: 'Reports delivered to the app within 24 hours' },
+    ];
+
+    const details = [
+        { label: 'Booking ID', value: `#${params.bookingId || 'BT124567'}` },
+        { label: 'Package', value: params.packageName || 'Blood Test' },
+        { label: 'Amount Paid', value: `₹${params.amount || '0'}` },
+    ];
+
     return (
-        <View style={[styles.screen, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}>
-            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} />
+        <View style={[styles.screen, { backgroundColor: bg, paddingTop: insets.top }]}>
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={bg} />
 
-            {/* Confetti Decorations */}
-            <View style={styles.confettiContainer}>
-                <View style={[styles.confettiDot, { left: '10%', top: '15%' }]} />
-                <View style={[styles.confettiDot, { right: '12%', top: '20%' }]} />
-                <View style={[styles.confettiDot, { left: '15%', top: '30%' }]} />
-                <View style={[styles.confettiDot, { right: '18%', top: '35%' }]} />
-                <View style={[styles.confettiStar, { left: '12%', top: '25%' }]} />
-                <View style={[styles.confettiStar, { right: '15%', top: '28%' }]} />
-            </View>
-
-            <View style={styles.successContainer}>
-                {/* Checkmark Circle */}
-                <View style={styles.iconContainer}>
-                    <Ionicons name="checkmark-circle" size={100} color={PRIMARY_GREEN} />
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
+            >
+                {/* Hero */}
+                <View style={styles.hero}>
+                    <View style={[styles.iconRing, { backgroundColor: isDarkMode ? '#0D2B1E' : PRIMARY_LIGHT }]}>
+                        <View style={[styles.iconCircle, { backgroundColor: PRIMARY }]}>
+                            <Ionicons name="checkmark" size={36} color="#FFFFFF" />
+                        </View>
+                    </View>
+                    <Text style={[styles.title, { color: textPrimary }]}>Payment Successful!</Text>
+                    <Text style={[styles.subtitle, { color: textMuted }]}>
+                        Your blood test has been booked successfully
+                    </Text>
                 </View>
 
-                {/* Success Title */}
-                <Text style={styles.title}>Payment Successful!</Text>
-                <Text style={styles.subtitle}>Your blood test collection(s) have been booked successfully</Text>
-
-                {/* Details Box */}
-                <View style={styles.detailsBox}>
-                    <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Booking ID</Text>
-                        <Text style={styles.detailValue}>#{params.bookingId || 'BT124567'}</Text>
-                    </View>
-                    <View style={[styles.detailRow, styles.detailRowBorder]}>
-                        <Text style={styles.detailLabel}>Package</Text>
-                        <Text style={styles.detailValue}>{params.packageName || 'Blood Test'}</Text>
-                    </View>
-                    <View style={[styles.detailRow, styles.detailRowBorder]}>
-                        <Text style={styles.detailLabel}>Amount Paid</Text>
-                        <Text style={styles.detailValue}>₹{params.amount || '0'}</Text>
-                    </View>
+                {/* Details card */}
+                <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
+                    {details.map((row, i) => (
+                        <View key={row.label} style={[styles.detailRow, i > 0 && { borderTopWidth: 1, borderTopColor: border }]}>
+                            <Text style={[styles.detailLabel, { color: textMuted }]}>{row.label}</Text>
+                            <Text style={[styles.detailValue, { color: textPrimary }]}>{row.value}</Text>
+                        </View>
+                    ))}
                 </View>
 
-                {/* Confirmation Message */}
-                <Text style={styles.confirmText}>
-                    You will receive a confirmation on your registered mobile number and email.
-                </Text>
-
-                {/* What&apos;s Next Steps */}
-                <View style={styles.stepsContainer}>
-                    <Text style={styles.stepsTitle}>What&apos;s Next?</Text>
-
-                    <View style={styles.step}>
-                        <View style={styles.stepNumber}>
-                            <Text style={styles.stepNumberText}>1</Text>
-                        </View>
-                        <Text style={styles.stepText}>Our phlebotomist will visit your address on the selected date & time</Text>
-                    </View>
-
-                    <View style={styles.step}>
-                        <View style={styles.stepNumber}>
-                            <Text style={styles.stepNumberText}>2</Text>
-                        </View>
-                        <Text style={styles.stepText}>Sample collection will take 5-10 minutes</Text>
-                    </View>
-
-                    <View style={styles.step}>
-                        <View style={styles.stepNumber}>
-                            <Text style={styles.stepNumberText}>3</Text>
-                        </View>
-                        <Text style={styles.stepText}>You&apos;ll receive your reports within 24 hours</Text>
-                    </View>
+                {/* Confirmation note */}
+                <View style={[styles.noticeRow, { backgroundColor: isDarkMode ? '#0D2B1E' : PRIMARY_LIGHT, borderColor: isDarkMode ? '#1A4A32' : '#C6E9D9' }]}>
+                    <Ionicons name="information-circle-outline" size={18} color={PRIMARY} />
+                    <Text style={[styles.noticeText, { color: isDarkMode ? '#7FD4A8' : PRIMARY_DARK }]}>
+                        A confirmation will be sent to your registered mobile number and email.
+                    </Text>
                 </View>
-            </View>
 
-            {/* Footer Buttons */}
-            <View style={styles.footer}>
+                {/* What's next */}
+                <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
+                    <Text style={[styles.cardHeading, { color: textPrimary }]}>What&apos;s Next?</Text>
+                    {steps.map((step, i) => (
+                        <View key={i} style={styles.stepRow}>
+                            <View style={[styles.stepIconBox, { backgroundColor: isDarkMode ? '#1A3D2B' : PRIMARY_LIGHT }]}>
+                                <Ionicons name={step.icon} size={18} color={PRIMARY} />
+                            </View>
+                            <Text style={[styles.stepText, { color: textPrimary }]}>{step.text}</Text>
+                        </View>
+                    ))}
+                </View>
+            </ScrollView>
+
+            {/* Footer */}
+            <View style={[styles.footer, { backgroundColor: bg, borderTopColor: border, paddingBottom: insets.bottom + 12 }]}>
                 <TouchableOpacity
-                    style={styles.viewBookingsBtn}
+                    style={[styles.primaryBtn, { backgroundColor: PRIMARY }]}
                     onPress={() => router.push('/my-bookings')}
+                    activeOpacity={0.85}
                 >
-                    <Text style={styles.viewBookingsBtnText}>View Bookings</Text>
+                    <Ionicons name="calendar-outline" size={18} color="#FFFFFF" />
+                    <Text style={styles.primaryBtnText}>View My Bookings</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={styles.backHomeBtn}
-                    onPress={() => router.push('/(tabs)')}
+                    style={[styles.secondaryBtn, { borderColor: PRIMARY, backgroundColor: isDarkMode ? '#1A3D2B' : PRIMARY_LIGHT }]}
+                    onPress={() => router.replace('/(tabs)' as any)}
+                    activeOpacity={0.85}
                 >
-                    <Text style={styles.backHomeBtnText}>Back to Home</Text>
+                    <Text style={[styles.secondaryBtnText, { color: PRIMARY }]}>Back to Home</Text>
                 </TouchableOpacity>
             </View>
         </View>
     );
 }
 
-const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.create({
-    screen: {
-        flex: 1,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+const styles = StyleSheet.create({
+    screen: { flex: 1 },
+    content: { paddingHorizontal: 20, paddingTop: 32 },
+
+    hero: { alignItems: 'center', marginBottom: 28 },
+    iconRing: {
+        width: 120, height: 120, borderRadius: 60,
+        justifyContent: 'center', alignItems: 'center', marginBottom: 20,
     },
-    confettiContainer: {
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
+    iconCircle: {
+        width: 80, height: 80, borderRadius: 40,
+        justifyContent: 'center', alignItems: 'center',
+        shadowColor: PRIMARY, shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.35, shadowRadius: 16, elevation: 8,
     },
-    confettiDot: {
-        position: 'absolute',
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: PRIMARY_GREEN,
-        opacity: 0.4,
+    title: { fontSize: 24, fontWeight: '700', marginBottom: 8, textAlign: 'center', letterSpacing: -0.3 },
+    subtitle: { fontSize: 14, textAlign: 'center', lineHeight: 20, paddingHorizontal: 24 },
+
+    card: {
+        borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 16,
     },
-    confettiStar: {
-        position: 'absolute',
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: '#FCD34D',
-        opacity: 0.5,
-    },
-    successContainer: {
-        flex: 1,
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 20,
-        justifyContent: 'center',
-    },
-    iconContainer: {
-        marginBottom: 20,
-    },
-    title: {
-        fontSize: 26,
-        fontWeight: '700',
-        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
-        textAlign: 'center',
-        marginBottom: 8,
-    },
-    subtitle: {
-        fontSize: 14,
-        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
-        textAlign: 'center',
-        marginBottom: 24,
-    },
-    detailsBox: {
-        width: '100%',
-        backgroundColor: isDarkMode ? '#252525' : '#F9FAFB',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 20,
-        borderWidth: 1,
-        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
-    },
+    cardHeading: { fontSize: 15, fontWeight: '700', marginBottom: 16, letterSpacing: -0.2 },
+
     detailRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: 10,
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        paddingVertical: 12,
     },
-    detailRowBorder: {
-        borderTopWidth: 1,
-        borderTopColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
+    detailLabel: { fontSize: 13, fontWeight: '500' },
+    detailValue: { fontSize: 14, fontWeight: '700' },
+
+    noticeRow: {
+        flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+        borderRadius: 12, borderWidth: 1, padding: 14, marginBottom: 16,
     },
-    detailLabel: {
-        fontSize: 12,
-        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
-        fontWeight: '500',
+    noticeText: { flex: 1, fontSize: 13, lineHeight: 19, fontWeight: '500' },
+
+    stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 14 },
+    stepIconBox: {
+        width: 38, height: 38, borderRadius: 10,
+        justifyContent: 'center', alignItems: 'center', flexShrink: 0,
     },
-    detailValue: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
-    },
-    confirmText: {
-        fontSize: 12,
-        color: isDarkMode ? '#AAAAAA' : TEXT_MUTED,
-        textAlign: 'center',
-        marginBottom: 24,
-        lineHeight: 18,
-    },
-    stepsContainer: {
-        width: '100%',
-        backgroundColor: isDarkMode ? '#252525' : '#F9FAFB',
-        borderRadius: 12,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
-    },
-    stepsTitle: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
-        marginBottom: 12,
-    },
-    step: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        marginBottom: 12,
-        gap: 12,
-    },
-    stepNumber: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: PRIMARY_GREEN,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 2,
-        flexShrink: 0,
-    },
-    stepNumberText: {
-        color: '#FFFFFF',
-        fontSize: 12,
-        fontWeight: '700',
-    },
-    stepText: {
-        fontSize: 12,
-        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
-        flex: 1,
-        lineHeight: 17,
-        paddingTop: 4,
-    },
+    stepText: { flex: 1, fontSize: 13, lineHeight: 19, paddingTop: 9 },
+
     footer: {
-        paddingHorizontal: 16,
-        paddingBottom: 20,
-        paddingTop: 12,
-        gap: 10,
-        borderTopWidth: 1,
-        borderTopColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        paddingHorizontal: 20, paddingTop: 14,
+        borderTopWidth: 1, gap: 10,
     },
-    viewBookingsBtn: {
-        backgroundColor: PRIMARY_GREEN,
-        paddingVertical: 14,
-        borderRadius: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
+    primaryBtn: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        gap: 8, paddingVertical: 15, borderRadius: 14,
     },
-    viewBookingsBtnText: {
-        color: '#FFFFFF',
-        fontSize: 15,
-        fontWeight: '700',
+    primaryBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+    secondaryBtn: {
+        alignItems: 'center', justifyContent: 'center',
+        paddingVertical: 14, borderRadius: 14, borderWidth: 1.5,
     },
-    backHomeBtn: {
-        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
-        paddingVertical: 14,
-        borderRadius: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: PRIMARY_GREEN,
-    },
-    backHomeBtnText: {
-        color: PRIMARY_GREEN,
-        fontSize: 15,
-        fontWeight: '700',
-    },
+    secondaryBtnText: { fontSize: 15, fontWeight: '600' },
 });
-const styles = makeStyles(false, {} as ThemeColors);

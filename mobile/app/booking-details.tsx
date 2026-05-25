@@ -266,7 +266,7 @@ export default function BookingDetailsScreen() {
     if (loading) {
         return (
             <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}>
-                <StatusBar backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+                <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} />
                 <View style={styles.centerContainer}>
                     <ActivityIndicator size="large" color={PRIMARY_GREEN} />
                 </View>
@@ -277,7 +277,7 @@ export default function BookingDetailsScreen() {
     if (!booking) {
         return (
             <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}>
-                <StatusBar backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+                <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} />
                 <View style={styles.centerContainer}>
                     <Text style={[styles.errorText, { color: isDarkMode ? '#E0E0E0' : '#000000' }]}>Booking not found</Text>
                 </View>
@@ -287,7 +287,7 @@ export default function BookingDetailsScreen() {
 
     return (
         <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}>
-            <StatusBar backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} />
 
             {/* Header */}
             <View style={[styles.header, { backgroundColor: isDarkMode ? '#252525' : '#FFFFFF' }]}>

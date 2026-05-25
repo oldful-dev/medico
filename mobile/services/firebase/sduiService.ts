@@ -197,10 +197,9 @@ export const sduiService = {
         const raw = getRemoteValue('home_config');
         const config = parseJSON<HomeConfig>(raw, HOME_CONFIG_FALLBACK);
 
-        // Deep-filter: only enabled banners, sections, services, badges
+        // Deep-filter: only enabled sections, services, badges
         return {
             ...config,
-            banners: sortByOrder(config.banners?.filter(b => b.enabled) ?? HOME_CONFIG_FALLBACK.banners),
             sections: sortByOrder(
                 (config.sections ?? HOME_CONFIG_FALLBACK.sections)
                     .filter(s => s.enabled)

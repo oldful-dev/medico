@@ -177,7 +177,7 @@ export default function ManageAddressesScreen() {
     };
 
     const startEdit = (address: Address) => {
-        setEditingId(address.id);
+        setEditingId(address.id || null);
         setNewLabel(address.label || '');
         setNewLine1(address.line1);
         setNewLine2(address.line2 || '');
@@ -256,6 +256,7 @@ export default function ManageAddressesScreen() {
                     text: 'Delete',
                     style: 'destructive',
                     onPress: async () => {
+                        if (!profile?.id || !address.id) return;
                         try {
                             await userService.deleteAddress(profile.id, address.id);
                             const profileRes = await userService.getProfile();

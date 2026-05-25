@@ -21,6 +21,7 @@ export interface Product {
     isEnabled: boolean;
     categoryId: string;
     category?: ProductCategory;
+    rating?: number;
 }
 
 export interface ProductCategory {

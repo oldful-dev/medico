@@ -577,6 +577,32 @@ const getMyHealthReports = async (req, res, next) => {
     }
 };
 
+// DELETE /api/users/health-reports/:reportId  (Delete a health report)
+const deleteHealthReport = async (req, res, next) => {
+    try {
+        const { reportId } = req.params;
+        const report = await prisma.healthReport.findUnique({
+            where: { id: reportId },
+        });
+
+        if (!report) {
+            return res.status(404).json({ success: false, message: 'Report not found' });
+        }
+
+        if (report.userId !== req.user.id) {
+            return res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
+
+        await prisma.healthReport.delete({
+            where: { id: reportId },
+        });
+
+        sendResponse(res, 200, null, 'Health report deleted');
+    } catch (error) {
+        next(error);
+    }
+};
+
 // PUT /api/users/profile/device-token  (B-05: Register FCM device token)
 const registerDeviceToken = async (req, res, next) => {
     try {
@@ -641,6 +667,6 @@ module.exports = {
     blockUser, suspendUser, activateUser,
     addEmergencyContact, removeEmergencyContact,
     addAddress, updateAddress, deleteAddress,
-    upsertMedicalCard, uploadHealthReport,
+    upsertMedicalCard, uploadHealthReport, deleteHealthReport,
     getMyProfile, updateMyProfile, registerDeviceToken, uploadProfileAvatar, getMyHealthReports,
 };

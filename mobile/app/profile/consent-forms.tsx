@@ -11,29 +11,31 @@ export default function ConsentFormsScreen() {
     const insets = useSafeAreaInsets();
     const [expandedForm, setExpandedForm] = useState<string | null>(null);
 
-    const forms = [
-        {
-            id: 'medical_consent',
-            title: 'Medical Treatment Consent',
-            description: 'Authorize medical examination and treatment',
-            date: 'Never signed',
-            status: 'pending',
-        },
-        {
-            id: 'data_privacy',
-            title: 'Data Privacy Consent',
-            description: 'Consent for collection and processing of personal data',
-            date: 'Never signed',
-            status: 'pending',
-        },
-        {
-            id: 'emergency_contact',
-            title: 'Emergency Contact Consent',
-            description: 'Authorize contact in case of medical emergencies',
-            date: 'Never signed',
-            status: 'pending',
-        },
-    ];
+    // TODO: Fetch from backend
+    // const forms = [
+    //     {
+    //         id: 'medical_consent',
+    //         title: 'Medical Treatment Consent',
+    //         description: 'Authorize medical examination and treatment',
+    //         date: 'Never signed',
+    //         status: 'pending',
+    //     },
+    //     {
+    //         id: 'data_privacy',
+    //         title: 'Data Privacy Consent',
+    //         description: 'Consent for collection and processing of personal data',
+    //         date: 'Never signed',
+    //         status: 'pending',
+    //     },
+    //     {
+    //         id: 'emergency_contact',
+    //         title: 'Emergency Contact Consent',
+    //         description: 'Authorize contact in case of medical emergencies',
+    //         date: 'Never signed',
+    //         status: 'pending',
+    //     },
+    // ];
+    const forms: any[] = [];
 
     const handleSignForm = (formId: string) => {
         Alert.alert(
@@ -57,11 +59,19 @@ export default function ConsentFormsScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <Text style={styles.description}>
-                    Manage and sign digital consent forms for medical treatment, data privacy, and emergency authorizations.
-                </Text>
+                {forms.length === 0 ? (
+                    <View style={styles.emptyState}>
+                        <Ionicons name="document-text-outline" size={64} color={Colors.textMuted} />
+                        <Text style={styles.emptyTitle}>Coming Soon</Text>
+                        <Text style={styles.emptySubtitle}>Consent forms management will be available soon</Text>
+                    </View>
+                ) : (
+                    <>
+                        <Text style={styles.description}>
+                            Manage and sign digital consent forms for medical treatment, data privacy, and emergency authorizations.
+                        </Text>
 
-                {forms.map((form) => (
+                        {forms.map((form) => (
                     <View key={form.id} style={styles.formCard}>
                         <TouchableOpacity
                             style={styles.formHeader}
@@ -110,17 +120,19 @@ export default function ConsentFormsScreen() {
                             </View>
                         )}
                     </View>
-                ))}
+                        ))}
 
-                <View style={styles.infoBox}>
-                    <Ionicons name="information-circle-outline" size={20} color={Colors.primary} />
-                    <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={styles.infoTitle}>About Consent Forms</Text>
-                        <Text style={styles.infoText}>
-                            Signed consent forms are securely stored and can be accessed anytime. Digital signatures are legally binding.
-                        </Text>
-                    </View>
-                </View>
+                        <View style={styles.infoBox}>
+                            <Ionicons name="information-circle-outline" size={20} color={Colors.primary} />
+                            <View style={{ flex: 1, marginLeft: 10 }}>
+                                <Text style={styles.infoTitle}>About Consent Forms</Text>
+                                <Text style={styles.infoText}>
+                                    Signed consent forms are securely stored and can be accessed anytime. Digital signatures are legally binding.
+                                </Text>
+                            </View>
+                        </View>
+                    </>
+                )}
 
                 <View style={{ height: 40 }} />
             </ScrollView>
@@ -131,7 +143,7 @@ export default function ConsentFormsScreen() {
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: Colors.bgPrimary,
+        backgroundColor: Colors.bgScreen,
     },
     header: {
         flexDirection: 'row',
@@ -153,6 +165,25 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: Spacing.lg,
         paddingVertical: Spacing.lg,
+    },
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 100,
+    },
+    emptyTitle: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading2,
+        color: Colors.textDark,
+        marginTop: Spacing.lg,
+        marginBottom: Spacing.sm,
+    },
+    emptySubtitle: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: Colors.textMuted,
+        textAlign: 'center',
     },
     description: {
         fontFamily: Fonts.regular,

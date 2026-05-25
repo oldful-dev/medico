@@ -250,7 +250,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     },
     invoiceText: {
         fontFamily: Fonts.regular,
-        fontSize: FontSize.small ?? 13,
+        fontSize: FontSize.bodySmall ?? 13,
         color: colors.textLight,
     },
     infoBox: {
@@ -265,7 +265,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     infoText: {
         flex: 1,
         fontFamily: Fonts.regular,
-        fontSize: FontSize.small ?? 13,
+        fontSize: FontSize.bodySmall ?? 13,
         color: colors.textDark,
         lineHeight: 20,
     },

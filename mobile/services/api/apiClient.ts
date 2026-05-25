@@ -6,7 +6,6 @@
 
 import { Platform } from 'react-native';
 
-// Android emulator uses 10.0.2.2 for localhost; iOS simulator uses localhost
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.ayuxacare.com/api';
 
 interface RequestConfig {
@@ -194,8 +193,8 @@ class ApiClient {
         return this.request<T>({ method: 'GET', endpoint });
     }
 
-    async post<T>(endpoint: string, body?: any): Promise<ApiResponse<T>> {
-        return this.request<T>({ method: 'POST', endpoint, body });
+    async post<T>(endpoint: string, body?: any, timeout?: number): Promise<ApiResponse<T>> {
+        return this.request<T>({ method: 'POST', endpoint, body, timeout });
     }
 
     async put<T>(endpoint: string, body?: any): Promise<ApiResponse<T>> {

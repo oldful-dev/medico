@@ -468,7 +468,7 @@ export default function AccountScreen() {
                         onPress={() => router.push('/help-support' as any)} colors={colors} />
                     <MenuRow icon="ticket-outline" iconBg={isDarkMode ? '#2D0A1A' : '#FCE4EC'} iconColor="#EC4899"
                         title="Raise Ticket" subtitle="Log and track a support request"
-                        onPress={() => router.push('/ticket-chat' as any)} colors={colors} />
+                        onPress={() => router.push('/help-support' as any)} colors={colors} />
                     <MenuRow icon="help-circle-outline" iconBg={isDarkMode ? '#0A2010' : '#E8F5E9'} iconColor="#2E7D32"
                         title="FAQ" subtitle="Frequently asked questions"
                         onPress={() => router.push('/help-support' as any)} colors={colors} />

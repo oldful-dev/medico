@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
@@ -44,7 +44,7 @@ const INITIAL_RECIPIENTS = [
 export default function InsuranceScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { dark: isDarkMode } = useTheme();
+    const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
     // UI State
@@ -305,7 +305,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         flex: 1,
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        color: '#FFFFFF',
         textAlign: 'left', marginLeft: 12,
         letterSpacing: -0.24,
     },
@@ -313,7 +313,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     /* ─── Content Card ─── */
     contentCard: {
         flex: 1,
-        backgroundColor: '#FDFDE8',
+        backgroundColor: isDarkMode ? '#0F172A' : '#FDFDE8',
         borderTopLeftRadius: 45,
         borderTopRightRadius: 45,
         overflow: 'hidden',
@@ -329,7 +329,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
 
     /* ─── Form Wrapper (Figma Rectangle 157) ─── */
     formWrapper: {
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
         borderRadius: 14,
         padding: 18,
         shadowColor: '#000000',
@@ -343,7 +343,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     pageTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#555555',
+        color: isDarkMode ? '#F1F5F9' : '#555555',
         textAlign: 'left',
         marginBottom: 6,
         letterSpacing: -0.24,
@@ -351,7 +351,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     pageSubtitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 11,
-        color: '#777777',
+        color: isDarkMode ? '#94A3B8' : '#777777',
         textAlign: 'left',
         lineHeight: 16,
         marginBottom: 20,
@@ -359,7 +359,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
 
     /* ─── Who is it for? Section ─── */
     sectionCard: {
-        backgroundColor: '#FFFDFD',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFDFD',
         borderRadius: 12,
         padding: 14,
         marginBottom: 18,
@@ -372,7 +372,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     sectionTitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 14,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         marginBottom: 10,
         letterSpacing: -0.24,
     },
@@ -413,7 +413,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     conditionHeader: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 13,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         marginBottom: 14,
         lineHeight: 20,
     },
@@ -444,7 +444,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     conditionLabel: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 13,
-        color: '#555555',
+        color: isDarkMode ? '#CBD5E1' : '#555555',
     },
     conditionLabelSelected: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
@@ -455,21 +455,21 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     requirementsLabel: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 13,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         marginTop: 12,
         marginBottom: 8,
     },
     textAreaCard: {
-        backgroundColor: '#FFFDFD',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFDFD',
         borderRadius: 10,
         borderWidth: 0.8,
-        borderColor: 'rgba(143,143,143,0.2)',
+        borderColor: isDarkMode ? '#334155' : 'rgba(143,143,143,0.2)',
         marginBottom: 20,
     },
     textArea: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 12,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         padding: 14,
         height: 102,
     },
@@ -489,6 +489,6 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 14,
-        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        color: '#FFFFFF',
     },
 });

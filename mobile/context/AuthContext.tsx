@@ -101,11 +101,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         responseListenerRef.current = notificationService.addResponseListener(
             (response) => {
                 const data = response.notification.request.content.data as Record<string, any>;
-                // Route based on data payload set by backend
+                const type = data?.type as string | undefined;
+
                 if (data?.screen) {
                     router.push(data.screen as any);
-                } else if (data?.bookingId) {
-                    router.push('/order-history' as any);
+                } else if (type?.startsWith('sos_')) {
+                    router.push('/sos-emergency' as any);
+                } else if (type === 'ticket_created' || type === 'ticket_reply') {
+                    router.push('/help-support' as any);
+                } else if (
+                    type === 'booking_created' || type === 'booking_status' ||
+                    type === 'caregiver_assigned' || type === 'lab_booking_confirmed' ||
+                    type === 'lab_rescheduled'
+                ) {
+                    router.push('/my-bookings' as any);
+                } else if (type === 'subscription_activated') {
+                    router.push('/(tabs)' as any);
                 } else {
                     router.push('/notifications' as any);
                 }
@@ -243,14 +254,14 @@ const styles = StyleSheet.create({
     },
     title: {
         fontFamily: Fonts.bold,
-        fontSize: FontSize.xl,
+        fontSize: FontSize.heading1,
         color: Colors.textDark,
         marginBottom: 8,
         textAlign: 'center',
     },
     message: {
         fontFamily: Fonts.regular,
-        fontSize: FontSize.sm,
+        fontSize: FontSize.bodySmall,
         color: Colors.textMuted,
         textAlign: 'center',
         lineHeight: 20,
@@ -266,7 +277,7 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         fontFamily: Fonts.semiBold,
-        fontSize: FontSize.md,
+        fontSize: FontSize.button,
         color: '#FFFFFF',
     },
 });

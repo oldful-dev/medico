@@ -36,5 +36,6 @@ router.post('/:id/medical-card', authenticate, ctrl.upsertMedicalCard);
 
 // Health Reports
 router.post('/:id/health-reports', authenticate, upload.single('file'), ctrl.uploadHealthReport);
+router.delete('/health-reports/:reportId', authenticateUser, ctrl.deleteHealthReport);
 
 module.exports = router;

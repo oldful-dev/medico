@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
@@ -33,7 +33,7 @@ export default function PhysioFitnessScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
-    const { dark: isDarkMode } = useTheme();
+    const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
     // State
@@ -169,7 +169,6 @@ export default function PhysioFitnessScreen() {
                     <View style={dynamicStyles.bodyPartGrid}>
                         {BODY_PARTS.map((part) => {
                             const isSelected = selectedBodyPart === part;
-    const dynamicStyles = makeStyles(isDarkMode);
 
                             return (
                                 <TouchableOpacity
@@ -196,7 +195,7 @@ export default function PhysioFitnessScreen() {
                         <TextInput
                             placeholder="Describe your issue"
                             style={dynamicStyles.textInput}
-                            placeholderTextColor="#555"
+                            placeholderTextColor={isDarkMode ? '#94A3B8' : '#555'}
                             multiline
                             value={otherIssue}
                             onChangeText={setOtherIssue}
@@ -257,7 +256,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        color: '#FFFFFF',
         letterSpacing: -0.24,
     },
     headerSubtitle: {
@@ -270,7 +269,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     /* ─── Main Content Container (Cream Box) ─── */
     contentContainer: {
         flex: 1,
-        backgroundColor: '#FDFDE8', // Cream color
+        backgroundColor: isDarkMode ? '#0F172A' : '#FDFDE8',
         borderTopLeftRadius: 45,
         borderTopRightRadius: 45,
         paddingTop: 25,
@@ -289,7 +288,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     sectionTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         marginBottom: 15,
         marginTop: 5,
     },
@@ -366,12 +365,12 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     serviceTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
     },
     serviceSubtitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 16,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#CBD5E1' : '#2F2F2F',
         marginTop: 2,
     },
     serviceDesc: {
@@ -397,7 +396,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     discountText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        color: '#FFFFFF',
         fontSize: 11,
     },
 
@@ -430,7 +429,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         color: '#555555',
     },
     bodyPartTextSelected: {
-        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        color: '#FFFFFF',
     },
 
     /* ─── Input & Calendar Cards ─── */
@@ -472,7 +471,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         flex: 1,
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 14,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
     },
 
     calendarIcon: {
@@ -499,7 +498,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        color: '#FFFFFF',
         fontSize: 14,
     },
 });

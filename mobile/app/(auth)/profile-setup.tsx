@@ -21,7 +21,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { FormInput } from '@/components/common';
 import { userService, cityService, ApiError, authService } from '@/services/api';
 import { mediaService } from '@/services/api/mediaService';
-import { OTPInput } from '@/components/common';
+import { OTPInput, type OTPInputRef } from '@/components/common';
 import { useAuth } from '@/context/AuthContext';
 import { useUser } from '@/context/UserContext';
 import { useTranslation } from 'react-i18next';
@@ -79,7 +79,7 @@ export default function ProfileSetupScreen() {
     const [isPhoneVerified, setIsPhoneVerified] = useState(!!passedPhone);
     const [otpSent, setOtpSent] = useState(false);
     const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-    const otpRef = useRef<{ clear: () => void }>(null);
+    const otpRef = useRef<OTPInputRef>(null);
 
     const fetchGPSLocation = async () => {
         setLine2('Fetching GPS Location...');

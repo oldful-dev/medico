@@ -9,7 +9,8 @@ const { logger } = require('../config/logger');
 const { sendResponse, sendPaginatedResponse, paginate, generateInvoiceNumber } = require('../utils/helpers');
 const { generateInvoicePDF } = require('../utils/pdfGenerator');
 const { uploadFile } = require('../utils/storage.service');
-const { sendEmail, sendWhatsApp } = require('../utils/notifications');
+const { sendWhatsApp } = require('../utils/notifications');
+const emailService = require('../services/email');
 const { sendDLTSMS } = require('../utils/fast2sms');
 const { emitToAdmins } = require('../services/socket.service');
 const crypto = require('crypto');
@@ -297,6 +298,13 @@ const verifyPayment = async (req, res, next) => {
                 body: `Your ${payment.booking.service.name} booking (${payment.booking.bookingCode}) has been confirmed.`,
                 data: { type: 'booking_created', bookingId: payment.booking.id, bookingCode: payment.booking.bookingCode },
             });
+
+            // WhatsApp BOOKING_CONFIRMED + DLT SMS ORDER_CONFIRMED
+            await sendBookingConfirmation({
+                user: payment.user,
+                bookingCode: payment.booking.bookingCode,
+                booking: { serviceName: payment.booking.service?.name },
+            }).catch(err => logger.warn('sendBookingConfirmation failed (non-fatal):', err.message));
         }
 
         // ─── Promote labOrder: HOLD_CREATED → CONFIRMED (Blood Test) ─────────────
@@ -328,6 +336,26 @@ const verifyPayment = async (req, res, next) => {
                 body: `Your ${subscription.plan.name} plan is now active. Welcome to Ayuxa Family!`,
                 data: { type: 'subscription_activated', subscriptionId: subscription.id },
             });
+
+            // WhatsApp BOOKING_CONFIRMED (reuse — plan activation) + DLT SMS ORDER_CONFIRMED
+            if (payment.user?.phone) {
+                const { sendBookingConfirmed } = require('../services/whatsapp');
+                const { sendSMS } = require('../services/sms');
+                await sendBookingConfirmed({
+                    phone: payment.user.phone,
+                    name: payment.user.name,
+                    orderId: subscription.id,
+                    userId: payment.userId,
+                }).catch(err => logger.warn('subscription WA BOOKING_CONFIRMED failed (non-fatal):', err.message));
+                if (payment.user.smsEnabled !== false) {
+                    await sendSMS({
+                        template: 'ORDER_CONFIRMED',
+                        mobile: payment.user.phone,
+                        variables: [payment.user.name, subscription.id, process.env.SUPPORT_PHONE || '9480198108'],
+                        userId: payment.userId,
+                    }).catch(err => logger.warn('subscription ORDER_CONFIRMED SMS failed (non-fatal):', err.message));
+                }
+            }
         }
 
         // ─── Promote product order: PENDING → PAID ────────────────────────────
@@ -338,11 +366,10 @@ const verifyPayment = async (req, res, next) => {
             });
         }
 
-        // Generate Invoice
+        // Create invoice record (fast — DB only, no PDF yet)
         const gstRate = parseFloat(process.env.GST_RATE) || 18;
         const subtotal = payment.amount / (1 + gstRate / 100);
         const gstAmount = payment.amount - subtotal;
-
         const invoiceNumber = await generateInvoiceNumber();
         const invoice = await prisma.invoice.create({
             data: {
@@ -356,69 +383,68 @@ const verifyPayment = async (req, res, next) => {
             },
         });
 
-        // Generate PDF
-        try {
-            const pdfBuffer = await generateInvoicePDF({
-                invoiceNumber,
-                invoiceDate: new Date(),
-                subtotal,
-                gstRate,
-                gstAmount,
-                totalAmount: payment.amount,
-                billingName: payment.user.name,
-                description: 'Ayuxa Healthcare Services',
-            });
-
-            const { url } = await uploadFile(pdfBuffer, 'invoices', `invoice-${invoiceNumber}.pdf`);
-
-            await prisma.invoice.update({
-                where: { id: invoice.id },
-                data: { pdfUrl: url },
-            });
-
-            // Send invoice via Email
-            if (payment.user.email) {
-                await sendEmail({
-                    to: payment.user.email,
-                    subject: `Invoice ${invoiceNumber} - Ayuxa Healthcare`,
-                    html: `
-                        <p>Dear ${payment.user.name},</p>
-                        <p>Your payment of ₹${parseFloat(payment.amount).toFixed(2)} was successful.</p>
-                        <p>You can download your GST invoice here: <a href="${url}">Download Invoice</a></p>
-                        <p>Best regards,<br/>Ayuxa Team</p>
-                    `,
-                });
-            }
-
-            // WhatsApp — Template: PAYMENT_RECEIVED (ID 20520) — Var1=name, Var2=amount
-            const { sendPaymentReceived: sendPaymentWA } = require('../services/whatsapp');
-            await sendPaymentWA({
-                phone: payment.user.phone,
-                name: payment.user.name,
-                amount: parseFloat(payment.amount).toFixed(2),
-                userId: payment.userId,
-            });
-
-            // DLT SMS — PAYMENT_RECEIVED (215352) — Var1=name, Var2=amount
-            if (payment.user.phone && payment.user.smsEnabled !== false) {
-                const { sendSMS } = require('../services/sms');
-                await sendSMS({
-                    template: 'PAYMENT_RECEIVED',
-                    mobile: payment.user.phone,
-                    variables: [payment.user.name, parseFloat(payment.amount).toFixed(2)],
-                    userId: payment.userId,
-                }).catch(err => logger.warn('PAYMENT_RECEIVED SMS failed (non-fatal):', err.message));
-            }
-
-            await prisma.invoice.update({
-                where: { id: invoice.id },
-                data: { emailSentAt: new Date() },
-            });
-        } catch (pdfErr) {
-            console.error('Invoice PDF error:', pdfErr);
-        }
-
+        // ─── Respond immediately — all heavy work runs in background ──────────
         sendResponse(res, 200, { payment, invoice }, 'Payment verified successfully');
+
+        // PDF generation, GCS upload, email, WA, SMS — all non-blocking after response
+        setImmediate(async () => {
+            try {
+                const pdfBuffer = await generateInvoicePDF({
+                    invoiceNumber,
+                    invoiceDate: new Date(),
+                    subtotal,
+                    gstRate,
+                    gstAmount,
+                    totalAmount: payment.amount,
+                    billingName: payment.user.name,
+                    description: 'Ayuxa Healthcare Services',
+                });
+
+                const { url } = await uploadFile(pdfBuffer, 'invoices', `invoice-${invoiceNumber}.pdf`);
+
+                await prisma.invoice.update({
+                    where: { id: invoice.id },
+                    data: { pdfUrl: url, emailSentAt: new Date() },
+                });
+
+                if (payment.user.email) {
+                    await emailService.sendPaymentReceipt({
+                        to: payment.user.email,
+                        name: payment.user.name,
+                        invoiceNumber,
+                        amount: parseFloat(payment.amount).toFixed(2),
+                        paymentId: payment.razorpayPaymentId,
+                        invoicePdfUrl: url,
+                        userId: payment.userId,
+                    });
+                }
+
+                // WhatsApp — PAYMENT_RECEIVED — Var1=name, Var2=amount
+                // Only send if this is NOT a booking/labOrder/subscription that already sent its own messages
+                if (!payment.booking && !payment.labOrder && !payment.subscriptionId) {
+                    const { sendPaymentReceived: sendPaymentWA } = require('../services/whatsapp');
+                    await sendPaymentWA({
+                        phone: payment.user.phone,
+                        name: payment.user.name,
+                        amount: parseFloat(payment.amount).toFixed(2),
+                        userId: payment.userId,
+                    });
+
+                    // DLT SMS — PAYMENT_RECEIVED (215352) — Var1=name, Var2=amount
+                    if (payment.user.phone && payment.user.smsEnabled !== false) {
+                        const { sendSMS } = require('../services/sms');
+                        await sendSMS({
+                            template: 'PAYMENT_RECEIVED',
+                            mobile: payment.user.phone,
+                            variables: [payment.user.name, parseFloat(payment.amount).toFixed(2)],
+                            userId: payment.userId,
+                        }).catch(err => logger.warn('PAYMENT_RECEIVED SMS failed (non-fatal):', err.message));
+                    }
+                }
+            } catch (bgErr) {
+                logger.error('verifyPayment background work failed:', bgErr.message);
+            }
+        });
     } catch (error) {
         next(error);
     }

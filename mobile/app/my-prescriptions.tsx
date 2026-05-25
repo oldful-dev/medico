@@ -10,7 +10,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 
 import { userService } from '@/services/api/userService';
 import { useUser } from '@/context/UserContext';
-import { useTheme } from '@react-navigation/native';
+import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -30,7 +30,7 @@ interface HealthReport {
 export default function MyPrescriptionsScreen() {
     const router = useRouter();
     const { profile } = useUser();
-    const { dark: isDarkMode } = useTheme();
+    const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     const [reports, setReports] = useState<HealthReport[]>([]);
     const [loading, setLoading] = useState(true);

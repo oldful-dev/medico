@@ -1,6 +1,6 @@
 // Login Screen — Mobile OTP + Social Login (no password)
 // Flow: Enter mobile → Request OTP → Inline OTP boxes → Login → Home
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, type Ref } from 'react';
 import {
     View,
     Text,
@@ -21,7 +21,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
-import { OTPInput, GoogleIcon } from '@/components/common';
+import { OTPInput, GoogleIcon, type OTPInputRef } from '@/components/common';
 import { Colors, Fonts, FontSize, Radius } from '@/constants/theme';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
@@ -55,7 +55,7 @@ export default function LoginScreen() {
     const [isLoading, setIsLoading] = useState(false);
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const isVerifyingRef = useRef(false);
-    const otpRef = useRef<{ clear: () => void }>(null);
+    const otpRef = useRef<OTPInputRef>(null);
 
 
     // Animation for OTP section reveal
@@ -184,7 +184,6 @@ export default function LoginScreen() {
 
             const response = await authService.googleSignIn({
                 idToken,
-                accessToken: tokens.accessToken,
                 email: user.email,
                 name: user.name ?? '',
                 photoUrl: user.photo ?? '',
@@ -218,7 +217,7 @@ export default function LoginScreen() {
                 let errorMessage = 'Google sign-in failed. Please try again.';
 
                 // DEVELOPER_ERROR common instructions
-                if (error.code === statusCodes.DEVELOPER_ERROR || error.message?.includes('DEVELOPER_ERROR')) {
+                if (error.message?.includes('DEVELOPER_ERROR')) {
                     errorMessage = 'Configuration Error (DEVELOPER_ERROR).\n\nThis usually means:\n1. Your SHA-1 fingerprint is not registered in Google Cloud/Firebase console.\n2. The package name (com.ayuxacare.app) mismatch.\n3. The Web Client ID is incorrect.';
                 } else if (error.message?.includes('NETWORK_ERROR')) {
                     errorMessage = 'Network error. Please check your internet connection.';

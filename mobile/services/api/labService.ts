@@ -21,7 +21,7 @@ export interface LabSlot {
 }
 
 export interface LabBookingPayload {
-    bookingType: 'HOME';
+    bookingType: 'HOME' | 'LAB';
     patient: {
         name: string;
         age: number;

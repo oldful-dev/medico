@@ -11,58 +11,60 @@ export default function ViewDocumentsScreen() {
     const insets = useSafeAreaInsets();
     const [selectedCategory, setSelectedCategory] = useState('all');
 
-    const documents = [
-        {
-            id: '1',
-            name: 'Medical Report - January 2026',
-            category: 'medical',
-            type: 'PDF',
-            size: '2.4 MB',
-            date: '15 Jan 2026',
-            icon: 'document-text-outline',
-            color: '#2563EB',
-        },
-        {
-            id: '2',
-            name: 'Lab Test Results',
-            category: 'lab',
-            type: 'PDF',
-            size: '1.8 MB',
-            date: '12 Jan 2026',
-            icon: 'flask-outline',
-            color: '#7C3AED',
-        },
-        {
-            id: '3',
-            name: 'Prescription - Jan 2026',
-            category: 'prescription',
-            type: 'PDF',
-            size: '0.9 MB',
-            date: '10 Jan 2026',
-            icon: 'receipt-outline',
-            color: '#EA580C',
-        },
-        {
-            id: '4',
-            name: 'Health Insurance Card',
-            category: 'insurance',
-            type: 'Image',
-            size: '3.1 MB',
-            date: '01 Jan 2026',
-            icon: 'card-outline',
-            color: '#0284C7',
-        },
-        {
-            id: '5',
-            name: 'Discharge Summary',
-            category: 'medical',
-            type: 'PDF',
-            size: '1.2 MB',
-            date: '25 Dec 2025',
-            icon: 'document-text-outline',
-            color: '#2563EB',
-        },
-    ];
+    // TODO: Fetch from backend
+    // const documents = [
+    //     {
+    //         id: '1',
+    //         name: 'Medical Report - January 2026',
+    //         category: 'medical',
+    //         type: 'PDF',
+    //         size: '2.4 MB',
+    //         date: '15 Jan 2026',
+    //         icon: 'document-text-outline',
+    //         color: '#2563EB',
+    //     },
+    //     {
+    //         id: '2',
+    //         name: 'Lab Test Results',
+    //         category: 'lab',
+    //         type: 'PDF',
+    //         size: '1.8 MB',
+    //         date: '12 Jan 2026',
+    //         icon: 'flask-outline',
+    //         color: '#7C3AED',
+    //     },
+    //     {
+    //         id: '3',
+    //         name: 'Prescription - Jan 2026',
+    //         category: 'prescription',
+    //         type: 'PDF',
+    //         size: '0.9 MB',
+    //         date: '10 Jan 2026',
+    //         icon: 'receipt-outline',
+    //         color: '#EA580C',
+    //     },
+    //     {
+    //         id: '4',
+    //         name: 'Health Insurance Card',
+    //         category: 'insurance',
+    //         type: 'Image',
+    //         size: '3.1 MB',
+    //         date: '01 Jan 2026',
+    //         icon: 'card-outline',
+    //         color: '#0284C7',
+    //     },
+    //     {
+    //         id: '5',
+    //         name: 'Discharge Summary',
+    //         category: 'medical',
+    //         type: 'PDF',
+    //         size: '1.2 MB',
+    //         date: '25 Dec 2025',
+    //         icon: 'document-text-outline',
+    //         color: '#2563EB',
+    //     },
+    // ];
+    const documents: any[] = [];
 
     const categories = [
         { id: 'all', label: 'All Documents', icon: 'grid-outline' },
@@ -133,7 +135,13 @@ export default function ViewDocumentsScreen() {
 
                 {/* Documents List */}
                 <View style={styles.contentContainer}>
-                    {filteredDocuments.length > 0 ? (
+                    {documents.length === 0 ? (
+                        <View style={styles.emptyState}>
+                            <Ionicons name="documents-outline" size={64} color={Colors.textMuted} />
+                            <Text style={styles.emptyText}>Coming Soon</Text>
+                            <Text style={styles.emptySubtext}>Documents will be available soon</Text>
+                        </View>
+                    ) : filteredDocuments.length > 0 ? (
                         filteredDocuments.map((doc) => (
                             <View key={doc.id} style={styles.documentCard}>
                                 <View style={[styles.iconCircle, { backgroundColor: `${doc.color}15` }]}>
@@ -178,7 +186,7 @@ export default function ViewDocumentsScreen() {
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: Colors.bgPrimary,
+        backgroundColor: Colors.bgScreen,
     },
     header: {
         flexDirection: 'row',
