@@ -666,6 +666,7 @@ const uploadProfileAvatar = async (req, res, next) => {
 const deleteProfile = async (req, res, next) => {
     try {
         const userId = req.user.id;
+        logger.info(`[DELETE_ACCOUNT] Deleting user ${userId} and all related data`);
 
         // Delete all related data in cascade
         await Promise.all([
@@ -684,9 +685,11 @@ const deleteProfile = async (req, res, next) => {
 
         // Delete the user account
         await prisma.user.delete({ where: { id: userId } });
+        logger.info(`[DELETE_ACCOUNT] User ${userId} deleted successfully`);
 
         sendResponse(res, 200, null, 'Account deleted successfully');
     } catch (error) {
+        logger.error(`[DELETE_ACCOUNT] Error deleting user ${userId}:`, error.message);
         next(error);
     }
 };
