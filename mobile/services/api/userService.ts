@@ -167,6 +167,10 @@ export const userService = {
         return apiClient.delete<null>(`/users/health-reports/${reportId}`);
     },
 
+    deleteAccount: async (): Promise<ApiResponse<null>> => {
+        return apiClient.delete<null>('/users/profile');
+    },
+
     // ─── Profile Avatar ─────────────────────────
     // Uses XHR instead of fetch — React Native's fetch has issues sending
     // FormData with URI file objects; XHR is the reliable multipart approach.

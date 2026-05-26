@@ -9,7 +9,7 @@ import useThemeStore from "@/store/useThemeStore";
 import useAuthStore from "@/store/useAuthStore";
 import GlobalSearch from "./GlobalSearch";
 import { reportAPI } from "@/lib/api";
-import { timeAgo, showToast } from "@/lib/hooks";
+import { timeAgo, showToast, playTing } from "@/lib/hooks";
 import { getSocket } from "@/lib/socket";
 
 export default function Header({ onToggleSidebar, onMobileMenu }) {
@@ -73,6 +73,7 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                         href: '/sos',
                         time: new Date()
                     });
+                    playTing('sos');
                     showToast(`🚨 ${data.title}`, 'danger');
                 });
 
@@ -85,6 +86,7 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                         href: '/bookings',
                         time: new Date()
                     });
+                    playTing();
                     showToast(`📅 New Booking: ${data.serviceType || 'Service'}`, 'success');
                 });
 
@@ -98,6 +100,7 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                         href: '/support',
                         time: new Date()
                     });
+                    playTing();
                     showToast(`🎫 New Support Ticket: ${data.subject}`, 'success');
                 });
 
@@ -110,6 +113,7 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                         href: '/support',
                         time: new Date()
                     });
+                    playTing('message');
                     showToast(`💬 New Support Message from ${data.senderName}`, 'info');
                 });
 
@@ -136,8 +140,10 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                         time: new Date()
                     });
                     if (data.paymentStatus === 'SUCCESS') {
+                        playTing();
                         showToast(`💳 Payment confirmed: ${data.bookingCode || ''}`, 'success');
                     } else {
+                        playTing('sos');
                         showToast(`❌ Payment failed for ${data.userName || 'booking'}`, 'danger');
                     }
                 });

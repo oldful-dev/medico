@@ -182,7 +182,21 @@ export default function AccountScreen() {
             'This will permanently delete your account and all data. This cannot be undone.',
             [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Delete', style: 'destructive', onPress: () => router.push('/help-support' as any) },
+                {
+                    text: 'Delete', style: 'destructive', onPress: async () => {
+                        try {
+                            const res = await userService.deleteAccount();
+                            if (res.success) {
+                                await logout();
+                                router.replace('/(auth)/login' as any);
+                            } else {
+                                Alert.alert('Error', res.message || 'Failed to delete account');
+                            }
+                        } catch (err: any) {
+                            Alert.alert('Error', err.message || 'Failed to delete account');
+                        }
+                    }
+                },
             ]
         );
     };
