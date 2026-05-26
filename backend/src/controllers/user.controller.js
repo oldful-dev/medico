@@ -664,8 +664,8 @@ const uploadProfileAvatar = async (req, res, next) => {
 
 // DELETE /api/users/profile  (App user — permanently delete account and all data)
 const deleteProfile = async (req, res, next) => {
+    const userId = req.user.id;
     try {
-        const userId = req.user.id;
         logger.info(`[DELETE_ACCOUNT] Deleting user ${userId} and all related data`);
 
         // Delete all related data in cascade
