@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MessageSquare, CheckCircle, Eye, Send, ChevronLeft, ChevronRight, RefreshCw, ArrowLeft, Clock, User, Headphones } from "lucide-react";
 import { supportAPI } from "@/lib/api";
-import { showToast, formatDateTime, timeAgo } from "@/lib/hooks";
+import { showToast, formatDateTime, timeAgo, playTing } from "@/lib/hooks";
 import { getSocket, onSocketEvent } from "@/lib/socket";
 
 const statusColors = { open: 'badge-warning', 'in-progress': 'badge-info', resolved: 'badge-success', closed: 'badge-default' };
@@ -57,6 +57,7 @@ export default function SupportPage() {
                     setSelected(prev => {
                         if (prev && prev.id === ticketId) {
                             console.log('[Socket] 📨 Updating selected ticket:', ticketId);
+                            playTing('message');
                             showToast(`💬 New message from ${senderName}`, 'info');
                             // Check if message already exists to avoid duplicates
                             const messageExists = (prev.messages || []).some(m => m.id === message.id);

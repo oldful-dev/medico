@@ -662,11 +662,40 @@ const uploadProfileAvatar = async (req, res, next) => {
     }
 };
 
+// DELETE /api/users/profile  (App user — permanently delete account and all data)
+const deleteProfile = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+
+        // Delete all related data in cascade
+        await Promise.all([
+            prisma.address.deleteMany({ where: { userId } }),
+            prisma.emergencyContact.deleteMany({ where: { userId } }),
+            prisma.familyMember.deleteMany({ where: { userId } }),
+            prisma.medicalCard.deleteMany({ where: { userId } }),
+            prisma.healthReport.deleteMany({ where: { userId } }),
+            prisma.booking.deleteMany({ where: { userId } }),
+            prisma.subscription.deleteMany({ where: { userId } }),
+            prisma.notificationLog.deleteMany({ where: { userId } }),
+            prisma.sosAlert.deleteMany({ where: { userId } }),
+            prisma.payment.deleteMany({ where: { userId } }),
+            prisma.invoice.deleteMany({ where: { userId } }),
+        ]);
+
+        // Delete the user account
+        await prisma.user.delete({ where: { id: userId } });
+
+        sendResponse(res, 200, null, 'Account deleted successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getUsers, getUserById, createUser, updateUser,
     blockUser, suspendUser, activateUser,
     addEmergencyContact, removeEmergencyContact,
     addAddress, updateAddress, deleteAddress,
     upsertMedicalCard, uploadHealthReport, deleteHealthReport,
-    getMyProfile, updateMyProfile, registerDeviceToken, uploadProfileAvatar, getMyHealthReports,
+    getMyProfile, updateMyProfile, registerDeviceToken, uploadProfileAvatar, getMyHealthReports, deleteProfile,
 };
