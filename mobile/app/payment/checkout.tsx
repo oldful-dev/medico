@@ -2,10 +2,7 @@
 // Flow: Order summary → optional coupon → create booking → initiate order → native Razorpay → verify → success
 // Edge cases: cancel (ondismiss), failure (retry), app crash (AsyncStorage recovery)
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import {
-    View, Text, ScrollView, TouchableOpacity, Modal,
-    TextInput, ActivityIndicator, StyleSheet, Platform, Alert, NativeModules,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, StyleSheet, Platform, Alert, NativeModules, KeyboardAvoidingView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -77,6 +74,7 @@ export default function CheckoutScreen() {
         skipUpsell?: string;
         bookingAmount?: string;
         bookingLabel?: string;
+        checkoutRoute?: string;
     }>();
 
     // Get blood test items from cart if blood-test category
@@ -128,7 +126,8 @@ export default function CheckoutScreen() {
     // ─── Sync phone from profile when it loads
     useEffect(() => {
         if (profile?.phone && !phoneNumber) {
-            setPhoneNumber(profile.phone);
+            const cleanPhone = profile.phone.startsWith('+91') ? profile.phone.slice(3) : profile.phone;
+            setPhoneNumber(cleanPhone);
         }
     }, [profile?.phone]);
 
@@ -403,7 +402,7 @@ export default function CheckoutScreen() {
                             name: profile?.name || '',
                             age: calculateAge(profile?.dateOfBirth),
                             gender: profile?.gender || 'M',
-                            phone: phoneNumber,
+                            phone: phoneNumber.startsWith('+91') ? phoneNumber : `+91${phoneNumber}`,
                             email: profile?.email || '',
                         },
                         address: {
@@ -441,7 +440,7 @@ export default function CheckoutScreen() {
                     }
                     // Use the last booking ID for display (or we could use the first one)
                     sessionBookingId.current = lastBookingId;
-                } else if (params.bookingPayload) {
+                } else if (params.bookingPayload && !params.subscriptionId) {
                     // ─── Service/Product Booking ──────────────────────────────────
                     const payload = JSON.parse(params.bookingPayload as string);
                     const bookingRes = await bookingService.createBooking({
@@ -529,6 +528,7 @@ export default function CheckoutScreen() {
                         bookingPayload: params.bookingPayload || '',
                         bookingAmount: params.bookingAmount || '',
                         bookingLabel: params.bookingLabel || '',
+                        checkoutRoute: params.checkoutRoute || '',
                     },
                 });
                 return;
@@ -638,6 +638,7 @@ export default function CheckoutScreen() {
                             bookingPayload: params.bookingPayload || '',
                             bookingAmount: params.bookingAmount || '',
                             bookingLabel: params.bookingLabel || '',
+                            checkoutRoute: params.checkoutRoute || '',
                         },
                     });
                 }
@@ -733,7 +734,8 @@ export default function CheckoutScreen() {
 
     // ─── UI ─────────────────────────────────────────────────
     return (
-        <SafeAreaView style={styles.screen} edges={['top']}>
+        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <SafeAreaView style={{ flex: 1 }} edges={['top']}>
             <StatusBar style="light" />
 
             {/* Header */}
@@ -1142,7 +1144,8 @@ export default function CheckoutScreen() {
                     </View>
                 </Modal>
             )}
-        </SafeAreaView>
+            </SafeAreaView>
+        </KeyboardAvoidingView>
     );
 }
 

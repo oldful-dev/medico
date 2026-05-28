@@ -1,14 +1,5 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
-    Platform,
-    Alert,
-    ActivityIndicator,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Alert, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -109,7 +100,8 @@ export default function MedicalEquipmentScreen() {
                     </View>
                 </View>
 
-                <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
+                <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* ─── Select Equipment Section ─── */}
                     <View style={dynamicStyles.sectionCardTintedDark}>
@@ -208,6 +200,7 @@ export default function MedicalEquipmentScreen() {
                     </View>
 
                 </KeyboardAwareScrollView>
+        </KeyboardAvoidingView>
             </View>
         </View>
     );

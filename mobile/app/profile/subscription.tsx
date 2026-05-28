@@ -1,10 +1,7 @@
 // Subscription & Membership screen
 // Shows active plan, benefits, upgrade options, renewal
 import React, { useState, useCallback } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, FlatList,
-    ActivityIndicator, Alert, ScrollView,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';

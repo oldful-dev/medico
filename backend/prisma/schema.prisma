@@ -287,6 +287,7 @@ model Plan {
   yearlyPrice    Float              @default(0)
   isVisible      Boolean            @default(true)
   sortOrder      Int                @default(0)
+  tierLevel      Int                @default(0)
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   planType       String             @default("CARE")
@@ -702,19 +703,24 @@ model WellnessWaitlist {
 }
 
 model ProductOrder {
-  id        String    @id @default(uuid())
-  orderCode String    @unique
-  userId    String
-  productId String
-  quantity  Int       @default(1)
-  amount    Float
-  status    String    @default("PENDING")
-  address   String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  payments  Payment[]
-  product   Product   @relation(fields: [productId], references: [id])
-  user      User      @relation(fields: [userId], references: [id])
+  id             String    @id @default(uuid())
+  orderCode      String    @unique
+  userId         String
+  productId      String
+  quantity       Int       @default(1)
+  amount         Float
+  shippingCharge Float     @default(0)
+  status         String    @default("PENDING")
+  address        String?
+  courierName    String?
+  awbCode        String?
+  trackingUrl    String?
+  shippingStatus String    @default("PENDING")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  payments       Payment[]
+  product        Product   @relation(fields: [productId], references: [id])
+  user           User      @relation(fields: [userId], references: [id])
 
   @@map("product_orders")
 }
@@ -883,12 +889,16 @@ enum BillingCycle {
 }
 
 enum SubscriptionStatus {
+  PENDING
   ACTIVE
   EXPIRING
   EXPIRED
   PAUSED
   CANCELLED
+  UPGRADED
+  DOWNGRADED
   PAYMENT_PENDING
+  PAYMENT_FAILED
 }
 
 enum PaymentStatus {

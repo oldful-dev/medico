@@ -2,10 +2,7 @@
 // Flow: Address confirmation → Payment method → Razorpay → Success
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import {
-    View, Text, ScrollView, TouchableOpacity,
-    TextInput, ActivityIndicator, StyleSheet, Platform, Alert, NativeModules,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, StyleSheet, Platform, Alert, NativeModules, KeyboardAvoidingView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -69,7 +66,43 @@ export default function ServiceCheckoutScreen() {
         meetupParams?: string;
         refreshProfileOnSuccess?: string;
         pickupAddress?: string;
+        skipUpsell?: string;
     }>();
+
+    const baseAmount = parseFloat(params.amount ?? '0');
+    const label  = params.label ?? 'Service Booking';
+
+    // ─── Intercept and redirect to Smart Upgrade Prompt if no active plan for Home Services
+    useEffect(() => {
+        if (params.bookingPayload && !params.subscriptionId && params.skipUpsell !== '1') {
+            const category = mapLabelToCategory(label);
+            const isHome = [
+                'PLUMBING_ELECTRICAL',
+                'APPLIANCE_REPAIR',
+                'DEEP_CLEANING',
+                'BILL_PAYMENT',
+                'BANK_PAPERWORK',
+                'LEGAL_PAPERWORK',
+                'TECH_HELPER',
+                'HOME_ESSENTIALS',
+            ].includes(category);
+
+            if (isHome) {
+                const hasActivePlan = profile?.subscriptions?.some((s: any) => s.status === 'ACTIVE');
+                if (!hasActivePlan) {
+                    router.replace({
+                        pathname: '/payment/upgrade-prompt',
+                        params: {
+                            bookingPayload: params.bookingPayload,
+                            amount: params.amount,
+                            label: params.label,
+                            checkoutRoute: '/service-checkout',
+                        }
+                    });
+                }
+            }
+        }
+    }, [profile, params.bookingPayload, params.subscriptionId, params.skipUpsell, label]);
 
     React.useEffect(() => {
         console.log('💳 [SERVICE CHECKOUT] Screen loaded');
@@ -79,8 +112,7 @@ export default function ServiceCheckoutScreen() {
         console.log('💳 [SERVICE CHECKOUT] Profile:', !!profile);
     }, [params.label, params.amount, params.meetupId, profile]);
 
-    const baseAmount = parseFloat(params.amount ?? '0');
-    const label  = params.label ?? 'Service Booking';
+
 
     // Parse meetup details if this is a meetup booking
     const meetupParamsObj = params.meetupParams ? (() => {
@@ -263,12 +295,33 @@ export default function ServiceCheckoutScreen() {
             setFlowState('creating_booking');
             if (!params.meetupId && !sessionBookingId.current && params.bookingPayload) {
                 const payload = JSON.parse(params.bookingPayload as string);
+
+                // Construct full address line for administrative visibility
+                const addressParts = [];
+                if (selectedAddress) {
+                    if (selectedAddress.line1) addressParts.push(selectedAddress.line1);
+                    if (selectedAddress.line2) addressParts.push(selectedAddress.line2);
+                    if (selectedAddress.cityName) addressParts.push(selectedAddress.cityName);
+                    if (selectedAddress.state) addressParts.push(selectedAddress.state);
+                    if (selectedAddress.pincode) addressParts.push(selectedAddress.pincode);
+                    if (selectedAddress.landmark) addressParts.push(`Landmark: ${selectedAddress.landmark}`);
+                }
+                const fullAddressLine = addressParts.length > 0 ? addressParts.join(', ') : payload.addressLine;
+
+                const lat = selectedAddress?.latitude !== undefined && selectedAddress?.latitude !== null
+                    ? Number(selectedAddress.latitude)
+                    : payload.latitude;
+                const lng = selectedAddress?.longitude !== undefined && selectedAddress?.longitude !== null
+                    ? Number(selectedAddress.longitude)
+                    : payload.longitude;
+
                 const bookingRes = await bookingService.createBooking({
                     ...payload,
                     amount: finalAmount,
                     paymentMethod: selectedMethod,
-                    addressId: selectedAddress?.id,
-                    addressLine: selectedAddress?.line1,
+                    addressLine: fullAddressLine,
+                    latitude: lat,
+                    longitude: lng,
                 });
                 if (!bookingRes.success || !bookingRes.data) {
                     setFlowState('failed');
@@ -491,7 +544,8 @@ export default function ServiceCheckoutScreen() {
     }, [payLoading, finalAmount, selectedMethod, couponApplied, couponCode, params, label, router, refreshData, selectedAddress, colors.primary, colors.textWhite]);
 
     return (
-        <SafeAreaView style={[styles.screen, { backgroundColor: colors.primary }]} edges={['top']}>
+        <KeyboardAvoidingView style={[styles.screen, { backgroundColor: colors.primary }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <SafeAreaView style={{ flex: 1 }} edges={['top']}>
             <StatusBar style="light" />
 
             {/* Header */}
@@ -776,7 +830,8 @@ export default function ServiceCheckoutScreen() {
                     }
                 </TouchableOpacity>
             </View>
-        </SafeAreaView>
+            </SafeAreaView>
+        </KeyboardAvoidingView>
     );
 }
 

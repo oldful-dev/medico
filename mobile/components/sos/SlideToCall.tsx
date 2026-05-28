@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import SOSCountdown from './SOSCountdown';
 import { Fonts } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
 import { sosService } from '@/services/device/sosService';
 import { AnalyticsEvents } from '@/services/firebase/analyticsEvents';
 
@@ -28,6 +29,7 @@ interface SlideToCallProps {
 }
 
 export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
+    const { t } = useTranslation();
     const translateX = useRef(new Animated.Value(0)).current;
     const [showCountdown, setShowCountdown] = useState(false);
 
@@ -100,7 +102,7 @@ export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
         <View style={styles.track}>
             {/* Text label — centered in track */}
             <View style={styles.labelContainer}>
-                <Text style={styles.label}>Slide to Call for Help</Text>
+                <Text style={styles.label}>{t('sos.slide_to_call')}</Text>
             </View>
 
             {/* Draggable thumb with phone icon */}

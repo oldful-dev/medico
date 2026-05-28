@@ -3,16 +3,7 @@
 // On CTA press: initiates subscription → navigates to checkout with subscriptionId.
 // After payment verify: refreshData() updates global profile with active plan.
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
-    ScrollView,
-    ActivityIndicator,
-    Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -54,6 +45,7 @@ export default function PlansScreen() {
         bookingPayload?: string;
         amount?: string;
         label?: string;
+        checkoutRoute?: string;
     }>();
 
     const { isDarkMode } = useTheme();
@@ -154,7 +146,7 @@ export default function PlansScreen() {
             // Checkout handles: Razorpay open → verify → payment-success screen
             // On success, verify updates subscription → ACTIVE on backend.
             // We then call refreshData() via payment-success screen to sync profile.
-            router.push({
+             router.push({
                 pathname: '/payment/checkout',
                 params: {
                     subscriptionId,
@@ -164,6 +156,10 @@ export default function PlansScreen() {
                     phone: profile.phone ?? '',
                     email: profile.email ?? '',
                     refreshProfileOnSuccess: '1',
+                    bookingPayload: params.bookingPayload || '',
+                    bookingAmount: params.amount || '',
+                    bookingLabel: params.label || '',
+                    checkoutRoute: params.checkoutRoute || '',
                 },
             });
         } catch (e: any) {

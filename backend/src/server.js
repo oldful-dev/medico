@@ -255,6 +255,9 @@ app.use('/api/banners', bannerRoutes);
 // Local Meetups
 app.use('/api/meetups', meetupRoutes);
 
+// Wellness Store
+app.use('/api/wellness', require('./routes/wellness.routes'));
+
 
 // ═══ ERROR HANDLING ═════════════════════════════════════════
 app.use(notFoundHandler);

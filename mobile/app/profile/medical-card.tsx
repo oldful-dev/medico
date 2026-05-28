@@ -1,8 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    ActivityIndicator, Alert, Share, Platform, Linking,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Share, Platform, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +9,10 @@ import { userService } from '@/services/api/userService';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import * as Print from 'expo-print';
+import { generateMedicalCardHTML } from '@/utils/medicalCardPDF';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const formatDate = (iso?: string) => {
     if (!iso) return 'N/A';
@@ -114,106 +115,123 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
 ═══════════════════════════════════════`;
     };
 
-    const handleDownloadPDF = async () => {
+    const handleAction = async (mode: 'download' | 'share', title: string) => {
         try {
-            const cardText = generateCardText();
-            const htmlContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <style>
-                        body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
-                        h1 { color: #02743F; text-align: center; }
-                        .section { margin: 20px 0; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
-                        .section h2 { color: #02743F; font-size: 14px; margin-top: 15px; }
-                        .field { margin: 8px 0; }
-                        .label { font-weight: bold; color: #666; }
-                        .value { color: #2F2F2F; }
-                    </style>
-                </head>
-                <body>
-                    <pre>${cardText}</pre>
-                </body>
-                </html>
-            `;
+            const pdfData = {
+                name: profile?.name || 'N/A',
+                phone: profile?.phone || 'N/A',
+                email: profile?.email || '',
+                dateOfBirth: profile?.dateOfBirth || '',
+                gender: profile?.gender || '',
+                uniqueUserId: profile?.uniqueUserId || 'N/A',
+                bloodGroup: medicalCard?.bloodGroup || '',
+                allergies: medicalCard?.allergies || [],
+                chronicConditions: medicalCard?.chronicConditions || [],
+                currentMedications: medicalCard?.currentMedications || [],
+                emergencyContacts: emergencyContacts || [],
+                addresses: addresses || [],
+                insuranceInfo: (medicalCard as any)?.insuranceInfo || '',
+                primaryDoctor: (medicalCard as any)?.primaryDoctor || '',
+            };
+            const htmlContent = generateMedicalCardHTML(pdfData);
 
             const result = await Print.printToFileAsync({
                 html: htmlContent,
-                base64: false,
+                base64: Platform.OS === 'android' && mode === 'download',
             });
 
-            await Share.share({
-                url: result.uri,
-                title: `${profile?.name}-MedicalCard.pdf`,
-            });
-        } catch (error) {
-            Alert.alert('Error', 'Failed to generate PDF.');
-        }
-    };
+            if (Platform.OS === 'android' && mode === 'download') {
+                const storedUri = await AsyncStorage.getItem('ayuxa_download_dir_uri');
+                
+                const savePdfToAndroidDir = async (dirUri: string) => {
+                    const cleanName = (profile?.name || 'User').replace(/[^a-zA-Z0-9]/g, '_');
+                    const dateStr = new Date().toLocaleDateString('en-IN').replace(/\//g, '-');
+                    const filename = `${cleanName}_MedicalCard_${dateStr}`;
+                    
+                    try {
+                        const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+                            dirUri,
+                            filename,
+                            'application/pdf'
+                        );
+                        await FileSystem.writeAsStringAsync(fileUri, result.base64!, {
+                            encoding: FileSystem.EncodingType.Base64,
+                        });
+                        Alert.alert('Success', 'Medical Card PDF successfully saved to your selected folder!');
+                    } catch (err) {
+                        console.error('SAF write error:', err);
+                        await AsyncStorage.removeItem('ayuxa_download_dir_uri');
+                        Alert.alert('Save Failed', 'Failed to save to the selected folder. Please try downloading again to re-select the folder.');
+                    }
+                };
 
-    const handleShareWhatsApp = async () => {
-        try {
-            const cardText = generateCardText();
-            const message = encodeURIComponent(`📋 My AYUXA Medical Card:\n\n${cardText}`);
-
-            const whatsappUrl = Platform.OS === 'ios'
-                ? `whatsapp://send?text=${message}`
-                : `https://wa.me/?text=${message}`;
-
-            const canOpen = await Linking.canOpenURL(whatsappUrl);
-            if (canOpen) {
-                await Linking.openURL(whatsappUrl);
+                if (!storedUri) {
+                    Alert.alert(
+                        'Select Folder',
+                        'Please choose or create a folder (e.g. Ayuxa/Medical card) in your internal storage to automatically save your medical card PDFs.',
+                        [
+                            {
+                                text: 'Select Folder',
+                                onPress: async () => {
+                                    try {
+                                        const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                                        if (permissions.granted) {
+                                            const grantedUri = permissions.directoryUri;
+                                            await AsyncStorage.setItem('ayuxa_download_dir_uri', grantedUri);
+                                            await savePdfToAndroidDir(grantedUri);
+                                        } else {
+                                            Alert.alert('Permission Denied', 'Could not save PDF without folder permission.');
+                                        }
+                                    } catch (err) {
+                                        Alert.alert('Error', 'Failed to select folder.');
+                                    }
+                                }
+                            },
+                            { text: 'Cancel', style: 'cancel' }
+                        ]
+                    );
+                } else {
+                    await savePdfToAndroidDir(storedUri);
+                }
             } else {
-                Alert.alert('WhatsApp not installed', 'Please install WhatsApp to share.');
+                if (await Sharing.isAvailableAsync()) {
+                    await Sharing.shareAsync(result.uri, {
+                        mimeType: 'application/pdf',
+                        dialogTitle: title,
+                        UTI: 'com.adobe.pdf',
+                    });
+                } else {
+                    Alert.alert('Sharing not available', 'Sharing is not supported on this device.');
+                }
             }
         } catch (error) {
-            Alert.alert('Error', 'Failed to open WhatsApp.');
+            Alert.alert('Error', 'Failed to generate and share PDF.');
         }
     };
 
-    const handleShareEmail = async () => {
-        try {
-            const cardText = generateCardText();
-            const subject = encodeURIComponent(`${profile?.name} - AYUXA Medical Card`);
-            const body = encodeURIComponent(cardText);
-
-            const mailtoLink = `mailto:?subject=${subject}&body=${body}`;
-
-            const canOpen = await Linking.canOpenURL(mailtoLink);
-            if (canOpen) {
-                await Linking.openURL(mailtoLink);
-            } else {
-                Alert.alert('Error', 'No email client available.');
-            }
-        } catch (error) {
-            Alert.alert('Error', 'Failed to open email.');
-        }
-    };
+    const handleDownloadPDF = () => handleAction('download', `${profile?.name || 'User'}-MedicalCard.pdf`);
+    const handleShareWhatsApp = () => handleAction('share', `${profile?.name || 'User'}-MedicalCard.pdf`);
+    const handleShareEmail = () => handleAction('share', `${profile?.name || 'User'}-MedicalCard.pdf`);
 
     const handlePrint = async () => {
         try {
-            const cardText = generateCardText();
-            const htmlContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <style>
-                        body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
-                        h1 { color: #02743F; text-align: center; }
-                        .section { margin: 20px 0; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
-                        .section h2 { color: #02743F; font-size: 14px; margin-top: 15px; }
-                        .field { margin: 8px 0; }
-                        .label { font-weight: bold; color: #666; }
-                        .value { color: #2F2F2F; }
-                    </style>
-                </head>
-                <body>
-                    <pre>${cardText}</pre>
-                </body>
-                </html>
-            `;
+            const pdfData = {
+                name: profile?.name || 'N/A',
+                phone: profile?.phone || 'N/A',
+                email: profile?.email || '',
+                dateOfBirth: profile?.dateOfBirth || '',
+                gender: profile?.gender || '',
+                uniqueUserId: profile?.uniqueUserId || 'N/A',
+                bloodGroup: medicalCard?.bloodGroup || '',
+                allergies: medicalCard?.allergies || [],
+                chronicConditions: medicalCard?.chronicConditions || [],
+                currentMedications: medicalCard?.currentMedications || [],
+                emergencyContacts: emergencyContacts || [],
+                addresses: addresses || [],
+                insuranceInfo: (medicalCard as any)?.insuranceInfo || '',
+                primaryDoctor: (medicalCard as any)?.primaryDoctor || '',
+            };
+            const htmlContent = generateMedicalCardHTML(pdfData);
 
             await Print.printAsync({
                 html: htmlContent,

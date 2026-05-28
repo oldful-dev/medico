@@ -1,17 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    Image,
-    ScrollView,
-    FlatList,
-    TouchableOpacity,
-    ActivityIndicator,
-    TextInput,
-    RefreshControl,
-    Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, FlatList, TouchableOpacity, ActivityIndicator, TextInput, RefreshControl, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +9,7 @@ import { useRouter } from 'expo-router';
 import { storeService, Product } from '@/services/api/storeService';
 import { useCart } from '@/context/CartContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
+import { useToast } from '@/context/ToastContext';
 
 // Using local images or placeholder for Hero if a specific illustration isn't explicitly supplied
 // For this teaser, we'll build a vibrant Hero with a prominent 'Ayuxa Care' logo or generic medical icon
@@ -39,6 +28,7 @@ export default function WellnessScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { addItem, items } = useCart();
+    const { showToast } = useToast();
     const colors = useThemeColors();
 
     const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -110,10 +100,7 @@ export default function WellnessScreen() {
             quantity: 1,
             details: { productId: product.id, imageUrl: product.imageUrl },
         });
-        Alert.alert('Added to Cart', `${product.name} added to cart!`, [
-            { text: 'Continue', style: 'cancel' },
-            { text: 'View Cart', onPress: () => router.push('/(tabs)/cart' as any) },
-        ]);
+        showToast('Item added to cart');
     };
 
     let filteredProducts = displayedProducts;

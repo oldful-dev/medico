@@ -2,18 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
-import {
-  View,
-  Text,
-  Image,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  useWindowDimensions,
-  ActivityIndicator,
-  Alert,
-  Linking,
-} from 'react-native';
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, useWindowDimensions, ActivityIndicator, Alert, Linking } from 'react-native';
 import * as Location from 'expo-location';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -176,6 +165,30 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGr
   );
 }
 
+interface TrustBadgesProps {
+  badges: any[];
+  colors: ThemeColors;
+}
+
+function TrustBadges({ badges, colors }: TrustBadgesProps) {
+  const s = makeStyles(colors);
+  return (
+    <View style={s.trustCard}>
+      {badges.map((badge, i) => (
+        <React.Fragment key={badge.id}>
+          <View style={s.trustItem}>
+            <View style={s.trustIconCircle}>
+              <Image source={{ uri: getAssetUrl(badge.icon) }} style={s.trustIcon} resizeMode="contain" />
+            </View>
+            <Text style={s.trustLabel}>{badge.label}</Text>
+          </View>
+          {i < badges.length - 1 && <View style={s.trustDivider} />}
+        </React.Fragment>
+      ))}
+    </View>
+  );
+}
+
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
@@ -262,29 +275,27 @@ export default function HomeScreen() {
     } catch {
       setCurrentLocationStr('Location Unavailable');
       setUserPinCode(null);
-      setFeaturedMeetup(null);
-      return;
     }
 
-    // Refetch featured meetup only if pincode is detected
-    if (detectedPinCode) {
-      try {
-        const res = await meetupService.getMeetups({ pinCode: detectedPinCode });
-        if (res.success && res.data && res.data.length > 0) {
-          const featured = res.data.find((m: any) => m.isFeatured);
-          // Only show if meetup's pincode matches user's pincode
-          if (featured && featured.pinCode === detectedPinCode) {
-            setFeaturedMeetup(featured);
-          } else {
-            setFeaturedMeetup(null);
-          }
-        } else {
-          setFeaturedMeetup(null);
-        }
-      } catch {
+    // Refetch featured meetup
+    try {
+      let res = null;
+      if (detectedPinCode) {
+        res = await meetupService.getMeetups({ pinCode: detectedPinCode });
+      }
+
+      // Fallback: fetch globally if pinCode query yields nothing or was skipped
+      if (!res || !res.success || !res.data || res.data.length === 0) {
+        res = await meetupService.getMeetups();
+      }
+
+      if (res.success && res.data && res.data.length > 0) {
+        const featured = res.data.find((m: any) => m.isFeatured);
+        setFeaturedMeetup(featured ?? null);
+      } else {
         setFeaturedMeetup(null);
       }
-    } else {
+    } catch {
       setFeaturedMeetup(null);
     }
   }, [cities, setSelectedCity]);
@@ -394,6 +405,10 @@ export default function HomeScreen() {
 
   const { sections, trust_badges, sos_banner } = homeConfig;
 
+  const quickServicesSection = sections.find(sec => sec.id === 'quick_services' || sec.type === 'quick_services');
+  const serviceGridSection = sections.find(sec => sec.id === 'ayuxa_services' || sec.type === 'service_grid');
+  const essentialsSection = sections.find(sec => sec.id === 'essentials' || sec.type === 'essentials_grid');
+
   return (
     <View style={s.screen}>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
@@ -452,14 +467,58 @@ export default function HomeScreen() {
                 <Image source={{ uri: profile.profileImageUrl }} style={s.greetingAvatar} />
               ) : (
                 <View style={s.greetingAvatarPlaceholder}>
-                  <Ionicons name="person" size={48} color="#02743F" />
+                  <Ionicons name="person-circle-outline" size={90} color="#02743F" />
                 </View>
               )}
             </View>
           </View>
         </View>
 
-        {/* Featured Meetup Card */}
+        {/* Quick Services (Strip) */}
+        {quickServicesSection && (
+          <QuickServicesStrip
+            section={quickServicesSection}
+            itemWidth={exactEssentialItemWidth}
+            cardHeight={exactEssentialCardHeight}
+            colors={colors}
+          />
+        )}
+
+        {/* Ayuxa Services (Grid) */}
+        {serviceGridSection && (
+          <ServiceGrid
+            section={serviceGridSection}
+            itemWidth={exactAyuxaItemWidth}
+            imageHeight={exactAyuxaImageHeight}
+            cardHeight={exactAyuxaCardHeight}
+            colors={colors}
+          />
+        )}
+
+        {/* Banner Slider — Option 1: After Greeting (Admin-Managed) */}
+        {banners.length > 0 && (
+          <BannerSlider banners={banners} colors={colors} />
+        )}
+
+        {/* Trust Badges */}
+        {trust_badges.length > 0 && (
+          <TrustBadges
+            badges={trust_badges}
+            colors={colors}
+          />
+        )}
+
+        {/* Home Essentials Services (Grid) */}
+        {essentialsSection && (
+          <EssentialsGrid
+            section={essentialsSection}
+            itemWidth={exactEssentialItemWidth}
+            cardHeight={exactEssentialCardHeight}
+            colors={colors}
+          />
+        )}
+
+        {/* Featured Meetup Card (bottom) */}
         {featuredMeetup && (() => {
           const { date } = (() => {
             const d = new Date(featuredMeetup.eventDate);
@@ -507,65 +566,6 @@ export default function HomeScreen() {
             </TouchableOpacity>
           );
         })()}
-
-        {/* Banner Slider — Option 1: After Greeting (Admin-Managed) */}
-        {banners.length > 0 && (
-          <BannerSlider banners={banners} colors={colors} />
-        )}
-
-        {sections.map(section => {
-          if (section.type === 'quick_services') {
-            return (
-              <QuickServicesStrip
-                key={section.id}
-                section={section}
-                itemWidth={exactEssentialItemWidth}
-                cardHeight={exactEssentialCardHeight}
-                colors={colors}
-              />
-            );
-          }
-          if (section.type === 'service_grid') {
-            return (
-              <ServiceGrid
-                key={section.id}
-                section={section}
-                itemWidth={exactAyuxaItemWidth}
-                imageHeight={exactAyuxaImageHeight}
-                cardHeight={exactAyuxaCardHeight}
-                colors={colors}
-              />
-            );
-          }
-          if (section.type === 'essentials_grid') {
-            return (
-              <React.Fragment key={section.id}>
-                {trust_badges.length > 0 && (
-                  <View style={s.trustCard}>
-                    {trust_badges.map((badge, i) => (
-                      <React.Fragment key={badge.id}>
-                        <View style={s.trustItem}>
-                          <View style={s.trustIconCircle}>
-                            <Image source={{ uri: getAssetUrl(badge.icon) }} style={s.trustIcon} resizeMode="contain" />
-                          </View>
-                          <Text style={s.trustLabel}>{badge.label}</Text>
-                        </View>
-                        {i < trust_badges.length - 1 && <View style={s.trustDivider} />}
-                      </React.Fragment>
-                    ))}
-                  </View>
-                )}
-                <EssentialsGrid
-                  section={section}
-                  itemWidth={exactEssentialItemWidth}
-                  cardHeight={exactEssentialCardHeight}
-                  colors={colors}
-                />
-              </React.Fragment>
-            );
-          }
-          return null;
-        })}
       </ScrollView>
     </View>
   );

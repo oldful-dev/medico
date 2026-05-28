@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    ActivityIndicator, Alert, TextInput,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -212,7 +209,10 @@ export default function BloodTestOrderSummaryScreen() {
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}>
+        <KeyboardAvoidingView
+            style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
             <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} />
 
             {/* Header */}
@@ -371,7 +371,7 @@ export default function BloodTestOrderSummaryScreen() {
             </ScrollView>
 
             {/* Footer CTA */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: 12 + insets.bottom }]}>
                 <TouchableOpacity
                     style={[styles.payBtn, isLoading && styles.payBtnDisabled]}
                     onPress={handlePayment}
@@ -388,7 +388,7 @@ export default function BloodTestOrderSummaryScreen() {
                     )}
                 </TouchableOpacity>
             </View>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 

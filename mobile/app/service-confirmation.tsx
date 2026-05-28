@@ -1,8 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import {
-    View, Text, TouchableOpacity, Image,
-    ScrollView, ActivityIndicator, Alert, Animated,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator, Alert, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';

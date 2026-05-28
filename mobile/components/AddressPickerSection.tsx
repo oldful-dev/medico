@@ -315,15 +315,22 @@ export const AddressPickerSection = ({
                     {showPhoneField && onPhoneChange && (
                         <View style={styles.field}>
                             <Text style={styles.fieldLabel}>Contact Number *</Text>
-                            <TextInput
-                                style={styles.fieldInput}
-                                placeholder="Enter phone number"
-                                placeholderTextColor={TEXT_MUTED}
-                                maxLength={10}
-                                keyboardType="phone-pad"
-                                value={phoneNumber}
-                                onChangeText={onPhoneChange}
-                            />
+                            <View style={styles.phoneInputContainer}>
+                                <Text style={styles.phonePrefix}>+91</Text>
+                                <View style={styles.phoneDivider} />
+                                <TextInput
+                                    style={styles.phoneInput}
+                                    placeholder="Enter phone number"
+                                    placeholderTextColor={TEXT_MUTED}
+                                    maxLength={10}
+                                    keyboardType="phone-pad"
+                                    value={phoneNumber.startsWith('+91') ? phoneNumber.slice(3) : phoneNumber}
+                                    onChangeText={(val) => {
+                                        const cleanVal = val.replace(/\D/g, '').slice(0, 10);
+                                        onPhoneChange(cleanVal);
+                                    }}
+                                />
+                            </View>
                         </View>
                     )}
 
@@ -441,6 +448,33 @@ const styles = StyleSheet.create({
         borderColor: CARD_BORDER,
         borderRadius: 8,
         paddingHorizontal: 12,
+        paddingVertical: 10,
+        fontSize: 13,
+        color: TEXT_DARK,
+    },
+    phoneInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: CARD_BORDER,
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        backgroundColor: '#FFFFFF',
+    },
+    phonePrefix: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: TEXT_DARK,
+        paddingRight: 8,
+    },
+    phoneDivider: {
+        width: 1,
+        height: 16,
+        backgroundColor: CARD_BORDER,
+        marginRight: 8,
+    },
+    phoneInput: {
+        flex: 1,
         paddingVertical: 10,
         fontSize: 13,
         color: TEXT_DARK,

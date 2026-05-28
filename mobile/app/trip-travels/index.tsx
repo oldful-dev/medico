@@ -1,17 +1,5 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Alert,
-    TextInput,
-    Modal,
-    FlatList,
-    ScrollView,
-    ActivityIndicator,
-    Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, Modal, FlatList, ScrollView, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -138,6 +126,7 @@ export default function TripTravelsScreen() {
             </View>
 
             {/* ── Scrollable Form Card ── */}
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <KeyboardAwareScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={dynamicStyles.scrollContent}
@@ -278,6 +267,7 @@ export default function TripTravelsScreen() {
                     </Text>
                 </View>
             </KeyboardAwareScrollView>
+        </KeyboardAvoidingView>
 
             {/* ── Date Picker Modal ── */}
             {showDatePicker && (

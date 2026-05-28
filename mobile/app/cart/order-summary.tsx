@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    ActivityIndicator, Alert, TextInput,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -196,7 +193,7 @@ export default function CartOrderSummaryScreen() {
     const dynamicStyles = makeStyles(isDarkMode);
 
     return (
-        <View style={[dynamicStyles.container, { paddingTop: insets.top }]}>
+        <KeyboardAvoidingView style={[dynamicStyles.container, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#252525' : '#FFFFFF'} />
 
             <View style={dynamicStyles.header}>
@@ -327,7 +324,7 @@ export default function CartOrderSummaryScreen() {
                     )}
                 </TouchableOpacity>
             </View>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 

@@ -1,8 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    ActivityIndicator, RefreshControl,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';

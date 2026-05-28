@@ -1,14 +1,5 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
-    Platform,
-    TextInput,
-    Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, TextInput, Alert, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -101,7 +92,8 @@ export default function PaperLegalScreen() {
 
             {/* Main Content Area (Rounded Cream Box) */}
             <View style={styles.contentContainer}>
-                <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
+                <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* ─── Select Service ─── */}
                     <Text style={styles.sectionTitle}>Select Service</Text>
@@ -188,6 +180,7 @@ export default function PaperLegalScreen() {
                     </View>
 
                 </KeyboardAwareScrollView>
+        </KeyboardAvoidingView>
             </View>
         </View>
     );

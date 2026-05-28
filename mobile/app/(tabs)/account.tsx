@@ -384,6 +384,15 @@ export default function AccountScreen() {
                     onPress={() => router.push('/emergency-contacts' as any)}
                     colors={colors}
                 />
+                <MenuRow
+                    icon="alert-circle-outline"
+                    iconBg="#FFEBEB"
+                    iconColor="#EF4444"
+                    title="My SOS Alerts"
+                    subtitle="Track active and past emergency alerts"
+                    onPress={() => router.push('/my-sos-alerts' as any)}
+                    colors={colors}
+                />
 
                 {/* ═══════════════════════════════════════
                     SECTION 3 — Medical & Health

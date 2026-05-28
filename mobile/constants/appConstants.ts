@@ -5,7 +5,7 @@ export const APP_CONFIG = {
   tagline: 'Elder Care, Simplified',
   version: '1.0.0',
   supportEmail: 'support@ayuxacare.com',
-  supportPhone: '+91-XXXXXXXXXX',
+  supportPhone: '080-4728-0789',
   emergencyHotline: '+91-XXXXXXXXXX',
 };
 

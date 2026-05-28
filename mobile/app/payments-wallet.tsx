@@ -1,8 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    Alert, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -205,31 +202,40 @@ export default function PaymentsWalletScreen() {
             </ScrollView>
 
             {/* ─── Add Card Modal ─── */}
-            <Modal visible={showAddModal} transparent animationType="slide">
-                <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                    <View style={styles.modalOverlay}>
-                        <View style={styles.modalSheet}>
-                            <View style={styles.modalHandle} />
-                            <Text style={styles.modalTitle}>Add Payment Method</Text>
+            <Modal visible={showAddModal} transparent animationType="slide" onRequestClose={() => { setShowAddModal(false); resetForm(); }}>
+                <View style={styles.modalOverlay}>
+                    <KeyboardAvoidingView
+                        behavior="padding"
+                        style={[styles.modalSheet, { maxHeight: '90%', flexShrink: 1 }]}
+                        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                    >
+                        <View style={styles.modalHandle} />
+                        <Text style={styles.modalTitle}>Add Payment Method</Text>
 
-                            {/* Type Toggle */}
-                            <View style={styles.typeToggle}>
-                                <TouchableOpacity
-                                    style={[styles.typeBtn, addType === 'CARD' && styles.typeBtnActive]}
-                                    onPress={() => setAddType('CARD')}
-                                >
-                                    <Ionicons name="card-outline" size={16} color={addType === 'CARD' ? '#fff' : Colors.textMuted} />
-                                    <Text style={[styles.typeBtnText, addType === 'CARD' && styles.typeBtnTextActive]}>Debit / Credit Card</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[styles.typeBtn, addType === 'UPI' && styles.typeBtnActive]}
-                                    onPress={() => setAddType('UPI')}
-                                >
-                                    <Ionicons name="wallet-outline" size={16} color={addType === 'UPI' ? '#fff' : Colors.textMuted} />
-                                    <Text style={[styles.typeBtnText, addType === 'UPI' && styles.typeBtnTextActive]}>UPI</Text>
-                                </TouchableOpacity>
-                            </View>
+                        {/* Type Toggle */}
+                        <View style={styles.typeToggle}>
+                            <TouchableOpacity
+                                style={[styles.typeBtn, addType === 'CARD' && styles.typeBtnActive]}
+                                onPress={() => setAddType('CARD')}
+                            >
+                                <Ionicons name="card-outline" size={16} color={addType === 'CARD' ? '#fff' : Colors.textMuted} />
+                                <Text style={[styles.typeBtnText, addType === 'CARD' && styles.typeBtnTextActive]}>Debit / Credit Card</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.typeBtn, addType === 'UPI' && styles.typeBtnActive]}
+                                onPress={() => setAddType('UPI')}
+                            >
+                                <Ionicons name="wallet-outline" size={16} color={addType === 'UPI' ? '#fff' : Colors.textMuted} />
+                                <Text style={[styles.typeBtnText, addType === 'UPI' && styles.typeBtnTextActive]}>UPI</Text>
+                            </TouchableOpacity>
+                        </View>
 
+                        <ScrollView
+                            showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
+                            style={{ flexShrink: 1, marginBottom: 8 }}
+                            contentContainerStyle={{ paddingBottom: 8 }}
+                        >
                             {addType === 'CARD' ? (
                                 <>
                                     {/* Brand Selector */}
@@ -309,22 +315,22 @@ export default function PaymentsWalletScreen() {
                                     />
                                 </>
                             )}
+                        </ScrollView>
 
-                            <View style={styles.modalBtns}>
-                                <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowAddModal(false); resetForm(); }}>
-                                    <Text style={styles.cancelBtnText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.saveBtn} onPress={handleAdd} disabled={saving}>
-                                    {saving ? (
-                                        <ActivityIndicator color="#fff" size="small" />
-                                    ) : (
-                                        <Text style={styles.saveBtnText}>Save</Text>
-                                    )}
-                                </TouchableOpacity>
-                            </View>
+                        <View style={styles.modalBtns}>
+                            <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowAddModal(false); resetForm(); }}>
+                                <Text style={styles.cancelBtnText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.saveBtn} onPress={handleAdd} disabled={saving}>
+                                {saving ? (
+                                    <ActivityIndicator color="#fff" size="small" />
+                                ) : (
+                                    <Text style={styles.saveBtnText}>Save</Text>
+                                )}
+                            </TouchableOpacity>
                         </View>
-                    </View>
-                </KeyboardAvoidingView>
+                    </KeyboardAvoidingView>
+                </View>
             </Modal>
         </View>
     );

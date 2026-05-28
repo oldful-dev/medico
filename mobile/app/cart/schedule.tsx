@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput,
-    ActivityIndicator
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -49,7 +46,19 @@ export default function CartScheduleScreen() {
     const [selectedAddress, setSelectedAddress] = useState('');
     const [pincode, setPincode] = useState('');
     const [landmark, setLandmark] = useState('');
-    const [phoneNumber, setPhoneNumber] = useState(profile?.phone || '');
+    const [phoneNumber, setPhoneNumber] = useState(
+        profile?.phone
+            ? (profile.phone.startsWith('+91') ? profile.phone.slice(3) : profile.phone)
+            : ''
+    );
+
+    useEffect(() => {
+        if (profile?.phone && !phoneNumber) {
+            const cleanPhone = profile.phone.startsWith('+91') ? profile.phone.slice(3) : profile.phone;
+            setPhoneNumber(cleanPhone);
+        }
+    }, [profile?.phone]);
+
     const [serviceabilityStatus, setServiceabilityStatus] = useState<'unchecked' | 'checking' | 'serviceable' | 'non-serviceable'>('unchecked');
     const [detectingLocation, setDetectingLocation] = useState(false);
     const [locationPickerVisible, setLocationPickerVisible] = useState(false);
@@ -243,7 +252,7 @@ export default function CartScheduleScreen() {
                     name: profile?.name || '',
                     age: 30,
                     gender: profile?.gender || 'M',
-                    phone: phoneNumber,
+                    phone: phoneNumber.startsWith('+91') ? phoneNumber : `+91${phoneNumber}`,
                 },
                 address: {
                     lat: coords.lat,
@@ -554,14 +563,22 @@ export default function CartScheduleScreen() {
                             style={[styles.input, { flex: 1 }]}
                         />
                     </View>
-                    <TextInput
-                        placeholder="Phone Number"
-                        placeholderTextColor={TEXT_MUTED}
-                        value={phoneNumber}
-                        onChangeText={setPhoneNumber}
-                        keyboardType="phone-pad"
-                        style={styles.input}
-                    />
+                    <View style={dynamicStyles.phoneInputContainer}>
+                        <Text style={dynamicStyles.phonePrefix}>+91</Text>
+                        <View style={dynamicStyles.phoneDivider} />
+                        <TextInput
+                            placeholder="Phone Number"
+                            placeholderTextColor={TEXT_MUTED}
+                            value={phoneNumber.startsWith('+91') ? phoneNumber.slice(3) : phoneNumber}
+                            onChangeText={(val) => {
+                                const cleanVal = val.replace(/\D/g, '').slice(0, 10);
+                                setPhoneNumber(cleanVal);
+                            }}
+                            keyboardType="phone-pad"
+                            style={dynamicStyles.phoneInput}
+                            maxLength={10}
+                        />
+                    </View>
                 </View>
             )}
         </ScrollView>
@@ -620,7 +637,7 @@ export default function CartScheduleScreen() {
     const dynamicStyles = makeStyles(isDarkMode);
 
     return (
-        <View style={[dynamicStyles.container, { paddingTop: insets.top }]}>
+        <KeyboardAvoidingView style={[dynamicStyles.container, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#252525' : '#FFFFFF'} />
             <View style={dynamicStyles.header}>
                 <TouchableOpacity onPress={() => router.back()}>
@@ -649,7 +666,7 @@ export default function CartScheduleScreen() {
 
             {getStepContent()}
 
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: 12 + insets.bottom }]}>
                 {step > 1 && (
                     <TouchableOpacity style={styles.backButton} onPress={() => setStep((s) => (s - 1) as 1 | 2 | 3)}>
                         <Text style={styles.backButtonText}>Back</Text>
@@ -694,7 +711,7 @@ export default function CartScheduleScreen() {
                 initialLat={parseFloat(coords.lat)}
                 initialLng={parseFloat(coords.long)}
             />
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 
@@ -762,6 +779,34 @@ const makeStyles = (isDarkMode: boolean) => {
         addressInput: { borderWidth: 1, borderColor: inputBorder, borderRadius: 8, padding: 12, minHeight: 80, textAlignVertical: 'top', fontSize: 14, color: textPrimary, marginBottom: 12, backgroundColor: inputBg },
         row: { flexDirection: 'row', marginBottom: 12 },
         input: { borderWidth: 1, borderColor: inputBorder, borderRadius: 8, padding: 12, fontSize: 14, color: textPrimary, marginBottom: 12, backgroundColor: inputBg },
+        phoneInputContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: inputBorder,
+            borderRadius: 8,
+            paddingHorizontal: 12,
+            backgroundColor: inputBg,
+            marginBottom: 12,
+        },
+        phonePrefix: {
+            fontSize: 14,
+            fontWeight: '500',
+            color: textPrimary,
+            paddingRight: 8,
+        },
+        phoneDivider: {
+            width: 1,
+            height: 16,
+            backgroundColor: inputBorder,
+            marginRight: 8,
+        },
+        phoneInput: {
+            flex: 1,
+            paddingVertical: 12,
+            fontSize: 14,
+            color: textPrimary,
+        },
         summaryCard: { borderWidth: 1, borderColor: borderColor, borderRadius: 12, padding: 16, backgroundColor: bgCardSecondary },
         summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
         summaryRowDivider: { borderBottomWidth: 1, borderBottomColor: borderColor },

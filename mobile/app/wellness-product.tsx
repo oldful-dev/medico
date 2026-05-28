@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    Image, ActivityIndicator, Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,12 +9,14 @@ import { storeService, Product } from '@/services/api/storeService';
 import { useCart } from '@/context/CartContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
+import { useToast } from '@/context/ToastContext';
 
 export default function WellnessProductScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { addItem, items } = useCart();
+    const { showToast } = useToast();
 
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
@@ -62,10 +61,7 @@ export default function WellnessProductScreen() {
             quantity: 1,
             details: { productId: product.id, imageUrl: product.imageUrl },
         });
-        Alert.alert('Added to Cart', `${product.name} added to cart!`, [
-            { text: 'Continue Shopping', style: 'cancel' },
-            { text: 'View Cart', onPress: () => router.push('/(tabs)/cart' as any) },
-        ]);
+        showToast('Item added to cart');
     };
 
     if (loading) {

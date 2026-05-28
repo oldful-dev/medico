@@ -1,15 +1,5 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
-    Platform,
-    TextInput,
-    Alert,
-    ActivityIndicator,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -113,7 +103,8 @@ export default function PhysioFitnessScreen() {
 
             {/* Main Content Area (Rounded Cream Box) */}
             <View style={dynamicStyles.contentContainer}>
-                <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
+                <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* ─── Select Service ─── */}
                     <Text style={dynamicStyles.sectionTitle}>Select Service</Text>
@@ -226,6 +217,7 @@ export default function PhysioFitnessScreen() {
                     </TouchableOpacity>
 
                 </KeyboardAwareScrollView>
+        </KeyboardAvoidingView>
             </View>
         </View>
     );

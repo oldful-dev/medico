@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    ActivityIndicator, FlatList, TextInput, Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, FlatList, TextInput, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -14,6 +11,7 @@ import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
+import { useToast } from '@/context/ToastContext';
 
 const CATEGORIES = ['All', 'Popular', 'Health Checks', 'Wellness'];
 
@@ -137,6 +135,7 @@ export default function BloodTestScreen() {
     const isFromCheckout = params.fromCheckout === 'true';
 
     const { addItem, itemCount } = useCart();
+    const { showToast } = useToast();
 
     useEffect(() => { fetchPackages(); }, []);
 
@@ -166,8 +165,8 @@ export default function BloodTestScreen() {
     const handleAddToCart = useCallback((pkg: LabPackage) => {
         addItem({ id: pkg.code, serviceType: 'Bloodwork', title: pkg.name, price: pkg.discounted_cost || pkg.cost, quantity: 1, details: pkg });
         setDetailModalVisible(false);
-        Alert.alert('Added to Cart', `${pkg.name} added to your cart.`);
-    }, [addItem]);
+        showToast('Item added to cart');
+    }, [addItem, showToast]);
 
     const handleBookNow = useCallback((pkg: LabPackage) => {
         setDetailModalVisible(false);

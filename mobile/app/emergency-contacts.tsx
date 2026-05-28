@@ -1,8 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, TextInput,
-    Alert, Platform, ActivityIndicator, Switch, Linking,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, ActivityIndicator, Switch, Linking, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -131,6 +128,7 @@ export default function EmergencyContactsScreen() {
                 </View>
             </SafeAreaView>
 
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <KeyboardAwareScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} enableOnAndroid={true} extraScrollHeight={20} keyboardShouldPersistTaps="handled">
 
                 {contacts.length === 0 && !showAddForm && (
@@ -240,6 +238,7 @@ export default function EmergencyContactsScreen() {
                     <Text style={styles.addButtonText}>Add Emergency Contact</Text>
                 </TouchableOpacity>
             </KeyboardAwareScrollView>
+        </KeyboardAvoidingView>
         </View>
     );
 }

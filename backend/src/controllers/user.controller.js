@@ -668,7 +668,17 @@ const deleteProfile = async (req, res, next) => {
     try {
         logger.info(`[DELETE_ACCOUNT] Deleting user ${userId} and all related data`);
 
-        // Delete all related data in cascade
+        // Step 1: delete invoice before payment (FK constraint)
+        await prisma.invoice.deleteMany({
+            where: { payment: { userId } },
+        });
+
+        // Step 2: delete activityUpdates via labOrder
+        await prisma.activityUpdate.deleteMany({
+            where: { labOrder: { userId } },
+        });
+
+        // Step 3: delete everything with direct userId, in parallel
         await Promise.all([
             prisma.address.deleteMany({ where: { userId } }),
             prisma.emergencyContact.deleteMany({ where: { userId } }),
@@ -677,13 +687,17 @@ const deleteProfile = async (req, res, next) => {
             prisma.healthReport.deleteMany({ where: { userId } }),
             prisma.booking.deleteMany({ where: { userId } }),
             prisma.subscription.deleteMany({ where: { userId } }),
-            prisma.notificationLog.deleteMany({ where: { userId } }),
-            prisma.sosAlert.deleteMany({ where: { userId } }),
+            prisma.notificationLog.deleteMany({ where: { recipientId: userId } }),
+            prisma.sOSAlert.deleteMany({ where: { userId } }),
+            prisma.supportTicket.deleteMany({ where: { userId } }),
+            prisma.labOrder.deleteMany({ where: { userId } }),
+            prisma.meetupRegistration.deleteMany({ where: { userId } }),
+            prisma.productOrder.deleteMany({ where: { userId } }),
             prisma.payment.deleteMany({ where: { userId } }),
-            prisma.invoice.deleteMany({ where: { userId } }),
+            prisma.savedCard.deleteMany({ where: { userId } }),
         ]);
 
-        // Delete the user account
+        // Step 4: delete the user account
         await prisma.user.delete({ where: { id: userId } });
         logger.info(`[DELETE_ACCOUNT] User ${userId} deleted successfully`);
 

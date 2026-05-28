@@ -48,7 +48,7 @@ const transformToRedcliffePayload = (order, type) => {
             collection_date: order.slot?.date,
             collection_slot: parseInt(order.slot?.slotId, 10),
             customer_name: order.patient.name,
-            customer_age: parseInt(order.patient.age, 10),
+            customer_age: parseInt(order.patient.age, 10) || 30,
             customer_gender: order.patient.gender.toLowerCase(),
             customer_phonenumber: sanitizedPhone,
             customer_whatsapppnumber: sanitizedPhone, // Note the double 'p'
@@ -68,7 +68,7 @@ const transformToRedcliffePayload = (order, type) => {
         if (order.additionalMembers && order.additionalMembers.length > 0) {
             payload.additional_member = order.additionalMembers.map(m => ({
                 customer_name: m.name,
-                customer_age: String(m.age),
+                customer_age: String(parseInt(m.age, 10) || 30),
                 customer_gender: m.gender.toLowerCase(),
                 packages: m.packages.map(p => p.code)
             }));
@@ -83,7 +83,7 @@ const transformToRedcliffePayload = (order, type) => {
             booking_date: new Date().toISOString().split('T')[0],
             collection_date: order.slot?.date,
             customer_name: order.patient.name,
-            customer_age: order.patient.age,
+            customer_age: parseInt(order.patient.age, 10) || 30,
             customer_gender: order.patient.gender.toLowerCase(),
             customer_phonenumber: sanitizedPhone,
             customer_whatsappnumber: sanitizedPhone,
@@ -229,6 +229,9 @@ exports.holdBooking = async (orderData, type = 'HOME') => {
 
         return res.data;
     } catch (error) {
+        if (error.response?.data) {
+            logger.error(`[Redcliffe] holdBooking API error response: ${JSON.stringify(error.response.data, null, 2)}`);
+        }
         const errMessage = error.response?.data?.message || error.message;
         logger.error(`[Redcliffe] holdBooking error: ${errMessage}`);
         throw new Error(errMessage);
@@ -265,6 +268,7 @@ exports.getBookingStatus = async (params) => {
     } catch (error) {
         // If Redcliffe says "No booking done yet", it means it's still in HOLD or not confirmed
         if (error.response?.status === 400 && error.response?.data?.message === 'No booking done yet') {
+            const bid = params?.booking_id || '';
             return {
                 status: 'success',
                 data: [{
@@ -299,6 +303,107 @@ exports.getConsolidatedReport = async (bookingId) => {
     }
 };
 
+
+// ─── Functions called by the legacy lab.controller (POST /labs/book and update routes) ──
+
+/**
+ * Alias for holdBooking — the old controller called createTempBooking with a raw payload.
+ * We forward it directly to Redcliffe center-create-booking.
+ */
+exports.createTempBooking = async (payload) => {
+    try {
+        const res = await client.post('/api/external/v2/center-create-booking/', payload, {
+            timeout: 30000
+        });
+        const status = typeof res.data.status === 'string' ? res.data.status.toLowerCase() : '';
+        if (status !== 'success') {
+            throw new Error(res.data.message || 'Redcliffe booking rejected');
+        }
+        return res.data;
+    } catch (error) {
+        const errMessage = error.response?.data?.message || error.message;
+        logger.error(`[Redcliffe] createTempBooking error: ${errMessage}`);
+        throw new Error(errMessage);
+    }
+};
+
+/**
+ * POST /api/external/v2/center-update-booking/
+ * Used for reschedule (booking_status = "rescheduled") and cancel (booking_status = "cancelled").
+ */
+exports.updateBooking = async ({ booking_id, booking_status, remark = '', collection_date, collection_slot }) => {
+    try {
+        const body = { booking_id: String(booking_id), booking_status, remark };
+        if (collection_date) body.collection_date = collection_date;
+        if (collection_slot !== undefined) body.collection_slot = collection_slot;
+
+        const res = await client.post('/api/external/v2/center-update-booking/', body, {
+            timeout: 20000
+        });
+        return res.data;
+    } catch (error) {
+        const errMessage = error.response?.data?.message || error.message;
+        logger.error(`[Redcliffe] updateBooking error: ${errMessage}`);
+        throw new Error(errMessage);
+    }
+};
+
+/**
+ * POST /api/external/v2/open-add-member/
+ * Adds additional family members to an existing booking.
+ */
+exports.addMember = async (bookingId, additionalMembers) => {
+    try {
+        const res = await client.post('/api/external/v2/open-add-member/', {
+            booking_id: String(bookingId),
+            additional_member: additionalMembers
+        }, { timeout: 20000 });
+        return res.data;
+    } catch (error) {
+        const errMessage = error.response?.data?.message || error.message;
+        logger.error(`[Redcliffe] addMember error: ${errMessage}`);
+        throw new Error(errMessage);
+    }
+};
+
+/**
+ * POST /api/external/v2/center-update-is-credit/
+ * Switches payment mode between credit (online) and non-credit (cash/offline).
+ */
+exports.updatePaymentMode = async (bookingId, isCredit, remark = '') => {
+    try {
+        const res = await client.post('/api/external/v2/center-update-is-credit/', {
+            booking_id: String(bookingId),
+            is_credit: isCredit,
+            remark
+        }, { timeout: 20000 });
+        return res.data;
+    } catch (error) {
+        const errMessage = error.response?.data?.message || error.message;
+        logger.error(`[Redcliffe] updatePaymentMode error: ${errMessage}`);
+        throw new Error(errMessage);
+    }
+};
+
+/**
+ * POST /api/external/v2/open-set-package/
+ * Replaces the package list on an existing booking.
+ */
+exports.updatePackage = async (bookingId, packages, centerDiscount = 0) => {
+    try {
+        const res = await client.post('/api/external/v2/open-set-package/', {
+            booking_id: String(bookingId),
+            packages,
+            center_discount: centerDiscount
+        }, { timeout: 20000 });
+        return res.data;
+    } catch (error) {
+        const errMessage = error.response?.data?.message || error.message;
+        logger.error(`[Redcliffe] updatePackage error: ${errMessage}`);
+        throw new Error(errMessage);
+    }
+};
+
 module.exports = {
     searchLocation: exports.searchLocation,
     getLatLngFromEloc: exports.getLatLngFromEloc,
@@ -307,8 +412,13 @@ module.exports = {
     getPackages: exports.getPackages,
     getPackageDetails: exports.getPackageDetails,
     holdBooking: exports.holdBooking,
+    createTempBooking: exports.createTempBooking,
     confirmBooking: exports.confirmBooking,
     getBookingStatus: exports.getBookingStatus,
+    updateBooking: exports.updateBooking,
+    addMember: exports.addMember,
+    updatePaymentMode: exports.updatePaymentMode,
+    updatePackage: exports.updatePackage,
     getDigitalReport: exports.getDigitalReport,
     getConsolidatedReport: exports.getConsolidatedReport
 };

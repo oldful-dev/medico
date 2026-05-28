@@ -22,15 +22,17 @@ export default function PaymentSuccessScreen() {
         bookingPayload?: string;
         bookingAmount?: string;
         bookingLabel?: string;
+        checkoutRoute?: string;
     }>();
 
     const isSubscriptionSuccess = params.isSubscription === '1';
 
     const handlePrimaryAction = () => {
         if (isSubscriptionSuccess && params.bookingPayload) {
+            const targetRoute = params.checkoutRoute || '/payment/checkout';
             // Restore checkout context and apply discount
             router.replace({
-                pathname: '/payment/checkout',
+                pathname: targetRoute as any,
                 params: {
                     bookingPayload: params.bookingPayload,
                     amount: params.bookingAmount || '',

@@ -1,13 +1,5 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    TextInput,
-    Alert,
-    Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -173,7 +165,8 @@ export default function TechHelperScreen() {
 
             {/* ─── Main Content Container ─── */}
             <View style={dynamicStyles.contentContainer}>
-                <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
+                <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* Hero Title & Tagline */}
                     <Text style={dynamicStyles.mainTitle}>Tech Helper</Text>
@@ -339,6 +332,7 @@ export default function TechHelperScreen() {
                     </TouchableOpacity>
 
                 </KeyboardAwareScrollView>
+        </KeyboardAvoidingView>
             </View>
         </View>
     );

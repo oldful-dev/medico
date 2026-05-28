@@ -1,8 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, TextInput,
-    Alert, Platform, ActivityIndicator, ScrollView,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, ActivityIndicator, Keyboard, KeyboardAvoidingView } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -172,7 +170,17 @@ export default function FamilyMembersScreen() {
                 </View>
             </SafeAreaView>
 
-            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <KeyboardAwareScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                enableOnAndroid={true}
+                enableAutomaticScroll={true}
+                extraScrollHeight={120}
+                extraHeight={135}
+            >
 
                 {loading ? (
                     <View style={styles.centerContainer}>
@@ -266,7 +274,10 @@ export default function FamilyMembersScreen() {
                         />
                         <TouchableOpacity
                             style={[styles.input, { justifyContent: 'center' }]}
-                            onPress={() => setShowDatePicker(true)}
+                            onPress={() => {
+                                Keyboard.dismiss();
+                                setShowDatePicker(true);
+                            }}
                             activeOpacity={0.7}
                         >
                             <View style={styles.dateInputContent}>
@@ -359,7 +370,8 @@ export default function FamilyMembersScreen() {
                     <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
                     <Text style={styles.infoText}>Family member health profiles help our care team provide personalised service recommendations.</Text>
                 </View>
-            </ScrollView>
+            </KeyboardAwareScrollView>
+        </KeyboardAvoidingView>
 
             {showDatePicker && (
                 <DateTimePicker

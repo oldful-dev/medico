@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 import '@/i18n/i18n';
 
@@ -13,6 +14,7 @@ import { BookingProvider } from '@/context/BookingContext';
 import { CartProvider } from '@/context/CartContext';
 import { AppConfigProvider } from '@/context/AppConfigContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { ToastProvider } from '@/context/ToastContext';
 
 // Keep the native splash visible until splash.tsx explicitly hides it.
 // Never hide it here — doing so causes a blank/Metro screen gap.
@@ -37,13 +39,15 @@ export default function RootLayout() {
   });
 
   return (
+    <SafeAreaProvider>
     <AppConfigProvider>
       <AuthProvider>
         <UserProvider>
           <ThemeProvider>
             <BookingProvider>
               <CartProvider>
-                <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+                <ToastProvider>
+                  <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
                 <Stack screenOptions={{ headerShown: false }}>
                   {/* Auth / Onboarding Flow */}
                   <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -82,6 +86,7 @@ export default function RootLayout() {
                   <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
                   <Stack.Screen name="family-members" options={{ headerShown: false }} />
                   <Stack.Screen name="emergency-contacts" options={{ headerShown: false }} />
+                  <Stack.Screen name="my-sos-alerts" options={{ headerShown: false }} />
                   <Stack.Screen name="medical-card" options={{ headerShown: false }} />
                   <Stack.Screen name="manage-addresses" options={{ headerShown: false }} />
                   <Stack.Screen name="payments-wallet" options={{ headerShown: false }} />
@@ -131,11 +136,13 @@ export default function RootLayout() {
                 </Stack>
                 <StatusBar style="auto" />
               </NavigationThemeProvider>
+                </ToastProvider>
             </CartProvider>
           </BookingProvider>
           </ThemeProvider>
         </UserProvider>
       </AuthProvider>
     </AppConfigProvider>
+    </SafeAreaProvider>
   );
 }
