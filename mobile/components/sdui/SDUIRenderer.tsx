@@ -93,6 +93,57 @@ export const getIcon = (key: string): ImageSourcePropType | undefined =>
 const resolveImage = (item: { image_url?: string; icon_key?: string }): ImageSourcePropType | undefined =>
     item.image_url ? { uri: item.image_url } : (item.icon_key ? getIcon(item.icon_key) : undefined);
 
+// ─── Translation & Dynamic Mapping Helpers ────────────────────────────────────
+
+function translateSectionTitle(title: string | undefined, t: any): string {
+  if (!title) return '';
+  const clean = title.toLowerCase().trim();
+  if (clean.includes('ayuxa') || clean.includes('services')) {
+    return t('home.view_all_services', 'Ayuxa Services');
+  }
+  if (clean.includes('essential')) {
+    return t('home.home_essentials', 'Home Essentials');
+  }
+  return title;
+}
+
+function translateSDUIItem(label: string, route: string | undefined, t: any): string {
+  if (!route) return label;
+  const cleanRoute = route.toLowerCase().trim();
+  
+  let key = '';
+  if (cleanRoute.includes('physio-fitness')) key = 'physio_fitness';
+  else if (cleanRoute.includes('meal-service') || cleanRoute.includes('tiffin')) key = 'meal_service';
+  else if (cleanRoute.includes('medical-equipment') || cleanRoute.includes('equipment')) key = 'medical_equipment';
+  else if (cleanRoute.includes('insurance')) key = 'insurance';
+  else if (cleanRoute.includes('tech-helper')) key = 'tech_helper';
+  else if (cleanRoute.includes('doctor-visit')) key = 'doctor_visit';
+  else if (cleanRoute.includes('nurse-care')) key = 'nurse_care';
+  else if (cleanRoute.includes('hospital-trip')) key = 'hospital_trip';
+  else if (cleanRoute.includes('blood-test')) key = 'blood_test';
+  else if (cleanRoute.includes('order-medicines')) key = 'order_medicines';
+  else if (cleanRoute.includes('appliance-repair')) key = 'appliance_repair';
+  else if (cleanRoute.includes('plumbing-electrical')) key = 'plumbing_electrical';
+  else if (cleanRoute.includes('deep-cleaning')) key = 'deep_cleaning';
+  else if (cleanRoute.includes('driving-cab')) key = 'driving_cab';
+  else if (cleanRoute.includes('bill-payment')) key = 'bill_payment';
+  else if (cleanRoute.includes('bank-paperwork')) key = 'bank_paperwork';
+  else if (cleanRoute.includes('grocery-run')) key = 'grocery_run';
+  else if (cleanRoute.includes('anything-else')) key = 'anything_else';
+  else if (cleanRoute.includes('paper-legal')) key = 'paper_legal';
+  else if (cleanRoute.includes('trip-travels')) key = 'trip_travels';
+  else if (cleanRoute.includes('smart-upgrade')) key = 'smart_upgrade';
+  
+  if (key) {
+    const translated = t('services.' + key);
+    if (translated && translated !== 'services.' + key) {
+      return translated;
+    }
+  }
+  
+  return label;
+}
+
 // ─── Section Renderer ─────────────────────────────────────────────────────────
 // Renders a single home section based on its `type` field.
 
@@ -114,7 +165,7 @@ export function SectionRenderer({
     essentialItemHeight,
 }: SectionRendererProps) {
     const router = useRouter();
-    useTranslation(); // subscribe to language changes so getText() re-evaluates
+    const { t } = useTranslation();
 
     if (!section.visible) return null;
 
@@ -122,26 +173,36 @@ export function SectionRenderer({
         .filter(i => i.visible)
         .sort((a, b) => a.sort_order - b.sort_order);
 
+    const translateSOSText = (text: string) => {
+        if (text === 'Need Immediate') return t('sos.need_medical');
+        if (text === 'Medical Support?') return t('sos.medical_support');
+        if (text === 'Click here') return t('sos.click_here');
+        return text;
+    };
+
     switch (section.type) {
         case 'quick_services':
             return (
                 <View style={styles.quickServiceCard}>
-                    {visibleItems.map(item => (
-                        <TouchableOpacity
-                            key={item.id}
-                            style={styles.quickServiceBox}
-                            onPress={() => item.route && router.push(item.route as any)}
-                        >
-                            <Image
-                                source={resolveImage(item)}
-                                style={styles.quickServiceIcon}
-                                resizeMode="contain"
-                            />
-                            {item.label.split('\n').map((line, i) => (
-                                <Text key={i} style={styles.quickServiceLabel}>{line}</Text>
-                            ))}
-                        </TouchableOpacity>
-                    ))}
+                    {visibleItems.map(item => {
+                        const translatedLabel = translateSDUIItem(item.label, item.route, t);
+                        return (
+                            <TouchableOpacity
+                                key={item.id}
+                                style={styles.quickServiceBox}
+                                onPress={() => item.route && router.push(item.route as any)}
+                            >
+                                <Image
+                                    source={resolveImage(item)}
+                                    style={styles.quickServiceIcon}
+                                    resizeMode="contain"
+                                />
+                                {translatedLabel.split('\n').map((line, i) => (
+                                    <Text key={i} style={styles.quickServiceLabel}>{line}</Text>
+                                ))}
+                            </TouchableOpacity>
+                        );
+                    })}
                 </View>
             );
 
@@ -151,32 +212,35 @@ export function SectionRenderer({
             return (
                 <View style={styles.servicesCard}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>{getText(section.title)}</Text>
+                        <Text style={styles.sectionTitle}>{translateSectionTitle(section.title, t)}</Text>
                         {section.view_all_route && (
                             <TouchableOpacity onPress={() => router.push(section.view_all_route as any)}>
-                                <Text style={styles.viewAllText}>View All</Text>
+                                <Text style={styles.viewAllText}>{t('common.view_all')}</Text>
                             </TouchableOpacity>
                         )}
                     </View>
                     <View style={styles.serviceGrid}>
-                        {displayItems.map(item => (
-                            <TouchableOpacity
-                                key={item.id}
-                                style={[styles.serviceGridItem, { width: itemWidth, height: itemHeight }]}
-                                onPress={() => item.route && router.push(item.route as any)}
-                            >
-                                <Image
-                                    source={resolveImage(item)}
-                                    style={[styles.serviceGridImage, { width: itemWidth, height: imageHeight }]}
-                                    resizeMode="cover"
-                                />
-                                <View style={styles.serviceGridLabelContainer}>
-                                    {item.label.split('\n').map((line, i) => (
-                                        <Text key={i} style={styles.serviceGridLabel}>{line}</Text>
-                                    ))}
-                                </View>
-                            </TouchableOpacity>
-                        ))}
+                        {displayItems.map(item => {
+                            const translatedLabel = translateSDUIItem(item.label, item.route, t);
+                            return (
+                                <TouchableOpacity
+                                    key={item.id}
+                                    style={[styles.serviceGridItem, { width: itemWidth, height: itemHeight }]}
+                                    onPress={() => item.route && router.push(item.route as any)}
+                                >
+                                    <Image
+                                        source={resolveImage(item)}
+                                        style={[styles.serviceGridImage, { width: itemWidth, height: imageHeight }]}
+                                        resizeMode="cover"
+                                    />
+                                    <View style={styles.serviceGridLabelContainer}>
+                                        {translatedLabel.split('\n').map((line, i) => (
+                                            <Text key={i} style={styles.serviceGridLabel}>{line}</Text>
+                                        ))}
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
                 </View>
             );
@@ -204,13 +268,13 @@ export function SectionRenderer({
                     <View style={styles.sosContent}>
                         <Image source={cfg.icon_url ? { uri: cfg.icon_url } : getIcon('sos_icon')} style={styles.sosIcon} resizeMode="contain" />
                         <View style={styles.sosTextGroup}>
-                            {cfg.title_line1 && <Text style={styles.sosTitle}>{cfg.title_line1}</Text>}
-                            {cfg.title_line2 && <Text style={styles.sosTitle}>{cfg.title_line2}</Text>}
+                            {cfg.title_line1 && <Text style={styles.sosTitle}>{translateSOSText(cfg.title_line1)}</Text>}
+                            {cfg.title_line2 && <Text style={styles.sosTitle}>{translateSOSText(cfg.title_line2)}</Text>}
                             <TouchableOpacity
                                 style={styles.sosButton}
                                 onPress={() => cfg.cta_route && router.push(cfg.cta_route as any)}
                             >
-                                <Text style={styles.sosButtonText}>{cfg.cta_text ?? 'Click here'}</Text>
+                                <Text style={styles.sosButtonText}>{translateSOSText(cfg.cta_text ?? 'Click here')}</Text>
                                 <Ionicons name="arrow-forward" size={10} color="#FFFFFF" />
                             </TouchableOpacity>
                         </View>
@@ -252,7 +316,7 @@ function EssentialsGrid({
     essentialItemHeight: number;
     router: ReturnType<typeof useRouter>;
 }) {
-    useTranslation(); // subscribe to language changes so getText() re-evaluates
+    const { t } = useTranslation();
     const columns = section.config?.columns ?? 4;
     const maxVisibleRows = section.config?.max_visible_rows ?? 0; // 0 = show all
     const [expanded, setExpanded] = useState(false);
@@ -271,34 +335,37 @@ function EssentialsGrid({
     return (
         <View style={styles.essentialsCard}>
             <View style={styles.sectionHeader}>
-                <Text style={styles.essentialsTitle}>{getText(section.title)}</Text>
+                <Text style={styles.essentialsTitle}>{translateSectionTitle(section.title, t)}</Text>
                 {section.view_all_route && (
                     <TouchableOpacity onPress={() => router.push(section.view_all_route as any)}>
-                        <Text style={styles.viewAllSmall}>View All</Text>
+                        <Text style={styles.viewAllSmall}>{t('common.view_all')}</Text>
                     </TouchableOpacity>
                 )}
             </View>
             {displayRows.map((row, ri) => (
                 <View key={ri} style={styles.essentialsRow}>
-                    {row.map(item => (
-                        <TouchableOpacity
-                            key={item.id}
-                            style={[styles.essentialItem, { width: essentialItemWidth, height: essentialItemHeight }]}
-                            onPress={() => item.route && router.push(item.route as any)}
-                        >
-                            <View style={styles.essentialIconCircle}>
-                                <Image source={resolveImage(item)} style={styles.essentialIcon} resizeMode="contain" />
-                            </View>
-                            {item.label.split('\n').map((line, i) => (
-                                <Text key={i} style={styles.essentialLabel}>{line}</Text>
-                            ))}
-                        </TouchableOpacity>
-                    ))}
+                    {row.map(item => {
+                        const translatedLabel = translateSDUIItem(item.label, item.route, t);
+                        return (
+                            <TouchableOpacity
+                                key={item.id}
+                                style={[styles.essentialItem, { width: essentialItemWidth, height: essentialItemHeight }]}
+                                onPress={() => item.route && router.push(item.route as any)}
+                            >
+                                <View style={styles.essentialIconCircle}>
+                                    <Image source={resolveImage(item)} style={styles.essentialIcon} resizeMode="contain" />
+                                </View>
+                                {translatedLabel.split('\n').map((line, i) => (
+                                    <Text key={i} style={styles.essentialLabel}>{line}</Text>
+                                ))}
+                            </TouchableOpacity>
+                        );
+                    })}
                 </View>
             ))}
             {shouldCollapse && (
                 <TouchableOpacity style={styles.viewMoreButton} onPress={() => setExpanded(prev => !prev)}>
-                    <Text style={styles.viewMoreText}>{expanded ? 'View Less' : 'View More'}</Text>
+                    <Text style={styles.viewMoreText}>{expanded ? t('common.view_less', 'View Less') : t('common.view_more', 'View More')}</Text>
                     <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.primary} />
                 </TouchableOpacity>
             )}

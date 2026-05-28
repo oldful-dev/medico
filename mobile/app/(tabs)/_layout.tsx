@@ -13,6 +13,7 @@ import { useAuth } from '@/context/AuthContext';
 import { userService } from '@/services/api/userService';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
+import { useCart } from '@/context/CartContext';
 
 export default function TabLayout() {
   const { t } = useTranslation();
@@ -21,6 +22,7 @@ export default function TabLayout() {
   const router = useRouter();
   const hasHandledError = useRef(false);
   const colors = useThemeColors();
+  const { itemCount } = useCart();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -119,6 +121,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="cart-outline" size={22} color={color} />
           ),
+          tabBarBadge: itemCount > 0 ? itemCount : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: colors.sosRed,
+            color: '#FFFFFF',
+            fontSize: 10,
+            lineHeight: 14,
+          },
         }}
       />
     </Tabs>

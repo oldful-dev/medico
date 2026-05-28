@@ -1,19 +1,7 @@
 // Doctor Home Visit - Booking Screen
 // PRD: Grid of symptoms, smart routing to GP or Physio, Time selection, Address confirmation
 import React from 'react';
-import {
-    View,
-    Text,
-    Image,
-    TouchableOpacity,
-    ScrollView,
-    StyleSheet,
-    Platform,
-    useWindowDimensions,
-    Alert,
-    ActivityIndicator,
-    TextInput,
-} from 'react-native';
+import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Platform, useWindowDimensions, Alert, ActivityIndicator, TextInput, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -355,7 +343,8 @@ export default function DoctorVisitScreen() {
 
             {/* ─── Main Content Card (Cream Background with Top Radius) ─── */}
             <View style={[styles.contentCard, { backgroundColor: colors.bgScreen }]}>
-                <KeyboardAwareScrollView
+                <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <KeyboardAwareScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
@@ -579,6 +568,7 @@ export default function DoctorVisitScreen() {
                     {/* Bottom Padding for Fixed App Bar */}
                     <View style={styles.bottomSpacer} />
                 </KeyboardAwareScrollView>
+        </KeyboardAvoidingView>
             </View>
 
             {/* ─── Fixed Bottom Bar ─── */}

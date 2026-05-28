@@ -8,6 +8,9 @@ const ctrl = require('../controllers/subscription.controller');
 router.get('/me/active', authenticate, ctrl.checkUserActiveSubscription);
 router.post('/initiate', authenticate, ctrl.initiateUserSubscription);
 router.post('/verify', authenticate, ctrl.verifyUserSubscription);
+router.post('/:id/calculate-adjustment', authenticate, ctrl.calculateAdjustment);
+router.post('/:id/execute-transition', authenticate, ctrl.executeTransition);
+router.post('/:id/renew', authenticate, ctrl.executeRenew);
 
 // Admin routes
 router.get('/', authenticateAdmin, ctrl.getSubscriptions);

@@ -44,9 +44,23 @@ export default function CustomDateTimePicker({
 }: CustomDateTimePickerProps) {
     const notify = onChange ?? onDateChange;
 
+    const isSlotPast = (date: Date, slot: string) => {
+        const now = new Date();
+        if (date.toDateString() !== now.toDateString()) return false;
+        return mergeDateTime(date, slot) <= now;
+    };
+
     const datePills = useMemo(() => {
         const pills: Date[] = [];
         const start = new Date(minimumDate ?? new Date());
+        
+        // If today is fully past (all slots in the past), we start from tomorrow
+        const now = new Date();
+        const isTodayFullyPast = timeSlots.every(slot => mergeDateTime(start, slot) <= now);
+        if (isTodayFullyPast && start.toDateString() === now.toDateString()) {
+            start.setDate(start.getDate() + 1);
+        }
+
         start.setHours(0, 0, 0, 0);
         for (let i = 0; i < daysToShow; i++) {
             const d = new Date(start);
@@ -54,11 +68,24 @@ export default function CustomDateTimePicker({
             pills.push(d);
         }
         return pills;
-    }, [minimumDate, daysToShow]);
+    }, [minimumDate, daysToShow, timeSlots]);
 
     const [selectedDateIdx, setSelectedDateIdx] = useState(0);
     const [selectedTime, setSelectedTime]       = useState(timeSlots[0]);
     const scrollRef = useRef<ScrollView>(null);
+
+    // Keep selection in sync and shift if selected time becomes past
+    React.useEffect(() => {
+        const selectedDate = datePills[selectedDateIdx];
+        if (!selectedDate) return;
+        if (isSlotPast(selectedDate, selectedTime)) {
+            const firstValid = timeSlots.find(slot => !isSlotPast(selectedDate, slot));
+            if (firstValid) {
+                setSelectedTime(firstValid);
+                if (notify) notify(mergeDateTime(selectedDate, firstValid));
+            }
+        }
+    }, [selectedDateIdx, datePills, timeSlots, selectedTime, notify]);
 
     const handleDateSelect = (idx: number) => {
         setSelectedDateIdx(idx);
@@ -110,14 +137,24 @@ export default function CustomDateTimePicker({
                 <View style={styles.timeGrid}>
                     {timeSlots.map((slot, idx) => {
                         const active = selectedTime === slot;
+                        const isPast = datePills[selectedDateIdx] ? isSlotPast(datePills[selectedDateIdx], slot) : false;
                         return (
                             <TouchableOpacity
                                 key={idx}
-                                style={[styles.timeSlot, active && styles.timeSlotSelected]}
+                                style={[
+                                    styles.timeSlot,
+                                    active && styles.timeSlotSelected,
+                                    isPast && styles.timeSlotDisabled
+                                ]}
                                 onPress={() => handleTimeSelect(slot)}
+                                disabled={isPast}
                                 activeOpacity={0.75}
                             >
-                                <Text style={[styles.timeSlotText, active && styles.timeSlotTextSelected]}>
+                                <Text style={[
+                                    styles.timeSlotText,
+                                    active && styles.timeSlotTextSelected,
+                                    isPast && styles.timeSlotTextDisabled
+                                ]}>
                                     {slot}
                                 </Text>
                             </TouchableOpacity>
@@ -200,6 +237,11 @@ const styles = StyleSheet.create({
         borderColor: Colors.primary,
         backgroundColor: Colors.primary,
     },
+    timeSlotDisabled: {
+        borderColor: '#E5E7EB',
+        backgroundColor: '#F3F4F6',
+        opacity: 0.5,
+    },
     timeSlotText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
@@ -207,5 +249,8 @@ const styles = StyleSheet.create({
     },
     timeSlotTextSelected: {
         color: '#FFFFFF',
+    },
+    timeSlotTextDisabled: {
+        color: '#9CA3AF',
     },
 });

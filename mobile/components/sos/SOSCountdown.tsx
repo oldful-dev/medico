@@ -1,6 +1,7 @@
 // SOS Countdown Overlay - Full screen countdown before triggering emergency
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Fonts } from '@/constants/theme';
 
 interface SOSCountdownProps {
@@ -10,6 +11,7 @@ interface SOSCountdownProps {
 }
 
 export default function SOSCountdown({ seconds = 3, onComplete, onCancel }: SOSCountdownProps) {
+    const { t } = useTranslation();
     const [count, setCount] = useState(seconds);
 
     useEffect(() => {
@@ -25,15 +27,15 @@ export default function SOSCountdown({ seconds = 3, onComplete, onCancel }: SOSC
         <Modal transparent={true} visible={true} animationType="fade">
             <View style={[styles.container, { backgroundColor: 'rgba(0,0,0,0.85)' }]}>
                 <View style={styles.content}>
-                    <Text style={styles.warningText}>EMERGENCY ALERT</Text>
-                    <Text style={styles.subText}>Contacting Admin and Family in</Text>
+                    <Text style={styles.warningText}>{t('sos.countdown.emergency_alert')}</Text>
+                    <Text style={styles.subText}>{t('sos.countdown.subtext')}</Text>
                     
                     <View style={styles.countCircle}>
                         <Text style={styles.countText}>{count}</Text>
                     </View>
 
                     <TouchableOpacity style={styles.cancelBtn} onPress={onCancel}>
-                        <Text style={styles.cancelText}>CANCEL</Text>
+                        <Text style={styles.cancelText}>{t('sos.countdown.cancel')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>

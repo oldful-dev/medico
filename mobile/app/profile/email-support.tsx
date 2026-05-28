@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,7 +38,7 @@ export default function EmailSupportScreen() {
     };
 
     return (
-        <View style={styles.screen}>
+        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
             <StatusBar style="light" backgroundColor={Colors.primary} />
 
@@ -148,7 +148,7 @@ export default function EmailSupportScreen() {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 

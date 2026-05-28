@@ -54,7 +54,6 @@
     "no_data": "No data found",
     "back_to_home": "Back to Home"
   },
-
   "auth": {
     "splash_tagline": "ISO 9001:2015 Certified",
     "login_title": "Login to Ayuxa",
@@ -79,7 +78,6 @@
     "session_expired_message": "Your session has expired. Please login again to continue.",
     "login_again": "Login Again"
   },
-
   "profile_setup": {
     "title": "Create your profile",
     "subtitle": "Let us know you better",
@@ -111,7 +109,6 @@
     "emergency_required": "Emergency contact number is required",
     "invalid_emergency": "Please enter a valid 10-digit emergency contact number"
   },
-
   "home": {
     "tab_title": "Home",
     "greeting_morning": "Good Morning",
@@ -125,7 +122,6 @@
     "view_all_services": "View All Services",
     "home_essentials": "Home Essentials"
   },
-
   "services": {
     "doctor_visit": "Doctor Home Visit",
     "nurse_care": "Home Nursing Care",
@@ -147,9 +143,10 @@
     "tech_helper": "Tech Helper",
     "paper_legal": "Paper & Legal",
     "trip_travels": "Trip & Travels",
-    "smart_upgrade": "Smart Upgrade"
+    "smart_upgrade": "Smart Upgrade",
+    "caregiver_support": "Caregiver\nSupport",
+    "emergency_assist": "Emergency\nAssist"
   },
-
   "booking": {
     "book_service": "Book Service",
     "book_now": "Book Now",
@@ -176,7 +173,6 @@
     "confirm_booking": "Confirm Booking",
     "schedule_appointment": "Schedule Appointment"
   },
-
   "doctor_visit": {
     "header": "Doctor Home Visit",
     "description_bold": "Booking a doctor or ",
@@ -195,9 +191,9 @@
     "post_surgery": "Post-surgery Rehab",
     "stroke_recovery": "Stroke Recovery",
     "frozen_shoulder": "Frozen shoulder",
-    "other": "Other"
+    "other": "Other",
+    "last_visit": "Last visit"
   },
-
   "nurse_care": {
     "header": "Book Home Nursing Care",
     "description": "Booking long-term or shift-based care at home with experienced nursing professionals and caretakers.",
@@ -219,11 +215,20 @@
     "post_surgery": "Post-Surgery",
     "gender_pref": "Gender preferences",
     "not_sure_title": "Not sure about your options?",
-    "not_sure_subtitle": "I'm not sure, let an Expert call me decide"
+    "not_sure_subtitle": "I'm not sure, let an Expert call me decide",
+    "address_placeholder": "Type your full address",
+    "landmark_placeholder": "Landmark (optional, e.g. Near Apollo Hospital)",
+    "alert_select_who": "Please select who the nurse is for.",
+    "alert_select_staff": "Please select a staff type.",
+    "alert_select_duration": "Please select a shift duration.",
+    "alert_address_required": "Address Required",
+    "alert_address_denied": "Please type your full address manually since location access is denied.",
+    "alert_address_failed": "Could not fetch your address. Please try again or enter it manually.",
+    "alert_upload_failed": "Failed to upload documents. Please try again."
   },
-
   "hospital_trip": {
     "header": "Hospital Trip",
+    "main_title": "Hospital Trip",
     "select_specialist": "Select a specialist. You can only select one.",
     "eye_specialist": "Eye\nSpecialist",
     "brain_nerves": "Brain &\nNerves",
@@ -233,6 +238,9 @@
     "cancer_specialist": "Cancer\nSpecialist",
     "destination_details": "Destination Details",
     "preferred_hospital": "Type preferred Hospital",
+    "preferred_hospital_option": "I have a preferred Hospital",
+    "hospital_name_placeholder": "Enter hospital name",
+    "recommend_hospital": "Recommend a hospital for me",
     "need_advice": "Tags request as \"Need Advice\"",
     "select_doctor": "Select Doctor",
     "preferred_doctor": "I have a preferred Doctor",
@@ -240,11 +248,29 @@
     "doctor_name_placeholder": "Enter doctor name",
     "service_addons": "Service Add-ons",
     "transport_addon": "Transport: Arrange Cab for me?",
-    "support_addon": "Support: Send an Ayuxa Care Buddy to\nassist me at the hospital?",
+    "support_addon": "Support: Send an Ayuxa Platforms Buddy to\nassist me at the hospital?",
     "booking_fee": "Booking",
-    "fee_actuals": "Fee + Actuals"
+    "fee_actuals": "Fee + Actuals",
+    "confirm_pickup": "Confirm Pickup Address",
+    "pickup_placeholder": "Type your full pickup address",
+    "gps_denied": "GPS Access Denied. Please provide exact location.",
+    "auto_filled": "Auto-filled from Google Maps location.",
+    "landmark_placeholder": "Landmark (optional, e.g. Near Apollo Hospital)",
+    "confirm_btn": "Confirm & Request Trip",
+    "alert_select_specialist": "Select Specialist",
+    "alert_select_specialist_msg": "Please select a specialist category first.",
+    "alert_select_hospital": "Select Hospital",
+    "alert_select_hospital_msg": "Please select a hospital preference.",
+    "alert_hospital_required": "Hospital Required",
+    "alert_hospital_required_msg": "Please enter your preferred hospital name.",
+    "alert_doctor_required": "Doctor Name Required",
+    "alert_doctor_required_msg": "Please enter your preferred doctor's name.",
+    "alert_date_required": "Date Required",
+    "alert_date_required_msg": "Please select an appointment date.",
+    "alert_address_required": "Address Required",
+    "alert_address_denied": "Please type your pickup address manually since location access is denied.",
+    "alert_address_failed": "Could not fetch your address. Please wait or try again."
   },
-
   "blood_test": {
     "header": "Book a Home Blood Test",
     "subtitle": "Lab tests & checkup at your doorstep",
@@ -258,9 +284,49 @@
     "upload_prescription_hint": "Help us understand which tests you need",
     "fasting_required": "Fasting Required",
     "fasting_message": "Please do not eat 10-12 hours before this test.",
-    "understood": "Understood"
+    "understood": "Understood",
+    "page_title": "Blood Tests",
+    "nabl_sub": "NABL Certified · Home Collection",
+    "trust_home": "Home Collection",
+    "trust_reports": "Reports in 24 Hrs",
+    "trust_nabl": "NABL Certified",
+    "search_placeholder": "Search blood tests...",
+    "cat_all": "All",
+    "cat_popular": "Popular",
+    "cat_health_checks": "Health Checks",
+    "cat_wellness": "Wellness",
+    "parameter_one": "Parameter",
+    "parameter_other": "Parameters",
+    "home_lab": "Home / Lab",
+    "details_btn": "Details",
+    "loading_packages": "Loading packages...",
+    "packages_count_one": "{{count}} package found",
+    "packages_count_other": "{{count}} packages found",
+    "empty_title": "No tests found",
+    "empty_sub": "Try a different search term",
+    "added_to_cart": "Added to Cart",
+    "added_to_cart_msg": "{{name}} has been added to your cart.",
+    "test_details": "Test Details",
+    "save_pct": "SAVE {{pct}}%",
+    "report_time": "Report Time",
+    "report_time_default": "12-24 Hrs",
+    "collection": "Collection",
+    "home_collection": "Home",
+    "parameters": "Parameters",
+    "includes_params_one": "Includes {{count}} Parameter",
+    "includes_params_other": "Includes {{count}} Parameters",
+    "complete_analysis_one": "Complete analysis with {{count}} comprehensive parameter",
+    "complete_analysis_other": "Complete analysis with {{count}} comprehensive parameters",
+    "fasting_desc": "Avoid food & water for 10-12 hours before collection",
+    "preparation": "Preparation",
+    "no_prep": "No special preparation required",
+    "important_notes": "Important Notes",
+    "note_vary": "Report may vary slightly by location",
+    "note_share": "Always share your previous reports with the doctor",
+    "add_to_cart": "Add to Cart",
+    "unable_to_load": "Unable to load",
+    "load_error_desc": "There was an issue loading the package details. Please try again."
   },
-
   "bill_payment": {
     "header": "Bill Payment",
     "hero_title": "Bill Payment",
@@ -276,7 +342,6 @@
     "missing_info": "Missing Info",
     "fill_all_details": "Please fill in all bill details."
   },
-
   "order_medicines": {
     "header": "Order Medicines",
     "header_subtitle": "Upload prescription, we deliver to your door.",
@@ -302,7 +367,6 @@
     "gallery_permission": "Gallery access is required to choose photos.",
     "order_failed": "Order Failed"
   },
-
   "account": {
     "tab_title": "Account",
     "my_health": "My Health",
@@ -352,6 +416,7 @@
     "bookings_services": "Bookings & Services",
     "my_bookings": "My Bookings",
     "my_bookings_subtitle": "Health, wellness, concierge bookings & history",
+    "my_sos_subtitle": "View your SOS complaint history",
     "local_meetups": "Local Meetups",
     "local_meetups_subtitle": "Senior community events & meetups near you",
     "addresses_people": "Addresses & People",
@@ -408,67 +473,76 @@
     "membership_free": "Free",
     "upgrade": "Upgrade"
   },
-
   "plans": {
     "tab_title": "Plans",
     "subscribe": "Subscribe",
     "view_details": "View Details / Subscribe",
     "quarterly": "Quarterly",
+    "quarterly_suffix": "/ quarter",
+    "quarterly_days": "90 days",
     "biannually": "Biannually",
+    "biannually_suffix": "/ 6 months",
+    "biannually_days": "180 days",
     "yearly": "Yearly",
+    "yearly_suffix": "/ year",
+    "yearly_days": "365 days",
     "why_subscribe": "Why Subscribe?",
     "save_big": "Save Big",
     "save_big_desc": "Recover your plan cost in just 2 orders.",
     "priority_support": "Priority Support",
     "priority_support_desc": "Skip the queue. Members get answered first.",
     "family_updates": "Family Updates",
-    "family_updates_desc": "We send a weekly health report to your children."
+    "family_updates_desc": "We send a weekly health report to your children.",
+    "login_required": "Login Required",
+    "login_required_desc": "Please login to subscribe to a plan.",
+    "active_plan_title": "Active Plan",
+    "active_plan_desc": "You already have an active {{planName}} plan until {{expiry}}.\n\nCancel your current plan to subscribe to another.",
+    "unavailable": "Unavailable",
+    "unavailable_desc": "This plan is not available for the selected period.",
+    "error": "Error",
+    "initiate_error": "Could not initiate plan. Please try again.",
+    "subscribe_error": "Failed to initiate subscription",
+    "your_active_plan": "Your Active Plan",
+    "expires": "Expires",
+    "cta_active": "✓ Active Plan",
+    "cta_locked": "🔒 Plan Active",
+    "cta_choose": "Choose Plan"
   },
-
-  "wellness": {
-    "tab_title": "Wellness",
-    "coming_soon": "Coming Soon",
-    "teaser_subtitle": "We're crafting something great for your health journey."
-  },
-
   "cart": {
-    "tab_title": "Cart",
-    "your_cart": "Your Cart",
-    "empty_title": "No upcoming appointments",
-    "empty_subtitle": "Explore our services to book your first appointment.",
-    "cart_empty": "Your cart is empty",
-    "cart_empty_subtitle": "Add some services or products to get started.",
-    "explore_services": "Explore Services",
-    "checkout": "Checkout",
+    "header_title": "Your Cart",
+    "empty_title": "Your cart is empty",
+    "empty_subtitle": "Add some services or products to get started.",
     "item": "Item",
     "items": "Items",
-    "subtotal": "Subtotal",
-    "grand_total": "Grand Total",
-    "checkout_all_coming_soon": "Checkout All (Coming Soon)",
-    "unified_checkout_coming": "Unified mixed-category checkout is coming soon. Please checkout each category separately for now."
+    "subtotal": "Subtotal: ₹{{amount}}",
+    "checkout_category": "Checkout {{category}}",
+    "grand_total": "Grand Total: ₹{{amount}}",
+    "checkout_all": "Checkout All (Coming Soon)",
+    "coming_soon": "Coming Soon",
+    "unified_coming_soon": "Unified mixed-category checkout is coming soon. Please checkout each category separately for now."
   },
-
   "sos": {
-    "title": "Emergency SOS",
-    "subtitle": "Tap below to alert your emergency contacts and our team.",
-    "slide_to_call": "Slide to Call",
-    "calling": "Calling...",
-    "alert_sent": "Alert Sent",
-    "alert_sent_message": "Your emergency contacts have been notified.",
-    "need_medical": "Need Immediate",
-    "medical_support": "Medical Support?",
-    "click_here": "Click here",
-    "sos_button": "SOS",
+    "title": "My SOS Alerts",
+    "slide_to_call": "Slide to Call for Help",
     "calling_emergency": "Calling emergency...",
     "contacting_services": "Contacting Services...",
-    "press_button": "To start a call, simply press the button",
+    "press_button_to_start": "To start a call,simply press the button",
+    "contacting_emergency_desc": "Contacting emergency services...",
     "notifying_contacts": "Notifying Emergency Contacts",
     "contacts_being_notified": "Emergency contacts are being notified...",
-    "partial_alert": "Partial Alert",
-    "emergency": "Emergency",
-    "call_112": "Please call 112 directly for emergency assistance."
+    "partial_alert_title": "Partial Alert",
+    "partial_alert_msg": "Phone call initiated. Backend alert may not have been sent. Please try again if needed.",
+    "emergency_title": "Emergency",
+    "emergency_fallback_msg": "Please call 112 directly for emergency assistance.",
+    "status_active": "Active",
+    "status_responding": "Responding",
+    "status_resolved": "Resolved",
+    "countdown": {
+      "emergency_alert": "EMERGENCY ALERT",
+      "subtext": "Contacting Admin and Family in",
+      "cancel": "CANCEL"
+    }
   },
-
   "language_selection": {
     "header": "Select Language",
     "title": "Choose your preferred language",
@@ -476,24 +550,26 @@
     "save": "Save Language",
     "saving": "Saving..."
   },
-
   "city_selection": {
     "header": "Select Your City",
     "subtitle": "We'll show you services available in your city.",
     "coming_soon": "Coming Soon",
     "continue": "Continue"
   },
-
   "notifications": {
-    "header": "Notifications",
-    "empty": "No notifications yet",
+    "header_title": "Notifications",
+    "empty_title": "No notifications yet",
     "empty_subtitle": "You'll see booking updates, reminders, and offers here.",
-    "your_otp": "Your OTP Code",
-    "verification_code": "Your Ayuxa Care verification code is: {{code}}",
-    "today": "Today",
-    "earlier": "Earlier"
+    "section_today": "Today",
+    "section_earlier": "Earlier",
+    "time_just_now": "Just now",
+    "time_min_ago": "{{count}} min ago",
+    "time_hours_ago": "{{count}} hour ago",
+    "time_hours_ago_plural": "{{count}} hours ago",
+    "time_yesterday": "Yesterday",
+    "time_days_ago": "{{count}} days ago",
+    "default_title": "Notification"
   },
-
   "help_support": {
     "header": "Help & Support",
     "call_us": "Call Us",
@@ -529,7 +605,6 @@
     "messages": "message",
     "messages_plural": "messages"
   },
-
   "image_upload": {
     "select_image": "SELECT IMAGE",
     "upload_photos": "Upload Photos of the Issue",
@@ -542,13 +617,11 @@
     "camera_permission": "You need to grant camera permission to take a picture.",
     "gallery_permission": "You need to grant gallery permission to choose a picture."
   },
-
   "datetime_picker": {
     "label": "Schedule Appointment",
     "select": "Select Date & Time",
     "done": "Done"
   },
-
   "errors": {
     "generic": "Something went wrong. Please try again.",
     "network": "Network error. Please check your connection.",
@@ -560,7 +633,6 @@
     "address_required": "Could not fetch your address. Please wait or try again.",
     "service_init": "Service initialization incomplete. Please try again."
   },
-
   "my_bookings": {
     "header": "My Bookings",
     "subtitle": "All your appointments in one place",
@@ -583,7 +655,6 @@
     "rebook": "Rebook",
     "cancel": "Cancel"
   },
-
   "booking_details": {
     "header": "Booking Details",
     "date_time": "Date & Time",
@@ -600,7 +671,6 @@
     "cancel_booking": "Cancel Booking",
     "book_again": "Book Again"
   },
-
   "edit_profile": {
     "header": "Edit Profile",
     "full_name": "Full Name *",
@@ -620,20 +690,24 @@
     "profile_updated": "Profile updated successfully.",
     "update_failed": "Failed to update profile."
   },
-
   "ticket_chat": {
-    "header": "Ticket",
-    "message_placeholder": "Type your message...",
-    "status_open": "open",
-    "status_in_progress": "in_progress",
-    "status_resolved": "resolved",
-    "status_closed": "closed",
-    "you": "You",
-    "support_team": "Support Team",
-    "no_messages": "No messages yet. Start the conversation below.",
-    "ticket_closed": "This ticket has been {{status}}."
+    "header_title": "Ticket",
+    "description": "Description",
+    "no_description": "No description provided.",
+    "created_at": "Created {{date}}",
+    "empty_messages": "No messages yet. Start the conversation below.",
+    "closed_ticket": "This ticket has been {{status}}.",
+    "type_placeholder": "Type your message...",
+    "error_load": "Failed to load ticket details.",
+    "error_send": "Failed to send message.",
+    "network_error": "Network error. Please try again.",
+    "sender_you": "You",
+    "sender_support": "Support Team",
+    "status_open": "Open",
+    "status_in_progress": "In Progress",
+    "status_resolved": "Resolved",
+    "status_closed": "Closed"
   },
-
   "manage_addresses": {
     "header": "Manage Addresses",
     "detect_location": "Detect Current Location",
@@ -665,9 +739,16 @@
     "address_saved": "Address saved successfully.",
     "save_failed": "Failed to save address.",
     "search_pick": "Search & Pick Location",
-    "update": "Update"
+    "update": "Update",
+    "saved_addresses": "Saved Addresses",
+    "address_updated": "Address updated successfully.",
+    "address_added": "Address added successfully.",
+    "delete_confirm_title": "Delete Address",
+    "delete_confirm_msg": "Are you sure you want to delete this address?",
+    "address_deleted": "Address deleted successfully.",
+    "delete_failed": "Failed to delete address.",
+    "finding_location": "Finding your location..."
   },
-
   "emergency_contacts": {
     "header": "Emergency Contacts",
     "empty_title": "No Emergency Contacts",
@@ -687,9 +768,16 @@
     "whatsapp": "WhatsApp",
     "remove": "Remove",
     "notify_toggle": "Notify them for every booking?",
-    "fill_required": "Please fill name, phone, and relationship."
+    "fill_required": "Please fill name, phone, and relationship.",
+    "notify_desc": "Emergency contacts will receive a notification for each service booking.",
+    "save_contact": "Save Contact",
+    "contact_added": "Emergency contact added.",
+    "add_failed": "Failed to add contact.",
+    "remove_confirm_title": "Remove Contact",
+    "remove_confirm_msg": "Are you sure you want to remove this contact?",
+    "remove_success": "Emergency contact removed.",
+    "remove_failed": "Failed to remove contact."
   },
-
   "family_members": {
     "header": "Family Members",
     "empty_title": "No Family Members",
@@ -716,9 +804,17 @@
     "update_member": "Update Member",
     "health_note": "Family member health profiles help our care team provide personalised service recommendations.",
     "edit_btn": "Edit",
-    "remove_btn": "Remove"
+    "remove_btn": "Remove",
+    "member_added": "Family member added successfully.",
+    "member_updated": "Family member updated successfully.",
+    "remove_confirm_title": "Remove Member",
+    "remove_confirm_msg": "Remove {{name}}?",
+    "remove_success": "Family member removed successfully.",
+    "remove_failed": "Failed to remove family member.",
+    "gender_male": "Male",
+    "gender_female": "Female",
+    "gender_other": "Other"
   },
-
   "prescriptions": {
     "header": "My Prescriptions",
     "empty_title": "No Prescriptions",
@@ -728,7 +824,6 @@
     "uploaded": "Prescription uploaded.",
     "upload_failed": "Upload failed."
   },
-
   "order_history": {
     "header": "Order History",
     "tab_active": "Active",
@@ -744,7 +839,6 @@
     "cancel_booking_message": "Are you sure you want to cancel this booking?",
     "cancelled_success": "Booking cancelled successfully."
   },
-
   "payments_wallet": {
     "header": "Payments & Wallet",
     "saved_methods": "Saved Cards & UPI",
@@ -766,14 +860,20 @@
     "year_placeholder": "YYYY",
     "upi_placeholder": "yourname@upi",
     "set_default": "Set default",
-    "delete": "Delete",
     "add_card_upi": "Add Card or UPI",
     "visa": "Visa",
     "mastercard": "Mastercard",
     "rupay": "Rupay",
-    "amex": "Amex"
+    "amex": "Amex",
+    "expires": "Expires {{date}}",
+    "remove_method": "Remove Payment Method",
+    "remove_confirm": "Are you sure you want to remove {{method}}?",
+    "remove_failed": "Could not remove payment method. Please try again.",
+    "update_failed": "Could not update default payment method. Please try again.",
+    "invalid_last4": "Please enter the last 4 digits of your card number.",
+    "invalid_expiry": "Please enter card expiry.",
+    "invalid_upi": "Please enter a valid UPI ID (e.g. name@upi)."
   },
-
   "search_screen": {
     "header": "Search",
     "placeholder": "Search services, doctors, tests...",
@@ -787,9 +887,14 @@
     "popular_nursing": "Nursing care",
     "popular_ac": "AC repair",
     "popular_physio": "Physiotherapy",
-    "popular_medicines": "Order medicines"
+    "popular_medicines": "Order medicines",
+    "category_doctor_visit": "Doctor Visit",
+    "category_nursing_care": "Nursing Care",
+    "category_blood_test": "Blood Test",
+    "category_medicines": "Medicines",
+    "category_physio_fitness": "Physio & Fitness",
+    "category_meal_service": "Meal Service"
   },
-
   "rate_us": {
     "header": "Rate Ayuxa",
     "title": "Enjoying Ayuxa?",
@@ -800,7 +905,20 @@
     "reason3": "Helps us maintain high service standards",
     "cta": "Rate Ayuxa on Play Store"
   },
-
+  "legal": {
+    "failed_load": "Failed to load document",
+    "last_updated": "Last Updated: {{date}}",
+    "loading": "Loading..."
+  },
+  "privacy_policy": {
+    "header_title": "Privacy Policy"
+  },
+  "refund_policy": {
+    "header_title": "Refund Policy"
+  },
+  "terms_policy": {
+    "header_title": "Terms & Conditions"
+  },
   "service_checkout": {
     "header": "Checkout",
     "service_summary": "Service Summary",
@@ -828,7 +946,6 @@
     "razorpay_secure": "Secured by Razorpay. Your payment is protected.",
     "cod_note": "Please prepare exact change in cash."
   },
-
   "service_confirmation": {
     "booking_confirmed": "Booking Confirmed",
     "registration_confirmed": "Registration Confirmed!",
@@ -849,7 +966,6 @@
     "call_support": "Call Support",
     "cancel": "Cancel"
   },
-
   "wellness_product": {
     "not_found": "Product not found",
     "back": "← Back to Wellness Store",
@@ -865,7 +981,6 @@
     "more_in": "More in {{category}}",
     "add_to_cart": "Add to Cart"
   },
-
   "medical_card": {
     "header": "Medical Card",
     "download": "Download",
@@ -889,7 +1004,6 @@
     "medications": "Current Medications",
     "edit": "Edit Medical Card"
   },
-
   "edit_medical_card": {
     "header": "My Medical Card",
     "blood_group": "Blood Group",
@@ -904,7 +1018,6 @@
     "emergency_note": "In an emergency, your app will show this card instantly to medical professionals.",
     "save": "Save Medical Card"
   },
-
   "medical_logs": {
     "header": "Medical Logs",
     "search_placeholder": "Search documents…",
@@ -928,7 +1041,6 @@
     "delete": "Delete",
     "title_placeholder": "e.g. Blood test report Jan 2026"
   },
-
   "activity_center": {
     "header": "Live Updates",
     "title": "Activity Center",
@@ -937,7 +1049,6 @@
     "empty_subtitle": "Doctor assignments, sample collections, deliveries and payments will appear here in real time.",
     "fetching": "Fetching updates…"
   },
-
   "subscription": {
     "header": "Membership",
     "choose_billing": "Choose Billing Cycle",
@@ -959,7 +1070,6 @@
     "contact_support": "Contact Support",
     "cancel_note": "Want to cancel your subscription? Contact support →"
   },
-
   "consent_forms": {
     "header": "Consent Forms",
     "coming_soon": "Coming Soon",
@@ -980,7 +1090,6 @@
     "about_title": "About Consent Forms",
     "about_desc": "Signed consent forms are securely stored and can be accessed anytime. Digital signatures are legally binding."
   },
-
   "download_documents": {
     "header": "Download Documents",
     "coming_soon": "Coming Soon",
@@ -995,7 +1104,6 @@
     "select_docs": "Select Documents",
     "select_at_least_one": "Please select at least one document to download"
   },
-
   "service_agreements": {
     "header": "Service Agreements",
     "coming_soon": "Coming Soon",
@@ -1012,7 +1120,6 @@
     "about_title": "Service Agreements",
     "about_desc": "These agreements outline the terms and conditions of your subscription plan. All active agreements are legally binding."
   },
-
   "view_documents": {
     "header": "View Documents",
     "tab_all": "All Documents",
@@ -1026,7 +1133,6 @@
     "empty_subtitle": "Documents will appear here once uploaded",
     "view": "View Document"
   },
-
   "email_support": {
     "header": "Email Support",
     "title": "Send us an Email",
@@ -1039,6 +1145,9 @@
     "cat_technical": "Technical",
     "cat_general": "General",
     "cat_other": "Other",
+    "cat_service": "Service",
+    "cat_complaint": "Complaint",
+    "cat_lab": "Lab / Test",
     "message": "Message",
     "message_placeholder": "Describe your issue in detail...",
     "attach_note": "Screenshots or documents can be added later via email",
@@ -1047,13 +1156,11 @@
     "need_help": "Need Immediate Help?",
     "call_support": "Call Support"
   },
-
   "all_services": {
     "header": "All Ayuxa Services",
     "all_essentials": "All Home Essentials",
     "loading": "Loading services..."
   },
-
   "concierge_service": {
     "concierge_services": "Concierge Services",
     "fetching_price": "Fetching price...",
@@ -1061,7 +1168,6 @@
     "address_required_msg": "Could not fetch your address. Please wait or try again.",
     "upload_image_hint": "JPG, PNG or PDF, file size no more than 10MB"
   },
-
   "anything_else": {
     "header": "Anything Else?",
     "description": "Need help with something not on our list? Tell us what you need — our team will handle it.",
@@ -1071,7 +1177,6 @@
     "bullet3": "Gift Sourcing & Delivery",
     "bullet4": "Custom Task Assistance"
   },
-
   "appliance_repair": {
     "header": "AC & Appliance Repair",
     "description": "Book a reliable technician for AC, refrigerator, washing machine, and other household appliance repairs.",
@@ -1081,7 +1186,6 @@
     "bullet3": "Washing Machine Repair",
     "bullet4": "Microwave & Other Appliances"
   },
-
   "bank_paperwork": {
     "header": "Bank / Paperwork",
     "description": "Get professional help with bank visits, passbook updates, KYC, and other paperwork — all at your doorstep.",
@@ -1091,7 +1195,6 @@
     "bullet3": "Fixed Deposit & Account Opening",
     "bullet4": "Statement & Certificate Collection"
   },
-
   "deep_cleaning": {
     "header": "Deep Cleaning / Pest",
     "description": "Book professional deep cleaning or pest control for your home — thorough, safe, and certified.",
@@ -1101,7 +1204,6 @@
     "bullet3": "Pest Control Treatment",
     "bullet4": "Sofa / Carpet / Mattress Cleaning"
   },
-
   "driving_cab": {
     "header": "Driving / Cab Booking",
     "description": "Book a reliable driver or cab for hospital visits, errands, or any destination — safe and comfortable.",
@@ -1111,7 +1213,6 @@
     "bullet3": "Airport Transfers",
     "bullet4": "Daily Commute Arrangements"
   },
-
   "grocery_run": {
     "header": "Grocery Run",
     "description": "Share your grocery list and our concierge will shop from your nearest store and deliver to your doorstep.",
@@ -1121,7 +1222,6 @@
     "bullet3": "Monthly Ration & Staples",
     "bullet4": "Same-Day Delivery Available"
   },
-
   "meal_service": {
     "header": "Select Meal Plan",
     "meal_type_required": "Please select a meal type.",
@@ -1143,7 +1243,6 @@
     "other_placeholder": "Enter any other requirement (e.g. No Salt)",
     "request_tiffin": "Request Tiffin"
   },
-
   "medical_equipment": {
     "header": "Rent Medical Equipment",
     "subtitle": "Wheelchairs, Beds, and Oxygen on rent.",
@@ -1164,7 +1263,6 @@
     "when": "When?",
     "confirm_rental": "Confirm Rental"
   },
-
   "paper_legal": {
     "header": "Paper and Legal",
     "subtitle": "Pension, Life Certificates, and Property work.",
@@ -1181,7 +1279,6 @@
     "when": "When?",
     "book_assistant": "Book Assistant"
   },
-
   "physio_fitness": {
     "header": "Physio & Fitness",
     "subtitle": "Pain relief therapy and yoga.",
@@ -1202,9 +1299,9 @@
     "other_issue": "Other Issue",
     "describe_issue": "Describe your issue",
     "when": "When?",
-    "book_appointment": "Book Appointment"
+    "book_appointment": "Book Appointment",
+    "discount": "+10% OFF"
   },
-
   "plumbing_electrical": {
     "header": "Plumbing & Electrical",
     "description": "Book a certified plumber or electrician for pipe leaks, wiring faults, and all home repairs.",
@@ -1214,21 +1311,19 @@
     "bullet3": "Electrical Wiring & Switchboard",
     "bullet4": "Fan & Light Fixture Installation"
   },
-
   "smart_upgrade": {
     "header": "Smart Upgrade",
     "login_required": "Please login to upgrade your plan.",
-    "already_subscribed": "You already have an active Ayuxa Care plan. Manage it from the Plans tab.",
+    "already_subscribed": "You already have an active Ayuxa Platforms plan. Manage it from the Plans tab.",
     "load_failed": "Could not load plan details. Please try again.",
     "upgrade_failed": "Could not initiate plan. Please try again.",
     "process_failed": "Failed to process upgrade. Please check your connection.",
     "title": "Smart Upgrade",
     "stop_fees": "Stop Paying Booking Fees.",
     "get_management": "Get Total Home Management.",
-    "join_plan": "Join the Ayuxa Care Homemaker Plan",
+    "join_plan": "Join the Ayuxa Platforms Homemaker Plan",
     "view_upgrade": "View Plan Details & Upgrade"
   },
-
   "tech_helper": {
     "header": "Tech Helper",
     "title": "Tech Helper",
@@ -1249,9 +1344,9 @@
     "home_visit_desc": "A buddy comes to teach",
     "phone_call": "Phone Call",
     "phone_call_desc": "Remote help",
-    "book": "Book Tech Support"
+    "book": "Book Tech Support",
+    "invalid_time": "Please select a future time slot."
   },
-
   "trip_travels": {
     "header": "Trip & Travel",
     "hero_title": "Where do you want to go?",
@@ -1282,7 +1377,6 @@
     "travellers_required": "Please select number of travellers",
     "purpose_required": "Please select purpose of travel"
   },
-
   "insurance": {
     "header": "Insurance Plan",
     "title": "Get an Insurance Plan",
@@ -1302,7 +1396,6 @@
     "submission_failed": "Something went wrong.",
     "failed": "Failed to submit request. Please try again."
   },
-
   "meetup": {
     "header": "Local Meetups",
     "subtitle": "Senior community events near you",
@@ -1392,9 +1485,9 @@
     "no_pickup_desc": "You'll arrange your own transportation to the venue.",
     "save_continue": "Save & Continue",
     "select_pickup_address": "Please select pickup address",
-    "select_pickup_time": "Please select preferred pickup time"
+    "select_pickup_time": "Please select preferred pickup time",
+    "park_pin_code": "PARK – PIN CODE {{pinCode}}"
   },
-
   "payment": {
     "header": "Secure Payment Summary",
     "consultation_fee": "Consultation / Service Fee",
@@ -1511,7 +1604,7 @@
     "upgrade_prompt_title": "Smart Upgrade",
     "stop_fees": "Stop Paying Booking Fees.",
     "get_management": "Get Total Home Management.",
-    "join_plan": "Join the Ayuxa Care Homemaker Plan",
+    "join_plan": "Join the Ayuxa Platforms Homemaker Plan",
     "feature": "Feature",
     "pay_per_use": "Pay-Per-Use",
     "homemaker_plan": "Homemaker Plan",
@@ -1525,7 +1618,6 @@
     "total_without_upgrade": "Total Price (without Upgrade)",
     "redirect_note": "You will be redirected to secure payment"
   },
-
   "blood_test_schedule": {
     "header": "Schedule Your Blood Test",
     "step_date": "Date & Time",
@@ -1566,7 +1658,6 @@
     "payable": "Payable Amount",
     "continue_payment": "Continue to Payment"
   },
-
   "blood_test_summary": {
     "header": "Order Summary",
     "parameters_included": "Parameters included",
@@ -1595,7 +1686,6 @@
     "coupon_applied": "Coupon applied! You saved ₹{{amount}}",
     "invalid_coupon": "This coupon is not valid"
   },
-
   "blood_test_success": {
     "header": "Payment Successful!",
     "subtitle": "Your blood test has been booked successfully",
@@ -1611,7 +1701,6 @@
     "view_bookings": "View My Bookings",
     "back_home": "Back to Home"
   },
-
   "blood_test_detail": {
     "header": "Test Details",
     "report_time": "Report Time",
@@ -1634,7 +1723,6 @@
     "add_cart": "Add to Cart",
     "book_now": "Book Now"
   },
-
   "doctor_confirmation": {
     "header": "Booking Confirmed",
     "title": "Booking Confirmed!",
@@ -1659,7 +1747,6 @@
     "call_support": "Call Support",
     "back_home": "Back to Home"
   },
-
   "nurse_confirmation": {
     "header": "Booking Confirmed",
     "title": "Request Sent Successfully!",
@@ -1679,7 +1766,6 @@
     "call_support": "Call Support",
     "back_home": "Back to Home"
   },
-
   "profile_bookings": {
     "header": "My Bookings",
     "tab_upcoming": "Upcoming",
@@ -1698,6 +1784,484 @@
     "cancellation_msg": "Our team will process your cancellation and reach out shortly.",
     "rebook_msg": "Please browse services to book again.",
     "no_bookings": "No bookings found",
-    "no_bookings_subtitle": "You don't have any bookings in this section yet."
+    "no_bookings_subtitle": "You don't have any bookings in this section yet.",
+    "subtitle": "All your appointments in one place",
+    "tab_all": "All",
+    "tab_cancelled": "Cancelled",
+    "tab_rescheduled": "Rescheduled",
+    "status_confirmed": "Confirmed",
+    "status_pending": "Pending",
+    "status_completed": "Completed",
+    "status_cancelled": "Cancelled",
+    "status_rescheduled": "Rescheduled",
+    "category_wellness": "Wellness",
+    "category_health": "Health",
+    "category_concierge": "Concierge",
+    "category_meetup": "Meetup",
+    "category_lab": "Lab Test",
+    "collection_home_collection": "Home Collection",
+    "collection_drop_off": "Drop-off",
+    "collection_home_visit": "Home Visit",
+    "collection_pickup": "Pickup",
+    "collection_self_arranged": "Self Arranged",
+    "payment_paid": "Paid",
+    "payment_failed": "Failed",
+    "payment_pending": "Pending",
+    "cancel_confirm": "Are you sure you want to cancel this booking?",
+    "yes_cancel": "Yes, Cancel",
+    "no": "No",
+    "cancelled_alert_title": "Cancelled",
+    "cancelled_alert_msg": "Your booking has been cancelled.",
+    "cancel_error": "Failed to cancel booking.",
+    "something_wrong": "Something went wrong.",
+    "loading": "Loading bookings…",
+    "empty_all_desc": "Book a service to see it here",
+    "empty_tab_desc": "No {{tab}} bookings yet",
+    "section_upcoming": "Upcoming",
+    "section_past": "Past & Completed",
+    "assigned_name": "Assigned: {{name}}",
+    "view_details": "View Details"
+  },
+  "checkout": {
+    "header_title": "Order Summary",
+    "checkout_title": "{{category}} Checkout",
+    "items_count": "{{count}} items",
+    "date_time": "Date & Time",
+    "collection_type": "Collection Type",
+    "home_collection": "Home Collection",
+    "lab_visit": "Lab Visit",
+    "address": "Address",
+    "subtotal": "Subtotal",
+    "gst": "GST (18%)",
+    "discount": "Discount",
+    "total_amount": "Total Amount",
+    "apply_coupon": "Apply Coupon Code",
+    "coupon_placeholder": "Enter coupon code",
+    "apply": "Apply",
+    "payment_method": "Payment Method",
+    "confirm_booking": "Confirm Booking",
+    "confirm_pay": "Confirm & Pay ₹{{amount}}",
+    "invalid_data": "Invalid booking data",
+    "could_not_create": "Could not create booking",
+    "could_not_pay": "Could not initiate payment",
+    "verification_failed": "Payment verification failed",
+    "coupon_applied": "Coupon applied! You saved ₹{{amount}}",
+    "invalid_coupon": "This coupon code is not valid or has expired.",
+    "could_not_apply": "Could not apply coupon. Please try again.",
+    "select_date": "Select Date",
+    "select_slot": "Select Time Slot",
+    "collection_home_desc": "We'll collect sample from your home",
+    "collection_lab_desc": "Drop your sample at the nearest lab",
+    "collection_address": "Collection Address",
+    "saved_addresses": "Saved Addresses",
+    "add_new": "Add New",
+    "new_address": "New Address",
+    "label_home": "Home",
+    "label_office": "Office",
+    "label_other": "Other",
+    "search_pick": "Search & pick location",
+    "full_address": "Full address",
+    "pincode": "Pincode",
+    "landmark_optional": "Landmark (optional)",
+    "save_use": "Save & Use",
+    "auto_detect": "Auto Detect",
+    "current_location": "Current location",
+    "manual": "Manual",
+    "search_select": "Search & select",
+    "checking_serviceability": "Checking serviceability...",
+    "serviceable": "Location is serviceable",
+    "not_serviceable": "Location not serviceable",
+    "enter_full_address": "Enter full address",
+    "phone_number": "Phone Number",
+    "payable_amount": "Payable Amount",
+    "continue_payment": "Continue to Payment",
+    "continue": "Continue",
+    "back": "Back",
+    "no_items_found": "No items found in this category",
+    "required_date_time": "Please select date and time",
+    "required_address_pin": "Please enter valid address and pincode",
+    "required_phone": "Please enter a valid phone number",
+    "failed_proceed": "Failed to proceed with booking",
+    "location_error_title": "Location Error",
+    "location_error_msg": "Unable to detect your location.",
+    "address_required": "Address Required",
+    "address_required_msg": "Please select a service address.",
+    "booking_received_title": "Booking Received",
+    "booking_received_msg": "Your service has been scheduled. Please pay ₹{{amount}} in cash to our provider when they arrive.",
+    "build_required_title": "Build Required",
+    "build_required_msg": "Razorpay involves native code and cannot run in standard Expo Go.\nRun `npx expo run:android` to build a Custom Dev Client.",
+    "registration_failed": "Could not register for meetup. Please try again.",
+    "failed_register_meetup": "Failed to register for meetup",
+    "payment_cancelled_title": "Payment Cancelled",
+    "payment_cancelled_msg": "You can try again whenever you are ready. Your booking details have been saved.",
+    "payment_failed_title": "Payment Failed",
+    "retry_payment": "Retry Payment",
+    "pending_payment_title": "Pending Payment Found",
+    "pending_payment_msg": "You have a payment that was interrupted. Would you like to check its status?",
+    "dismiss": "Dismiss",
+    "check_status": "Check Status",
+    "service_fee": "Service Fee",
+    "booking_fee": "Booking Fee",
+    "platform_fee": "Platform Fee",
+    "taxes_gst": "Taxes & GST",
+    "subscription_applied": "(Subscription Benefits Applied)",
+    "saved_fees": "💰 You saved ₹{{amount}} on fees!",
+    "no_saved_addresses": "No saved addresses. Please add one in your profile.",
+    "add_address_btn": "Add Address",
+    "promo_code": "Promo Code",
+    "coupon_applied_success": "\"{{code}}\" applied — saved ₹{{amount}}",
+    "cash_note": "Please prepare exact change if possible. Our provider will collect the amount upon arrival.",
+    "razorpay_note": "Secured by Razorpay. Your payment information is encrypted and safe.",
+    "secure_payment_title": "Checkout",
+    "original_date": "Original Date",
+    "new_date": "New Date",
+    "appointment_rescheduled": "Appointment Rescheduled",
+    "download_report_btn": "Download Report",
+    "phlebotomist_note": "Our phlebotomist will contact you before arriving. Please keep your phone reachable.",
+    "reschedule_btn": "Reschedule",
+    "book_again_btn": "Book Again",
+    "reschedule_title": "Reschedule Appointment",
+    "reschedule_msg": "Reschedule requests must be approved by our admin team. You can contact our support team to request a reschedule.",
+    "contact_support_btn": "Contact Support",
+    "success_cancel_msg": "Booking cancelled successfully",
+    "success_title": "Success",
+    "error_title": "Error",
+    "payment_failed_verification_msg": "Payment was received but could not be verified. Our team will resolve this within 24 hours. Please do NOT retry the payment."
+  },
+  "success_screen": {
+    "title": "Payment Successful!",
+    "subtitle": "Your {{category}} booking has been confirmed.",
+    "booking_id": "Booking ID",
+    "amount_paid": "Amount Paid",
+    "view_bookings": "View My Bookings",
+    "back_home": "Back to Home"
+  },
+  "confirmation_screen": {
+    "title_meetup": "Registration Confirmed!",
+    "subtitle_meetup": "You have successfully joined the Local Meet Up.",
+    "booking_code": "Booking Code: {{code}}",
+    "meeting_details": "Meeting Details",
+    "label_date": "Date",
+    "label_time": "Time",
+    "label_venue": "Venue",
+    "label_pincode": "PIN Code",
+    "pickup_arranged": "Pickup Arranged",
+    "pickup_at": "At {{time}}",
+    "contact_soon": "We will contact you soon with more details.",
+    "whats_next": "What's Next?",
+    "next_step1": "You'll receive a confirmation SMS",
+    "next_step2": "Our team will call you 1 day before the event",
+    "next_step3_pickup": "Pickup will be arranged at your address",
+    "next_step3_self": "Please reach the venue on time",
+    "btn_my_bookings": "Go to My Bookings",
+    "btn_back_home": "Back to Home",
+    "title_service": "Booking Received!",
+    "subtitle_service": "Your service request has been submitted successfully.",
+    "request_id": "Request ID",
+    "service_details": "Service Details",
+    "label_service": "Service",
+    "label_details": "Additional Details",
+    "label_address": "Address",
+    "label_scheduled_date": "Scheduled Date",
+    "label_booking_fee": "Booking Fee / Estimate",
+    "uploaded_files": "Uploaded Photos / Documents",
+    "files_count": "{{count}} file(s) uploaded",
+    "cancel_btn": "Cancel",
+    "call_support_btn": "Call Support",
+    "back_home_link": "Back to Home",
+    "standard_request": "Standard service request",
+    "cancel_title": "Cancel Request",
+    "cancel_confirm": "Are you sure you want to cancel this booking?",
+    "no_keep": "No, Keep It",
+    "yes_cancel": "Yes, Cancel",
+    "cancelled_title": "Cancelled",
+    "cancelled_msg": "Booking cancelled successfully",
+    "failed_cancel_msg": "Failed to cancel",
+    "something_wrong": "Something went wrong",
+    "loading": "Loading...",
+    "booking_confirmed_title": "Booking Confirmed",
+    "please_wait": "Please wait...",
+    "fetching_details": "Fetching your booking details...",
+    "info_driver": "A driver will be assigned shortly. You can track your cab location.",
+    "info_medicine": "Your order is being processed. Track delivery status here.",
+    "info_meal": "Our kitchen received your request. Track your tiffin delivery.",
+    "info_healthcare": "A healthcare professional will be assigned to you shortly.",
+    "info_concierge": "An Ayuxa concierge assistant will handle your request.",
+    "info_technician": "A certified technician is being prepared for your home visit.",
+    "info_fallback": "A dedicated partner will be assigned to your request shortly.",
+    "track_driver": "Track Car/Cab",
+    "track_healthcare": "Track Professional",
+    "track_order": "Track Order",
+    "track_meal": "Track Tiffin",
+    "track_technician": "Track Technician",
+    "track_fallback": "Track Progress"
+  },
+  "smart_upgrade": {
+    "header": "Smart Upgrade",
+    "card_title": "Smart Upgrade",
+    "tagline_1": "Stop Paying Booking Fees.",
+    "tagline_2": "Get Total Home Management.",
+    "price_intro": "Join the Ayuxa Platforms Homemaker Plan for Just",
+    "price_bold": "₹3,499/ month",
+    "upgrade_btn": "View Plan Details & Upgrade",
+    "processing": "Processing...",
+    "disclaimer_header": "Important Note",
+    "disclaimer_sub": "(Disclaimer)",
+    "disc_booking_fee_label": "Booking Fee:",
+    "disc_booking_fee_text": "This fee covers the administrative cost of finding, verifying, and scheduling the professional.",
+    "disc_vendor_label": "Vendor Payments:",
+    "disc_vendor_text": "The actual cost of repair (spare parts, labour charges, materials) or utility bill amounts must be paid directly to the vendor/provider upon completion.",
+    "disc_supervision_label": "Supervision:",
+    "disc_supervision_text": "\"Pay-Per-Use\" Bookings include remote coordination. For physical on-site supervision (having an Ayuxa Platforms staff member present while work is done), you must have an active Ayuxa Platforms plan.",
+    "login_required": "Login Required",
+    "login_required_desc": "Please login to upgrade your plan.",
+    "already_subscribed": "Already Subscribed",
+    "already_subscribed_desc": "You already have an active Ayuxa Platforms plan. Manage it from the Plans tab.",
+    "error": "Error",
+    "load_plan_error": "Could not load plan details. Please try again.",
+    "upgrade_failed": "Upgrade Failed",
+    "initiate_error": "Could not initiate plan. Please try again.",
+    "process_error": "Failed to process upgrade. Please check your connection."
+  },
+  "trip_travel": {
+    "header": "Trip & Travel",
+    "hero_title": "Where do you want to go?",
+    "hero_subtitle": "Share your travel plan and we'll assist you better.",
+    "destination": "Destination (Preferred)",
+    "destination_placeholder": "Enter destination",
+    "travel_dates": "Travel Dates",
+    "select_dates_placeholder": "Select travel dates",
+    "travellers": "Travellers",
+    "person_count_one": "{{count}} person",
+    "person_count_other": "{{count}} people",
+    "select": "Select",
+    "purpose": "Purpose",
+    "special_requirements": "Special Requirements / Assistance",
+    "special_requirements_placeholder": "Wheelchair access, dietary needs, medical equipment…",
+    "additional_details": "Additional Details",
+    "additional_details_placeholder": "Preferred airlines, seat preferences, hotel tier…",
+    "optional": "Optional",
+    "submit_btn": "Submit Enquiry",
+    "footer_note": "Our team will contact you within 24 hours to confirm your travel plan.",
+    "modal_select_date": "Select Travel Date",
+    "modal_travellers": "Number of Travellers",
+    "modal_purpose": "Purpose of Travel",
+    "purpose_leisure": "Leisure / Vacation",
+    "purpose_business": "Business Travel",
+    "purpose_family": "Family Getaway",
+    "purpose_adventure": "Adventure Trip",
+    "purpose_wellness": "Wellness Retreat",
+    "purpose_cultural": "Cultural Tour",
+    "purpose_other": "Other",
+    "required": "Required",
+    "enter_destination": "Please enter your destination",
+    "select_dates": "Please select travel dates",
+    "select_travellers": "Please select number of travellers",
+    "select_purpose": "Please select purpose of travel",
+    "error": "Error",
+    "init_error": "Service initialization incomplete.",
+    "booking_failed": "Booking Failed",
+    "generic_error": "Something went wrong.",
+    "submit_error": "Failed to submit inquiry. Please check your connection."
+  },
+  "paper_legal": {
+    "header": "Paper and Legal",
+    "subtitle": "Pension, Life Certificates, and\nProperty work.",
+    "select_service": "Select Service",
+    "option_dlc": "Digital Life Certificate",
+    "option_dlc_sub": "(Jeevan Pramaan - Home visit)",
+    "option_kyc": "Bank KYC Update",
+    "option_kyc_sub": "(Assistance)",
+    "option_will": "Will Registration",
+    "option_will_sub": "(Lawyer Connect)",
+    "option_govtid": "Govt ID Update",
+    "option_govtid_sub": "(Aadhaar/PAN fix)",
+    "details_label": "Details",
+    "details_placeholder": "Describe your requirement or what needs signatures...",
+    "upload_title": "Upload Relevant Documents",
+    "upload_subtitle": "Upload IDs, previous certificates, or legal paperwork (JPG, PNG or PDF)",
+    "when": "When?",
+    "book_btn": "Book Assistant",
+    "initializing": "Initializing...",
+    "processing": "Processing...",
+    "missing_info": "Missing Info",
+    "missing_info_desc": "Please select a service, describe details, and select a timing.",
+    "error": "Error",
+    "init_error": "Service initialization incomplete. Please try again.",
+    "generic_error": "Something went wrong. Please check your connection."
+  },
+  "my_sos_alerts": {
+    "header": "My SOS Alerts",
+    "empty_title": "No SOS Alerts",
+    "empty_subtitle": "You have not triggered any SOS alerts. Stay safe!",
+    "load_failed": "Failed to load SOS history.",
+    "alert_count_one": "{{count}} alert in history",
+    "alert_count_other": "{{count}} alerts in history",
+    "step_triggered": "SOS Triggered",
+    "step_team_notified": "Team Notified",
+    "step_responder_assigned": "Responder Assigned",
+    "step_resolved": "Resolved",
+    "resolved_at": "Resolved: {{date}}",
+    "resolution_notes": "Resolution Notes",
+    "call_notes": "Call Notes",
+    "no_responder": "No responder assigned yet",
+    "responder": "Responder"
+  },
+
+  "wellness": {
+    "tab_title": "Wellness",
+    "header_title": "Ayuxa Wellness",
+    "store_title": "Wellness Store",
+    "coming_soon": "Coming Soon",
+    "teaser_subtitle": "We're crafting something great for your health journey.",
+    "store_opening_soon": "The Ayuxa Wellness Store is Opening Soon!",
+    "store_opening_desc": "Genuine Medicines, Senior Care Products, and Daily Essentials delivered to your door.",
+    "what_to_buy": "What can you buy here?",
+    "what_to_buy_desc": "A fully-stocked pharmacy and senior-care shop right at your fingertips.",
+    "search_placeholder": "Search products...",
+    "no_products_found": "No products found",
+    "load_more": "Load More Products",
+    "add": "Add",
+    "cat_medicines": "Genuine Medicines",
+    "cat_medicines_sub": "(Prescription & OTC)",
+    "cat_sugar_free": "Sugar-Free Foods",
+    "cat_sugar_free_sub": "(Biscuits, Atta, Snacks)",
+    "cat_mobility": "Mobility Aids",
+    "cat_mobility_sub": "(Walking Sticks, Walkers)",
+    "cat_adult_care": "Adult Care",
+    "cat_adult_care_sub": "(Diapers, Lotions, Hygiene)",
+    "cat_devices": "Health Devices",
+    "cat_devices_sub": "(BP Monitors, Oximeters)",
+    "product_not_found": "Product not found",
+    "back_to_store": "← Back to Wellness Store",
+    "genuine_product": "100% Genuine Product",
+    "mrp_prefix": "MRP",
+    "you_save": "You Save ₹{{amount}}!",
+    "tax_inclusive": "Inclusive of all taxes",
+    "in_stock": "In Stock & Ready to Ship",
+    "hurry_stock": "Hurry, only {{count}} units left!",
+    "out_of_stock": "Out of Stock",
+    "sold_out": "Sold Out",
+    "only_left": "Only {{count}} left",
+    "fast_delivery": "Fast Delivery",
+    "genuine": "Genuine",
+    "easy_returns": "Easy Returns",
+    "about_product": "About this Product",
+    "more_in_category": "More in {{category}}",
+    "view_all": "View all →",
+    "add_to_cart": "Add to Cart",
+    "added_to_cart_title": "Added to Cart",
+    "added_to_cart_message": "{{name}} added to cart!",
+    "continue_shopping": "Continue Shopping",
+    "view_cart": "View Cart",
+    "off_badge": "{{percent}}% OFF"
+  },
+  "service_detail": {
+    "concierge_services": "Concierge Services",
+    "fetching_price": "Fetching price...",
+    "address_required": "Address Required",
+    "address_required_desc": "Could not fetch your address. Please wait or try again.",
+    "error": "Error",
+    "init_error": "Service initialization incomplete. Please try again.",
+    "upload_error": "Failed to upload. Please check your connection.",
+    "generic_error": "Something went wrong. Please check your connection.",
+    "image_upload_title": "Select An Image",
+    "image_upload_subtitle": "JPG, PNG or PDF, file size no more than 10MB",
+    "appliance_repair": {
+      "header": "AC & Appliance Repair",
+      "hero": "AC & Appliance Repair",
+      "description": "Book a reliable technician for AC, refrigerator, washing machine, and other household appliance repairs.",
+      "pricing": "₹{{price}} Booking Fee + Vendor's Bill",
+      "pricing_note": "*The vendor's bill depends on the actual work needed.",
+      "bullet_1": "AC Servicing & Repair (Split & Window ACs)",
+      "bullet_2": "Refrigerator Repair",
+      "bullet_3": "Washing Machine Repair",
+      "bullet_4": "Microwave & Other Appliances",
+      "upload_title": "Select An Image Of Scrap Items"
+    },
+    "bank_paperwork": {
+      "header": "Bank / Paperwork",
+      "hero": "Bank / Paper Work",
+      "description": "Get professional help with bank visits, passbook updates, KYC, and other paperwork — all at your doorstep.",
+      "pricing": "₹{{price}} Per Visit (Concierge Fee)",
+      "pricing_note": "*Charges cover the assistant's visit + travel. Bank charges are separate.",
+      "bullet_1": "Passbook Update & KYC",
+      "bullet_2": "Cheque Deposit & Withdrawal",
+      "bullet_3": "Fixed Deposit & Account Opening",
+      "bullet_4": "Statement & Certificate Collection",
+      "upload_title": "Select An Image Of Scrap Items"
+    },
+    "bill_payment": {
+      "header": "Bill Payment",
+      "hero": "Bill Payment",
+      "description": "Our concierge will handle your utility bill payments — electricity, water, gas, and more.",
+      "pricing": "₹{{price}} Convenience Fee Per Bill",
+      "pricing_note": "*Actual bill amount is paid by you directly.",
+      "bullet_1": "Electricity Bill Payment",
+      "bullet_2": "Water & Gas Bill",
+      "bullet_3": "Property Tax",
+      "bullet_4": "DTH / Internet Recharge",
+      "upload_title": "Upload Bill Image (Optional)"
+    },
+    "deep_cleaning": {
+      "header": "Deep Cleaning / Pest",
+      "hero": "Deep Cleaning / Pest",
+      "description": "Book professional deep cleaning or pest control for your home — thorough, safe, and certified.",
+      "pricing": "₹{{price}} Onwards (based on area)",
+      "pricing_note": "*Pricing depends on the number of rooms and type of cleaning.",
+      "bullet_1": "Full Home Deep Cleaning",
+      "bullet_2": "Kitchen & Bathroom Sanitization",
+      "bullet_3": "Pest Control Treatment",
+      "bullet_4": "Sofa / Carpet / Mattress Cleaning",
+      "upload_title": "Select An Image Of The Area"
+    },
+    "driving_cab": {
+      "header": "Driving / Cab Booking",
+      "hero": "Driver / Cab Booking",
+      "description": "Book a reliable driver or cab for hospital visits, errands, or any destination — safe and comfortable.",
+      "pricing": "₹{{price}} Booking Fee + Distance Fare",
+      "pricing_note": "*Distance fare depends on pickup to drop distance.",
+      "bullet_1": "Door-to-Door Cab Booking",
+      "bullet_2": "Hospital & Clinic Trips",
+      "bullet_3": "Airport Transfers",
+      "bullet_4": "Daily Commute Arrangements",
+      "upload_title": "Select An Image Of Scrap Items"
+    },
+    "grocery_run": {
+      "header": "Grocery Run",
+      "hero": "Grocery Run",
+      "description": "Share your grocery list and our concierge will shop from your nearest store and deliver to your doorstep.",
+      "pricing": "₹{{price}} Delivery Fee + Grocery Bill",
+      "pricing_note": "*Grocery bill is charged separately based on actual market price.",
+      "bullet_1": "Fruits, Vegetables & Dairy",
+      "bullet_2": "Medicines & Pharmacy Items",
+      "bullet_3": "Monthly Ration & Staples",
+      "bullet_4": "Same-Day Delivery Available",
+      "upload_title": "Select An Image Of Scrap Items"
+    },
+    "plumbing_electrical": {
+      "header": "Plumbing & Electrical",
+      "hero": "Plumbing & Electrical",
+      "description": "Book a certified plumber or electrician for pipe leaks, wiring faults, and all home repairs.",
+      "pricing": "₹{{price}} Booking Fee + Vendor's Bill",
+      "pricing_note": "*The vendor's bill depends on the actual work needed.",
+      "bullet_1": "Pipe Leakage & Repair",
+      "bullet_2": "Drainage Cleaning & Unclogging",
+      "bullet_3": "Electrical Wiring & Switchboard",
+      "bullet_4": "Fan & Light Fixture Installation",
+      "upload_title": "Select An Image Of The Issue"
+    },
+    "anything_else": {
+      "header": "Anything Else?",
+      "hero": "Anything Else?",
+      "description": "Need help with something not on our list? Tell us what you need — our team will handle it.",
+      "pricing": "₹{{price}} Concierge Fee (varies by task)",
+      "pricing_note": "*Final price depends on the complexity of the request.",
+      "bullet_1": "Personal Errands & Pickups",
+      "bullet_2": "Form Filling & Documentation",
+      "bullet_3": "Gift Sourcing & Delivery",
+      "bullet_4": "Custom Task Assistance",
+      "upload_title": "Select An Image Of Scrap Items"
+    }
   }
 }

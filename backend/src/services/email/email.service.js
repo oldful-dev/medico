@@ -12,7 +12,7 @@ const prisma = require('../../config/database');
 const ZEPTOMAIL_URL = 'https://api.zeptomail.in/v1.1/email';
 const ZEPTOMAIL_TOKEN = process.env.ZEPTOMAIL_API_KEY;
 const SENDER_EMAIL = process.env.ZEPTOMAIL_SENDER_EMAIL || 'noreply@ayuxacare.com';
-const SENDER_NAME = process.env.ZEPTOMAIL_SENDER_NAME || 'Ayuxa Care';
+const SENDER_NAME = process.env.ZEPTOMAIL_SENDER_NAME || 'Ayuxa Platforms';
 
 let _client = null;
 

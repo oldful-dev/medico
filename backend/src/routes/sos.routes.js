@@ -12,6 +12,9 @@ const { authorize } = require('../middleware/rbac');
 // Trigger SOS Alert
 router.post('/', authenticateUser, ctrl.triggerSOS);
 
+// User's own SOS history
+router.get('/my-alerts', authenticateUser, ctrl.getMySOSAlerts);
+
 // ─── ADMIN ROUTES (Panel) ──────────────────────────────
 // List SOS Alerts
 router.get('/', authenticateAdmin, authorize('CITY_ADMIN', 'SUPER_ADMIN'), ctrl.getSOSAlerts);

@@ -1,10 +1,7 @@
 // Ticket Chat Screen — View messages and reply to a support ticket
 // Uses WebSocket for real-time message delivery from admin
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, TextInput,
-    FlatList, ActivityIndicator, Alert, Platform, Keyboard,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, ActivityIndicator, Alert, Platform, Keyboard, KeyboardAvoidingView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -173,82 +170,88 @@ export default function TicketChatScreen() {
     const bottomPadding = Platform.OS === 'android' ? keyboardHeight : 0;
 
     return (
-        <View style={[styles.screen, { paddingBottom: bottomPadding }]}>
-            <View style={{ backgroundColor: colors.primary, height: insets.top }} />
-            <StatusBar style="light" backgroundColor={colors.primary} />
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
+            <View style={[styles.screen, { paddingBottom: bottomPadding }]}>
+                <View style={{ backgroundColor: colors.primary, height: insets.top }} />
+                <StatusBar style="light" backgroundColor={colors.primary} />
 
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={colors.textWhite} />
-                </TouchableOpacity>
-                <View style={styles.headerCenter}>
-                    <Text style={styles.headerTitle} numberOfLines={1}>{ticket?.subject || 'Ticket'}</Text>
-                    <Text style={styles.headerSubtitle}>{ticket?.ticketCode}</Text>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: statusColor[ticket?.status || 'open'] || '#9B9B9B' }]}>
-                    <Text style={styles.statusText}>{ticket?.status?.replace('_', ' ') || 'open'}</Text>
-                </View>
-            </View>
-
-            {/* Messages — FlatList with description as header */}
-            <FlatList
-                ref={flatListRef}
-                data={messages}
-                keyExtractor={(item) => item.id}
-                renderItem={renderMessage}
-                contentContainerStyle={styles.messagesList}
-                showsVerticalScrollIndicator={false}
-                onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
-                keyboardShouldPersistTaps="handled"
-                ListHeaderComponent={
-                    <View style={styles.descriptionCard}>
-                        <Text style={styles.descLabel}>Description</Text>
-                        <Text style={styles.descText}>{ticket?.description || 'No description provided.'}</Text>
-                        <Text style={styles.descMeta}>
-                            {ticket?.category} · Created {new Date(ticket?.createdAt || '').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </Text>
-                    </View>
-                }
-                ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <Ionicons name="chatbubbles-outline" size={48} color={colors.textMuted} />
-                        <Text style={styles.emptyText}>No messages yet. Start the conversation below.</Text>
-                    </View>
-                }
-            />
-
-            {/* Input bar */}
-            {isResolved ? (
-                <View style={[styles.inputBar, { justifyContent: 'center', paddingBottom: (keyboardHeight === 0 ? (insets.bottom || Spacing.md) : Spacing.sm) }]}>
-                    <Text style={styles.closedText}>This ticket has been {ticket?.status}.</Text>
-                </View>
-            ) : (
-                <View style={[styles.inputBar, { paddingBottom: (keyboardHeight === 0 ? (insets.bottom || Spacing.md) : Spacing.sm) }]}>
-                    <TextInput
-                        style={styles.textInput}
-                        placeholder="Type your message..."
-                        placeholderTextColor={colors.textMuted}
-                        value={messageText}
-                        onChangeText={setMessageText}
-                        multiline
-                        maxLength={2000}
-                        editable={!sending}
-                    />
-                    <TouchableOpacity
-                        style={[styles.sendBtn, (!messageText.trim() || sending) && styles.sendBtnDisabled]}
-                        onPress={handleSend}
-                        disabled={!messageText.trim() || sending}
-                    >
-                        {sending ? (
-                            <ActivityIndicator size="small" color="#fff" />
-                        ) : (
-                            <Ionicons name="send" size={20} color="#fff" />
-                        )}
+                {/* Header */}
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <Ionicons name="arrow-back" size={24} color={colors.textWhite} />
                     </TouchableOpacity>
+                    <View style={styles.headerCenter}>
+                        <Text style={styles.headerTitle} numberOfLines={1}>{ticket?.subject || 'Ticket'}</Text>
+                        <Text style={styles.headerSubtitle}>{ticket?.ticketCode}</Text>
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: statusColor[ticket?.status || 'open'] || '#9B9B9B' }]}>
+                        <Text style={styles.statusText}>{ticket?.status?.replace('_', ' ') || 'open'}</Text>
+                    </View>
                 </View>
-            )}
-        </View>
+
+                {/* Messages — FlatList with description as header */}
+                <FlatList
+                    ref={flatListRef}
+                    data={messages}
+                    keyExtractor={(item) => item.id}
+                    renderItem={renderMessage}
+                    contentContainerStyle={styles.messagesList}
+                    showsVerticalScrollIndicator={false}
+                    onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+                    keyboardShouldPersistTaps="handled"
+                    ListHeaderComponent={
+                        <View style={styles.descriptionCard}>
+                            <Text style={styles.descLabel}>Description</Text>
+                            <Text style={styles.descText}>{ticket?.description || 'No description provided.'}</Text>
+                            <Text style={styles.descMeta}>
+                                {ticket?.category} · Created {new Date(ticket?.createdAt || '').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </Text>
+                        </View>
+                    }
+                    ListEmptyComponent={
+                        <View style={styles.emptyContainer}>
+                            <Ionicons name="chatbubbles-outline" size={48} color={colors.textMuted} />
+                            <Text style={styles.emptyText}>No messages yet. Start the conversation below.</Text>
+                        </View>
+                    }
+                />
+
+                {/* Input bar */}
+                {isResolved ? (
+                    <View style={[styles.inputBar, { justifyContent: 'center', paddingBottom: (keyboardHeight === 0 ? (insets.bottom || Spacing.md) : Spacing.sm) }]}>
+                        <Text style={styles.closedText}>This ticket has been {ticket?.status}.</Text>
+                    </View>
+                ) : (
+                    <View style={[styles.inputBar, { paddingBottom: (keyboardHeight === 0 ? (insets.bottom || Spacing.md) : Spacing.sm) }]}>
+                        <TextInput
+                            style={styles.textInput}
+                            placeholder="Type your message..."
+                            placeholderTextColor={colors.textMuted}
+                            value={messageText}
+                            onChangeText={setMessageText}
+                            multiline
+                            maxLength={2000}
+                            editable={!sending}
+                        />
+                        <TouchableOpacity
+                            style={[styles.sendBtn, (!messageText.trim() || sending) && styles.sendBtnDisabled]}
+                            onPress={handleSend}
+                            disabled={!messageText.trim() || sending}
+                        >
+                            {sending ? (
+                                <ActivityIndicator size="small" color="#fff" />
+                            ) : (
+                                <Ionicons name="send" size={20} color="#fff" />
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                )}
+            </View>
+        </KeyboardAvoidingView>
     );
 }
 

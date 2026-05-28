@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity,
-    TextInput, Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -176,6 +173,7 @@ export default function MeetupRegisterScreen() {
                 ))}
             </View>
 
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <KeyboardAwareScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                 {/* Personal Details */}
@@ -286,6 +284,7 @@ export default function MeetupRegisterScreen() {
 
                 <View style={{ height: 20 }} />
             </KeyboardAwareScrollView>
+        </KeyboardAvoidingView>
 
             {/* Continue button */}
             <View style={[makeStyles(isDarkMode, colors).footer, { paddingBottom: insets.bottom + 12 }]}>

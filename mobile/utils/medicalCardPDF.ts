@@ -1,6 +1,6 @@
 /**
  * Medical Card PDF Generator
- * Generates a professional PDF with user's medical information
+ * Generates a professional PDF with user's medical information matching the official AYUXA design
  */
 
 interface MedicalCardData {
@@ -22,7 +22,6 @@ interface MedicalCardData {
 
 /**
  * Generate HTML content for medical card PDF
- * Can be rendered to PDF on native side
  */
 export function generateMedicalCardHTML(data: MedicalCardData): string {
     const formatDate = (iso?: string) => {
@@ -30,48 +29,47 @@ export function generateMedicalCardHTML(data: MedicalCardData): string {
         try {
             return new Date(iso).toLocaleDateString('en-IN', {
                 day: '2-digit',
-                month: 'short',
+                month: '2-digit',
                 year: 'numeric',
-            });
+            }).replace(/\//g, '/');
         } catch {
             return iso;
         }
     };
 
-    const emergencyContactsHTML = (data.emergencyContacts || [])
-        .map(
-            (contact) => `
-        <div class="contact-item">
-            <div class="contact-name">${contact.name}</div>
-            <div class="contact-details">
-                ${contact.relationship} • ${contact.phone}
-            </div>
-        </div>
-    `
-        )
-        .join('');
+    const primaryContact = data.emergencyContacts?.[0];
 
-    const allergiesHTML =
-        data.allergies && data.allergies.length > 0
-            ? data.allergies.map((a) => `<span class="tag">${a}</span>`).join('')
-            : '<span class="text-muted">None recorded</span>';
+    const foodKeywords = ['wheat', 'peanut', 'egg', 'milk', 'soy', 'gluten', 'shellfish', 'nut', 'food'];
+    const allAllergies = data.allergies || [];
+    const foodAllergies = allAllergies.filter(a => foodKeywords.some(k => a.toLowerCase().includes(k)));
+    const medicineAllergies = allAllergies.filter(a => !foodKeywords.some(k => a.toLowerCase().includes(k)));
 
-    const conditionsHTML =
-        data.chronicConditions && data.chronicConditions.length > 0
-            ? data.chronicConditions.map((c) => `<span class="tag">${c}</span>`).join('')
-            : '<span class="text-muted">None recorded</span>';
-
-    const medicationsHTML =
-        data.currentMedications && data.currentMedications.length > 0
-            ? data.currentMedications
-                  .map((m) => `<div class="medication-item">• ${m}</div>`)
-                  .join('')
-            : '<div class="text-muted">None recorded</div>';
+    const foodAllergiesStr = foodAllergies.join(', ') || 'None';
+    const medicineAllergiesStr = medicineAllergies.join(', ') || 'None';
+    const medicationsStr = (data.currentMedications || []).join(', ') || 'None';
+    const conditionsStr = (data.chronicConditions || []).join(', ') || 'None';
 
     const address = data.addresses?.[0];
     const addressHTML = address
         ? `${address.line1}, ${address.cityName}, ${address.state} ${address.pincode}`
         : 'N/A';
+
+    const getOrdinalSuffix = (d: number) => {
+        if (d > 3 && d < 21) return 'th';
+        switch (d % 10) {
+            case 1:  return 'st';
+            case 2:  return 'nd';
+            case 3:  return 'rd';
+            default: return 'th';
+        }
+    };
+
+    const now = new Date();
+    const day = now.getDate();
+    const monthStr = now.toLocaleDateString('en-GB', { month: 'long' });
+    const year = now.getFullYear();
+    const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const generationDateStr = `${day}${getOrdinalSuffix(day)} ${monthStr} ${year} at ${timeStr}`;
 
     return `
 <!DOCTYPE html>
@@ -87,271 +85,240 @@ export function generateMedicalCardHTML(data: MedicalCardData): string {
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f5f5f5;
-            padding: 20px;
+            background: #ffffff;
+            padding: 40px;
+            color: #2D3748;
         }
         .container {
-            max-width: 900px;
+            max-width: 800px;
             margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            overflow: hidden;
         }
         .header {
-            background: linear-gradient(135deg, #02743F 0%, #048357 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        .header-title {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        .header-subtitle {
-            font-size: 14px;
-            opacity: 0.9;
-            margin-bottom: 4px;
-        }
-        .header-id {
-            font-size: 12px;
-            opacity: 0.8;
-            font-family: 'Courier New', monospace;
-        }
-        .content {
-            padding: 30px;
-        }
-        .section {
-            margin-bottom: 28px;
-            page-break-inside: avoid;
-        }
-        .section-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: #02743F;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #E8F5E9;
-        }
-        .row {
             display: flex;
-            margin-bottom: 12px;
-            gap: 30px;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            margin-bottom: 24px;
+            border-bottom: 1.5px solid #E2E8F0;
         }
-        .col {
-            flex: 1;
+        .logo-section {
+            display: flex;
+            align-items: center;
         }
-        .field-label {
-            font-size: 12px;
-            color: #666;
+        .logo-img {
+            height: 44px;
+            margin-right: 12px;
+        }
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+            border-left: 1.5px solid #E2E8F0;
+            padding-left: 12px;
+        }
+        .brand-name {
+            font-size: 28px;
+            font-weight: 800;
+            color: #0E6E45;
+            line-height: 1;
+            letter-spacing: 0.5px;
+        }
+        .brand-sub {
+            font-size: 7px;
+            color: #718096;
+            letter-spacing: 1px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
+            margin-top: 3px;
         }
-        .field-value {
+        .header-right {
             font-size: 15px;
-            color: #2F2F2F;
-            font-weight: 500;
+            font-weight: 700;
+            color: #2D3748;
         }
-        .text-muted {
-            color: #999;
-            font-style: italic;
+        .card-title {
+            font-weight: 700;
         }
-        .tags-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
+        .card-id {
+            color: #2D3748;
         }
-        .tag {
-            background: #E8F5E9;
-            color: #02743F;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 500;
+        .id-val {
+            color: #DC2626;
+            font-weight: 800;
         }
-        .medication-item {
+        .section {
+            margin-bottom: 22px;
+        }
+        .section-header {
+            background-color: #387B57;
+            color: white;
             font-size: 14px;
-            color: #2F2F2F;
+            font-weight: 700;
+            padding: 8px 14px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+        .section-content {
+            padding-left: 6px;
+        }
+        .field-row {
             margin-bottom: 6px;
-            line-height: 1.5;
-        }
-        .contact-item {
-            background: #F9F9F9;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            border-left: 3px solid #02743F;
-        }
-        .contact-name {
-            font-weight: 600;
-            color: #2F2F2F;
             font-size: 14px;
+            color: #2D3748;
         }
-        .contact-details {
+        .label {
+            color: #1D809F;
+            font-weight: 700;
+        }
+        .value {
+            color: #2D3748;
+            font-weight: 500;
+        }
+        .value-red {
+            color: #DC2626;
+            font-weight: 700;
+        }
+        .notes-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #2D3748;
+        }
+        .footer-note {
             font-size: 12px;
-            color: #666;
-            margin-top: 2px;
-        }
-        .footer {
-            background: #F9F9F9;
-            padding: 20px 30px;
-            text-align: center;
-            border-top: 1px solid #E5E5E5;
-            font-size: 11px;
-            color: #999;
+            color: #2D3748;
+            text-align: left;
             margin-top: 30px;
+            font-weight: 500;
         }
-        .print-note {
+        .note-red {
+            color: #DC2626;
+            font-weight: 600;
+        }
+        .decorator-container {
             text-align: center;
-            color: #999;
-            font-size: 12px;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #E5E5E5;
-        }
-        @media print {
-            body {
-                background: white;
-                padding: 0;
-            }
-            .container {
-                box-shadow: none;
-                border-radius: 0;
-            }
-            .print-note {
-                display: none;
-            }
+            margin-top: 40px;
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Header -->
         <div class="header">
-            <div class="header-title">Medical Card</div>
-            <div class="header-subtitle">${data.name}</div>
-            <div class="header-id">AYUXA ID: ${data.uniqueUserId}</div>
-        </div>
-
-        <div class="content">
-            <!-- Personal Information -->
-            <div class="section">
-                <div class="section-title">Personal Information</div>
-                <div class="row">
-                    <div class="col">
-                        <div class="field-label">Full Name</div>
-                        <div class="field-value">${data.name}</div>
-                    </div>
-                    <div class="col">
-                        <div class="field-label">AYUXA Client ID</div>
-                        <div class="field-value">${data.uniqueUserId}</div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col">
-                        <div class="field-label">Phone</div>
-                        <div class="field-value">${data.phone}</div>
-                    </div>
-                    <div class="col">
-                        <div class="field-label">Email</div>
-                        <div class="field-value">${data.email || 'N/A'}</div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col">
-                        <div class="field-label">Date of Birth</div>
-                        <div class="field-value">${formatDate(data.dateOfBirth)}</div>
-                    </div>
-                    <div class="col">
-                        <div class="field-label">Gender</div>
-                        <div class="field-value">${data.gender || 'N/A'}</div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col">
-                        <div class="field-label">Address</div>
-                        <div class="field-value">${addressHTML}</div>
-                    </div>
+            <div class="logo-section">
+                <img src="https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/onlylogo.png" class="logo-img" />
+                <div class="logo-text">
+                    <span class="brand-name">AYUXA</span>
+                    <span class="brand-sub">Your Health, Synchronized</span>
                 </div>
             </div>
-
-            <!-- Blood Group & Emergency -->
-            <div class="section">
-                <div class="section-title">Blood Group & Emergency</div>
-                <div class="row">
-                    <div class="col">
-                        <div class="field-label">Blood Group</div>
-                        <div class="field-value" style="font-size: 20px; color: #DC2626; font-weight: 700;">
-                            ${data.bloodGroup || 'Not recorded'}
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="field-label">Primary Doctor</div>
-                        <div class="field-value">${data.primaryDoctor || 'Not assigned'}</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Medical History -->
-            <div class="section">
-                <div class="section-title">Medical History</div>
-
-                <div style="margin-bottom: 16px;">
-                    <div class="field-label">Allergies</div>
-                    <div class="tags-container">${allergiesHTML}</div>
-                </div>
-
-                <div style="margin-bottom: 16px;">
-                    <div class="field-label">Existing Conditions</div>
-                    <div class="tags-container">${conditionsHTML}</div>
-                </div>
-
-                <div>
-                    <div class="field-label">Current Medications</div>
-                    ${medicationsHTML}
-                </div>
-            </div>
-
-            <!-- Emergency Contacts -->
-            ${
-                emergencyContactsHTML
-                    ? `
-            <div class="section">
-                <div class="section-title">Emergency Contacts</div>
-                ${emergencyContactsHTML}
-            </div>
-            `
-                    : ''
-            }
-
-            <!-- Insurance Information -->
-            ${
-                data.insuranceInfo
-                    ? `
-            <div class="section">
-                <div class="section-title">Insurance Information</div>
-                <div class="field-value">${data.insuranceInfo}</div>
-            </div>
-            `
-                    : ''
-            }
-
-            <div class="print-note">
-                Generated on ${new Date().toLocaleDateString('en-IN', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                })}
+            <div class="header-right">
+                <span class="card-title">AYUXA MEDICAL CARD. </span>
+                <span class="card-id">ID: <span class="id-val">${data.uniqueUserId}</span></span>
             </div>
         </div>
 
-        <div class="footer">
-            This is an official AYUXA medical card for emergency reference.
-            Keep a digital and printed copy with you at all times.
+        <!-- Personal Detail -->
+        <div class="section">
+            <div class="section-header">Personal Detail</div>
+            <div class="section-content">
+                <div class="field-row"><span class="label">Name:</span> <span class="value">${data.name}</span></div>
+                <div class="field-row"><span class="label">Address:</span> <span class="value">${addressHTML}</span></div>
+                <div class="field-row"><span class="label">DOB:</span> <span class="value">${formatDate(data.dateOfBirth)}</span></div>
+                <div class="field-row"><span class="label">Gender:</span> <span class="value">${data.gender || 'N/A'}</span></div>
+                <div class="field-row"><span class="label">Phone:</span> <span class="value">${data.phone}</span></div>
+                <div class="field-row"><span class="label">Email:</span> <span class="value">${data.email || 'N/A'}</span></div>
+            </div>
+        </div>
+
+        <!-- Blood Group & Emergency -->
+        <div class="section">
+            <div class="section-header">Blood Group & Emergency</div>
+            <div class="section-content">
+                <div class="field-row">
+                    <span class="label">Blood Group:</span> 
+                    <span class="value-red">${data.bloodGroup || 'Not recorded'}</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">Emergency Contact:</span> 
+                    <span class="value">${primaryContact ? primaryContact.phone : 'N/A'}</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">Relation:</span> 
+                    <span class="value">${primaryContact ? primaryContact.relationship : 'N/A'}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Medicine Allergies -->
+        <div class="section">
+            <div class="section-header">Medicine Allergies</div>
+            <div class="section-content">
+                <div class="field-row">
+                    <span class="label">Medicine Allergies:</span> 
+                    <span class="value">${medicineAllergiesStr}</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">Food Allergies:</span> 
+                    <span class="value">${foodAllergiesStr}</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">Current Medications:</span> 
+                    <span class="value">${medicationsStr}</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">Existing Conditions:</span> 
+                    <span class="value">${conditionsStr}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Insurance Provider -->
+        <div class="section">
+            <div class="section-header">Insurance Provider</div>
+            <div class="section-content">
+                <div class="field-row">
+                    <span class="label">Insurance Provider:</span> 
+                    <span class="value">${data.insuranceInfo || 'None'}</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">Broker:</span> 
+                    <span class="value">Ayuxa Platforms</span>
+                </div>
+                <div class="field-row">
+                    <span class="label">Type:</span> 
+                    <span class="value">${data.insuranceInfo ? 'Personal / Family' : 'None'}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Health Notes -->
+        <div class="section">
+            <div class="section-header">Additional Health Notes</div>
+            <div class="section-content">
+                <div class="notes-text">None</div>
+            </div>
+        </div>
+
+        <!-- Footer Note -->
+        <div class="footer-note">
+            <span class="note-red">Note:</span> This medical card is generated based on self reported health data provided by the user within the Ayuxa mobile application. <span class="note-red">Generated On: ${generationDateStr}</span>
+        </div>
+
+        <!-- Decorator -->
+        <div class="decorator-container">
+            <svg height="24" width="400" style="margin: 0 auto; display: block;">
+                <!-- Left Line -->
+                <line x1="0" y1="12" x2="160" y2="12" style="stroke:#E28743; stroke-width:1.5" />
+                <!-- Left Curly loop -->
+                <path d="M 160 12 C 165 7, 168 7, 172 12 C 176 17, 179 17, 184 12" fill="none" style="stroke:#E28743; stroke-width:1.5" />
+                <!-- Center Diamonds -->
+                <polygon points="190,12 195,7 200,12 195,17" style="fill:#E28743;" />
+                <polygon points="202,12 207,7 212,12 207,17" style="fill:#E28743;" />
+                <polygon points="214,12 219,7 224,12 219,17" style="fill:#E28743;" />
+                <!-- Right Curly loop -->
+                <path d="M 230 12 C 235 7, 238 7, 242 12 C 246 17, 249 17, 254 12" fill="none" style="stroke:#E28743; stroke-width:1.5" />
+                <!-- Right Line -->
+                <line x1="254" y1="12" x2="400" y2="12" style="stroke:#E28743; stroke-width:1.5" />
+            </svg>
         </div>
     </div>
 </body>

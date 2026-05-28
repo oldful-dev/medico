@@ -12,6 +12,7 @@ import { apiClient, ApiResponse } from './apiClient';
 export interface Plan {
     id: string;
     name: string;             // Basic Care, Care Plus, Premium Care
+    planType?: string;        // 'CARE', 'HOMEMAKER'
     description?: string;
     benefits?: string;
     quarterlyPrice: number;
@@ -22,6 +23,15 @@ export interface Plan {
 }
 
 export type BillingCycle = 'QUARTERLY' | 'BIANNUAL' | 'YEARLY';
+
+export interface ActiveSubscription {
+    id: string;
+    planId: string;
+    planName: string;
+    planType?: string;
+    expiryDate: string;
+    autoRenew: boolean;
+}
 
 export interface InitiateSubscriptionPayload {
     planId: string;

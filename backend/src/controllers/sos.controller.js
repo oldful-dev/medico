@@ -447,10 +447,33 @@ const updateSOSNotification = async (req, res) => {
     }
 };
 
-module.exports = { 
-    triggerSOS, 
-    getSOSAlerts, 
-    assignResponder, 
-    resolveSOS, 
-    updateSOSNotification 
+/**
+ * GET /api/sos/my-alerts
+ * Returns the authenticated user's own SOS alert history.
+ */
+const getMySOSAlerts = async (req, res) => {
+    try {
+        const alerts = await prisma.sOSAlert.findMany({
+            where: { userId: req.user.id },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                responder: {
+                    select: { id: true, name: true, phone: true, specialization: true, profileImageUrl: true },
+                },
+            },
+        });
+        res.json({ success: true, data: alerts });
+    } catch (err) {
+        logger.error('Failed to fetch user SOS alerts:', err);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+};
+
+module.exports = {
+    triggerSOS,
+    getSOSAlerts,
+    assignResponder,
+    resolveSOS,
+    updateSOSNotification,
+    getMySOSAlerts,
 };

@@ -375,12 +375,13 @@ const DEFAULT_CONFIG = {
 
         // ── Help & Support Screen ──────────────────────────────────────────
         help_support: {
-            phone: '+919480198108',
+            phone: '080-4728-0789',
             whatsapp_url: 'https://wa.me/919480198108',
             page_description: 'Our support team is available to help with bookings, services, and payments.',
             contacts: [
-                { id: 'customer_support', label: 'Customer Support', phone: '+91 94801 98108', email: 'support@ayuxa.com',      name: null },
-                { id: 'grievance',        label: 'Grievance Officer', phone: null,              email: 'compliance@ayuxa.com', name: 'SK Murgan' },
+                { id: 'customer_support', label: 'Customer Support', phone: '080-4728-0789', email: 'support@ayuxacare.com',      name: null },
+                { id: 'backend_operations', label: 'Backend Operations', phone: '+91 94801-98108', email: 'support@ayuxacare.com', name: null },
+                { id: 'grievance',        label: 'Grievance Officer', phone: null,              email: 'compliance@ayuxacare.com', name: 'SK Murgan' },
             ],
             ticket_categories: [
                 { id: 'billing',    label: 'Billing',    sort_order: 1 },
@@ -407,6 +408,11 @@ const DEFAULT_CONFIG = {
                 { id: 'lab',      q: 'How can I get my lab reports?',   a: 'Reports appear in My Health → Prescriptions and are sent via WhatsApp/Email.',                        sort_order: 3 },
                 { id: 'refund',   q: 'What is the refund policy?',      a: 'Cancel 2 hours before the slot for a full refund. Settlement takes 5–7 business days.',               sort_order: 4 },
                 { id: 'contacts', q: 'How to add emergency contacts?',  a: 'Go to My Profile → Emergency Contacts.',                                                              sort_order: 5 },
+                { id: 'reschedule', q: 'How do I reschedule a service booking?', a: 'Go to My Bookings, select your active booking, and tap Reschedule, or chat/call our support team.', sort_order: 6 },
+                { id: 'family',   q: 'Can I book services for family members?', a: 'Yes, you can add family members under My Profile → Family Members and select them when making a booking.', sort_order: 7 },
+                { id: 'caregivers', q: 'Are caregivers verified?',      a: 'Yes, all our caregivers and support buddies undergo background verification, screening, and basic medical training.', sort_order: 8 },
+                { id: 'membership', q: 'How do I upgrade to a premium plan?', a: 'Navigate to My Profile → Subscription & Membership, select your preferred plan, and proceed to checkout.', sort_order: 9 },
+                { id: 'emergency', q: 'What should I do in a medical emergency?', a: 'For life-threatening emergencies, call national emergency lines immediately. Tap the SOS Assist button on our app to alert our local response team and your emergency contacts.', sort_order: 10 },
             ],
         },
     },

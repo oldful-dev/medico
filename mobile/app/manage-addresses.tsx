@@ -1,8 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, TextInput,
-    Alert, Platform, ActivityIndicator, ScrollView,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, ActivityIndicator, ScrollView, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -404,6 +401,7 @@ export default function ManageAddressesScreen() {
                 </View>
             </SafeAreaView>
 
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <KeyboardAwareScrollView style={dynamicStyles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} enableOnAndroid={true} extraScrollHeight={20} keyboardShouldPersistTaps="handled">
 
                 {/* ═════════════════════════════════════════
@@ -664,6 +662,7 @@ export default function ManageAddressesScreen() {
 
                 <View style={{ height: 30 }} />
             </KeyboardAwareScrollView>
+        </KeyboardAvoidingView>
 
             {/* Location Picker Modal */}
             <LocationPickerModal

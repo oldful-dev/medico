@@ -28,7 +28,7 @@ const layout = (content) => `
         <!-- Header -->
         <tr>
           <td style="background-color:${PRIMARY};padding:24px 32px;">
-            <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:0.3px;">Ayuxa Care</h1>
+            <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:0.3px;">Ayuxa Platforms</h1>
             <p style="margin:4px 0 0;color:#a8d8c0;font-size:13px;">Making Elder Care Better</p>
           </td>
         </tr>
@@ -43,8 +43,9 @@ const layout = (content) => `
         <!-- Footer -->
         <tr>
           <td style="background-color:#f9f9f9;padding:20px 32px;border-top:1px solid #eee;text-align:center;">
-            <p style="margin:0;font-size:12px;color:#999;">© ${new Date().getFullYear()} Ayuxa Care Pvt Ltd. All rights reserved.</p>
-            <p style="margin:4px 0 0;font-size:12px;color:#bbb;">Bangalore, Karnataka, India | care@ayuxacare.com</p>
+            <p style="margin:0;font-size:12px;color:#999;">© 2006 Ayuxa Platforms. All Rights Reserved.</p>
+            <p style="margin:4px 0 0;font-size:12px;color:#bbb;">Bangalore | Karnataka | India</p>
+            <p style="margin:4px 0 0;font-size:12px;color:#bbb;"><a href="mailto:support@ayuxacare.com" style="color:#bbb;text-decoration:none;">support@ayuxacare.com</a></p>
           </td>
         </tr>
 
@@ -62,11 +63,11 @@ const EMAIL_TEMPLATES = {
     // ─── Onboarding ───────────────────────────
 
     WELCOME: {
-        subject: (vars) => `Welcome to Ayuxa Care, ${vars.name}!`,
+        subject: (vars) => `Welcome to Ayuxa Platforms, ${vars.name}!`,
         html: (vars) => layout(`
             <h2 style="margin:0 0 8px;color:${PRIMARY};font-size:20px;">Welcome, ${vars.name}! 🎉</h2>
             <p style="margin:0 0 20px;color:#555;font-size:15px;line-height:1.6;">
-                Your Ayuxa Care account is ready. You now have access to premium elder care services at your doorstep.
+                Your Ayuxa Platforms account is ready. You now have access to premium elder care services at your doorstep.
             </p>
             <div style="background:${BG};border:1px solid #c9e9d8;border-radius:8px;padding:20px;margin-bottom:24px;">
                 <p style="margin:0 0 8px;font-size:14px;color:#333;"><strong>Your Ayuxa ID:</strong></p>
@@ -108,7 +109,7 @@ const EMAIL_TEMPLATES = {
                     </tr>` : ''}
                 </table>
             </div>
-            <p style="margin:0;color:#777;font-size:13px;">Need help? Call us at <a href="tel:+919480198108" style="color:${PRIMARY};">+91 94801 98108</a> or reply to this email.</p>
+            <p style="margin:0;color:#777;font-size:13px;">Need help? Contact <a href="mailto:support@ayuxacare.com" style="color:${PRIMARY};">support@ayuxacare.com</a> or call us at <a href="tel:080-4728-0789" style="color:${PRIMARY};">080-4728-0789</a>.</p>
         `),
     },
 
@@ -141,7 +142,7 @@ const EMAIL_TEMPLATES = {
             <table cellpadding="0" cellspacing="0" style="margin-bottom:20px;"><tr><td style="background-color:${PRIMARY};border-radius:6px;">
                 <a href="${vars.invoicePdfUrl}" style="display:inline-block;padding:12px 28px;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;">Download GST Invoice</a>
             </td></tr></table>` : ''}
-            <p style="margin:0;color:#777;font-size:13px;">Keep this email as your payment confirmation. For any issues, contact <a href="tel:+919480198108" style="color:${PRIMARY};">+91 94801 98108</a>.</p>
+            <p style="margin:0;color:#777;font-size:13px;">Keep this email as your payment confirmation. For any issues, contact <a href="mailto:support@ayuxacare.com" style="color:${PRIMARY};">support@ayuxacare.com</a> or call <a href="tel:080-4728-0789" style="color:${PRIMARY};">080-4728-0789</a>.</p>
         `),
     },
 
@@ -251,10 +252,10 @@ const EMAIL_TEMPLATES = {
     },
 
     CAREERS_APPLICANT_CONFIRM: {
-        subject: (vars) => `Application Received: ${vars.role} at Ayuxa Care`,
+        subject: (vars) => `Application Received: ${vars.role} at Ayuxa Platforms`,
         html: (vars) => layout(`
             <h2 style="margin:0 0 8px;color:${PRIMARY};font-size:20px;">Application Received! 🙌</h2>
-            <p style="margin:0 0 20px;color:#555;font-size:15px;">Hi ${vars.name}, thank you for your interest in joining Ayuxa Care.</p>
+            <p style="margin:0 0 20px;color:#555;font-size:15px;">Hi ${vars.name}, thank you for your interest in joining Ayuxa Platforms.</p>
             <p style="margin:0 0 20px;color:#555;font-size:14px;line-height:1.6;">
                 We've received your application for the <strong>${vars.role}</strong> position. Our talent team is reviewing your profile and will reach out if your qualifications match our needs.
             </p>

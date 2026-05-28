@@ -1,14 +1,7 @@
 // OTP Verification Screen — Pixel-matched to Figma frame "OTP Verifiication" (4:4)
 // Layout: Back arrow + Help header, title/phone, OTP boxes, resend row
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
-    Platform,
-    Alert,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';

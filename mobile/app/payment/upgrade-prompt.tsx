@@ -33,6 +33,7 @@ export default function UpgradePromptScreen() {
         amount: string;
         label: string;
         discount?: string;
+        checkoutRoute?: string;
     }>();
 
     const serviceCharge = parseFloat(params.amount || '0');
@@ -92,13 +93,15 @@ export default function UpgradePromptScreen() {
                 bookingPayload: params.bookingPayload,
                 amount: params.amount,
                 label: params.label,
+                checkoutRoute: params.checkoutRoute || '/payment/checkout',
             }
         });
     };
 
     const handleNoUpgrade = () => {
+        const targetRoute = params.checkoutRoute || '/payment/checkout';
         router.push({
-            pathname: '/payment/checkout',
+            pathname: targetRoute as any,
             params: {
                 bookingPayload: params.bookingPayload,
                 amount: params.amount,

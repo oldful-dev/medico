@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput,
-    ActivityIndicator, Modal,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput, ActivityIndicator, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,7 +41,19 @@ export default function BloodTestScheduleScreen() {
     const [selectedAddress, setSelectedAddress] = useState('');
     const [pincode, setPincode] = useState('');
     const [landmark, setLandmark] = useState('');
-    const [phoneNumber, setPhoneNumber] = useState(profile?.phone || '');
+    const [phoneNumber, setPhoneNumber] = useState(
+        profile?.phone
+            ? (profile.phone.startsWith('+91') ? profile.phone.slice(3) : profile.phone)
+            : ''
+    );
+
+    useEffect(() => {
+        if (profile?.phone && !phoneNumber) {
+            const cleanPhone = profile.phone.startsWith('+91') ? profile.phone.slice(3) : profile.phone;
+            setPhoneNumber(cleanPhone);
+        }
+    }, [profile?.phone]);
+
     const [serviceabilityStatus, setServiceabilityStatus] = useState<'unchecked' | 'checking' | 'serviceable' | 'non-serviceable'>('unchecked');
     const [detectingLocation, setDetectingLocation] = useState(false);
     const [locationPickerVisible, setLocationPickerVisible] = useState(false);
@@ -262,7 +271,7 @@ export default function BloodTestScheduleScreen() {
                     name: profile?.name || '',
                     age: 30,
                     gender: profile?.gender || 'M',
-                    phone: phoneNumber,
+                    phone: phoneNumber.startsWith('+91') ? phoneNumber : `+91${phoneNumber}`,
                 },
                 address: {
                     lat: coords.lat,
@@ -632,14 +641,22 @@ export default function BloodTestScheduleScreen() {
                 </View>
 
                 {/* Phone */}
-                <TextInput
-                    placeholder="Phone Number"
-                    placeholderTextColor={TEXT_MUTED}
-                    value={phoneNumber}
-                    onChangeText={setPhoneNumber}
-                    keyboardType="phone-pad"
-                    style={styles.input}
-                />
+                <View style={styles.phoneInputContainer}>
+                    <Text style={styles.phonePrefix}>+91</Text>
+                    <View style={styles.phoneDivider} />
+                    <TextInput
+                        placeholder="Phone Number"
+                        placeholderTextColor={TEXT_MUTED}
+                        value={phoneNumber.startsWith('+91') ? phoneNumber.slice(3) : phoneNumber}
+                        onChangeText={(val) => {
+                            const cleanVal = val.replace(/\D/g, '').slice(0, 10);
+                            setPhoneNumber(cleanVal);
+                        }}
+                        keyboardType="phone-pad"
+                        style={styles.phoneInput}
+                        maxLength={10}
+                    />
+                </View>
             </View>
             )}
         </ScrollView>
@@ -694,7 +711,7 @@ export default function BloodTestScheduleScreen() {
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}>
+        <KeyboardAvoidingView style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} />
 
             {/* Header */}
@@ -743,7 +760,7 @@ export default function BloodTestScheduleScreen() {
             {getStepContent()}
 
             {/* Footer Button */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: 12 + insets.bottom }]}>
                 {step > 1 && (
                     <TouchableOpacity
                         style={styles.backButton}
@@ -794,7 +811,7 @@ export default function BloodTestScheduleScreen() {
                 initialLat={parseFloat(coords.lat)}
                 initialLng={parseFloat(coords.long)}
             />
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 
@@ -1075,6 +1092,34 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
         fontSize: 14,
         color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
         backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+    },
+    phoneInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        marginBottom: 10,
+    },
+    phonePrefix: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
+        paddingRight: 8,
+    },
+    phoneDivider: {
+        width: 1,
+        height: 16,
+        backgroundColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
+        marginRight: 8,
+    },
+    phoneInput: {
+        flex: 1,
+        paddingVertical: 10,
+        fontSize: 14,
+        color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
     },
     summaryCard: {
         backgroundColor: LIGHT_GREEN_BG,

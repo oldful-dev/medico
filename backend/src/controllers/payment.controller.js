@@ -337,23 +337,23 @@ const verifyPayment = async (req, res, next) => {
                 data: { type: 'subscription_activated', subscriptionId: subscription.id },
             });
 
-            // WhatsApp BOOKING_CONFIRMED (reuse — plan activation) + DLT SMS ORDER_CONFIRMED
+            // WhatsApp PAYMENT_RECEIVED + DLT SMS PAYMENT_RECEIVED — non-fatal
             if (payment.user?.phone) {
-                const { sendBookingConfirmed } = require('../services/whatsapp');
+                const { sendPaymentReceived } = require('../services/whatsapp');
                 const { sendSMS } = require('../services/sms');
-                await sendBookingConfirmed({
+                await sendPaymentReceived({
                     phone: payment.user.phone,
                     name: payment.user.name,
-                    orderId: subscription.id,
+                    amount: parseFloat(payment.amount).toFixed(2),
                     userId: payment.userId,
-                }).catch(err => logger.warn('subscription WA BOOKING_CONFIRMED failed (non-fatal):', err.message));
+                }).catch(err => logger.warn('subscription WA PAYMENT_RECEIVED failed (non-fatal):', err.message));
                 if (payment.user.smsEnabled !== false) {
                     await sendSMS({
-                        template: 'ORDER_CONFIRMED',
+                        template: 'PAYMENT_RECEIVED',
                         mobile: payment.user.phone,
-                        variables: [payment.user.name, subscription.id, process.env.SUPPORT_PHONE || '9480198108'],
+                        variables: [payment.user.name, parseFloat(payment.amount).toFixed(2)],
                         userId: payment.userId,
-                    }).catch(err => logger.warn('subscription ORDER_CONFIRMED SMS failed (non-fatal):', err.message));
+                    }).catch(err => logger.warn('subscription PAYMENT_RECEIVED SMS failed (non-fatal):', err.message));
                 }
             }
         }

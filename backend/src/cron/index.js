@@ -6,7 +6,7 @@ const cron = require('node-cron');
 const prisma = require('../config/database');
 const { logger } = require('../config/logger');
 const { sendExpiryReminder } = require('../utils/notifications');
-const { sendPlanExpiryFamily, sendHealthCheckFamily, sendBookingConfirmed, sendSOSAlertOps } = require('../services/whatsapp');
+const { sendPlanExpiryFamily, sendHealthCheckFamily, sendPaymentReceived, sendSOSAlertOps } = require('../services/whatsapp');
 const { calculateExpiryDate } = require('../utils/helpers');
 const { sendSMS } = require('../services/sms');
 
@@ -146,19 +146,19 @@ const initCronJobs = () => {
                     data: { status: 'EXPIRED' },
                 });
 
-                // Notify user — WhatsApp BOOKING_CONFIRMED + DLT SMS ORDER_CONFIRMED
+                // Notify user — WhatsApp PAYMENT_RECEIVED + DLT SMS PAYMENT_RECEIVED
                 if (sub.user?.phone) {
-                    sendBookingConfirmed({
+                    sendPaymentReceived({
                         phone: sub.user.phone,
                         name: sub.user.name,
-                        orderId: newSub.id,
+                        amount: parseFloat(amount).toFixed(2),
                         userId: sub.userId,
                     }).catch(() => {});
                     if (sub.user.smsEnabled !== false) {
                         sendSMS({
-                            template: 'ORDER_CONFIRMED',
+                            template: 'PAYMENT_RECEIVED',
                             mobile: sub.user.phone,
-                            variables: [sub.user.name, newSub.id, process.env.SUPPORT_PHONE || '9480198108'],
+                            variables: [sub.user.name, parseFloat(amount).toFixed(2)],
                             userId: sub.userId,
                         }).catch(() => {});
                     }

@@ -1,15 +1,5 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    Image,
-    TouchableOpacity,
-    StyleSheet,
-    Platform,
-    Alert,
-    ActivityIndicator,
-    Linking,
-} from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Platform, Alert, ActivityIndicator, Linking, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -157,7 +147,8 @@ export default function BookNursingCareScreen() {
 
                 {/* ─── Main Content Card (Cream Background with Top Radius) ─── */}
                 <View style={[dynamicStyles.contentCard, { backgroundColor: isDarkMode ? '#252525' : '#FDFDE8' }]}>
-                    <KeyboardAwareScrollView
+                    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <KeyboardAwareScrollView
                         style={dynamicStyles.scrollView}
                         contentContainerStyle={dynamicStyles.scrollContent}
                         showsVerticalScrollIndicator={false}
@@ -353,6 +344,7 @@ export default function BookNursingCareScreen() {
                             />
                         </View>
                     </KeyboardAwareScrollView>
+        </KeyboardAvoidingView>
 
                     {/* ─── Fixed Normal Bottom Bar ─── */}
                     <View style={[dynamicStyles.bottomBarContainer, { paddingBottom: insets.bottom || 20, backgroundColor: isDarkMode ? '#252525' : '#FDFDE8' }]}>

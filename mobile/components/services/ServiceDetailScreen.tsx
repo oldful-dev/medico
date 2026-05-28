@@ -33,6 +33,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { Colors, Fonts, FontSize, Radius, Shadow } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
 
 // ─── Shared static map thumbnail used across all service screens ───
 const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
@@ -93,11 +94,12 @@ export default function ServiceDetailScreen({
     hideLocation = false,
     children,
 }: ServiceDetailScreenProps) {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
 
-    const buttonLabel = bookButtonLabel ?? (isLoading ? 'Processing...' : 'Book Service');
+    const buttonLabel = bookButtonLabel ?? (isLoading ? t('common.processing') : t('booking.book_service'));
     const dynamicStyles = makeStyles(isDarkMode);
 
     return (
@@ -137,7 +139,7 @@ export default function ServiceDetailScreen({
                 {/* ─── Pricing Card ─── */}
                 {!hidePricing && (
                     <View style={dynamicStyles.card}>
-                        <Text style={dynamicStyles.cardTitle}>Pricing</Text>
+                        <Text style={dynamicStyles.cardTitle}>{t('booking_details.pricing', { defaultValue: 'Pricing' })}</Text>
 
                         {/* Price chip — Figma: light grey rounded rect, ₹amount bold + rest regular */}
                         <View style={dynamicStyles.priceChip}>
@@ -168,13 +170,13 @@ export default function ServiceDetailScreen({
                 {/* Figma: white card, "Location" label, address input row (220w×38h), map thumbnail (69×69) right */}
                 {!hideLocation && (
                     <View style={dynamicStyles.card}>
-                        <Text style={dynamicStyles.cardTitle}>Location</Text>
+                        <Text style={dynamicStyles.cardTitle}>{t('checkout.address', { defaultValue: 'Location' })}</Text>
                         <View style={dynamicStyles.locationRow}>
                             {/* Address input — Figma: 220px wide, 38px tall, 1px border, pin icon left */}
                             <View style={dynamicStyles.locationInputBox}>
                                 <Ionicons name="location-outline" size={15} color={Colors.primary} style={{ marginRight: 5 }} />
                                 <Text style={dynamicStyles.locationText} numberOfLines={1}>
-                                    {address || 'Fetching location...'}
+                                    {address || t('common.fetching')}
                                 </Text>
                             </View>
                             {/* Map — Figma: 69×69, border-radius ~12, right of input */}
@@ -182,7 +184,7 @@ export default function ServiceDetailScreen({
                         </View>
                         <TextInput
                             style={dynamicStyles.landmarkInput}
-                            placeholder="Landmark (optional, e.g. Near Apollo Hospital)"
+                            placeholder={t('checkout.landmark_optional')}
                             placeholderTextColor={isDarkMode ? '#606060' : '#898989'}
                             value={landmark}
                             onChangeText={onLandmarkChange || (() => {})}

@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
-    Platform,
-    Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Alert, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -112,6 +104,7 @@ export default function SmartUpgradeScreen() {
                 <Text style={styles.headerTitle}>Smart Upgrade</Text>
             </View>
 
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <KeyboardAwareScrollView 
                 contentContainerStyle={styles.scrollContent} 
                 showsVerticalScrollIndicator={false} 
@@ -186,6 +179,7 @@ export default function SmartUpgradeScreen() {
                     </View>
                 </LinearGradient>
             </KeyboardAwareScrollView>
+        </KeyboardAvoidingView>
         </View>
     );
 }

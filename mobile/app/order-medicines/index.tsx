@@ -1,17 +1,6 @@
 // Order Medicines Screen - Fully Responsive with ScrollView
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
-    Platform,
-    ScrollView,
-    TextInput,
-    Alert,
-    ActivityIndicator,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, ScrollView, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -173,7 +162,8 @@ export default function OrderMedicinesScreen() {
             {/* Main Content Area (Rounded Cream Box) */}
             <View style={dynamicStyles.contentContainer}>
                 {/* ─── ScrollView Added for Small Screens ─── */}
-                <KeyboardAwareScrollView
+                <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <KeyboardAwareScrollView
                     style={dynamicStyles.scrollView}
                     contentContainerStyle={dynamicStyles.scrollContent}
                     showsVerticalScrollIndicator={false}
@@ -345,6 +335,7 @@ export default function OrderMedicinesScreen() {
                     </TouchableOpacity>
 
                 </KeyboardAwareScrollView>
+        </KeyboardAvoidingView>
             </View>
         </View>
     );

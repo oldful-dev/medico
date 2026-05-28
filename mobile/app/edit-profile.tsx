@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import {
-    View, Text, TextInput, StyleSheet, TouchableOpacity,
-    Alert, ActivityIndicator, Platform,
-} from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -76,6 +73,7 @@ export default function EditProfileScreen() {
                 </View>
             </SafeAreaView>
 
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <KeyboardAwareScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} enableOnAndroid={true} extraScrollHeight={20} keyboardShouldPersistTaps="handled">
 
                 <Text style={styles.label}>Full Name *</Text>
@@ -106,6 +104,7 @@ export default function EditProfileScreen() {
                     {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
                 </TouchableOpacity>
             </KeyboardAwareScrollView>
+        </KeyboardAvoidingView>
         </View>
     );
 }

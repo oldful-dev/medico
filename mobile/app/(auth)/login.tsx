@@ -1,21 +1,7 @@
 // Login Screen — Mobile OTP + Social Login (no password)
 // Flow: Enter mobile → Request OTP → Inline OTP boxes → Login → Home
 import React, { useState, useEffect, useCallback, useRef, type Ref } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    Image,
-    TouchableOpacity,
-    ScrollView,
-    StyleSheet,
-    Animated,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    Alert,
-    ActivityIndicator,
-} from 'react-native';
+import { View, Text, TextInput, Image, TouchableOpacity, ScrollView, StyleSheet, Animated, Keyboard, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -241,7 +227,7 @@ export default function LoginScreen() {
             <StatusBar style={isDarkMode ? "light" : "dark"} />
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
             >
                 <ScrollView

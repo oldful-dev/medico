@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    TextInput, Alert, Switch,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Switch, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -62,7 +59,7 @@ export default function MeetupPickupScreen() {
             pickupEnabled: pickupEnabled ? 'true' : 'false',
             pickupAddress: selectedAddress ? `${selectedAddress.line1}${selectedAddress.line2 ? ', ' + selectedAddress.line2 : ''}` : '',
             pickupLandmark: selectedAddress?.landmark || '',
-            pickupContact: alternateContact,
+            pickupContact: alternateContact ? (alternateContact.startsWith('+91') ? alternateContact : `+91${alternateContact}`) : '',
             preferredPickupTime: preferredTime,
         };
 
@@ -82,7 +79,7 @@ export default function MeetupPickupScreen() {
     };
 
     return (
-        <View style={[makeStyles(isDarkMode, colors).screen, { paddingTop: insets.top }]}>
+        <KeyboardAvoidingView style={[makeStyles(isDarkMode, colors).screen, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={PRIMARY} />
 
             {/* Header */}
@@ -173,15 +170,22 @@ export default function MeetupPickupScreen() {
                             )}
 
                             <Text style={makeStyles(isDarkMode, colors).fieldLabel}>Alternate Contact Number</Text>
-                            <TextInput
-                                style={makeStyles(isDarkMode, colors).input}
-                                placeholder="Enter alternate number"
-                                placeholderTextColor={Colors.textLight}
-                                value={alternateContact}
-                                onChangeText={setAlternateContact}
-                                keyboardType="phone-pad"
-                                maxLength={10}
-                            />
+                            <View style={makeStyles(isDarkMode, colors).phoneInputContainer}>
+                                <Text style={makeStyles(isDarkMode, colors).phonePrefix}>+91</Text>
+                                <View style={makeStyles(isDarkMode, colors).phoneDivider} />
+                                <TextInput
+                                    style={makeStyles(isDarkMode, colors).phoneInput}
+                                    placeholder="Enter alternate number"
+                                    placeholderTextColor={Colors.textLight}
+                                    value={alternateContact.startsWith('+91') ? alternateContact.slice(3) : alternateContact}
+                                    onChangeText={(val) => {
+                                        const cleanVal = val.replace(/\D/g, '').slice(0, 10);
+                                        setAlternateContact(cleanVal);
+                                    }}
+                                    keyboardType="phone-pad"
+                                    maxLength={10}
+                                />
+                            </View>
 
                             <Text style={makeStyles(isDarkMode, colors).fieldLabel}>Preferred Pickup Time <Text style={makeStyles(isDarkMode, colors).required}>*</Text></Text>
                             <TouchableOpacity
@@ -237,7 +241,7 @@ export default function MeetupPickupScreen() {
                     <Ionicons name="arrow-forward" size={18} color="#fff" />
                 </TouchableOpacity>
             </View>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 
@@ -290,6 +294,34 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
         backgroundColor: isDarkMode ? '#3A3A3A' : '#F9FAFB', borderWidth: 1.5, borderColor: isDarkMode ? '#4A4A4A' : Colors.borderLight,
         borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
         fontFamily: Fonts.regular, fontSize: 14, color: isDarkMode ? '#FFFFFF' : Colors.textDark,
+    },
+    phoneInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: isDarkMode ? '#3A3A3A' : '#F9FAFB',
+        borderWidth: 1.5,
+        borderColor: isDarkMode ? '#4A4A4A' : Colors.borderLight,
+        borderRadius: 10,
+        paddingHorizontal: 14,
+    },
+    phonePrefix: {
+        fontSize: 14,
+        fontFamily: Fonts.medium,
+        color: isDarkMode ? '#FFFFFF' : Colors.textDark,
+        paddingRight: 8,
+    },
+    phoneDivider: {
+        width: 1,
+        height: 16,
+        backgroundColor: isDarkMode ? '#4A4A4A' : Colors.borderLight,
+        marginRight: 8,
+    },
+    phoneInput: {
+        flex: 1,
+        paddingVertical: 12,
+        fontFamily: Fonts.regular,
+        fontSize: 14,
+        color: isDarkMode ? '#FFFFFF' : Colors.textDark,
     },
     textArea: { height: 80, textAlignVertical: 'top', paddingTop: 12 },
     readOnlyInput: { backgroundColor: isDarkMode ? '#2A3A2A' : '#F0FDF4', borderColor: PRIMARY },

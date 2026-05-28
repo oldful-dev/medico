@@ -1,15 +1,7 @@
-﻿// Refund Request - Submit refund request
+// Refund Request - Submit refund request
 // PRD: SLA breach refunds, Compassionate Clause (demise/hospitalization)
 import React from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
-    Platform,
-    TextInput,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput, KeyboardAvoidingView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,7 +23,7 @@ export default function RefundRequestScreen() {
     const insets = useSafeAreaInsets();
 
     return (
-        <View style={styles.screen}>
+        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <View style={{ backgroundColor: '#048357', height: insets.top }} />
             <StatusBar style="light" backgroundColor="#048357" />
 
@@ -157,7 +149,7 @@ export default function RefundRequestScreen() {
                     </TouchableOpacity>
                 </View>
             </View>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 

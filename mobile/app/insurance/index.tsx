@@ -1,17 +1,7 @@
 // Insurance - Landing
 // PRD: Tailored for seniors/parents with pre-existing condition tracking
 import React from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Platform,
-    TextInput,
-    Alert,
-    ActivityIndicator,
-    Image,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, TextInput, Alert, ActivityIndicator, Image, KeyboardAvoidingView } from 'react-native';
 
 // ─── Figma Assets ───
 const familyIcon = require('../../assets/images/cb86876504871abc5e6db19e5612175dae2b0479.png');
@@ -163,7 +153,8 @@ export default function InsuranceScreen() {
 
             {/* ─── Content Card ─── */}
             <View style={dynamicStyles.contentCard}>
-                <KeyboardAwareScrollView
+                <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <KeyboardAwareScrollView
                     style={dynamicStyles.scrollView}
                     contentContainerStyle={dynamicStyles.scrollContent}
                     showsVerticalScrollIndicator={false}
@@ -278,6 +269,7 @@ export default function InsuranceScreen() {
                         </View>
                     </View>
                 </KeyboardAwareScrollView>
+        </KeyboardAvoidingView>
             </View>
         </View>
     );

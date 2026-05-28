@@ -2,16 +2,7 @@
 // Layout: ScrollView with form fields, profile photo, checkbox, save button
 // No business logic — pure presentation
 import React, { useState, useEffect, useRef } from 'react';
-import {
-    View,
-    Text,
-    Image,
-    TouchableOpacity,
-    StyleSheet,
-    Platform,
-    Alert,
-    ActionSheetIOS,
-} from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Platform, Alert, ActionSheetIOS, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -327,6 +318,7 @@ export default function ProfileSetupScreen() {
     return (
         <View style={[styles.screen, { backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFEE' }]}>
             <StatusBar style={isDarkMode ? "light" : "dark"} />
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <KeyboardAwareScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
@@ -560,6 +552,7 @@ export default function ProfileSetupScreen() {
                 </View>
 
             </KeyboardAwareScrollView>
+        </KeyboardAvoidingView>
         </View>
     );
 }

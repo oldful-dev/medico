@@ -15,6 +15,7 @@ export default {
     "android": {
       "package": "com.ayuxacare.app",
       "googleServicesFile": "./google-services.json",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icons/icon.png",
         "backgroundColor": "#F5F0E8"

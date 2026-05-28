@@ -1,10 +1,7 @@
 // Medical Logs — Document vault
 // Prescriptions, blood work reports, scans, discharge summaries, etc.
 import React, { useState, useCallback } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, FlatList,
-    ActivityIndicator, Alert, Linking, TextInput, RefreshControl,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert, Linking, TextInput, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -320,7 +317,7 @@ export default function MedicalLogsScreen() {
             {/* Upload modal */}
             {uploadModalVisible && (
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modal}>
+                    <KeyboardAvoidingView style={styles.modal} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
                         <Text style={styles.modalTitle}>Upload Document</Text>
 
                         <Text style={styles.fieldLabel}>Title</Text>
@@ -365,7 +362,7 @@ export default function MedicalLogsScreen() {
                         <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setUploadModalVisible(false)}>
                             <Text style={styles.modalCancelText}>Cancel</Text>
                         </TouchableOpacity>
-                    </View>
+                    </KeyboardAvoidingView>
                 </View>
             )}
         </SafeAreaView>

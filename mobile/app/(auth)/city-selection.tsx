@@ -1,18 +1,8 @@
-﻿// City Selection Screen — Server-Driven UI
+// City Selection Screen — Server-Driven UI
 // City list (names, states, availability) comes from AppConfigContext.
 // Admin can add/activate cities without an app release.
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
-    Alert,
-    TextInput,
-    Modal,
-    ActivityIndicator,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput, Modal, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -242,7 +232,10 @@ export default function CitySelectionScreen() {
             {/* ─── Notify Me Modal ─── */}
             <Modal visible={showNotifyModal} transparent animationType="slide">
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalSheet, { backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF' }]}>
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        style={[styles.modalSheet, { backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF' }]}
+                    >
                         <View style={[styles.modalHeader, { borderBottomColor: isDarkMode ? '#3A3A3A' : '#F0F0F0' }]}>
                             <Text style={[styles.modalTitle, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}>Notify Me When You Launch</Text>
                             <TouchableOpacity onPress={() => setShowNotifyModal(false)}>
@@ -291,7 +284,7 @@ export default function CitySelectionScreen() {
                                 }
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    </KeyboardAvoidingView>
                 </View>
             </Modal>
         </View>
