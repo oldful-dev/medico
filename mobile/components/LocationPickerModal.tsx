@@ -8,6 +8,7 @@ import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
 import { LocationSearch } from './LocationSearch';
 import { LocationMapConfirm } from './LocationMapConfirm';
+import { useTranslation } from 'react-i18next';
 
 type LocationPickerStep = 'search' | 'map';
 
@@ -32,6 +33,7 @@ export const LocationPickerModal = ({
     initialLat = 28.7041,
     initialLng = 77.1025,
 }: LocationPickerModalProps) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
     const [step, setStep] = useState<LocationPickerStep>('search');
@@ -95,10 +97,10 @@ export const LocationPickerModal = ({
 
                     <View style={styles.headerCenter}>
                         <Text style={styles.headerTitle}>
-                            {step === 'search' ? 'Search Location' : 'Confirm on Map'}
+                            {step === 'search' ? t('location_picker.search_location') : t('location_picker.confirm_on_map')}
                         </Text>
                         <Text style={styles.headerSub}>
-                            {step === 'search' ? 'Type your area or address' : 'Drag pin to fine-tune'}
+                            {step === 'search' ? t('location_picker.type_area_address') : t('location_picker.drag_pin_fine_tune')}
                         </Text>
                     </View>
 
@@ -117,8 +119,8 @@ export const LocationPickerModal = ({
                         </View>
                     </View>
                     <View style={styles.stepLabels}>
-                        <Text style={[styles.stepLabel, styles.stepLabelActive]}>Search</Text>
-                        <Text style={[styles.stepLabel, step === 'map' && styles.stepLabelActive]}>Confirm</Text>
+                        <Text style={[styles.stepLabel, styles.stepLabelActive]}>{t('location_picker.search')}</Text>
+                        <Text style={[styles.stepLabel, step === 'map' && styles.stepLabelActive]}>{t('location_picker.confirm')}</Text>
                     </View>
                 </View>
 

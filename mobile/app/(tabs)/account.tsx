@@ -66,11 +66,11 @@ export default function AccountScreen() {
             const res = await userService.updateProfile({ [key]: value } as any);
             if (!res.success) {
                 setProfile(oldProfile);
-                Alert.alert('Error', res.message || 'Failed to update preference');
+                Alert.alert(t('common.error'), res.message || t('account.failed_update_pref'));
             }
         } catch {
             setProfile(oldProfile);
-            Alert.alert('Error', 'Network error. Please try again.');
+            Alert.alert(t('common.error'), t('common.generic_error'));
         }
     };
 
@@ -101,8 +101,8 @@ export default function AccountScreen() {
     );
 
     const medicalCard = profile?.medicalCards?.[0];
-    const bloodGroup = medicalCard?.bloodGroup || 'Not set';
-    const allergies = medicalCard?.allergies?.length ? medicalCard.allergies.join(', ') : 'None';
+    const bloodGroup = medicalCard?.bloodGroup || t('account.not_set');
+    const allergies = medicalCard?.allergies?.length ? medicalCard.allergies.join(', ') : t('common.none');
 
     const activeSub = profile?.subscriptions?.[0];
     const resolveMembershipKey = (): string => {
@@ -126,24 +126,24 @@ export default function AccountScreen() {
     const completionPct = Math.round((completionFields.filter(Boolean).length / completionFields.length) * 100);
 
     const handleAvatarUpload = async () => {
-        Alert.alert('Update Photo', 'Choose option', [
+        Alert.alert(t('account.update_photo'), t('account.choose_option'), [
             {
-                text: 'Camera', onPress: async () => {
+                text: t('account.camera'), onPress: async () => {
                     const perm = await ImagePicker.requestCameraPermissionsAsync();
-                    if (!perm.granted) { Alert.alert('Permission required', 'Camera access needed'); return; }
+                    if (!perm.granted) { Alert.alert(t('account.permission_required'), t('account.camera_access_needed')); return; }
                     const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
                     if (!result.canceled && result.assets[0]) uploadImage(result.assets[0]);
                 }
             },
             {
-                text: 'Gallery', onPress: async () => {
+                text: t('account.gallery'), onPress: async () => {
                     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                    if (!perm.granted) { Alert.alert('Permission required', 'Gallery access needed'); return; }
+                    if (!perm.granted) { Alert.alert(t('account.permission_required'), t('account.gallery_access_needed')); return; }
                     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
                     if (!result.canceled && result.assets[0]) uploadImage(result.assets[0]);
                 }
             },
-            { text: 'Cancel', style: 'cancel' },
+            { text: t('common.cancel'), style: 'cancel' },
         ]);
     };
 
@@ -155,20 +155,20 @@ export default function AccountScreen() {
             if (res.success && res.data) {
                 setProfile(res.data);
             } else {
-                Alert.alert('Error', res.message || 'Upload failed.');
+                Alert.alert(t('common.error'), res.message || t('account.upload_failed'));
             }
         } catch (err: any) {
-            Alert.alert('Error', err.message || 'Upload failed.');
+            Alert.alert(t('common.error'), err.message || t('account.upload_failed'));
         } finally {
             setUploadingAvatar(false);
         }
     };
 
     const handleLogout = () => {
-        Alert.alert('Log Out', 'Are you sure you want to log out?', [
-            { text: 'Cancel', style: 'cancel' },
+        Alert.alert(t('account.log_out'), t('account.logout_confirm'), [
+            { text: t('common.cancel'), style: 'cancel' },
             {
-                text: 'Log Out', style: 'destructive', onPress: async () => {
+                text: t('account.log_out'), style: 'destructive', onPress: async () => {
                     try { await logout(); } catch { }
                     router.replace('/(auth)/login' as any);
                 }
@@ -178,22 +178,22 @@ export default function AccountScreen() {
 
     const handleDeleteAccount = () => {
         Alert.alert(
-            'Delete Account',
-            'This will permanently delete your account and all data. This cannot be undone.',
+            t('account.delete_account'),
+            t('account.delete_account_confirm'),
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: 'Delete', style: 'destructive', onPress: async () => {
+                    text: t('common.delete'), style: 'destructive', onPress: async () => {
                         try {
                             const res = await userService.deleteAccount();
                             if (res.success) {
                                 await logout();
                                 router.replace('/(auth)/login' as any);
                             } else {
-                                Alert.alert('Error', res.message || 'Failed to delete account');
+                                Alert.alert(t('common.error'), res.message || t('account.delete_failed'));
                             }
                         } catch (err: any) {
-                            Alert.alert('Error', err.message || 'Failed to delete account');
+                            Alert.alert(t('common.error'), err.message || t('account.delete_failed'));
                         }
                     }
                 },
@@ -209,7 +209,7 @@ export default function AccountScreen() {
             {/* ─── Green Header Bar ─── */}
             <SafeAreaView style={styles.headerSafe} edges={['top']}>
                 <View style={styles.headerRow}>
-                    <Text style={styles.headerTitle}>My Profile</Text>
+                    <Text style={styles.headerTitle}>{t('account.header_title')}</Text>
                 </View>
             </SafeAreaView>
 
@@ -263,16 +263,16 @@ export default function AccountScreen() {
                             >
                                 <Ionicons name={membership.icon as any} size={13} color={membership.color} />
                                 <Text style={[styles.memberBadgeText, { color: membership.color }]}>
-                                    {membership.label}
+                                    {t(`account.membership_${resolveMembershipKey()}`)}
                                 </Text>
-                                {membership.label === 'Free' && (
-                                    <Text style={[styles.memberBadgeUpgrade, { color: membership.color }]}>· Upgrade</Text>
+                                {resolveMembershipKey() === 'free' && (
+                                    <Text style={[styles.memberBadgeUpgrade, { color: membership.color }]}>· {t('account.upgrade')}</Text>
                                 )}
                             </TouchableOpacity>
 
                             {/* AYUXA ID */}
                             <View style={styles.idPill}>
-                                <Text style={styles.idPillText}>ID: {profile?.uniqueUserId || 'Pending'}</Text>
+                                <Text style={styles.idPillText}>{t('account.id', { id: profile?.uniqueUserId || t('account.pending') })}</Text>
                             </View>
                         </View>
                     </View>
@@ -285,7 +285,7 @@ export default function AccountScreen() {
                         </View>
                         <View style={styles.contactRow}>
                             <Ionicons name="mail-outline" size={14} color={colors.textMuted} />
-                            <Text style={styles.contactText} numberOfLines={1}>{profile?.email || 'Not provided'}</Text>
+                            <Text style={styles.contactText} numberOfLines={1}>{profile?.email || t('account.not_provided')}</Text>
                         </View>
                     </View>
 
@@ -293,22 +293,22 @@ export default function AccountScreen() {
                     <View style={styles.profileActions}>
                         <TouchableOpacity style={styles.actionBtnPrimary} onPress={() => router.push('/edit-profile' as any)}>
                             <Ionicons name="create-outline" size={15} color="#fff" />
-                            <Text style={styles.actionBtnPrimaryText}>Edit Profile</Text>
+                            <Text style={styles.actionBtnPrimaryText}>{t('account.edit_profile')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.actionBtnOutline} onPress={handleLogout}>
                             <Ionicons name="log-out-outline" size={15} color={colors.textMuted} />
-                            <Text style={styles.actionBtnOutlineText}>Log Out</Text>
+                            <Text style={styles.actionBtnOutlineText}>{t('account.log_out')}</Text>
                         </TouchableOpacity>
                     </View>
 
                     <TouchableOpacity style={styles.deleteAccountBtn} onPress={handleDeleteAccount}>
                         <Ionicons name="trash-outline" size={13} color="#EF4444" />
-                        <Text style={styles.deleteAccountText}>Delete My Account</Text>
+                        <Text style={styles.deleteAccountText}>{t('account.delete_account')}</Text>
                     </TouchableOpacity>
 
                     {/* Profile completion */}
                     <View style={styles.completionRow}>
-                        <Text style={styles.completionLabel}>Profile Completion</Text>
+                        <Text style={styles.completionLabel}>{t('account.profile_completion')}</Text>
                         <Text style={styles.completionPct}>{completionPct}%</Text>
                     </View>
                     <View style={styles.completionTrack}>
@@ -319,13 +319,13 @@ export default function AccountScreen() {
                 {/* ═══════════════════════════════════════
                     SECTION 1 — Activity Center (Live Updates)
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Activity Center" colors={colors} />
+                <SectionHeading title={t('account.section_activity')} colors={colors} />
                 <MenuRow
                     icon="pulse-outline"
                     iconBg="#FFF0E0"
                     iconColor="#F59E0B"
-                    title="Live Updates"
-                    subtitle="Doctor, nurse, caregiver assignments & delivery updates"
+                    title={t('account.live_updates_title')}
+                    subtitle={t('account.live_updates_sub')}
                     onPress={() => router.push('/profile/activity-center' as any)}
                     colors={colors}
                 />
@@ -333,13 +333,13 @@ export default function AccountScreen() {
                 {/* ═══════════════════════════════════════
                     SECTION 2 — Bookings & Addresses & Family
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Bookings & Services" colors={colors} />
+                <SectionHeading title={t('account.section_bookings')} colors={colors} />
                 <MenuRow
                     icon="calendar-outline"
                     iconBg="#E8F5E9"
                     iconColor="#048357"
-                    title="My Bookings"
-                    subtitle="Health, wellness, concierge bookings & history"
+                    title={t('account.my_bookings_title')}
+                    subtitle={t('account.my_bookings_sub')}
                     onPress={() => router.push('/my-bookings' as any)}
                     colors={colors}
                 />
@@ -348,19 +348,19 @@ export default function AccountScreen() {
                     icon="people-outline"
                     iconBg="#D1FAE5"
                     iconColor="#02743F"
-                    title="Local Meetups"
-                    subtitle="Senior community events & meetups near you"
+                    title={t('account.local_meetups_title')}
+                    subtitle={t('account.local_meetups_sub')}
                     onPress={() => router.push('/meetup' as any)}
                     colors={colors}
                 />
 
-                <SectionHeading title="Addresses & People" colors={colors} />
+                <SectionHeading title={t('account.section_addresses')} colors={colors} />
                 <MenuRow
                     icon="location-outline"
                     iconBg="#E3F2FD"
                     iconColor="#1E88E5"
-                    title="Manage Addresses"
-                    subtitle="Home, Office, Parents Home, Other"
+                    title={t('account.manage_addresses_title')}
+                    subtitle={t('account.manage_addresses_sub')}
                     onPress={() => router.push('/manage-addresses' as any)}
                     colors={colors}
                 />
@@ -368,8 +368,8 @@ export default function AccountScreen() {
                     icon="person-add-outline"
                     iconBg="#EDE9FE"
                     iconColor="#7C3AED"
-                    title="Family Members"
-                    subtitle="Father, mother, spouse, children & dependents"
+                    title={t('account.family_members_title')}
+                    subtitle={t('account.family_members_sub')}
                     onPress={() => router.push('/family-members' as any)}
                     colors={colors}
                 />
@@ -377,10 +377,10 @@ export default function AccountScreen() {
                     icon="people-outline"
                     iconBg="#FFE6E6"
                     iconColor="#FF3B30"
-                    title="Emergency Contacts"
+                    title={t('account.emergency_contacts_title')}
                     subtitle={profile?.emergencyContacts?.length
-                        ? `${profile.emergencyContacts.length} contact(s) saved`
-                        : 'Add emergency contacts'}
+                        ? t('account.emergency_contacts_saved', { count: profile.emergencyContacts.length })
+                        : t('account.add_emergency_contacts')}
                     onPress={() => router.push('/emergency-contacts' as any)}
                     colors={colors}
                 />
@@ -388,8 +388,8 @@ export default function AccountScreen() {
                     icon="alert-circle-outline"
                     iconBg="#FFEBEB"
                     iconColor="#EF4444"
-                    title="My SOS Alerts"
-                    subtitle="Track active and past emergency alerts"
+                    title={t('account.my_sos_alerts_title')}
+                    subtitle={t('account.my_sos_alerts_sub')}
                     onPress={() => router.push('/my-sos-alerts' as any)}
                     colors={colors}
                 />
@@ -397,13 +397,13 @@ export default function AccountScreen() {
                 {/* ═══════════════════════════════════════
                     SECTION 3 — Medical & Health
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Health & Medical" green colors={colors} />
+                <SectionHeading title={t('account.section_health')} green colors={colors} />
                 <MenuRow
                     icon="medical-outline"
                     iconBg="#FFF0E0"
                     iconColor="#F5A623"
-                    title="Medical Card"
-                    subtitle={`Blood: ${bloodGroup} • Allergies: ${allergies}`}
+                    title={t('account.medical_card_title')}
+                    subtitle={t('account.medical_card_sub', { bloodGroup, allergies })}
                     onPress={() => router.push('/profile/medical-card' as any)}
                     colors={colors}
                 />
@@ -411,8 +411,8 @@ export default function AccountScreen() {
                     icon="documents-outline"
                     iconBg="#E8F5E9"
                     iconColor="#048357"
-                    title="Medical Logs"
-                    subtitle="Prescriptions, reports, scans, discharge summaries"
+                    title={t('account.medical_logs_title')}
+                    subtitle={t('account.medical_logs_sub')}
                     onPress={() => router.push('/profile/medical-logs' as any)}
                     colors={colors}
                 />
@@ -420,13 +420,13 @@ export default function AccountScreen() {
                 {/* ═══════════════════════════════════════
                     SECTION 4 — Payments & Subscription
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Payments & Plans" colors={colors} />
+                <SectionHeading title={t('account.section_payments')} colors={colors} />
                 <MenuRow
                     icon="wallet-outline"
                     iconBg="#F3E5F5"
                     iconColor="#8E24AA"
-                    title="Payment Methods"
-                    subtitle="Cards, UPI, wallet, net banking"
+                    title={t('account.payment_methods_title')}
+                    subtitle={t('account.payment_methods_sub')}
                     onPress={() => router.push('/payments-wallet' as any)}
                     colors={colors}
                 />
@@ -434,8 +434,8 @@ export default function AccountScreen() {
                     icon="ribbon-outline"
                     iconBg="#FEF3C7"
                     iconColor="#B45309"
-                    title="Subscription & Membership"
-                    subtitle={activeSub ? `${activeSub.plan?.name || 'Active Plan'} · Renew soon` : 'Upgrade to a plan'}
+                    title={t('account.subscription_membership_title')}
+                    subtitle={activeSub ? t('account.active_plan_renew', { name: activeSub.plan?.name || t('account.active_plan') }) : t('account.upgrade_to_plan')}
                     onPress={() => router.push('/profile/subscription' as any)}
                     colors={colors}
                 />
@@ -443,58 +443,58 @@ export default function AccountScreen() {
                 {/* ═══════════════════════════════════════
                     SECTION 5 — Preferences & Notifications
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Preferences" colors={colors} />
+                <SectionHeading title={t('account.section_preferences')} colors={colors} />
                 <TouchableOpacity style={styles.menuRow} activeOpacity={0.7} onPress={() => setLangModalVisible(true)}>
                     <View style={styles.menuLeft}>
                         <View style={[styles.menuIcon, { backgroundColor: isDarkMode ? '#3F51B515' : '#E8EAF6' }]}>
                             <Ionicons name="language-outline" size={20} color={isDarkMode ? '#7986CB' : '#3F51B5'} />
                         </View>
-                        <Text style={styles.menuTitle}>Language</Text>
+                        <Text style={styles.menuTitle}>{t('account.language')}</Text>
                     </View>
                     <View style={styles.menuRight}>
                         <Text style={styles.menuValue}>{currentLangLabel}</Text>
                         <Ionicons name="chevron-forward" size={18} color={colors.textLight} />
                     </View>
                 </TouchableOpacity>
-                <ToggleRow icon="moon-outline" iconBg="#1E1B4B15" iconColor="#4338CA" title="Dark Mode" value={isDarkMode} onToggle={toggleDarkMode} colors={colors} />
+                <ToggleRow icon="moon-outline" iconBg="#1E1B4B15" iconColor="#4338CA" title={t('account.dark_mode')} value={isDarkMode} onToggle={toggleDarkMode} colors={colors} />
 
-                <SectionHeading title="Notifications" colors={colors} />
-                <ToggleRow icon="notifications-outline" iconBg="#E1F5FE" iconColor="#0288D1" title="Push Notifications" value={!!profile?.pushEnabled} onToggle={v => handleToggle('pushEnabled', v)} colors={colors} />
-                <ToggleRow icon="chatbubble-outline" iconBg="#FFF3E0" iconColor="#EF6C00" title="SMS Alerts" value={!!profile?.smsEnabled} onToggle={v => handleToggle('smsEnabled', v)} colors={colors} />
-                <ToggleRow icon="logo-whatsapp" iconBg="#E8F5E9" iconColor="#25D366" title="WhatsApp Updates" value={!!profile?.whatsappEnabled} onToggle={v => handleToggle('whatsappEnabled', v)} colors={colors} />
-                <ToggleRow icon="mail-outline" iconBg="#EDE9FE" iconColor="#7C3AED" title="Email Notifications" value={!!profile?.emailMarketingEnabled} onToggle={v => handleToggle('emailMarketingEnabled', v)} colors={colors} />
-                <ToggleRow icon="megaphone-outline" iconBg="#FFF8E1" iconColor="#FFA000" title="Promotional Offers" value={!!profile?.emailMarketingEnabled} onToggle={v => handleToggle('emailMarketingEnabled', v)} colors={colors} />
+                <SectionHeading title={t('account.section_notifications')} colors={colors} />
+                <ToggleRow icon="notifications-outline" iconBg="#E1F5FE" iconColor="#0288D1" title={t('account.push_notifications')} value={!!profile?.pushEnabled} onToggle={v => handleToggle('pushEnabled', v)} colors={colors} />
+                <ToggleRow icon="chatbubble-outline" iconBg="#FFF3E0" iconColor="#EF6C00" title={t('account.sms_alerts')} value={!!profile?.smsEnabled} onToggle={v => handleToggle('smsEnabled', v)} colors={colors} />
+                <ToggleRow icon="logo-whatsapp" iconBg="#E8F5E9" iconColor="#25D366" title={t('account.whatsapp_updates')} value={!!profile?.whatsappEnabled} onToggle={v => handleToggle('whatsappEnabled', v)} colors={colors} />
+                <ToggleRow icon="mail-outline" iconBg="#EDE9FE" iconColor="#7C3AED" title={t('account.email_notifications')} value={!!profile?.emailMarketingEnabled} onToggle={v => handleToggle('emailMarketingEnabled', v)} colors={colors} />
+                <ToggleRow icon="megaphone-outline" iconBg="#FFF8E1" iconColor="#FFA000" title={t('account.promotional_offers')} value={!!profile?.emailMarketingEnabled} onToggle={v => handleToggle('emailMarketingEnabled', v)} colors={colors} />
 
                 {/* ═══════════════════════════════════════
                     SECTION 6 — Help & Support (dropdown)
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Help & Support" colors={colors} />
+                <SectionHeading title={t('account.section_support')} colors={colors} />
                 <DropdownSection
                     icon="headset-outline"
                     iconBg={isDarkMode ? '#0C3547' : '#E0F4FF'}
                     iconColor="#0284C7"
-                    title="Help & Support"
-                    subtitle="Call, chat, raise a ticket & more"
+                    title={t('account.support_title')}
+                    subtitle={t('account.support_sub')}
                     expanded={supportExpanded}
                     onToggle={() => setSupportExpanded(v => !v)}
                     colors={colors}
                     isDarkMode={isDarkMode}
                 >
                     <MenuRow icon="call-outline" iconBg={isDarkMode ? '#0C3547' : '#DCF3FF'} iconColor="#0284C7"
-                        title="Call Support" subtitle="Speak to our support team directly"
+                        title={t('account.call_support_title')} subtitle={t('account.call_support_sub')}
                         onPress={() => Linking.openURL('tel:+918001234567')} colors={colors} />
                     <MenuRow icon="mail-outline" iconBg={isDarkMode ? '#2D1F0A' : '#FFF3E0'} iconColor="#F57C00"
-                        title="Email Support" subtitle="support@ayuxacare.com"
+                        title={t('account.email_support_title')} subtitle={t('account.email_support_sub')}
                         onPress={() => Linking.openURL('mailto:support@ayuxacare.com')} colors={colors} />
                     <MenuRow icon="chatbubble-ellipses-outline" iconBg={isDarkMode ? '#1E1340' : '#F3E5F5'} iconColor="#7C3AED"
-                        title="Live Chat" subtitle="Chat with us in real time"
-                        onPress={() => router.push('/help-support' as any)} colors={colors} />
+                        title={t('account.live_chat_title')} subtitle={t('account.live_chat_sub')}
+                        onPress={() => router.push('/help-support/chat' as any)} colors={colors} />
                     <MenuRow icon="ticket-outline" iconBg={isDarkMode ? '#2D0A1A' : '#FCE4EC'} iconColor="#EC4899"
-                        title="Raise Ticket" subtitle="Log and track a support request"
-                        onPress={() => router.push('/help-support' as any)} colors={colors} />
+                        title={t('account.raise_ticket_title')} subtitle={t('account.raise_ticket_sub')}
+                        onPress={() => router.push('/help-support/raise-ticket' as any)} colors={colors} />
                     <MenuRow icon="help-circle-outline" iconBg={isDarkMode ? '#0A2010' : '#E8F5E9'} iconColor="#2E7D32"
-                        title="FAQ" subtitle="Frequently asked questions"
-                        onPress={() => router.push('/help-support' as any)} colors={colors} />
+                        title={t('account.faq_title')} subtitle={t('account.faq_sub')}
+                        onPress={() => router.push('/help-support/faq' as any)} colors={colors} />
 
                     {/* Emergency Assistance — full-width red CTA */}
                     <TouchableOpacity
@@ -502,9 +502,9 @@ export default function AccountScreen() {
                             borderColor: isDarkMode ? '#7F1D1D' : '#FEE2E2',
                             backgroundColor: isDarkMode ? '#450A0A' : '#FEF2F2',
                         }]}
-                        onPress={() => Alert.alert('Emergency Assistance', 'Connecting you to our 24/7 emergency team…\n\nTap OK to call immediately.', [
-                            { text: 'Cancel', style: 'cancel' },
-                            { text: 'Call Now', onPress: () => Linking.openURL('tel:+918001234567') },
+                        onPress={() => Alert.alert(t('account.emergency_assistance'), t('account.emergency_alert_msg'), [
+                            { text: t('common.cancel'), style: 'cancel' },
+                            { text: t('account.call_now'), onPress: () => Linking.openURL('tel:+918001234567') },
                         ])}
                         activeOpacity={0.75}
                     >
@@ -512,8 +512,8 @@ export default function AccountScreen() {
                             <Ionicons name="alert-circle" size={20} color={isDarkMode ? '#FCA5A5' : '#DC2626'} />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={[styles.emergencyTitle, { color: isDarkMode ? '#FCA5A5' : '#DC2626' }]}>Emergency Assistance</Text>
-                            <Text style={[styles.emergencySub, { color: isDarkMode ? '#FECACA' : '#991B1B' }]}>24/7 urgent help — tap to call now</Text>
+                            <Text style={[styles.emergencyTitle, { color: isDarkMode ? '#FCA5A5' : '#DC2626' }]}>{t('account.emergency_assistance')}</Text>
+                            <Text style={[styles.emergencySub, { color: isDarkMode ? '#FECACA' : '#991B1B' }]}>{t('account.emergency_assistance_sub')}</Text>
                         </View>
                         <View style={[styles.emergencyPulse, { backgroundColor: isDarkMode ? '#7F1D1D' : '#FCA5A5' }]}>
                             <View style={[styles.emergencyDot, { backgroundColor: isDarkMode ? '#FCA5A5' : '#DC2626' }]} />
@@ -524,44 +524,44 @@ export default function AccountScreen() {
                 {/* ═══════════════════════════════════════
                     SECTION 7 — Terms, Conditions & Documents (dropdown)
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Terms, Conditions & Documents" colors={colors} />
+                <SectionHeading title={t('account.section_terms')} colors={colors} />
                 <DropdownSection
                     icon="documents-outline"
                     iconBg={isDarkMode ? '#1A1000' : '#FFF8E1'}
                     iconColor="#F57C00"
-                    title="Documents & Policies"
-                    subtitle="Legal, consent & downloadable files"
+                    title={t('account.docs_title')}
+                    subtitle={t('account.docs_sub')}
                     expanded={docsExpanded}
                     onToggle={() => setDocsExpanded(v => !v)}
                     colors={colors}
                     isDarkMode={isDarkMode}
                 >
                     <MenuRow icon="document-text-outline" iconBg={isDarkMode ? '#2D1F0A' : '#FFF3E0'} iconColor="#F57C00"
-                        title="Terms & Conditions" onPress={() => router.push('/terms-policy' as any)} colors={colors} />
+                        title={t('account.terms_conditions')} onPress={() => router.push('/terms-policy' as any)} colors={colors} />
                     <MenuRow icon="shield-checkmark-outline" iconBg={isDarkMode ? '#0A2010' : '#E8F5E9'} iconColor="#2E7D32"
-                        title="Privacy Policy" onPress={() => router.push('/privacy-policy' as any)} colors={colors} />
+                        title={t('account.privacy_policy')} onPress={() => router.push('/privacy-policy' as any)} colors={colors} />
                     <MenuRow icon="receipt-outline" iconBg={isDarkMode ? '#2D0A1A' : '#FCE4EC'} iconColor="#C2185B"
-                        title="Refund Policy" onPress={() => router.push('/refund-policy' as any)} colors={colors} />
+                        title={t('account.refund_policy')} onPress={() => router.push('/refund-policy' as any)} colors={colors} />
                     <MenuRow icon="checkmark-done-circle-outline" iconBg={isDarkMode ? '#1E1340' : '#F3E5F5'} iconColor="#6A1B9A"
-                        title="Consent Forms" onPress={() => router.push('/profile/consent-forms' as any)} colors={colors} />
+                        title={t('account.consent_forms')} onPress={() => router.push('/profile/consent-forms' as any)} colors={colors} />
                     <MenuRow icon="clipboard-outline" iconBg={isDarkMode ? '#001A18' : '#E0F2F1'} iconColor="#00796B"
-                        title="Service Agreements" onPress={() => router.push('/profile/service-agreements' as any)} colors={colors} />
+                        title={t('account.service_agreements')} onPress={() => router.push('/profile/service-agreements' as any)} colors={colors} />
                     <MenuRow icon="eye-outline" iconBg={isDarkMode ? '#001A18' : '#EFF7F6'} iconColor="#004D40"
-                        title="View Documents" onPress={() => router.push('/profile/view-documents' as any)} colors={colors} />
+                        title={t('account.view_documents')} onPress={() => router.push('/profile/view-documents' as any)} colors={colors} />
                     <MenuRow icon="download-outline" iconBg={isDarkMode ? '#0A1A00' : '#F1F8E9'} iconColor="#558B2F"
-                        title="Download Documents" onPress={() => router.push('/profile/download-documents' as any)} colors={colors} />
+                        title={t('account.download_documents')} onPress={() => router.push('/profile/download-documents' as any)} colors={colors} />
                 </DropdownSection>
 
                 {/* ═══════════════════════════════════════
                     SECTION 8 — Social Media (dropdown)
                    ═══════════════════════════════════════ */}
-                <SectionHeading title="Social Media" colors={colors} />
+                <SectionHeading title={t('account.section_social')} colors={colors} />
                 <DropdownSection
                     icon="share-social-outline"
                     iconBg={isDarkMode ? '#0C1A2E' : '#E8F4FF'}
                     iconColor="#0284C7"
-                    title="Follow AYUXA"
-                    subtitle="Instagram, Facebook, YouTube & more"
+                    title={t('account.social_title')}
+                    subtitle={t('account.social_sub')}
                     expanded={socialExpanded}
                     onToggle={() => setSocialExpanded(v => !v)}
                     colors={colors}
@@ -578,8 +578,10 @@ export default function AccountScreen() {
                                 <Ionicons name={s.icon as any} size={20} color={s.color} />
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={[styles.socialLabel, { color: isDarkMode ? '#F9FAFB' : '#1F2937' }]}>{s.label}</Text>
-                                <Text style={[styles.socialHandle, { color: isDarkMode ? '#6B7280' : '#9CA3AF' }]}>{s.handle}</Text>
+                                <Text style={[styles.socialLabel, { color: isDarkMode ? '#F9FAFB' : '#1F2937' }]}>{t(`account.social_label_${s.key}`)}</Text>
+                                <Text style={[styles.socialHandle, { color: isDarkMode ? '#6B7280' : '#9CA3AF' }]}>
+                                    {s.key === 'whatsapp' ? t('account.social_handle_whatsapp') : s.handle}
+                                </Text>
                             </View>
                             <Ionicons name="open-outline" size={15} color={isDarkMode ? '#6B7280' : '#9CA3AF'} />
                         </TouchableOpacity>
@@ -593,7 +595,7 @@ export default function AccountScreen() {
             <Modal visible={langModalVisible} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContainer}>
-                        <Text style={styles.modalTitle}>Select Language</Text>
+                        <Text style={styles.modalTitle}>{t('account.select_language')}</Text>
                         {savingLang ? (
                             <ActivityIndicator color={colors.primary} style={{ marginVertical: Spacing.xl }} />
                         ) : (
@@ -614,7 +616,7 @@ export default function AccountScreen() {
                             ))
                         )}
                         <TouchableOpacity style={styles.modalCancel} onPress={() => setLangModalVisible(false)}>
-                            <Text style={styles.modalCancelText}>Cancel</Text>
+                            <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

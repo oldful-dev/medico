@@ -10,7 +10,8 @@ import { useThemeColors } from '@/hooks/use-theme-colors';
 import { userService, Address } from '@/services/api/userService';
 import { locationService } from '@/services/device/locationService';
 import { LocationPickerModal } from '@/components/LocationPickerModal';
-
+import { useTranslation } from 'react-i18next';
+import * as Location from 'expo-location';
 
 const LABEL_OPTIONS = ['Home', 'Office', 'Parents Home', 'Other'];
 
@@ -67,13 +68,11 @@ const parseAddressComponents = async (address: string, coords?: { lat: number; l
     return parts;
 };
 
-// Import Location for native geocoding
-import * as Location from 'expo-location';
-
 export default function ManageAddressesScreen() {
     const router = useRouter();
     const { profile, setProfile } = useUser();
     const colors = useThemeColors();
+    const { t } = useTranslation();
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
@@ -95,6 +94,13 @@ export default function ManageAddressesScreen() {
     const [detectedCoords, setDetectedCoords] = useState<{ lat: number; lng: number } | null>(null);
 
     const addresses: Address[] = profile?.addresses || [];
+
+    // Helper to translate address label
+    const getTranslatedLabel = (label: string) => {
+        if (!label) return '';
+        const key = `manage_addresses.labels.${label.toLowerCase().replace(/\s+/g, '_')}`;
+        return t(key, { defaultValue: label });
+    };
 
     // Auto-detect location on first load
     React.useEffect(() => {
@@ -203,7 +209,7 @@ export default function ManageAddressesScreen() {
 
     const saveAddress = async () => {
         if (!newLabel.trim() || !newLine1.trim() || !newCity.trim() || !newState.trim() || !newPincode.trim()) {
-            Alert.alert('Missing Info', 'Please fill Label, Address Line 1, City, State, and Pincode.');
+            Alert.alert(t('manage_addresses.alerts.missing_info_title'), t('manage_addresses.alerts.missing_info_msg'));
             return;
         }
         if (!profile?.id) return;
@@ -231,12 +237,12 @@ export default function ManageAddressesScreen() {
                 const profileRes = await userService.getProfile();
                 if (profileRes.success && profileRes.data) setProfile(profileRes.data);
                 resetForm();
-                Alert.alert('Success', editingId ? 'Address updated.' : 'Address added.');
+                Alert.alert(t('manage_addresses.alerts.success_title'), editingId ? t('manage_addresses.alerts.address_updated') : t('manage_addresses.alerts.address_added'));
             } else {
-                Alert.alert('Error', res.message || 'Failed to save address.');
+                Alert.alert(t('manage_addresses.alerts.error_title'), res.message || t('manage_addresses.alerts.failed_save'));
             }
         } catch (err: any) {
-            Alert.alert('Error', err.message || 'Something went wrong.');
+            Alert.alert(t('manage_addresses.alerts.error_title'), err.message || t('manage_addresses.alerts.something_went_wrong'));
         } finally {
             setSaving(false);
         }
@@ -245,12 +251,12 @@ export default function ManageAddressesScreen() {
     const deleteAddress = async (address: Address) => {
         if (!profile?.id || !address.id) return;
         Alert.alert(
-            'Delete Address',
-            'Are you sure you want to delete this address?',
+            t('manage_addresses.alerts.delete_confirm_title'),
+            t('manage_addresses.alerts.delete_confirm_msg'),
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('manage_addresses.cancel'), style: 'cancel' },
                 {
-                    text: 'Delete',
+                    text: t('manage_addresses.alerts.delete_btn'),
                     style: 'destructive',
                     onPress: async () => {
                         if (!profile?.id || !address.id) return;
@@ -258,9 +264,9 @@ export default function ManageAddressesScreen() {
                             await userService.deleteAddress(profile.id, address.id);
                             const profileRes = await userService.getProfile();
                             if (profileRes.success && profileRes.data) setProfile(profileRes.data);
-                            Alert.alert('Success', 'Address deleted.');
+                            Alert.alert(t('manage_addresses.alerts.success_title'), t('manage_addresses.alerts.address_deleted'));
                         } catch (err: any) {
-                            Alert.alert('Error', err.message || 'Failed to delete address.');
+                            Alert.alert(t('manage_addresses.alerts.error_title'), err.message || t('manage_addresses.alerts.failed_delete'));
                         }
                     },
                 },
@@ -275,7 +281,7 @@ export default function ManageAddressesScreen() {
             const profileRes = await userService.getProfile();
             if (profileRes.success && profileRes.data) setProfile(profileRes.data);
         } catch (err: any) {
-            Alert.alert('Error', err.message || 'Failed to update.');
+            Alert.alert(t('manage_addresses.alerts.error_title'), err.message || t('manage_addresses.alerts.failed_update'));
         }
     };
 
@@ -397,7 +403,7 @@ export default function ManageAddressesScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                         <Ionicons name="arrow-back" size={24} color={colors.textWhite} />
                     </TouchableOpacity>
-                    <Text style={[styles.headerTitle, { color: colors.textWhite }]}>Manage Addresses</Text>
+                    <Text style={[styles.headerTitle, { color: colors.textWhite }]}>{t('manage_addresses.header_title')}</Text>
                 </View>
             </SafeAreaView>
 
@@ -419,12 +425,12 @@ export default function ManageAddressesScreen() {
                                     )}
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={dynamicStyles.detectTitle}>Detect Current Location</Text>
+                                    <Text style={dynamicStyles.detectTitle}>{t('manage_addresses.detect_current_location')}</Text>
                                     {detectedAddress ? (
                                         <Text style={dynamicStyles.detectSubtitle} numberOfLines={1}>{detectedAddress}</Text>
                                     ) : (
                                         <Text style={styles.detectSubtitleEmpty}>
-                                            {detectingLocation ? 'Finding your location...' : 'Tap to auto-detect your current address'}
+                                            {detectingLocation ? t('manage_addresses.finding_location') : t('manage_addresses.tap_to_detect')}
                                         </Text>
                                     )}
                                 </View>
@@ -444,14 +450,14 @@ export default function ManageAddressesScreen() {
                                         onPress={startAddFromDetected}
                                     >
                                         <Ionicons name="add-circle" size={18} color="#FFFFFF" />
-                                        <Text style={styles.detectAddBtnText}>Save This Address</Text>
+                                        <Text style={styles.detectAddBtnText}>{t('manage_addresses.save_this_address')}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         style={dynamicStyles.detectSearchBtn}
                                         onPress={() => setShowLocationPicker(true)}
                                     >
                                         <Ionicons name="search" size={18} color={colors.primary} />
-                                        <Text style={dynamicStyles.detectSearchBtnText}>Search Location</Text>
+                                        <Text style={dynamicStyles.detectSearchBtnText}>{t('manage_addresses.search_location')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             )}
@@ -462,7 +468,7 @@ export default function ManageAddressesScreen() {
                                     onPress={() => setShowLocationPicker(true)}
                                 >
                                     <Ionicons name="search" size={18} color={colors.primary} />
-                                    <Text style={dynamicStyles.detectSearchBtnText}>Search & Pick Location</Text>
+                                    <Text style={dynamicStyles.detectSearchBtnText}>{t('manage_addresses.search_pick_location')}</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -475,12 +481,12 @@ export default function ManageAddressesScreen() {
                 {addresses.length === 0 && !showAddForm && (
                     <View style={styles.emptyState}>
                         <Ionicons name="bookmark-outline" size={56} color="#AAAEAC" />
-                        <Text style={dynamicStyles.emptyTitle}>No Saved Addresses</Text>
-                        <Text style={dynamicStyles.emptyDesc}>Start by detecting or searching your location above.</Text>
+                        <Text style={dynamicStyles.emptyTitle}>{t('manage_addresses.no_saved_addresses')}</Text>
+                        <Text style={dynamicStyles.emptyDesc}>{t('manage_addresses.start_by_detecting')}</Text>
                     </View>
                 )}
 
-                {addresses.length > 0 && <Text style={dynamicStyles.savedAddressesTitle}>Saved Addresses</Text>}
+                {addresses.length > 0 && <Text style={dynamicStyles.savedAddressesTitle}>{t('manage_addresses.saved_addresses')}</Text>}
 
                 {addresses.map((item) => (
                     <View key={item.id} style={[dynamicStyles.card, item.isDefault && dynamicStyles.cardDefault]}>
@@ -495,11 +501,11 @@ export default function ManageAddressesScreen() {
                                     }
                                     size={16} color="#FFFFFF"
                                 />
-                                <Text style={styles.labelText}>{item.label}</Text>
+                                <Text style={styles.labelText}>{getTranslatedLabel(item.label)}</Text>
                             </View>
                             {item.isDefault && (
                                 <View style={styles.defaultBadge}>
-                                    <Text style={styles.defaultBadgeText}>Default</Text>
+                                    <Text style={styles.defaultBadgeText}>{t('manage_addresses.default_badge')}</Text>
                                 </View>
                             )}
                         </View>
@@ -513,16 +519,16 @@ export default function ManageAddressesScreen() {
                             {!item.isDefault && (
                                 <TouchableOpacity style={dynamicStyles.actionBtn} onPress={() => setDefault(item)}>
                                     <Ionicons name="checkmark-circle-outline" size={16} color={colors.primary} />
-                                    <Text style={dynamicStyles.actionBtnText}>Set Default</Text>
+                                    <Text style={dynamicStyles.actionBtnText}>{t('manage_addresses.set_default')}</Text>
                                 </TouchableOpacity>
                             )}
                             <TouchableOpacity style={dynamicStyles.actionBtn} onPress={() => startEdit(item)}>
                                 <Ionicons name="pencil-outline" size={16} color={colors.primary} />
-                                <Text style={dynamicStyles.actionBtnText}>Edit</Text>
+                                    <Text style={dynamicStyles.actionBtnText}>{t('manage_addresses.edit')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={[dynamicStyles.actionBtn, styles.deleteBtn]} onPress={() => deleteAddress(item)}>
                                 <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                                <Text style={[dynamicStyles.actionBtnText, { color: '#EF4444' }]}>Delete</Text>
+                                <Text style={[dynamicStyles.actionBtnText, { color: '#EF4444' }]}>{t('manage_addresses.delete')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -530,10 +536,10 @@ export default function ManageAddressesScreen() {
 
                 {showAddForm && (
                     <View style={dynamicStyles.addForm}>
-                        <Text style={dynamicStyles.formTitle}>{editingId ? 'Edit Address' : 'Save Address'}</Text>
+                        <Text style={dynamicStyles.formTitle}>{editingId ? t('manage_addresses.edit_address') : t('manage_addresses.save_address_title')}</Text>
 
                         {/* Label Selection */}
-                        <Text style={dynamicStyles.fieldLabel}>Address Label *</Text>
+                        <Text style={dynamicStyles.fieldLabel}>{t('manage_addresses.address_label')}</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.labelChips}>
                             {LABEL_OPTIONS.map((label) => (
                                 <TouchableOpacity
@@ -542,18 +548,18 @@ export default function ManageAddressesScreen() {
                                     onPress={() => setNewLabel(label)}
                                 >
                                     <Text style={[dynamicStyles.labelChipText, newLabel === label && styles.labelChipTextActive]}>
-                                        {label}
+                                        {getTranslatedLabel(label)}
                                     </Text>
                                 </TouchableOpacity>
                             ))}
                         </ScrollView>
 
                         {/* Address Fields */}
-                        <Text style={dynamicStyles.fieldLabel}>Address Line 1 *</Text>
+                        <Text style={dynamicStyles.fieldLabel}>{t('manage_addresses.address_line1')}</Text>
                         <View style={styles.inputWithButton}>
                             <TextInput
                                 style={[dynamicStyles.input, { flex: 1 }]}
-                                placeholder="Street address"
+                                placeholder={t('manage_addresses.street_address_placeholder')}
                                 placeholderTextColor={colors.textMuted}
                                 multiline
                                 numberOfLines={2}
@@ -568,10 +574,10 @@ export default function ManageAddressesScreen() {
                             </TouchableOpacity>
                         </View>
 
-                        <Text style={dynamicStyles.fieldLabel}>Address Line 2 (Optional)</Text>
+                        <Text style={dynamicStyles.fieldLabel}>{t('manage_addresses.address_line2')}</Text>
                         <TextInput
                             style={dynamicStyles.input}
-                            placeholder="Apartment, suite, etc."
+                            placeholder={t('manage_addresses.apartment_placeholder')}
                             placeholderTextColor={colors.textMuted}
                             value={newLine2}
                             onChangeText={setNewLine2}
@@ -579,20 +585,20 @@ export default function ManageAddressesScreen() {
 
                         <View style={styles.twoColRow}>
                             <View style={styles.twoColField}>
-                                <Text style={dynamicStyles.fieldLabel}>City *</Text>
+                                <Text style={dynamicStyles.fieldLabel}>{t('manage_addresses.city_label')}</Text>
                                 <TextInput
                                     style={dynamicStyles.input}
-                                    placeholder="City"
+                                    placeholder={t('manage_addresses.city_placeholder')}
                                     placeholderTextColor={colors.textMuted}
                                     value={newCity}
                                     onChangeText={setNewCity}
                                 />
                             </View>
                             <View style={styles.twoColField}>
-                                <Text style={dynamicStyles.fieldLabel}>State *</Text>
+                                <Text style={dynamicStyles.fieldLabel}>{t('manage_addresses.state_label')}</Text>
                                 <TextInput
                                     style={dynamicStyles.input}
-                                    placeholder="State"
+                                    placeholder={t('manage_addresses.state_placeholder')}
                                     placeholderTextColor={colors.textMuted}
                                     value={newState}
                                     onChangeText={setNewState}
@@ -600,10 +606,10 @@ export default function ManageAddressesScreen() {
                             </View>
                         </View>
 
-                        <Text style={dynamicStyles.fieldLabel}>Pincode *</Text>
+                        <Text style={dynamicStyles.fieldLabel}>{t('manage_addresses.pincode_label')}</Text>
                         <TextInput
                             style={dynamicStyles.input}
-                            placeholder="6-digit pincode"
+                            placeholder={t('manage_addresses.pincode_placeholder')}
                             placeholderTextColor={colors.textMuted}
                             keyboardType="numeric"
                             maxLength={6}
@@ -611,10 +617,10 @@ export default function ManageAddressesScreen() {
                             onChangeText={setNewPincode}
                         />
 
-                        <Text style={dynamicStyles.fieldLabel}>Landmark (Optional)</Text>
+                        <Text style={dynamicStyles.fieldLabel}>{t('manage_addresses.landmark_label')}</Text>
                         <TextInput
                             style={dynamicStyles.input}
-                            placeholder="e.g. Near Apollo Hospital, Opposite Park"
+                            placeholder={t('manage_addresses.landmark_placeholder')}
                             placeholderTextColor={colors.textMuted}
                             value={newLandmark}
                             onChangeText={setNewLandmark}
@@ -622,7 +628,7 @@ export default function ManageAddressesScreen() {
 
                         <View style={styles.formActions}>
                             <TouchableOpacity style={dynamicStyles.cancelFormBtn} onPress={resetForm}>
-                                <Text style={dynamicStyles.cancelFormText}>Cancel</Text>
+                                <Text style={dynamicStyles.cancelFormText}>{t('manage_addresses.cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[dynamicStyles.saveFormBtn, saving && { opacity: 0.6 }]}
@@ -632,7 +638,7 @@ export default function ManageAddressesScreen() {
                                 {saving ? (
                                     <ActivityIndicator color="#FFF" size="small" />
                                 ) : (
-                                    <Text style={styles.saveFormText}>{editingId ? 'Update' : 'Save'}</Text>
+                                    <Text style={styles.saveFormText}>{editingId ? t('manage_addresses.update') : t('manage_addresses.save')}</Text>
                                 )}
                             </TouchableOpacity>
                         </View>
@@ -656,7 +662,7 @@ export default function ManageAddressesScreen() {
                         activeOpacity={0.7}
                     >
                         <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
-                        <Text style={dynamicStyles.addButtonText}>Add New Address</Text>
+                        <Text style={dynamicStyles.addButtonText}>{t('manage_addresses.add_new_address')}</Text>
                     </TouchableOpacity>
                 )}
 

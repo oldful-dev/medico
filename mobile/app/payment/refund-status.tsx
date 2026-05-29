@@ -1,10 +1,11 @@
-﻿// Refund Status - Track refund progress
+// Refund Status - Track refund progress
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 
 // ─── Refund Timeline Steps ───
@@ -19,6 +20,15 @@ const TIMELINE_STEPS = [
 export default function RefundStatusScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { t } = useTranslation();
+
+    const TIMELINE_STEPS = [
+        { label: t('refund_status.step_requested'), date: '02 Mar 2026, 3:00 PM', status: 'completed' },
+        { label: t('refund_status.step_under_review'), date: '02 Mar 2026, 3:15 PM', status: 'completed' },
+        { label: t('refund_status.step_approved'), date: '03 Mar 2026, 10:30 AM', status: 'current' },
+        { label: t('refund_status.step_initiated'), date: '', status: 'pending' },
+        { label: t('refund_status.step_credited'), date: '', status: 'pending' },
+    ];
 
     return (
         <View style={styles.screen}>
@@ -30,7 +40,7 @@ export default function RefundStatusScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Refund Status</Text>
+                <Text style={styles.headerTitle}>{t('refund_status.header_title')}</Text>
             </View>
 
             {/* ─── Content Card ─── */}
@@ -47,13 +57,13 @@ export default function RefundStatusScreen() {
                                 <Ionicons name="hourglass" size={28} color="#FFFFFF" />
                             </View>
                         </View>
-                        <Text style={styles.statusTitle}>Refund In Progress</Text>
+                        <Text style={styles.statusTitle}>{t('refund_status.in_progress_title')}</Text>
                         <Text style={styles.statusSubtitle}>
-                            Your refund request has been approved and is being processed.
+                            {t('refund_status.in_progress_subtitle')}
                         </Text>
 
                         <View style={styles.amountRow}>
-                            <Text style={styles.amountLabel}>Refund Amount</Text>
+                            <Text style={styles.amountLabel}>{t('refund_status.refund_amount')}</Text>
                             <Text style={styles.amountValue}>₹499.00</Text>
                         </View>
                     </View>
@@ -61,24 +71,24 @@ export default function RefundStatusScreen() {
                     {/* Order Reference */}
                     <View style={styles.refCard}>
                         <View style={styles.refRow}>
-                            <Text style={styles.refLabel}>Booking ID</Text>
+                            <Text style={styles.refLabel}>{t('refund_status.booking_id')}</Text>
                             <Text style={styles.refValue}>MED-2026-03-02-001</Text>
                         </View>
                         <View style={styles.refDivider} />
                         <View style={styles.refRow}>
-                            <Text style={styles.refLabel}>Request ID</Text>
+                            <Text style={styles.refLabel}>{t('refund_status.request_id')}</Text>
                             <Text style={styles.refValue}>REF-2026-03-02-042</Text>
                         </View>
                         <View style={styles.refDivider} />
                         <View style={styles.refRow}>
-                            <Text style={styles.refLabel}>Refund To</Text>
-                            <Text style={styles.refValue}>Original Payment Method</Text>
+                            <Text style={styles.refLabel}>{t('refund_status.refund_to')}</Text>
+                            <Text style={styles.refValue}>{t('refund_status.original_method')}</Text>
                         </View>
                     </View>
 
                     {/* Timeline Card */}
                     <View style={styles.timelineCard}>
-                        <Text style={styles.timelineCardTitle}>Refund Progress</Text>
+                        <Text style={styles.timelineCardTitle}>{t('refund_status.refund_progress')}</Text>
 
                         {TIMELINE_STEPS.map((step, index) => {
                             const isCompleted = step.status === 'completed';
@@ -133,7 +143,7 @@ export default function RefundStatusScreen() {
                     <View style={styles.estimateBanner}>
                         <Ionicons name="time-outline" size={18} color="#02743F" />
                         <Text style={styles.estimateText}>
-                            Estimated completion: 5-7 business days from approval date.
+                            {t('refund_status.estimated_completion')}
                         </Text>
                     </View>
 
@@ -141,8 +151,8 @@ export default function RefundStatusScreen() {
                     <TouchableOpacity style={styles.helpCard}>
                         <Ionicons name="chatbubble-ellipses-outline" size={20} color="#02743F" />
                         <View style={styles.helpTextGroup}>
-                            <Text style={styles.helpTitle}>Need Help?</Text>
-                            <Text style={styles.helpSubtitle}>Contact support for refund queries</Text>
+                            <Text style={styles.helpTitle}>{t('refund_status.need_help')}</Text>
+                            <Text style={styles.helpSubtitle}>{t('refund_status.contact_support')}</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={18} color="#AAAEAC" />
                     </TouchableOpacity>

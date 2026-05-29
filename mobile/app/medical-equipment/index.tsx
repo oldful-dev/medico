@@ -9,6 +9,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { useTranslation } from 'react-i18next';
 
 
 // ─── Figma Assets ───
@@ -20,6 +21,7 @@ const imgWalker = require('@/assets/images/00863cfbd96593a21fa1f5b136210f8574404
 
 
 export default function MedicalEquipmentScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
@@ -34,23 +36,23 @@ export default function MedicalEquipmentScreen() {
 
     const handleBookService = async () => {
         if (!selectedEquipment) {
-            Alert.alert('Required', 'Please select the equipment you need.');
+            Alert.alert(t('common.required'), t('medical_equipment.select_equipment'));
             return;
         }
         if (!selectedDuration) {
-            Alert.alert('Required', 'Please select a rental duration.');
+            Alert.alert(t('common.required'), t('medical_equipment.select_duration'));
             return;
         }
         if (!selectedDate) {
-            Alert.alert('Date Required', 'Please select a pickup/delivery date.');
+            Alert.alert(t('common.required'), t('medical_equipment.select_date'));
             return;
         }
         if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert('Address Required', 'Could not fetch your address. Please wait or try again.');
+            Alert.alert(t('service_detail.address_required'), t('service_detail.address_required_desc'));
             return;
         }
         if (!cityId || !serviceId) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            Alert.alert(t('common.error'), t('booking.init_incomplete'));
             return;
         }
         try {
@@ -74,7 +76,7 @@ export default function MedicalEquipmentScreen() {
             });
         } catch (error) {
             console.error('Equipment error:', error);
-            Alert.alert('Error', 'Something went wrong. Please try again.');
+            Alert.alert(t('common.error'), t('booking.something_wrong'));
         } finally {
             setIsBooking(false);
         }
@@ -94,8 +96,8 @@ export default function MedicalEquipmentScreen() {
                             <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#F1F5F9' : '#02743F'} />
                         </TouchableOpacity>
                         <View style={dynamicStyles.headerTextCol}>
-                            <Text style={dynamicStyles.headerTitle}>Rent Medical Equipment</Text>
-                            <Text style={dynamicStyles.headerSubtitle}>Wheelchairs, Beds, and Oxygen on rent.</Text>
+                            <Text style={dynamicStyles.headerTitle}>{t('medical_equipment.header')}</Text>
+                            <Text style={dynamicStyles.headerSubtitle}>{t('medical_equipment.subtitle')}</Text>
                         </View>
                     </View>
                 </View>
@@ -105,7 +107,7 @@ export default function MedicalEquipmentScreen() {
 
                     {/* ─── Select Equipment Section ─── */}
                     <View style={dynamicStyles.sectionCardTintedDark}>
-                        <Text style={dynamicStyles.sectionTitle}>Select equipment set rental dyration</Text>
+                        <Text style={dynamicStyles.sectionTitle}>{t('medical_equipment.equipment_section')}</Text>
 
                         <View style={dynamicStyles.equipmentGrid}>
                             {/* Wheelchair */}
@@ -115,8 +117,8 @@ export default function MedicalEquipmentScreen() {
                                 activeOpacity={0.7}
                             >
                                 <Image source={imgWheelchair} style={dynamicStyles.equipmentImage} resizeMode="contain" />
-                                <Text style={dynamicStyles.equipmentName}>Wheelchair</Text>
-                                <Text style={dynamicStyles.equipmentDesc}>Manual/Electric</Text>
+                                <Text style={dynamicStyles.equipmentName}>{t('medical_equipment.wheelchair')}</Text>
+                                <Text style={dynamicStyles.equipmentDesc}>{t('medical_equipment.wheelchair_desc')}</Text>
                             </TouchableOpacity>
 
                             {/* Hospital Bed */}
@@ -126,8 +128,8 @@ export default function MedicalEquipmentScreen() {
                                 activeOpacity={0.7}
                             >
                                 <Image source={imgHospitalBed} style={[dynamicStyles.equipmentImage, dynamicStyles.bedImage]} resizeMode="contain" />
-                                <Text style={dynamicStyles.equipmentName}>Hospital Bed</Text>
-                                <Text style={dynamicStyles.equipmentDesc}>Manual/Electric</Text>
+                                <Text style={dynamicStyles.equipmentName}>{t('medical_equipment.hospital_bed')}</Text>
+                                <Text style={dynamicStyles.equipmentDesc}>{t('medical_equipment.hospital_bed_desc')}</Text>
                             </TouchableOpacity>
 
                             {/* Oxygen Concentrator */}
@@ -137,7 +139,7 @@ export default function MedicalEquipmentScreen() {
                                 activeOpacity={0.7}
                             >
                                 <Image source={imgOxygen} style={[dynamicStyles.equipmentImage, dynamicStyles.oxygenImage]} resizeMode="contain" />
-                                <Text style={[dynamicStyles.equipmentName, dynamicStyles.oxygenText]}>Oxygen Concentrator</Text>
+                                <Text style={[dynamicStyles.equipmentName, dynamicStyles.oxygenText]}>{t('medical_equipment.oxygen')}</Text>
                             </TouchableOpacity>
 
                             {/* Walker/stick */}
@@ -147,35 +149,35 @@ export default function MedicalEquipmentScreen() {
                                 activeOpacity={0.7}
                             >
                                 <Image source={imgWalker} style={[dynamicStyles.equipmentImage, dynamicStyles.walkerImage]} resizeMode="contain" />
-                                <Text style={dynamicStyles.equipmentName}>Walker/stick</Text>
+                                <Text style={dynamicStyles.equipmentName}>{t('medical_equipment.walker')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
 
                     {/* ─── Set Rental Duration Section ─── */}
                     <View style={dynamicStyles.sectionCardTintedLight}>
-                        <Text style={dynamicStyles.sectionTitle}>Set Rental Duration</Text>
+                        <Text style={dynamicStyles.sectionTitle}>{t('medical_equipment.duration')}</Text>
 
                         <TouchableOpacity style={dynamicStyles.radioRow} onPress={() => setSelectedDuration('Weekly')} activeOpacity={0.7}>
-                            <Ionicons name={selectedDuration === 'Weekly' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedDuration === 'Weekly' ? "#02743F" : "#02743F"} />
-                            <Text style={dynamicStyles.radioLabel}>Weekly</Text>
+                            <Ionicons name={selectedDuration === 'Weekly' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedDuration === 'Weekly' ? colors.primary : (isDarkMode ? '#64748B' : '#AAAEAC')} />
+                            <Text style={dynamicStyles.radioLabel}>{t('medical_equipment.weekly')}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={dynamicStyles.radioRow} onPress={() => setSelectedDuration('Monthly')} activeOpacity={0.7}>
-                            <Ionicons name={selectedDuration === 'Monthly' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedDuration === 'Monthly' ? "#02743F" : "#02743F"} />
-                            <Text style={dynamicStyles.radioLabel}>Monthly</Text>
+                            <Ionicons name={selectedDuration === 'Monthly' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedDuration === 'Monthly' ? colors.primary : (isDarkMode ? '#64748B' : '#AAAEAC')} />
+                            <Text style={dynamicStyles.radioLabel}>{t('medical_equipment.monthly')}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={dynamicStyles.radioRow} onPress={() => setSelectedDuration('Custom')} activeOpacity={0.7}>
-                            <Ionicons name={selectedDuration === 'Custom' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedDuration === 'Custom' ? "#02743F" : "#02743F"} />
-                            <Text style={dynamicStyles.radioLabel}>Custom</Text>
+                            <Ionicons name={selectedDuration === 'Custom' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedDuration === 'Custom' ? colors.primary : (isDarkMode ? '#64748B' : '#AAAEAC')} />
+                            <Text style={dynamicStyles.radioLabel}>{t('medical_equipment.custom')}</Text>
                         </TouchableOpacity>
                     </View>
 
                     {/* ─── Schedule Pick-up Section ─── */}
                     <View style={dynamicStyles.sectionCardTransparent}>
                         <CustomDateTimePicker
-                            label="When?"
+                            label={t('medical_equipment.when')}
                             value={selectedDate}
                             onDateChange={setSelectedDate}
                         />
@@ -190,11 +192,11 @@ export default function MedicalEquipmentScreen() {
                             onPress={handleBookService}
                         >
                             {isLoadingInit ? (
-                                <Text style={dynamicStyles.confirmButtonText}>Initializing...</Text>
+                                <Text style={dynamicStyles.confirmButtonText}>{t('common.initializing')}</Text>
                             ) : isBooking ? (
                                 <ActivityIndicator color="#FFFFFF" />
                             ) : (
-                                <Text style={dynamicStyles.confirmButtonText}>Confirm Rental</Text>
+                                <Text style={dynamicStyles.confirmButtonText}>{t('medical_equipment.confirm_rental')}</Text>
                             )}
                         </TouchableOpacity>
                     </View>
@@ -331,7 +333,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     equipmentDesc: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 8,
-        color: '#777777',
+        color: isDarkMode ? '#AAAAAA' : '#777777',
         textAlign: 'center',
     },
 
@@ -356,9 +358,9 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     scheduleBox: {
         flex: 1,
-        backgroundColor: 'rgba(255, 253, 253, 0.26)',
+        backgroundColor: isDarkMode ? '#1E293B' : 'rgba(255, 253, 253, 0.26)',
         borderWidth: 2,
-        borderColor: '#898989',
+        borderColor: isDarkMode ? '#475569' : '#898989',
         borderRadius: 10,
         height: 75,
         justifyContent: 'center',
@@ -366,7 +368,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         marginHorizontal: 8, // Gap between boxes
     },
     scheduleBoxActive: {
-        borderColor: '#02743F', // Green border for selected
+        borderColor: isDarkMode ? '#34D399' : '#02743F', // Green border for selected
     },
     scheduleHeader: {
         flexDirection: 'row',
@@ -386,22 +388,23 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     schedulePrimaryText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 14,
-        color: '#555555',
+        color: isDarkMode ? '#F1F5F9' : '#555555',
     },
     schedulePrimaryTextClock: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 18, // Time is larger
-        color: '#555555',
+        color: isDarkMode ? '#F1F5F9' : '#555555',
         lineHeight: 22,
     },
     scheduleAmPm: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 14,
+        color: isDarkMode ? '#94A3B8' : '#777777',
     },
     scheduleSecondaryText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 14,
-        color: '#555555',
+        color: isDarkMode ? '#CBD5E1' : '#555555',
     },
 
     /* ─── Main Button ─── */

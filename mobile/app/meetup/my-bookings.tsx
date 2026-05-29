@@ -9,27 +9,29 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { meetupService } from '@/services/api/meetupService';
 import type { MeetupRegistration } from '@/services/api/meetupService';
+import { useTranslation } from 'react-i18next';
 
 const PRIMARY = '#02743F';
 
 type Tab = 'upcoming' | 'past';
-
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-    confirmed:  { label: 'Confirmed',  color: PRIMARY,    bg: '#D1FAE5' },
-    pending:    { label: 'Pending',    color: '#D97706',  bg: '#FEF3C7' },
-    cancelled:  { label: 'Cancelled',  color: '#DC2626',  bg: '#FEE2E2' },
-    attended:   { label: 'Attended',   color: '#7C3AED',  bg: '#EDE9FE' },
-};
 
 export default function MeetupMyBookingsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState<Tab>('upcoming');
     const [bookings, setBookings] = useState<MeetupRegistration[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+
+    const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+        confirmed:  { label: t('meetup.status_confirmed', 'Confirmed'),  color: PRIMARY,    bg: '#D1FAE5' },
+        pending:    { label: t('meetup.status_pending', 'Pending'),    color: '#D97706',  bg: '#FEF3C7' },
+        cancelled:  { label: t('meetup.status_cancelled', 'Cancelled'),  color: '#DC2626',  bg: '#FEE2E2' },
+        attended:   { label: t('meetup.status_attended', 'Attended'),   color: '#7C3AED',  bg: '#EDE9FE' },
+    };
 
     const upcomingBookings = bookings.filter(b => b.status !== 'CANCELLED' && b.status !== 'ATTENDED');
     const pastBookings = bookings.filter(b => b.status === 'ATTENDED' || b.status === 'CANCELLED');
@@ -64,8 +66,8 @@ export default function MeetupMyBookingsScreen() {
                     <Ionicons name="arrow-back" size={22} color="#fff" />
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
-                    <Text style={makeStyles(isDarkMode, colors).headerTitle}>My Bookings</Text>
-                    <Text style={makeStyles(isDarkMode, colors).headerSub}>Local meetup registrations</Text>
+                    <Text style={makeStyles(isDarkMode, colors).headerTitle}>{t('meetup.my_bookings_header', 'My Bookings')}</Text>
+                    <Text style={makeStyles(isDarkMode, colors).headerSub}>{t('meetup.my_bookings_subtitle', 'Local meetup registrations')}</Text>
                 </View>
                 <View style={makeStyles(isDarkMode, colors).countBadge}>
                     <Text style={makeStyles(isDarkMode, colors).countText}>{upcomingBookings.length}</Text>
@@ -82,7 +84,7 @@ export default function MeetupMyBookingsScreen() {
                         activeOpacity={0.8}
                     >
                         <Text style={[makeStyles(isDarkMode, colors).tabText, activeTab === tab && styles.tabTextActive]}>
-                            {tab === 'upcoming' ? 'Upcoming' : 'Past'}
+                            {tab === 'upcoming' ? t('meetup.tab_upcoming', 'Upcoming') : t('meetup.tab_past', 'Past')}
                         </Text>
                         {tab === 'upcoming' && upcomingBookings.length > 0 && (
                             <View style={[makeStyles(isDarkMode, colors).tabBadge, activeTab === tab && styles.tabBadgeActive]}>
@@ -111,19 +113,19 @@ export default function MeetupMyBookingsScreen() {
                                 <Ionicons name="calendar-outline" size={40} color={Colors.textMuted} />
                             </View>
                             <Text style={makeStyles(isDarkMode, colors).emptyTitle}>
-                                {activeTab === 'upcoming' ? 'No upcoming meetups' : 'No past meetups'}
+                                {activeTab === 'upcoming' ? t('meetup.no_upcoming_meetups', 'No upcoming meetups') : t('meetup.no_past_meetups', 'No past meetups')}
                             </Text>
                             <Text style={makeStyles(isDarkMode, colors).emptySub}>
                                 {activeTab === 'upcoming'
-                                    ? 'Browse and join a local meetup near you'
-                                    : 'Your attended meetups will appear here'}
+                                    ? t('meetup.browse_meetups_sub', 'Browse and join a local meetup near you')
+                                    : t('meetup.past_meetups_sub', 'Your attended meetups will appear here')}
                             </Text>
                             {activeTab === 'upcoming' && (
                                 <TouchableOpacity
                                     style={makeStyles(isDarkMode, colors).browseBtn}
                                     onPress={() => router.push('/meetup' as any)}
                                 >
-                                    <Text style={makeStyles(isDarkMode, colors).browseBtnText}>Browse Meetups</Text>
+                                    <Text style={makeStyles(isDarkMode, colors).browseBtnText}>{t('meetup.browse_meetups', 'Browse Meetups')}</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -148,7 +150,7 @@ export default function MeetupMyBookingsScreen() {
                                     <View style={makeStyles(isDarkMode, colors).cardBody}>
                                         <Text style={makeStyles(isDarkMode, colors).cardTitle}>{meetup?.title ?? 'Meetup'}</Text>
                                         <Text style={{ fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted, marginBottom: 8 }}>
-                                            Booking: {booking.bookingCode}
+                                            {t('meetup.booking_label', { code: booking.bookingCode })}
                                         </Text>
 
                                         <View style={makeStyles(isDarkMode, colors).cardMeta}>
@@ -177,19 +179,19 @@ export default function MeetupMyBookingsScreen() {
                                         {booking.pickupEnabled && (
                                             <View style={makeStyles(isDarkMode, colors).pickupRow}>
                                                 <Ionicons name="car-outline" size={13} color={PRIMARY} />
-                                                <Text style={makeStyles(isDarkMode, colors).pickupText}>Pickup: {booking.pickupAddress}</Text>
+                                                <Text style={makeStyles(isDarkMode, colors).pickupText}>{t('meetup.pickup_label', { address: booking.pickupAddress })}</Text>
                                             </View>
                                         )}
 
                                         <View style={makeStyles(isDarkMode, colors).cardFooter}>
                                             <View style={makeStyles(isDarkMode, colors).amountBadge}>
-                                                <Text style={makeStyles(isDarkMode, colors).amountText}>₹{booking.amountPaid} • {booking.paymentStatus === 'PAID' ? '✓ Paid' : 'Pending'}</Text>
+                                                <Text style={makeStyles(isDarkMode, colors).amountText}>₹{booking.amountPaid} • {booking.paymentStatus === 'PAID' ? `✓ ${t('meetup.paid', 'Paid')}` : t('meetup.payment_pending', 'Pending')}</Text>
                                             </View>
                                             <TouchableOpacity
                                                 style={makeStyles(isDarkMode, colors).viewBtn}
                                                 onPress={() => router.push({ pathname: '/meetup/details', params: { id: booking.meetupId } } as any)}
                                             >
-                                                <Text style={makeStyles(isDarkMode, colors).viewBtnText}>View Details</Text>
+                                                <Text style={makeStyles(isDarkMode, colors).viewBtnText}>{t('meetup.view_details', 'View Details')}</Text>
                                                 <Ionicons name="arrow-forward" size={13} color={PRIMARY} />
                                             </TouchableOpacity>
                                         </View>
@@ -209,7 +211,7 @@ export default function MeetupMyBookingsScreen() {
                 activeOpacity={0.85}
             >
                 <Ionicons name="add" size={22} color="#fff" />
-                <Text style={makeStyles(isDarkMode, colors).fabText}>Join Meetup</Text>
+                <Text style={makeStyles(isDarkMode, colors).fabText}>{t('meetup.join_now', 'Join Now')}</Text>
             </TouchableOpacity>
         </View>
     );

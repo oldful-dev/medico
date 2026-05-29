@@ -639,7 +639,7 @@ export default function ServiceCheckoutScreen() {
                             {benefitApplied ? (
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                     <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>₹{originalBookingFee}</Text>
-                                    <Text style={[styles.breakdownValue, { color: '#2e7d32', fontFamily: Fonts.semiBold }]}> FREE</Text>
+                                    <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> FREE</Text>
                                 </View>
                             ) : (
                                 <Text style={styles.breakdownValue}>₹{bookingFee}</Text>
@@ -650,7 +650,7 @@ export default function ServiceCheckoutScreen() {
                             {benefitApplied ? (
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                     <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>₹{originalPlatformFee}</Text>
-                                    <Text style={[styles.breakdownValue, { color: '#2e7d32', fontFamily: Fonts.semiBold }]}> FREE</Text>
+                                    <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> FREE</Text>
                                 </View>
                             ) : (
                                 <Text style={styles.breakdownValue}>₹{platformFee}</Text>
@@ -667,8 +667,8 @@ export default function ServiceCheckoutScreen() {
 
                     {couponApplied && (
                         <View style={styles.row}>
-                            <Text style={[styles.rowLabel, { color: '#2e7d32' }]}>Coupon Discount</Text>
-                            <Text style={[styles.rowValue, { color: '#2e7d32' }]}>- ₹{discount.toLocaleString('en-IN')}</Text>
+                            <Text style={[styles.rowLabel, { color: isDarkMode ? colors.primary : '#2e7d32' }]}>Coupon Discount</Text>
+                            <Text style={[styles.rowValue, { color: isDarkMode ? colors.primary : '#2e7d32' }]}>- ₹{discount.toLocaleString('en-IN')}</Text>
                         </View>
                     )}
                     <View style={[styles.row, styles.totalRow]}>
@@ -704,7 +704,7 @@ export default function ServiceCheckoutScreen() {
                                     <Ionicons
                                         name={selectedAddress?.id === addr.id ? 'radio-button-on' : 'radio-button-off'}
                                         size={20}
-                                        color={selectedAddress?.id === addr.id ? colors.primary : colors.textLight}
+                                        color={selectedAddress?.id === addr.id ? colors.primary : colors.textMuted}
                                     />
                                     <View style={{ flex: 1, marginLeft: 12 }}>
                                         <Text style={styles.addressLabel}>
@@ -739,7 +739,7 @@ export default function ServiceCheckoutScreen() {
                     <Text style={styles.cardTitle}>Promo Code</Text>
                     {couponApplied ? (
                         <View style={styles.couponApplied}>
-                            <Ionicons name="checkmark-circle" size={18} color="#2e7d32" />
+                            <Ionicons name="checkmark-circle" size={18} color={isDarkMode ? colors.primary : "#2e7d32"} />
                             <Text style={styles.couponAppliedText}>&quot;{couponCode}&quot; applied — saved ₹{discount}</Text>
                             <TouchableOpacity onPress={handleRemoveCoupon}>
                                 <Ionicons name="close-circle-outline" size={18} color="#999" />
@@ -781,14 +781,14 @@ export default function ServiceCheckoutScreen() {
                             onPress={() => setSelectedMethod(m.type)}
                             activeOpacity={0.8}
                         >
-                            <Ionicons name={m.icon} size={20} color={selectedMethod === m.type ? colors.primary : colors.textLight} />
+                            <Ionicons name={m.icon} size={20} color={selectedMethod === m.type ? colors.primary : colors.textMuted} />
                             <Text style={[styles.methodLabel, selectedMethod === m.type && styles.methodLabelActive]}>
                                 {m.label}
                             </Text>
                             <Ionicons
                                 name={selectedMethod === m.type ? 'radio-button-on' : 'radio-button-off'}
                                 size={20}
-                                color={selectedMethod === m.type ? colors.primary : colors.textLight}
+                                color={selectedMethod === m.type ? colors.primary : colors.textMuted}
                                 style={{ marginLeft: 'auto' }}
                             />
                         </TouchableOpacity>
@@ -859,11 +859,11 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     cardTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textDark, marginBottom: Spacing.xs ?? 4 },
 
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    rowLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textLight },
+    rowLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textMuted },
     rowValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: colors.textDark },
 
     detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, paddingVertical: Spacing.sm },
-    detailLabel: { fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: colors.textLight },
+    detailLabel: { fontFamily: Fonts.regular, fontSize: FontSize.caption ?? 12, color: colors.textMuted },
     detailValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: colors.textDark, marginTop: 4 },
 
     meetupCard: { gap: 0 },
@@ -970,7 +970,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         borderColor: colors.borderLight,
     },
     methodRowActive: { borderColor: colors.primary, backgroundColor: isDarkMode ? 'rgba(52, 199, 89, 0.1)' : '#F0FAF4' },
-    methodLabel: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textLight },
+    methodLabel: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textMuted },
     methodLabelActive: { color: colors.textDark, fontFamily: Fonts.medium },
 
     securityNote: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: Spacing.md },
@@ -990,7 +990,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     benefitNote: {
         fontFamily: Fonts.medium,
         fontSize: 10,
-        color: '#2e7d32',
+        color: isDarkMode ? colors.primary : '#2e7d32',
         textAlign: 'right',
         marginTop: -2,
     },

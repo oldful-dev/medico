@@ -11,6 +11,7 @@ import { planService, Plan, BillingCycle } from '@/services/api/planService';
 import { useUser } from '@/context/UserContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTranslation } from 'react-i18next';
 
 // ─── Tier config ──────────────────────────────────────────
 const TIER_CONFIG: Record<string, { color: string; bg: string; gradient: string; icon: string }> = {
@@ -135,6 +136,7 @@ function PlanCard({
 }: {
     plan: Plan; cycle: CycleKey; isActive: boolean; onSelect: () => void; isDisabled?: boolean;
 }) {
+    const { t } = useTranslation();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     const styles = makeStyles(isDarkMode, colors);
@@ -144,7 +146,10 @@ function PlanCard({
     const iconBg = isDarkMode ? `${tier.color}33` : tier.bg;
     const price = getPlanPrice(plan, cycle);
     const benefits = parseBenefits(plan.benefits);
-    const cycleLabel = CYCLES.find(c => c.key === cycle)?.label || '';
+
+    const planNameKey = plan.name.toLowerCase().replace(' ', '_');
+    const hasTranslation = t('subscription.plan_names.' + planNameKey) !== 'subscription.plan_names.' + planNameKey;
+    const localizedPlanName = hasTranslation ? t('subscription.plan_names.' + planNameKey) : plan.name;
 
     return (
         <TouchableOpacity
@@ -160,7 +165,7 @@ function PlanCard({
         >
             {isActive && (
                 <View style={[styles.activeBadge, { backgroundColor: tier.color }]}>
-                    <Text style={styles.activeBadgeText}>Active Plan</Text>
+                    <Text style={styles.activeBadgeText}>{t('subscription.active_plan')}</Text>
                 </View>
             )}
 
@@ -169,14 +174,14 @@ function PlanCard({
                     <Ionicons name={tier.icon as any} size={24} color={tier.color} />
                 </View>
                 <View style={{ flex: 1 }}>
-                    <Text style={[styles.planName, { color: tier.color }]}>{plan.name}</Text>
+                    <Text style={[styles.planName, { color: tier.color }]}>{localizedPlanName}</Text>
                     {plan.description ? <Text style={styles.planDesc} numberOfLines={2}>{plan.description}</Text> : null}
                 </View>
             </View>
 
             <View style={styles.planPriceRow}>
                 <Text style={[styles.planPrice, { color: tier.color }]}>₹{price.toLocaleString('en-IN')}</Text>
-                <Text style={styles.planCycleLabel}>/ {cycleLabel}</Text>
+                <Text style={styles.planCycleLabel}>/ {t('subscription.cycles.' + cycle.toLowerCase())}</Text>
             </View>
 
             {benefits.length > 0 && (
@@ -188,7 +193,9 @@ function PlanCard({
                         </View>
                     ))}
                     {benefits.length > 4 && (
-                        <Text style={[styles.moreBenefits, { color: tier.color }]}>+{benefits.length - 4} more benefits</Text>
+                        <Text style={[styles.moreBenefits, { color: tier.color }]}>
+                            {t('subscription.more_benefits', { count: benefits.length - 4 })}
+                        </Text>
                     )}
                 </View>
             )}
@@ -198,6 +205,7 @@ function PlanCard({
 
 // ─── Screen ───────────────────────────────────────────────
 export default function SubscriptionScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const { profile } = useUser();
     const { isDarkMode } = useTheme();
@@ -225,21 +233,25 @@ export default function SubscriptionScreen() {
     }, []));
 
     const handleSelectPlan = async (plan: Plan, isFromRenewButton: boolean = false) => {
+        const planNameKey = plan.name.toLowerCase().replace(' ', '_');
+        const hasTranslation = t('subscription.plan_names.' + planNameKey) !== 'subscription.plan_names.' + planNameKey;
+        const localizedPlanName = hasTranslation ? t('subscription.plan_names.' + planNameKey) : plan.name;
+
         // ─── Restrict plan change if user has active subscription ───
         if (activeSub && activeSub.status === 'ACTIVE') {
             // Only allow renewing the same plan via Renew button or contact support for upgrade
             if (plan.id === activePlanId && isFromRenewButton) {
                 // User can renew their current plan via Renew Now button
                 const price = getPlanPrice(plan, selectedCycle);
-                const cycleLabel = CYCLES.find(c => c.key === selectedCycle)?.label || '';
+                const cycleLabel = t('subscription.cycles.' + selectedCycle.toLowerCase());
 
                 Alert.alert(
-                    `Renew ${plan.name}`,
-                    `₹${price.toLocaleString('en-IN')} for ${cycleLabel}\n\nProceed to payment?`,
+                    t('subscription.renew_title', { name: localizedPlanName }),
+                    t('subscription.renew_confirm_msg', { price: price.toLocaleString('en-IN'), cycle: cycleLabel }),
                     [
-                        { text: 'Cancel', style: 'cancel' },
+                        { text: t('common.cancel'), style: 'cancel' },
                         {
-                            text: 'Continue',
+                            text: t('common.continue'),
                             onPress: async () => {
                                 setInitiating(plan.id);
                                 try {
@@ -258,10 +270,10 @@ export default function SubscriptionScreen() {
                                             },
                                         } as any);
                                     } else {
-                                        Alert.alert('Error', res.message || 'Could not initiate subscription.');
+                                        Alert.alert(t('common.error'), res.message || t('subscription.initiate_failed'));
                                     }
                                 } catch {
-                                    Alert.alert('Error', 'Something went wrong. Please try again.');
+                                    Alert.alert(t('common.error'), t('subscription.generic_failed'));
                                 } finally {
                                     setInitiating(null);
                                 }
@@ -272,19 +284,24 @@ export default function SubscriptionScreen() {
             } else if (plan.id === activePlanId && !isFromRenewButton) {
                 // User tapped card directly - block it
                 Alert.alert(
-                    'Renew Plan',
-                    'Use the "Renew Now" button above to renew your current plan.',
-                    [{ text: 'OK', style: 'cancel' }]
+                    t('subscription.renew_plan_alert_title'),
+                    t('subscription.renew_plan_alert_msg'),
+                    [{ text: t('common.ok'), style: 'cancel' }]
                 );
             } else {
                 // User cannot switch plans while active
+                const activePlanName = activeSub.plan?.name || '';
+                const activePlanNameKey = activePlanName.toLowerCase().replace(' ', '_');
+                const hasActiveTranslation = t('subscription.plan_names.' + activePlanNameKey) !== 'subscription.plan_names.' + activePlanNameKey;
+                const localizedActivePlanName = hasActiveTranslation ? t('subscription.plan_names.' + activePlanNameKey) : activePlanName;
+
                 Alert.alert(
-                    'Upgrade Plan?',
-                    `You currently have an active ${activeSub.plan?.name} plan. To upgrade or downgrade, please contact our support team for assistance.`,
+                    t('subscription.upgrade_plan_title'),
+                    t('subscription.upgrade_plan_msg', { activePlan: localizedActivePlanName }),
                     [
-                        { text: 'Dismiss', style: 'cancel' },
+                        { text: t('common.dismiss'), style: 'cancel' },
                         {
-                            text: 'Contact Support',
+                            text: t('subscription.contact_support'),
                             onPress: () => router.push('/help-support' as any),
                         },
                     ]
@@ -295,19 +312,20 @@ export default function SubscriptionScreen() {
 
         // ─── Normal flow: No active subscription, allow subscribing to any plan ───
         const price = getPlanPrice(plan, selectedCycle);
-        const cycleLabel = CYCLES.find(c => c.key === selectedCycle)?.label || '';
+        const cycleLabel = t('subscription.cycles.' + selectedCycle.toLowerCase());
 
         Alert.alert(
-            `Subscribe to ${plan.name}`,
-            `₹${price.toLocaleString('en-IN')} for ${cycleLabel}\n\nProceed to payment?`,
+            t('subscription.subscribe_title', { name: localizedPlanName }),
+            t('subscription.subscribe_confirm_msg', { price: price.toLocaleString('en-IN'), cycle: cycleLabel }),
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: 'Continue',
+                    text: t('common.continue'),
                     onPress: async () => {
                         setInitiating(plan.id);
                         try {
                             const res = await planService.initiateSubscription({
+                                // Make sure we pass the correct params
                                 planId: plan.id,
                                 billingCycle: selectedCycle,
                                 amount: price,
@@ -322,10 +340,10 @@ export default function SubscriptionScreen() {
                                     },
                                 } as any);
                             } else {
-                                Alert.alert('Error', res.message || 'Could not initiate subscription.');
+                                Alert.alert(t('common.error'), res.message || t('subscription.initiate_failed'));
                             }
                         } catch {
-                            Alert.alert('Error', 'Something went wrong. Please try again.');
+                            Alert.alert(t('common.error'), t('subscription.generic_failed'));
                         } finally {
                             setInitiating(null);
                         }
@@ -344,7 +362,7 @@ export default function SubscriptionScreen() {
                 <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textDark} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Membership</Text>
+                <Text style={styles.headerTitle}>{t('subscription.header_title')}</Text>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -357,15 +375,22 @@ export default function SubscriptionScreen() {
                             <View style={styles.activeSubLeft}>
                                 <Ionicons name="ribbon" size={26} color="#B45309" />
                                 <View>
-                                    <Text style={styles.activeSubTitle}>{activeSub.plan?.name || 'Active Plan'}</Text>
+                                    <Text style={styles.activeSubTitle}>
+                                        {(() => {
+                                            const name = activeSub.plan?.name || '';
+                                            const nameKey = name.toLowerCase().replace(' ', '_');
+                                            const hasTrans = t('subscription.plan_names.' + nameKey) !== 'subscription.plan_names.' + nameKey;
+                                            return hasTrans ? t('subscription.plan_names.' + nameKey) : (name || t('subscription.active_plan_fallback'));
+                                        })()}
+                                    </Text>
                                     <Text style={styles.activeSubMeta}>
-                                        Since: {formatDate(activeSub.startDate || activeSub.createdAt || '')}
+                                        {t('subscription.since')} {formatDate(activeSub.startDate || activeSub.createdAt || '')}
                                     </Text>
                                 </View>
                             </View>
                             <View style={[styles.activeStatusBadge, { backgroundColor: activeSub.status === 'ACTIVE' ? '#D1FAE5' : '#FEE2E2' }]}>
                                 <Text style={{ fontFamily: Fonts.medium, fontSize: 11, color: activeSub.status === 'ACTIVE' ? '#059669' : '#DC2626' }}>
-                                    {activeSub.status || 'Active'}
+                                    {activeSub.status || t('subscription.status_active')}
                                 </Text>
                             </View>
                         </View>
@@ -375,7 +400,7 @@ export default function SubscriptionScreen() {
                             <View style={styles.durationBlock}>
                                 <Ionicons name="calendar-outline" size={16} color="#B45309" />
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.durationLabel}>Plan Duration</Text>
+                                    <Text style={styles.durationLabel}>{t('subscription.plan_duration')}</Text>
                                     <Text style={styles.durationValue}>
                                         {formatDate(activeSub.startDate || activeSub.createdAt || '')} • {formatDate(activeSub.expiryDate || '')}
                                     </Text>
@@ -385,13 +410,13 @@ export default function SubscriptionScreen() {
                             <View style={styles.daysRemainingBlock}>
                                 <Ionicons name="hourglass-outline" size={16} color={calculateDaysRemaining(activeSub.expiryDate) && calculateDaysRemaining(activeSub.expiryDate)! <= 7 ? '#DC2626' : '#B45309'} />
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.daysLabel}>Days Remaining</Text>
+                                    <Text style={styles.daysLabel}>{t('subscription.days_remaining')}</Text>
                                     {calculateDaysRemaining(activeSub.expiryDate) !== null ? (
                                         <Text style={[
                                             styles.daysValue,
                                             calculateDaysRemaining(activeSub.expiryDate)! <= 7 && styles.daysValueWarning
                                         ]}>
-                                            {calculateDaysRemaining(activeSub.expiryDate)} days left
+                                            {t('subscription.days_left_count', { count: calculateDaysRemaining(activeSub.expiryDate) })}
                                         </Text>
                                     ) : (
                                         <Text style={styles.daysValue}>—</Text>
@@ -403,7 +428,7 @@ export default function SubscriptionScreen() {
                         <View style={styles.renewalRow}>
                             <View style={styles.renewalDateBlock}>
                                 <Ionicons name="time-outline" size={14} color="#B45309" />
-                                <Text style={styles.renewalLabel}>Renews on</Text>
+                                <Text style={styles.renewalLabel}>{t('subscription.renews_on')}</Text>
                                 <Text style={styles.renewalDate}>{formatDate(activeSub.expiryDate || '')}</Text>
                             </View>
                             <TouchableOpacity
@@ -411,11 +436,11 @@ export default function SubscriptionScreen() {
                                 onPress={() => {
                                     const activePlan = plans.find(p => p.id === activePlanId);
                                     if (activePlan) handleSelectPlan(activePlan, true); // true = from Renew button
-                                    else Alert.alert('Renew', 'Select a plan below to renew your membership.');
+                                    else Alert.alert(t('subscription.renew_alert_title'), t('subscription.renew_alert_msg'));
                                 }}
                             >
                                 <Ionicons name="refresh-outline" size={14} color="#fff" />
-                                <Text style={styles.renewBtnText}>Renew Now</Text>
+                                <Text style={styles.renewBtnText}>{t('subscription.renew_now')}</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -424,7 +449,7 @@ export default function SubscriptionScreen() {
                             <View style={styles.restrictionNotice}>
                                 <Ionicons name="information-circle" size={16} color="#B45309" />
                                 <Text style={styles.restrictionText}>
-                                    You can only renew your current plan. To upgrade or downgrade, contact support after expiry.
+                                    {t('subscription.restriction_notice')}
                                 </Text>
                             </View>
                         )}
@@ -432,7 +457,7 @@ export default function SubscriptionScreen() {
                 )}
 
                 {/* Billing cycle selector */}
-                <Text style={styles.sectionLabel}>Choose Billing Cycle</Text>
+                <Text style={styles.sectionLabel}>{t('subscription.choose_billing_cycle')}</Text>
                 <View style={styles.cycleSelector}>
                     {CYCLES.map(c => (
                         <TouchableOpacity
@@ -441,11 +466,11 @@ export default function SubscriptionScreen() {
                             onPress={() => setSelectedCycle(c.key)}
                         >
                             <Text style={[styles.cycleBtnText, selectedCycle === c.key && styles.cycleBtnTextActive]}>
-                                {c.label}
+                                {t('subscription.billing_cycles.' + c.key.toLowerCase())}
                             </Text>
                             {c.key === 'YEARLY' && (
                                 <View style={styles.savingsBadge}>
-                                    <Text style={styles.savingsBadgeText}>Best</Text>
+                                    <Text style={styles.savingsBadgeText}>{t('subscription.best_tag')}</Text>
                                 </View>
                             )}
                         </TouchableOpacity>
@@ -453,16 +478,16 @@ export default function SubscriptionScreen() {
                 </View>
 
                 {/* Plans */}
-                <Text style={styles.sectionLabel}>Choose a Plan</Text>
+                <Text style={styles.sectionLabel}>{t('subscription.choose_plan')}</Text>
                 {loading ? (
                     <View style={styles.center}>
                         <ActivityIndicator size="large" color={Colors.primary} />
-                        <Text style={styles.loadingText}>Loading plans…</Text>
+                        <Text style={styles.loadingText}>{t('subscription.loading_plans')}</Text>
                     </View>
                 ) : plans.length === 0 ? (
                     <View style={styles.center}>
                         <Ionicons name="ribbon-outline" size={48} color="#E5E7EB" />
-                        <Text style={styles.emptyText}>No plans available right now.</Text>
+                        <Text style={styles.emptyText}>{t('subscription.no_plans')}</Text>
                     </View>
                 ) : (
                     plans.map(plan => {
@@ -478,7 +503,7 @@ export default function SubscriptionScreen() {
                                 />
                                 {isDisabled && (
                                     <View style={styles.disabledOverlay}>
-                                        <Text style={styles.disabledText}>Contact support to upgrade</Text>
+                                        <Text style={styles.disabledText}>{t('subscription.contact_to_upgrade')}</Text>
                                     </View>
                                 )}
                                 {initiating === plan.id && (
@@ -494,7 +519,7 @@ export default function SubscriptionScreen() {
                 {/* Cancel note */}
                 {activeSub && (
                     <TouchableOpacity style={styles.cancelLink} onPress={() => router.push('/help-support' as any)}>
-                        <Text style={styles.cancelLinkText}>Want to cancel your subscription? Contact support →</Text>
+                        <Text style={styles.cancelLinkText}>{t('subscription.cancel_subscription_note')}</Text>
                     </TouchableOpacity>
                 )}
 

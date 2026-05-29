@@ -10,11 +10,13 @@ import ImageUploadBox from '@/components/common/ImageUploadBox';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imllustration = require('@/assets/images/49fa5256c84b3ee062131d88f5ae26383f5d5257.png'); // The lawyer/assistant illustration
 
 export default function PaperLegalScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
@@ -30,12 +32,12 @@ export default function PaperLegalScreen() {
 
     const handleBookService = async () => {
         if (!selectedService || !details || !selectedDate || !address) {
-            Alert.alert('Missing Info', 'Please select a service, describe details, and select a timing.');
+            Alert.alert(t('paper_legal.missing_info'), t('paper_legal.missing_info_desc'));
             return;
         }
 
         if (!cityId || !serviceId) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            Alert.alert(t('paper_legal.error'), t('paper_legal.init_error'));
             return;
         }
 
@@ -61,11 +63,11 @@ export default function PaperLegalScreen() {
 
             router.push({
                 pathname: '/service-checkout',
-                params: { bookingPayload, amount: String(servicePrice), label: serviceName || 'Paperwork & Legal', ...(params.subscriptionId && { subscriptionId: params.subscriptionId }) },
+                params: { bookingPayload, amount: String(servicePrice), label: serviceName || t('paper_legal.header'), ...(params.subscriptionId && { subscriptionId: params.subscriptionId }) },
             });
         } catch (error) {
             console.error('Paper-legal error:', error);
-            Alert.alert('Error', 'Something went wrong. Please check your connection.');
+            Alert.alert(t('paper_legal.error'), t('paper_legal.generic_error'));
         } finally {
             setIsBooking(false);
         }
@@ -85,9 +87,9 @@ export default function PaperLegalScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Paper and Legal</Text>
+                    <Text style={styles.headerTitle}>{t('paper_legal.header')}</Text>
                 </View>
-                <Text style={styles.headerSubtitle}>Pension, Life Certificates, and{'\n'}Property work.</Text>
+                <Text style={styles.headerSubtitle}>{t('paper_legal.subtitle')}</Text>
             </View>
 
             {/* Main Content Area (Rounded Cream Box) */}
@@ -96,7 +98,7 @@ export default function PaperLegalScreen() {
             <KeyboardAwareScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* ─── Select Service ─── */}
-                    <Text style={styles.sectionTitle}>Select Service</Text>
+                    <Text style={styles.sectionTitle}>{t('paper_legal.select_service')}</Text>
 
                     <View style={styles.serviceCard}>
 
@@ -105,7 +107,7 @@ export default function PaperLegalScreen() {
                             <View style={selectedService === 'Digital Life Certificate' ? styles.radioSelected : styles.radioUnselected}>
                                 {selectedService === 'Digital Life Certificate' && <View style={styles.radioInner} />}
                             </View>
-                            <Text style={styles.optionMainText}>Digital life Certificate <Text style={styles.optionSubText}>(Jeevan Pramaan - Home visit)</Text></Text>
+                            <Text style={styles.optionMainText}>{t('paper_legal.option_dlc')} <Text style={styles.optionSubText}>{t('paper_legal.option_dlc_sub')}</Text></Text>
                         </TouchableOpacity>
 
                         {/* Option 2: Bank KYC */}
@@ -113,7 +115,7 @@ export default function PaperLegalScreen() {
                             <View style={selectedService === 'Bank KYC Update' ? styles.radioSelected : styles.radioUnselected}>
                                 {selectedService === 'Bank KYC Update' && <View style={styles.radioInner} />}
                             </View>
-                            <Text style={styles.optionMainText}>Bank KYC Update <Text style={styles.optionSubText}>(Assistance)</Text></Text>
+                            <Text style={styles.optionMainText}>{t('paper_legal.option_kyc')} <Text style={styles.optionSubText}>{t('paper_legal.option_kyc_sub')}</Text></Text>
                         </TouchableOpacity>
 
                         {/* Option 3: Will Registration */}
@@ -121,7 +123,7 @@ export default function PaperLegalScreen() {
                             <View style={selectedService === 'Will Registration' ? styles.radioSelected : styles.radioUnselected}>
                                 {selectedService === 'Will Registration' && <View style={styles.radioInner} />}
                             </View>
-                            <Text style={styles.optionMainText}>Will Registration <Text style={styles.optionSubText}>(Lawyer Connect)</Text></Text>
+                            <Text style={styles.optionMainText}>{t('paper_legal.option_will')} <Text style={styles.optionSubText}>{t('paper_legal.option_will_sub')}</Text></Text>
                         </TouchableOpacity>
 
                         {/* Option 4: Govt ID Update */}
@@ -129,17 +131,17 @@ export default function PaperLegalScreen() {
                             <View style={selectedService === 'Govt ID Update' ? styles.radioSelected : styles.radioUnselected}>
                                 {selectedService === 'Govt ID Update' && <View style={styles.radioInner} />}
                             </View>
-                            <Text style={styles.optionMainText}>Govt ID Update <Text style={styles.optionSubText}>(adhar/Pan fix)</Text></Text>
+                            <Text style={styles.optionMainText}>{t('paper_legal.option_govtid')} <Text style={styles.optionSubText}>{t('paper_legal.option_govtid_sub')}</Text></Text>
                         </TouchableOpacity>
 
                     </View>
 
                     {/* ─── Details Text Area ─── */}
-                    <Text style={styles.sectionTitle}>Details</Text>
+                    <Text style={styles.sectionTitle}>{t('paper_legal.details_label')}</Text>
                     <View style={styles.textAreaContainer}>
                         <TextInput
                             style={styles.textArea}
-                            placeholder="Describe your requirement or what needs signatures..."
+                            placeholder={t('paper_legal.details_placeholder')}
                             multiline
                             numberOfLines={4}
                             textAlignVertical="top"
@@ -151,15 +153,15 @@ export default function PaperLegalScreen() {
 
                     {/* ─── Upload Documents ─── */}
                     <ImageUploadBox
-                        title="Upload Relevant Documents"
-                        subtitle="Upload IDs, previous certificates, or legal paperwork (JPG, PNG or PDF)"
+                        title={t('paper_legal.upload_title')}
+                        subtitle={t('paper_legal.upload_subtitle')}
                         onImagesChange={setSelectedImages}
                         maxImages={5}
                     />
 
                     {/* ─── Schedule Visit ─── */}
                     <CustomDateTimePicker
-                        label="When?"
+                        label={t('paper_legal.when')}
                         value={selectedDate}
                         onDateChange={setSelectedDate}
                     />
@@ -171,7 +173,7 @@ export default function PaperLegalScreen() {
                         disabled={isBooking || isLoadingInit}
                         onPress={handleBookService}
                     >
-                        <Text style={styles.submitButtonText}>{isLoadingInit ? 'Initializing...' : isBooking ? 'Processing...' : 'Book Assistant'}</Text>
+                        <Text style={styles.submitButtonText}>{isLoadingInit ? t('paper_legal.initializing') : isBooking ? t('paper_legal.processing') : t('paper_legal.book_btn')}</Text>
                     </TouchableOpacity>
 
                     {/* ─── Ayuxa Care Illustration Bottom ─── */}

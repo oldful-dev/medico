@@ -5,10 +5,12 @@ import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 const imgHero = require('@/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png');
 
 export default function BillPaymentScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
@@ -20,7 +22,7 @@ export default function BillPaymentScreen() {
 
     const handleBook = async () => {
         if (!isReady) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            Alert.alert(t('service_detail.error'), t('service_detail.init_error'));
             return;
         }
         try {
@@ -39,12 +41,12 @@ export default function BillPaymentScreen() {
                         formDataJson: { billAttachments: uploadedImageUrls },
                     }),
                     amount: String(servicePrice),
-                    label: serviceName || 'Bill Payment',
+                    label: serviceName || t('service_detail.bill_payment.header'),
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
         } catch {
-            Alert.alert('Error', 'Failed to process. Please check your connection.');
+            Alert.alert(t('service_detail.error'), t('service_detail.generic_error'));
         } finally {
             setIsBooking(false);
         }
@@ -52,18 +54,18 @@ export default function BillPaymentScreen() {
 
     return (
         <ServiceDetailScreen
-            headerTitle="Bill Payment"
-            heroTitle="Bill Payment"
-            heroSubtitle="Concierge Services"
-            description="Our concierge will handle your utility bill payments — electricity, water, gas, and more."
+            headerTitle={t('service_detail.bill_payment.header')}
+            heroTitle={t('service_detail.bill_payment.hero')}
+            heroSubtitle={t('service_detail.concierge_services')}
+            description={t('service_detail.bill_payment.description')}
             heroImage={imgHero}
-            pricingLabel={servicePrice > 0 ? `₹${servicePrice} Convenience Fee Per Bill` : 'Fetching price...'}
-            pricingNote="*Actual bill amount is paid by you directly."
+            pricingLabel={servicePrice > 0 ? t('service_detail.bill_payment.pricing', { price: servicePrice }) : t('service_detail.fetching_price')}
+            pricingNote={t('service_detail.bill_payment.pricing_note')}
             bulletItems={[
-                'Electricity Bill Payment',
-                'Water & Gas Bill',
-                'Property Tax',
-                'DTH / Internet Recharge',
+                t('service_detail.bill_payment.bullet_1'),
+                t('service_detail.bill_payment.bullet_2'),
+                t('service_detail.bill_payment.bullet_3'),
+                t('service_detail.bill_payment.bullet_4'),
             ]}
             address=""
             onBook={handleBook}
@@ -71,8 +73,8 @@ export default function BillPaymentScreen() {
             hideLocation={true}
         >
             <ImageUploadBox
-                title="Upload Bill Image (Optional)"
-                subtitle="JPG, PNG or PDF, file size no more than 10MB"
+                title={t('service_detail.bill_payment.upload_title')}
+                subtitle={t('service_detail.image_upload_subtitle')}
                 onImagesChange={setSelectedImages}
                 maxImages={3}
             />

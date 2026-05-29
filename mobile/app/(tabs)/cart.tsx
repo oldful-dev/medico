@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { storeService } from '@/services/api/storeService';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 // ─── Category Mapping ────────────────────────────────────────
 type ServiceCategory = 'blood-test' | 'wellness' | 'service' | 'doctor' | 'nurse' | 'other';
@@ -87,12 +88,17 @@ function categorizeItem(serviceType: string): ServiceCategory {
 }
 
 export default function CartScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     const styles = makeStyles(colors, isDarkMode);
     const { items, removeItem, clearCategory } = useCart();
+
+    const getCategoryLabel = (category: ServiceCategory) => {
+        return t(`cart.category_${category === 'blood-test' ? 'bloodwork' : category === 'service' ? 'services' : category}`);
+    };
     const { profile } = useUser();
     const [showMixedCartInfo, setShowMixedCartInfo] = useState(false);
     const [disabledProductIds, setDisabledProductIds] = useState<Set<string>>(new Set());
@@ -149,14 +155,14 @@ export default function CartScreen() {
             <View style={[styles.screen, { paddingTop: insets.top }]}>
                 <StatusBar style="dark" />
                 <View style={styles.emptyHeader}>
-                    <Text style={styles.emptyHeaderTitle}>Cart</Text>
+                    <Text style={styles.emptyHeaderTitle}>{t('cart.header_title')}</Text>
                 </View>
                 <View style={styles.emptyBody}>
                     <MaterialCommunityIcons name="cart-off" size={72} color="#E0E0E0" />
-                    <Text style={styles.emptyTitle}>Your cart is empty</Text>
-                    <Text style={styles.emptySubtitle}>Add a service to get started</Text>
+                    <Text style={styles.emptyTitle}>{t('cart.empty_title')}</Text>
+                    <Text style={styles.emptySubtitle}>{t('cart.empty_subtitle')}</Text>
                     <TouchableOpacity style={styles.browseBtn} onPress={() => router.push('/')}>
-                        <Text style={styles.browseBtnText}>Browse Services</Text>
+                        <Text style={styles.browseBtnText}>{t('cart.browse_services')}</Text>
                         <Ionicons name="arrow-forward" size={16} color="#fff" />
                     </TouchableOpacity>
                 </View>
@@ -173,11 +179,11 @@ export default function CartScreen() {
             const disabledItems = categoryItems.filter(item => disabledProductIds.has(item.id));
             if (disabledItems.length > 0) {
                 Alert.alert(
-                    'Products Unavailable',
-                    `${disabledItems.map(i => i.title).join(', ')} ${disabledItems.length === 1 ? 'is' : 'are'} no longer available.`,
+                    t('checkout.products_unavailable'),
+                    t('checkout.products_unavailable_msg'),
                     [
-                        { text: 'Remove', onPress: () => disabledItems.forEach(i => removeItem(i.id)) },
-                        { text: 'Keep', style: 'cancel' },
+                        { text: t('common.remove'), onPress: () => disabledItems.forEach(i => removeItem(i.id)) },
+                        { text: t('common.keep'), style: 'cancel' },
                     ]
                 );
                 return;
@@ -192,7 +198,7 @@ export default function CartScreen() {
                 params: {
                     category: 'blood-test',
                     amount: String(categoryTotal),
-                    label: 'Blood Test Package',
+                    label: t('cart.blood_test_package'),
                     itemCount: categoryItems.length,
                     skipUpsell: '1',
                 },
@@ -219,7 +225,7 @@ export default function CartScreen() {
                 pathname: config.checkoutFlow as any,
                 params: {
                     amount: String(categoryTotal),
-                    label: config.label,
+                    label: getCategoryLabel(category),
                     category,
                     itemCount: categoryItems.length,
                     // Pass plan info for benefit calculation at checkout
@@ -236,9 +242,9 @@ export default function CartScreen() {
 
             {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>My Cart</Text>
+                <Text style={styles.headerTitle}>{t('cart.header_title')}</Text>
                 <View style={styles.headerBadge}>
-                    <Text style={styles.headerBadgeText}>{items.length} item{items.length > 1 ? 's' : ''}</Text>
+                    <Text style={styles.headerBadgeText}>{items.length} {items.length === 1 ? t('cart.item').toLowerCase() : t('cart.items').toLowerCase()}</Text>
                 </View>
             </View>
 
@@ -252,11 +258,11 @@ export default function CartScreen() {
                         <View style={styles.benefitContent}>
                             <Ionicons name="star" size={20} color="#10B981" />
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.benefitTitle}>Plan Benefits Active</Text>
-                                <Text style={styles.benefitText}>Booking & platform fees waived on checkout</Text>
+                                <Text style={styles.benefitTitle}>{t('cart.plan_benefits_active')}</Text>
+                                <Text style={styles.benefitText}>{t('cart.plan_benefits_desc')}</Text>
                             </View>
                             <View style={styles.benefitBadge}>
-                                <Text style={styles.benefitBadgeText}>ACTIVE</Text>
+                                <Text style={styles.benefitBadgeText}>{t('cart.active')}</Text>
                             </View>
                         </View>
                     </View>
@@ -271,8 +277,8 @@ export default function CartScreen() {
                         <View style={styles.mixedCartContent}>
                             <Ionicons name="information-circle" size={20} color="#F59E0B" />
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.mixedCartTitle}>Mixed Cart</Text>
-                                <Text style={styles.mixedCartText}>Checkout separately for each category</Text>
+                                <Text style={styles.mixedCartTitle}>{t('cart.mixed_cart')}</Text>
+                                <Text style={styles.mixedCartText}>{t('cart.mixed_cart_desc')}</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={20} color="#F59E0B" />
                         </View>
@@ -293,9 +299,9 @@ export default function CartScreen() {
                                     <MaterialCommunityIcons name={config.icon as any} size={20} color={config.color} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.categoryTitle}>{config.label}</Text>
+                                    <Text style={styles.categoryTitle}>{getCategoryLabel(category)}</Text>
                                     <Text style={styles.categoryItemCount}>
-                                        {categoryItems.length} item{categoryItems.length > 1 ? 's' : ''}
+                                        {categoryItems.length} {categoryItems.length === 1 ? t('cart.item').toLowerCase() : t('cart.items').toLowerCase()}
                                     </Text>
                                 </View>
                                 <Text style={styles.categoryTotal}>₹{categoryTotal.toLocaleString('en-IN')}</Text>
@@ -312,7 +318,7 @@ export default function CartScreen() {
                                             {isDisabled && (
                                                 <View style={styles.disabledOverlay}>
                                                     <Ionicons name="alert-circle-outline" size={18} color="#EF4444" />
-                                                    <Text style={styles.disabledLabel}>No longer available</Text>
+                                                    <Text style={styles.disabledLabel}>{t('cart.no_longer_available')}</Text>
                                                 </View>
                                             )}
                                             <View style={[styles.itemContent, isDisabled && { opacity: 0.5 }]}>
@@ -348,7 +354,7 @@ export default function CartScreen() {
                                 activeOpacity={0.88}
                             >
                                 <Ionicons name="arrow-forward" size={16} color="#fff" />
-                                <Text style={styles.categoryCheckoutText}>Checkout</Text>
+                                <Text style={styles.categoryCheckoutText}>{t('cart.checkout')}</Text>
                             </TouchableOpacity>
                         </View>
                     );
@@ -357,11 +363,11 @@ export default function CartScreen() {
                 {/* ── Trust Row ── */}
                 <View style={styles.trustRow}>
                     {[
-                        { icon: 'lock-closed-outline', label: 'Secure Payment' },
-                        { icon: 'shield-checkmark-outline', label: 'Verified' },
-                        { icon: 'flash-outline', label: 'Quick' },
-                    ].map(({ icon, label }) => (
-                        <View key={label} style={styles.trustItem}>
+                        { icon: 'lock-closed-outline', key: 'secure_payment', label: t('cart.secure_payment') },
+                        { icon: 'shield-checkmark-outline', key: 'verified', label: t('cart.verified') },
+                        { icon: 'flash-outline', key: 'quick', label: t('cart.quick') },
+                    ].map(({ icon, key, label }) => (
+                        <View key={key} style={styles.trustItem}>
                             <Ionicons name={icon as any} size={16} color={colors.primary} />
                             <Text style={styles.trustLabel}>{label}</Text>
                         </View>

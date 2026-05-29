@@ -50,25 +50,25 @@ export default function BookNursingCareScreen() {
 
     const handleBookService = async () => {
         if (!selectedWho) {
-            Alert.alert('Required', 'Please select who the nurse is for.');
+            Alert.alert(t('common.required'), t('nurse_care.alert_select_who'));
             return;
         }
         if (!selectedStaff) {
-            Alert.alert('Required', 'Please select a staff type.');
+            Alert.alert(t('common.required'), t('nurse_care.alert_select_staff'));
             return;
         }
         if (!selectedDuration) {
-            Alert.alert('Required', 'Please select a shift duration.');
+            Alert.alert(t('common.required'), t('nurse_care.alert_select_duration'));
             return;
         }
         if (!address || address.trim().length < 5) {
-            Alert.alert('Address Required', locationDenied
-                ? 'Please type your full address manually since location access is denied.'
-                : 'Could not fetch your address. Please try again or enter it manually.');
+            Alert.alert(t('nurse_care.alert_address_required'), locationDenied
+                ? t('nurse_care.alert_address_denied')
+                : t('nurse_care.alert_address_failed'));
             return;
         }
         if (!isReady) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            Alert.alert(t('common.error'), t('booking.init_incomplete'));
             return;
         }
         // Map duration to ShiftDuration enum
@@ -115,7 +115,7 @@ export default function BookNursingCareScreen() {
             });
         } catch (error) {
             console.error('Nurse care error:', error);
-            Alert.alert('Error', 'Failed to upload documents. Please try again.');
+            Alert.alert(t('common.error'), t('nurse_care.alert_upload_failed'));
         } finally {
             setIsBooking(false);
         }
@@ -170,21 +170,21 @@ export default function BookNursingCareScreen() {
                                     onPress={() => setSelectedWho('Self')}
                                 >
                                     {selectedWho === 'Self' && <Ionicons name="checkbox" size={16} color="#02743F" style={dynamicStyles.whoIconCheck} />}
-                                    <Text style={dynamicStyles.whoButtonText}>Self</Text>
+                                    <Text style={dynamicStyles.whoButtonText}>{t('common.self')}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     style={[dynamicStyles.whoButton, selectedWho === 'Spouse' && dynamicStyles.whoButtonActive]}
                                     onPress={() => setSelectedWho('Spouse')}
                                 >
                                     <Image source={familyIcon} style={dynamicStyles.whoIcon} resizeMode="contain" />
-                                    <Text style={dynamicStyles.whoButtonText}>Spouse</Text>
+                                    <Text style={dynamicStyles.whoButtonText}>{t('common.spouse')}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     style={[dynamicStyles.whoButton, selectedWho === 'Parent' && dynamicStyles.whoButtonActive]}
                                     onPress={() => setSelectedWho('Parent')}
                                 >
                                     <Image source={familyIcon} style={dynamicStyles.whoIcon} resizeMode="contain" />
-                                    <Text style={dynamicStyles.whoButtonText}>Parent</Text>
+                                    <Text style={dynamicStyles.whoButtonText}>{t('common.parent')}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -295,15 +295,15 @@ export default function BookNursingCareScreen() {
                             <View style={dynamicStyles.gridRow}>
                                 <TouchableOpacity style={dynamicStyles.radioCardSmall} onPress={() => setSelectedGender('Male')}>
                                     <Ionicons name={selectedGender === 'Male' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Male' ? "#02743F" : "#AAAEAC"} />
-                                    <Text style={dynamicStyles.radioLabel}>Male</Text>
+                                    <Text style={dynamicStyles.radioLabel}>{t('common.male')}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={dynamicStyles.radioCardSmall} onPress={() => setSelectedGender('Female')}>
                                     <Ionicons name={selectedGender === 'Female' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Female' ? "#02743F" : "#AAAEAC"} />
-                                    <Text style={dynamicStyles.radioLabel}>Female</Text>
+                                    <Text style={dynamicStyles.radioLabel}>{t('common.female')}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={dynamicStyles.radioCardSmall} onPress={() => setSelectedGender('Any')}>
                                     <Ionicons name={selectedGender === 'Any' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Any' ? "#02743F" : "#AAAEAC"} />
-                                    <Text style={dynamicStyles.radioLabel}>Any</Text>
+                                    <Text style={dynamicStyles.radioLabel}>{t('common.any')}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -312,32 +312,32 @@ export default function BookNursingCareScreen() {
                         <TouchableOpacity style={dynamicStyles.notSureBanner} onPress={() => Linking.openURL('tel:+918062180429')} activeOpacity={0.75}>
                             <Image source={helpIcon} style={dynamicStyles.ideaIcon} resizeMode="contain" />
                             <View style={dynamicStyles.notSureTextGroup}>
-                                <Text style={dynamicStyles.notSureTitle}>Not sure about your options?</Text>
-                                <Text style={dynamicStyles.notSureSubtitle}>I’m not sure, let an Expert call me decide</Text>
+                                <Text style={dynamicStyles.notSureTitle}>{t('nurse_care.not_sure_title')}</Text>
+                                <Text style={dynamicStyles.notSureSubtitle}>{t('nurse_care.not_sure_subtitle')}</Text>
                             </View>
                         </TouchableOpacity>
                         {/* ─── Confirm Address ─── */}
                         <View style={dynamicStyles.sectionContainer}>
-                            <Text style={dynamicStyles.sectionTitle}>Confirm Address</Text>
+                            <Text style={dynamicStyles.sectionTitle}>{t('booking.confirm_address')}</Text>
                             {locationDenied ? (
                                 <FormInput
-                                    placeholder="Type your full address"
+                                    placeholder={t('nurse_care.address_placeholder')}
                                     value={address}
                                     onChangeText={setAddress}
                                     multiline
-                                    style={{ elevation: 0, backgroundColor: '#FFF' }}
+                                    style={{ elevation: 0, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF' }}
                                 />
                             ) : (
-                                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(217,217,217,0.3)', padding: 12, borderRadius: 8 }}>
-                                    <Ionicons name="location-outline" size={16} color="#2F2F2F" style={{ marginRight: 8 }} />
-                                    <Text style={{ flex: 1, fontFamily: 'LexendDeca_400Regular', color: '#2F2F2F' }} numberOfLines={1}>{address}</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(217,217,217,0.3)', padding: 12, borderRadius: 8 }}>
+                                    <Ionicons name="location-outline" size={16} color={isDarkMode ? '#FFF' : '#2F2F2F'} style={{ marginRight: 8 }} />
+                                    <Text style={{ flex: 1, fontFamily: 'LexendDeca_400Regular', color: isDarkMode ? '#FFF' : '#2F2F2F' }} numberOfLines={1}>{address}</Text>
                                     <TouchableOpacity onPress={() => router.push('/(auth)/city-selection')}>
-                                        <Text style={{ color: '#02743F', fontFamily: 'LexendDeca_500Medium', marginLeft: 8 }}>Edit</Text>
+                                        <Text style={{ color: '#02743F', fontFamily: 'LexendDeca_500Medium', marginLeft: 8 }}>{t('common.edit')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             )}
                             <FormInput
-                                placeholder="Landmark (optional, e.g. Near Apollo Hospital)"
+                                placeholder={t('nurse_care.landmark_placeholder')}
                                 value={landmark}
                                 onChangeText={setLandmark}
                                 style={{ marginTop: 12, elevation: 0 }}

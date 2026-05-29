@@ -13,6 +13,7 @@ import { generateMedicalCardHTML } from '@/utils/medicalCardPDF';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 const formatDate = (iso?: string) => {
     if (!iso) return 'N/A';
@@ -32,6 +33,7 @@ export default function MedicalCardScreen() {
     const { profile } = useUser();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const { t } = useTranslation();
     const styles = makeStyles(colors, isDarkMode);
     const [loading, setLoading] = useState(false);
 
@@ -54,64 +56,64 @@ export default function MedicalCardScreen() {
     const addresses = profile?.addresses || [];
 
     const generateCardText = () => {
-        const allergies = (medicalCard?.allergies || []).join(', ') || 'None';
-        const conditions = (medicalCard?.chronicConditions || []).join(', ') || 'None';
-        const medications = (medicalCard?.currentMedications || []).join(', ') || 'None';
+        const allergies = (medicalCard?.allergies || []).join(', ') || t('medical_card.none');
+        const conditions = (medicalCard?.chronicConditions || []).join(', ') || t('medical_card.none');
+        const medications = (medicalCard?.currentMedications || []).join(', ') || t('medical_card.none');
 
-        return `AYUXA MEDICAL CARD
-
-═══════════════════════════════════════
-FULL CLIENT DETAILS
-═══════════════════════════════════════
-
-Name: ${profile?.name || 'N/A'}
-AYUXA Client ID: ${profile?.uniqueUserId || 'N/A'}
-Phone: ${profile?.phone || 'N/A'}
-Email: ${profile?.email || 'N/A'}
-Date of Birth: ${formatDate(profile?.dateOfBirth)}
-Gender: ${profile?.gender || 'N/A'}
+        return `${t('medical_card.ayuxa_medical_card')}
 
 ═══════════════════════════════════════
-BLOOD GROUP & EMERGENCY
+${t('medical_card.full_client_details')}
 ═══════════════════════════════════════
 
-Blood Group: ${medicalCard?.bloodGroup || 'Not recorded'}
-Primary Doctor: ${(medicalCard as any)?.primaryDoctor || 'Not assigned'}
+${t('medical_card.name_label')}: ${profile?.name || 'N/A'}
+${t('medical_card.ayuxa_id_label')}: ${profile?.uniqueUserId || 'N/A'}
+${t('medical_card.phone_label')}: ${profile?.phone || 'N/A'}
+${t('medical_card.email_label')}: ${profile?.email || 'N/A'}
+${t('medical_card.dob_label')}: ${formatDate(profile?.dateOfBirth)}
+${t('medical_card.gender_label')}: ${profile?.gender || 'N/A'}
 
 ═══════════════════════════════════════
-MEDICAL HISTORY
+${t('medical_card.blood_group_emergency')}
 ═══════════════════════════════════════
 
-Allergies: ${allergies}
-Existing Conditions: ${conditions}
-Current Medications: ${medications}
+${t('medical_card.blood_group_label')}: ${medicalCard?.bloodGroup || t('medical_card.not_recorded')}
+${t('medical_card.primary_doctor_label')}: ${(medicalCard as any)?.primaryDoctor || t('medical_card.not_assigned')}
 
 ═══════════════════════════════════════
-EMERGENCY CONTACTS
+${t('medical_card.medical_history')}
 ═══════════════════════════════════════
 
-${(emergencyContacts || []).map(c => `${c.name} (${c.relationship}): ${c.phone}`).join('\n') || 'None'}
+${t('medical_card.allergies_label')}: ${allergies}
+${t('medical_card.existing_conditions')}: ${conditions}
+${t('medical_card.current_medications')}: ${medications}
 
 ═══════════════════════════════════════
-ADDRESS
+${t('medical_card.emergency_contacts')}
 ═══════════════════════════════════════
 
-${addresses[0] ? `${addresses[0].line1}\n${addresses[0].cityName}, ${addresses[0].state} ${addresses[0].pincode}` : 'Not recorded'}
+${(emergencyContacts || []).map(c => `${c.name} (${c.relationship}): ${c.phone}`).join('\n') || t('medical_card.none')}
 
 ═══════════════════════════════════════
-INSURANCE INFORMATION
+${t('medical_card.address')}
 ═══════════════════════════════════════
 
-${(medicalCard as any)?.insuranceInfo || 'Not recorded'}
+${addresses[0] ? `${addresses[0].line1}\n${addresses[0].cityName}, ${addresses[0].state} ${addresses[0].pincode}` : t('medical_card.not_recorded')}
 
 ═══════════════════════════════════════
-Generated on ${new Date().toLocaleDateString('en-IN', {
+${t('medical_card.insurance_info')}
+═══════════════════════════════════════
+
+${(medicalCard as any)?.insuranceInfo || t('medical_card.not_recorded')}
+
+═══════════════════════════════════════
+${t('medical_card.generated_on', { date: new Date().toLocaleDateString('en-IN', {
             day: '2-digit',
             month: 'short',
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
-        })}
+        }) })}
 ═══════════════════════════════════════`;
     };
 
@@ -157,21 +159,21 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
                         await FileSystem.writeAsStringAsync(fileUri, result.base64!, {
                             encoding: FileSystem.EncodingType.Base64,
                         });
-                        Alert.alert('Success', 'Medical Card PDF successfully saved to your selected folder!');
+                        Alert.alert(t('medical_card.alerts.success_title'), t('medical_card.alerts.pdf_saved'));
                     } catch (err) {
                         console.error('SAF write error:', err);
                         await AsyncStorage.removeItem('ayuxa_download_dir_uri');
-                        Alert.alert('Save Failed', 'Failed to save to the selected folder. Please try downloading again to re-select the folder.');
+                        Alert.alert(t('medical_card.alerts.save_failed_title'), t('medical_card.alerts.save_failed_msg'));
                     }
                 };
 
                 if (!storedUri) {
                     Alert.alert(
-                        'Select Folder',
-                        'Please choose or create a folder (e.g. Ayuxa/Medical card) in your internal storage to automatically save your medical card PDFs.',
+                        t('medical_card.alerts.select_folder_title'),
+                        t('medical_card.alerts.select_folder_msg'),
                         [
                             {
-                                text: 'Select Folder',
+                                text: t('medical_card.alerts.select_folder_title'),
                                 onPress: async () => {
                                     try {
                                         const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
@@ -180,14 +182,14 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
                                             await AsyncStorage.setItem('ayuxa_download_dir_uri', grantedUri);
                                             await savePdfToAndroidDir(grantedUri);
                                         } else {
-                                            Alert.alert('Permission Denied', 'Could not save PDF without folder permission.');
+                                            Alert.alert(t('medical_card.alerts.permission_denied_title'), t('medical_card.alerts.permission_denied_msg'));
                                         }
                                     } catch (err) {
-                                        Alert.alert('Error', 'Failed to select folder.');
+                                        Alert.alert(t('medical_card.alerts.error_title'), t('medical_card.alerts.failed_folder_select'));
                                     }
                                 }
                             },
-                            { text: 'Cancel', style: 'cancel' }
+                            { text: t('common.cancel'), style: 'cancel' }
                         ]
                     );
                 } else {
@@ -201,11 +203,11 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
                         UTI: 'com.adobe.pdf',
                     });
                 } else {
-                    Alert.alert('Sharing not available', 'Sharing is not supported on this device.');
+                    Alert.alert(t('medical_card.alerts.sharing_not_available_title'), t('medical_card.alerts.sharing_not_available_msg'));
                 }
             }
         } catch (error) {
-            Alert.alert('Error', 'Failed to generate and share PDF.');
+            Alert.alert(t('medical_card.alerts.error_title'), t('medical_card.alerts.failed_generate'));
         }
     };
 
@@ -237,7 +239,7 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
                 html: htmlContent,
             });
         } catch (error) {
-            Alert.alert('Error', 'Failed to open print dialog.');
+            Alert.alert(t('medical_card.alerts.error_title'), t('medical_card.alerts.failed_print'));
         }
     };
 
@@ -268,7 +270,7 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
                     </View>
                 ))
             ) : (
-                <Text style={styles.emptyText}>None recorded</Text>
+                <Text style={styles.emptyText}>{t('medical_card.none')}</Text>
             )}
         </View>
     );
@@ -289,7 +291,7 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                         <Ionicons name="arrow-back" size={24} color={colors.textDark} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Medical Card</Text>
+                    <Text style={styles.headerTitle}>{t('medical_card.header_title')}</Text>
                     <TouchableOpacity onPress={handleEdit} style={styles.editHeaderBtn}>
                         <Ionicons name="create-outline" size={24} color={colors.primary} />
                     </TouchableOpacity>
@@ -320,7 +322,7 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
                         activeOpacity={0.7}
                     >
                         <Ionicons name="download-outline" size={16} color={colors.primary} />
-                        <Text style={[styles.actionBtnText, { color: colors.primary }]}>Download</Text>
+                        <Text style={[styles.actionBtnText, { color: colors.primary }]}>{t('medical_card.download')}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -329,7 +331,7 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
                         activeOpacity={0.7}
                     >
                         <Ionicons name="logo-whatsapp" size={16} color="#25D366" />
-                        <Text style={[styles.actionBtnText, { color: '#25D366' }]}>WhatsApp</Text>
+                        <Text style={[styles.actionBtnText, { color: '#25D366' }]}>{t('medical_card.whatsapp')}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -341,7 +343,7 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
                         activeOpacity={0.7}
                     >
                         <Ionicons name="mail-outline" size={16} color="#EA580C" />
-                        <Text style={[styles.actionBtnText, { color: '#EA580C' }]}>Email</Text>
+                        <Text style={[styles.actionBtnText, { color: '#EA580C' }]}>{t('medical_card.email')}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -350,43 +352,43 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
                         activeOpacity={0.7}
                     >
                         <Ionicons name="print-outline" size={16} color="#7C3AED" />
-                        <Text style={[styles.actionBtnText, { color: '#7C3AED' }]}>Print</Text>
+                        <Text style={[styles.actionBtnText, { color: '#7C3AED' }]}>{t('medical_card.print')}</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* Personal Information */}
-                <SectionCard title="Personal Information">
-                    <FieldRow label="Full Name" value={profile?.name || ''} />
-                    <FieldRow label="Phone" value={profile?.phone || ''} />
-                    <FieldRow label="Email" value={profile?.email || ''} />
-                    <FieldRow label="Date of Birth" value={formatDate(profile?.dateOfBirth)} />
-                    <FieldRow label="Gender" value={profile?.gender || ''} />
+                <SectionCard title={t('medical_card.personal_information')}>
+                    <FieldRow label={t('medical_card.name_label')} value={profile?.name || ''} />
+                    <FieldRow label={t('medical_card.phone_label')} value={profile?.phone || ''} />
+                    <FieldRow label={t('medical_card.email_label')} value={profile?.email || ''} />
+                    <FieldRow label={t('medical_card.dob_label')} value={formatDate(profile?.dateOfBirth)} />
+                    <FieldRow label={t('medical_card.gender_label')} value={profile?.gender || ''} />
                 </SectionCard>
 
                 {/* Blood Group & Emergency */}
-                <SectionCard title="Blood Group & Emergency">
+                <SectionCard title={t('medical_card.blood_group_emergency')}>
                     <View style={styles.bloodGroupContainer}>
-                        <Text style={styles.bloodGroupLabel}>Blood Group</Text>
-                        <Text style={styles.bloodGroupValue}>{medicalCard?.bloodGroup || 'Not recorded'}</Text>
+                        <Text style={styles.bloodGroupLabel}>{t('medical_card.blood_group_label')}</Text>
+                        <Text style={styles.bloodGroupValue}>{medicalCard?.bloodGroup || t('medical_card.not_recorded')}</Text>
                     </View>
                     <View style={styles.fieldRow}>
-                        <Text style={styles.fieldLabel}>Primary Doctor</Text>
-                        <Text style={styles.fieldValue}>{(medicalCard as any)?.primaryDoctor || 'Not assigned'}</Text>
+                        <Text style={styles.fieldLabel}>{t('medical_card.primary_doctor_label')}</Text>
+                        <Text style={styles.fieldValue}>{(medicalCard as any)?.primaryDoctor || t('medical_card.not_assigned')}</Text>
                     </View>
                 </SectionCard>
 
                 {/* Medical History */}
-                <SectionCard title="Medical History">
+                <SectionCard title={t('medical_card.medical_history')}>
                     <View style={styles.subsection}>
-                        <Text style={styles.subsectionLabel}>Allergies</Text>
+                        <Text style={styles.subsectionLabel}>{t('medical_card.allergies_label')}</Text>
                         <TagList items={medicalCard?.allergies || []} />
                     </View>
                     <View style={styles.subsection}>
-                        <Text style={styles.subsectionLabel}>Existing Conditions</Text>
+                        <Text style={styles.subsectionLabel}>{t('medical_card.existing_conditions')}</Text>
                         <TagList items={medicalCard?.chronicConditions || []} />
                     </View>
                     <View style={styles.subsection}>
-                        <Text style={styles.subsectionLabel}>Current Medications</Text>
+                        <Text style={styles.subsectionLabel}>{t('medical_card.current_medications')}</Text>
                         {(medicalCard?.currentMedications || []).length > 0 ? (
                             (medicalCard?.currentMedications || []).map((med, idx) => (
                                 <View key={idx} style={styles.medicationItem}>
@@ -394,14 +396,14 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
                                 </View>
                             ))
                         ) : (
-                            <Text style={styles.emptyText}>None recorded</Text>
+                            <Text style={styles.emptyText}>{t('medical_card.none')}</Text>
                         )}
                     </View>
                 </SectionCard>
 
                 {/* Emergency Contacts */}
                 {emergencyContacts.length > 0 && (
-                    <SectionCard title="Emergency Contacts">
+                    <SectionCard title={t('emergency_contacts.header_title')}>
                         {emergencyContacts.map((contact, idx) => (
                             <View key={idx} style={styles.contactItem}>
                                 <View style={styles.contactIcon}>
@@ -418,7 +420,7 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
 
                 {/* Address */}
                 {addresses.length > 0 && (
-                    <SectionCard title="Address">
+                    <SectionCard title={t('manage_addresses.saved_addresses')}>
                         <Text style={styles.addressText}>
                             {addresses[0].line1}, {addresses[0].cityName}, {addresses[0].state} {addresses[0].pincode}
                         </Text>
@@ -427,7 +429,7 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
 
                 {/* Insurance Information */}
                 {(medicalCard as any)?.insuranceInfo && (
-                    <SectionCard title="Insurance Information">
+                    <SectionCard title={t('medical_card.insurance_info')}>
                         <Text style={styles.addressText}>{(medicalCard as any).insuranceInfo}</Text>
                     </SectionCard>
                 )}
@@ -435,7 +437,7 @@ Generated on ${new Date().toLocaleDateString('en-IN', {
                 {/* Edit Button */}
                 <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
                     <Ionicons name="pencil-outline" size={16} color="#FFFFFF" />
-                    <Text style={styles.editButtonText}>Edit Medical Card</Text>
+                    <Text style={styles.editButtonText}>{t('medical_card.edit_medical_card')}</Text>
                 </TouchableOpacity>
 
                 <View style={styles.spacer} />

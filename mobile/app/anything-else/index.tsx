@@ -5,10 +5,12 @@ import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 const imgHero = require('@/assets/images/6c8ed456023258e8b4095af93909c6cbc6c4b909.png');
 
 export default function AnythingElseScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
@@ -20,11 +22,11 @@ export default function AnythingElseScreen() {
 
     const handleBook = async () => {
         if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert('Address Required', 'Could not fetch your address. Please wait or try again.');
+            Alert.alert(t('service_detail.address_required'), t('service_detail.address_required_desc'));
             return;
         }
         if (!isReady) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            Alert.alert(t('service_detail.error'), t('service_detail.init_error'));
             return;
         }
         try {
@@ -43,12 +45,12 @@ export default function AnythingElseScreen() {
                         formDataJson: { attachments: uploadedImageUrls },
                     }),
                     amount: String(servicePrice),
-                    label: serviceName || 'Anything Else',
+                    label: serviceName || t('service_detail.anything_else.header'),
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
         } catch {
-            Alert.alert('Error', 'Failed to upload. Please check your connection.');
+            Alert.alert(t('service_detail.error'), t('service_detail.upload_error'));
         } finally {
             setIsBooking(false);
         }
@@ -56,18 +58,18 @@ export default function AnythingElseScreen() {
 
     return (
         <ServiceDetailScreen
-            headerTitle="Anything Else?"
-            heroTitle="Anything Else?"
-            heroSubtitle="Concierge Services"
-            description="Need help with something not on our list? Tell us what you need — our team will handle it."
+            headerTitle={t('service_detail.anything_else.header')}
+            heroTitle={t('service_detail.anything_else.hero')}
+            heroSubtitle={t('service_detail.concierge_services')}
+            description={t('service_detail.anything_else.description')}
             heroImage={imgHero}
-            pricingLabel={servicePrice > 0 ? `₹${servicePrice} Concierge Fee (varies by task)` : 'Fetching price...'}
-            pricingNote="*Final price depends on the complexity of the request."
+            pricingLabel={servicePrice > 0 ? t('service_detail.anything_else.pricing', { price: servicePrice }) : t('service_detail.fetching_price')}
+            pricingNote={t('service_detail.anything_else.pricing_note')}
             bulletItems={[
-                'Personal Errands & Pickups',
-                'Form Filling & Documentation',
-                'Gift Sourcing & Delivery',
-                'Custom Task Assistance',
+                t('service_detail.anything_else.bullet_1'),
+                t('service_detail.anything_else.bullet_2'),
+                t('service_detail.anything_else.bullet_3'),
+                t('service_detail.anything_else.bullet_4'),
             ]}
             address={address}
             landmark={landmark}
@@ -76,8 +78,8 @@ export default function AnythingElseScreen() {
             isLoading={isLoading || isBooking}
         >
             <ImageUploadBox
-                title="Select An Image Of Scrap Items"
-                subtitle="JPG, PNG or PDF, file size no more than 10MB"
+                title={t('service_detail.anything_else.upload_title')}
+                subtitle={t('service_detail.image_upload_subtitle')}
                 onImagesChange={setSelectedImages}
                 maxImages={3}
             />

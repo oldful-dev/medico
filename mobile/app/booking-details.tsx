@@ -9,6 +9,7 @@ import { labService, LabOrderListItem } from '@/services/api/labService';
 import { meetupService } from '@/services/api/meetupService';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
+import { useTranslation } from 'react-i18next';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -138,6 +139,7 @@ export default function BookingDetailsScreen() {
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     const styles = makeStyles(isDarkMode, colors);
+    const { t } = useTranslation();
     const [booking, setBooking] = useState<BookingDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [downloading, setDownloading] = useState(false);
@@ -157,26 +159,26 @@ export default function BookingDetailsScreen() {
                 if (res.success && res.data) {
                     setBooking(normalizeLabOrderDetail(res.data as LabOrderListItem));
                 } else {
-                    Alert.alert('Error', 'Failed to load booking details');
+                    Alert.alert(t('common.error'), t('booking_details.fail_load'));
                 }
             } else if (type === 'meetup') {
                 const res = await meetupService.getRegistrationById(bookingId || '');
                 if (res.success && res.data) {
                     setBooking(normalizeMeetupDetail(res.data));
                 } else {
-                    Alert.alert('Error', 'Failed to load meetup details');
+                    Alert.alert(t('common.error'), t('booking_details.fail_load_meetup'));
                 }
             } else {
                 const res = await bookingService.getBookingById(bookingId || '');
                 if (res.success && res.data) {
                     setBooking(normalizeServiceDetail(res.data));
                 } else {
-                    Alert.alert('Error', 'Failed to load booking details');
+                    Alert.alert(t('common.error'), t('booking_details.fail_load'));
                 }
             }
         } catch (error) {
             console.error('Failed to fetch booking details:', error);
-            Alert.alert('Error', 'Failed to load booking details');
+            Alert.alert(t('common.error'), t('booking_details.fail_load'));
         } finally {
             setLoading(false);
         }
@@ -184,7 +186,7 @@ export default function BookingDetailsScreen() {
 
     const handleDownloadReport = async () => {
         if (!booking?.reportUrl) {
-            Alert.alert('Error', 'Report URL not available');
+            Alert.alert(t('common.error'), t('booking_details.report_url_unavailable'));
             return;
         }
 
@@ -194,10 +196,10 @@ export default function BookingDetailsScreen() {
             if (supported) {
                 await Linking.openURL(booking.reportUrl);
             } else {
-                Alert.alert('Error', 'Cannot open report');
+                Alert.alert(t('common.error'), t('booking_details.cannot_open_report'));
             }
         } catch (error) {
-            Alert.alert('Error', 'Failed to download report');
+            Alert.alert(t('common.error'), t('booking_details.fail_download'));
         } finally {
             setDownloading(false);
         }
@@ -205,12 +207,12 @@ export default function BookingDetailsScreen() {
 
     const handleCancelBooking = async () => {
         Alert.alert(
-            'Cancel Booking',
-            'Are you sure you want to cancel this booking?',
+            t('booking_details.cancel_alert_title'),
+            t('booking_details.cancel_alert_msg'),
             [
-                { text: 'No', onPress: () => {} },
+                { text: t('common.no'), style: 'cancel' },
                 {
-                    text: 'Yes, Cancel',
+                    text: t('booking_details.yes_cancel'),
                     onPress: async () => {
                         try {
                             let res;
@@ -222,13 +224,13 @@ export default function BookingDetailsScreen() {
                                 res = await bookingService.cancelBooking(booking?.id || '');
                             }
                             if (res.success) {
-                                Alert.alert('Success', 'Booking cancelled successfully');
+                                Alert.alert(t('common.success'), t('booking_details.cancel_success'));
                                 router.back();
                             } else {
-                                Alert.alert('Error', 'Failed to cancel booking');
+                                Alert.alert(t('common.error'), t('booking_details.fail_cancel'));
                             }
                         } catch (error) {
-                            Alert.alert('Error', 'Failed to cancel booking');
+                            Alert.alert(t('common.error'), t('booking_details.fail_cancel'));
                         }
                     },
                     style: 'destructive',
@@ -243,12 +245,12 @@ export default function BookingDetailsScreen() {
 
     const handleRescheduleClick = () => {
         Alert.alert(
-            'Reschedule Appointment',
-            'Reschedule requests must be approved by our admin team. You can contact our support team to request a reschedule.',
+            t('booking_details.reschedule_title'),
+            t('booking_details.reschedule_msg'),
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: 'Contact Support',
+                    text: t('booking_details.contact_support'),
                     onPress: () => {
                         router.push('/help-support' as any);
                     },
@@ -276,7 +278,7 @@ export default function BookingDetailsScreen() {
             <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}>
                 <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} />
                 <View style={styles.centerContainer}>
-                    <Text style={[styles.errorText, { color: isDarkMode ? '#E0E0E0' : '#000000' }]}>Booking not found</Text>
+                    <Text style={[styles.errorText, { color: isDarkMode ? '#E0E0E0' : '#000000' }]}>{t('booking_details.booking_not_found')}</Text>
                 </View>
             </View>
         );
@@ -291,7 +293,7 @@ export default function BookingDetailsScreen() {
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#E0E0E0' : TEXT_DARK} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: isDarkMode ? '#E0E0E0' : TEXT_DARK }]}>Booking Details</Text>
+                <Text style={[styles.headerTitle, { color: isDarkMode ? '#E0E0E0' : TEXT_DARK }]}>{t('booking_details.header')}</Text>
                 <View
                     style={[
                         styles.statusBadge,
@@ -299,7 +301,7 @@ export default function BookingDetailsScreen() {
                     ]}
                 >
                     <Text style={styles.statusBadgeText}>
-                        {isCompleted ? 'Completed' : 'Upcoming'}
+                        {isCompleted ? t('booking_details.completed') : t('booking_details.upcoming')}
                     </Text>
                 </View>
             </View>
@@ -310,7 +312,7 @@ export default function BookingDetailsScreen() {
                     <View style={styles.packageHeader}>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.packageName}>{booking.packageName}</Text>
-                            <Text style={styles.bookingId}>Booking ID: #{booking.bookingId}</Text>
+                            <Text style={styles.bookingId}>{t('booking_details.booking_id', { id: booking.bookingId })}</Text>
                         </View>
                     </View>
                 </View>
@@ -320,11 +322,11 @@ export default function BookingDetailsScreen() {
                     <View style={[styles.card, styles.rescheduleCard]}>
                         <View style={styles.rescheduleHeader}>
                             <Ionicons name="alert-circle" size={16} color="#8B5CF6" />
-                            <Text style={styles.rescheduleTitle}>Appointment Rescheduled</Text>
+                            <Text style={styles.rescheduleTitle}>{t('booking_details.appointment_rescheduled')}</Text>
                         </View>
                         <View style={styles.rescheduleDates}>
                             <View>
-                                <Text style={styles.rescheduleLabel}>Original Date</Text>
+                                <Text style={styles.rescheduleLabel}>{t('booking_details.original_date')}</Text>
                                 <Text style={styles.rescheduleValueOld}>
                                     {new Date(booking.scheduledDate).toLocaleDateString('en-IN', {
                                         day: 'numeric',
@@ -338,7 +340,7 @@ export default function BookingDetailsScreen() {
                                 <Ionicons name="arrow-forward" size={16} color="#8B5CF6" />
                             </View>
                             <View>
-                                <Text style={styles.rescheduleLabel}>New Date</Text>
+                                <Text style={styles.rescheduleLabel}>{t('booking_details.new_date')}</Text>
                                 <Text style={styles.rescheduleValueNew}>
                                     {new Date(booking.rescheduledDate).toLocaleDateString('en-IN', {
                                         day: 'numeric',
@@ -360,7 +362,7 @@ export default function BookingDetailsScreen() {
                             <View style={styles.gridIcon}>
                                 <Ionicons name="calendar" size={16} color={PRIMARY_GREEN} />
                             </View>
-                            <Text style={styles.gridLabel}>Date & Time</Text>
+                            <Text style={styles.gridLabel}>{t('booking_details.date_time')}</Text>
                             <Text style={styles.gridValue}>
                                 {new Date(booking.scheduledDate).toLocaleDateString('en-IN', {
                                     day: 'numeric',
@@ -376,9 +378,9 @@ export default function BookingDetailsScreen() {
                             <View style={styles.gridIcon}>
                                 <Ionicons name="home" size={16} color={PRIMARY_GREEN} />
                             </View>
-                            <Text style={styles.gridLabel}>Collection Type</Text>
-                            <Text style={styles.gridValue}>
-                                {booking.collectionType === 'home' ? 'Home Collection' : 'Lab Visit'}
+                            <Text style={styles.gridLabel}>{t('booking_details.collection_type')}</Text>
+                             <Text style={styles.gridValue}>
+                                {booking.collectionType === 'home' ? t('booking_details.home_collection') : t('booking_details.lab_visit')}
                             </Text>
                         </View>
 
@@ -388,7 +390,7 @@ export default function BookingDetailsScreen() {
                                 <View style={styles.gridIcon}>
                                     <Ionicons name="flask" size={16} color={PRIMARY_GREEN} />
                                 </View>
-                                <Text style={styles.gridLabel}>Tests</Text>
+                                <Text style={styles.gridLabel}>{t('booking_details.tests')}</Text>
                                 <Text style={styles.gridValue}>{booking.testsCount}</Text>
                             </View>
                         )}
@@ -398,9 +400,9 @@ export default function BookingDetailsScreen() {
                             <View style={styles.gridIcon}>
                                 <Ionicons name="checkmark-circle" size={16} color={PRIMARY_GREEN} />
                             </View>
-                            <Text style={styles.gridLabel}>Status</Text>
+                            <Text style={styles.gridLabel}>{t('booking_details.status')}</Text>
                             <Text style={[styles.gridValue, { color: isCompleted ? SUCCESS_GREEN : booking?.status === 'rescheduled' ? '#8B5CF6' : WARNING_AMBER }]}>
-                                {booking?.status === 'rescheduled' ? 'Rescheduled' : isCompleted ? 'Completed' : 'Upcoming'}
+                                {booking?.status === 'rescheduled' ? t('booking_details.rescheduled_status') : isCompleted ? t('booking_details.completed') : t('booking_details.upcoming')}
                             </Text>
                         </View>
 
@@ -409,9 +411,9 @@ export default function BookingDetailsScreen() {
                             <View style={styles.gridIcon}>
                                 <Ionicons name="person" size={16} color={PRIMARY_GREEN} />
                             </View>
-                            <Text style={styles.gridLabel}>Assigned Personnel</Text>
+                            <Text style={styles.gridLabel}>{t('booking_details.assigned_personnel')}</Text>
                             <Text style={styles.gridValue}>
-                                {booking.assignedPersonnel || 'Not assigned'}
+                                {booking.assignedPersonnel || t('booking_details.not_assigned')}
                             </Text>
                         </View>
                     </View>
@@ -422,12 +424,12 @@ export default function BookingDetailsScreen() {
                     <View style={styles.card}>
                         <View style={styles.sectionHeader}>
                             <Ionicons name="location" size={16} color={PRIMARY_GREEN} />
-                            <Text style={styles.sectionTitle}>Collection Address</Text>
+                            <Text style={styles.sectionTitle}>{t('booking_details.collection_address')}</Text>
                         </View>
                         <Text style={styles.addressText}>{booking.address}</Text>
                         {booking.pincode && <Text style={styles.pincodeText}>{booking.pincode}</Text>}
                         {booking.landmark && (
-                            <Text style={styles.landmarkText}>Landmark: {booking.landmark}</Text>
+                            <Text style={styles.landmarkText}>{t('booking_details.landmark', { value: booking.landmark })}</Text>
                         )}
                     </View>
                 )}
@@ -435,7 +437,7 @@ export default function BookingDetailsScreen() {
                 {/* Payment Card */}
                 <View style={styles.card}>
                     <View style={styles.paymentRow}>
-                        <Text style={styles.paymentLabel}>Amount Paid</Text>
+                        <Text style={styles.paymentLabel}>{t('booking_details.amount_paid')}</Text>
                         <View style={styles.paymentAmount}>
                             <Text style={styles.amountText}>₹{booking.amount}</Text>
                             <View style={[styles.paymentStatus, { backgroundColor: booking.paymentStatus === 'paid' ? SUCCESS_GREEN : '#EF4444' }]}>
@@ -450,7 +452,7 @@ export default function BookingDetailsScreen() {
                     <View style={styles.card}>
                         <View style={styles.reportHeader}>
                             <View>
-                                <Text style={styles.reportTitle}>Report is ready</Text>
+                                <Text style={styles.reportTitle}>{t('booking_details.report_ready')}</Text>
                                 {booking.reportGeneratedAt && (
                                     <Text style={styles.reportDate}>
                                         {new Date(booking.reportGeneratedAt).toLocaleDateString('en-IN', {
@@ -474,7 +476,7 @@ export default function BookingDetailsScreen() {
                             ) : (
                                 <>
                                     <Ionicons name="download" size={16} color={PRIMARY_GREEN} />
-                                    <Text style={styles.downloadBtnText}>Download Report</Text>
+                                    <Text style={styles.downloadBtnText}>{t('booking_details.download_report')}</Text>
                                 </>
                             )}
                         </TouchableOpacity>
@@ -486,7 +488,7 @@ export default function BookingDetailsScreen() {
                     <View style={styles.infoCard}>
                         <Ionicons name="information-circle" size={16} color={WARNING_AMBER} />
                         <Text style={styles.infoText}>
-                            Our phlebotomist will contact you before arriving. Please keep your phone reachable.
+                            {t('booking_details.phlebotomist_note')}
                         </Text>
                     </View>
                 )}
@@ -500,18 +502,18 @@ export default function BookingDetailsScreen() {
                             style={styles.actionBtn}
                             onPress={handleRescheduleClick}
                         >
-                            <Text style={styles.actionBtnText}>Reschedule</Text>
+                            <Text style={styles.actionBtnText}>{t('booking_details.reschedule')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.actionBtn, styles.cancelBtn]}
                             onPress={handleCancelBooking}
                         >
-                            <Text style={styles.cancelBtnText}>Cancel Booking</Text>
+                            <Text style={styles.cancelBtnText}>{t('booking_details.cancel_booking')}</Text>
                         </TouchableOpacity>
                     </>
                 ) : (
                     <TouchableOpacity style={styles.actionBtn} onPress={handleBookAgain}>
-                        <Text style={styles.actionBtnText}>Book Again</Text>
+                        <Text style={styles.actionBtnText}>{t('booking_details.book_again')}</Text>
                     </TouchableOpacity>
                 )}
             </View>

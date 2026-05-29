@@ -32,6 +32,71 @@ const resolveRoute = (route?: string) => {
   return route.replace(/oldful/gi, 'ayuxa').replace(/ayuxacare/gi, 'ayuxa');
 };
 
+const translateServiceLabel = (id: string, fallbackLabel: string, t: any) => {
+  const keyMap: Record<string, string> = {
+    'doctor': 'services.doctor_visit',
+    'nursing': 'services.nurse_care',
+    'caregiver': 'services.caregiver_support',
+    'emergency': 'services.emergency_assist',
+    'doctor_visit': 'services.doctor_visit',
+    'homing_nursing': 'services.nurse_care',
+    'blood_test': 'services.blood_test',
+    'fitness': 'services.physio_fitness',
+    'equipment': 'services.medical_equipment',
+    'medicines': 'services.order_medicines',
+    'meal': 'services.meal_service',
+    'physio': 'services.physio_fitness',
+    'hospital_trip': 'services.hospital_trip',
+    'insurance': 'services.insurance',
+    'ac_repair': 'services.appliance_repair',
+    'plumbing': 'services.plumbing_electrical',
+    'cleaning': 'services.deep_cleaning',
+    'driver': 'services.driving_cab',
+    'bills': 'services.bill_payment',
+    'bank': 'services.bank_paperwork',
+    'grocery': 'services.grocery_run',
+    'anything': 'services.anything_else',
+    'paper_legal': 'services.paper_legal',
+    'trip_travel': 'services.trip_travels',
+    'tech_helper': 'services.tech_helper',
+    'smart_upgrade': 'services.smart_upgrade',
+  };
+
+  const key = keyMap[id.toLowerCase()];
+  if (key && t(key) !== key) {
+    return t(key);
+  }
+  return fallbackLabel;
+};
+
+const translateSectionTitle = (id: string, fallbackTitle: string, t: any) => {
+  const keyMap: Record<string, string> = {
+    'quick_services': 'home.section_quick_services',
+    'ayuxa_services': 'home.section_ayuxa_services',
+    'essentials': 'home.section_essentials',
+  };
+
+  const key = keyMap[id.toLowerCase()];
+  if (key && t(key) !== key) {
+    return t(key);
+  }
+  return fallbackTitle;
+};
+
+const translateTrustBadgeLabel = (id: string, fallbackLabel: string, t: any) => {
+  const keyMap: Record<string, string> = {
+    'support': 'home.trust_support',
+    'caregivers': 'home.trust_caregivers',
+    'family': 'home.trust_family',
+  };
+
+  const key = keyMap[id.toLowerCase()];
+  if (key && t(key) !== key) {
+    return t(key);
+  }
+  return fallbackLabel;
+};
+
 // ─── Sub-components receive colors prop ──────────────────────────────────────
 
 interface QuickServicesProps {
@@ -42,12 +107,14 @@ interface QuickServicesProps {
 }
 
 function QuickServicesStrip({ section, colors }: QuickServicesProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const s = makeStyles(colors);
   return (
     <View style={s.quickServiceCard}>
       {section.services.map((item, index) => {
-        const [line1, line2] = item.label.split('\n');
+        const translatedLabel = translateServiceLabel(item.id, item.label, t);
+        const [line1, line2] = translatedLabel.split('\n');
         return (
           <TouchableOpacity
             key={item.id}
@@ -81,7 +148,7 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors }: Se
   return (
     <View style={s.servicesCard}>
       <View style={s.sectionHeader}>
-        <Text style={s.sectionTitle}>{section.title}</Text>
+        <Text style={s.sectionTitle}>{translateSectionTitle(section.id, section.title, t)}</Text>
         {section.view_all_route && (
           <TouchableOpacity onPress={() => router.push(resolveRoute(section.view_all_route) as any)}>
             <Text style={s.viewAllText}>{t('common.view_all')}</Text>
@@ -90,7 +157,8 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors }: Se
       </View>
       <View style={s.serviceGrid}>
         {items.map(item => {
-          const [line1, line2] = item.label.split('\n');
+          const translatedLabel = translateServiceLabel(item.id, item.label, t);
+          const [line1, line2] = translatedLabel.split('\n');
           return (
             <TouchableOpacity
               key={item.id}
@@ -122,6 +190,7 @@ interface EssentialsGridProps {
 }
 
 function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGridProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const s = makeStyles(colors);
   const items = section.max_items ? section.services.slice(0, section.max_items) : section.services;
@@ -134,17 +203,18 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGr
   return (
     <View style={s.essentialsCard}>
       <View style={s.sectionHeader}>
-        <Text style={s.essentialsTitle}>{section.title}</Text>
+        <Text style={s.essentialsTitle}>{translateSectionTitle(section.id, section.title, t)}</Text>
         {section.view_all_route && (
           <TouchableOpacity onPress={() => router.push(resolveRoute(section.view_all_route) as any)}>
-            <Text style={s.viewAllSmall}>View All</Text>
+            <Text style={s.viewAllSmall}>{t('common.view_all')}</Text>
           </TouchableOpacity>
         )}
       </View>
       {rows.map((row, rowIdx) => (
         <View key={rowIdx} style={s.essentialsRow}>
           {row.map(item => {
-            const [line1, line2] = item.label.split('\n');
+            const translatedLabel = translateServiceLabel(item.id, item.label, t);
+            const [line1, line2] = translatedLabel.split('\n');
             return (
               <TouchableOpacity
                 key={item.id}
@@ -171,6 +241,7 @@ interface TrustBadgesProps {
 }
 
 function TrustBadges({ badges, colors }: TrustBadgesProps) {
+  const { t } = useTranslation();
   const s = makeStyles(colors);
   return (
     <View style={s.trustCard}>
@@ -180,7 +251,7 @@ function TrustBadges({ badges, colors }: TrustBadgesProps) {
             <View style={s.trustIconCircle}>
               <Image source={{ uri: getAssetUrl(badge.icon) }} style={s.trustIcon} resizeMode="contain" />
             </View>
-            <Text style={s.trustLabel}>{badge.label}</Text>
+            <Text style={s.trustLabel}>{translateTrustBadgeLabel(badge.id, badge.label, t)}</Text>
           </View>
           {i < badges.length - 1 && <View style={s.trustDivider} />}
         </React.Fragment>
@@ -192,6 +263,7 @@ function TrustBadges({ badges, colors }: TrustBadgesProps) {
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { profile, selectedCity, setSelectedCity } = useUser();
@@ -331,11 +403,11 @@ export default function HomeScreen() {
               // Permanently denied — user must enable in Settings
               setCurrentLocationStr('Enable in Settings');
               Alert.alert(
-                'Location Permission Required',
-                'Location access was denied. Please enable it in App Settings to auto-detect your city.',
+                t('home.location_perm_required_title'),
+                t('home.location_perm_required_msg'),
                 [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Open Settings', onPress: () => Linking.openSettings() },
+                  { text: t('common.cancel'), style: 'cancel' },
+                  { text: t('home.open_settings'), onPress: () => Linking.openSettings() },
                 ],
               );
             } else {
@@ -418,7 +490,13 @@ export default function HomeScreen() {
           <Image source={logoSmall} style={s.logoSmall} resizeMode="contain" />
           <TouchableOpacity style={s.locationPill} onPress={() => router.push('/(auth)/city-selection')}>
             <Ionicons name="location-sharp" size={16} color={colors.primary} />
-            <Text style={s.locationText} numberOfLines={1}>{currentLocationStr}</Text>
+            <Text style={s.locationText} numberOfLines={1}>
+              {currentLocationStr === 'Loading...' ? t('home.location_loading') :
+               currentLocationStr === 'Location Unavailable' ? t('home.location_unavailable') :
+               currentLocationStr === 'Enable in Settings' ? t('home.enable_in_settings') :
+               currentLocationStr === 'Location Required' ? t('home.location_required') :
+               currentLocationStr}
+            </Text>
           </TouchableOpacity>
           <View style={s.headerRight}>
             <TouchableOpacity onPress={() => router.push('/sos-emergency')}>
@@ -439,15 +517,17 @@ export default function HomeScreen() {
             <View style={s.comingSoonContent}>
               <Ionicons name="notifications-circle" size={40} color={colors.primary} />
               <View style={s.comingSoonTextRow}>
-                <Text style={s.comingSoonTitle}>We&apos;re coming soon to {currentLocationStr}!</Text>
-                <Text style={s.comingSoonDesc}>Notify me when you launch in my city.</Text>
+                <Text style={s.comingSoonTitle}>
+                  {t('home.coming_soon_title', { city: currentLocationStr === 'Loading...' ? t('home.location_loading') : currentLocationStr })}
+                </Text>
+                <Text style={s.comingSoonDesc}>{t('home.coming_soon_desc')}</Text>
               </View>
             </View>
             <TouchableOpacity
               style={s.notifyMeButton}
-              onPress={() => Alert.alert('Success', "We'll notify you as soon as we start operations in " + currentLocationStr)}
+              onPress={() => Alert.alert(t('home.notify_success_title'), t('home.notify_success_desc', { city: currentLocationStr === 'Loading...' ? t('home.location_loading') : currentLocationStr }))}
             >
-              <Text style={s.notifyMeText}>Notify Me</Text>
+              <Text style={s.notifyMeText}>{t('home.notify_me')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -455,11 +535,13 @@ export default function HomeScreen() {
         <View style={s.newGreetingBanner}>
           <View style={s.greetingContent}>
             <View style={s.greetingTextContainer}>
-              <Text style={s.newGreetingTitle}>{greeting}, {userName}!</Text>
-              <Text style={s.newGreetingSubtitle}>We see you. We hear you. We care you.</Text>
+              <Text style={s.newGreetingTitle}>
+                {t(currentHour >= 16 ? 'home.greeting_evening' : currentHour >= 12 ? 'home.greeting_afternoon' : 'home.greeting_morning')}, {userName}!
+              </Text>
+              <Text style={s.newGreetingSubtitle}>{t('home.greeting_subtitle')}</Text>
               <TouchableOpacity onPress={() => router.push('/my-bookings')} style={s.bookingStatusBtn}>
                 <Ionicons name="calendar" size={14} color="#02743F" />
-                <Text style={s.bookingStatusBtnText}>Booking Status</Text>
+                <Text style={s.bookingStatusBtnText}>{t('home.booking_status')}</Text>
               </TouchableOpacity>
             </View>
             <View style={s.greetingAvatarContainer}>
@@ -541,7 +623,7 @@ export default function HomeScreen() {
               )}
               <View style={s.featuredMeetupOverlay}>
                 <View style={s.featuredMeetupHeader}>
-                  <Text style={s.featuredMeetupBadge}>Featured Event</Text>
+                  <Text style={s.featuredMeetupBadge}>{t('home.featured_event')}</Text>
                 </View>
                 <Text style={s.featuredMeetupTitle} numberOfLines={2}>{featuredMeetup.title}</Text>
                 <View style={s.featuredMeetupMeta}>

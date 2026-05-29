@@ -10,6 +10,7 @@ import { labService } from '@/services/api/labService';
 import { useUser } from '@/context/UserContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTranslation } from 'react-i18next';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -24,11 +25,13 @@ const PAYMENT_METHODS = [
 ] as const;
 
 export default function BloodTestOrderSummaryScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { profile } = useUser();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const styles = makeStyles(isDarkMode, colors);
     const params = useLocalSearchParams<{
         bookingPayload?: string;
         amount?: string;
@@ -67,18 +70,18 @@ export default function BloodTestOrderSummaryScreen() {
             if (res.success && res.data?.valid) {
                 setDiscount(res.data.discount);
                 setCouponApplied(true);
-                Alert.alert('Success', `Coupon applied! You saved ₹${res.data.discount}`);
+                Alert.alert(t('common.success'), t('blood_test_summary.coupon_applied_msg', { discount: res.data.discount }));
             } else {
-                Alert.alert('Invalid', 'This coupon is not valid');
+                Alert.alert(t('blood_test_summary.invalid_title'), t('blood_test_summary.coupon_invalid_msg'));
             }
         } catch {
-            Alert.alert('Error', 'Could not apply coupon');
+            Alert.alert(t('common.error'), t('blood_test_summary.coupon_error_msg'));
         }
     };
 
     const handlePayment = async () => {
         if (!bookingData) {
-            Alert.alert('Error', 'Invalid booking data');
+            Alert.alert(t('common.error'), t('blood_test_summary.invalid_booking_msg'));
             return;
         }
 
@@ -92,7 +95,7 @@ export default function BloodTestOrderSummaryScreen() {
 
             if (!bookingRes) {
                 console.error('🩸 Order Summary: holdBooking returned undefined');
-                Alert.alert('Error', 'Could not create booking - no response from server');
+                Alert.alert(t('common.error'), t('blood_test_summary.booking_no_response_msg'));
                 return;
             }
 
@@ -102,7 +105,7 @@ export default function BloodTestOrderSummaryScreen() {
 
             if (!bookingId) {
                 console.error('🩸 Order Summary: No booking ID in response:', bookingRes);
-                Alert.alert('Error', `Could not create booking`);
+                Alert.alert(t('common.error'), t('blood_test_summary.booking_failed_msg'));
                 return;
             }
 
@@ -129,7 +132,7 @@ export default function BloodTestOrderSummaryScreen() {
             });
 
             if (!payRes.success || !payRes.data) {
-                Alert.alert('Error', 'Could not initiate payment');
+                Alert.alert(t('common.error'), t('blood_test_summary.payment_initiate_failed_msg'));
                 return;
             }
 
@@ -150,7 +153,7 @@ export default function BloodTestOrderSummaryScreen() {
                     email: profile?.email || '',
                     method: selectedMethod.toLowerCase(),
                 },
-                theme: { color: PRIMARY_GREEN },
+                theme: { color: colors.primary },
                 config: {
                     display: {
                         blocks: {
@@ -190,7 +193,7 @@ export default function BloodTestOrderSummaryScreen() {
                     },
                 });
             } else {
-                Alert.alert('Error', 'Payment verification failed');
+                Alert.alert(t('common.error'), t('blood_test_summary.payment_verification_failed_msg'));
             }
         } catch (error: any) {
             console.error('🩸 Order Summary: Payment/Booking error:', error);
@@ -200,8 +203,8 @@ export default function BloodTestOrderSummaryScreen() {
                 details: error.details,
             });
             if (error.code !== 'E_CANCELED') {
-                const errorMsg = error.details?.message || error.message || 'Payment failed';
-                Alert.alert('Error', errorMsg);
+                const errorMsg = error.details?.message || error.message || t('blood_test_summary.payment_failed_msg');
+                Alert.alert(t('common.error'), errorMsg);
             }
         } finally {
             setIsLoading(false);
@@ -218,9 +221,9 @@ export default function BloodTestOrderSummaryScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color={TEXT_DARK} />
+                    <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#FFFFFF' : TEXT_DARK} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Order Summary</Text>
+                <Text style={styles.headerTitle}>{t('blood_test_summary.order_summary_header')}</Text>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -233,7 +236,7 @@ export default function BloodTestOrderSummaryScreen() {
                             <Text style={styles.testName}>{params.label}</Text>
                             {params.testsCount && parseInt(params.testsCount) > 0 && (
                                 <Text style={styles.parametersText}>
-                                    {params.testsCount} {parseInt(params.testsCount) === 1 ? 'Parameter' : 'Parameters'} included
+                                    {params.testsCount} {parseInt(params.testsCount) === 1 ? t('blood_test_summary.parameter_included') : t('blood_test_summary.parameters_included')}
                                 </Text>
                             )}
                         </View>
@@ -248,10 +251,10 @@ export default function BloodTestOrderSummaryScreen() {
                     {/* Date & Time */}
                     <View style={styles.detailRow}>
                         <View style={styles.detailIcon}>
-                            <Ionicons name="calendar" size={16} color={PRIMARY_GREEN} />
+                            <Ionicons name="calendar" size={16} color={colors.primary} />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.detailLabel}>Date & Time</Text>
+                            <Text style={styles.detailLabel}>{t('blood_test_summary.date_time')}</Text>
                             <Text style={styles.detailValue}>
                                 {bookingData?.slot?.date}, {bookingData?.slot?.time}
                             </Text>
@@ -263,11 +266,11 @@ export default function BloodTestOrderSummaryScreen() {
                     {/* Collection Type */}
                     <View style={styles.detailRow}>
                         <View style={styles.detailIcon}>
-                            <Ionicons name={params.collectionType === 'LAB' ? 'business' : 'home'} size={16} color={PRIMARY_GREEN} />
+                            <Ionicons name={params.collectionType === 'LAB' ? 'business' : 'home'} size={16} color={colors.primary} />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.detailLabel}>Collection Type</Text>
-                            <Text style={styles.detailValue}>{params.collectionType === 'LAB' ? 'Lab Visit' : 'Home Collection'}</Text>
+                            <Text style={styles.detailLabel}>{t('blood_test_summary.collection_type')}</Text>
+                            <Text style={styles.detailValue}>{params.collectionType === 'LAB' ? t('blood_test_summary.lab_visit') : t('blood_test_summary.home_collection')}</Text>
                         </View>
                     </View>
 
@@ -277,10 +280,10 @@ export default function BloodTestOrderSummaryScreen() {
                             {/* Address */}
                             <View style={styles.detailRow}>
                                 <View style={styles.detailIcon}>
-                                    <Ionicons name="location" size={16} color={PRIMARY_GREEN} />
+                                    <Ionicons name="location" size={16} color={colors.primary} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={styles.detailLabel}>Address</Text>
+                                    <Text style={styles.detailLabel}>{t('blood_test_summary.address')}</Text>
                                     <Text style={styles.detailValue} numberOfLines={2}>
                                         {bookingData?.address?.line1}, {bookingData?.address?.pincode}
                                     </Text>
@@ -293,41 +296,41 @@ export default function BloodTestOrderSummaryScreen() {
                 {/* Price Breakdown */}
                 <View style={styles.card}>
                     <View style={styles.breakdownRow}>
-                        <Text style={styles.breakdownLabel}>Subtotal</Text>
+                        <Text style={styles.breakdownLabel}>{t('blood_test_summary.subtotal')}</Text>
                         <Text style={styles.breakdownValue}>₹{baseAmount.toFixed(2)}</Text>
                     </View>
 
                     <View style={styles.breakdownRow}>
-                        <Text style={styles.breakdownLabel}>Convenience Fee</Text>
+                        <Text style={styles.breakdownLabel}>{t('blood_test_summary.convenience_fee')}</Text>
                         <Text style={styles.breakdownValue}>₹{convenienceFee.toFixed(2)}</Text>
                     </View>
 
                     <View style={styles.breakdownRow}>
-                        <Text style={styles.breakdownLabel}>GST (18%)</Text>
+                        <Text style={styles.breakdownLabel}>{t('blood_test_summary.gst')}</Text>
                         <Text style={styles.breakdownValue}>₹{gst.toFixed(2)}</Text>
                     </View>
 
                     {discount > 0 && (
                         <View style={styles.breakdownRow}>
-                            <Text style={[styles.breakdownLabel, { color: PRIMARY_GREEN }]}>Discount</Text>
-                            <Text style={[styles.breakdownValue, { color: PRIMARY_GREEN }]}>-₹{discount.toFixed(2)}</Text>
+                            <Text style={[styles.breakdownLabel, { color: colors.primary }]}>{t('blood_test_summary.discount')}</Text>
+                            <Text style={[styles.breakdownValue, { color: colors.primary }]}>-₹{discount.toFixed(2)}</Text>
                         </View>
                     )}
 
                     <View style={styles.breakdownDivider} />
 
                     <View style={styles.totalRow}>
-                        <Text style={styles.totalLabel}>Total Amount</Text>
+                        <Text style={styles.totalLabel}>{t('blood_test_summary.total_amount')}</Text>
                         <Text style={styles.totalValue}>₹{totalAmount.toFixed(2)}</Text>
                     </View>
                 </View>
 
                 {/* Coupon Section */}
                 <View style={styles.card}>
-                    <Text style={styles.sectionTitle}>Apply Coupon Code</Text>
+                    <Text style={styles.sectionTitle}>{t('blood_test_summary.apply_coupon_code')}</Text>
                     <View style={styles.couponRow}>
                         <TextInput
-                            placeholder="Enter coupon code"
+                            placeholder={t('blood_test_summary.enter_coupon_code')}
                             placeholderTextColor={TEXT_MUTED}
                             value={couponCode}
                             onChangeText={setCouponCode}
@@ -340,7 +343,7 @@ export default function BloodTestOrderSummaryScreen() {
                             disabled={couponApplied}
                         >
                             <Text style={[styles.applyBtnText, couponApplied && styles.applyBtnTextApplied]}>
-                                {couponApplied ? '✓' : 'Apply'}
+                                {couponApplied ? '✓' : t('blood_test_summary.apply')}
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -348,7 +351,7 @@ export default function BloodTestOrderSummaryScreen() {
 
                 {/* Payment Method */}
                 <View style={styles.card}>
-                    <Text style={styles.sectionTitle}>Payment Method</Text>
+                    <Text style={styles.sectionTitle}>{t('blood_test_summary.payment_method')}</Text>
                     {PAYMENT_METHODS.map(m => (
                         <TouchableOpacity
                             key={m.type}
@@ -356,14 +359,14 @@ export default function BloodTestOrderSummaryScreen() {
                             onPress={() => setSelectedMethod(m.type)}
                             activeOpacity={0.8}
                         >
-                            <Ionicons name={m.icon as any} size={20} color={selectedMethod === m.type ? PRIMARY_GREEN : TEXT_MUTED} />
+                            <Ionicons name={m.icon as any} size={20} color={selectedMethod === m.type ? colors.primary : TEXT_MUTED} />
                             <Text style={[styles.methodLabel, selectedMethod === m.type && styles.methodLabelActive]}>
-                                {m.label}
+                                {m.type === 'UPI' ? t('blood_test_summary.upi_label') : m.type === 'CARD' ? t('blood_test_summary.card_label') : t('blood_test_summary.cod_label')}
                             </Text>
                             <Ionicons
                                 name={selectedMethod === m.type ? 'radio-button-on' : 'radio-button-off'}
                                 size={20}
-                                color={selectedMethod === m.type ? PRIMARY_GREEN : TEXT_MUTED}
+                                color={selectedMethod === m.type ? colors.primary : TEXT_MUTED}
                             />
                         </TouchableOpacity>
                     ))}
@@ -382,8 +385,8 @@ export default function BloodTestOrderSummaryScreen() {
                     ) : (
                         <Text style={styles.payBtnText}>
                             {selectedMethod === 'CASH' 
-                                ? 'Confirm Booking' 
-                                : `Confirm & Pay ₹${totalAmount.toFixed(2)}`}
+                                ? t('blood_test_summary.confirm_booking') 
+                                : `${t('blood_test_summary.confirm_pay')} ₹${totalAmount.toFixed(2)}`}
                         </Text>
                     )}
                 </TouchableOpacity>
@@ -603,4 +606,3 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     methodLabel: { flex: 1, fontSize: 13, color: isDarkMode ? '#AAAAAA' : TEXT_MUTED, fontWeight: '400' },
     methodLabelActive: { color: isDarkMode ? '#FFFFFF' : TEXT_DARK, fontWeight: '600' },
 });
-const styles = makeStyles(false, {} as ThemeColors);

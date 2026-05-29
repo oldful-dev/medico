@@ -1,6 +1,9 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
+import { useThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 interface CustomDateTimePickerProps {
     label?: string;
@@ -17,11 +20,10 @@ const DEFAULT_TIME_SLOTS = [
     '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM',
 ];
 
-const DAY_NAMES  = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MON_NAMES  = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-function formatDatePill(date: Date): string {
-    return `${DAY_NAMES[date.getDay()]}\n${date.getDate()} ${MON_NAMES[date.getMonth()]}`;
+function formatDatePill(date: Date, t: any): string {
+    const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    return `${t(`days.${dayKeys[date.getDay()]}`)}\n${date.getDate()} ${t(`months.${monthKeys[date.getMonth()]}`)}`;
 }
 
 function mergeDateTime(date: Date, timeStr: string): Date {
@@ -42,6 +44,10 @@ export default function CustomDateTimePicker({
     daysToShow = 14,
     timeSlots = DEFAULT_TIME_SLOTS,
 }: CustomDateTimePickerProps) {
+    const { t } = useTranslation();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(isDarkMode, colors);
     const notify = onChange ?? onDateChange;
 
     const isSlotPast = (date: Date, slot: string) => {
@@ -103,7 +109,7 @@ export default function CustomDateTimePicker({
 
             {/* ── Select Date ── */}
             <View style={styles.section}>
-                <Text style={styles.sectionLabel}>Select Date</Text>
+                <Text style={styles.sectionLabel}>{t('common.select_date')}</Text>
                 <ScrollView
                     ref={scrollRef}
                     horizontal
@@ -123,7 +129,7 @@ export default function CustomDateTimePicker({
                                 activeOpacity={0.75}
                             >
                                 <Text style={[styles.datePillText, active && styles.datePillTextSelected]}>
-                                    {formatDatePill(date)}
+                                    {formatDatePill(date, t)}
                                 </Text>
                             </TouchableOpacity>
                         );
@@ -133,7 +139,7 @@ export default function CustomDateTimePicker({
 
             {/* ── Select Time ── */}
             <View style={styles.section}>
-                <Text style={styles.sectionLabel}>Select Time</Text>
+                <Text style={styles.sectionLabel}>{t('common.select_time')}</Text>
                 <View style={styles.timeGrid}>
                     {timeSlots.map((slot, idx) => {
                         const active = selectedTime === slot;
@@ -166,7 +172,7 @@ export default function CustomDateTimePicker({
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean, colors: any) => StyleSheet.create({
     container: {
         paddingHorizontal: 16,
         paddingBottom: 8,
@@ -174,7 +180,7 @@ const styles = StyleSheet.create({
     label: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.heading3,
-        color: Colors.textDark,
+        color: colors.textDark,
         marginBottom: Spacing.md,
     },
     section: {
@@ -183,7 +189,7 @@ const styles = StyleSheet.create({
     sectionLabel: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.textDark,
+        color: colors.textDark,
         marginBottom: Spacing.md,
     },
 
@@ -198,19 +204,19 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         borderRadius: 12,
         borderWidth: 1.5,
-        borderColor: '#E5E7EB',
-        backgroundColor: '#FFFFFF',
+        borderColor: isDarkMode ? '#334155' : '#E5E7EB',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
         alignItems: 'center',
         justifyContent: 'center',
     },
     datePillSelected: {
-        borderColor: Colors.primary,
-        backgroundColor: Colors.primary,
+        borderColor: colors.primary,
+        backgroundColor: colors.primary,
     },
     datePillText: {
         fontFamily: Fonts.semiBold,
         fontSize: 12,
-        color: Colors.textMuted,
+        color: colors.textMuted,
         textAlign: 'center',
         lineHeight: 18,
     },
@@ -228,29 +234,29 @@ const styles = StyleSheet.create({
         paddingVertical: 11,
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
-        backgroundColor: '#FFFFFF',
+        borderColor: isDarkMode ? '#334155' : '#E5E7EB',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
         width: '31%',
         alignItems: 'center',
     },
     timeSlotSelected: {
-        borderColor: Colors.primary,
-        backgroundColor: Colors.primary,
+        borderColor: colors.primary,
+        backgroundColor: colors.primary,
     },
     timeSlotDisabled: {
-        borderColor: '#E5E7EB',
-        backgroundColor: '#F3F4F6',
+        borderColor: isDarkMode ? '#334155' : '#E5E7EB',
+        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : '#F3F4F6',
         opacity: 0.5,
     },
     timeSlotText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.textMuted,
+        color: colors.textMuted,
     },
     timeSlotTextSelected: {
         color: '#FFFFFF',
     },
     timeSlotTextDisabled: {
-        color: '#9CA3AF',
+        color: isDarkMode ? '#475569' : '#9CA3AF',
     },
 });

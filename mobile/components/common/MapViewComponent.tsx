@@ -6,6 +6,7 @@
 import React from 'react';
 import { StyleSheet, View, Platform } from 'react-native';
 import MapView, { Marker, Region, PROVIDER_GOOGLE } from 'react-native-maps';
+import { useTranslation } from 'react-i18next';
 
 interface MapViewComponentProps {
     latitude: number;
@@ -24,7 +25,7 @@ const DEFAULT_DELTA = { latitudeDelta: 0.005, longitudeDelta: 0.005 };
 const MapViewComponent: React.FC<MapViewComponentProps> = ({
     latitude,
     longitude,
-    markerTitle = 'Selected Location',
+    markerTitle,
     markerDescription,
     showMarker = true,
     onLocationChange,
@@ -32,11 +33,14 @@ const MapViewComponent: React.FC<MapViewComponentProps> = ({
     scrollEnabled = true,
     zoomEnabled = true,
 }) => {
+    const { t } = useTranslation();
     const region: Region = {
         latitude,
         longitude,
         ...DEFAULT_DELTA,
     };
+
+    const resolvedMarkerTitle = markerTitle ?? t('common.selected_location');
 
     return (
         <View style={[styles.container, style]}>
@@ -55,7 +59,7 @@ const MapViewComponent: React.FC<MapViewComponentProps> = ({
                 {showMarker && (
                     <Marker
                         coordinate={{ latitude, longitude }}
-                        title={markerTitle}
+                        title={resolvedMarkerTitle}
                         description={markerDescription}
                     />
                 )}

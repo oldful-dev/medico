@@ -16,7 +16,7 @@ import { locationService } from '@/services/device/locationService';
 import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
-
+import { useTranslation } from 'react-i18next';
 
 // ─── Initial State Constants ───
 const INITIAL_CONDITIONS = [
@@ -32,6 +32,7 @@ const INITIAL_RECIPIENTS = [
 ];
 
 export default function InsuranceScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
@@ -73,11 +74,11 @@ export default function InsuranceScreen() {
     const handleBookService = async () => {
         const activeRecipient = recipients.find(r => r.selected);
         if (!activeRecipient) {
-            Alert.alert('Required', 'Please select who the insurance is for.');
+            Alert.alert(t('common.required'), t('insurance.alert_recipient_required'));
             return;
         }
         if (!cityId || !serviceId) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            Alert.alert(t('common.error'), t('insurance.alert_init_failed'));
             return;
         }
         // Insurance is a consultation request — no Razorpay payment.
@@ -99,11 +100,11 @@ export default function InsuranceScreen() {
             if (res.success && res.data) {
                 router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
             } else {
-                Alert.alert('Submission Failed', res.message || 'Something went wrong.');
+                Alert.alert(t('common.error'), res.message || t('insurance.alert_submission_failed'));
             }
         } catch (error) {
             console.error('Insurance booking error:', error);
-            Alert.alert('Error', 'Failed to submit request. Please try again.');
+            Alert.alert(t('common.error'), t('insurance.alert_request_failed'));
         } finally {
             setIsBooking(false);
         }
@@ -136,6 +137,26 @@ export default function InsuranceScreen() {
         setConditions(newConditions);
     };
 
+    const translateRecipientLabel = (label: string) => {
+        const keyMap: Record<string, string> = {
+            'self': 'common.self',
+            'parents': 'insurance.parents',
+        };
+        const key = keyMap[label.toLowerCase()];
+        return key ? t(key) : label;
+    };
+
+    const translateConditionLabel = (label: string) => {
+        const keyMap: Record<string, string> = {
+            'diabetes': 'insurance.diabetes',
+            'hypertension (bp)': 'insurance.hypertension',
+            'heart condition': 'insurance.heart_condition',
+            'none': 'common.none',
+        };
+        const key = keyMap[label.toLowerCase()];
+        return key ? t(key) : label;
+    };
+
     const dynamicStyles = makeStyles(isDarkMode);
 
     return (
@@ -148,128 +169,128 @@ export default function InsuranceScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={dynamicStyles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={dynamicStyles.headerTitle}>Insurance Plan</Text>
+                <Text style={dynamicStyles.headerTitle}>{t('insurance.header')}</Text>
             </View>
 
             {/* ─── Content Card ─── */}
             <View style={dynamicStyles.contentCard}>
                 <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-            <KeyboardAwareScrollView
-                    style={dynamicStyles.scrollView}
-                    contentContainerStyle={dynamicStyles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                    enableOnAndroid
-                    extraScrollHeight={20}
-                >
-                    {/* ─── Main Form Card (matches Figma Rectangle 157) ─── */}
-                    <View style={dynamicStyles.formWrapper}>
-                        {/* Title */}
-                        <Text style={dynamicStyles.pageTitle}>Get an Insurance Plan</Text>
-                        <Text style={dynamicStyles.pageSubtitle}>
-                            Find the best health insurance plan tailored for you or your parents.
-                        </Text>
+                    <KeyboardAwareScrollView
+                        style={dynamicStyles.scrollView}
+                        contentContainerStyle={dynamicStyles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        enableOnAndroid
+                        extraScrollHeight={20}
+                    >
+                        {/* ─── Main Form Card (matches Figma Rectangle 157) ─── */}
+                        <View style={dynamicStyles.formWrapper}>
+                            {/* Title */}
+                            <Text style={dynamicStyles.pageTitle}>{t('insurance.page_title')}</Text>
+                            <Text style={dynamicStyles.pageSubtitle}>
+                                {t('insurance.page_subtitle')}
+                            </Text>
 
-                        {/* ─── Who Is It For? ─── */}
-                        <View style={dynamicStyles.sectionCard}>
-                            <Text style={dynamicStyles.sectionTitle}>Who is it for?</Text>
-                            <View style={dynamicStyles.recipientRow}>
-                                {recipients.map((item, index) => (
-                                    <TouchableOpacity
-                                        key={index}
-                                        style={[
-                                            dynamicStyles.recipientButton,
-                                            item.selected && dynamicStyles.recipientButtonSelected,
-                                        ]}
-                                        onPress={() => selectRecipient(index)}
-                                    >
-                                        <Ionicons
-                                            name={item.selected ? 'radio-button-on' : 'radio-button-off'}
-                                            size={15}
-                                            color={item.selected ? '#048357' : '#AAAEAC'}
-                                        />
-                                        {item.label === 'Parents' && (
-                                            <Image
-                                                source={familyIcon}
-                                                style={dynamicStyles.familyIcon}
-                                                resizeMode="contain"
+                            {/* ─── Who Is It For? ─── */}
+                            <View style={dynamicStyles.sectionCard}>
+                                <Text style={dynamicStyles.sectionTitle}>{t('insurance.who_for')}</Text>
+                                <View style={dynamicStyles.recipientRow}>
+                                    {recipients.map((item, index) => (
+                                        <TouchableOpacity
+                                            key={index}
+                                            style={[
+                                                dynamicStyles.recipientButton,
+                                                item.selected && dynamicStyles.recipientButtonSelected,
+                                            ]}
+                                            onPress={() => selectRecipient(index)}
+                                        >
+                                            <Ionicons
+                                                name={item.selected ? 'radio-button-on' : 'radio-button-off'}
+                                                size={15}
+                                                color={item.selected ? '#048357' : '#AAAEAC'}
                                             />
+                                            {item.label === 'Parents' && (
+                                                <Image
+                                                    source={familyIcon}
+                                                    style={dynamicStyles.familyIcon}
+                                                    resizeMode="contain"
+                                                />
+                                            )}
+                                            <Text style={[
+                                                dynamicStyles.recipientText,
+                                                item.selected && dynamicStyles.recipientTextSelected,
+                                            ]}>
+                                                {translateRecipientLabel(item.label)}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+
+                            {/* ─── Pre-existing Conditions ─── */}
+                            <Text style={dynamicStyles.conditionHeader}>
+                                {t('insurance.condition_header')}{'\n'}
+                                <Text style={dynamicStyles.conditionSubHeader}>{t('insurance.condition_sub_header')}</Text>
+                            </Text>
+
+                            {conditions.map((cond, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={dynamicStyles.conditionItem}
+                                    onPress={() => toggleCondition(index)}
+                                >
+                                    <View style={[
+                                        dynamicStyles.conditionCheckbox,
+                                        cond.selected && dynamicStyles.conditionCheckboxSelected,
+                                    ]}>
+                                        {cond.selected && (
+                                            <Ionicons name="checkmark" size={14} color="#FFFFFF" />
                                         )}
-                                        <Text style={[
-                                            dynamicStyles.recipientText,
-                                            item.selected && dynamicStyles.recipientTextSelected,
-                                        ]}>
-                                            {item.label}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
+                                    </View>
+                                    <Text style={[
+                                        dynamicStyles.conditionLabel,
+                                        cond.selected && dynamicStyles.conditionLabelSelected,
+                                    ]}>
+                                        {translateConditionLabel(cond.label)}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+
+                            {/* ─── Requirements Text Area ─── */}
+                            <Text style={dynamicStyles.requirementsLabel}>{t('insurance.requirements_label')}</Text>
+                            <View style={dynamicStyles.textAreaCard}>
+                                <TextInput
+                                    style={dynamicStyles.textArea}
+                                    placeholder={t('insurance.requirements_placeholder')}
+                                    placeholderTextColor="#AAAEAC"
+                                    multiline
+                                    numberOfLines={4}
+                                    textAlignVertical="top"
+                                    value={requirements}
+                                    onChangeText={setRequirements}
+                                />
+                            </View>
+
+                            {/* ─── Submit Button ─── */}
+                            <View style={dynamicStyles.submitContainer}>
+                                <TouchableOpacity
+                                    style={[dynamicStyles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                                    activeOpacity={0.8}
+                                    disabled={isBooking || isLoadingInit}
+                                    onPress={handleBookService}
+                                >
+                                    {isLoadingInit ? (
+                                        <Text style={dynamicStyles.submitButtonText}>{t('common.initializing')}</Text>
+                                    ) : isBooking ? (
+                                        <ActivityIndicator color="#FFFFFF" />
+                                    ) : (
+                                        <Text style={dynamicStyles.submitButtonText}>{t('insurance.submit_request')}</Text>
+                                    )}
+                                </TouchableOpacity>
                             </View>
                         </View>
-
-                        {/* ─── Pre-existing Conditions ─── */}
-                        <Text style={dynamicStyles.conditionHeader}>
-                            Do you existing have diseases?{'\n'}
-                            <Text style={dynamicStyles.conditionSubHeader}>(Crucial for premium calculation)</Text>
-                        </Text>
-
-                        {conditions.map((cond, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={dynamicStyles.conditionItem}
-                                onPress={() => toggleCondition(index)}
-                            >
-                                <View style={[
-                                    dynamicStyles.conditionCheckbox,
-                                    cond.selected && dynamicStyles.conditionCheckboxSelected,
-                                ]}>
-                                    {cond.selected && (
-                                        <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-                                    )}
-                                </View>
-                                <Text style={[
-                                    dynamicStyles.conditionLabel,
-                                    cond.selected && dynamicStyles.conditionLabelSelected,
-                                ]}>
-                                    {cond.label}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-
-                        {/* ─── Requirements Text Area ─── */}
-                        <Text style={dynamicStyles.requirementsLabel}>Write what you&apos;re looking for</Text>
-                        <View style={dynamicStyles.textAreaCard}>
-                            <TextInput
-                                style={dynamicStyles.textArea}
-                                placeholder="Describe your requirements or preferences....."
-                                placeholderTextColor="#AAAEAC"
-                                multiline
-                                numberOfLines={4}
-                                textAlignVertical="top"
-                                value={requirements}
-                                onChangeText={setRequirements}
-                            />
-                        </View>
-
-                        {/* ─── Submit Button ─── */}
-                        <View style={dynamicStyles.submitContainer}>
-                            <TouchableOpacity
-                                style={[dynamicStyles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
-                                activeOpacity={0.8}
-                                disabled={isBooking || isLoadingInit}
-                                onPress={handleBookService}
-                            >
-                                {isLoadingInit ? (
-                                    <Text style={dynamicStyles.submitButtonText}>Initializing...</Text>
-                                ) : isBooking ? (
-                                    <ActivityIndicator color="#FFFFFF" />
-                                ) : (
-                                    <Text style={dynamicStyles.submitButtonText}>Submit Request</Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </KeyboardAwareScrollView>
-        </KeyboardAvoidingView>
+                    </KeyboardAwareScrollView>
+                </KeyboardAvoidingView>
             </View>
         </View>
     );
@@ -380,7 +401,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         height: 36,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: 'rgba(143,143,143,0.3)',
+        borderColor: isDarkMode ? '#475569' : 'rgba(143,143,143,0.3)',
         gap: 4,
     },
     familyIcon: {
@@ -394,11 +415,11 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     recipientText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 11,
-        color: '#555555',
+        color: isDarkMode ? '#94A3B8' : '#555555',
     },
     recipientTextSelected: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: '#02743F',
+        color: isDarkMode ? '#34D399' : '#02743F',
     },
 
     /* ─── Pre-existing Conditions ─── */
@@ -412,7 +433,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     conditionSubHeader: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 11,
-        color: '#777777',
+        color: isDarkMode ? '#94A3B8' : '#777777',
     },
     conditionItem: {
         flexDirection: 'row',
@@ -425,7 +446,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         height: 22,
         borderRadius: 6,
         borderWidth: 1.5,
-        borderColor: '#DADADA',
+        borderColor: isDarkMode ? '#475569' : '#DADADA',
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -440,7 +461,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     conditionLabelSelected: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
     },
 
     /* ─── Requirements Text Area ─── */

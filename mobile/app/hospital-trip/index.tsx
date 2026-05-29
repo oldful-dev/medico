@@ -20,20 +20,7 @@ const imgKidney = require('@/assets/images/bc2188e6d87da62a1af90ead7f0bf3503c623
 const imgLungs = require('@/assets/images/2e704f53861f02d36dae70114611506893870ca5.png');
 const imgCancer = require('@/assets/images/12a939ac9402eccf1948ba9378dc7ffb078381cb.png');
 const imgDental = require('@/assets/images/fde7739eae440fa8bbeccc49dfe81d9417584cdb.png');
-const imgHospitalIcon = require('@/assets/images/31bbfde9d06049efbd9fd2f7dfc3a946806d9b19.png');
 const imgRadioIcon = require('@/assets/images/9e6f2fbe6164dacc5707082a5ca833130f9cddd9.png');
-// If no explicit image for the add-ons row, we will use ionicons.
-// If no explicit image for the add-ons row, we will use ionicons. Check screen cap:
-// Add-ons list: Transport (unchecked circle by default, I'll use ionicons), Support (green check), Car/Money ($500)
-
-const SPECIALISTS = [
-    { id: 'eye', label: 'Eye\nSpecialist', icon: imgEye },
-    { id: 'brain', label: 'Brain &\nNerves', icon: imgBrain },
-    { id: 'kidney', label: 'Kidney &\nUrinary', icon: imgKidney },
-    { id: 'lungs', label: 'Lungs &\nBreathing', icon: imgLungs },
-    { id: 'dental', label: 'Dental Care', icon: imgDental },
-    { id: 'cancer', label: 'Cancer\nSpecialist', icon: imgCancer },
-];
 
 export default function HospitalTripScreen() {
     const { t } = useTranslation();
@@ -68,41 +55,50 @@ export default function HospitalTripScreen() {
 
     const [isBooking, setIsBooking] = useState(false);
 
+    const SPECIALISTS = [
+        { id: 'eye', label: t('hospital_trip.eye_specialist'), icon: imgEye },
+        { id: 'brain', label: t('hospital_trip.brain_nerves'), icon: imgBrain },
+        { id: 'kidney', label: t('hospital_trip.kidney_urinary'), icon: imgKidney },
+        { id: 'lungs', label: t('hospital_trip.lungs_breathing'), icon: imgLungs },
+        { id: 'dental', label: t('hospital_trip.dental_care'), icon: imgDental },
+        { id: 'cancer', label: t('hospital_trip.cancer_specialist'), icon: imgCancer },
+    ];
+
     const handleBookService = async () => {
         if (!selectedSpecialist) {
-            Alert.alert('Select Specialist', 'Please select a specialist category first.');
+            Alert.alert(t('hospital_trip.alert_select_specialist'), t('hospital_trip.alert_select_specialist_msg'));
             return;
         }
         if (!hospitalPreference) {
-            Alert.alert('Select Hospital', 'Please select a hospital preference.');
+            Alert.alert(t('hospital_trip.alert_select_hospital'), t('hospital_trip.alert_select_hospital_msg'));
             return;
         }
         if (hospitalPreference === 'preferred' && !hospitalQuery.trim()) {
-            Alert.alert('Hospital Required', 'Please enter your preferred hospital name.');
+            Alert.alert(t('hospital_trip.alert_hospital_required'), t('hospital_trip.alert_hospital_required_msg'));
             return;
         }
         if (selectedDoctorType === 'preferred' && !preferredDoctor.trim()) {
-            Alert.alert('Doctor Name Required', "Please enter your preferred doctor's name.");
+            Alert.alert(t('hospital_trip.alert_doctor_required'), t('hospital_trip.alert_doctor_required_msg'));
             return;
         }
         if (!selectedDate) {
-            Alert.alert('Date Required', 'Please select an appointment date.');
+            Alert.alert(t('hospital_trip.alert_date_required'), t('hospital_trip.alert_date_required_msg'));
             return;
         }
         if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert('Address Required', locationDenied
-                ? 'Please type your pickup address manually since location access is denied.'
-                : 'Could not fetch your address. Please wait or try again.');
+            Alert.alert(t('hospital_trip.alert_address_required'), locationDenied
+                ? t('hospital_trip.alert_address_denied')
+                : t('hospital_trip.alert_address_failed'));
             return;
         }
         if (!isReady) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            Alert.alert(t('common.error'), t('booking.init_incomplete'));
             return;
         }
         try {
             setIsBooking(true);
 
-            // Navigate to checkout � booking created inside checkout after payment succeeds
+            // Navigate to checkout
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
@@ -126,7 +122,7 @@ export default function HospitalTripScreen() {
             });
         } catch (error) {
             console.error('Hospital trip error:', error);
-            Alert.alert('Error', 'Something went wrong. Please try again.');
+            Alert.alert(t('common.error'), t('booking.something_wrong'));
         } finally {
             setIsBooking(false);
         }
@@ -153,8 +149,8 @@ export default function HospitalTripScreen() {
             <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* --- Hero / Titles --- */}
-                    <Text style={dynamicStyles.mainTitle}>Hospital Trip</Text>
-                    <Text style={dynamicStyles.subTitle}>Select a specialist. You can only select one.</Text>
+                    <Text style={dynamicStyles.mainTitle}>{t('hospital_trip.main_title')}</Text>
+                    <Text style={dynamicStyles.subTitle}>{t('hospital_trip.select_specialist')}</Text>
                     <View style={dynamicStyles.divider} />
 
                     {/* --- Specialists Grid --- */}
@@ -182,7 +178,7 @@ export default function HospitalTripScreen() {
                     {/* --- Destination Details --- */}
                     <View style={dynamicStyles.sectionHeaderRow}>
                         <Image source={imgRadioIcon} style={dynamicStyles.sectionHeaderIcon} resizeMode="contain" />
-                        <Text style={[dynamicStyles.sectionTitle, { marginBottom: 0 }]}>Destination Details</Text>
+                        <Text style={[dynamicStyles.sectionTitle, { marginBottom: 0 }]}>{t('hospital_trip.destination_details')}</Text>
                     </View>
 
                     <TouchableOpacity
@@ -191,14 +187,14 @@ export default function HospitalTripScreen() {
                         onPress={() => setHospitalPreference('preferred')}
                     >
                         <View style={[dynamicStyles.radioCircle, hospitalPreference === 'preferred' && dynamicStyles.radioCircleSelected]} />
-                        <Text style={dynamicStyles.doctorOptionText}>I have a preferred Hospital</Text>
+                        <Text style={dynamicStyles.doctorOptionText}>{t('hospital_trip.preferred_hospital_option')}</Text>
                     </TouchableOpacity>
 
                     {hospitalPreference === 'preferred' && (
                         <View style={dynamicStyles.doctorNameInput}>
                             <TextInput
                                 style={dynamicStyles.doctorTextInput}
-                                placeholder="Enter hospital name"
+                                placeholder={t('hospital_trip.hospital_name_placeholder')}
                                 placeholderTextColor={isDarkMode ? '#64748B' : '#888888'}
                                 value={hospitalQuery}
                                 onChangeText={setHospitalQuery}
@@ -212,13 +208,13 @@ export default function HospitalTripScreen() {
                         onPress={() => setHospitalPreference('recommend')}
                     >
                         <View style={[dynamicStyles.radioCircle, hospitalPreference === 'recommend' && dynamicStyles.radioCircleSelected]} />
-                        <Text style={dynamicStyles.doctorOptionText}>Recommend a hospital for me</Text>
+                        <Text style={dynamicStyles.doctorOptionText}>{t('hospital_trip.recommend_hospital')}</Text>
                     </TouchableOpacity>
 
                     <View style={dynamicStyles.divider} />
 
                     {/* --- Select Doctor --- */}
-                    <Text style={[dynamicStyles.sectionTitle, { marginLeft: 0 }]}>Select Doctor</Text>
+                    <Text style={[dynamicStyles.sectionTitle, { marginLeft: 0 }]}>{t('hospital_trip.select_doctor')}</Text>
 
                     <TouchableOpacity
                         style={dynamicStyles.doctorOptionRow}
@@ -226,14 +222,14 @@ export default function HospitalTripScreen() {
                         onPress={() => setSelectedDoctorType('preferred')}
                     >
                         <View style={[dynamicStyles.radioCircle, selectedDoctorType === 'preferred' && dynamicStyles.radioCircleSelected]} />
-                        <Text style={dynamicStyles.doctorOptionText}>I have a preferred Doctor</Text>
+                        <Text style={dynamicStyles.doctorOptionText}>{t('hospital_trip.preferred_doctor')}</Text>
                     </TouchableOpacity>
 
                     {selectedDoctorType === 'preferred' && (
                         <View style={dynamicStyles.doctorNameInput}>
                             <TextInput
                                 style={dynamicStyles.doctorTextInput}
-                                placeholder="Enter doctor name"
+                                placeholder={t('hospital_trip.doctor_name_placeholder')}
                                 placeholderTextColor={isDarkMode ? '#64748B' : '#888888'}
                                 value={preferredDoctor}
                                 onChangeText={setPreferredDoctor}
@@ -248,21 +244,21 @@ export default function HospitalTripScreen() {
                         onPress={() => setSelectedDoctorType('recommend')}
                     >
                         <View style={[dynamicStyles.radioCircle, selectedDoctorType === 'recommend' && dynamicStyles.radioCircleSelected]} />
-                        <Text style={dynamicStyles.doctorOptionText}>Recommend a doctor for me</Text>
+                        <Text style={dynamicStyles.doctorOptionText}>{t('hospital_trip.recommend_doctor')}</Text>
                     </TouchableOpacity>
 
                     <View style={dynamicStyles.divider} />
 
                     {/* --- Schedule --- */}
                     <CustomDateTimePicker
-                        label="When?"
+                        label={t('hospital_trip.destination_details')}
                         value={selectedDate}
                         onDateChange={setSelectedDate}
                     />
 
                     {/* --- Service Add-ons --- */}
                     <View style={dynamicStyles.addonsContainer}>
-                        <Text style={dynamicStyles.sectionTitle}>Service Add-ons</Text>
+                        <Text style={dynamicStyles.sectionTitle}>{t('hospital_trip.service_addons')}</Text>
 
                         {/* Addon: Transport */}
                         <TouchableOpacity
@@ -278,9 +274,8 @@ export default function HospitalTripScreen() {
                                 <View style={dynamicStyles.uncheckedCircle} />
                             )}
                             <Text style={dynamicStyles.addonText}>
-                                <Text style={dynamicStyles.addonBold}>Transport: </Text>Arrange Cab for me?
+                                {t('hospital_trip.transport_addon')}
                             </Text>
-                            <Ionicons name="chevron-forward" size={18} color="#555" style={{ marginLeft: 'auto' }} />
                         </TouchableOpacity>
 
                         {/* Addon: Support */}
@@ -297,7 +292,7 @@ export default function HospitalTripScreen() {
                                 <View style={dynamicStyles.uncheckedCircle} />
                             )}
                             <Text style={dynamicStyles.addonText}>
-                                <Text style={dynamicStyles.addonBold}>Support: </Text>Send an Ayuxa Care Buddy to{'\n'}assist me at the hospital?
+                                {t('hospital_trip.support_addon')}
                             </Text>
                         </TouchableOpacity>
 
@@ -308,20 +303,20 @@ export default function HospitalTripScreen() {
                             {/* In Figma, there's a small car icon here, using car icon from Ionicons for now */}
                             <Ionicons name="car" size={20} color="#C42A2A" style={{ marginRight: 6 }} />
                             <Text style={dynamicStyles.costText}>
-                                <Text style={dynamicStyles.costAmount}>$500</Text>
-                                <Text style={dynamicStyles.costLabel}> Booking </Text>
-                                <Text style={dynamicStyles.costActuals}>Fee + Actuals</Text>
+                                <Text style={dynamicStyles.costAmount}>₹{servicePrice}</Text>
+                                <Text style={dynamicStyles.costLabel}> {t('hospital_trip.booking_fee')} </Text>
+                                <Text style={dynamicStyles.costActuals}>{t('hospital_trip.fee_actuals')}</Text>
                             </Text>
                         </View>
                     </View>
 
                     {/* --- Confirm Pickup Address --- */}
                     <View style={dynamicStyles.addonsContainer}>
-                        <Text style={dynamicStyles.sectionTitle}>Confirm Pickup Address</Text>
+                        <Text style={dynamicStyles.sectionTitle}>{t('hospital_trip.confirm_pickup')}</Text>
 
                         {locationDenied ? (
                             <FormInput
-                                placeholder="Type your full pickup address"
+                                placeholder={t('hospital_trip.pickup_placeholder')}
                                 value={address}
                                 onChangeText={setAddress}
                                 multiline
@@ -334,15 +329,15 @@ export default function HospitalTripScreen() {
                                     {address}
                                 </Text>
                                 <TouchableOpacity onPress={() => router.push('/(auth)/city-selection')}>
-                                    <Text style={{ color: '#02743F', fontFamily: 'LexendDeca_500Medium' }}>Edit</Text>
+                                    <Text style={{ color: '#02743F', fontFamily: 'LexendDeca_500Medium' }}>{t('common.edit')}</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
                         <Text style={{ fontSize: 10, color: '#888', marginTop: 4, marginLeft: 2 }}>
-                            {locationDenied ? "GPS Access Denied. Please provide exact location." : "Auto-filled from Google Maps location."}
+                            {locationDenied ? t('hospital_trip.gps_denied') : t('hospital_trip.auto_filled')}
                         </Text>
                         <FormInput
-                            placeholder="Landmark (optional, e.g. Near Apollo Hospital)"
+                            placeholder={t('hospital_trip.landmark_placeholder')}
                             value={landmark}
                             onChangeText={setLandmark}
                             style={{ marginTop: 12, elevation: 0 }}
@@ -357,11 +352,11 @@ export default function HospitalTripScreen() {
                         onPress={handleBookService}
                     >
                         {isLoadingInit ? (
-                            <Text style={dynamicStyles.submitButtonText}>Initializing...</Text>
+                            <Text style={dynamicStyles.submitButtonText}>{t('common.initializing')}</Text>
                         ) : isBooking ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text style={dynamicStyles.submitButtonText}>Confirm & Request Trip</Text>
+                            <Text style={dynamicStyles.submitButtonText}>{t('hospital_trip.confirm_btn')}</Text>
                         )}
                     </TouchableOpacity>
 
@@ -428,7 +423,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     subTitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 14,
-        color: '#898989',
+        color: isDarkMode ? '#94A3B8' : '#898989',
         textAlign: 'left',
         marginBottom: 15,
     },
@@ -447,16 +442,16 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     specialistCard: {
         width: '31%',
-        aspectRatio: 1, // slightly taller in design? Let's use specific height
+        aspectRatio: 1,
         height: 110,
-        backgroundColor: 'rgba(217, 217, 217, 0.48)',
+        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(217, 217, 217, 0.48)',
         borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
         padding: 5,
     },
     specialistCardSelected: {
-        backgroundColor: '#E8F5E9',
+        backgroundColor: isDarkMode ? 'rgba(2,116,63,0.15)' : '#E8F5E9',
         borderWidth: 1,
         borderColor: '#02743F',
     },
@@ -468,12 +463,12 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     specialistLabel: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 11,
-        color: '#848484',
+        color: isDarkMode ? '#CCCCCC' : '#848484',
         textAlign: 'center',
         lineHeight: 14,
     },
     specialistLabelSelected: {
-        color: '#02743F',
+        color: isDarkMode ? '#34D399' : '#02743F',
     },
 
     /* --- Destination Details --- */
@@ -497,13 +492,13 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     inputCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
         borderRadius: 10,
         paddingHorizontal: 15,
         height: 57,
         marginBottom: 15,
         borderWidth: 1,
-        borderColor: '#777',
+        borderColor: isDarkMode ? '#334155' : '#777',
     },
     hospitalIcon: {
         width: 34,
@@ -517,19 +512,19 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     hospitalInput: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 15,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
         padding: 0,
         marginBottom: 2,
     },
     hospitalInputHint: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 8,
-        color: '#555555',
+        color: isDarkMode ? '#94A3B8' : '#555555',
     },
     checkedBox: {
         width: 16,
         height: 16,
-        backgroundColor: '#6FCF45', // Green matching checkbox
+        backgroundColor: '#6FCF45',
         borderRadius: 4,
         marginRight: 15,
         justifyContent: 'center',
@@ -538,7 +533,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     selectedHospitalText: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 12,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
     },
 
     /* --- Select Doctor --- */
@@ -560,7 +555,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     radioCircleSelected: {
         borderColor: '#02743F',
-        borderWidth: 5, // Dot look
+        borderWidth: 5,
     },
     doctorOptionText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
@@ -610,13 +605,13 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     scheduleValue: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 16,
-        color: '#555',
+        color: isDarkMode ? '#E2E8F0' : '#555',
         marginTop: 15,
     },
     scheduleLabel: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 16,
-        color: '#555',
+        color: isDarkMode ? '#94A3B8' : '#555',
         marginTop: 5,
     },
     scheduleIconTime: {
@@ -629,7 +624,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     scheduleValueTime: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 20,
-        color: '#555',
+        color: isDarkMode ? '#E2E8F0' : '#555',
         marginTop: 10,
     },
     scheduleValueTimePeriod: {
@@ -658,7 +653,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     checkedBoxBig: {
         width: 24,
         height: 24,
-        backgroundColor: '#6FCF45', // Green
+        backgroundColor: '#6FCF45',
         borderRadius: 6,
         marginRight: 10,
         justifyContent: 'center',
@@ -672,22 +667,22 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         borderWidth: 1,
         borderColor: '#A0A0A0',
         marginRight: 10,
-        marginTop: 2, // align with text
+        marginTop: 2,
     },
     addonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 14,
-        color: '#555555',
+        color: isDarkMode ? '#E2E8F0' : '#555555',
         flex: 1,
         lineHeight: 18,
     },
     addonBold: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: '#555555',
+        color: isDarkMode ? '#E2E8F0' : '#555555',
     },
     addonDivider: {
         height: 1,
-        backgroundColor: '#D9D9D9',
+        backgroundColor: isDarkMode ? '#334155' : '#D9D9D9',
         marginVertical: 10,
     },
     costRow: {
@@ -701,17 +696,17 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     costAmount: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 16,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
     },
     costLabel: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 14,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
     },
     costActuals: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 16,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
     },
 
     /* --- Submit Button --- */

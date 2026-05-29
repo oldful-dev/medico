@@ -9,6 +9,7 @@ import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { labService, LabOrderListItem } from '@/services/api/labService';
 import { bookingService, Booking as ServiceBooking } from '@/services/api/bookingService';
 import { meetupService } from '@/services/api/meetupService';
+import { useTranslation } from 'react-i18next';
 
 const PRIMARY = '#02743F';
 const PRIMARY_LIGHT = '#F0FAF4';
@@ -159,6 +160,7 @@ function normalizeMeetup(reg: any): Booking {
 
 // ─── Screen ────────────────────────────────────────────────────────────────────
 export default function MyBookingsScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
@@ -232,10 +234,10 @@ export default function MyBookingsScreen() {
 
     // ─── Cancel handler ──────────────────────────────────────────────────────
     const handleCancel = (booking: Booking) => {
-        Alert.alert('Cancel Booking', 'Are you sure you want to cancel this booking?', [
-            { text: 'No', style: 'cancel' },
+        Alert.alert(t('my_bookings.cancel_alert_title'), t('my_bookings.cancel_alert_msg'), [
+            { text: t('common.no'), style: 'cancel' },
             {
-                text: 'Yes, Cancel', style: 'destructive',
+                text: t('my_bookings.cancel_confirm_btn'), style: 'destructive',
                 onPress: async () => {
                     try {
                         let res: any;
@@ -247,13 +249,13 @@ export default function MyBookingsScreen() {
                             res = await bookingService.cancelBooking(booking.id);
                         }
                         if (res?.success) {
-                            Alert.alert('Cancelled', 'Your booking has been cancelled.');
+                            Alert.alert(t('my_bookings.cancelled_title'), t('my_bookings.cancelled_msg'));
                             fetchAll();
                         } else {
-                            Alert.alert('Error', res?.message || 'Failed to cancel booking.');
+                            Alert.alert(t('common.error'), res?.message || t('my_bookings.cancel_failed'));
                         }
                     } catch {
-                        Alert.alert('Error', 'Something went wrong.');
+                        Alert.alert(t('common.error'), t('common.generic_error'));
                     }
                 },
             },
@@ -276,6 +278,10 @@ export default function MyBookingsScreen() {
             router.push({ pathname: '/booking-details', params: { bookingId: booking.id, type } } as any);
         };
 
+        const collectionTypeKey = booking.collectionType
+            ? booking.collectionType.toLowerCase().replace(' ', '_').replace('-', '_')
+            : '';
+
         return (
             <TouchableOpacity key={booking.id} style={S.card} onPress={navToDetail} activeOpacity={0.75}>
 
@@ -283,11 +289,11 @@ export default function MyBookingsScreen() {
                 <View style={S.cardHead}>
                     <View style={[S.catChip, { backgroundColor: `${meta.color}18` }]}>
                         <Ionicons name={meta.icon as any} size={12} color={meta.color} />
-                        <Text style={[S.catChipText, { color: meta.color }]}>{meta.label}</Text>
+                        <Text style={[S.catChipText, { color: meta.color }]}>{t('my_bookings.categories.' + booking.category)}</Text>
                     </View>
                     <View style={[S.statusPill, { backgroundColor: `${status.color}18` }]}>
                         <View style={[S.statusDot, { backgroundColor: status.color }]} />
-                        <Text style={[S.statusPillText, { color: status.color }]}>{status.label}</Text>
+                        <Text style={[S.statusPillText, { color: status.color }]}>{t('my_bookings.statuses.' + booking.status)}</Text>
                     </View>
                 </View>
 
@@ -321,7 +327,7 @@ export default function MyBookingsScreen() {
                         {booking.collectionType && (
                             <View style={S.infoItem}>
                                 <Ionicons name="location-outline" size={13} color={TEXT_MUTED} />
-                                <Text style={S.infoText}>{booking.collectionType}</Text>
+                                <Text style={S.infoText}>{t('my_bookings.collection_types.' + collectionTypeKey)}</Text>
                             </View>
                         )}
                     </View>
@@ -334,7 +340,7 @@ export default function MyBookingsScreen() {
                             <Ionicons name="person" size={12} color={PRIMARY} />
                         </View>
                         <Text style={S.personnelText} numberOfLines={1}>
-                            Assigned: <Text style={S.personnelName}>{booking.assignedPersonnel}</Text>
+                            {t('my_bookings.assigned')}: <Text style={S.personnelName}>{booking.assignedPersonnel}</Text>
                         </Text>
                     </View>
                 )}
@@ -356,7 +362,7 @@ export default function MyBookingsScreen() {
                             S.payBadgeText,
                             { color: booking.paymentStatus === 'paid' ? '#059669' : booking.paymentStatus === 'failed' ? '#EF4444' : '#D97706' },
                         ]}>
-                            {booking.paymentStatus === 'paid' ? 'Paid' : booking.paymentStatus === 'failed' ? 'Failed' : 'Pending'}
+                            {t('my_bookings.payment_statuses.' + booking.paymentStatus)}
                         </Text>
                     </View>
                 </View>
@@ -366,7 +372,7 @@ export default function MyBookingsScreen() {
                     {/* View Details — always shown */}
                     <TouchableOpacity style={[S.actionBtn, S.detailsBtn]} onPress={(e) => { e.stopPropagation(); navToDetail(); }}>
                         <Ionicons name="eye-outline" size={13} color={PRIMARY} />
-                        <Text style={S.detailsBtnText}>View Details</Text>
+                        <Text style={S.detailsBtnText}>{t('my_bookings.actions.view_details')}</Text>
                     </TouchableOpacity>
 
                     {/* Download Report */}
@@ -376,7 +382,7 @@ export default function MyBookingsScreen() {
                             onPress={(e) => { e.stopPropagation(); Linking.openURL(booking.reportUrl!); }}
                         >
                             <Ionicons name="download-outline" size={13} color="#0EA5E9" />
-                            <Text style={S.reportBtnText}>Report</Text>
+                            <Text style={S.reportBtnText}>{t('my_bookings.actions.report')}</Text>
                         </TouchableOpacity>
                     )}
 
@@ -390,7 +396,7 @@ export default function MyBookingsScreen() {
                             }}
                         >
                             <Ionicons name="refresh-outline" size={13} color={PRIMARY} />
-                            <Text style={S.rebookBtnText}>Rebook</Text>
+                            <Text style={S.rebookBtnText}>{t('my_bookings.actions.rebook')}</Text>
                         </TouchableOpacity>
                     )}
 
@@ -401,7 +407,7 @@ export default function MyBookingsScreen() {
                             onPress={(e) => { e.stopPropagation(); handleCancel(booking); }}
                         >
                             <Ionicons name="close-circle-outline" size={13} color="#EF4444" />
-                            <Text style={S.cancelBtnText}>Cancel</Text>
+                            <Text style={S.cancelBtnText}>{t('my_bookings.actions.cancel')}</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -412,11 +418,12 @@ export default function MyBookingsScreen() {
     // ─── Section renderer ─────────────────────────────────────────────────────
     const renderSection = (title: string, items: Booking[], accentColor: string) => {
         if (items.length === 0) return null;
+        const sectionTitleKey = title === 'Upcoming' ? 'upcoming_section' : 'past_section';
         return (
             <View style={S.section} key={title}>
                 <View style={S.sectionHead}>
                     <View style={[S.sectionAccent, { backgroundColor: accentColor }]} />
-                    <Text style={S.sectionTitle}>{title}</Text>
+                    <Text style={S.sectionTitle}>{t('my_bookings.' + sectionTitleKey)}</Text>
                     <View style={[S.sectionCount, { backgroundColor: `${accentColor}18` }]}>
                         <Text style={[S.sectionCountText, { color: accentColor }]}>{items.length}</Text>
                     </View>
@@ -436,8 +443,8 @@ export default function MyBookingsScreen() {
                     <Ionicons name="arrow-back" size={22} color="#fff" />
                 </TouchableOpacity>
                 <View style={S.headerCenter}>
-                    <Text style={S.headerTitle}>My Bookings</Text>
-                    <Text style={S.headerSub}>All your appointments in one place</Text>
+                    <Text style={S.headerTitle}>{t('my_bookings.header_title')}</Text>
+                    <Text style={S.headerSub}>{t('my_bookings.header_sub')}</Text>
                 </View>
                 <TouchableOpacity onPress={fetchAll} style={S.refreshBtn}>
                     <Ionicons name="refresh-outline" size={20} color="#fff" />
@@ -447,14 +454,14 @@ export default function MyBookingsScreen() {
             {/* ── Stats strip ── */}
             <View style={S.statsStrip}>
                 {[
-                    { label: 'Total',     value: bookings.length,       color: 'rgba(255,255,255,0.9)' },
-                    { label: 'Upcoming',  value: counts.upcoming,       color: '#86EFAC' },
-                    { label: 'Completed', value: counts.completed,      color: '#93C5FD' },
-                    { label: 'Cancelled', value: counts.cancelled,      color: '#FCA5A5' },
+                    { label: 'Total',     value: bookings.length,       color: 'rgba(255,255,255,0.9)', key: 'total' },
+                    { label: 'Upcoming',  value: counts.upcoming,       color: '#86EFAC', key: 'upcoming' },
+                    { label: 'Completed', value: counts.completed,      color: '#93C5FD', key: 'completed' },
+                    { label: 'Cancelled', value: counts.cancelled,      color: '#FCA5A5', key: 'cancelled' },
                 ].map(s => (
                     <View key={s.label} style={S.statItem}>
                         <Text style={[S.statValue, { color: s.color }]}>{s.value}</Text>
-                        <Text style={S.statLabel}>{s.label}</Text>
+                        <Text style={S.statLabel}>{t('my_bookings.stats.' + s.key)}</Text>
                     </View>
                 ))}
             </View>
@@ -484,7 +491,7 @@ export default function MyBookingsScreen() {
                                     style={{ marginRight: 4 }}
                                 />
                                 <Text style={[S.tabLabel, active && S.tabLabelActive]}>
-                                    {label}
+                                    {t('my_bookings.tabs.' + key)}
                                 </Text>
                                 {count > 0 && (
                                     <View style={[S.tabCount, active && S.tabCountActive]}>
@@ -501,18 +508,18 @@ export default function MyBookingsScreen() {
             {loading ? (
                 <View style={S.loader}>
                     <ActivityIndicator size="large" color={PRIMARY} />
-                    <Text style={S.loaderText}>Loading bookings…</Text>
+                    <Text style={S.loaderText}>{t('my_bookings.loading')}</Text>
                 </View>
             ) : filtered.length === 0 ? (
                 <View style={S.empty}>
                     <View style={S.emptyIcon}>
                         <Ionicons name="calendar-outline" size={40} color={TEXT_MUTED} />
                     </View>
-                    <Text style={S.emptyTitle}>No bookings found</Text>
+                    <Text style={S.emptyTitle}>{t('my_bookings.empty_title')}</Text>
                     <Text style={S.emptySub}>
                         {activeTab === 'all'
-                            ? 'Book a service to see it here'
-                            : `No ${activeTab} bookings yet`}
+                            ? t('my_bookings.empty_sub_all')
+                            : t('my_bookings.empty_sub_tab', { tab: t('my_bookings.tabs.' + activeTab) })}
                     </Text>
                 </View>
             ) : (

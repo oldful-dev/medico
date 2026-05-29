@@ -83,24 +83,21 @@ export default function OrderMedicinesScreen() {
         else await openGallery();
     };
 
-
-
-
     const handleBookService = async () => {
         if (!isManualEntry && selectedImages.length === 0) {
-            Alert.alert('Prescription Required', 'Please upload a photo of your prescription or switch to manual entry.');
+            Alert.alert(t('order_medicines.alert_prescription_required_title'), t('order_medicines.alert_prescription_required_msg'));
             return;
         }
         if (isManualEntry && !manualText.trim()) {
-            Alert.alert('Prescription Required', 'Please type your medicine details in the text field.');
+            Alert.alert(t('order_medicines.alert_prescription_required_title'), t('order_medicines.alert_manual_empty_msg'));
             return;
         }
         if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert('Address Required', 'Could not fetch your address. Please wait or try again.');
+            Alert.alert(t('common.required'), t('errors.address_required'));
             return;
         }
         if (!isReady) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            Alert.alert(t('common.error'), t('booking.init_incomplete'));
             return;
         }
         try {
@@ -135,7 +132,7 @@ export default function OrderMedicinesScreen() {
             });
         } catch (error) {
             console.error('Medicines error:', error);
-            Alert.alert('Error', 'Failed to upload prescription. Please try again.');
+            Alert.alert(t('common.error'), t('booking.something_wrong'));
         } finally {
             setIsBooking(false);
         }
@@ -268,13 +265,13 @@ export default function OrderMedicinesScreen() {
                             )}
                         </View>
                         <TouchableOpacity style={dynamicStyles.editAddressButton} onPress={() => setIsManualAddress(true)}>
-                            <Ionicons name="pencil-outline" size={14} color="#2F2F2F" />
+                            <Ionicons name="pencil-outline" size={14} color={isDarkMode ? '#F1F5F9' : '#2F2F2F'} />
                         </TouchableOpacity>
                     </View>
 
                     <TextInput
                         style={[dynamicStyles.addressText, { marginBottom: 15, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: isDarkMode ? '#1E293B' : '#FFF', borderRadius: 8, borderWidth: 1, borderColor: isDarkMode ? '#334155' : '#E5E7EB', fontFamily: 'LexendDeca_400Regular', fontSize: 12, color: isDarkMode ? '#F1F5F9' : '#2F2F2F' }]}
-                        placeholder="Landmark (optional, e.g. Near Apollo Hospital)"
+                        placeholder={t('nurse_care.landmark_placeholder')}
                         placeholderTextColor="#898989"
                         value={landmark}
                         onChangeText={setLandmark}
@@ -286,7 +283,7 @@ export default function OrderMedicinesScreen() {
                         activeOpacity={0.7}
                         onPress={() => setAutoRefill(!autoRefill)}
                     >
-                        <Ionicons name="notifications" size={30} color={autoRefill ? "#048357" : "#555555"} style={{ marginRight: 15 }} />
+                        <Ionicons name="notifications" size={30} color={autoRefill ? "#048357" : (isDarkMode ? '#AAA' : '#555555')} style={{ marginRight: 15 }} />
                         <View style={dynamicStyles.uploadTextContainer}>
                             <View>
                                 <Text style={dynamicStyles.autoRefillTitle}>{t('order_medicines.auto_refill')}</Text>
@@ -431,7 +428,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         width: 31,
         height: 24,
         borderWidth: 1,
-        borderColor: '#D3DFDD',
+        borderColor: isDarkMode ? '#334155' : '#D3DFDD',
         borderRadius: 4,
         marginRight: 15,
         justifyContent: 'center',
@@ -441,7 +438,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     typeIconLine: {
         width: 18,
         height: 2,
-        backgroundColor: '#555555',
+        backgroundColor: isDarkMode ? '#AAA' : '#555555',
         borderRadius: 1,
     },
     uploadTextContainer: {
@@ -459,7 +456,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     uploadSubText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 14,
-        color: '#555555',
+        color: isDarkMode ? '#CCCCCC' : '#555555',
         flex: 1, // Ensures it takes remaining space properly
         flexShrink: 1, // Prevents overflow
     },
@@ -478,7 +475,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     addressText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 14,
-        color: '#898989',
+        color: isDarkMode ? '#CCCCCC' : '#898989',
         flex: 1,
     },
     editAddressButton: {
@@ -518,7 +515,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     autoRefillDesc: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 13,
-        color: '#898989',
+        color: isDarkMode ? '#CCCCCC' : '#898989',
         marginTop: 2,
         flexShrink: 1,
     },
@@ -533,7 +530,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     durationButton: {
         flex: 1,
         borderWidth: 1,
-        borderColor: '#D3DFDD',
+        borderColor: isDarkMode ? '#334155' : '#D3DFDD',
         borderRadius: 8,
         paddingVertical: 12,
         alignItems: 'center',
@@ -546,7 +543,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     durationText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 14,
-        color: '#555555',
+        color: isDarkMode ? '#CBD5E1' : '#555555',
     },
     durationTextActive: {
         color: '#048357',
@@ -572,7 +569,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     uploadOptionCardActive: {
         borderColor: '#048357',
         borderWidth: 1.5,
-        backgroundColor: '#F0FFF4',
+        backgroundColor: isDarkMode ? 'rgba(4,131,87,0.15)' : '#F0FFF4',
     },
     manualEntryContainer: {
         backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',

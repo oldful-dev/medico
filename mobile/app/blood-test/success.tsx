@@ -5,12 +5,14 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const PRIMARY = '#02743F';
 const PRIMARY_LIGHT = '#E8F5EE';
 const PRIMARY_DARK = '#015C32';
 
 export default function BloodTestSuccessScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
@@ -27,15 +29,15 @@ export default function BloodTestSuccessScreen() {
     const textMuted = isDarkMode ? '#909090' : '#6B7280';
 
     const steps = [
-        { icon: 'bicycle-outline' as const, text: 'Our phlebotomist will visit your address on the selected date & time' },
-        { icon: 'flask-outline' as const, text: 'Sample collection typically takes 5–10 minutes' },
-        { icon: 'document-text-outline' as const, text: 'Reports delivered to the app within 24 hours' },
+        { icon: 'bicycle-outline' as const, text: t('blood_test_success.phlebotomist_step') },
+        { icon: 'flask-outline' as const, text: t('blood_test_success.collection_step') },
+        { icon: 'document-text-outline' as const, text: t('blood_test_success.reports_step') },
     ];
 
     const details = [
-        { label: 'Booking ID', value: `#${params.bookingId || 'BT124567'}` },
-        { label: 'Package', value: params.packageName || 'Blood Test' },
-        { label: 'Amount Paid', value: `₹${params.amount || '0'}` },
+        { label: t('blood_test_success.booking_id'), value: `#${params.bookingId || 'BT124567'}` },
+        { label: t('blood_test_success.package_label'), value: params.packageName || 'Blood Test' },
+        { label: t('blood_test_success.amount_paid'), value: `₹${params.amount || '0'}` },
     ];
 
     return (
@@ -53,9 +55,9 @@ export default function BloodTestSuccessScreen() {
                             <Ionicons name="checkmark" size={36} color="#FFFFFF" />
                         </View>
                     </View>
-                    <Text style={[styles.title, { color: textPrimary }]}>Payment Successful!</Text>
+                    <Text style={[styles.title, { color: textPrimary }]}>{t('blood_test_success.payment_successful')}</Text>
                     <Text style={[styles.subtitle, { color: textMuted }]}>
-                        Your blood test has been booked successfully
+                        {t('blood_test_success.booked_successfully')}
                     </Text>
                 </View>
 
@@ -73,13 +75,13 @@ export default function BloodTestSuccessScreen() {
                 <View style={[styles.noticeRow, { backgroundColor: isDarkMode ? '#0D2B1E' : PRIMARY_LIGHT, borderColor: isDarkMode ? '#1A4A32' : '#C6E9D9' }]}>
                     <Ionicons name="information-circle-outline" size={18} color={PRIMARY} />
                     <Text style={[styles.noticeText, { color: isDarkMode ? '#7FD4A8' : PRIMARY_DARK }]}>
-                        A confirmation will be sent to your registered mobile number and email.
+                        {t('blood_test_success.confirmation_note')}
                     </Text>
                 </View>
 
                 {/* What's next */}
                 <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
-                    <Text style={[styles.cardHeading, { color: textPrimary }]}>What&apos;s Next?</Text>
+                    <Text style={[styles.cardHeading, { color: textPrimary }]}>{t('blood_test_success.whats_next')}</Text>
                     {steps.map((step, i) => (
                         <View key={i} style={styles.stepRow}>
                             <View style={[styles.stepIconBox, { backgroundColor: isDarkMode ? '#1A3D2B' : PRIMARY_LIGHT }]}>
@@ -99,14 +101,14 @@ export default function BloodTestSuccessScreen() {
                     activeOpacity={0.85}
                 >
                     <Ionicons name="calendar-outline" size={18} color="#FFFFFF" />
-                    <Text style={styles.primaryBtnText}>View My Bookings</Text>
+                    <Text style={styles.primaryBtnText}>{t('blood_test_success.view_my_bookings')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.secondaryBtn, { borderColor: PRIMARY, backgroundColor: isDarkMode ? '#1A3D2B' : PRIMARY_LIGHT }]}
                     onPress={() => router.replace('/(tabs)' as any)}
                     activeOpacity={0.85}
                 >
-                    <Text style={[styles.secondaryBtnText, { color: PRIMARY }]}>Back to Home</Text>
+                    <Text style={[styles.secondaryBtnText, { color: PRIMARY }]}>{t('blood_test_success.back_to_home')}</Text>
                 </TouchableOpacity>
             </View>
         </View>

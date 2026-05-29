@@ -9,6 +9,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { meetupService } from '@/services/api/meetupService';
 import type { Meetup } from '@/services/api/meetupService';
+import { useTranslation } from 'react-i18next';
 
 const PRIMARY = '#02743F';
 
@@ -17,6 +18,7 @@ export default function MeetupDetailsScreen() {
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const { t } = useTranslation();
     const { id } = useLocalSearchParams<{ id: string }>();
     const [meetup, setMeetup] = useState<Meetup | null>(null);
     const [loading, setLoading] = useState(true);
@@ -67,7 +69,7 @@ export default function MeetupDetailsScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={makeStyles(isDarkMode, colors).backBtn}>
                     <Ionicons name="arrow-back" size={22} color="#fff" />
                 </TouchableOpacity>
-                <Text style={makeStyles(isDarkMode, colors).headerTitle}>Local Meet Up Details</Text>
+                <Text style={makeStyles(isDarkMode, colors).headerTitle}>{t('meetup.details_header', 'Local Meet Up Details')}</Text>
                 <View style={{ width: 30 }} />
             </View>
 
@@ -78,7 +80,7 @@ export default function MeetupDetailsScreen() {
                 ) : (
                     <View style={makeStyles(isDarkMode, colors).banner}>
                         <Ionicons name="people" size={56} color="rgba(255,255,255,0.35)" />
-                        <Text style={makeStyles(isDarkMode, colors).bannerLabel}>Community Meetup</Text>
+                        <Text style={makeStyles(isDarkMode, colors).bannerLabel}>{t('meetup.community_meetup', 'Community Meetup')}</Text>
                     </View>
                 )}
 
@@ -87,7 +89,7 @@ export default function MeetupDetailsScreen() {
                     {seatsLow && (
                         <View style={makeStyles(isDarkMode, colors).limitedBadge}>
                             <Ionicons name="alert-circle" size={13} color="#D97706" />
-                            <Text style={makeStyles(isDarkMode, colors).limitedText}>Limited Seats Available — {seatsLeft} left</Text>
+                            <Text style={makeStyles(isDarkMode, colors).limitedText}>{t('meetup.limited_seats_left', { seats: seatsLeft })}</Text>
                         </View>
                     )}
 
@@ -98,11 +100,11 @@ export default function MeetupDetailsScreen() {
 
                     {/* Details */}
                     {[
-                        { icon: 'calendar-outline', label: 'Date', value: `${dateStr}, ${dayOfWeek}` },
-                        { icon: 'time-outline', label: 'Time', value: meetup.endTime ? `${meetup.startTime} – ${meetup.endTime}` : meetup.startTime },
-                        { icon: 'location-outline', label: 'Venue', value: meetup.venue },
-                        { icon: 'keypad-outline', label: 'PIN Code', value: meetup.pinCode ? `${meetup.pinCode}  (Only for this area)` : '—' },
-                        { icon: 'person-outline', label: 'Organizer', value: meetup.organizerName ?? 'Ayuxa Senior Community' },
+                        { icon: 'calendar-outline', label: t('meetup.detail_date', 'Date'), value: `${dateStr}, ${dayOfWeek}` },
+                        { icon: 'time-outline', label: t('meetup.detail_time', 'Time'), value: meetup.endTime ? `${meetup.startTime} – ${meetup.endTime}` : meetup.startTime },
+                        { icon: 'location-outline', label: t('meetup.detail_venue', 'Venue'), value: meetup.venue },
+                        { icon: 'keypad-outline', label: t('meetup.detail_pincode', 'PIN Code'), value: meetup.pinCode ? `${meetup.pinCode}  (${t('meetup.detail_pincode_sub', 'Only for this area')})` : '—' },
+                        { icon: 'person-outline', label: t('meetup.detail_organizer', 'Organizer'), value: meetup.organizerName ?? t('meetup.organizer_default', 'Ayuxa Senior Community') },
                     ].map((row, i) => (
                         <View key={i} style={makeStyles(isDarkMode, colors).detailRow}>
                             <View style={makeStyles(isDarkMode, colors).detailIcon}>
@@ -120,7 +122,7 @@ export default function MeetupDetailsScreen() {
                     {/* What's included */}
                     {meetup.includedItems.length > 0 && (
                         <>
-                            <Text style={makeStyles(isDarkMode, colors).sectionLabel}>What&apos;s Included</Text>
+                            <Text style={makeStyles(isDarkMode, colors).sectionLabel}>{t('meetup.whats_included', "What's Included")}</Text>
                             <View style={makeStyles(isDarkMode, colors).includesBox}>
                                 {meetup.includedItems.map((item: string, i: number) => (
                                     <View key={i} style={makeStyles(isDarkMode, colors).includeRow}>
@@ -139,18 +141,18 @@ export default function MeetupDetailsScreen() {
             {/* Sticky footer */}
             <View style={[makeStyles(isDarkMode, colors).footer, { paddingBottom: insets.bottom + 12 }]}>
                 <View>
-                    <Text style={makeStyles(isDarkMode, colors).footerLabel}>Service Charge</Text>
+                    <Text style={makeStyles(isDarkMode, colors).footerLabel}>{t('meetup.service_charge', 'Service Charge')}</Text>
                     <Text style={makeStyles(isDarkMode, colors).footerPrice}>₹{meetup.serviceCharge ?? 299}</Text>
                 </View>
                 <TouchableOpacity
                     style={[makeStyles(isDarkMode, colors).joinBtn, !canBook && makeStyles(isDarkMode, colors).joinBtnDisabled]}
                     onPress={() => {
                         if (!canBook) {
-                            const statusLabel = userRegistrationForThisMeetup?.status === 'CANCELLED' ? 'Cancelled' : userRegistrationForThisMeetup?.status;
+                            const statusLabel = userRegistrationForThisMeetup?.status === 'CANCELLED' ? t('meetup.status_cancelled', 'Cancelled') : userRegistrationForThisMeetup?.status;
                             Alert.alert(
-                                'Already Registered',
-                                `You already have a registration for this event (Status: ${statusLabel}). You cannot book again.`,
-                                [{ text: 'OK' }]
+                                t('meetup.already_registered_title', 'Already Registered'),
+                                t('meetup.already_registered_msg', { status: statusLabel }),
+                                [{ text: t('common.ok', 'OK') }]
                             );
                             return;
                         }
@@ -173,7 +175,7 @@ export default function MeetupDetailsScreen() {
                     disabled={!canBook}
                 >
                     <Text style={makeStyles(isDarkMode, colors).joinBtnText}>
-                        {canBook ? 'Join Now' : 'Already Registered'}
+                        {canBook ? t('meetup.join_now', 'Join Now') : t('meetup.already_registered_btn', 'Already Registered')}
                     </Text>
                     {canBook && <Ionicons name="arrow-forward" size={18} color="#fff" />}
                 </TouchableOpacity>

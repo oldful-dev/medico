@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
 import { useLocationSearch, type LocationPrediction } from '@/hooks/useLocationSearch';
+import { useTranslation } from 'react-i18next';
 
 interface LocationSearchProps {
     onSelectLocation: (placeId: string, description: string, coords?: { lat: number; lng: number }) => void;
@@ -17,6 +18,7 @@ export const LocationSearch = ({
     onSelectLocation,
     showRecentSearches = true,
 }: LocationSearchProps) => {
+    const { t } = useTranslation();
     const { isDarkMode } = useTheme();
     const { predictions, loading, error, search, clear, getPlaceDetails } = useLocationSearch();
     const [searchText, setSearchText] = useState('');
@@ -95,7 +97,7 @@ export const LocationSearch = ({
                 <View style={[styles.searchBar, { backgroundColor: cardBg, borderColor: borderColor }]}>
                     <Ionicons name="search-outline" size={17} color={Colors.textMuted} style={{ marginRight: 8 }} />
                     <TextInput
-                        placeholder="Search area, street, landmark..."
+                        placeholder={t('location_picker.search_placeholder')}
                         placeholderTextColor={Colors.textLight}
                         value={searchText}
                         onChangeText={handleSearch}
@@ -124,7 +126,7 @@ export const LocationSearch = ({
                 <View style={styles.loadingRow}>
                     <ActivityIndicator size="small" color={Colors.primaryDark} />
                     <Text style={styles.loadingText}>
-                        {selecting ? 'Fetching address details…' : 'Searching…'}
+                        {selecting ? t('location_picker.fetching_details') : t('location_picker.searching')}
                     </Text>
                 </View>
             )}
@@ -162,7 +164,7 @@ export const LocationSearch = ({
                 <View>
                     <View style={styles.sectionHeader}>
                         <Ionicons name="time-outline" size={13} color={Colors.textMuted} style={{ marginRight: 5 }} />
-                        <Text style={styles.sectionTitle}>Recent Searches</Text>
+                        <Text style={styles.sectionTitle}>{t('location_picker.recent_searches')}</Text>
                     </View>
                     {recentSearches.map((loc, i) => (
                         <TouchableOpacity
@@ -186,8 +188,8 @@ export const LocationSearch = ({
                     <View style={[styles.emptyIconWrap, { backgroundColor: iconBg }]}>
                         <Ionicons name="location-outline" size={32} color={Colors.primaryDark} />
                     </View>
-                    <Text style={[styles.emptyTitle, { color: textColor }]}>No results found</Text>
-                    <Text style={styles.emptySub}>Try a different area or landmark name</Text>
+                    <Text style={[styles.emptyTitle, { color: textColor }]}>{t('location_picker.no_results')}</Text>
+                    <Text style={styles.emptySub}>{t('location_picker.try_different_search')}</Text>
                 </View>
             )}
 
@@ -196,9 +198,9 @@ export const LocationSearch = ({
                 <View style={styles.centerBox}>
                     <View style={styles.helpCards}>
                         {[
-                            { icon: 'business-outline' as const, text: 'Search by area or locality' },
-                            { icon: 'flag-outline' as const,     text: 'Try a landmark or street' },
-                            { icon: 'pin-outline' as const,      text: 'Enter full address or pincode' },
+                            { icon: 'business-outline' as const, text: t('location_picker.tip_area') },
+                            { icon: 'flag-outline' as const,     text: t('location_picker.tip_landmark') },
+                            { icon: 'pin-outline' as const,      text: t('location_picker.tip_address') },
                         ].map((tip, i) => (
                             <View key={i} style={[styles.tipRow, { backgroundColor: tipBg, borderColor: borderColor }]}>
                                 <View style={[styles.tipIcon, { backgroundColor: tipIconBg }]}>

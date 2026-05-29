@@ -9,6 +9,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { useTranslation } from 'react-i18next';
 
 
 // ─── Figma Assets ───
@@ -19,7 +20,20 @@ const imgSeniorFitnessLeft = require('@/assets/images/3abc2815df401d4b6b19fda9a2
 // Constants
 const BODY_PARTS = ['Back', 'Knee', 'Neck', 'Shoulder', 'Leg'];
 
+const translateBodyPart = (part: string, t: any) => {
+    const keys: Record<string, string> = {
+        'back': 'physio_fitness.back',
+        'knee': 'physio_fitness.knee',
+        'neck': 'physio_fitness.neck',
+        'shoulder': 'physio_fitness.shoulder',
+        'leg': 'physio_fitness.leg',
+    };
+    const key = keys[part.toLowerCase()];
+    return key ? t(key) : part;
+};
+
 export default function PhysioFitnessScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
@@ -35,19 +49,17 @@ export default function PhysioFitnessScreen() {
 
     const { cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('physio-fitness');
 
-
-
     const handleBookService = async () => {
         if (!selectedDate) {
-            Alert.alert('Date Required', 'Please select an appointment date and time.');
+            Alert.alert(t('common.required'), t('physio_fitness.date_required'));
             return;
         }
         if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert('Address Required', 'Could not fetch your address. Please wait or try again.');
+            Alert.alert(t('common.required'), t('errors.address_required'));
             return;
         }
         if (!cityId || !serviceId) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            Alert.alert(t('common.error'), t('booking.init_incomplete'));
             return;
         }
         try {
@@ -77,7 +89,7 @@ export default function PhysioFitnessScreen() {
             });
         } catch (error) {
             console.error('Physio error:', error);
-            Alert.alert('Error', 'Something went wrong. Please try again.');
+            Alert.alert(t('common.error'), t('booking.something_wrong'));
         } finally {
             setIsBooking(false);
         }
@@ -96,8 +108,8 @@ export default function PhysioFitnessScreen() {
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <View style={dynamicStyles.headerTextCol}>
-                    <Text style={dynamicStyles.headerTitle}>Physio & Fitness</Text>
-                    <Text style={dynamicStyles.headerSubtitle}>Pain relief therapy and yoga.</Text>
+                    <Text style={dynamicStyles.headerTitle}>{t('physio_fitness.header')}</Text>
+                    <Text style={dynamicStyles.headerSubtitle}>{t('physio_fitness.subtitle')}</Text>
                 </View>
             </View>
 
@@ -107,7 +119,7 @@ export default function PhysioFitnessScreen() {
             <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* ─── Select Service ─── */}
-                    <Text style={dynamicStyles.sectionTitle}>Select Service</Text>
+                    <Text style={dynamicStyles.sectionTitle}>{t('physio_fitness.select_service')}</Text>
 
                     {/* Option: Pain Relief */}
                     <TouchableOpacity
@@ -121,15 +133,15 @@ export default function PhysioFitnessScreen() {
                     >
                         {/* Discount Badge */}
                         <View style={dynamicStyles.discountBadgeTopRight}>
-                            <Text style={dynamicStyles.discountText}>+10% OFF</Text>
+                            <Text style={dynamicStyles.discountText}>{t('physio_fitness.discount')}</Text>
                         </View>
 
                         <Image source={imgPainRelief} style={dynamicStyles.painIllustration} resizeMode="contain" />
 
                         <View style={dynamicStyles.serviceTextGroupCentered}>
-                            <Text style={dynamicStyles.serviceTitle}>Pain Relief</Text>
-                            <Text style={dynamicStyles.serviceSubtitle}>(Physiotherapy)</Text>
-                            <Text style={dynamicStyles.serviceDesc}>For back pain, frozen shoulder, recovery</Text>
+                            <Text style={dynamicStyles.serviceTitle}>{t('physio_fitness.pain_relief_title')}</Text>
+                            <Text style={dynamicStyles.serviceSubtitle}>{t('physio_fitness.pain_relief_subtitle')}</Text>
+                            <Text style={dynamicStyles.serviceDesc}>{t('physio_fitness.pain_relief_desc')}</Text>
                         </View>
                     </TouchableOpacity>
 
@@ -149,14 +161,14 @@ export default function PhysioFitnessScreen() {
                         </View>
 
                         <View style={dynamicStyles.serviceTextGroupCentered}>
-                            <Text style={dynamicStyles.serviceTitle}>Senior Fitness</Text>
-                            <Text style={dynamicStyles.serviceSubtitle}>(Yoga/Exercise)</Text>
-                            <Text style={dynamicStyles.serviceDesc}>To stay active and mobile</Text>
+                            <Text style={dynamicStyles.serviceTitle}>{t('physio_fitness.senior_fitness_title')}</Text>
+                            <Text style={dynamicStyles.serviceSubtitle}>{t('physio_fitness.senior_fitness_subtitle')}</Text>
+                            <Text style={dynamicStyles.serviceDesc}>{t('physio_fitness.senior_fitness_desc')}</Text>
                         </View>
                     </TouchableOpacity>
 
                     {/* ─── Select Body Part ─── */}
-                    <Text style={dynamicStyles.sectionTitle}>Select Body Part</Text>
+                    <Text style={dynamicStyles.sectionTitle}>{t('physio_fitness.body_part')}</Text>
                     <View style={dynamicStyles.bodyPartGrid}>
                         {BODY_PARTS.map((part) => {
                             const isSelected = selectedBodyPart === part;
@@ -168,7 +180,7 @@ export default function PhysioFitnessScreen() {
                                     onPress={() => setSelectedBodyPart(part)}
                                 >
                                     <Text style={[dynamicStyles.bodyPartText, isSelected && dynamicStyles.bodyPartTextSelected]}>
-                                        {part}
+                                        {translateBodyPart(part, t)}
                                     </Text>
                                 </TouchableOpacity>
                             );
@@ -176,7 +188,7 @@ export default function PhysioFitnessScreen() {
                     </View>
 
                     {/* ─── Other Issue ─── */}
-                    <Text style={dynamicStyles.sectionTitle}>Other Issue</Text>
+                    <Text style={dynamicStyles.sectionTitle}>{t('physio_fitness.other_issue')}</Text>
                     <View style={dynamicStyles.inputCard}>
                         {/* Light cyan icon box */}
                         <View style={dynamicStyles.issueIconBox}>
@@ -184,7 +196,7 @@ export default function PhysioFitnessScreen() {
                             <View style={dynamicStyles.issueIconLine} />
                         </View>
                         <TextInput
-                            placeholder="Describe your issue"
+                            placeholder={t('physio_fitness.describe_issue')}
                             style={dynamicStyles.textInput}
                             placeholderTextColor={isDarkMode ? '#94A3B8' : '#555'}
                             multiline
@@ -195,7 +207,7 @@ export default function PhysioFitnessScreen() {
 
                     {/* ─── Date / Time Selection ─── */}
                     <CustomDateTimePicker
-                        label="When?"
+                        label={t('physio_fitness.when')}
                         value={selectedDate}
                         onDateChange={setSelectedDate}
                     />
@@ -208,11 +220,11 @@ export default function PhysioFitnessScreen() {
                         onPress={handleBookService}
                     >
                         {isLoadingInit ? (
-                            <Text style={dynamicStyles.submitButtonText}>Initializing...</Text>
+                            <Text style={dynamicStyles.submitButtonText}>{t('common.initializing')}</Text>
                         ) : isBooking ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text style={dynamicStyles.submitButtonText}>Book Appointment</Text>
+                            <Text style={dynamicStyles.submitButtonText}>{t('physio_fitness.book_appointment')}</Text>
                         )}
                     </TouchableOpacity>
 
@@ -304,8 +316,8 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         transform: [{ scale: 1.03 }],
     },
     painCardVertical: {
-        backgroundColor: '#FFEBDF',
-        borderColor: '#FF8800',
+        backgroundColor: isDarkMode ? 'rgba(255, 136, 0, 0.12)' : '#FFEBDF',
+        borderColor: isDarkMode ? 'rgba(255, 136, 0, 0.4)' : '#FF8800',
         flexDirection: 'column',
         alignItems: 'center',
         paddingVertical: 20,
@@ -340,8 +352,8 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         marginTop: 10,
     },
     fitnessCardVertical: {
-        backgroundColor: '#D3FBFF',
-        borderColor: '#313A51',
+        backgroundColor: isDarkMode ? 'rgba(49, 180, 200, 0.12)' : '#D3FBFF',
+        borderColor: isDarkMode ? 'rgba(49, 180, 200, 0.4)' : '#313A51',
         flexDirection: 'column',
         alignItems: 'center',
         paddingVertical: 20,
@@ -368,7 +380,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     serviceDesc: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 12,
-        color: '#777777',
+        color: isDarkMode ? '#94A3B8' : '#777777',
         marginTop: 4,
     },
 
@@ -376,8 +388,8 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         position: 'absolute',
         top: 15,
         right: 15,
-        backgroundColor: 'rgba(15, 185, 46, 0.7)',
-        borderColor: '#048357',
+        backgroundColor: isDarkMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(15, 185, 46, 0.7)',
+        borderColor: isDarkMode ? '#34D399' : '#048357',
         borderWidth: 1,
         borderRadius: 23,
         paddingHorizontal: 15,
@@ -388,7 +400,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     discountText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        color: '#FFFFFF',
+        color: isDarkMode ? '#34D399' : '#FFFFFF',
         fontSize: 11,
     },
 
@@ -405,11 +417,11 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         minWidth: '28%',
         borderRadius: 23,
         borderWidth: 1,
-        borderColor: '#AAAEAC',
+        borderColor: isDarkMode ? '#475569' : '#AAAEAC',
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 12,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
     },
     bodyPartPillSelected: {
         backgroundColor: 'rgba(4, 131, 87, 0.74)', // Teal/Green
@@ -418,7 +430,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     bodyPartText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 12,
-        color: '#555555',
+        color: isDarkMode ? '#94A3B8' : '#555555',
     },
     bodyPartTextSelected: {
         color: '#FFFFFF',
@@ -428,7 +440,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     inputCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
         borderRadius: 12,
         paddingHorizontal: 15,
         minHeight: 59,
@@ -444,8 +456,8 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     issueIconBox: {
         width: 43,
         height: 33,
-        backgroundColor: '#A7FFF2',
-        borderColor: '#C4F3EC',
+        backgroundColor: isDarkMode ? 'rgba(167, 255, 242, 0.15)' : '#A7FFF2',
+        borderColor: isDarkMode ? 'rgba(196, 243, 236, 0.4)' : '#C4F3EC',
         borderWidth: 1,
         borderRadius: 7,
         justifyContent: 'center',
@@ -456,7 +468,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     issueIconLine: {
         width: 21,
         height: 3,
-        backgroundColor: '#FFFAFA',
+        backgroundColor: isDarkMode ? '#34D399' : '#FFFAFA',
         borderRadius: 2,
     },
     textInput: {
@@ -474,7 +486,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     dateTimeText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 14,
-        color: '#555555',
+        color: isDarkMode ? '#CBD5E1' : '#555555',
     },
 
     /* ─── Submit Button ─── */

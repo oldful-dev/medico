@@ -9,7 +9,7 @@ import { useUser } from '@/context/UserContext';
 import { userService } from '@/services/api/userService';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
-import { Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
 
 interface EmergencyContact {
     id?: string;
@@ -25,6 +25,7 @@ export default function EmergencyContactsScreen() {
     const { profile, setProfile } = useUser();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const { t } = useTranslation();
     const styles = makeStyles(colors, isDarkMode);
 
     const [showAddForm, setShowAddForm] = useState(false);
@@ -38,6 +39,12 @@ export default function EmergencyContactsScreen() {
     const [notifyEnabled, setNotifyEnabled] = useState(true);
 
     const contacts: EmergencyContact[] = profile?.emergencyContacts || [];
+
+    const getTranslatedRelationship = (rel: string) => {
+        if (!rel) return '';
+        const key = `emergency_contacts.relationships.${rel.toLowerCase().replace(/\s+/g, '_')}`;
+        return t(key, { defaultValue: rel });
+    };
 
     useFocusEffect(
         useCallback(() => {
@@ -58,7 +65,7 @@ export default function EmergencyContactsScreen() {
 
     const addContact = async () => {
         if (!newName.trim() || !newPhone.trim() || !newRelationship) {
-            Alert.alert('Missing Info', 'Please fill name, phone, and relationship.');
+            Alert.alert(t('emergency_contacts.alerts.missing_info_title'), t('emergency_contacts.alerts.missing_info_msg'));
             return;
         }
         if (!profile?.id) return;
@@ -73,12 +80,12 @@ export default function EmergencyContactsScreen() {
                 const profileRes = await userService.getProfile();
                 if (profileRes.success && profileRes.data) setProfile(profileRes.data);
                 resetForm();
-                Alert.alert('Success', 'Emergency contact added.');
+                Alert.alert(t('emergency_contacts.alerts.success_title'), t('emergency_contacts.alerts.contact_added'));
             } else {
-                Alert.alert('Error', res.message || 'Failed to add.');
+                Alert.alert(t('emergency_contacts.alerts.error_title'), res.message || t('emergency_contacts.alerts.failed_add'));
             }
         } catch (err: any) {
-            Alert.alert('Error', err.message || 'Something went wrong.');
+            Alert.alert(t('emergency_contacts.alerts.error_title'), err.message || t('emergency_contacts.alerts.something_went_wrong'));
         } finally {
             setSaving(false);
         }
@@ -86,10 +93,10 @@ export default function EmergencyContactsScreen() {
 
     const deleteContact = (contactId: string) => {
         if (!profile?.id) return;
-        Alert.alert('Remove Contact', 'Are you sure?', [
-            { text: 'Cancel', style: 'cancel' },
+        Alert.alert(t('emergency_contacts.alerts.remove_contact_title'), t('emergency_contacts.alerts.remove_contact_msg'), [
+            { text: t('emergency_contacts.cancel'), style: 'cancel' },
             {
-                text: 'Remove', style: 'destructive', onPress: async () => {
+                text: t('emergency_contacts.remove'), style: 'destructive', onPress: async () => {
                     setDeletingId(contactId);
                     try {
                         const res = await userService.removeEmergencyContact(profile.id, contactId);
@@ -97,10 +104,10 @@ export default function EmergencyContactsScreen() {
                             const profileRes = await userService.getProfile();
                             if (profileRes.success && profileRes.data) setProfile(profileRes.data);
                         } else {
-                            Alert.alert('Error', res.message || 'Failed to remove.');
+                            Alert.alert(t('emergency_contacts.alerts.error_title'), res.message || t('emergency_contacts.alerts.failed_remove'));
                         }
                     } catch (err: any) {
-                        Alert.alert('Error', err.message || 'Something went wrong.');
+                        Alert.alert(t('emergency_contacts.alerts.error_title'), err.message || t('emergency_contacts.alerts.something_went_wrong'));
                     } finally {
                         setDeletingId(null);
                     }
@@ -124,7 +131,7 @@ export default function EmergencyContactsScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Emergency Contacts</Text>
+                    <Text style={styles.headerTitle}>{t('emergency_contacts.header_title')}</Text>
                 </View>
             </SafeAreaView>
 
@@ -134,8 +141,8 @@ export default function EmergencyContactsScreen() {
                 {contacts.length === 0 && !showAddForm && (
                     <View style={styles.emptyState}>
                         <Ionicons name="people-outline" size={56} color={colors.textMuted} />
-                        <Text style={styles.emptyTitle}>No Emergency Contacts</Text>
-                        <Text style={styles.emptyDesc}>Add your son, daughter, or neighbour as an emergency contact.</Text>
+                        <Text style={styles.emptyTitle}>{t('emergency_contacts.no_contacts')}</Text>
+                        <Text style={styles.emptyDesc}>{t('emergency_contacts.add_desc')}</Text>
                     </View>
                 )}
 
@@ -148,7 +155,7 @@ export default function EmergencyContactsScreen() {
                                 </View>
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.contactName}>{contact.name}</Text>
-                                    <Text style={styles.contactRel}>{contact.relationship}</Text>
+                                    <Text style={styles.contactRel}>{getTranslatedRelationship(contact.relationship)}</Text>
                                     <Text style={styles.contactPhone}>{contact.phone}</Text>
                                 </View>
                             </View>
@@ -158,8 +165,7 @@ export default function EmergencyContactsScreen() {
                                 style={styles.callBtn}
                                 onPress={() => Linking.openURL(`tel:${contact.phone}`)}
                             >
-                                <Ionicons name="call" size={15} color="#fff" />
-                                <Text style={styles.callBtnText}>Call</Text>
+                                <Ionicons name="call" size={18} color="#fff" />
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.waBtn}
@@ -169,8 +175,7 @@ export default function EmergencyContactsScreen() {
                                     Linking.openURL(`whatsapp://send?phone=${normalized}`);
                                 }}
                             >
-                                <Ionicons name="logo-whatsapp" size={15} color="#fff" />
-                                <Text style={styles.callBtnText}>WhatsApp</Text>
+                                <Ionicons name="logo-whatsapp" size={18} color="#fff" />
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.removeBtn}
@@ -180,10 +185,7 @@ export default function EmergencyContactsScreen() {
                                 {deletingId === contact.id ? (
                                     <ActivityIndicator size="small" color="#FF3B30" />
                                 ) : (
-                                    <>
-                                        <Ionicons name="trash-outline" size={14} color="#FF3B30" />
-                                        <Text style={styles.removeBtnText}>Remove</Text>
-                                    </>
+                                    <Ionicons name="trash-outline" size={18} color="#FF3B30" />
                                 )}
                             </TouchableOpacity>
                         </View>
@@ -194,8 +196,8 @@ export default function EmergencyContactsScreen() {
                 {contacts.length > 0 && (
                     <View style={styles.notifyCard}>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.notifyTitle}>Notify them for every booking?</Text>
-                            <Text style={styles.notifyDesc}>Emergency contacts will receive a notification for each service booking.</Text>
+                            <Text style={styles.notifyTitle}>{t('emergency_contacts.notify_toggle_title')}</Text>
+                            <Text style={styles.notifyDesc}>{t('emergency_contacts.notify_toggle_desc')}</Text>
                         </View>
                         <Switch
                             trackColor={{ false: colors.textMuted, true: colors.primary }}
@@ -209,25 +211,25 @@ export default function EmergencyContactsScreen() {
 
                 {showAddForm && (
                     <View style={styles.addForm}>
-                        <Text style={styles.formTitle}>Add Emergency Contact</Text>
-                        <TextInput style={styles.input} placeholder="Full Name *" placeholderTextColor={colors.textMuted} value={newName} onChangeText={setNewName} />
-                        <TextInput style={styles.input} placeholder="Phone Number *" placeholderTextColor={colors.textMuted} keyboardType="phone-pad" value={newPhone} onChangeText={setNewPhone} />
+                        <Text style={styles.formTitle}>{t('emergency_contacts.add_title')}</Text>
+                        <TextInput style={styles.input} placeholder={t('emergency_contacts.full_name_placeholder')} placeholderTextColor={colors.textMuted} value={newName} onChangeText={setNewName} />
+                        <TextInput style={styles.input} placeholder={t('emergency_contacts.phone_placeholder')} placeholderTextColor={colors.textMuted} keyboardType="phone-pad" value={newPhone} onChangeText={setNewPhone} />
 
-                        <Text style={styles.relLabel}>Relationship *</Text>
+                        <Text style={styles.relLabel}>{t('emergency_contacts.relationship_label')}</Text>
                         <View style={styles.relRow}>
                             {RELATIONSHIPS.map(rel => (
                                 <TouchableOpacity key={rel} style={[styles.relChip, newRelationship === rel && styles.relChipActive]} onPress={() => setNewRelationship(rel)}>
-                                    <Text style={[styles.relChipText, newRelationship === rel && styles.relChipTextActive]}>{rel}</Text>
+                                    <Text style={[styles.relChipText, newRelationship === rel && styles.relChipTextActive]}>{getTranslatedRelationship(rel)}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
 
                         <View style={styles.formActions}>
                             <TouchableOpacity style={styles.cancelBtn} onPress={resetForm}>
-                                <Text style={styles.cancelBtnText}>Cancel</Text>
+                                <Text style={styles.cancelBtnText}>{t('emergency_contacts.cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.saveBtn} onPress={addContact} disabled={saving}>
-                                {saving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveBtnText}>Save Contact</Text>}
+                                {saving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveBtnText}>{t('emergency_contacts.save_contact')}</Text>}
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -235,7 +237,7 @@ export default function EmergencyContactsScreen() {
 
                 <TouchableOpacity style={styles.addButton} onPress={() => setShowAddForm(!showAddForm)} activeOpacity={0.7}>
                     <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
-                    <Text style={styles.addButtonText}>Add Emergency Contact</Text>
+                    <Text style={styles.addButtonText}>{t('emergency_contacts.add_button')}</Text>
                 </TouchableOpacity>
             </KeyboardAwareScrollView>
         </KeyboardAvoidingView>
@@ -285,18 +287,10 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 13, color: colors.primary,
     },
-    contactActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, borderTopWidth: 1, borderTopColor: colors.borderLight, paddingTop: 10 },
-    callBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, backgroundColor: colors.primary },
-    waBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, backgroundColor: '#25D366' },
-    callBtnText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 12, color: '#FFFFFF',
-    },
-    removeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, borderWidth: 1, borderColor: isDarkMode ? '#EF4444' : '#FFCDD2' },
-    removeBtnText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 12, color: '#FF3B30',
-    },
+    contactActions: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10, borderTopWidth: 1, borderTopColor: colors.borderLight, paddingTop: 10 },
+    callBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+    waBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center' },
+    removeBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: isDarkMode ? '#EF4444' : '#FFCDD2', alignItems: 'center', justifyContent: 'center', marginLeft: 'auto' },
 
     notifyCard: {
         flexDirection: 'row', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(52,199,89,0.05)' : 'rgba(4, 131, 87, 0.05)',

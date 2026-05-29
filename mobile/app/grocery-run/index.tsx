@@ -5,10 +5,12 @@ import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 const imgHero = require('@/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png');
 
 export default function GroceryRunScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
@@ -20,11 +22,11 @@ export default function GroceryRunScreen() {
 
     const handleBook = async () => {
         if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert('Address Required', 'Could not fetch your address. Please wait or try again.');
+            Alert.alert(t('service_detail.address_required'), t('service_detail.address_required_desc'));
             return;
         }
         if (!isReady) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            Alert.alert(t('service_detail.error'), t('service_detail.init_error'));
             return;
         }
         try {
@@ -43,12 +45,12 @@ export default function GroceryRunScreen() {
                         formDataJson: { groceryListAttachments: uploadedImageUrls },
                     }),
                     amount: String(servicePrice),
-                    label: serviceName || 'Grocery Run',
+                    label: serviceName || t('service_detail.grocery_run.header'),
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
         } catch {
-            Alert.alert('Error', 'Something went wrong. Please check your connection.');
+            Alert.alert(t('service_detail.error'), t('service_detail.generic_error'));
         } finally {
             setIsBooking(false);
         }
@@ -56,18 +58,18 @@ export default function GroceryRunScreen() {
 
     return (
         <ServiceDetailScreen
-            headerTitle="Grocery Run"
-            heroTitle="Grocery Run"
-            heroSubtitle="Concierge Services"
-            description="Share your grocery list and our concierge will shop from your nearest store and deliver to your doorstep."
+            headerTitle={t('service_detail.grocery_run.header')}
+            heroTitle={t('service_detail.grocery_run.hero')}
+            heroSubtitle={t('service_detail.concierge_services')}
+            description={t('service_detail.grocery_run.description')}
             heroImage={imgHero}
-            pricingLabel={servicePrice > 0 ? `₹${servicePrice} Delivery Fee + Grocery Bill` : 'Fetching price...'}
-            pricingNote="*Grocery bill is charged separately based on actual market price."
+            pricingLabel={servicePrice > 0 ? t('service_detail.grocery_run.pricing', { price: servicePrice }) : t('service_detail.fetching_price')}
+            pricingNote={t('service_detail.grocery_run.pricing_note')}
             bulletItems={[
-                'Fruits, Vegetables & Dairy',
-                'Medicines & Pharmacy Items',
-                'Monthly Ration & Staples',
-                'Same-Day Delivery Available',
+                t('service_detail.grocery_run.bullet_1'),
+                t('service_detail.grocery_run.bullet_2'),
+                t('service_detail.grocery_run.bullet_3'),
+                t('service_detail.grocery_run.bullet_4'),
             ]}
             address={address}
             landmark={landmark}
@@ -76,8 +78,8 @@ export default function GroceryRunScreen() {
             isLoading={isLoading || isBooking}
         >
             <ImageUploadBox
-                title="Select An Image Of Scrap Items"
-                subtitle="JPG, PNG or PDF, file size no more than 10MB"
+                title={t('service_detail.grocery_run.upload_title')}
+                subtitle={t('service_detail.image_upload_subtitle')}
                 onImagesChange={setSelectedImages}
                 maxImages={3}
             />
