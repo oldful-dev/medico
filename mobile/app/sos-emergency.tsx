@@ -1,4 +1,4 @@
-﻿// SOS Emergency Screen — Figma frame id: 200:413
+// SOS Emergency Screen — Figma frame id: 200:413
 // Design: Warm cream background, centered title, concentric ring button, slide-to-call
 // NO close button per Figma design
 
@@ -13,9 +13,11 @@ import { SOSButton, SlideToCall, BackgroundGlow } from '@/components/sos';
 import SOSCountdown from '@/components/sos/SOSCountdown';
 import { sosService } from '@/services/device/sosService';
 import { Fonts } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
 
 export default function SOSEmergencyScreen() {
     const router = useRouter();
+    const { t } = useTranslation();
     const [showCountdown, setShowCountdown] = useState(false);
     const [isTriggering, setIsTriggering] = useState(false);
     const [prefetchedLocation, setPrefetchedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -51,15 +53,15 @@ export default function SOSEmergencyScreen() {
             } else {
                 await sosService.callEmergencyHotline('+918062180429');
                 Alert.alert(
-                    'Partial Alert',
-                    'Phone call initiated. Backend alert may not have been sent. Please try again if needed.'
+                    t('sos.partial_alert_title'),
+                    t('sos.partial_alert_msg')
                 );
             }
         } catch {
             try {
                 await sosService.callEmergencyHotline('112');
             } catch {
-                Alert.alert('Emergency', 'Please call 112 directly for emergency assistance.');
+                Alert.alert(t('sos.emergency_title'), t('sos.emergency_fallback_msg'));
             }
         } finally {
             setIsTriggering(false);
@@ -83,12 +85,12 @@ export default function SOSEmergencyScreen() {
                     {/* ─── Header — centered title & subtitle (Figma: Group 483545) ─── */}
                     <View style={styles.headerGroup}>
                         <Text style={styles.titleText}>
-                            {isTriggering ? 'Contacting Services...' : 'Calling emergency...'}
+                            {isTriggering ? t('sos.contacting_services_title') : t('sos.calling_emergency_title')}
                         </Text>
                         <Text style={styles.subtitleText}>
                             {isTriggering
-                                ? 'Contacting emergency services...'
-                                : 'To start a call,simply press the button'}
+                                ? t('sos.contacting_services_desc')
+                                : t('sos.press_button')}
                         </Text>
                     </View>
 
@@ -110,8 +112,8 @@ export default function SOSEmergencyScreen() {
                         <SlideToCall />
                         <Text style={styles.notifyingText}>
                             {isTriggering
-                                ? 'Emergency contacts are being notified...'
-                                : 'Notifying Emergency Contacts'}
+                                ? t('sos.contacts_notified_text')
+                                : t('sos.notifying_contacts_text')}
                         </Text>
                     </View>
 

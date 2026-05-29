@@ -65,19 +65,17 @@ export default function MeetupPickupScreen() {
             preferredPickupTime: preferredTime,
         };
 
-        console.log('💳 [MEETUP PICKUP] Navigating to /service-checkout with payload:', registrationPayload);
         router.push({
             pathname: '/service-checkout',
             params: {
                 bookingPayload: JSON.stringify(registrationPayload),
                 amount: String(serviceCharge),
-                label: 'Local Meetup',
+                label: t('meetup.header_title', 'Local Meetup'),
                 meetupId: params.id,
                 meetupParams: JSON.stringify(params),
-                pickupAddress: selectedAddress ? `${selectedAddress.line1}${selectedAddress.line2 ? ', ' + selectedAddress.line2 : ''}` : '',
+                skipUpsell: '1',
             },
         } as any);
-        console.log('💳 [MEETUP PICKUP] Router.push called for /service-checkout');
     };
 
     return (

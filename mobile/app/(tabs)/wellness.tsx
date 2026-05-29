@@ -15,14 +15,6 @@ import { useToast } from '@/context/ToastContext';
 // For this teaser, we'll build a vibrant Hero with a prominent 'Ayuxa Care' logo or generic medical icon
 const imgPlaceholderHero = require('@/assets/images/8f136eff1200bb21c080348f6cdb7ad1c2831bdf.png');
 
-const CATEGORIES = [
-    { id: 1, title: 'Genuine Medicines', subtitle: '(Prescription & OTC)', icon: 'medical' },
-    { id: 2, title: 'Sugar-Free Foods', subtitle: '(Biscuits, Atta, Snacks)', icon: 'fast-food' },
-    { id: 3, title: 'Mobility Aids', subtitle: '(Walking Sticks, Walkers)', icon: 'walk' },
-    { id: 4, title: 'Adult Care', subtitle: '(Diapers, Lotions, Hygiene)', icon: 'body' },
-    { id: 5, title: 'Health Devices', subtitle: '(BP Monitors, Oximeters)', icon: 'pulse' },
-];
-
 export default function WellnessScreen() {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
@@ -30,6 +22,25 @@ export default function WellnessScreen() {
     const { addItem, items } = useCart();
     const { showToast } = useToast();
     const colors = useThemeColors();
+
+    const CATEGORIES = [
+        { id: 1, title: t('wellness.cat_medicines'), subtitle: t('wellness.cat_medicines_sub'), icon: 'medical' },
+        { id: 2, title: t('wellness.cat_sugar_free'), subtitle: t('wellness.cat_sugar_free_sub'), icon: 'fast-food' },
+        { id: 3, title: t('wellness.cat_mobility'), subtitle: t('wellness.cat_mobility_sub'), icon: 'walk' },
+        { id: 4, title: t('wellness.cat_adult_care'), subtitle: t('wellness.cat_adult_care_sub'), icon: 'body' },
+        { id: 5, title: t('wellness.cat_devices'), subtitle: t('wellness.cat_devices_sub'), icon: 'pulse' },
+    ];
+
+    const CATEGORY_LIST = [
+        { id: 'All',                  label: t('wellness.filter_all') },
+        { id: 'Wellness Essentials',  label: t('wellness.filter_wellness_essentials') },
+        { id: 'Healthcare Devices',   label: t('wellness.filter_healthcare_devices') },
+        { id: 'Fitness & Recovery',   label: t('wellness.filter_fitness_recovery') },
+        { id: 'Mobility Aids',        label: t('wellness.filter_mobility_aids') },
+        { id: 'Health Monitors',      label: t('wellness.filter_health_monitors') },
+        { id: 'Supplements',          label: t('wellness.filter_supplements') },
+        { id: 'Personal Care',        label: t('wellness.filter_personal_care') },
+    ];
 
     const [allProducts, setAllProducts] = useState<Product[]>([]);
     const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
@@ -40,17 +51,6 @@ export default function WellnessScreen() {
     const ITEMS_PER_PAGE = 9;
 
     const [selectedCategory, setSelectedCategory] = useState<string>('All');
-
-    const CATEGORY_LIST = [
-        'All',
-        'Wellness Essentials',
-        'Healthcare Devices',
-        'Fitness & Recovery',
-        'Mobility Aids',
-        'Health Monitors',
-        'Supplements',
-        'Personal Care'
-    ];
 
     const fetchProducts = useCallback(async () => {
         try {
@@ -100,7 +100,7 @@ export default function WellnessScreen() {
             quantity: 1,
             details: { productId: product.id, imageUrl: product.imageUrl },
         });
-        showToast('Item added to cart');
+        showToast(t('wellness.added_to_cart_title'));
     };
 
     let filteredProducts = displayedProducts;
@@ -123,7 +123,7 @@ export default function WellnessScreen() {
                 <View style={{ backgroundColor: colors.primary, height: insets.top }} />
                 <StatusBar style="light" backgroundColor={colors.primary} />
                 <View style={[styles.headerContainer, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.headerTitle}>Ayuxa Wellness</Text>
+                    <Text style={styles.headerTitle}>{t('wellness.header_title')}</Text>
                 </View>
                 <View style={[styles.contentContainer, { backgroundColor: colors.bgScreen, justifyContent: 'center', alignItems: 'center' }]}>
                     <ActivityIndicator size="large" color={colors.primary} />
@@ -141,7 +141,7 @@ export default function WellnessScreen() {
                 <View style={{ backgroundColor: colors.primary, height: insets.top }} />
                 <StatusBar style="light" backgroundColor={colors.primary} />
                 <View style={[styles.headerContainer, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.headerTitle}>Wellness Store</Text>
+                    <Text style={styles.headerTitle}>{t('wellness.store_title')}</Text>
                     <TouchableOpacity onPress={() => router.push('/(tabs)/cart' as any)} style={styles.cartIconBtn}>
                         <Ionicons name="cart-outline" size={22} color="#fff" />
                         {items.length > 0 && (
@@ -156,7 +156,7 @@ export default function WellnessScreen() {
                         <Ionicons name="search" size={18} color={colors.textMuted} style={styles.searchIcon} />
                         <TextInput
                             style={[styles.searchInput, { color: colors.textDark }]}
-                            placeholder="Search products..."
+                            placeholder={t('wellness.search_placeholder')}
                             placeholderTextColor={colors.textMuted}
                             value={search}
                             onChangeText={setSearch}
@@ -176,12 +176,12 @@ export default function WellnessScreen() {
                     >
                         {CATEGORY_LIST.map((cat) => (
                             <TouchableOpacity
-                                key={cat}
-                                style={[styles.categoryChip, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }, selectedCategory === cat && [styles.categoryChipActive, { backgroundColor: colors.primary }]]}
-                                onPress={() => setSelectedCategory(cat)}
+                                key={cat.id}
+                                style={[styles.categoryChip, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }, selectedCategory === cat.id && [styles.categoryChipActive, { backgroundColor: colors.primary }]]}
+                                onPress={() => setSelectedCategory(cat.id)}
                             >
-                                <Text style={[styles.categoryChipText, { color: colors.textMuted }, selectedCategory === cat && [styles.categoryChipTextActive, { color: colors.textWhite }]]}>
-                                    {cat}
+                                <Text style={[styles.categoryChipText, { color: colors.textMuted }, selectedCategory === cat.id && [styles.categoryChipTextActive, { color: colors.textWhite }]]}>
+                                    {cat.label}
                                 </Text>
                             </TouchableOpacity>
                         ))}
@@ -203,13 +203,13 @@ export default function WellnessScreen() {
                         onEndReachedThreshold={0.5}
                         ListEmptyComponent={
                             <View style={styles.emptyBox}>
-                                <Text style={[styles.emptyText, { color: colors.textMuted }]}>No products found</Text>
+                                <Text style={[styles.emptyText, { color: colors.textMuted }]}>{t('wellness.no_products_found')}</Text>
                             </View>
                         }
                         ListFooterComponent={
                             !search && hasMoreProducts ? (
                                 <TouchableOpacity style={[styles.loadMoreBtn, { backgroundColor: colors.primary }]} onPress={loadMore} activeOpacity={0.7}>
-                                    <Text style={styles.loadMoreText}>Load More Products</Text>
+                                    <Text style={styles.loadMoreText}>{t('wellness.load_more')}</Text>
                                 </TouchableOpacity>
                             ) : null
                         }
@@ -234,12 +234,12 @@ export default function WellnessScreen() {
                                         )}
                                         {discount > 0 && (
                                             <View style={styles.discountBadge}>
-                                                <Text style={styles.discountText}>{discount}% OFF</Text>
+                                                <Text style={styles.discountText}>{t('wellness.off_badge', { percent: discount })}</Text>
                                             </View>
                                         )}
                                         {lowStock && (
                                             <View style={styles.lowStockBadge}>
-                                                <Text style={styles.lowStockText}>Only {product.stock} left</Text>
+                                                <Text style={styles.lowStockText}>{t('wellness.only_left', { count: product.stock })}</Text>
                                             </View>
                                         )}
                                     </View>
@@ -257,7 +257,7 @@ export default function WellnessScreen() {
                                         <View style={styles.ctaRow}>
                                             <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={() => handleAddToCart(product)}>
                                                 <Ionicons name="cart-outline" size={14} color="#fff" />
-                                                <Text style={styles.addBtnText}>Add</Text>
+                                                <Text style={styles.addBtnText}>{t('wellness.add')}</Text>
                                             </TouchableOpacity>
                                             <TouchableOpacity
                                                 style={[styles.detailBtn, { borderColor: colors.borderLight }]}
@@ -285,7 +285,7 @@ export default function WellnessScreen() {
 
             {/* ─── Header ─── */}
             <View style={[styles.headerContainer, { backgroundColor: colors.primary }]}>
-                <Text style={styles.headerTitle}>Ayuxa Wellness</Text>
+                <Text style={styles.headerTitle}>{t('wellness.header_title')}</Text>
             </View>
 
             <View style={[styles.contentContainer, { backgroundColor: colors.bgScreen }]}>
@@ -301,17 +301,17 @@ export default function WellnessScreen() {
                             </View>
                         </View>
 
-                        <Text style={[styles.heroHeadline, { color: colors.textDark }]}>The Ayuxa Wellness Store is Opening Soon!</Text>
+                        <Text style={[styles.heroHeadline, { color: colors.textDark }]}>{t('wellness.store_opening_soon')}</Text>
                         <Text style={[styles.heroSubHeadline, { color: colors.textDark }]}>
-                            Genuine Medicines, Senior Care Products, and Daily Essentials delivered to your door.
+                            {t('wellness.store_opening_desc')}
                         </Text>
                     </View>
 
                     {/* ─── "What can you buy here?" (Teaser Grid) ─── */}
                     <View style={[styles.teaserSection, { backgroundColor: colors.bgCard }]}>
-                        <Text style={[styles.teaserSectionTitle, { color: colors.textDark }]}>What can you buy here?</Text>
+                        <Text style={[styles.teaserSectionTitle, { color: colors.textDark }]}>{t('wellness.what_to_buy')}</Text>
                         <Text style={[styles.teaserSectionSubtitle, { color: colors.textMuted }]}>
-                            A fully-stocked pharmacy and senior-care shop right at your fingertips.
+                            {t('wellness.what_to_buy_desc')}
                         </Text>
 
                         <View style={styles.gridContainer}>

@@ -520,7 +520,10 @@
     "social_label_twitter": "எக்ஸ் (ட்விட்டர்)",
     "social_label_whatsapp": "வாட்ஸ்அப் சேனல்",
     "social_handle_whatsapp": "எங்கள் சேனலில் இணையுங்கள்",
-    "tab_title": "கணக்கு"
+    "tab_title": "கணக்கு",
+    "live_chat_subtitle": "WhatsApp-ல் எங்கள் ஆதரவு நிர்வாகிகளுடன் உடனடியாக இணையுங்கள்",
+    "live_chat_info": "எங்கள் ஆதரவு நண்பர்கள் சேவை முன்பதிவு, கட்டண சிக்கல்கள், மருத்துவர் ஸ்லாட்கள் மற்றும் பலவற்றில் உதவ கிடைக்கின்றனர்.",
+    "live_chat_status": "ஆதரவு ஆன்லைனில் செயலில்"
   },
   "plans": {
     "tab_title": "திட்டங்கள்",
@@ -603,7 +606,15 @@
     "added_to_cart_message": "{{name}} கார்ட்டில்!",
     "continue_shopping": "தொடரவும்",
     "view_cart": "கார்ட் பார்",
-    "off_badge": "{{percent}}% தள்ளுபடி"
+    "off_badge": "{{percent}}% தள்ளுபடி",
+    "filter_all": "அனைத்தும்",
+    "filter_wellness_essentials": "வெல்னஸ் அத்தியாவசியங்கள்",
+    "filter_healthcare_devices": "சுகாதார சாதனங்கள்",
+    "filter_fitness_recovery": "ஃபிட்னஸ் & மீட்சி",
+    "filter_mobility_aids": "இயக்க உதவி சாதனங்கள்",
+    "filter_health_monitors": "ஆரோக்கிய கண்காணிப்பாளர்கள்",
+    "filter_supplements": "சப்ளிமென்ட்கள்",
+    "filter_personal_care": "தனிப்பட்ட பராமரிப்பு"
   },
   "cart": {
     "header_title": "உங்கள் கார்ட்",
@@ -662,7 +673,13 @@
       "emergency_alert": "அவசர எச்சரிக்கை",
       "subtext": "நிர்வாகி & குடும்பத்தை தொடர்பு",
       "cancel": "ரத்து"
-    }
+    },
+    "calling_emergency_title": "அவசர அழைப்பு...",
+    "contacting_services_title": "சேவைகளை தொடர்பு கொள்கிறது...",
+    "press_button": "அழைப்பை தொடங்க பொத்தானை அழுத்தவும்",
+    "contacting_services_desc": "அவசர சேவைகளை தொடர்பு கொள்கிறது...",
+    "notifying_contacts_text": "அவசர தொடர்புகளுக்கு தெரிவிக்கப்படுகிறது",
+    "contacts_notified_text": "அவசர தொடர்புகளுக்கு அறிவிப்பு அனுப்பப்படுகிறது..."
   },
   "language_selection": {
     "header": "மொழி தேர்வு",
@@ -675,11 +692,27 @@
     "header": "நகரம் தேர்வு",
     "subtitle": "உங்கள் நகர சேவைகள்",
     "coming_soon": "விரைவில்",
-    "continue": "தொடர்"
+    "continue": "தொடர்",
+    "location_question": "நீங்கள் எங்கிருக்கிறீர்கள்?",
+    "location_sub": "உங்கள் நகரத்தை தேர்ந்தெடுத்து அருகிலுள்ள சேவைகளை பாருங்கள்.",
+    "detect_location": "என் இருப்பிடத்தை தானாக கண்டறி",
+    "available_now": "இப்போது கிடைக்கிறது",
+    "coming_soon_label": "விரைவில் வருகிறது",
+    "notify_banner": "உங்கள் நகரம் தெரியவில்லையா? தொடங்கும்போது அறிவிப்பு பெறுங்கள்!",
+    "notify_modal_title": "தொடங்கும்போது அறிவிக்கவும்",
+    "notify_modal_sub": "Ayuxa உங்கள் நகரத்தில் தொடங்கியவுடன் மின்னஞ்சல் அனுப்புவோம்.",
+    "your_name": "உங்கள் பெயர் *",
+    "your_name_label": "உங்கள் பெயரை உள்ளிடவும்",
+    "email_label": "மின்னஞ்சல் முகவரி *",
+    "email_placeholder": "உங்கள் மின்னஞ்சலை உள்ளிடவும்",
+    "city_optional": "உங்கள் நகரம் (விருப்பம்)",
+    "city_placeholder": "எ.கா: புனே, சென்னை, கொல்கத்தா",
+    "notify_submit": "அறிவிக்கவும்",
+    "active": "செயலில்"
   },
   "notifications": {
     "header_title": "அறிவிப்புகள்",
-    "empty_title": "அறிவிப்பு இல்லை",
+    "empty_title": "இன்னும் அறிவிப்புகள் இல்லை",
     "empty_subtitle": "பதிவு, நினைவூட்டல், சலுகை",
     "section_today": "இன்று",
     "section_earlier": "முந்தைய",
@@ -689,7 +722,16 @@
     "time_hours_ago_plural": "{{count}} மணி. முன்",
     "time_yesterday": "நேற்று",
     "time_days_ago": "{{count}} நாள். முன்",
-    "default_title": "அறிவிப்பு"
+    "default_title": "அறிவிப்பு",
+    "today": "இன்று",
+    "earlier": "முன்பு",
+    "empty_sub": "முன்பதிவு புதுப்பிப்புகள், நினைவூட்டல்கள் மற்றும் சலுகைகள் இங்கே தோன்றும்.",
+    "just_now": "இப்போது",
+    "min_ago": "{{count}} நிமிடம் முன்பு",
+    "hour_ago": "{{count}} மணி முன்பு",
+    "hours_ago": "{{count}} மணி முன்பு",
+    "yesterday": "நேற்று",
+    "days_ago": "{{count}} நாட்கள் முன்பு"
   },
   "help_support": {
     "header": "உதவி & ஆதரவு",
@@ -1265,7 +1307,11 @@
   "legal": {
     "failed_load": "ஏற்ற முடியவில்லை",
     "last_updated": "கடைசியாக: {{date}}",
-    "loading": "ஏற்றுகிறது"
+    "loading": "ஏற்றுகிறது",
+    "try_again": "மீண்டும் முயற்சிக்கவும்",
+    "privacy_policy": "தனியுரிமை கொள்கை",
+    "terms_conditions": "விதிமுறைகள் & நிபந்தனைகள்",
+    "refund_policy": "திரும்பப்பெறும் கொள்கை"
   },
   "privacy_policy": {
     "header_title": "தனியுரிமை"
@@ -1301,7 +1347,26 @@
     "card": "கார்டு",
     "cod": "டெலிவரியில் பணம்",
     "razorpay_secure": "Razorpay பாதுகாக்கப்பட்டது",
-    "cod_note": "சரியான சில்லறை தயார்"
+    "cod_note": "சரியான சில்லறை தயார்",
+    "header_title": "செக்அவுட்",
+    "included_in_charge": "சேவை கட்டணத்தில் சேர்க்கப்பட்டது",
+    "pickup_details": "பிக்கப் விவரங்கள்",
+    "coupon_discount": "கூப்பன் தள்ளுபடி",
+    "default_address": "இயல்புநிலை முகவரி",
+    "address_required_title": "முகவரி தேவை",
+    "address_required_msg": "சேவை முகவரியை தேர்ந்தெடுக்கவும்.",
+    "book_now": "இப்போது முன்பதிவு செய்யுங்கள்",
+    "processing": "செயலாக்கப்படுகிறது...",
+    "total": "மொத்தம்",
+    "free": "இலவசம்",
+    "no_address_saved": "சேமித்த முகவரி இல்லை",
+    "change": "மாற்று",
+    "venue_label": "இடம்",
+    "pickup_enabled": "பிக்கப் தேவை",
+    "pickup_disabled": "சொந்த ஏற்பாடு",
+    "pickup_time_label": "பிக்கப் நேரம்",
+    "organizer_label": "ஏற்பாட்டாளர்",
+    "plan_benefit_applied": "திட்ட சலுகை பயன்படுத்தப்பட்டது!"
   },
   "service_confirmation": {
     "booking_confirmed": "உறுதி செய்யப்பட்டது",
@@ -1838,7 +1903,7 @@
     "header": "தொழில்நுட்ப உதவி",
     "title": "தொழில்நுட்ப உதவி",
     "subtitle": "ஃபோன், வைஃபை, டிவி ரிமோட் சரி செய்கிறோம்",
-    "missing_info": "பிரச்சனை விவரி, தேதி, முகவரி உறுதி",
+    "missing_info": "தகவல் இல்லை",
     "whats_issue": "என்ன பிரச்சனை?",
     "phone_help": "தொலைபேசி (WhatsApp, Zoom, Contacts)",
     "tv_wifi": "டிவி & வைஃபை (Netflix, ரிமோட்)",
@@ -1848,14 +1913,33 @@
     "date_time": "தேதி & நேரம்",
     "date_placeholder": "தேர்வு",
     "upload_title": "புகைப்படம் (விருப்பம்)",
-    "upload_subtitle": "பிழைச் செய்தி அல்லது சாதனம்",
-    "select_mode": "முறை தேர்வு",
-    "home_visit": "வீடு வருகை",
-    "home_visit_desc": "நண்பர் கற்றுத் தர",
-    "phone_call": "தொலைபேசி",
-    "phone_call_desc": "தொலை உதவி",
+    "upload_subtitle": "பிரச்சனையை காட்டுங்கள் — அதிகபட்சம் 4 படங்கள்",
+    "select_mode": "முறையை தேர்ந்தெடுக்கவும்",
+    "home_visit": "வீட்டு வருகை",
+    "home_visit_desc": "நிபுணர் வீட்டிற்கு வருவார்",
+    "phone_call": "தொலைபேசி / வீடியோ அழைப்பு",
+    "phone_call_desc": "அழைப்பு வழியாக தொலை வழிகாட்டல்",
     "book": "பதிவு தொழில்நுட்ப ஆதரவு",
-    "invalid_time": "எதிர்கால நேர ஸ்லாட்டைத் தேர்ந்தெடுக்கவும்."
+    "invalid_time": "எதிர்கால நேர ஸ்லாட்டைத் தேர்ந்தெடுக்கவும்.",
+    "main_title": "வீட்டிற்கே வரும் தொழில்நுட்ப உதவி",
+    "sub_title": "நாங்கள் உங்கள் சாதனங்களையும் செயலிகளையும் சரிசெய்கிறோம்.",
+    "select_issue": "பிரச்சனை என்ன?",
+    "issue_phone": "தொலைபேசி / டேப்லெட் உதவி",
+    "issue_phone_sub": "அமைப்பு, மெதுவான தொலைபேசி, செயலி பிரச்சனை",
+    "issue_tv_wifi": "TV / Wi-Fi உதவி",
+    "issue_tv_wifi_sub": "Wi-Fi அமைப்பு, ஸ்மார்ட் TV, OTT",
+    "issue_banking": "வங்கி & UPI செயலி உதவி",
+    "issue_banking_sub": "மொபைல் வங்கி, UPI அமைப்பு",
+    "something_else": "வேறு ஏதாவது?",
+    "describe_placeholder": "உங்கள் பிரச்சனையை விவரிக்கவும்...",
+    "preferred_date_time": "விரும்பிய தேதி மற்றும் நேரம்",
+    "upload_photos": "புகைப்படங்கள் பதிவேற்றவும் (விருப்பம்)",
+    "book_btn": "தொழில்நுட்ப உதவி பதிவு செய்யவும்",
+    "initializing": "அமைக்கப்படுகிறது...",
+    "missing_info_desc": "தயவுசெய்து பிரச்சனை, தேதி மற்றும் முகவரியை உறுதிப்படுத்தவும்.",
+    "error": "பிழை",
+    "init_error": "சேவை அமைக்கப்படவில்லை. மீண்டும் முயற்சிக்கவும்.",
+    "generic_error": "ஏதோ தவறு. மீண்டும் முயற்சிக்கவும்."
   },
   "trip_travels": {
     "header": "பயணம்",
@@ -2649,7 +2733,16 @@
     "products_unavailable_msg": "உங்கள் கார்ட்டில் உள்ள சில தயாரிப்புகள் இனி கிடைக்காது. தயவுசெய்து உங்கள் கார்ட்டை மாற்றவும்.",
     "upi": "UPI (GPay / PhonePe / Paytm)",
     "card": "கிரெடிட் / டெபிட் கார்டு",
-    "cod": "கேஷ் ஆன் டெலிவரி"
+    "cod": "கேஷ் ஆன் டெலிவரி",
+    "delivery_address": "டெலிவரி முகவரி",
+    "service_address": "சேவை முகவரி",
+    "included_in_charge": "சேவை கட்டணத்தில் சேர்க்கப்பட்டது",
+    "additional_charges": "கூடுதல் கட்டணங்கள்",
+    "pickup_details": "பிக்அப் விவரங்கள்",
+    "pickup_address": "முகவரி:",
+    "pickup_landmark": "அடையாளம்:",
+    "pickup_time": "நேரம்:",
+    "pickup_contact": "தொடர்பு:"
   },
   "success_screen": {
     "title": "கட்டணம் வெற்றி!",
@@ -3048,5 +3141,24 @@
     "tip_area": "பகுதி அல்லது உள்ளூர் வாரியாகத் தேடவும்",
     "tip_landmark": "அடையாளம் அல்லது தெருவை முயற்சிக்கவும்",
     "tip_address": "முழு முகவரி அல்லது பின்கோடை உள்ளிடவும்"
+  },
+  "live_updates": {
+    "header_title": "நேரடி புதுப்பிப்புகள்",
+    "header_sub": "செயல்பாட்டு மையம்",
+    "live_label": "நேரடி",
+    "loading": "புதுப்பிப்புகளை பெறுகிறது…",
+    "empty_title": "செயலில் புதுப்பிப்புகள் இல்லை",
+    "empty_sub": "மருத்துவர் நியமனம், மாதிரி சேகரிப்பு, டெலிவரி மற்றும் கட்டணங்கள் இங்கே நேரடியாக தோன்றும்.",
+    "call": "அழைக்கவும்",
+    "eta": "ETA",
+    "doctor_assigned": "மருத்துவர் நியமிக்கப்பட்டார்",
+    "caregiver_assigned": "பராமரிப்பாளர் நியமிக்கப்பட்டார்",
+    "nurse_assigned": "நர்ஸ் நியமிக்கப்பட்டார்",
+    "appointment_confirmed": "சந்திப்பு உறுதிப்படுத்தப்பட்டது",
+    "sample_collected": "ஆய்வக மாதிரி சேகரிக்கப்பட்டது",
+    "out_for_delivery": "ஆர்டர் டெலிவரியில் உள்ளது",
+    "medicine_delivered": "மருந்து வழங்கப்பட்டது",
+    "service_rescheduled": "சேவை மறுத்தி திட்டமிடப்பட்டது",
+    "payment_confirmed": "கட்டணம் உறுதிப்படுத்தப்பட்டது"
   }
 }

@@ -520,7 +520,10 @@
     "social_label_twitter": "ಎಕ್ಸ್ (ಟ್ವಿಟರ್)",
     "social_label_whatsapp": "ವಾಟ್ಸಾಪ್ ಚಾನೆಲ್",
     "social_handle_whatsapp": "ನಮ್ಮ ಚಾನಲ್‌ಗೆ ಸೇರಿ",
-    "tab_title": "ಖಾತೆ"
+    "tab_title": "ಖಾತೆ",
+    "live_chat_subtitle": "WhatsApp ನಲ್ಲಿ ನಮ್ಮ ಬೆಂಬಲ ಅಧಿಕಾರಿಗಳೊಂದಿಗೆ ತಕ್ಷಣ ಸಂಪರ್ಕಿಸಿ",
+    "live_chat_info": "ನಮ್ಮ ಬೆಂಬಲ ಸ್ನೇಹಿತರು ಸೇವೆ ಬುಕಿಂಗ್, ಪಾವತಿ ಸಮಸ್ಯೆ, ವೈದ್ಯರ ಸ್ಲಾಟ್ ಮತ್ತು ಹೆಚ್ಚಿನ ವಿಷಯಗಳಲ್ಲಿ ಸಹಾಯ ಮಾಡಲು ಲಭ್ಯರಿದ್ದಾರೆ.",
+    "live_chat_status": "ಸಹಾಯ ಆನ್‌ಲೈನ್‌ನಲ್ಲಿ ಸಕ್ರಿಯ"
   },
   "plans": {
     "tab_title": "ಪ್ಲಾನ್‌ಗಳು",
@@ -614,7 +617,13 @@
       "emergency_alert": "ತುರ್ತು ಅಲರ್ಟ್",
       "subtext": "ಅಡ್ಮಿನ್ ಮತ್ತು ಕುಟುಂಬಕ್ಕೆ ಸಂಪರ್ಕ ಹಂತ",
       "cancel": "ರದ್ದು"
-    }
+    },
+    "calling_emergency_title": "ತುರ್ತು ಕರೆ...",
+    "contacting_services_title": "ಸೇವೆಗಳನ್ನು ಸಂಪರ್ಕಿಸುತ್ತಿದೆ...",
+    "press_button": "ಕರೆ ಪ್ರಾರಂಭಿಸಲು ಬಟನ್ ಒತ್ತಿರಿ",
+    "contacting_services_desc": "ತುರ್ತು ಸೇವೆಗಳನ್ನು ಸಂಪರ್ಕಿಸಲಾಗುತ್ತಿದೆ...",
+    "notifying_contacts_text": "ತುರ್ತು ಸಂಪರ್ಕಗಳಿಗೆ ತಿಳಿಸಲಾಗುತ್ತಿದೆ",
+    "contacts_notified_text": "ತುರ್ತು ಸಂಪರ್ಕಗಳಿಗೆ ಅಧಿಸೂಚನೆ ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ..."
   },
   "language_selection": {
     "header": "ಭಾಷೆ ಆರಿಸಿ",
@@ -627,11 +636,27 @@
     "header": "ನಗರ ಆರಿಸಿ",
     "subtitle": "ನಿಮ್ಮ ನಗರದಲ್ಲಿ ಲಭ್ಯವಿರುವ ಸೇವೆ ತೋರಿಸುತ್ತೇವೆ.",
     "coming_soon": "ಶೀಘ್ರದಲ್ಲೇ",
-    "continue": "ಮುಂದುವರಿ"
+    "continue": "ಮುಂದುವರಿ",
+    "location_question": "ನೀವು ಎಲ್ಲಿದ್ದೀರಿ?",
+    "location_sub": "ನಿಮ್ಮ ನಗರ ಆಯ್ಕೆ ಮಾಡಿ ಮತ್ತು ಹತ್ತಿರದ ಸೇವೆಗಳನ್ನು ನೋಡಿ.",
+    "detect_location": "ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಸ್ಥಳ ಪತ್ತೆ ಮಾಡಿ",
+    "available_now": "ಈಗ ಲಭ್ಯ",
+    "coming_soon_label": "ಶೀಘ್ರದಲ್ಲೇ ಬರುತ್ತಿದೆ",
+    "notify_banner": "ನಿಮ್ಮ ನಗರ ಕಾಣಿಸುತ್ತಿಲ್ಲವೇ? ಲಾಂಚ್ ಮಾಹಿತಿ ಪಡೆಯಿರಿ!",
+    "notify_modal_title": "ಲಾಂಚ್ ಆದಾಗ ತಿಳಿಸಿ",
+    "notify_modal_sub": "Ayuxa ನಿಮ್ಮ ನಗರದಲ್ಲಿ ಲಾಂಚ್ ಆದ ತಕ್ಷಣ ಈಮೇಲ್ ಕಳುಹಿಸುತ್ತೇವೆ.",
+    "your_name": "ನಿಮ್ಮ ಹೆಸರು *",
+    "your_name_label": "ನಿಮ್ಮ ಹೆಸರು ನಮೂದಿಸಿ",
+    "email_label": "ಈಮೇಲ್ ವಿಳಾಸ *",
+    "email_placeholder": "ನಿಮ್ಮ ಈಮೇಲ್ ನಮೂದಿಸಿ",
+    "city_optional": "ನಿಮ್ಮ ನಗರ (ಐಚ್ಛಿಕ)",
+    "city_placeholder": "ಉದಾ: ಪುಣೆ, ಚೆನ್ನೈ, ಕೊಲ್ಕತ್ತ",
+    "notify_submit": "ತಿಳಿಸಿ",
+    "active": "ಸಕ್ರಿಯ"
   },
   "notifications": {
-    "header_title": "ನೋಟಿಫಿಕೇಶನ್ಸ್",
-    "empty_title": "ಯಾವುದೇ ನೋಟಿಫಿಕೇಶನ್ ಇಲ್ಲ",
+    "header_title": "ಅಧಿಸೂಚನೆಗಳು",
+    "empty_title": "ಇನ್ನೂ ಅಧಿಸೂಚನೆಗಳಿಲ್ಲ",
     "empty_subtitle": "ಬುಕಿಂಗ್ ವಿವರ, ಆಫರ್ ಇಲ್ಲಿ ಕಾಣಿಸಲಿವೆ.",
     "section_today": "ಇಂದು",
     "section_earlier": "ಹಿಂದೆ",
@@ -641,7 +666,16 @@
     "time_hours_ago_plural": "{{count}} ಗಂಟೆಗಳ ಮುನ್ನ",
     "time_yesterday": "ನಿನ್ನೆ",
     "time_days_ago": "{{count}} ದಿನಗಳ ಮುನ್ನ",
-    "default_title": "ನೋಟಿಫಿಕೇಶನ್"
+    "default_title": "ನೋಟಿಫಿಕೇಶನ್",
+    "today": "ಇಂದು",
+    "earlier": "ಹಿಂದೆ",
+    "empty_sub": "ಬುಕಿಂಗ್ ಅಪ್‌ಡೇಟ್‌ಗಳು, ರಿಮೈಂಡರ್‌ಗಳು ಮತ್ತು ಆಫರ್‌ಗಳು ಇಲ್ಲಿ ತೋರಿಸಲ್ಪಡುತ್ತವೆ.",
+    "just_now": "ಇದೀಗ",
+    "min_ago": "{{count}} ನಿಮಿಷ ಹಿಂದೆ",
+    "hour_ago": "{{count}} ಗಂಟೆ ಹಿಂದೆ",
+    "hours_ago": "{{count}} ಗಂಟೆ ಹಿಂದೆ",
+    "yesterday": "ನಿನ್ನೆ",
+    "days_ago": "{{count}} ದಿನ ಹಿಂದೆ"
   },
   "help_support": {
     "header": "ಸಹಾಯ ಮತ್ತು ಬೆಂಬಲ",
@@ -1217,7 +1251,11 @@
   "legal": {
     "failed_load": "ದಾಖಲೆ ಲೋಡ್ ಆಗಿಲ್ಲ",
     "last_updated": "ನವೀಕರಣ: {{date}}",
-    "loading": "ಲೋಡ್..."
+    "loading": "ಲೋಡ್...",
+    "try_again": "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ",
+    "privacy_policy": "ಗೌಪ್ಯತಾ ನೀತಿ",
+    "terms_conditions": "ನಿಯಮಗಳು ಮತ್ತು ಷರತ್ತುಗಳು",
+    "refund_policy": "ಮರುಪಾವತಿ ನೀತಿ"
   },
   "privacy_policy": {
     "header_title": "ಗೊಪ್ಯತಾ ನೀತಿ"
@@ -1253,7 +1291,26 @@
     "card": "ಕ್ರೆಡಿಟ್ / ಡೆಬಿಟ್ ಕಾರ್ಡ್",
     "cod": "ನಗದು ಪಾವತಿ (COD)",
     "razorpay_secure": "Razorpay ಸುರಕ್ಷತೆ ಹೊಂದಿದೆ.",
-    "cod_note": "ಸರಿಯಾದ ನಗದು ಹಣ ಸಿದ್ಧವಾಗಿಡಿ."
+    "cod_note": "ಸರಿಯಾದ ನಗದು ಹಣ ಸಿದ್ಧವಾಗಿಡಿ.",
+    "header_title": "ಚೆಕ್‌ಔಟ್",
+    "included_in_charge": "ಸೇವಾ ಶುಲ್ಕದಲ್ಲಿ ಸೇರಿದೆ",
+    "pickup_details": "ಪಿಕ್‌ಅಪ್ ವಿವರಗಳು",
+    "coupon_discount": "ಕೂಪನ್ ರಿಯಾಯಿತಿ",
+    "default_address": "ಡೀಫಾಲ್ಟ್ ವಿಳಾಸ",
+    "address_required_title": "ವಿಳಾಸ ಅಗತ್ಯ",
+    "address_required_msg": "ದಯವಿಟ್ಟು ಸೇವಾ ವಿಳಾಸ ಆಯ್ಕೆ ಮಾಡಿ.",
+    "book_now": "ಈಗ ಬುಕ್ ಮಾಡಿ",
+    "processing": "ಪ್ರಕ್ರಿಯೆ...",
+    "total": "ಒಟ್ಟು",
+    "free": "ಉಚಿತ",
+    "no_address_saved": "ಉಳಿಸಿದ ವಿಳಾಸ ಇಲ್ಲ",
+    "change": "ಬದಲಾಯಿಸಿ",
+    "venue_label": "ಸ್ಥಳ",
+    "pickup_enabled": "ಪಿಕ್‌ಅಪ್ ಅಗತ್ಯ",
+    "pickup_disabled": "ಸ್ವಯಂ ವ್ಯವಸ್ಥೆ",
+    "pickup_time_label": "ಪಿಕ್‌ಅಪ್ ಸಮಯ",
+    "organizer_label": "ಆಯೋಜಕ",
+    "plan_benefit_applied": "ಪ್ಲಾನ್ ಪ್ರಯೋಜನ ಅನ್ವಯಿಸಲಾಗಿದೆ!"
   },
   "service_confirmation": {
     "booking_confirmed": "ಬುಕಿಂಗ್ ಖಚಿತವಾಗಿದೆ",
@@ -1790,7 +1847,7 @@
     "header": "ಟೆಕ್ ಸಹಾಯ",
     "title": "ಟೆಕ್ ಸಹಾಯ",
     "subtitle": "ಫೋನ್, ವೈಫೈ ಮತ್ತು ಟಿವಿ ರೇಮೋಟ್ ಸರಿಪಡಿಸುತ್ತೇವೆ.",
-    "missing_info": "ಸಮಸ್ಯೆ ಬರೆಯಿರಿ, ದಿನಾಂಕ ಆರಿಸಿ ಮತ್ತು ವಿಳಾಸ ಪರಿಶೀಲಿಸಿ.",
+    "missing_info": "ಮಾಹಿತಿ ಅಪೂರ್ಣ",
     "whats_issue": "ಸಮಸ್ಯೆ ಏನು?",
     "phone_help": "ಫೋನ್ ಸಹಾಯ (WhatsApp, Zoom, ಕಾಂಟ್ಯಾಕ್ಟ್ಸ್ ಸೆಟಪ್)",
     "tv_wifi": "ಟಿವಿ ಮತ್ತು ವೈಫೈ (Netflix ಲಾಗಿನ್, ರೇಮೋಟ್ ರಿಪೇರಿ)",
@@ -1800,14 +1857,33 @@
     "date_time": "ಪಚಂದದ ದಿನ/ಸಮಯ",
     "date_placeholder": "ದಿನ ಮತ್ತು ಸಮಯ ಆರಿಸಿ",
     "upload_title": "ಫೋಟೋ ಹಾಕಿ (ಐಚ್ಛಿಕ)",
-    "upload_subtitle": "ದೋಷ ಸಂದೇಶ ಅಥವಾ ಸಾಧನದ ಚಿತ್ರ ತೋರಿಸಿ",
-    "select_mode": "ವಿಧಾನ ಆರಿಸಿ",
+    "upload_subtitle": "ಸಮಸ್ಯೆ ತೋರಿಸಿ — ಗರಿಷ್ಠ 4 ಚಿತ್ರ",
+    "select_mode": "ವಿಧಾನ ಆಯ್ಕೆ ಮಾಡಿ",
     "home_visit": "ಮನೆ ಭೇಟಿ",
-    "home_visit_desc": "ಕಲಿಸಲು ಮನೆಗೆ ಬರುವರು",
-    "phone_call": "ಫೋನ್ ಕರೆ",
-    "phone_call_desc": "ದೂರಸ್ಥ ಸಹಾಯ",
+    "home_visit_desc": "ತಜ್ಞರು ನಿಮ್ಮ ಮನೆಗೆ ಬರುತ್ತಾರೆ",
+    "phone_call": "ಫೋನ್ / ವೀಡಿಯೋ ಕರೆ",
+    "phone_call_desc": "ಕರೆ ಮೂಲಕ ದೂರಸ್ಥ ಮಾರ್ಗದರ್ಶನ",
     "book": "ಟೆಕ್ ಸಪೋರ್ಟ್ ಬುಕ್ ಮಾಡಿ",
-    "invalid_time": "ಮುಂದಿನ ಸಮಯದ ಸ್ಲಾಟ್ ಆರಿಸಿ."
+    "invalid_time": "ಮುಂದಿನ ಸಮಯದ ಸ್ಲಾಟ್ ಆರಿಸಿ.",
+    "main_title": "ನಿಮ್ಮ ಬಾಗಿಲಿಗೆ ತಂತ್ರಜ್ಞಾನ ಸಹಾಯ",
+    "sub_title": "ನಾವು ನಿಮ್ಮ ಸಾಧನ ಮತ್ತು ಅಪ್ಲಿಕೇಶನ್‌ಗಳನ್ನು ಸರಿಪಡಿಸುತ್ತೇವೆ.",
+    "select_issue": "ಸಮಸ್ಯೆ ಏನು?",
+    "issue_phone": "ಫೋನ್ / ಟ್ಯಾಬ್ಲೆಟ್ ಸಹಾಯ",
+    "issue_phone_sub": "ಸೆಟಪ್, ನಿಧಾನ ಫೋನ್, ಆಪ್ ಸಮಸ್ಯೆ",
+    "issue_tv_wifi": "TV / Wi-Fi ಸಹಾಯ",
+    "issue_tv_wifi_sub": "Wi-Fi ಸೆಟಪ್, ಸ್ಮಾರ್ಟ್ TV, OTT",
+    "issue_banking": "ಬ್ಯಾಂಕಿಂಗ್ & UPI ಸಹಾಯ",
+    "issue_banking_sub": "ಮೊಬೈಲ್ ಬ್ಯಾಂಕಿಂಗ್, UPI ಸೆಟಪ್",
+    "something_else": "ಬೇರೆ ಸಮಸ್ಯೆ?",
+    "describe_placeholder": "ನಿಮ್ಮ ಸಮಸ್ಯೆ ವಿವರಿಸಿ...",
+    "preferred_date_time": "ಆದ್ಯತೆಯ ದಿನಾಂಕ ಮತ್ತು ಸಮಯ",
+    "upload_photos": "ಫೋಟೋ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ (ಐಚ್ಛಿಕ)",
+    "book_btn": "ತಂತ್ರ ಸಹಾಯ ಬುಕ್ ಮಾಡಿ",
+    "initializing": "ಸೆಟಪ್ ಆಗುತ್ತಿದೆ...",
+    "missing_info_desc": "ದಯವಿಟ್ಟು ಸಮಸ್ಯೆ, ದಿನಾಂಕ ಮತ್ತು ವಿಳಾಸ ನಿರ್ಧರಿಸಿ.",
+    "error": "ದೋಷ",
+    "init_error": "ಸೇವೆ ಕಾನ್ಫಿಗರ್ ಆಗಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+    "generic_error": "ಏನೋ ತಪ್ಪಾಯಿತು. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
   },
   "trip_travels": {
     "header": "ಪ್ರಯಾಣ",
@@ -2601,7 +2677,16 @@
     "products_unavailable_msg": "ನಿಮ್ಮ ಕಾರ್ಟ್‌ನಲ್ಲಿರುವ ಕೆಲವು ಉತ್ಪನ್ನಗಳು ಇನ್ನು ಮುಂದೆ ಲಭ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಕಾರ್ಟ್ ಅನ್ನು ನವೀಕರಿಸಿ.",
     "upi": "UPI (GPay / PhonePe / Paytm)",
     "card": "ಕ್ರೆಡಿಟ್ / ಡೆಬಿಟ್ ಕಾರ್ಡ್",
-    "cod": "ಕ್ಯಾಶ್ ಆನ್ ಡೆಲಿವರಿ"
+    "cod": "ಕ್ಯಾಶ್ ಆನ್ ಡೆಲಿವರಿ",
+    "delivery_address": "ಡೆಲಿವರಿ ವಿಳಾಸ",
+    "service_address": "ಸೇವಾ ವಿಳಾಸ",
+    "included_in_charge": "ಸೇವಾ ಶುಲ್ಕದಲ್ಲಿ ಸೇರಿದೆ",
+    "additional_charges": "ಹೆಚ್ಚುವರಿ ಶುಲ್ಕಗಳು",
+    "pickup_details": "ಪಿಕಪ್ ವಿವರಗಳು",
+    "pickup_address": "ವಿಳಾಸ:",
+    "pickup_landmark": "ಲ್ಯಾಂಡ್‌ಮಾರ್ಕ್:",
+    "pickup_time": "ಸಮಯ:",
+    "pickup_contact": "ಸಂಪರ್ಕ:"
   },
   "success_screen": {
     "title": "ಪಾವತಿ ಯಶಸ್ವಿ!",
@@ -2775,7 +2860,15 @@
     "added_to_cart_message": "{{name}} ಸೇರಿಸಲಾಗಿದೆ!",
     "continue_shopping": "ಖರೀದಿ ಮುಂದುವರಿ",
     "view_cart": "ಕಾರ್ಟ್ ನೋಡಿ",
-    "off_badge": "{{percent}}% ರಿಯಾಯಿತಿ"
+    "off_badge": "{{percent}}% ರಿಯಾಯಿತಿ",
+    "filter_all": "ಎಲ್ಲಾ",
+    "filter_wellness_essentials": "ವೆಲ್ನೆಸ್ ಅಗತ್ಯಗಳು",
+    "filter_healthcare_devices": "ಆರೋಗ್ಯ ಸಾಧನಗಳು",
+    "filter_fitness_recovery": "ಫಿಟ್‌ನೆಸ್ & ಚೇತರಿಕೆ",
+    "filter_mobility_aids": "ಚಲನ ಸಾಧನಗಳು",
+    "filter_health_monitors": "ಆರೋಗ್ಯ ಮಾನಿಟರ್",
+    "filter_supplements": "ಸಪ್ಲಿಮೆಂಟ್",
+    "filter_personal_care": "ವೈಯಕ್ತಿಕ ಆರೈಕೆ"
   },
   "service_detail": {
     "concierge_services": "ಸಹಾಯ ಸೇವೆಗಳು",
@@ -3048,5 +3141,24 @@
     "tip_area": "ಪ್ರದೇಶ ಅಥವಾ ಬಡಾವಣೆಯ ಮೂಲಕ ಹುಡುಕಿ",
     "tip_landmark": "ಲ್ಯಾಂಡ್‌ಮಾರ್ಕ್ ಅಥವಾ ರಸ್ತೆಯನ್ನು ಪ್ರಯತ್ನಿಸಿ",
     "tip_address": "ಪೂರ್ಣ ವಿಳಾಸ ಅಥವಾ ಪಿನ್‌ಕೋಡ್ ನಮೂದಿಸಿ"
+  },
+  "live_updates": {
+    "header_title": "ಲೈವ್ ಅಪ್‌ಡೇಟ್‌ಗಳು",
+    "header_sub": "ಚಟುವಟಿಕೆ ಕೇಂದ್ರ",
+    "live_label": "ಲೈವ್",
+    "loading": "ಅಪ್‌ಡೇಟ್‌ಗಳನ್ನು ತರಲಾಗುತ್ತಿದೆ…",
+    "empty_title": "ಯಾವುದೇ ಸಕ್ರಿಯ ಅಪ್‌ಡೇಟ್‌ಗಳಿಲ್ಲ",
+    "empty_sub": "ವೈದ್ಯ ನಿಯೋಜನೆ, ಮಾದರಿ ಸಂಗ್ರಹ, ಡೆಲಿವರಿ ಮತ್ತು ಪಾವತಿಗಳು ನೈಜ ಸಮಯದಲ್ಲಿ ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.",
+    "call": "ಕರೆ ಮಾಡಿ",
+    "eta": "ETA",
+    "doctor_assigned": "ವೈದ್ಯ ನಿಯೋಜಿಸಲಾಗಿದೆ",
+    "caregiver_assigned": "ಆರೈಕೆದಾರ ನಿಯೋಜಿಸಲಾಗಿದೆ",
+    "nurse_assigned": "ನರ್ಸ್ ನಿಯೋಜಿಸಲಾಗಿದೆ",
+    "appointment_confirmed": "ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ದೃಢಪಡಿಸಲಾಗಿದೆ",
+    "sample_collected": "ಲ್ಯಾಬ್ ಮಾದರಿ ಸಂಗ್ರಹಿಸಲಾಗಿದೆ",
+    "out_for_delivery": "ಆರ್ಡರ್ ಡೆಲಿವರಿಯಲ್ಲಿದೆ",
+    "medicine_delivered": "ಔಷಧ ಡೆಲಿವರ್ ಆಗಿದೆ",
+    "service_rescheduled": "ಸೇವೆ ಮರು ನಿಗದಿ",
+    "payment_confirmed": "ಪಾವತಿ ದೃಢಪಟ್ಟಿದೆ"
   }
 }

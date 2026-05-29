@@ -9,6 +9,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { planService } from '@/services/api/planService';
 import { useUser } from '@/context/UserContext';
 import { useTranslation } from 'react-i18next';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 
 // ─── Figma Assets ───
 const imgLightning = require('@/assets/images/50ffab5c68d190752695666bb7ec8bee1bc4842a.png'); // Lightning bolt
@@ -19,6 +21,9 @@ export default function SmartUpgradeScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { profile } = useUser();
+    const colors = useThemeColors();
+    const { isDarkMode } = useTheme();
+    const styles = makeStyles(colors, isDarkMode);
     const [isBooking, setIsBooking] = React.useState(false);
 
     // ─── Upgrade handler ────────────────────────────────────────────
@@ -95,8 +100,8 @@ export default function SmartUpgradeScreen() {
     return (
         <View style={styles.screen}>
             {/* Header extension */}
-            <View style={{ backgroundColor: '#048357', height: insets.top }} />
-            <StatusBar style="light" backgroundColor="#048357" />
+            <View style={{ backgroundColor: colors.primary, height: insets.top }} />
+            <StatusBar style="light" backgroundColor={colors.primary} />
 
             {/* ─── Header ─── */}
             <View style={styles.headerContainer}>
@@ -181,149 +186,124 @@ export default function SmartUpgradeScreen() {
                     </View>
                 </LinearGradient>
             </KeyboardAwareScrollView>
-        </KeyboardAvoidingView>
+            </KeyboardAvoidingView>
         </View>
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: '#FDFDE8', 
+        backgroundColor: colors.primary,
     },
-
-    /* ─── Header ─── */
     headerContainer: {
-        backgroundColor: '#048357',
+        backgroundColor: colors.primary,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
+        paddingVertical: 15,
         paddingBottom: 25,
-        paddingTop: 15,
+        paddingHorizontal: 16,
     },
     backButton: {
+        padding: 5,
         marginRight: 12,
-        padding: 4,
     },
     headerTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 22,
         color: '#FFFFFF',
-        letterSpacing: -0.24,
+        fontSize: 18,
+        fontWeight: '700',
+        flex: 1,
     },
-
     scrollContent: {
         paddingHorizontal: 16,
-        paddingVertical: 20,
         paddingBottom: 40,
     },
-
-    /* ─── Gradient Card ─── */
     gradientCard: {
-        borderRadius: 24,
-        padding: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 3,
+        borderRadius: 20,
+        padding: 20,
+        marginTop: 8,
     },
-
     titleGroup: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: 6,
     },
     cardTitle: {
-        fontFamily: Platform.select({ ios: 'Poppins-Bold', android: 'Poppins_700Bold', default: 'System' }),
-        fontSize: 26,
-        color: '#472323',
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#1A1A1A',
+        flex: 1,
     },
     lightningEmoji: {
         fontSize: 24,
-        marginLeft: 4,
     },
-
     cardSubtitleMain: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 18,
-        color: '#2F2F2F',
-        lineHeight: 26,
+        fontSize: 14,
         fontWeight: '600',
+        color: '#2F2F2F',
+        marginBottom: 2,
     },
     priceIntroText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 12,
-        color: '#555555',
-        marginTop: 8,
-        marginBottom: 20,
+        fontSize: 13,
+        color: '#444',
+        marginTop: 10,
+        marginBottom: 4,
     },
     priceBold: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: '#2F2F2F',
-        fontWeight: '600',
+        fontWeight: '800',
+        color: '#02743F',
+        fontSize: 15,
     },
-
-    /* ─── Chart ─── */
     chartContainer: {
-        width: '100%',
         alignItems: 'center',
-        marginBottom: 24,
+        marginVertical: 16,
     },
     chartImage: {
         width: '100%',
-        height: 220,
+        height: 180,
     },
-
-    /* ─── Upgrade Button ─── */
     upgradeButton: {
-        backgroundColor: '#048357', // Changed to match Header
-        height: 52,
-        borderRadius: 26,
-        justifyContent: 'center',
+        backgroundColor: '#02743F',
+        borderRadius: 14,
+        paddingVertical: 15,
         alignItems: 'center',
-        width: '100%',
-        marginBottom: 32,
+        marginBottom: 20,
     },
     upgradeButtonText: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         color: '#FFFFFF',
         fontSize: 16,
+        fontWeight: '700',
     },
-
-    /* ─── Disclaimer Section ─── */
     disclaimerHeader: {
-        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 17,
-        color: '#2F2F2F',
-        marginBottom: 16,
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#1A1A1A',
+        marginBottom: 8,
     },
     disclaimerSubtitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 15,
-        color: '#777',
+        fontWeight: '400',
+        color: '#666',
     },
     disclaimerBox: {
-        gap: 2,
+        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+        borderRadius: 10,
+        padding: 12,
     },
     disclaimerItem: {
-        paddingVertical: 10,
+        paddingVertical: 8,
     },
     disclaimerText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 12,
-        color: '#444',
+        color: isDarkMode ? '#CCC' : '#555',
         lineHeight: 18,
-        textAlign: 'center', // Matching the center alignment in screenshot
     },
     disclaimerBold: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: '#1E1E1E',
-        fontWeight: '600',
+        fontWeight: '700',
+        color: isDarkMode ? '#EEE' : '#222',
     },
     divider: {
         height: 1,
-        backgroundColor: '#EEEEEE',
+        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)',
         marginHorizontal: -10,
-    }
+    },
 });

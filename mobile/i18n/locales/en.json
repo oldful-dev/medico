@@ -520,7 +520,10 @@
     "social_label_twitter": "X (Twitter)",
     "social_label_whatsapp": "WhatsApp Channel",
     "social_handle_whatsapp": "Join our channel",
-    "tab_title": "Account"
+    "tab_title": "Account",
+    "live_chat_subtitle": "Connect with our support executives instantly on WhatsApp",
+    "live_chat_info": "Our support buddies are available to help you with service bookings, payment issues, doctor slots, and more.",
+    "live_chat_status": "Support Active Online"
   },
   "plans": {
     "tab_title": "Plans",
@@ -614,7 +617,13 @@
       "emergency_alert": "EMERGENCY ALERT",
       "subtext": "Contacting Admin and Family in",
       "cancel": "CANCEL"
-    }
+    },
+    "calling_emergency_title": "Calling emergency...",
+    "contacting_services_title": "Contacting Services...",
+    "press_button": "To start a call, simply press the button",
+    "contacting_services_desc": "Contacting emergency services...",
+    "notifying_contacts_text": "Notifying Emergency Contacts",
+    "contacts_notified_text": "Emergency contacts are being notified..."
   },
   "language_selection": {
     "header": "Select Language",
@@ -627,7 +636,23 @@
     "header": "Select Your City",
     "subtitle": "We'll show you services available in your city.",
     "coming_soon": "Coming Soon",
-    "continue": "Continue"
+    "continue": "Continue",
+    "location_question": "Where are you located?",
+    "location_sub": "Select your city to see available services near you.",
+    "detect_location": "Detect My Location Automatically",
+    "available_now": "Available Now",
+    "coming_soon_label": "Coming Soon",
+    "notify_banner": "Don't see your city? Tap to get notified when we launch near you!",
+    "notify_modal_title": "Notify Me When You Launch",
+    "notify_modal_sub": "We'll send you an email the moment Ayuxa goes live in your city.",
+    "your_name": "Your Name *",
+    "your_name_label": "Enter your name",
+    "email_label": "Email Address *",
+    "email_placeholder": "Enter your email",
+    "city_optional": "Your City (optional)",
+    "city_placeholder": "e.g. Pune, Chennai, Kolkata",
+    "notify_submit": "Notify Me",
+    "active": "Active"
   },
   "notifications": {
     "header_title": "Notifications",
@@ -641,7 +666,16 @@
     "time_hours_ago_plural": "{{count}} hours ago",
     "time_yesterday": "Yesterday",
     "time_days_ago": "{{count}} days ago",
-    "default_title": "Notification"
+    "default_title": "Notification",
+    "today": "Today",
+    "earlier": "Earlier",
+    "empty_sub": "You'll see booking updates, reminders, and offers here.",
+    "just_now": "Just now",
+    "min_ago": "{{count}} min ago",
+    "hour_ago": "{{count}} hour ago",
+    "hours_ago": "{{count}} hours ago",
+    "yesterday": "Yesterday",
+    "days_ago": "{{count}} days ago"
   },
   "help_support": {
     "header": "Help & Support",
@@ -1217,7 +1251,11 @@
   "legal": {
     "failed_load": "Failed to load document",
     "last_updated": "Last Updated: {{date}}",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "try_again": "Try Again",
+    "privacy_policy": "Privacy Policy",
+    "terms_conditions": "Terms & Conditions",
+    "refund_policy": "Refund Policy"
   },
   "privacy_policy": {
     "header_title": "Privacy Policy"
@@ -1253,7 +1291,26 @@
     "card": "Credit / Debit Card",
     "cod": "Cash on Delivery",
     "razorpay_secure": "Secured by Razorpay. Your payment is protected.",
-    "cod_note": "Please prepare exact change in cash."
+    "cod_note": "Please prepare exact change in cash.",
+    "header_title": "Checkout",
+    "included_in_charge": "Included in Service Charge",
+    "pickup_details": "Pickup Details",
+    "coupon_discount": "Coupon Discount",
+    "default_address": "Default Address",
+    "address_required_title": "Address Required",
+    "address_required_msg": "Please select a service address.",
+    "book_now": "Book Now",
+    "processing": "Processing...",
+    "total": "Total",
+    "free": "FREE",
+    "no_address_saved": "No saved addresses",
+    "change": "Change",
+    "venue_label": "Venue",
+    "pickup_enabled": "Pickup Required",
+    "pickup_disabled": "Self Arrangement",
+    "pickup_time_label": "Pickup Time",
+    "organizer_label": "Organizer",
+    "plan_benefit_applied": "Plan benefit applied!"
   },
   "service_confirmation": {
     "booking_confirmed": "Booking Confirmed",
@@ -1790,7 +1847,7 @@
     "header": "Tech Helper",
     "title": "Tech Helper",
     "subtitle": "We fix phones, Wi-Fi, and TV remotes.",
-    "missing_info": "Please describe the issue, select a date, and ensure address is present.",
+    "missing_info": "Missing Info",
     "whats_issue": "What's the issue?",
     "phone_help": "Phone Help (WhatsApp, Zoom, Contacts setup)",
     "tv_wifi": "TV & Wi-Fi (Netflix login, Remote fix)",
@@ -1800,14 +1857,33 @@
     "date_time": "Preferred Date & Time",
     "date_placeholder": "Select date & time",
     "upload_title": "Upload Photos (Optional)",
-    "upload_subtitle": "Show us the error message or broken device",
+    "upload_subtitle": "Show us the issue — max 4 images",
     "select_mode": "Select Mode",
     "home_visit": "Home Visit",
-    "home_visit_desc": "A buddy comes to teach",
-    "phone_call": "Phone Call",
-    "phone_call_desc": "Remote help",
+    "home_visit_desc": "Expert visits your home",
+    "phone_call": "Phone / Video Call",
+    "phone_call_desc": "Remote guidance over call",
     "book": "Book Tech Support",
-    "invalid_time": "Please select a future time slot."
+    "invalid_time": "Please select a future time slot.",
+    "main_title": "Tech Help at Your Doorstep",
+    "sub_title": "We fix your devices and apps — quickly and safely.",
+    "select_issue": "What's the issue?",
+    "issue_phone": "Phone / Tablet Help",
+    "issue_phone_sub": "Setup, slow phone, app issues, data transfer",
+    "issue_tv_wifi": "TV / Wi-Fi Support",
+    "issue_tv_wifi_sub": "Wi-Fi setup, smart TV config, OTT apps",
+    "issue_banking": "Banking & UPI App Help",
+    "issue_banking_sub": "Mobile banking, UPI setup, password reset",
+    "something_else": "Something Else?",
+    "describe_placeholder": "Describe your issue in detail...",
+    "preferred_date_time": "Preferred Date & Time",
+    "upload_photos": "Upload Photos (optional)",
+    "book_btn": "Book Tech Help",
+    "initializing": "Setting up...",
+    "missing_info_desc": "Please select an issue, date, and confirm address.",
+    "error": "Error",
+    "init_error": "Service not configured. Please try again.",
+    "generic_error": "Something went wrong. Please try again."
   },
   "trip_travels": {
     "header": "Trip & Travel",
@@ -2601,7 +2677,16 @@
     "products_unavailable_msg": "Some products in your cart are no longer available. Please update your cart.",
     "upi": "UPI (GPay / PhonePe / Paytm)",
     "card": "Credit / Debit Card",
-    "cod": "Cash on Delivery"
+    "cod": "Cash on Delivery",
+    "delivery_address": "Delivery Address",
+    "service_address": "Service Address",
+    "included_in_charge": "Included in Service Charge",
+    "additional_charges": "Additional Charges (Extra)",
+    "pickup_details": "Pickup Details",
+    "pickup_address": "Address:",
+    "pickup_landmark": "Landmark:",
+    "pickup_time": "Time:",
+    "pickup_contact": "Contact:"
   },
   "success_screen": {
     "title": "Payment Successful!",
@@ -2775,7 +2860,15 @@
     "added_to_cart_message": "{{name}} added to cart!",
     "continue_shopping": "Continue Shopping",
     "view_cart": "View Cart",
-    "off_badge": "{{percent}}% OFF"
+    "off_badge": "{{percent}}% OFF",
+    "filter_all": "All",
+    "filter_wellness_essentials": "Wellness Essentials",
+    "filter_healthcare_devices": "Healthcare Devices",
+    "filter_fitness_recovery": "Fitness & Recovery",
+    "filter_mobility_aids": "Mobility Aids",
+    "filter_health_monitors": "Health Monitors",
+    "filter_supplements": "Supplements",
+    "filter_personal_care": "Personal Care"
   },
   "service_detail": {
     "concierge_services": "Concierge Services",
@@ -3048,5 +3141,24 @@
     "tip_area": "Search by area or locality",
     "tip_landmark": "Try a landmark or street",
     "tip_address": "Enter full address or pincode"
+  },
+  "live_updates": {
+    "header_title": "Live Updates",
+    "header_sub": "Activity Center",
+    "live_label": "LIVE",
+    "loading": "Fetching updates…",
+    "empty_title": "No active updates",
+    "empty_sub": "Doctor assignments, sample collections, deliveries and payments will appear here in real time.",
+    "call": "Call",
+    "eta": "ETA",
+    "doctor_assigned": "Doctor Assigned",
+    "caregiver_assigned": "Caregiver Assigned",
+    "nurse_assigned": "Nurse Assigned",
+    "appointment_confirmed": "Appointment Confirmed",
+    "sample_collected": "Lab Sample Collected",
+    "out_for_delivery": "Order Out for Delivery",
+    "medicine_delivered": "Medicine Delivered",
+    "service_rescheduled": "Service Rescheduled",
+    "payment_confirmed": "Payment Confirmed"
   }
 }

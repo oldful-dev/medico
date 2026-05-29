@@ -10,6 +10,7 @@ import { labService, LabOrderListItem } from '@/services/api/labService';
 import { bookingService, Booking as ServiceBooking } from '@/services/api/bookingService';
 import { meetupService } from '@/services/api/meetupService';
 import { useTranslation } from 'react-i18next';
+import { useCart } from '@/context/CartContext';
 
 const PRIMARY = '#02743F';
 const PRIMARY_LIGHT = '#F0FAF4';
@@ -50,6 +51,11 @@ interface Booking {
     reportUrl?: string;
     packageCode?: string;
     createdAt: string;
+    // For service re-booking
+    amount?: number;
+    packagePrice?: number; // Redcliffe package cost (for lab rebook pricing)
+    serviceId?: string;
+    cityId?: string;
 }
 
 type FilterTab = 'all' | 'wellness' | 'health' | 'concierge' | 'upcoming' | 'completed' | 'cancelled' | 'rescheduled';
@@ -93,6 +99,9 @@ function mapLabStatus(s: string): Booking['status'] {
 function normalizeLabOrder(order: LabOrderListItem): Booking {
     const pkg = order.packages?.[0];
     const payment = order.payments?.[0];
+    // pkg.cost = Redcliffe package price; payment.amount = actual paid amount
+    const packagePrice = pkg?.cost || pkg?.price || pkg?.discounted_cost || 0;
+    const paidAmount = payment?.amount || 0;
     return {
         id: order.id,
         category: 'lab',
@@ -109,6 +118,9 @@ function normalizeLabOrder(order: LabOrderListItem): Booking {
         reportUrl: order.reportUrl,
         packageCode: pkg?.code || pkg?.packageCode || '',
         createdAt: order.createdAt,
+        // Use paidAmount for display, packagePrice for rebook pricing
+        amount: paidAmount || packagePrice,
+        packagePrice,
     };
 }
 
@@ -138,6 +150,9 @@ function normalizeServiceBooking(b: ServiceBooking): Booking {
         assignedPersonnel: b.caregiver?.name ?? undefined,
         reportReady: false,
         createdAt: b.createdAt ? String(b.createdAt) : '',
+        amount: b.amount || 0,
+        serviceId: b.serviceId,
+        cityId: b.cityId,
     };
 }
 
@@ -166,6 +181,7 @@ export default function MyBookingsScreen() {
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     const { tab: initialTab } = useLocalSearchParams<{ tab?: string }>();
+    const { addItem, clearCategory } = useCart();
 
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
@@ -386,13 +402,55 @@ export default function MyBookingsScreen() {
                         </TouchableOpacity>
                     )}
 
-                    {/* Rebook — completed/cancelled lab */}
-                    {(booking.status === 'completed' || booking.status === 'cancelled') && booking.category === 'lab' && (
+                    {/* Rebook — completed/cancelled bookings */}
+                    {(booking.status === 'completed' || booking.status === 'cancelled') && (
                         <TouchableOpacity
                             style={[S.actionBtn, S.rebookBtn]}
                             onPress={(e) => {
                                 e.stopPropagation();
-                                router.push({ pathname: '/blood-test', params: { rebook: 'true', packageCode: booking.packageCode, packageName: booking.serviceName } } as any);
+                                if (booking.category === 'lab') {
+                                    // Lab rebook: add to cart then go to unified checkout with slot picker
+                                    const price = booking.packagePrice || booking.amount || 0;
+                                    clearCategory('blood-test');
+                                    addItem({
+                                        id: booking.packageCode || booking.id,
+                                        serviceType: 'Bloodwork',
+                                        title: booking.serviceName,
+                                        price,
+                                        quantity: 1,
+                                        details: {
+                                            code: booking.packageCode,
+                                            name: booking.serviceName,
+                                            cost: price,
+                                        },
+                                    });
+                                    router.push({
+                                        pathname: '/payment/checkout',
+                                        params: {
+                                            category: 'blood-test',
+                                            amount: String(price),
+                                            label: booking.serviceName,
+                                            skipUpsell: '1',
+                                        },
+                                    } as any);
+                                } else {
+                                    // Service bookings → directly to checkout with previous payload
+                                    const bookingPayload = JSON.stringify({
+                                        serviceId: booking.serviceId,
+                                        cityId: booking.cityId,
+                                        scheduledDate: new Date().toISOString(),
+                                        formDataJson: {},
+                                    });
+                                    router.push({
+                                        pathname: '/payment/checkout',
+                                        params: {
+                                            bookingPayload,
+                                            amount: String(booking.amount ?? 0),
+                                            label: booking.serviceName,
+                                            skipUpsell: '1',
+                                        },
+                                    } as any);
+                                }
                             }}
                         >
                             <Ionicons name="refresh-outline" size={13} color={PRIMARY} />

@@ -43,17 +43,17 @@ export default function LiveChatScreen() {
                         </View>
                         <Text style={styles.title}>{t('account.live_chat')}</Text>
                         <Text style={styles.subtitle}>
-                            {t('account.live_chat_subtitle', 'Connect with our support executives instantly on WhatsApp')}
+                            {t('account.live_chat_subtitle')}
                         </Text>
                     </View>
 
                     <View style={styles.infoBox}>
                         <Text style={styles.infoText}>
-                            Our support buddies are available to help you with service bookings, payment issues, doctor slots, and more.
+                            {t('account.live_chat_info')}
                         </Text>
                         <View style={styles.statusRow}>
                             <View style={styles.greenDot} />
-                            <Text style={styles.statusText}>Support Active Online</Text>
+                            <Text style={styles.statusText}>{t('account.live_chat_status')}</Text>
                         </View>
                     </View>
 

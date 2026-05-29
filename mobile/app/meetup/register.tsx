@@ -118,7 +118,6 @@ export default function MeetupRegisterScreen() {
             } as any);
             console.log('🚗 [MEETUP REGISTER] Router.push called for /meetup/pickup');
         } else {
-            console.log('💳 [MEETUP REGISTER] Navigating to /service-checkout (no pickup)');
             router.push({
                 pathname: '/service-checkout',
                 params: {
@@ -139,9 +138,9 @@ export default function MeetupRegisterScreen() {
                     label: 'Local Meetup',
                     meetupId: id,
                     meetupParams: JSON.stringify(params),
+                    skipUpsell: '1',
                 } as any,
             } as any);
-            console.log('💳 [MEETUP REGISTER] Router.push called for /service-checkout');
         }
     };
 

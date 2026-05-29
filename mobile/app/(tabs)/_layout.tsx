@@ -2,18 +2,18 @@
 // Figma: bg #FFFFF8, rounded-tl/tr 20, shadow 0 4 30 rgba(30,30,30,0.63)
 // Tabs: Home, Plans, Wellness, Account, Cart
 // Labels: Poppins SemiBold 10px, active #02743F, inactive #AAAEAC
-import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Platform } from 'react-native';
-import { Colors, Fonts, Radius, Shadow } from '@/constants/theme';
-import { useThemeColors } from '@/hooks/use-theme-colors';
-import React, { useEffect, useRef } from 'react';
-import { useUser } from '@/context/UserContext';
-import { useAuth } from '@/context/AuthContext';
-import { userService } from '@/services/api/userService';
-import { useTranslation } from 'react-i18next';
-import { useRouter } from 'expo-router';
-import { useCart } from '@/context/CartContext';
+import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { Platform } from "react-native";
+import { Colors, Fonts, Radius, Shadow } from "@/constants/theme";
+import { useThemeColors } from "@/hooks/use-theme-colors";
+import React, { useEffect, useRef } from "react";
+import { useUser } from "@/context/UserContext";
+import { useAuth } from "@/context/AuthContext";
+import { userService } from "@/services/api/userService";
+import { useTranslation } from "react-i18next";
+import { useRouter } from "expo-router";
+import { useCart } from "@/context/CartContext";
 
 export default function TabLayout() {
   const { t } = useTranslation();
@@ -35,17 +35,20 @@ export default function TabLayout() {
         console.error("Failed to fetch user profile in global layout:", error);
 
         // Check if it's a timeout error
-        if (error?.message?.includes("timed out") || error?.message?.includes("timeout")) {
+        if (
+          error?.message?.includes("timed out") ||
+          error?.message?.includes("timeout")
+        ) {
           if (!hasHandledError.current) {
             hasHandledError.current = true;
             try {
               await logout();
               setTimeout(() => {
-                router.replace('/(auth)/login' as any);
+                router.replace("/(auth)/login" as any);
               }, 100);
             } catch (logoutErr) {
               console.error("Error during logout/redirect:", logoutErr);
-              router.replace('/(auth)/login' as any);
+              router.replace("/(auth)/login" as any);
             }
           }
         }
@@ -66,10 +69,10 @@ export default function TabLayout() {
           borderTopRightRadius: Radius.xl,
           height: 83,
           paddingTop: 10,
-          paddingBottom: Platform.OS === 'ios' ? 24 : 10,
+          paddingBottom: Platform.OS === "ios" ? 24 : 10,
           ...Shadow.header,
           borderTopWidth: 0,
-          position: 'absolute',
+          position: "absolute",
         },
         tabBarLabelStyle: {
           fontFamily: Fonts.semiBold,
@@ -81,7 +84,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: t('home.tab_title'),
+          title: t("home.tab_title"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={22} color={color} />
           ),
@@ -90,7 +93,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="plans"
         options={{
-          title: t('plans.tab_title'),
+          title: t("plans.tab_title"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="document-text-outline" size={21} color={color} />
           ),
@@ -99,7 +102,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="wellness"
         options={{
-          title: t('wellness.tab_title'),
+          title: t("wellness.tab_title"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="medkit" size={22} color={color} />
           ),
@@ -108,7 +111,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="account"
         options={{
-          title: t('account.tab_title'),
+          title: t("account.tab_title"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={22} color={color} />
           ),
@@ -117,14 +120,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="cart"
         options={{
-          title: 'Cart',
+          title: "Cart",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="cart-outline" size={22} color={color} />
           ),
           tabBarBadge: itemCount > 0 ? itemCount : undefined,
           tabBarBadgeStyle: {
             backgroundColor: colors.sosRed,
-            color: '#FFFFFF',
+            color: "#FFFFFF",
             fontSize: 10,
             lineHeight: 14,
           },

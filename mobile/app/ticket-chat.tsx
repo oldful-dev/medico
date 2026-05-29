@@ -13,6 +13,7 @@ import { joinUserRoom } from '@/services/socket/socketManager';
 import { useUser } from '@/context/UserContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 export default function TicketChatScreen() {
     const router = useRouter();
@@ -22,6 +23,7 @@ export default function TicketChatScreen() {
     const colors = useThemeColors();
     const styles = makeStyles(colors, isDarkMode);
     const { ticketId } = useLocalSearchParams<{ ticketId: string }>();
+    const { t } = useTranslation();
     const flatListRef = useRef<FlatList>(null);
 
     const [ticket, setTicket] = useState<SupportTicket | null>(null);
@@ -60,7 +62,7 @@ export default function TicketChatScreen() {
                 setMessages(res.data.messages || []);
             }
         } catch {
-            Alert.alert('Error', 'Failed to load ticket details.');
+            Alert.alert(t('common.error'), t('ticket_chat.error_load'));
         } finally {
             setLoading(false);
         }
@@ -115,10 +117,10 @@ export default function TicketChatScreen() {
                 setMessageText('');
                 setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
             } else {
-                Alert.alert('Error', res.message || 'Failed to send message.');
+                Alert.alert(t('common.error'), res.message || t('ticket_chat.error_send'));
             }
         } catch {
-            Alert.alert('Error', 'Network error. Please try again.');
+            Alert.alert(t('common.error'), t('ticket_chat.network_error'));
         } finally {
             setSending(false);
         }
@@ -144,7 +146,7 @@ export default function TicketChatScreen() {
                         color={isUser ? colors.primary : '#F5A623'}
                     />
                     <Text style={[styles.senderLabel, { color: isUser ? colors.primary : '#F5A623' }]}>
-                        {isUser ? 'You' : 'Support Team'}
+                        {isUser ? t('ticket_chat.sender_you') : t('ticket_chat.sender_support')}
                     </Text>
                 </View>
                 <Text style={styles.messageText}>{item.message}</Text>
@@ -205,17 +207,17 @@ export default function TicketChatScreen() {
                     keyboardShouldPersistTaps="handled"
                     ListHeaderComponent={
                         <View style={styles.descriptionCard}>
-                            <Text style={styles.descLabel}>Description</Text>
-                            <Text style={styles.descText}>{ticket?.description || 'No description provided.'}</Text>
+                            <Text style={styles.descLabel}>{t('ticket_chat.description')}</Text>
+                            <Text style={styles.descText}>{ticket?.description || t('ticket_chat.no_description')}</Text>
                             <Text style={styles.descMeta}>
-                                {ticket?.category} · Created {new Date(ticket?.createdAt || '').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                {ticket?.category} · {t('ticket_chat.created_at', { date: new Date(ticket?.createdAt || '').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) })}
                             </Text>
                         </View>
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
                             <Ionicons name="chatbubbles-outline" size={48} color={colors.textMuted} />
-                            <Text style={styles.emptyText}>No messages yet. Start the conversation below.</Text>
+                            <Text style={styles.emptyText}>{t('ticket_chat.empty_messages')}</Text>
                         </View>
                     }
                 />
@@ -223,13 +225,13 @@ export default function TicketChatScreen() {
                 {/* Input bar */}
                 {isResolved ? (
                     <View style={[styles.inputBar, { justifyContent: 'center', paddingBottom: (keyboardHeight === 0 ? (insets.bottom || Spacing.md) : Spacing.sm) }]}>
-                        <Text style={styles.closedText}>This ticket has been {ticket?.status}.</Text>
+                        <Text style={styles.closedText}>{t('ticket_chat.closed_ticket', { status: ticket?.status })}</Text>
                     </View>
                 ) : (
                     <View style={[styles.inputBar, { paddingBottom: (keyboardHeight === 0 ? (insets.bottom || Spacing.md) : Spacing.sm) }]}>
                         <TextInput
                             style={styles.textInput}
-                            placeholder="Type your message..."
+                            placeholder={t('ticket_chat.type_placeholder')}
                             placeholderTextColor={colors.textMuted}
                             value={messageText}
                             onChangeText={setMessageText}

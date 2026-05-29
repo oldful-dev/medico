@@ -10,6 +10,7 @@ import { useCart } from '@/context/CartContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/context/ToastContext';
+import { useTranslation } from 'react-i18next';
 
 export default function WellnessProductScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -17,6 +18,7 @@ export default function WellnessProductScreen() {
     const insets = useSafeAreaInsets();
     const { addItem, items } = useCart();
     const { showToast } = useToast();
+    const { t } = useTranslation();
 
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
@@ -61,7 +63,7 @@ export default function WellnessProductScreen() {
             quantity: 1,
             details: { productId: product.id, imageUrl: product.imageUrl },
         });
-        showToast('Item added to cart');
+        showToast(t('wellness.added_to_cart_title'));
     };
 
     if (loading) {
@@ -91,9 +93,9 @@ export default function WellnessProductScreen() {
                 </View>
                 <View style={styles.notFoundBox}>
                     <Ionicons name="cube-outline" size={64} color={colors.borderLight} />
-                    <Text style={styles.notFoundText}>Product not found</Text>
+                    <Text style={styles.notFoundText}>{t('wellness.product_not_found')}</Text>
                     <TouchableOpacity onPress={() => router.back()}>
-                        <Text style={styles.backLink}>← Back to Wellness Store</Text>
+                        <Text style={styles.backLink}>{t('wellness.back_to_store')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -145,17 +147,17 @@ export default function WellnessProductScreen() {
                     )}
                     {discount > 0 && (
                         <View style={styles.discountBadge}>
-                            <Text style={styles.discountText}>{discount}% OFF</Text>
+                            <Text style={styles.discountText}>{t('wellness.off_badge', { percent: discount })}</Text>
                         </View>
                     )}
                     {stockStatus === 'out' && (
                         <View style={styles.outBadge}>
-                            <Text style={styles.outText}>Sold Out</Text>
+                            <Text style={styles.outText}>{t('wellness.sold_out')}</Text>
                         </View>
                     )}
                     {stockStatus === 'low' && (
                         <View style={styles.lowStockBadge}>
-                            <Text style={styles.lowStockText}>Only {product.stock} left</Text>
+                            <Text style={styles.lowStockText}>{t('wellness.only_left', { count: product.stock })}</Text>
                         </View>
                     )}
                 </View>
@@ -176,7 +178,7 @@ export default function WellnessProductScreen() {
                             />
                         ))}
                         <Text style={styles.verifiedText}>
-                            ({product.rating || 4.0}) · 100% Genuine Product
+                            ({product.rating || 4.0}) · {t('wellness.genuine_product')}
                         </Text>
                     </View>
 
@@ -186,19 +188,19 @@ export default function WellnessProductScreen() {
                             <Text style={styles.price}>₹{product.price.toLocaleString('en-IN')}</Text>
                             {product.mrp > product.price && (
                                 <>
-                                    <Text style={styles.mrp}>MRP ₹{product.mrp.toLocaleString('en-IN')}</Text>
+                                    <Text style={styles.mrp}>{t('wellness.mrp_prefix')} ₹{product.mrp.toLocaleString('en-IN')}</Text>
                                     <View style={styles.discountPill}>
-                                        <Text style={styles.discountPillText}>{discount}% OFF</Text>
+                                        <Text style={styles.discountPillText}>{t('wellness.off_badge', { percent: discount })}</Text>
                                     </View>
                                 </>
                             )}
                         </View>
                         {savings > 0 && (
                             <Text style={styles.savingsText}>
-                                You Save ₹{savings.toLocaleString('en-IN')}!
+                                {t('wellness.you_save', { amount: savings.toLocaleString('en-IN') })}
                             </Text>
                         )}
-                        <Text style={styles.taxText}>Inclusive of all taxes</Text>
+                        <Text style={styles.taxText}>{t('wellness.tax_inclusive')}</Text>
                     </View>
 
                     {/* Stock Status details */}
@@ -206,21 +208,21 @@ export default function WellnessProductScreen() {
                         {stockStatus === 'ok' && (
                             <>
                                 <Ionicons name="checkmark-circle" size={16} color="#10b981" />
-                                <Text style={[styles.stockText, { color: '#059669' }]}>In Stock & Ready to Ship</Text>
+                                <Text style={[styles.stockText, { color: '#059669' }]}>{t('wellness.in_stock')}</Text>
                             </>
                         )}
                         {stockStatus === 'low' && (
                             <>
                                 <Ionicons name="alert-circle" size={16} color="#f59e0b" />
                                 <Text style={[styles.stockText, { color: '#d97706' }]}>
-                                    Hurry, only {product.stock} units left!
+                                    {t('wellness.hurry_stock', { count: product.stock })}
                                 </Text>
                             </>
                         )}
                         {stockStatus === 'out' && (
                             <>
                                 <Ionicons name="warning" size={16} color="#ef4444" />
-                                <Text style={[styles.stockText, { color: '#dc2626' }]}>Out of Stock</Text>
+                                <Text style={[styles.stockText, { color: '#dc2626' }]}>{t('wellness.out_of_stock')}</Text>
                             </>
                         )}
                     </View>
@@ -228,9 +230,9 @@ export default function WellnessProductScreen() {
                     {/* Trust Signals */}
                     <View style={styles.trustRow}>
                         {[
-                            { icon: 'car-outline', label: 'Fast Delivery' },
-                            { icon: 'shield-checkmark-outline', label: 'Genuine' },
-                            { icon: 'refresh-outline', label: 'Easy Returns' },
+                            { icon: 'car-outline', label: t('wellness.fast_delivery') },
+                            { icon: 'shield-checkmark-outline', label: t('wellness.genuine') },
+                            { icon: 'refresh-outline', label: t('wellness.easy_returns') },
                         ].map(({ icon, label }) => (
                             <View key={label} style={styles.trustItem}>
                                 <Ionicons name={icon as any} size={18} color={colors.primary} />
@@ -242,7 +244,7 @@ export default function WellnessProductScreen() {
                     {/* Description */}
                     {product.description && (
                         <View style={styles.descSection}>
-                            <Text style={styles.sectionTitle}>About this Product</Text>
+                            <Text style={styles.sectionTitle}>{t('wellness.about_product')}</Text>
                             <Text style={styles.descText}>{product.description}</Text>
                         </View>
                     )}
@@ -252,10 +254,10 @@ export default function WellnessProductScreen() {
                         <View style={styles.relatedSection}>
                             <View style={styles.relatedHeader}>
                                 <Text style={styles.sectionTitle}>
-                                    More in {product.category?.name}
+                                    {t('wellness.more_in_category', { category: product.category?.name })}
                                 </Text>
                                 <TouchableOpacity onPress={() => router.back()}>
-                                    <Text style={styles.viewAllText}>View all →</Text>
+                                    <Text style={styles.viewAllText}>{t('wellness.view_all')}</Text>
                                 </TouchableOpacity>
                             </View>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.relatedScroll}>
@@ -303,7 +305,7 @@ export default function WellnessProductScreen() {
                 >
                     <Ionicons name="cart-outline" size={20} color="#fff" />
                     <Text style={styles.addBtnText}>
-                        {stockStatus === 'out' ? 'Out of Stock' : 'Add to Cart'}
+                    {stockStatus === 'out' ? t('wellness.out_of_stock') : t('wellness.add_to_cart')}
                     </Text>
                 </TouchableOpacity>
             </View>

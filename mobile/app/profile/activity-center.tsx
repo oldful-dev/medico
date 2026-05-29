@@ -10,26 +10,27 @@ import { useUser } from '@/context/UserContext';
 import { initSocket, joinUserRoom, onSocket } from '@/services/socket/socketManager';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
-// ─── Event config ─────────────────────────────────────────
+// ─── Event config (keys only — labels resolved via t() inside component) ──────
 
-const EVENT_CONFIG: Record<string, {
-    label: string;
+const EVENT_CONFIG_BASE: Record<string, {
+    key: string;
     icon: keyof typeof Ionicons.glyphMap;
     iconColor: string;
     iconBg: string;
     accentColor: string;
     accentBg: string;
 }> = {
-    doctor_assigned:       { label: 'Doctor Assigned',       icon: 'medical-outline',          iconColor: '#2563EB', iconBg: '#DBEAFE', accentColor: '#1D4ED8', accentBg: '#EFF6FF' },
-    caregiver_assigned:    { label: 'Caregiver Assigned',    icon: 'heart-outline',             iconColor: '#DB2777', iconBg: '#FCE7F3', accentColor: '#BE185D', accentBg: '#FDF2F8' },
-    nurse_assigned:        { label: 'Nurse Assigned',        icon: 'bandage-outline',           iconColor: '#7C3AED', iconBg: '#EDE9FE', accentColor: '#6D28D9', accentBg: '#F5F3FF' },
-    appointment_confirmed: { label: 'Appointment Confirmed', icon: 'checkmark-circle-outline',  iconColor: '#059669', iconBg: '#D1FAE5', accentColor: '#047857', accentBg: '#ECFDF5' },
-    sample_collected:      { label: 'Lab Sample Collected',  icon: 'flask-outline',             iconColor: '#7C3AED', iconBg: '#EDE9FE', accentColor: '#6D28D9', accentBg: '#F5F3FF' },
-    out_for_delivery:      { label: 'Order Out for Delivery',icon: 'bicycle-outline',           iconColor: '#D97706', iconBg: '#FEF3C7', accentColor: '#B45309', accentBg: '#FFFBEB' },
-    medicine_delivered:    { label: 'Medicine Delivered',    icon: 'bag-check-outline',         iconColor: '#048357', iconBg: '#D1FAE5', accentColor: '#065F46', accentBg: '#ECFDF5' },
-    service_rescheduled:   { label: 'Service Rescheduled',   icon: 'calendar-outline',          iconColor: '#EA580C', iconBg: '#FFEDD5', accentColor: '#C2410C', accentBg: '#FFF7ED' },
-    payment_confirmed:     { label: 'Payment Confirmed',     icon: 'card-outline',              iconColor: '#0284C7', iconBg: '#E0F2FE', accentColor: '#0369A1', accentBg: '#F0F9FF' },
+    doctor_assigned:       { key: 'doctor_assigned',       icon: 'medical-outline',          iconColor: '#2563EB', iconBg: '#DBEAFE', accentColor: '#1D4ED8', accentBg: '#EFF6FF' },
+    caregiver_assigned:    { key: 'caregiver_assigned',    icon: 'heart-outline',             iconColor: '#DB2777', iconBg: '#FCE7F3', accentColor: '#BE185D', accentBg: '#FDF2F8' },
+    nurse_assigned:        { key: 'nurse_assigned',        icon: 'bandage-outline',           iconColor: '#7C3AED', iconBg: '#EDE9FE', accentColor: '#6D28D9', accentBg: '#F5F3FF' },
+    appointment_confirmed: { key: 'appointment_confirmed', icon: 'checkmark-circle-outline',  iconColor: '#059669', iconBg: '#D1FAE5', accentColor: '#047857', accentBg: '#ECFDF5' },
+    sample_collected:      { key: 'sample_collected',      icon: 'flask-outline',             iconColor: '#7C3AED', iconBg: '#EDE9FE', accentColor: '#6D28D9', accentBg: '#F5F3FF' },
+    out_for_delivery:      { key: 'out_for_delivery',      icon: 'bicycle-outline',           iconColor: '#D97706', iconBg: '#FEF3C7', accentColor: '#B45309', accentBg: '#FFFBEB' },
+    medicine_delivered:    { key: 'medicine_delivered',    icon: 'bag-check-outline',         iconColor: '#048357', iconBg: '#D1FAE5', accentColor: '#065F46', accentBg: '#ECFDF5' },
+    service_rescheduled:   { key: 'service_rescheduled',   icon: 'calendar-outline',          iconColor: '#EA580C', iconBg: '#FFEDD5', accentColor: '#C2410C', accentBg: '#FFF7ED' },
+    payment_confirmed:     { key: 'payment_confirmed',     icon: 'card-outline',              iconColor: '#0284C7', iconBg: '#E0F2FE', accentColor: '#0369A1', accentBg: '#F0F9FF' },
 };
 
 
@@ -52,8 +53,10 @@ function formatRelativeTime(iso: string): string {
 function UpdateCard({ item }: { item: ActivityUpdate }) {
     const colors = useThemeColors();
     const { isDarkMode } = useTheme();
+    const { t } = useTranslation();
     const styles = makeStyles(colors, isDarkMode);
-    const cfg = EVENT_CONFIG[item.eventType] || EVENT_CONFIG.doctor_assigned;
+    const base = EVENT_CONFIG_BASE[item.eventType] || EVENT_CONFIG_BASE.doctor_assigned;
+    const cfg = { ...base, label: t('live_updates.' + base.key) };
 
     return (
         <View style={styles.card}>
@@ -102,7 +105,7 @@ function UpdateCard({ item }: { item: ActivityUpdate }) {
                         activeOpacity={0.8}
                     >
                         <Ionicons name="call" size={16} color="#fff" />
-                        <Text style={styles.callBtnText}>Call</Text>
+                        <Text style={styles.callBtnText}>{t('live_updates.call')}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -111,7 +114,7 @@ function UpdateCard({ item }: { item: ActivityUpdate }) {
                     {item.eta ? (
                         <View style={styles.etaBadge}>
                             <Ionicons name="navigate-circle-outline" size={13} color="#059669" />
-                            <Text style={styles.etaText}>ETA  {item.eta}</Text>
+                            <Text style={styles.etaText}>{t('live_updates.eta')}  {item.eta}</Text>
                         </View>
                     ) : null}
                     {item.statusDetail ? (
@@ -131,6 +134,7 @@ export default function ActivityCenterScreen() {
     const { profile } = useUser();
     const colors = useThemeColors();
     const { isDarkMode } = useTheme();
+    const { t } = useTranslation();
     const styles = makeStyles(colors, isDarkMode);
     const [updates, setUpdates] = useState<ActivityUpdate[]>([]);
     const [loading, setLoading] = useState(false);
@@ -206,12 +210,12 @@ export default function ActivityCenterScreen() {
                         <Ionicons name="arrow-back" size={24} color="#fff" />
                     </TouchableOpacity>
                     <View style={{ flex: 1 }}>
-                        <Text style={styles.headerTitle}>Live Updates</Text>
-                        <Text style={styles.headerSub}>Activity Center</Text>
+                        <Text style={styles.headerTitle}>{t('live_updates.header_title')}</Text>
+                        <Text style={styles.headerSub}>{t('live_updates.header_sub')}</Text>
                     </View>
                     <View style={styles.livePill}>
                         <View style={styles.liveDot} />
-                        <Text style={styles.liveLabel}>LIVE</Text>
+                        <Text style={styles.liveLabel}>{t('live_updates.live_label')}</Text>
                     </View>
                 </View>
             </SafeAreaView>
@@ -220,7 +224,7 @@ export default function ActivityCenterScreen() {
                 {loading ? (
                     <View style={styles.center}>
                         <ActivityIndicator size="large" color={colors.primary} />
-                        <Text style={styles.loadingText}>Fetching updates…</Text>
+                        <Text style={styles.loadingText}>{t('live_updates.loading')}</Text>
                     </View>
                 ) : (
                     <FlatList
@@ -242,8 +246,8 @@ export default function ActivityCenterScreen() {
                                 <View style={styles.emptyIconCircle}>
                                     <Ionicons name="pulse-outline" size={40} color={colors.primary} />
                                 </View>
-                                <Text style={styles.emptyTitle}>No active updates</Text>
-                                <Text style={styles.emptySub}>Doctor assignments, sample collections, deliveries and payments will appear here in real time.</Text>
+                                <Text style={styles.emptyTitle}>{t('live_updates.empty_title')}</Text>
+                                <Text style={styles.emptySub}>{t('live_updates.empty_sub')}</Text>
                             </View>
                         }
                     />

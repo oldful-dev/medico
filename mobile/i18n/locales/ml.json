@@ -520,7 +520,10 @@
     "social_label_twitter": "എക്സ് (ട്വിറ്റർ)",
     "social_label_whatsapp": "വാട്സാപ്പ് ചാനൽ",
     "social_handle_whatsapp": "ഞങ്ങളുടെ ചാനലിൽ ചേരുക",
-    "tab_title": "അക്കൗണ്ട്"
+    "tab_title": "അക്കൗണ്ട്",
+    "live_chat_subtitle": "WhatsApp-ൽ ഞങ്ങളുടെ സഹായ ഉദ്യോഗസ്ഥരുമായി ഉടൻ ബന്ധപ്പെടൂ",
+    "live_chat_info": "ഞങ്ങളുടെ സഹായ ബഡ്ഡികൾ സേവന ബുക്കിംഗ്, പേയ്‌മെന്റ് പ്രശ്‌നങ്ങൾ, ഡോക്ടർ സ്ലോട്ടുകൾ എന്നിവ സഹായിക്കാൻ ലഭ്യമാണ്.",
+    "live_chat_status": "സഹായം ഓൺലൈനിൽ സജീവം"
   },
   "plans": {
     "tab_title": "പ്ലാനുകൾ",
@@ -603,7 +606,15 @@
     "added_to_cart_message": "{{name}} കാർട്ടിൽ!",
     "continue_shopping": "തുടരുക",
     "view_cart": "കാർട്ട് കാണുക",
-    "off_badge": "{{percent}}% കിഴിവ്"
+    "off_badge": "{{percent}}% കിഴിവ്",
+    "filter_all": "എല്ലാം",
+    "filter_wellness_essentials": "വെൽനസ് അവശ്യവസ്തുക്കൾ",
+    "filter_healthcare_devices": "ഹെൽത്ത്‌കെയർ ഉപകരണങ്ങൾ",
+    "filter_fitness_recovery": "ഫിറ്റ്‌നസ് & വീണ്ടെടുക്കൽ",
+    "filter_mobility_aids": "ചലന സഹായ ഉപകരണങ്ങൾ",
+    "filter_health_monitors": "ഹെൽത്ത് മോണിറ്ററുകൾ",
+    "filter_supplements": "സപ്ലിമെന്റുകൾ",
+    "filter_personal_care": "വ്യക്തിഗത പരിചരണം"
   },
   "cart": {
     "header_title": "നിങ്ങളുടെ കാർട്ട്",
@@ -662,7 +673,13 @@
       "emergency_alert": "അടിയന്തര മുന്നറിയിപ്പ്",
       "subtext": "അഡ്മിനെയും കുടുംബത്തെയും ബന്ധപ്പെടുന്നു",
       "cancel": "റദ്ദാക്കുക"
-    }
+    },
+    "calling_emergency_title": "അടിയന്തര കോൾ...",
+    "contacting_services_title": "സേവനങ്ങളുമായി ബന്ധപ്പെടുന്നു...",
+    "press_button": "കോൾ ആരംഭിക്കാൻ ബട്ടൺ അമർത്തൂ",
+    "contacting_services_desc": "അടിയന്തര സേവനങ്ങളുമായി ബന്ധപ്പെടുന്നു...",
+    "notifying_contacts_text": "അടിയന്തര ആളുകളെ അറിയിക്കുന്നു",
+    "contacts_notified_text": "അടിയന്തര ആളുകൾക്ക് അറിയിപ്പ് അയക്കുന്നു..."
   },
   "language_selection": {
     "header": "ഭാഷ തിരഞ്ഞെടുക്കുക",
@@ -675,11 +692,27 @@
     "header": "നഗരം തിരഞ്ഞെടുക്കുക",
     "subtitle": "നിങ്ങളുടെ നഗര സേവനങ്ങൾ",
     "coming_soon": "ഉടൻ വരുന്നു",
-    "continue": "തുടരുക"
+    "continue": "തുടരുക",
+    "location_question": "നിങ്ങൾ എവിടെ ആണ്?",
+    "location_sub": "നിങ്ങളുടെ നഗരം തിരഞ്ഞെടുക്കൂ, അടുത്തുള്ള സേവനങ്ങൾ കാണൂ.",
+    "detect_location": "എന്റെ ലൊക്കേഷൻ സ്വയം തിരിച്ചറിയൂ",
+    "available_now": "ഇപ്പോൾ ലഭ്യം",
+    "coming_soon_label": "ഉടൻ വരുന്നു",
+    "notify_banner": "നിങ്ങളുടെ നഗരം കാണുന്നില്ലേ? ലോഞ്ചിൽ അറിയിക്കൂ!",
+    "notify_modal_title": "ലോഞ്ചിൽ അറിയിക്കൂ",
+    "notify_modal_sub": "Ayuxa നിങ്ങളുടെ നഗരത്തിൽ ലോഞ്ച് ആകുമ്പോൾ ഇമെയിൽ ചെയ്യും.",
+    "your_name": "നിങ്ങളുടെ പേര് *",
+    "your_name_label": "നിങ്ങളുടെ പേര് നൽകൂ",
+    "email_label": "ഇമെയിൽ വിലാസം *",
+    "email_placeholder": "ഇമെയിൽ നൽകൂ",
+    "city_optional": "നിങ്ങളുടെ നഗരം (ഐച്ഛികം)",
+    "city_placeholder": "ഉദാ: പൂനെ, ചെന്നൈ, കൊൽക്കത്ത",
+    "notify_submit": "അറിയിക്കൂ",
+    "active": "സജീവം"
   },
   "notifications": {
     "header_title": "അറിയിപ്പുകൾ",
-    "empty_title": "അറിയിപ്പില്ല",
+    "empty_title": "ഇതുവരെ അറിയിപ്പുകൾ ഇല്ല",
     "empty_subtitle": "ബുക്കിംഗ്, ഓർമ്മപ്പെടുത്തൽ, ഓഫർ",
     "section_today": "ഇന്ന്",
     "section_earlier": "മുമ്പ്",
@@ -689,7 +722,16 @@
     "time_hours_ago_plural": "{{count}} മണിക്കൂർ മുമ്പ്",
     "time_yesterday": "ഇന്നലെ",
     "time_days_ago": "{{count}} ദിവസം മുമ്പ്",
-    "default_title": "അറിയിപ്പ്"
+    "default_title": "അറിയിപ്പ്",
+    "today": "ഇന്ന്",
+    "earlier": "മുൻപ്",
+    "empty_sub": "ബുക്കിംഗ് അപ്‌ഡേറ്റുകൾ, റിമൈൻഡറുകൾ, ഓഫറുകൾ ഇവിടെ കാണാം.",
+    "just_now": "ഇപ്പോൾ",
+    "min_ago": "{{count}} മിനിറ്റ് മുൻപ്",
+    "hour_ago": "{{count}} മണിക്കൂർ മുൻപ്",
+    "hours_ago": "{{count}} മണിക്കൂർ മുൻപ്",
+    "yesterday": "ഇന്നലെ",
+    "days_ago": "{{count}} ദിവസം മുൻപ്"
   },
   "help_support": {
     "header": "സഹായം & പിന്തുണ",
@@ -1265,7 +1307,11 @@
   "legal": {
     "failed_load": "ലോഡ് ചെയ്യാനായില്ല",
     "last_updated": "അവസാനം അപ്ഡേറ്റ്: {{date}}",
-    "loading": "ലോഡ് ചെയ്യുന്നു"
+    "loading": "ലോഡ് ചെയ്യുന്നു",
+    "try_again": "വീണ്ടും ശ്രമിക്കൂ",
+    "privacy_policy": "സ്വകാര്യതാ നയം",
+    "terms_conditions": "നിബന്ധനകളും വ്യവസ്ഥകളും",
+    "refund_policy": "റീഫണ്ട് നയം"
   },
   "privacy_policy": {
     "header_title": "സ്വകാര്യത"
@@ -1301,7 +1347,26 @@
     "card": "കാർഡ്",
     "cod": "ഡെലിവറിയിൽ പണം",
     "razorpay_secure": "Razorpay സുരക്ഷിതം",
-    "cod_note": "കൃത്യമായ ചില്ലറ തയ്യാറാക്കുക"
+    "cod_note": "കൃത്യമായ ചില്ലറ തയ്യാറാക്കുക",
+    "header_title": "ചെക്ക്ഔട്ട്",
+    "included_in_charge": "സേവന ചാർജിൽ ഉൾപ്പെടുന്നത്",
+    "pickup_details": "പിക്കപ്പ് വിശദാംശങ്ങൾ",
+    "coupon_discount": "കൂപ്പൺ കിഴിവ്",
+    "default_address": "ഡിഫോൾട്ട് വിലാസം",
+    "address_required_title": "വിലാസം ആവശ്യം",
+    "address_required_msg": "ദയവായി സേവന വിലാസം തിരഞ്ഞെടുക്കുക.",
+    "book_now": "ഇപ്പോൾ ബുക്ക് ചെയ്യുക",
+    "processing": "പ്രോസസ്സ് ചെയ്യുന്നു...",
+    "total": "ആകെ",
+    "free": "സൗജന്യം",
+    "no_address_saved": "സേവ് ചെയ്ത വിലാസം ഇല്ല",
+    "change": "മാറ്റുക",
+    "venue_label": "വേദി",
+    "pickup_enabled": "പിക്കപ്പ് ആവശ്യം",
+    "pickup_disabled": "സ്വന്തം ക്രമീകരണം",
+    "pickup_time_label": "പിക്കപ്പ് സമയം",
+    "organizer_label": "സംഘാടകൻ",
+    "plan_benefit_applied": "പ്ലാൻ ആനുകൂല്യം പ്രയോഗിച്ചു!"
   },
   "service_confirmation": {
     "booking_confirmed": "ഉറപ്പാക്കി",
@@ -1838,7 +1903,7 @@
     "header": "ടെക് സഹായി",
     "title": "ടെക് സഹായി",
     "subtitle": "ഫോൺ, വൈഫൈ, ടിവി റിമോട്ട് ശരിയാക്കുന്നു",
-    "missing_info": "പ്രശ്നം വിവരിക്കുക, തീയതി, വിലാസം ഉറപ്പാക്കുക",
+    "missing_info": "വിവരം കൂടുതൽ വേണം",
     "whats_issue": "എന്ത് പ്രശ്നം?",
     "phone_help": "ഫോൺ (WhatsApp, Zoom, Contacts)",
     "tv_wifi": "ടിവി & വൈഫൈ (Netflix, റിമോട്ട്)",
@@ -1848,14 +1913,33 @@
     "date_time": "തീയതി & സമയം",
     "date_placeholder": "തിരഞ്ഞെടുക്കുക",
     "upload_title": "ഫോട്ടോ (ഐച്ഛികം)",
-    "upload_subtitle": "പിശക് സന്ദേശം അല്ലെങ്കിൽ ഉപകരണം",
-    "select_mode": "മോഡ് തിരഞ്ഞെടുക്കുക",
-    "home_visit": "ഹോം സന്ദർശനം",
-    "home_visit_desc": "സുഹൃത്ത് പഠിപ്പിക്കാൻ വരും",
-    "phone_call": "ഫോൺ കോൾ",
-    "phone_call_desc": "റിമോട്ട് സഹായം",
+    "upload_subtitle": "പ്രശ്നം കാണിക്കൂ — പരമാവധി 4 ചിത്രം",
+    "select_mode": "മോഡ് തിരഞ്ഞെടുക്കൂ",
+    "home_visit": "വീട്ടിൽ വരുന്ന സേവനം",
+    "home_visit_desc": "വിദഗ്ധൻ നിങ്ങളുടെ വീട്ടിൽ വരും",
+    "phone_call": "ഫോൺ / വീഡിയോ കോൾ",
+    "phone_call_desc": "കോളിലൂടെ ദൂര മാർഗദർശനം",
     "book": "ടെക് സപ്പോർട്ട് ബുക്ക്",
-    "invalid_time": "ഭാവിയിലെ സമയ സ്ലോട്ട് തിരഞ്ഞെടുക്കുക."
+    "invalid_time": "ഭാവിയിലെ സമയ സ്ലോട്ട് തിരഞ്ഞെടുക്കുക.",
+    "main_title": "വീടിന് വരുന്ന ടെക് സഹായം",
+    "sub_title": "ഞങ്ങൾ നിങ്ങളുടെ ഉപകരണങ്ങളും ആപ്പുകളും ശരിയാക്കും.",
+    "select_issue": "പ്രശ്നം എന്ത്?",
+    "issue_phone": "ഫോൺ / ടാബ്ലെറ്റ് സഹായം",
+    "issue_phone_sub": "സെറ്റപ്പ്, മന്ദഗതി, ആപ്പ് പ്രശ്നം",
+    "issue_tv_wifi": "TV / Wi-Fi സഹായം",
+    "issue_tv_wifi_sub": "Wi-Fi സെറ്റപ്പ്, സ്മാർട്ട് TV, OTT",
+    "issue_banking": "ബാങ്കിംഗ് & UPI ആപ്പ് സഹായം",
+    "issue_banking_sub": "മൊബൈൽ ബാങ്കിംഗ്, UPI സെറ്റപ്പ്",
+    "something_else": "മറ്റൊരു പ്രശ്നം?",
+    "describe_placeholder": "നിങ്ങളുടെ പ്രശ്നം വിശദീകരിക്കൂ...",
+    "preferred_date_time": "ഇഷ്ടമുള്ള തീയതിയും സമയവും",
+    "upload_photos": "ഫോട്ടോ അപ്‌ലോഡ് ചെയ്യൂ (ഐച്ഛികം)",
+    "book_btn": "ടെക് ഹെൽപ് ബുക്ക് ചെയ്യൂ",
+    "initializing": "ക്രമീകരിക്കുന്നു...",
+    "missing_info_desc": "ദയവായി പ്രശ്നം, തീയതി, വിലാസം തിരഞ്ഞെടുക്കൂ.",
+    "error": "പിശക്",
+    "init_error": "സേവനം ക്രമീകരിച്ചിട്ടില്ല. വീണ്ടും ശ്രമിക്കൂ.",
+    "generic_error": "എന്തോ തെറ്റായി. വീണ്ടും ശ്രമിക്കൂ."
   },
   "trip_travels": {
     "header": "യാത്ര",
@@ -2649,7 +2733,16 @@
     "products_unavailable_msg": "നിങ്ങളുടെ കാർട്ടിലെ ചില ഉൽപ്പന്നങ്ങൾ ഇപ്പോൾ ലഭ്യമല്ല. ദയവായി നിങ്ങളുടെ കാർട്ട് അപ്ഡേറ്റ് ചെയ്യുക.",
     "upi": "UPI (GPay / PhonePe / Paytm)",
     "card": "ക്രെഡിറ്റ് / ഡെബിറ്റ് കാർഡ്",
-    "cod": "ക്യാഷ് ഓൺ ഡെലിവറി"
+    "cod": "ക്യാഷ് ഓൺ ഡെലിവറി",
+    "delivery_address": "ഡെലിവറി വിലാസം",
+    "service_address": "സേവന വിലാസം",
+    "included_in_charge": "സേവന ചാർജ്ജിൽ ഉൾപ്പെടുന്നത്",
+    "additional_charges": "അധിക ചാർജ്ജുകൾ",
+    "pickup_details": "പിക്കപ്പ് വിവരം",
+    "pickup_address": "വിലാസം:",
+    "pickup_landmark": "ലാൻഡ്മാർക്ക്:",
+    "pickup_time": "സമയം:",
+    "pickup_contact": "ബന്ധപ്പെടൽ:"
   },
   "success_screen": {
     "title": "പേയ്മെന്റ് വിജയം!",
@@ -3048,5 +3141,24 @@
     "tip_area": "സ്ഥലമോ പ്രദേശമോ വെച്ച് തിരയുക",
     "tip_landmark": "ഒരു ലാൻഡ്മാർക്കോ തെരുവോ നൽകി നോക്കൂ",
     "tip_address": "മുഴുവൻ വിലാസമോ പിൻകോഡോ നൽകുക"
+  },
+  "live_updates": {
+    "header_title": "ലൈവ് അപ്‌ഡേറ്റുകൾ",
+    "header_sub": "ആക്‌റ്റിവിറ്റി സെന്റർ",
+    "live_label": "ലൈവ്",
+    "loading": "അപ്‌ഡേറ്റുകൾ ലോഡ് ആകുന്നു…",
+    "empty_title": "സജീവ അപ്‌ഡേറ്റുകൾ ഇല്ല",
+    "empty_sub": "ഡോക്ടർ നിയമനം, സാമ്പിൾ ശേഖരണം, ഡെലിവറി, പേയ്‌മെന്റ് എന്നിവ തത്സമയം ഇവിടെ കാണാം.",
+    "call": "വിളിക്കൂ",
+    "eta": "ETA",
+    "doctor_assigned": "ഡോക്ടറെ നിയോഗിച്ചു",
+    "caregiver_assigned": "പരിചരണക്കാരനെ നിയോഗിച്ചു",
+    "nurse_assigned": "നഴ്‌സിനെ നിയോഗിച്ചു",
+    "appointment_confirmed": "അപ്പോയ്‌ന്റ്‌മെന്റ് സ്ഥിരീകരിച്ചു",
+    "sample_collected": "ലാബ് സാമ്പിൾ ശേഖരിച്ചു",
+    "out_for_delivery": "ഓർഡർ ഡെലിവറിയിൽ",
+    "medicine_delivered": "മരുന്ന് ഡെലിവർ ചെയ്തു",
+    "service_rescheduled": "സേവനം പുനഃക്രമീകരിച്ചു",
+    "payment_confirmed": "പേയ്‌മെന്റ് സ്ഥിരീകരിച്ചു"
   }
 }

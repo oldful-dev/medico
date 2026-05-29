@@ -520,7 +520,10 @@
     "social_label_twitter": "এক্স (টুইটার)",
     "social_label_whatsapp": "হোয়াটসঅ্যাপ চ্যানেল",
     "social_handle_whatsapp": "আমাদের চ্যানেলে যোগ দিন",
-    "tab_title": "অ্যাকাউন্ট"
+    "tab_title": "অ্যাকাউন্ট",
+    "live_chat_subtitle": "হোয়াটসঅ্যাপে আমাদের সাপোর্ট এক্সিকিউটিভের সাথে তাৎক্ষণিকভাবে সংযোগ করুন",
+    "live_chat_info": "আমাদের সাপোর্ট বাডিরা সেবা বুকিং, পেমেন্ট সমস্যা, ডাক্তার স্লট এবং আরও অনেক কিছুতে সাহায্য করতে উপলব্ধ।",
+    "live_chat_status": "সাপোর্ট অনলাইনে সক্রিয়"
   },
   "plans": {
     "tab_title": "প্ল্যান",
@@ -614,7 +617,13 @@
       "emergency_alert": "জরুরি অ্যালার্ট",
       "subtext": "অ্যাডমিন ও পরিবারকে জানানো হচ্ছে",
       "cancel": "বাতিল"
-    }
+    },
+    "calling_emergency_title": "জরুরি কল চলছে...",
+    "contacting_services_title": "পরিষেবার সাথে যোগাযোগ...",
+    "press_button": "কল শুরু করতে বাটন চাপুন",
+    "contacting_services_desc": "জরুরি পরিষেবার সাথে যোগাযোগ হচ্ছে...",
+    "notifying_contacts_text": "জরুরি পরিচিতিদের জানানো হচ্ছে",
+    "contacts_notified_text": "জরুরি পরিচিতিদের বিজ্ঞপ্তি পাঠানো হচ্ছে..."
   },
   "language_selection": {
     "header": "ভাষা বাছুন",
@@ -627,11 +636,27 @@
     "header": "শহর বাছুন",
     "subtitle": "আপনার শহরের উপলব্ধ সার্ভিস দেখাব।",
     "coming_soon": "আসছে",
-    "continue": "চলুন"
+    "continue": "চলুন",
+    "location_question": "আপনি কোথায় আছেন?",
+    "location_sub": "আপনার শহর বেছে নিন এবং কাছের পরিষেবা দেখুন।",
+    "detect_location": "আমার লোকেশন স্বয়ংক্রিয়ভাবে সনাক্ত করুন",
+    "available_now": "এখন উপলব্ধ",
+    "coming_soon_label": "শীঘ্রই আসছে",
+    "notify_banner": "আপনার শহর দেখছেন না? লঞ্চের সময় জানুন!",
+    "notify_modal_title": "লঞ্চের সময় জানান",
+    "notify_modal_sub": "Ayuxa আপনার শহরে লঞ্চ হলেই আমরা ইমেল করব।",
+    "your_name": "আপনার নাম *",
+    "your_name_label": "আপনার নাম লিখুন",
+    "email_label": "ইমেল ঠিকানা *",
+    "email_placeholder": "আপনার ইমেল লিখুন",
+    "city_optional": "আপনার শহর (ঐচ্ছিক)",
+    "city_placeholder": "যেমন: পুনে, চেন্নাই, কলকাতা",
+    "notify_submit": "জানান",
+    "active": "সক্রিয়"
   },
   "notifications": {
-    "header_title": "নোটিফিকেশন",
-    "empty_title": "কোনো নোটিফিকেশন নেই",
+    "header_title": "বিজ্ঞপ্তি",
+    "empty_title": "এখনও কোনো বিজ্ঞপ্তি নেই",
     "empty_subtitle": "বুকিং আপডেট, রিমাইন্ডার ও অফার এখানে পাবেন।",
     "section_today": "আজ",
     "section_earlier": "আগে",
@@ -641,7 +666,16 @@
     "time_hours_ago_plural": "{{count}} ঘণ্টা আগে",
     "time_yesterday": "গতকাল",
     "time_days_ago": "{{count}} দিন আগে",
-    "default_title": "নোটিফিকেশন"
+    "default_title": "নোটিফিকেশন",
+    "today": "আজ",
+    "earlier": "আগে",
+    "empty_sub": "বুকিং আপডেট, রিমাইন্ডার এবং অফার এখানে দেখাবে।",
+    "just_now": "এখনই",
+    "min_ago": "{{count}} মিনিট আগে",
+    "hour_ago": "{{count}} ঘন্টা আগে",
+    "hours_ago": "{{count}} ঘন্টা আগে",
+    "yesterday": "গতকাল",
+    "days_ago": "{{count}} দিন আগে"
   },
   "help_support": {
     "header": "সহায়তা ও সাপোর্ট",
@@ -1217,7 +1251,11 @@
   "legal": {
     "failed_load": "ফাইল লোড ব্যর্থ",
     "last_updated": "আপডেট: {{date}}",
-    "loading": "লোড হচ্ছে..."
+    "loading": "লোড হচ্ছে...",
+    "try_again": "আবার চেষ্টা করুন",
+    "privacy_policy": "গোপনীয়তা নীতি",
+    "terms_conditions": "শর্তাবলী",
+    "refund_policy": "রিফান্ড নীতি"
   },
   "privacy_policy": {
     "header_title": "গোপনীয়তা নীতি"
@@ -1253,7 +1291,26 @@
     "card": "ক্রেডিট / ডেবিট কার্ড",
     "cod": "ক্যাশ অন ডেলিভারি",
     "razorpay_secure": "Razorpay দ্বারা সুরক্ষিত।",
-    "cod_note": "দয়া করে সঠিক ক্যাশ তৈরি রাখুন।"
+    "cod_note": "দয়া করে সঠিক ক্যাশ তৈরি রাখুন।",
+    "header_title": "চেকআউট",
+    "included_in_charge": "পরিষেবা চার্জে অন্তর্ভুক্ত",
+    "pickup_details": "পিকআপ বিবরণ",
+    "coupon_discount": "কুপন ছাড়",
+    "default_address": "ডিফল্ট ঠিকানা",
+    "address_required_title": "ঠিকানা আবশ্যক",
+    "address_required_msg": "অনুগ্রহ করে পরিষেবা ঠিকানা নির্বাচন করুন।",
+    "book_now": "এখনই বুক করুন",
+    "processing": "প্রক্রিয়া হচ্ছে...",
+    "total": "মোট",
+    "free": "বিনামূল্যে",
+    "no_address_saved": "কোনো সংরক্ষিত ঠিকানা নেই",
+    "change": "পরিবর্তন",
+    "venue_label": "স্থান",
+    "pickup_enabled": "পিকআপ প্রয়োজন",
+    "pickup_disabled": "নিজস্ব ব্যবস্থা",
+    "pickup_time_label": "পিকআপ সময়",
+    "organizer_label": "আয়োজক",
+    "plan_benefit_applied": "প্ল্যান সুবিধা প্রযোজ্য!"
   },
   "service_confirmation": {
     "booking_confirmed": "বুকিং নিশ্চিত",
@@ -1790,7 +1847,7 @@
     "header": "টেক সহকারী",
     "title": "টেক সহকারী",
     "subtitle": "আমরা ফোন, Wi-Fi ও টিভি রিমোট ঠিক করি।",
-    "missing_info": "সমস্যা লিখুন, দিন বাছুন ও ঠিকানা দিন।",
+    "missing_info": "তথ্য অসম্পূর্ণ",
     "whats_issue": "কী সমস্যা?",
     "phone_help": "ফোন সাহায্য (WhatsApp, Zoom, কন্টাক্ট সেটআপ)",
     "tv_wifi": "টিভি ও Wi-Fi (Netflix লগইন, রিমোট ঠিক করা)",
@@ -1800,14 +1857,33 @@
     "date_time": "পছন্দের দিন ও সময়",
     "date_placeholder": "দিন ও সময় বাছুন",
     "upload_title": "ছবি দিন (ঐচ্ছিক)",
-    "upload_subtitle": "ত্রুটি বা নষ্ট ডিভাইসের ছবি দেখান",
-    "select_mode": "মাধ্যম বাছুন",
-    "home_visit": "হোম ভিজিট",
-    "home_visit_desc": "সহকারী বাড়িতে এসে শেখাবে",
-    "phone_call": "ফোন কল",
-    "phone_call_desc": "রিমোট সাহায্য",
+    "upload_subtitle": "সমস্যা দেখান — সর্বোচ্চ ৪টি ছবি",
+    "select_mode": "মোড বেছে নিন",
+    "home_visit": "বাড়িতে ভিজিট",
+    "home_visit_desc": "বিশেষজ্ঞ আপনার বাড়িতে আসবেন",
+    "phone_call": "ফোন / ভিডিও কল",
+    "phone_call_desc": "কলের মাধ্যমে দূরবর্তী সহায়তা",
     "book": "টেক সাপোর্ট বুক করুন",
-    "invalid_time": "পরবর্তী সময়ের স্লট বাছুন।"
+    "invalid_time": "পরবর্তী সময়ের স্লট বাছুন।",
+    "main_title": "আপনার দরজায় টেক সহায়তা",
+    "sub_title": "আমরা আপনার ডিভাইস ও অ্যাপ ঠিক করি — দ্রুত ও নিরাপদে।",
+    "select_issue": "সমস্যা কী?",
+    "issue_phone": "ফোন / ট্যাবলেট সহায়তা",
+    "issue_phone_sub": "সেটআপ, স্লো ফোন, অ্যাপ সমস্যা, ডেটা ট্রান্সফার",
+    "issue_tv_wifi": "TV / Wi-Fi সহায়তা",
+    "issue_tv_wifi_sub": "Wi-Fi সেটআপ, স্মার্ট TV, OTT অ্যাপ",
+    "issue_banking": "ব্যাংকিং ও UPI অ্যাপ সহায়তা",
+    "issue_banking_sub": "মোবাইল ব্যাংকিং, UPI সেটআপ, পাসওয়ার্ড রিসেট",
+    "something_else": "অন্য কিছু?",
+    "describe_placeholder": "আপনার সমস্যা বিস্তারিত বর্ণনা করুন...",
+    "preferred_date_time": "পছন্দের তারিখ ও সময়",
+    "upload_photos": "ছবি আপলোড করুন (ঐচ্ছিক)",
+    "book_btn": "টেক হেল্প বুক করুন",
+    "initializing": "সেটআপ হচ্ছে...",
+    "missing_info_desc": "অনুগ্রহ করে সমস্যা, তারিখ এবং ঠিকানা নিশ্চিত করুন।",
+    "error": "ত্রুটি",
+    "init_error": "পরিষেবা কনফিগার হয়নি। আবার চেষ্টা করুন।",
+    "generic_error": "কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।"
   },
   "trip_travels": {
     "header": "ভ্রমণ",
@@ -2601,7 +2677,16 @@
     "products_unavailable_msg": "আপনার কার্টের কিছু পণ্য আর উপলব্ধ নেই। অনুগ্রহ করে আপনার কার্ট আপডেট করুন।",
     "upi": "UPI (GPay / PhonePe / Paytm)",
     "card": "ক্রেডিট / ডেবিট কার্ড",
-    "cod": "ক্যাশ অন ডেলিভারি"
+    "cod": "ক্যাশ অন ডেলিভারি",
+    "delivery_address": "ডেলিভারি ঠিকানা",
+    "service_address": "পরিষেবার ঠিকানা",
+    "included_in_charge": "পরিষেবা চার্জে অন্তর্ভুক্ত",
+    "additional_charges": "অতিরিক্ত চার্জ",
+    "pickup_details": "পিকআপ বিবরণ",
+    "pickup_address": "ঠিকানা:",
+    "pickup_landmark": "ল্যান্ডমার্ক:",
+    "pickup_time": "সময়:",
+    "pickup_contact": "যোগাযোগ:"
   },
   "success_screen": {
     "title": "পেমেন্ট সফল!",
@@ -2775,7 +2860,15 @@
     "added_to_cart_message": "{{name}} কার্টে রাখা হল!",
     "continue_shopping": "কেনাকাটা চালান",
     "view_cart": "কার্ট দেখুন",
-    "off_badge": "{{percent}}% ছাড়"
+    "off_badge": "{{percent}}% ছাড়",
+    "filter_all": "সব",
+    "filter_wellness_essentials": "ওয়েলনেস এসেনশিয়ালস",
+    "filter_healthcare_devices": "স্বাস্থ্যসেবা ডিভাইস",
+    "filter_fitness_recovery": "ফিটনেস ও পুনরুদ্ধার",
+    "filter_mobility_aids": "মোবিলিটি এইডস",
+    "filter_health_monitors": "হেলথ মনিটর",
+    "filter_supplements": "সাপ্লিমেন্ট",
+    "filter_personal_care": "ব্যক্তিগত যত্ন"
   },
   "service_detail": {
     "concierge_services": "কনসিয়ার্জ সার্ভিস",
@@ -3048,5 +3141,24 @@
     "tip_area": "এলাকা বা এলাকা অনুসারে অনুসন্ধান করুন",
     "tip_landmark": "একটি ল্যান্ডমার্ক বা রাস্তা চেষ্টা করুন",
     "tip_address": "সম্পূর্ণ ঠিকানা বা পিনকোড লিখুন"
+  },
+  "live_updates": {
+    "header_title": "লাইভ আপডেট",
+    "header_sub": "অ্যাক্টিভিটি সেন্টার",
+    "live_label": "লাইভ",
+    "loading": "আপডেট লোড হচ্ছে…",
+    "empty_title": "কোনো সক্রিয় আপডেট নেই",
+    "empty_sub": "ডাক্তার নিয়োগ, স্যাম্পল সংগ্রহ, ডেলিভারি এবং পেমেন্ট এখানে রিয়েল টাইমে দেখাবে।",
+    "call": "কল করুন",
+    "eta": "ETA",
+    "doctor_assigned": "ডাক্তার নিযুক্ত",
+    "caregiver_assigned": "পরিচর্যাকারী নিযুক্ত",
+    "nurse_assigned": "নার্স নিযুক্ত",
+    "appointment_confirmed": "অ্যাপয়েন্টমেন্ট নিশ্চিত",
+    "sample_collected": "ল্যাব স্যাম্পল সংগ্রহ",
+    "out_for_delivery": "ডেলিভারিতে অর্ডার",
+    "medicine_delivered": "ওষুধ ডেলিভার",
+    "service_rescheduled": "সেবা পুনর্নির্ধারিত",
+    "payment_confirmed": "পেমেন্ট নিশ্চিত"
   }
 }
