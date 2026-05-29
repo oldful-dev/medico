@@ -89,11 +89,11 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     daysLabel: { fontFamily: Fonts.regular, fontSize: 11, color: '#B45309', marginBottom: 2 },
     daysValue: { fontFamily: Fonts.semiBold, fontSize: 13, color: '#059669' },
     daysValueWarning: { color: '#DC2626' },
-    renewalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: isDarkMode ? '#654321' : '#FEF3C7', paddingTop: 12, marginBottom: 12 },
+    renewalRow: { flexDirection: 'column', gap: 10, borderTopWidth: 1, borderTopColor: isDarkMode ? '#654321' : '#FEF3C7', paddingTop: 12, marginBottom: 12 },
     renewalDateBlock: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     renewalLabel: { fontFamily: Fonts.regular, fontSize: 12, color: '#B45309' },
     renewalDate: { fontFamily: Fonts.semiBold, fontSize: 13, color: '#92400E' },
-    renewBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#B45309', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
+    renewBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#B45309', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, width: '100%' },
     renewBtnText: { fontFamily: Fonts.medium, fontSize: 13, color: '#fff' },
     restrictionNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: isDarkMode ? 'rgba(180, 83, 9, 0.2)' : 'rgba(180, 83, 9, 0.1)', borderRadius: 8, padding: 10, borderLeftWidth: 3, borderLeftColor: '#B45309' },
     restrictionText: { fontFamily: Fonts.regular, fontSize: 12, color: '#92400E', flex: 1, lineHeight: 16 },
@@ -216,8 +216,11 @@ export default function SubscriptionScreen() {
     const [selectedCycle, setSelectedCycle] = useState<CycleKey>('YEARLY');
     const [initiating, setInitiating] = useState<string | null>(null); // planId being initiated
 
-    const activeSub = profile?.subscriptions?.[0];
-    const activePlanId = activeSub?.planId;
+    const activeSubs = profile?.subscriptions?.filter((sub: any) => sub.status === 'ACTIVE') || [];
+
+    const getActiveSubForCategory = (planType?: string) => {
+        return profile?.subscriptions?.find((sub: any) => sub.plan?.planType === planType || sub.planType === planType);
+    };
 
     useFocusEffect(useCallback(() => {
         (async () => {
@@ -237,10 +240,13 @@ export default function SubscriptionScreen() {
         const hasTranslation = t('subscription.plan_names.' + planNameKey) !== 'subscription.plan_names.' + planNameKey;
         const localizedPlanName = hasTranslation ? t('subscription.plan_names.' + planNameKey) : plan.name;
 
+        const activeSubForCategory = getActiveSubForCategory(plan.planType);
+        const activePlanIdForCategory = activeSubForCategory?.planId;
+
         // ─── Restrict plan change if user has active subscription ───
-        if (activeSub && activeSub.status === 'ACTIVE') {
+        if (activeSubForCategory && activeSubForCategory.status === 'ACTIVE') {
             // Only allow renewing the same plan via Renew button or contact support for upgrade
-            if (plan.id === activePlanId && isFromRenewButton) {
+            if (plan.id === activePlanIdForCategory && isFromRenewButton) {
                 // User can renew their current plan via Renew Now button
                 const price = getPlanPrice(plan, selectedCycle);
                 const cycleLabel = t('subscription.cycles.' + selectedCycle.toLowerCase());
@@ -281,7 +287,7 @@ export default function SubscriptionScreen() {
                         },
                     ]
                 );
-            } else if (plan.id === activePlanId && !isFromRenewButton) {
+            } else if (plan.id === activePlanIdForCategory && !isFromRenewButton) {
                 // User tapped card directly - block it
                 Alert.alert(
                     t('subscription.renew_plan_alert_title'),
@@ -290,7 +296,7 @@ export default function SubscriptionScreen() {
                 );
             } else {
                 // User cannot switch plans while active
-                const activePlanName = activeSub.plan?.name || '';
+                const activePlanName = activeSubForCategory.plan?.name || '';
                 const activePlanNameKey = activePlanName.toLowerCase().replace(' ', '_');
                 const hasActiveTranslation = t('subscription.plan_names.' + activePlanNameKey) !== 'subscription.plan_names.' + activePlanNameKey;
                 const localizedActivePlanName = hasActiveTranslation ? t('subscription.plan_names.' + activePlanNameKey) : activePlanName;
@@ -369,92 +375,95 @@ export default function SubscriptionScreen() {
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
                 {/* Active subscription status */}
-                {activeSub && (
-                    <View style={styles.activeSubCard}>
-                        <View style={styles.activeSubTop}>
-                            <View style={styles.activeSubLeft}>
-                                <Ionicons name="ribbon" size={26} color="#B45309" />
-                                <View>
-                                    <Text style={styles.activeSubTitle}>
-                                        {(() => {
-                                            const name = activeSub.plan?.name || '';
-                                            const nameKey = name.toLowerCase().replace(' ', '_');
-                                            const hasTrans = t('subscription.plan_names.' + nameKey) !== 'subscription.plan_names.' + nameKey;
-                                            return hasTrans ? t('subscription.plan_names.' + nameKey) : (name || t('subscription.active_plan_fallback'));
-                                        })()}
-                                    </Text>
-                                    <Text style={styles.activeSubMeta}>
-                                        {t('subscription.since')} {formatDate(activeSub.startDate || activeSub.createdAt || '')}
-                                    </Text>
-                                </View>
-                            </View>
-                            <View style={[styles.activeStatusBadge, { backgroundColor: activeSub.status === 'ACTIVE' ? '#D1FAE5' : '#FEE2E2' }]}>
-                                <Text style={{ fontFamily: Fonts.medium, fontSize: 11, color: activeSub.status === 'ACTIVE' ? '#059669' : '#DC2626' }}>
-                                    {activeSub.status || t('subscription.status_active')}
-                                </Text>
-                            </View>
-                        </View>
-
-                        {/* Duration and Days Remaining */}
-                        <View style={styles.durationSection}>
-                            <View style={styles.durationBlock}>
-                                <Ionicons name="calendar-outline" size={16} color="#B45309" />
-                                <View style={{ flex: 1 }}>
-                                    <Text style={styles.durationLabel}>{t('subscription.plan_duration')}</Text>
-                                    <Text style={styles.durationValue}>
-                                        {formatDate(activeSub.startDate || activeSub.createdAt || '')} • {formatDate(activeSub.expiryDate || '')}
-                                    </Text>
-                                </View>
-                            </View>
-
-                            <View style={styles.daysRemainingBlock}>
-                                <Ionicons name="hourglass-outline" size={16} color={calculateDaysRemaining(activeSub.expiryDate) && calculateDaysRemaining(activeSub.expiryDate)! <= 7 ? '#DC2626' : '#B45309'} />
-                                <View style={{ flex: 1 }}>
-                                    <Text style={styles.daysLabel}>{t('subscription.days_remaining')}</Text>
-                                    {calculateDaysRemaining(activeSub.expiryDate) !== null ? (
-                                        <Text style={[
-                                            styles.daysValue,
-                                            calculateDaysRemaining(activeSub.expiryDate)! <= 7 && styles.daysValueWarning
-                                        ]}>
-                                            {t('subscription.days_left_count', { count: calculateDaysRemaining(activeSub.expiryDate) })}
+                {activeSubs.map(activeSub => {
+                    const activePlanId = activeSub.planId || activeSub.plan?.id || activeSub.plan?._id;
+                    return (
+                        <View key={activeSub.id} style={[styles.activeSubCard, { marginBottom: 16 }]}>
+                            <View style={styles.activeSubTop}>
+                                <View style={styles.activeSubLeft}>
+                                    <Ionicons name="ribbon" size={26} color="#B45309" />
+                                    <View>
+                                        <Text style={styles.activeSubTitle}>
+                                            {(() => {
+                                                const name = activeSub.plan?.name || '';
+                                                const nameKey = name.toLowerCase().replace(' ', '_');
+                                                const hasTrans = t('subscription.plan_names.' + nameKey) !== 'subscription.plan_names.' + nameKey;
+                                                return hasTrans ? t('subscription.plan_names.' + nameKey) : (name || t('subscription.active_plan_fallback'));
+                                            })()}
                                         </Text>
-                                    ) : (
-                                        <Text style={styles.daysValue}>—</Text>
-                                    )}
+                                        <Text style={styles.activeSubMeta}>
+                                            {t('subscription.since')} {formatDate(activeSub.startDate || activeSub.createdAt || '')}
+                                        </Text>
+                                    </View>
+                                </View>
+                                <View style={[styles.activeStatusBadge, { backgroundColor: activeSub.status === 'ACTIVE' ? '#D1FAE5' : '#FEE2E2' }]}>
+                                    <Text style={{ fontFamily: Fonts.medium, fontSize: 11, color: activeSub.status === 'ACTIVE' ? '#059669' : '#DC2626' }}>
+                                        {activeSub.status || t('subscription.status_active')}
+                                    </Text>
                                 </View>
                             </View>
-                        </View>
 
-                        <View style={styles.renewalRow}>
-                            <View style={styles.renewalDateBlock}>
-                                <Ionicons name="time-outline" size={14} color="#B45309" />
-                                <Text style={styles.renewalLabel}>{t('subscription.renews_on')}</Text>
-                                <Text style={styles.renewalDate}>{formatDate(activeSub.expiryDate || '')}</Text>
-                            </View>
-                            <TouchableOpacity
-                                style={styles.renewBtn}
-                                onPress={() => {
-                                    const activePlan = plans.find(p => p.id === activePlanId);
-                                    if (activePlan) handleSelectPlan(activePlan, true); // true = from Renew button
-                                    else Alert.alert(t('subscription.renew_alert_title'), t('subscription.renew_alert_msg'));
-                                }}
-                            >
-                                <Ionicons name="refresh-outline" size={14} color="#fff" />
-                                <Text style={styles.renewBtnText}>{t('subscription.renew_now')}</Text>
-                            </TouchableOpacity>
-                        </View>
+                            {/* Duration and Days Remaining */}
+                            <View style={styles.durationSection}>
+                                <View style={styles.durationBlock}>
+                                    <Ionicons name="calendar-outline" size={16} color="#B45309" />
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.durationLabel}>{t('subscription.plan_duration')}</Text>
+                                        <Text style={styles.durationValue}>
+                                            {formatDate(activeSub.startDate || activeSub.createdAt || '')} • {formatDate(activeSub.expiryDate || '')}
+                                        </Text>
+                                    </View>
+                                </View>
 
-                        {/* Restriction Notice */}
-                        {activeSub.status === 'ACTIVE' && (
-                            <View style={styles.restrictionNotice}>
-                                <Ionicons name="information-circle" size={16} color="#B45309" />
-                                <Text style={styles.restrictionText}>
-                                    {t('subscription.restriction_notice')}
-                                </Text>
+                                <View style={styles.daysRemainingBlock}>
+                                    <Ionicons name="hourglass-outline" size={16} color={calculateDaysRemaining(activeSub.expiryDate) && calculateDaysRemaining(activeSub.expiryDate)! <= 7 ? '#DC2626' : '#B45309'} />
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.daysLabel}>{t('subscription.days_remaining')}</Text>
+                                        {calculateDaysRemaining(activeSub.expiryDate) !== null ? (
+                                            <Text style={[
+                                                styles.daysValue,
+                                                calculateDaysRemaining(activeSub.expiryDate)! <= 7 && styles.daysValueWarning
+                                            ]}>
+                                                {t('subscription.days_left_count', { count: calculateDaysRemaining(activeSub.expiryDate) })}
+                                            </Text>
+                                        ) : (
+                                            <Text style={styles.daysValue}>—</Text>
+                                        )}
+                                    </View>
+                                </View>
                             </View>
-                        )}
-                    </View>
-                )}
+
+                            <View style={styles.renewalRow}>
+                                <View style={styles.renewalDateBlock}>
+                                    <Ionicons name="time-outline" size={14} color="#B45309" />
+                                    <Text style={styles.renewalLabel}>{t('subscription.renews_on')}</Text>
+                                    <Text style={styles.renewalDate}>{formatDate(activeSub.expiryDate || '')}</Text>
+                                </View>
+                                <TouchableOpacity
+                                    style={styles.renewBtn}
+                                    onPress={() => {
+                                        const activePlan = plans.find(p => p.id === activePlanId);
+                                        if (activePlan) handleSelectPlan(activePlan, true); // true = from Renew button
+                                        else Alert.alert(t('subscription.renew_alert_title'), t('subscription.renew_alert_msg'));
+                                    }}
+                                >
+                                    <Ionicons name="refresh-outline" size={14} color="#fff" />
+                                    <Text style={styles.renewBtnText}>{t('subscription.renew_now')}</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Restriction Notice */}
+                            {activeSub.status === 'ACTIVE' && (
+                                <View style={styles.restrictionNotice}>
+                                    <Ionicons name="information-circle" size={16} color="#B45309" />
+                                    <Text style={styles.restrictionText}>
+                                        {t('subscription.restriction_notice')}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
+                    );
+                })}
 
                 {/* Billing cycle selector */}
                 <Text style={styles.sectionLabel}>{t('subscription.choose_billing_cycle')}</Text>
@@ -491,13 +500,15 @@ export default function SubscriptionScreen() {
                     </View>
                 ) : (
                     plans.map(plan => {
-                        const isDisabled = activeSub && activeSub.status === 'ACTIVE' && plan.id !== activePlanId;
+                        const activeSubForCategory = getActiveSubForCategory(plan.planType);
+                        const activePlanIdForCategory = activeSubForCategory?.planId;
+                        const isDisabled = activeSubForCategory && activeSubForCategory.status === 'ACTIVE' && plan.id !== activePlanIdForCategory;
                         return (
                             <View key={plan.id} style={{ position: 'relative' }}>
                                 <PlanCard
                                     plan={plan}
                                     cycle={selectedCycle}
-                                    isActive={plan.id === activePlanId}
+                                    isActive={plan.id === activePlanIdForCategory}
                                     onSelect={() => handleSelectPlan(plan)}
                                     isDisabled={isDisabled}
                                 />
@@ -517,7 +528,7 @@ export default function SubscriptionScreen() {
                 )}
 
                 {/* Cancel note */}
-                {activeSub && (
+                {profile?.subscriptions?.some((s: any) => s.status === 'ACTIVE') && (
                     <TouchableOpacity style={styles.cancelLink} onPress={() => router.push('/help-support' as any)}>
                         <Text style={styles.cancelLinkText}>{t('subscription.cancel_subscription_note')}</Text>
                     </TouchableOpacity>

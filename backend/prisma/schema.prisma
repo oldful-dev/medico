@@ -84,6 +84,7 @@ model User {
   savedCards            SavedCard[]
   sosAlerts             SOSAlert[]
   subscriptions         Subscription[]
+  upgradeHistory        SubscriptionUpgradeHistory[]
   city                  City                   @relation(fields: [cityId], references: [id])
   waitlistEntries       WaitlistEntry[]
   meetupRegistrations   MeetupRegistration[]
@@ -291,9 +292,12 @@ model Plan {
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   planType       String             @default("CARE")
-  planBenefits   PlanBenefit[]
-  billingCycles  PlanBillingCycle[]
-  subscriptions  Subscription[]
+  planBenefits      PlanBenefit[]
+  billingCycles     PlanBillingCycle[]
+  subscriptions     Subscription[]
+  oldPlanHistory    SubscriptionUpgradeHistory[] @relation("OldPlan")
+  newPlanHistory    SubscriptionUpgradeHistory[] @relation("NewPlan")
+  scheduledForSubs  Subscription[]              @relation("ScheduledPlan")
 
   @@map("plans")
 }
@@ -342,10 +346,17 @@ model Subscription {
   createdAt                  DateTime            @default(now())
   updatedAt                  DateTime            @updatedAt
   billingCycleId             String?
+  // ─── Upgrade / Downgrade tracking ───────────────────────────────────
+  scheduledPlanId            String?             // for SCHEDULED_DOWNGRADE
+  scheduledChangeDate        DateTime?           // when downgrade activates
+  proRataCredit              Float?              // credit from old plan
+  creditApplied              Float?              // credit used in upgrade
+  upgradeFromSubId           String?             // previous subscription id
   payments                   Payment[]
   usage                      SubscriptionUsage[]
   planBillingCycle           PlanBillingCycle?   @relation(fields: [billingCycleId], references: [id], onDelete: Cascade)
   plan                       Plan                @relation(fields: [planId], references: [id], onDelete: Cascade)
+  scheduledPlan              Plan?               @relation("ScheduledPlan", fields: [scheduledPlanId], references: [id])
   user                       User                @relation(fields: [userId], references: [id])
 
   @@map("subscriptions")
@@ -363,6 +374,29 @@ model SubscriptionUsage {
   subscription    Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
   @@map("subscription_usage")
+}
+
+model SubscriptionUpgradeHistory {
+  id            String   @id @default(uuid())
+  userId        String
+  oldPlanId     String
+  newPlanId     String
+  oldPlanName   String
+  newPlanName   String
+  oldPrice      Float
+  newPrice      Float
+  remainingDays Int
+  creditApplied Float    @default(0)
+  amountPaid    Float
+  type          String   @default("UPGRADE") // UPGRADE | DOWNGRADE_SCHEDULED | RENEW
+  upgradeDate   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id])
+  oldPlan       Plan     @relation("OldPlan", fields: [oldPlanId], references: [id])
+  newPlan       Plan     @relation("NewPlan", fields: [newPlanId], references: [id])
+
+  @@index([userId])
+  @@map("subscription_upgrade_history")
 }
 
 model Payment {
@@ -897,6 +931,7 @@ enum SubscriptionStatus {
   CANCELLED
   UPGRADED
   DOWNGRADED
+  SCHEDULED_DOWNGRADE
   PAYMENT_PENDING
   PAYMENT_FAILED
 }

@@ -104,17 +104,16 @@ export default function AccountScreen() {
     const bloodGroup = medicalCard?.bloodGroup || t('account.not_set');
     const allergies = medicalCard?.allergies?.length ? medicalCard.allergies.join(', ') : t('common.none');
 
-    const activeSub = profile?.subscriptions?.[0];
-    const resolveMembershipKey = (): string => {
-        const tier = activeSub?.plan?.tier?.toLowerCase();
-        if (tier && MEMBERSHIP_CONFIG[tier]) return tier;
-        const name = (activeSub?.plan?.name || '').toLowerCase();
-        if (name.includes('premium')) return 'premium';
-        if (name.includes('care plus') || name.includes('care_plus')) return 'care_plus';
-        if (name.includes('basic')) return 'basic';
-        return activeSub ? 'basic' : 'free';
+    const activeSubs = profile?.subscriptions?.filter((sub: any) => sub.status === 'ACTIVE') || [];
+    const getMembershipConfig = (sub: any) => {
+        const tier = sub?.plan?.tier?.toLowerCase();
+        if (tier && MEMBERSHIP_CONFIG[tier]) return { key: tier, ...MEMBERSHIP_CONFIG[tier] };
+        const name = (sub?.plan?.name || '').toLowerCase();
+        if (name.includes('premium')) return { key: 'premium', ...MEMBERSHIP_CONFIG.premium };
+        if (name.includes('care plus') || name.includes('care_plus')) return { key: 'care_plus', ...MEMBERSHIP_CONFIG.care_plus };
+        if (name.includes('basic')) return { key: 'basic', ...MEMBERSHIP_CONFIG.basic };
+        return { key: 'basic', ...MEMBERSHIP_CONFIG.basic };
     };
-    const membership = MEMBERSHIP_CONFIG[resolveMembershipKey()];
 
     // Profile completion %
     const completionFields = [
@@ -256,19 +255,38 @@ export default function AccountScreen() {
                             </View>
 
                             {/* Membership badge — always visible */}
-                            <TouchableOpacity
-                                style={[styles.memberBadge, { backgroundColor: membership.bg, borderColor: membership.border }]}
-                                onPress={() => router.push('/profile/subscription' as any)}
-                                activeOpacity={0.75}
-                            >
-                                <Ionicons name={membership.icon as any} size={13} color={membership.color} />
-                                <Text style={[styles.memberBadgeText, { color: membership.color }]}>
-                                    {t(`account.membership_${resolveMembershipKey()}`)}
-                                </Text>
-                                {resolveMembershipKey() === 'free' && (
-                                    <Text style={[styles.memberBadgeUpgrade, { color: membership.color }]}>· {t('account.upgrade')}</Text>
-                                )}
-                            </TouchableOpacity>
+                            {activeSubs.length > 0 ? (
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 4 }}>
+                                    {activeSubs.map(sub => {
+                                        const config = getMembershipConfig(sub);
+                                        return (
+                                            <TouchableOpacity
+                                                key={sub.id}
+                                                style={[styles.memberBadge, { backgroundColor: config.bg, borderColor: config.border }]}
+                                                onPress={() => router.push('/plans/membership-dashboard' as any)}
+                                                activeOpacity={0.75}
+                                            >
+                                                <Ionicons name={config.icon as any} size={13} color={config.color} />
+                                                <Text style={[styles.memberBadgeText, { color: config.color }]}>
+                                                    {sub.plan?.name || t(`account.membership_${config.key}`)}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            ) : (
+                                <TouchableOpacity
+                                    style={[styles.memberBadge, { backgroundColor: MEMBERSHIP_CONFIG.free.bg, borderColor: MEMBERSHIP_CONFIG.free.border }]}
+                                    onPress={() => router.push('/plans/membership-dashboard' as any)}
+                                    activeOpacity={0.75}
+                                >
+                                    <Ionicons name={MEMBERSHIP_CONFIG.free.icon as any} size={13} color={MEMBERSHIP_CONFIG.free.color} />
+                                    <Text style={[styles.memberBadgeText, { color: MEMBERSHIP_CONFIG.free.color }]}>
+                                        {t('account.membership_free')}
+                                    </Text>
+                                    <Text style={[styles.memberBadgeUpgrade, { color: MEMBERSHIP_CONFIG.free.color }]}>· {t('account.upgrade')}</Text>
+                                </TouchableOpacity>
+                            )}
 
                             {/* AYUXA ID */}
                             <View style={styles.idPill}>
@@ -435,8 +453,8 @@ export default function AccountScreen() {
                     iconBg="#FEF3C7"
                     iconColor="#B45309"
                     title={t('account.subscription_membership_title')}
-                    subtitle={activeSub ? t('account.active_plan_renew', { name: activeSub.plan?.name || t('account.active_plan') }) : t('account.upgrade_to_plan')}
-                    onPress={() => router.push('/profile/subscription' as any)}
+                    subtitle={activeSubs.length > 0 ? t('account.active_plan_renew', { name: activeSubs.map(s => s.plan?.name || t('account.active_plan')).join(', ') }) : t('account.upgrade_to_plan')}
+                    onPress={() => router.push('/plans/membership-dashboard' as any)}
                     colors={colors}
                 />
 

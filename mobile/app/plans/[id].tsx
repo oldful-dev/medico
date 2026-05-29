@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 import { useUser } from '@/context/UserContext';
 import { planService, Plan, BillingCycle, ActiveSubscription } from '@/services/api/planService';
 
@@ -29,7 +30,8 @@ export default function PlanDetailsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const colors = useThemeColors();
-    const styles = makeStyles(colors);
+    const { isDarkMode } = useTheme();
+    const styles = makeStyles(colors, isDarkMode);
     const { profile } = useUser();
     
     // params: 
@@ -87,8 +89,15 @@ export default function PlanDetailsScreen() {
     }, [plan, userActiveSubscriptions]);
 
     const isActivePlan = activeSubForCategory?.planId === plan?.id;
-    const isChangePlan = activeSubForCategory && !isActivePlan;
-    const actionType = isDirectRenew || isActivePlan ? 'RENEW' : (isChangePlan ? 'CHANGE_PLAN' : 'SUBSCRIBE');
+    const isHigherTier = plan && activeSubForCategory && (plan.tierLevel ?? 0) > (activeSubForCategory.tierLevel ?? 0) && plan.planType === activeSubForCategory.planType;
+    const isChangePlan = activeSubForCategory && !isActivePlan && !isHigherTier;
+    const actionType = isDirectRenew || isActivePlan
+        ? 'RENEW'
+        : isHigherTier
+            ? 'UPGRADE'
+            : isChangePlan
+                ? 'CHANGE_PLAN'
+                : 'SUBSCRIBE';
 
     const handleAction = async () => {
         if (!profile) {
@@ -100,6 +109,15 @@ export default function PlanDetailsScreen() {
         const price = getPriceForCycle(plan, activeCycle);
         if (!price || price <= 0) {
             Alert.alert(t('plans.unavailable'), t('plans.unavailable_desc'));
+            return;
+        }
+
+        if (actionType === 'UPGRADE') {
+            // Route to the dedicated upgrade screen with pro-rata preview
+            router.push({
+                pathname: '/plans/upgrade',
+                params: { subId: activeSubForCategory!.id },
+            } as any);
             return;
         }
 
@@ -251,7 +269,13 @@ export default function PlanDetailsScreen() {
                         <ActivityIndicator size="small" color={colors.textWhite} />
                     ) : (
                         <Text style={styles.actionBtnText}>
-                            {actionType === 'RENEW' ? 'Renew Plan' : (actionType === 'CHANGE_PLAN' ? 'Change to this Plan' : 'Subscribe Now')}
+                            {actionType === 'RENEW'
+                                ? t('membership.renew_btn')
+                                : actionType === 'UPGRADE'
+                                    ? t('membership.upgrade_btn')
+                                    : actionType === 'CHANGE_PLAN'
+                                        ? 'Change to this Plan'
+                                        : t('plans.subscribe')}
                         </Text>
                     )}
                 </TouchableOpacity>
@@ -260,8 +284,8 @@ export default function PlanDetailsScreen() {
     );
 }
 
-const makeStyles = (colors: ThemeColors) => StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.bgScreen },
+const makeStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: dark ? '#0F172A' : colors.bgScreen },
     headerContainer: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
         backgroundColor: colors.primary, paddingHorizontal: Spacing.lg, paddingBottom: 25, paddingTop: 10,

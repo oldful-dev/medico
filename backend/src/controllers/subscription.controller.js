@@ -96,7 +96,6 @@ const initiateUserSubscription = async (req, res, next) => {
         const { planId, billingCycle, amount } = req.body;
         const userId = req.user.id;
         
-        // Ensure user does not already have an ACTIVE or PENDING subscription in the same category
         const requestedPlan = await prisma.plan.findUnique({ where: { id: planId } });
         if (!requestedPlan) return res.status(404).json({ success: false, message: 'Plan not found.' });
 
@@ -109,13 +108,64 @@ const initiateUserSubscription = async (req, res, next) => {
             include: { plan: true }
         });
 
+        // If active subscription exists in the same category
         if (existingSub) {
-            return res.status(400).json({ 
-                success: false, 
-                message: `You already have an active ${existingSub.plan.planType} plan. Please use Change Plan instead.` 
-            });
+            if (requestedPlan.id === existingSub.planId) {
+                // ─── Case 1: Same Plan -> Renewal / Extension ───
+                const start = new Date(existingSub.expiryDate);
+                const expiryDate = calculateExpiryDate(start, billingCycle);
+
+                const subscription = await prisma.subscription.create({
+                    data: {
+                        userId,
+                        planId,
+                        billingCycle,
+                        startDate: start,
+                        expiryDate,
+                        amount,
+                        status: 'PAYMENT_PENDING',
+                        upgradeFromSubId: existingSub.id,
+                    },
+                });
+                return sendResponse(res, 201, subscription, 'Subscription renewal initiated');
+            } else if (requestedPlan.tierLevel > existingSub.plan.tierLevel) {
+                // ─── Case 2: Higher Tier -> Upgrade ───
+                const now = Date.now();
+                const start = existingSub.startDate.getTime();
+                const expiry = existingSub.expiryDate.getTime();
+                const daysTotal = Math.max(1, Math.round((expiry - start) / (1000 * 60 * 60 * 24)));
+                const daysRemaining = Math.max(0, Math.round((expiry - now) / (1000 * 60 * 60 * 24)));
+                const dailyRate = existingSub.amount / daysTotal;
+                const creditAmount = Math.round(daysRemaining * dailyRate * 100) / 100;
+
+                const amountDue = Math.max(0, Math.round((amount - creditAmount) * 100) / 100);
+                const newExpiry = calculateExpiryDate(new Date(), billingCycle);
+
+                const subscription = await prisma.subscription.create({
+                    data: {
+                        userId,
+                        planId,
+                        billingCycle,
+                        startDate: new Date(),
+                        expiryDate: newExpiry,
+                        amount: amountDue,
+                        status: 'PAYMENT_PENDING',
+                        proRataCredit: creditAmount,
+                        creditApplied: creditAmount,
+                        upgradeFromSubId: existingSub.id,
+                    },
+                });
+                return sendResponse(res, 201, subscription, 'Subscription upgrade initiated');
+            } else if (requestedPlan.tierLevel < existingSub.plan.tierLevel) {
+                // ─── Case 3: Lower Tier -> Downgrade Blocked ───
+                return res.status(400).json({
+                    success: false,
+                    message: 'You currently have an active membership. Downgrades can only be processed through support after your current plan expires.'
+                });
+            }
         }
 
+        // ─── Case 4: First time subscribing (normal flow) ───
         const start = new Date();
         const expiryDate = calculateExpiryDate(start, billingCycle);
 
@@ -267,25 +317,163 @@ const verifyUserSubscription = async (req, res, next) => {
         const { subscriptionId, razorpayPaymentId, razorpaySignature } = req.body;
         // In reality, you verify the razorpay signature here using crypto
 
-        const subscription = await prisma.subscription.update({
+        let subscription = await prisma.subscription.findUnique({
             where: { id: subscriptionId },
-            data: { status: 'ACTIVE' },
             include: { plan: { include: { planBenefits: true } } }
         });
 
-        // Initialize benefits for the user based on planBenefits
-        const usageData = subscription.plan.planBenefits.map(benefit => ({
-            subscriptionId: subscription.id,
-            serviceCategory: benefit.serviceCategory,
-            totalAllocated: benefit.freeCount,
-            usedCount: 0,
-            lockedCount: 0
-        }));
+        if (!subscription) return res.status(404).json({ success: false, message: 'Subscription not found' });
 
-        if (usageData.length > 0) {
-            await prisma.subscriptionUsage.createMany({
-                data: usageData
+        if (subscription.upgradeFromSubId) {
+            const oldSub = await prisma.subscription.findUnique({
+                where: { id: subscription.upgradeFromSubId },
+                include: { plan: true }
             });
+
+            if (oldSub) {
+                if (oldSub.planId === subscription.planId) {
+                    // ─── Case 1: Renewal / Extension ───
+                    const updatedOldSub = await prisma.subscription.update({
+                        where: { id: oldSub.id },
+                        data: {
+                            expiryDate: subscription.expiryDate,
+                            billingCycle: subscription.billingCycle,
+                            status: 'ACTIVE',
+                        },
+                        include: { plan: { include: { planBenefits: true } } }
+                    });
+
+                    // Mark new subscription as EXPIRED (not ACTIVE, to avoid duplicates)
+                    await prisma.subscription.update({
+                        where: { id: subscription.id },
+                        data: { status: 'EXPIRED' }
+                    });
+
+                    // Update/reset usage benefits on the original subscription
+                    const planBenefits = subscription.plan.planBenefits || [];
+                    for (const benefit of planBenefits) {
+                        const existingUsage = await prisma.subscriptionUsage.findFirst({
+                            where: {
+                                subscriptionId: oldSub.id,
+                                serviceCategory: benefit.serviceCategory
+                            }
+                        });
+                        if (existingUsage) {
+                            await prisma.subscriptionUsage.update({
+                                where: { id: existingUsage.id },
+                                data: {
+                                    totalAllocated: benefit.freeCount,
+                                    usedCount: 0,
+                                    lockedCount: 0
+                                }
+                            });
+                        } else {
+                            await prisma.subscriptionUsage.create({
+                                data: {
+                                    subscriptionId: oldSub.id,
+                                    serviceCategory: benefit.serviceCategory,
+                                    totalAllocated: benefit.freeCount,
+                                    usedCount: 0,
+                                    lockedCount: 0
+                                }
+                            });
+                        }
+                    }
+
+                    // Create upgrade history record for RENEW
+                    await prisma.subscriptionUpgradeHistory.create({
+                        data: {
+                            userId: subscription.userId,
+                            oldPlanId: oldSub.planId,
+                            newPlanId: subscription.planId,
+                            oldPlanName: oldSub.plan.name,
+                            newPlanName: subscription.plan.name,
+                            oldPrice: oldSub.amount,
+                            newPrice: subscription.amount,
+                            remainingDays: 0,
+                            creditApplied: 0,
+                            amountPaid: subscription.amount,
+                            type: 'RENEW',
+                        }
+                    });
+
+                    // Send notifications using original sub details
+                    subscription = updatedOldSub;
+                } else if (subscription.plan.tierLevel > oldSub.plan.tierLevel) {
+                    // ─── Case 2: Upgrade ───
+                    // Mark old sub as UPGRADED
+                    await prisma.subscription.update({
+                        where: { id: oldSub.id },
+                        data: { status: 'UPGRADED', cancelledAt: new Date() }
+                    });
+
+                    // Mark new sub as ACTIVE
+                    subscription = await prisma.subscription.update({
+                        where: { id: subscription.id },
+                        data: { status: 'ACTIVE' },
+                        include: { plan: { include: { planBenefits: true } } }
+                    });
+
+                    // Initialize usage for new sub
+                    const usageData = subscription.plan.planBenefits.map(benefit => ({
+                        subscriptionId: subscription.id,
+                        serviceCategory: benefit.serviceCategory,
+                        totalAllocated: benefit.freeCount,
+                        usedCount: 0,
+                        lockedCount: 0
+                    }));
+                    if (usageData.length > 0) {
+                        await prisma.subscriptionUsage.createMany({ data: usageData });
+                    }
+
+                    // Record Upgrade History
+                    const now = Date.now();
+                    const start = oldSub.startDate.getTime();
+                    const expiry = oldSub.expiryDate.getTime();
+                    const daysTotal = Math.max(1, Math.round((expiry - start) / (1000 * 60 * 60 * 24)));
+                    const daysRemaining = Math.max(0, Math.round((expiry - now) / (1000 * 60 * 60 * 24)));
+                    const dailyRate = oldSub.amount / daysTotal;
+                    const creditAmount = Math.round(daysRemaining * dailyRate * 100) / 100;
+
+                    await prisma.subscriptionUpgradeHistory.create({
+                        data: {
+                            userId: subscription.userId,
+                            oldPlanId: oldSub.planId,
+                            newPlanId: subscription.planId,
+                            oldPlanName: oldSub.plan.name,
+                            newPlanName: subscription.plan.name,
+                            oldPrice: oldSub.amount,
+                            newPrice: subscription.amount + creditAmount,
+                            remainingDays: Math.floor(daysRemaining),
+                            creditApplied: creditAmount,
+                            amountPaid: subscription.amount,
+                            type: 'UPGRADE',
+                        }
+                    });
+                }
+            }
+        } else {
+            // Normal first-time activation
+            subscription = await prisma.subscription.update({
+                where: { id: subscriptionId },
+                data: { status: 'ACTIVE' },
+                include: { plan: { include: { planBenefits: true } } }
+            });
+
+            // Initialize benefits
+            const usageData = subscription.plan.planBenefits.map(benefit => ({
+                subscriptionId: subscription.id,
+                serviceCategory: benefit.serviceCategory,
+                totalAllocated: benefit.freeCount,
+                usedCount: 0,
+                lockedCount: 0
+            }));
+
+            if (usageData.length > 0) {
+                await prisma.subscriptionUsage.createMany({
+                    data: usageData
+                });
+            }
         }
 
         // WhatsApp PAYMENT_RECEIVED + DLT SMS PAYMENT_RECEIVED — non-fatal
@@ -547,9 +735,495 @@ const checkUserActiveSubscription = async (req, res, next) => {
     }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  NEW: Membership Enhancement Endpoints
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /api/subscriptions/me/memberships
+// Returns all active subscriptions grouped by category
+const getMemberships = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const subs = await prisma.subscription.findMany({
+            where: {
+                userId,
+                status: { in: ['ACTIVE', 'SCHEDULED_DOWNGRADE', 'EXPIRING'] },
+                expiryDate: { gte: new Date() },
+            },
+            include: {
+                plan: {
+                    include: { planBenefits: true, billingCycles: true }
+                },
+                scheduledPlan: { select: { id: true, name: true, tierLevel: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        // Group by planType (CARE, HOMEMAKER, etc.)
+        const grouped = {};
+        for (const sub of subs) {
+            const category = sub.plan.planType || 'CARE';
+            if (!grouped[category]) grouped[category] = [];
+            const now = new Date();
+            const daysRemaining = Math.max(0, Math.floor((new Date(sub.expiryDate) - now) / (1000 * 60 * 60 * 24)));
+            grouped[category].push({
+                id: sub.id,
+                planId: sub.planId,
+                planName: sub.plan.name,
+                planType: sub.plan.planType,
+                tierLevel: sub.plan.tierLevel,
+                status: sub.status,
+                billingCycle: sub.billingCycle,
+                startDate: sub.startDate,
+                expiryDate: sub.expiryDate,
+                daysRemaining,
+                amount: sub.amount,
+                autoRenew: sub.autoRenew,
+                scheduledDowngrade: sub.scheduledPlan ? {
+                    planId: sub.scheduledPlanId,
+                    planName: sub.scheduledPlan.name,
+                    activatesOn: sub.scheduledChangeDate,
+                } : null,
+            });
+        }
+
+        // Add latest expired/cancelled subscription if category has no active ones
+        const checkCategories = ['CARE', 'HOMEMAKER'];
+        for (const cat of checkCategories) {
+            if (!grouped[cat] || grouped[cat].length === 0) {
+                const lastSub = await prisma.subscription.findFirst({
+                    where: {
+                        userId,
+                        plan: { planType: cat }
+                    },
+                    include: {
+                        plan: {
+                            include: { planBenefits: true, billingCycles: true }
+                        },
+                        scheduledPlan: { select: { id: true, name: true, tierLevel: true } }
+                    },
+                    orderBy: { expiryDate: 'desc' }
+                });
+
+                if (lastSub) {
+                    if (!grouped[cat]) grouped[cat] = [];
+                    grouped[cat].push({
+                        id: lastSub.id,
+                        planId: lastSub.planId,
+                        planName: lastSub.plan.name,
+                        planType: lastSub.plan.planType,
+                        tierLevel: lastSub.plan.tierLevel,
+                        status: lastSub.status === 'CANCELLED' ? 'CANCELLED' : 'EXPIRED',
+                        billingCycle: lastSub.billingCycle,
+                        startDate: lastSub.startDate,
+                        expiryDate: lastSub.expiryDate,
+                        daysRemaining: 0,
+                        amount: lastSub.amount,
+                        autoRenew: lastSub.autoRenew,
+                        scheduledDowngrade: null,
+                    });
+                }
+            }
+        }
+
+        sendResponse(res, 200, { memberships: grouped, categories: Object.keys(grouped) });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// GET /api/subscriptions/:id/available-upgrades
+// Returns plans in the same category with a higher tier level
+const getAvailableUpgrades = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const sub = await prisma.subscription.findUnique({
+            where: { id: req.params.id },
+            include: { plan: true },
+        });
+
+        if (!sub || sub.userId !== userId) {
+            return res.status(404).json({ success: false, message: 'Subscription not found.' });
+        }
+        if (sub.status !== 'ACTIVE' && sub.status !== 'SCHEDULED_DOWNGRADE') {
+            return res.status(400).json({ success: false, message: 'Only active subscriptions can be upgraded.' });
+        }
+
+        const upgrades = await prisma.plan.findMany({
+            where: {
+                planType: sub.plan.planType,
+                tierLevel: { gt: sub.plan.tierLevel },
+                isVisible: true,
+            },
+            include: { billingCycles: true },
+            orderBy: { tierLevel: 'asc' },
+        });
+
+        sendResponse(res, 200, {
+            currentPlan: {
+                id: sub.plan.id,
+                name: sub.plan.name,
+                tierLevel: sub.plan.tierLevel,
+                planType: sub.plan.planType,
+            },
+            availableUpgrades: upgrades,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// POST /api/subscriptions/:id/calculate-upgrade
+// Preview pro-rata credit and amount due for upgrade
+const calculateUpgrade = async (req, res, next) => {
+    try {
+        const { newPlanId, newBillingCycle } = req.body;
+        const userId = req.user.id;
+
+        if (!newPlanId || !newBillingCycle) {
+            return res.status(400).json({ success: false, message: 'newPlanId and newBillingCycle are required.' });
+        }
+
+        const currentSub = await prisma.subscription.findUnique({
+            where: { id: req.params.id },
+            include: { plan: true },
+        });
+
+        if (!currentSub || currentSub.userId !== userId) {
+            return res.status(404).json({ success: false, message: 'Subscription not found.' });
+        }
+        if (currentSub.status !== 'ACTIVE') {
+            return res.status(400).json({ success: false, message: 'Only active subscriptions can be upgraded.' });
+        }
+        if (new Date(currentSub.expiryDate) < new Date()) {
+            return res.status(400).json({ success: false, message: 'Subscription has expired. Please renew instead.' });
+        }
+
+        const newPlan = await prisma.plan.findUnique({ where: { id: newPlanId } });
+        if (!newPlan) {
+            return res.status(404).json({ success: false, message: 'Target plan not found.' });
+        }
+
+        // Validate same category
+        if (newPlan.planType !== currentSub.plan.planType) {
+            return res.status(400).json({ success: false, message: 'Cannot upgrade across plan categories.' });
+        }
+        // Validate upgrade direction
+        if (newPlan.tierLevel <= currentSub.plan.tierLevel) {
+            return res.status(400).json({
+                success: false,
+                isDowngrade: newPlan.tierLevel < currentSub.plan.tierLevel,
+                message: newPlan.tierLevel === currentSub.plan.tierLevel
+                    ? 'You are already on this plan.'
+                    : 'Downgrades are scheduled, not instant. Use schedule-downgrade instead.',
+            });
+        }
+
+        // Pro-rata calculation
+        const now = Date.now();
+        const start = currentSub.startDate.getTime();
+        const expiry = currentSub.expiryDate.getTime();
+        const daysTotal = Math.max(1, Math.round((expiry - start) / (1000 * 60 * 60 * 24)));
+        const daysRemaining = now < start ? daysTotal : Math.max(0, Math.round((expiry - now) / (1000 * 60 * 60 * 24)));
+        const dailyRate = currentSub.amount / daysTotal;
+        const creditAmount = Math.min(currentSub.amount, Math.round(daysRemaining * dailyRate * 100) / 100);
+
+        // Price of new plan
+        const cyclePrices = {
+            QUARTERLY: newPlan.quarterlyPrice,
+            BIANNUAL: newPlan.biannualPrice,
+            YEARLY: newPlan.yearlyPrice,
+            MONTHLY: newPlan.quarterlyPrice / 3,
+        };
+        const newPlanPrice = cyclePrices[newBillingCycle] || newPlan.quarterlyPrice;
+        const amountDue = Math.max(0, Math.round((newPlanPrice - creditAmount) * 100) / 100);
+
+        sendResponse(res, 200, {
+            currentSubId: currentSub.id,
+            currentPlan: { id: currentSub.plan.id, name: currentSub.plan.name, price: currentSub.amount },
+            newPlan: { id: newPlan.id, name: newPlan.name, price: newPlanPrice },
+            calculation: {
+                daysTotal,
+                daysRemaining,
+                dailyRate: Math.round(dailyRate * 100) / 100,
+                creditAmount,
+                newPlanPrice,
+                amountDue,
+                paymentRequired: amountDue > 0,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// POST /api/subscriptions/:id/upgrade
+// Execute upgrade instantly (with or without payment)
+const executeUpgrade = async (req, res, next) => {
+    try {
+        const { newPlanId, newBillingCycle, razorpayPaymentId, razorpayOrderId, razorpaySignature } = req.body;
+        const userId = req.user.id;
+
+        if (!newPlanId || !newBillingCycle) {
+            return res.status(400).json({ success: false, message: 'newPlanId and newBillingCycle are required.' });
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+            const currentSub = await tx.subscription.findUnique({
+                where: { id: req.params.id },
+                include: { plan: true },
+            });
+
+            if (!currentSub || currentSub.userId !== userId) throw Object.assign(new Error('Subscription not found.'), { code: 404 });
+            if (currentSub.status !== 'ACTIVE') throw new Error('Only active subscriptions can be upgraded.');
+            if (new Date(currentSub.expiryDate) < new Date()) throw new Error('Subscription has expired. Please renew instead.');
+
+            const newPlan = await tx.plan.findUnique({ where: { id: newPlanId } });
+            if (!newPlan) throw Object.assign(new Error('Target plan not found.'), { code: 404 });
+            if (newPlan.planType !== currentSub.plan.planType) throw new Error('Cannot upgrade across plan categories.');
+            if (newPlan.tierLevel <= currentSub.plan.tierLevel) throw new Error('Upgrades must be to a higher tier.');
+
+            // Pro-rata
+            const now = Date.now();
+            const start = currentSub.startDate.getTime();
+            const expiry = currentSub.expiryDate.getTime();
+            const daysTotal = Math.max(1, Math.round((expiry - start) / (1000 * 60 * 60 * 24)));
+            const daysRemaining = now < start ? daysTotal : Math.max(0, Math.round((expiry - now) / (1000 * 60 * 60 * 24)));
+            const dailyRate = currentSub.amount / daysTotal;
+            const creditAmount = Math.min(currentSub.amount, Math.round(daysRemaining * dailyRate * 100) / 100);
+
+            const cyclePrices = {
+                QUARTERLY: newPlan.quarterlyPrice, BIANNUAL: newPlan.biannualPrice,
+                YEARLY: newPlan.yearlyPrice, MONTHLY: newPlan.quarterlyPrice / 3,
+            };
+            const newPlanPrice = cyclePrices[newBillingCycle] || newPlan.quarterlyPrice;
+            const amountDue = Math.max(0, Math.round((newPlanPrice - creditAmount) * 100) / 100);
+
+            // Validate payment if required
+            if (amountDue > 0) {
+                if (!razorpayPaymentId) throw new Error('Payment ID is required for this upgrade.');
+                // Verify signature
+                const crypto = require('crypto');
+                const keySecret = process.env.RAZORPAY_KEY_SECRET;
+                if (razorpayOrderId && razorpaySignature && keySecret) {
+                    const expected = crypto.createHmac('sha256', keySecret)
+                        .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+                        .digest('hex');
+                    if (expected !== razorpaySignature) throw new Error('Payment verification failed.');
+                }
+            }
+
+            // 1. Archive old subscription
+            await tx.subscription.update({
+                where: { id: currentSub.id },
+                data: { status: 'UPGRADED', cancelledAt: new Date() },
+            });
+
+            // 2. Create new subscription
+            const newExpiry = calculateExpiryDate(new Date(), newBillingCycle);
+            const newSub = await tx.subscription.create({
+                data: {
+                    userId,
+                    planId: newPlanId,
+                    billingCycle: newBillingCycle,
+                    startDate: new Date(),
+                    expiryDate: newExpiry,
+                    amount: newPlanPrice,
+                    status: 'ACTIVE',
+                    proRataCredit: creditAmount,
+                    creditApplied: creditAmount,
+                    upgradeFromSubId: currentSub.id,
+                },
+                include: { plan: true },
+            });
+
+            // 3. Transfer/reset usage benefits
+            const oldUsage = await tx.subscriptionUsage.findMany({ where: { subscriptionId: currentSub.id } });
+            const newPlanWithBenefits = await tx.plan.findUnique({
+                where: { id: newPlanId },
+                include: { planBenefits: true },
+            });
+            if (newPlanWithBenefits?.planBenefits?.length > 0) {
+                await tx.subscriptionUsage.createMany({
+                    data: newPlanWithBenefits.planBenefits.map(b => ({
+                        subscriptionId: newSub.id,
+                        serviceCategory: b.serviceCategory,
+                        totalAllocated: b.freeCount,
+                        usedCount: 0,
+                        lockedCount: 0,
+                    })),
+                });
+            }
+
+            // 4. Record upgrade history
+            await tx.subscriptionUpgradeHistory.create({
+                data: {
+                    userId,
+                    oldPlanId: currentSub.planId,
+                    newPlanId,
+                    oldPlanName: currentSub.plan.name,
+                    newPlanName: newPlan.name,
+                    oldPrice: currentSub.amount,
+                    newPrice: newPlanPrice,
+                    remainingDays: daysRemaining,
+                    creditApplied: creditAmount,
+                    amountPaid: amountDue,
+                    type: 'UPGRADE',
+                },
+            });
+
+            return { newSubscription: newSub, creditApplied: creditAmount, amountPaid: amountDue };
+        });
+
+        sendResponse(res, 201, result, 'Plan upgraded successfully');
+    } catch (error) {
+        const statusCode = error.code === 404 ? 404 : 400;
+        if (error.message && !error.stack?.includes('PrismaClient')) {
+            return res.status(statusCode).json({ success: false, message: error.message });
+        }
+        next(error);
+    }
+};
+
+// POST /api/subscriptions/:id/schedule-downgrade
+// Schedule a downgrade to activate at expiry
+const scheduleDowngrade = async (req, res, next) => {
+    try {
+        const { newPlanId } = req.body;
+        const userId = req.user.id;
+
+        if (!newPlanId) return res.status(400).json({ success: false, message: 'newPlanId is required.' });
+
+        const currentSub = await prisma.subscription.findUnique({
+            where: { id: req.params.id },
+            include: { plan: true },
+        });
+
+        if (!currentSub || currentSub.userId !== userId) {
+            return res.status(404).json({ success: false, message: 'Subscription not found.' });
+        }
+        if (currentSub.status !== 'ACTIVE') {
+            return res.status(400).json({ success: false, message: 'Only active subscriptions can have downgrades scheduled.' });
+        }
+
+        const newPlan = await prisma.plan.findUnique({ where: { id: newPlanId } });
+        if (!newPlan) return res.status(404).json({ success: false, message: 'Target plan not found.' });
+        if (newPlan.planType !== currentSub.plan.planType) {
+            return res.status(400).json({ success: false, message: 'Cannot schedule downgrade across plan categories.' });
+        }
+        if (newPlan.tierLevel >= currentSub.plan.tierLevel) {
+            return res.status(400).json({ success: false, message: 'This plan is not a downgrade. Use upgrade instead.' });
+        }
+
+        const updated = await prisma.subscription.update({
+            where: { id: req.params.id },
+            data: {
+                scheduledPlanId: newPlanId,
+                scheduledChangeDate: currentSub.expiryDate,
+                status: 'SCHEDULED_DOWNGRADE',
+            },
+            include: { plan: true, scheduledPlan: true },
+        });
+
+        // Record in history
+        await prisma.subscriptionUpgradeHistory.create({
+            data: {
+                userId,
+                oldPlanId: currentSub.planId,
+                newPlanId,
+                oldPlanName: currentSub.plan.name,
+                newPlanName: newPlan.name,
+                oldPrice: currentSub.amount,
+                newPrice: newPlan.quarterlyPrice,
+                remainingDays: Math.max(0, Math.round((new Date(currentSub.expiryDate) - Date.now()) / (1000 * 60 * 60 * 24))),
+                creditApplied: 0,
+                amountPaid: 0,
+                type: 'DOWNGRADE_SCHEDULED',
+            },
+        });
+
+        sendResponse(res, 200, updated, `Downgrade to ${newPlan.name} scheduled for ${currentSub.expiryDate.toDateString()}`);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// POST /api/subscriptions/:id/cancel-downgrade
+// Cancel a scheduled downgrade and restore status to ACTIVE
+const cancelDowngrade = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const currentSub = await prisma.subscription.findUnique({
+            where: { id: req.params.id },
+            include: { plan: true },
+        });
+
+        if (!currentSub || currentSub.userId !== userId) {
+            return res.status(404).json({ success: false, message: 'Subscription not found.' });
+        }
+        if (currentSub.status !== 'SCHEDULED_DOWNGRADE') {
+            return res.status(400).json({ success: false, message: 'No scheduled downgrade to cancel.' });
+        }
+
+        const updated = await prisma.subscription.update({
+            where: { id: req.params.id },
+            data: {
+                scheduledPlanId: null,
+                scheduledChangeDate: null,
+                status: 'ACTIVE',
+            },
+            include: { plan: true },
+        });
+
+        // Record in history
+        await prisma.subscriptionUpgradeHistory.create({
+            data: {
+                userId,
+                oldPlanId: currentSub.planId,
+                newPlanId: currentSub.planId,
+                oldPlanName: currentSub.plan.name,
+                newPlanName: currentSub.plan.name,
+                oldPrice: currentSub.amount,
+                newPrice: currentSub.amount,
+                remainingDays: 0,
+                creditApplied: 0,
+                amountPaid: 0,
+                type: 'CANCEL_DOWNGRADE',
+            },
+        });
+
+        sendResponse(res, 200, updated, 'Scheduled downgrade cancelled successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
+// GET /api/subscriptions/me/upgrade-history
+// Returns full upgrade/downgrade/renew history for user
+const getUpgradeHistory = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const history = await prisma.subscriptionUpgradeHistory.findMany({
+            where: { userId },
+            include: {
+                oldPlan: { select: { id: true, name: true, planType: true, tierLevel: true } },
+                newPlan: { select: { id: true, name: true, planType: true, tierLevel: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+        sendResponse(res, 200, history);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getSubscriptions, createSubscription, initiateUserSubscription, verifyUserSubscription,
     pauseSubscription, resumeSubscription, extendSubscription,
     cancelSubscription, toggleAutoRenew, compassionateExtension,
-    checkUserActiveSubscription, calculateAdjustment, executeTransition, executeRenew
+    checkUserActiveSubscription, calculateAdjustment, executeTransition, executeRenew,
+    // New membership enhancement
+    getMemberships, getAvailableUpgrades, calculateUpgrade, executeUpgrade,
+    scheduleDowngrade, getUpgradeHistory, cancelDowngrade,
 };
+

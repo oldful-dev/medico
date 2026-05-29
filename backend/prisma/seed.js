@@ -101,21 +101,33 @@ async function main() {
 
     console.log(`✅ ${serviceData.length + homeEssentialsSubServices.length} total services seeded/updated`);
 
-    // ─── 4. Plans ─────────────────────────────
     const planData = [
-        { name: 'Care Plan', description: 'Ayuxa Care Plan - Comprehensive healthcare coverage', benefits: 'Doctor Visit (4/mo), Blood Test (2/mo), Home Nurse (2/mo), Physio (2/mo), 24/7 SOS Call, Priority Booking', quarterlyPrice: 599, biannualPrice: 999, yearlyPrice: 1999, sortOrder: 1 },
-        { name: 'HomeMaker Plan', description: 'Ayuxa HomeMaker Plan - Complete home care solution', benefits: 'All Care Plan services + Meal Service (20/mo), Home Essentials (4/mo), Tech Helper (4/mo), Unlimited SOS', quarterlyPrice: 1499, biannualPrice: 2499, yearlyPrice: 4799, sortOrder: 2 },
+        { name: 'Care Plan', description: 'Ayuxa Care Plan - Comprehensive healthcare coverage', benefits: 'Doctor Visit (4/mo), Blood Test (2/mo), Home Nurse (2/mo), Physio (2/mo), 24/7 SOS Call, Priority Booking', quarterlyPrice: 599, biannualPrice: 999, yearlyPrice: 1999, sortOrder: 1, tierLevel: 0, planType: 'CARE' },
+        { name: 'Care Plus', description: 'Ayuxa Care Plus - Expanded benefits & support', benefits: 'Doctor Visit (6/mo), Blood Test (3/mo), Home Nurse (4/mo), Physio (4/mo), 24/7 SOS Call, Priority Booking', quarterlyPrice: 899, biannualPrice: 1499, yearlyPrice: 2999, sortOrder: 2, tierLevel: 1, planType: 'CARE' },
+        { name: 'Premium Care', description: 'Ayuxa Premium Care - The ultimate medical care coverage', benefits: 'Unlimited Doctor Visits, Blood Test (6/mo), Home Nurse (8/mo), Physio (8/mo), 24/7 SOS Call, Dedicated Care Manager', quarterlyPrice: 1299, biannualPrice: 1999, yearlyPrice: 3999, sortOrder: 3, tierLevel: 2, planType: 'CARE' },
+        { name: 'HomeMaker Plan', description: 'Ayuxa HomeMaker Plan - Complete home care solution', benefits: 'All Care Plan services + Meal Service (20/mo), Home Essentials (4/mo), Tech Helper (4/mo), Unlimited SOS', quarterlyPrice: 1499, biannualPrice: 2499, yearlyPrice: 4799, sortOrder: 4, tierLevel: 0, planType: 'HOMEMAKER' },
+        { name: 'HomeMaker Plus', description: 'Ayuxa HomeMaker Plus - Enhanced home care with extra assistance', benefits: 'All Care Plus services + Meal Service (30/mo), Home Essentials (6/mo), Tech Helper (6/mo), Unlimited SOS', quarterlyPrice: 1999, biannualPrice: 3499, yearlyPrice: 6799, sortOrder: 5, tierLevel: 1, planType: 'HOMEMAKER' },
+        { name: 'Premium HomeMaker', description: 'Ayuxa Premium HomeMaker - VIP home and medical care solution', benefits: 'All Premium Care services + Unlimited Meal Service, Unlimited Home Essentials & Tech Helper, Dedicated Butler Service', quarterlyPrice: 2999, biannualPrice: 4999, yearlyPrice: 9799, sortOrder: 6, tierLevel: 2, planType: 'HOMEMAKER' },
     ];
 
     for (const p of planData) {
         await prisma.plan.upsert({
             where: { name: p.name },
-            update: {},
+            update: {
+                description: p.description,
+                benefits: p.benefits,
+                quarterlyPrice: p.quarterlyPrice,
+                biannualPrice: p.biannualPrice,
+                yearlyPrice: p.yearlyPrice,
+                sortOrder: p.sortOrder,
+                tierLevel: p.tierLevel,
+                planType: p.planType,
+            },
             create: p,
         });
     }
 
-    console.log(`✅ ${planData.length} plans seeded`);
+    console.log(`✅ ${planData.length} plans seeded/updated`);
 
     // ─── 5. Legal Documents ───────────────────
     const legalDocs = [
