@@ -1,18 +1,19 @@
-// ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 //  Plan Service — Wired to backend plan routes
 //  GET  /api/plans                  (list all plans)
 //  GET  /api/plans/:id              (get plan details)
 //  POST /api/subscriptions/initiate (start a subscription, returns subscriptionId)
-// ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { apiClient, ApiResponse } from './apiClient';
 
-// ─── Types (aligned with Prisma Plan model) ─────
+// ─── Types (aligned with Prisma Plan model) ─────────────
 
 export interface Plan {
     id: string;
     name: string;             // Basic Care, Care Plus, Premium Care
     planType?: string;        // 'CARE', 'HOMEMAKER'
+    tierLevel?: number;       // 0=Basic, 1=Premium, 2=VIP
     description?: string;
     benefits?: string;
     quarterlyPrice: number;
@@ -20,17 +21,36 @@ export interface Plan {
     yearlyPrice: number;
     isVisible: boolean;
     sortOrder: number;
+    billingCycles?: PlanBillingCycle[];
 }
 
-export type BillingCycle = 'QUARTERLY' | 'BIANNUAL' | 'YEARLY';
+export interface PlanBillingCycle {
+    id: string;
+    planId: string;
+    durationMonths: number;
+    price: number;
+    discountPercentage: number;
+}
+
+export type BillingCycle = 'QUARTERLY' | 'BIANNUAL' | 'YEARLY' | 'MONTHLY';
 
 export interface ActiveSubscription {
     id: string;
     planId: string;
     planName: string;
     planType?: string;
+    tierLevel?: number;
     expiryDate: string;
     autoRenew: boolean;
+    daysRemaining?: number;
+    status?: string;
+    amount?: number;
+    billingCycle?: BillingCycle;
+    scheduledDowngrade?: {
+        planId: string;
+        planName: string;
+        activatesOn: string;
+    } | null;
 }
 
 export interface InitiateSubscriptionPayload {
@@ -48,7 +68,45 @@ export interface InitiateSubscriptionResponse {
     expiryDate: string;
 }
 
-// ─── Service ──────────────────────────────────
+export interface UpgradeCalculation {
+    currentSubId: string;
+    currentPlan: { id: string; name: string; price: number };
+    newPlan: { id: string; name: string; price: number };
+    calculation: {
+        daysTotal: number;
+        daysRemaining: number;
+        dailyRate: number;
+        creditAmount: number;
+        newPlanPrice: number;
+        amountDue: number;
+        paymentRequired: boolean;
+    };
+}
+
+export interface UpgradeHistoryItem {
+    id: string;
+    oldPlanId: string;
+    newPlanId: string;
+    oldPlanName: string;
+    newPlanName: string;
+    oldPrice: number;
+    newPrice: number;
+    remainingDays: number;
+    creditApplied: number;
+    amountPaid: number;
+    type: string; // UPGRADE | DOWNGRADE_SCHEDULED | RENEW
+    upgradeDate: string;
+    createdAt: string;
+    oldPlan?: { id: string; name: string; planType?: string; tierLevel?: number };
+    newPlan?: { id: string; name: string; planType?: string; tierLevel?: number };
+}
+
+export interface MembershipsResponse {
+    memberships: Record<string, ActiveSubscription[]>; // keyed by planType
+    categories: string[];
+}
+
+// ─── Service ─────────────────────────────────────────────────────────────────
 
 export const planService = {
     /**
@@ -81,15 +139,70 @@ export const planService = {
     /**
      * GET /api/subscriptions/me/active
      * Check if user has an active subscription.
-     * Returns subscription details if active, or hasActiveSubscription: false if not.
      */
     checkActiveSubscription: async (): Promise<ApiResponse<any>> => {
         return apiClient.get('/subscriptions/me/active');
     },
 
     /**
+     * GET /api/subscriptions/me/memberships
+     * Returns all active subscriptions grouped by category (CARE, HOMEMAKER).
+     */
+    getMemberships: async (): Promise<ApiResponse<MembershipsResponse>> => {
+        return apiClient.get<MembershipsResponse>('/subscriptions/me/memberships');
+    },
+
+    /**
+     * GET /api/subscriptions/:id/available-upgrades
+     * Returns plans in same category with higher tier level.
+     */
+    getAvailableUpgrades: async (subId: string): Promise<ApiResponse<{ currentPlan: Plan; availableUpgrades: Plan[] }>> => {
+        return apiClient.get(`/subscriptions/${subId}/available-upgrades`);
+    },
+
+    /**
+     * POST /api/subscriptions/:id/calculate-upgrade
+     * Preview pro-rata credit calculation before upgrading.
+     */
+    calculateUpgrade: async (
+        subId: string,
+        newPlanId: string,
+        newBillingCycle: BillingCycle
+    ): Promise<ApiResponse<UpgradeCalculation>> => {
+        return apiClient.post<UpgradeCalculation>(`/subscriptions/${subId}/calculate-upgrade`, {
+            newPlanId,
+            newBillingCycle,
+        });
+    },
+
+    /**
+     * POST /api/subscriptions/:id/upgrade
+     * Execute the upgrade instantly. Pass payment details if amountDue > 0.
+     */
+    executeUpgrade: async (
+        subId: string,
+        payload: {
+            newPlanId: string;
+            newBillingCycle: BillingCycle;
+            razorpayPaymentId?: string;
+            razorpayOrderId?: string;
+            razorpaySignature?: string;
+        }
+    ): Promise<ApiResponse<any>> => {
+        return apiClient.post(`/subscriptions/${subId}/upgrade`, payload);
+    },
+
+    /**
+     * GET /api/subscriptions/me/upgrade-history
+     * Returns the full upgrade / downgrade / renew history for the user.
+     */
+    getUpgradeHistory: async (): Promise<ApiResponse<UpgradeHistoryItem[]>> => {
+        return apiClient.get<UpgradeHistoryItem[]>('/subscriptions/me/upgrade-history');
+    },
+
+    /**
      * PUT /api/subscriptions/:id/cancel
-     * Cancel an active subscription — backend fires PLAN_CANCELLED_WITH_CONTACT SMS (215602).
+     * Cancel an active subscription — backend fires PLAN_CANCELLED_WITH_CONTACT SMS.
      */
     cancelSubscription: async (subscriptionId: string): Promise<ApiResponse<any>> => {
         return apiClient.put(`/subscriptions/${subscriptionId}/cancel`);

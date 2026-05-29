@@ -134,6 +134,46 @@ const initiatePayment = async (req, res, next) => {
             }
         }
 
+        let resolvedSubId = subscriptionId;
+        if (subscriptionId && subscriptionId.startsWith('RENEW_')) {
+            const cleanSubId = subscriptionId.replace('RENEW_', '');
+            const existingSub = await prisma.subscription.findUnique({
+                where: { id: cleanSubId },
+                include: { plan: true }
+            });
+            if (existingSub) {
+                const amt = parseFloat(amount);
+                let billingCycle = 'QUARTERLY';
+                if (existingSub.plan.yearlyPrice && Math.abs(amt - existingSub.plan.yearlyPrice) < 1) {
+                    billingCycle = 'YEARLY';
+                } else if (existingSub.plan.biannualPrice && Math.abs(amt - existingSub.plan.biannualPrice) < 1) {
+                    billingCycle = 'BIANNUAL';
+                } else if (existingSub.plan.quarterlyPrice && Math.abs(amt - existingSub.plan.quarterlyPrice) < 1) {
+                    billingCycle = 'QUARTERLY';
+                } else {
+                    billingCycle = existingSub.billingCycle;
+                }
+
+                const { calculateExpiryDate } = require('../utils/helpers');
+                const start = new Date(existingSub.expiryDate);
+                const expiryDate = calculateExpiryDate(start, billingCycle);
+
+                const renewalPendingSub = await prisma.subscription.create({
+                    data: {
+                        userId: existingSub.userId,
+                        planId: existingSub.planId,
+                        billingCycle,
+                        startDate: start,
+                        expiryDate,
+                        amount: amt,
+                        status: 'PAYMENT_PENDING',
+                        upgradeFromSubId: existingSub.id,
+                    }
+                });
+                resolvedSubId = renewalPendingSub.id;
+            }
+        }
+
         // Create Razorpay order (Only if amount >= 1 INR)
         if (finalAmount >= 1) {
             const razorpayOrder = await razorpay.createOrder(finalAmount, `receipt_${Date.now()}`);
@@ -145,7 +185,7 @@ const initiatePayment = async (req, res, next) => {
                     userId: userId || req.user.id,
                     ...(bookingId && { bookingId }),
                     ...(labOrderId && { labOrderId }),
-                    ...(subscriptionId && { subscriptionId }),
+                    ...(resolvedSubId && { subscriptionId: resolvedSubId }),
                     ...(productOrderId && { productOrderId }),
                     amount: finalAmount,
                     ...(couponCode && { couponCode }),
@@ -170,7 +210,7 @@ const initiatePayment = async (req, res, next) => {
             data: {
                 userId: userId || req.user.id,
                 ...(bookingId && { bookingId }),
-                ...(subscriptionId && { subscriptionId }),
+                ...(resolvedSubId && { subscriptionId: resolvedSubId }),
                 amount: finalAmount,
                 status: 'SUCCESS',
                 paymentMethod: 'CASH', // Default for free/zero-amount
@@ -324,36 +364,189 @@ const verifyPayment = async (req, res, next) => {
 
         // ─── Promote subscription: PAYMENT_PENDING → ACTIVE ───────────────────
         if (payment.subscriptionId) {
-            const subscription = await prisma.subscription.update({
+            let subscription = await prisma.subscription.findUnique({
                 where: { id: payment.subscriptionId },
-                data: { status: 'ACTIVE' },
-                include: { plan: true }
+                include: { plan: { include: { planBenefits: true } } }
             });
 
-            const { sendPushToUser } = require('../utils/pushNotification.service');
-            await sendPushToUser(payment.userId, {
-                title: 'Plan Activated!',
-                body: `Your ${subscription.plan.name} plan is now active. Welcome to Ayuxa Family!`,
-                data: { type: 'subscription_activated', subscriptionId: subscription.id },
-            });
+            if (subscription) {
+                if (subscription.upgradeFromSubId) {
+                    const oldSub = await prisma.subscription.findUnique({
+                        where: { id: subscription.upgradeFromSubId },
+                        include: { plan: true }
+                    });
 
-            // WhatsApp PAYMENT_RECEIVED + DLT SMS PAYMENT_RECEIVED — non-fatal
-            if (payment.user?.phone) {
-                const { sendPaymentReceived } = require('../services/whatsapp');
-                const { sendSMS } = require('../services/sms');
-                await sendPaymentReceived({
-                    phone: payment.user.phone,
-                    name: payment.user.name,
-                    amount: parseFloat(payment.amount).toFixed(2),
-                    userId: payment.userId,
-                }).catch(err => logger.warn('subscription WA PAYMENT_RECEIVED failed (non-fatal):', err.message));
-                if (payment.user.smsEnabled !== false) {
-                    await sendSMS({
-                        template: 'PAYMENT_RECEIVED',
-                        mobile: payment.user.phone,
-                        variables: [payment.user.name, parseFloat(payment.amount).toFixed(2)],
+                    if (oldSub) {
+                        if (oldSub.planId === subscription.planId) {
+                            // ─── Case 1: Renewal / Extension ───
+                            const updatedOldSub = await prisma.subscription.update({
+                                where: { id: oldSub.id },
+                                data: {
+                                    expiryDate: subscription.expiryDate,
+                                    billingCycle: subscription.billingCycle,
+                                    status: 'ACTIVE',
+                                },
+                                include: { plan: { include: { planBenefits: true } } }
+                            });
+
+                            // Mark new subscription as EXPIRED (not ACTIVE, to avoid duplicates)
+                            await prisma.subscription.update({
+                                where: { id: subscription.id },
+                                data: { status: 'EXPIRED' }
+                            });
+
+                            // Update/reset usage benefits on the original subscription
+                            const planBenefits = subscription.plan.planBenefits || [];
+                            for (const benefit of planBenefits) {
+                                const existingUsage = await prisma.subscriptionUsage.findFirst({
+                                    where: {
+                                        subscriptionId: oldSub.id,
+                                        serviceCategory: benefit.serviceCategory
+                                    }
+                                });
+                                if (existingUsage) {
+                                    await prisma.subscriptionUsage.update({
+                                        where: { id: existingUsage.id },
+                                        data: {
+                                            totalAllocated: benefit.freeCount,
+                                            usedCount: 0,
+                                            lockedCount: 0
+                                        }
+                                    });
+                                } else {
+                                    await prisma.subscriptionUsage.create({
+                                        data: {
+                                            subscriptionId: oldSub.id,
+                                            serviceCategory: benefit.serviceCategory,
+                                            totalAllocated: benefit.freeCount,
+                                            usedCount: 0,
+                                            lockedCount: 0
+                                        }
+                                    });
+                                }
+                            }
+
+                            // Create upgrade history record for RENEW
+                            await prisma.subscriptionUpgradeHistory.create({
+                                data: {
+                                    userId: subscription.userId,
+                                    oldPlanId: oldSub.planId,
+                                    newPlanId: subscription.planId,
+                                    oldPlanName: oldSub.plan.name,
+                                    newPlanName: subscription.plan.name,
+                                    oldPrice: oldSub.amount,
+                                    newPrice: subscription.amount,
+                                    remainingDays: 0,
+                                    creditApplied: 0,
+                                    amountPaid: subscription.amount,
+                                    type: 'RENEW',
+                                }
+                            });
+
+                            // Send notifications using original sub details
+                            subscription = updatedOldSub;
+                        } else if (subscription.plan.tierLevel > oldSub.plan.tierLevel) {
+                            // ─── Case 2: Upgrade ───
+                            // Mark old sub as UPGRADED
+                            await prisma.subscription.update({
+                                where: { id: oldSub.id },
+                                data: { status: 'UPGRADED', cancelledAt: new Date() }
+                            });
+
+                            // Mark new sub as ACTIVE
+                            subscription = await prisma.subscription.update({
+                                where: { id: subscription.id },
+                                data: { status: 'ACTIVE' },
+                                include: { plan: { include: { planBenefits: true } } }
+                            });
+
+                            // Initialize usage for new sub
+                            const usageData = subscription.plan.planBenefits.map(benefit => ({
+                                subscriptionId: subscription.id,
+                                serviceCategory: benefit.serviceCategory,
+                                totalAllocated: benefit.freeCount,
+                                usedCount: 0,
+                                lockedCount: 0
+                            }));
+                            if (usageData.length > 0) {
+                                await prisma.subscriptionUsage.createMany({ data: usageData });
+                            }
+
+                            // Record Upgrade History
+                            const now = Date.now();
+                            const start = oldSub.startDate.getTime();
+                            const expiry = oldSub.expiryDate.getTime();
+                            const daysTotal = Math.max(1, Math.round((expiry - start) / (1000 * 60 * 60 * 24)));
+                            const daysRemaining = Math.max(0, Math.round((expiry - now) / (1000 * 60 * 60 * 24)));
+                            const dailyRate = oldSub.amount / daysTotal;
+                            const creditAmount = Math.round(daysRemaining * dailyRate * 100) / 100;
+
+                            await prisma.subscriptionUpgradeHistory.create({
+                                data: {
+                                    userId: subscription.userId,
+                                    oldPlanId: oldSub.planId,
+                                    newPlanId: subscription.planId,
+                                    oldPlanName: oldSub.plan.name,
+                                    newPlanName: subscription.plan.name,
+                                    oldPrice: oldSub.amount,
+                                    newPrice: subscription.amount + creditAmount,
+                                    remainingDays: Math.floor(daysRemaining),
+                                    creditApplied: creditAmount,
+                                    amountPaid: subscription.amount,
+                                    type: 'UPGRADE',
+                                }
+                            });
+                        }
+                    }
+                } else {
+                    // Normal first-time activation
+                    subscription = await prisma.subscription.update({
+                        where: { id: payment.subscriptionId },
+                        data: { status: 'ACTIVE' },
+                        include: { plan: { include: { planBenefits: true } } }
+                    });
+
+                    // Initialize benefits
+                    const usageData = subscription.plan.planBenefits.map(benefit => ({
+                        subscriptionId: subscription.id,
+                        serviceCategory: benefit.serviceCategory,
+                        totalAllocated: benefit.freeCount,
+                        usedCount: 0,
+                        lockedCount: 0
+                    }));
+
+                    if (usageData.length > 0) {
+                        await prisma.subscriptionUsage.createMany({
+                            data: usageData
+                        });
+                    }
+                }
+
+                const { sendPushToUser } = require('../utils/pushNotification.service');
+                await sendPushToUser(payment.userId, {
+                    title: 'Plan Activated!',
+                    body: `Your ${subscription.plan.name} plan is now active. Welcome to Ayuxa Family!`,
+                    data: { type: 'subscription_activated', subscriptionId: subscription.id },
+                });
+
+                // WhatsApp PAYMENT_RECEIVED + DLT SMS PAYMENT_RECEIVED — non-fatal
+                if (payment.user?.phone) {
+                    const { sendPaymentReceived } = require('../services/whatsapp');
+                    const { sendSMS } = require('../services/sms');
+                    await sendPaymentReceived({
+                        phone: payment.user.phone,
+                        name: payment.user.name,
+                        amount: parseFloat(payment.amount).toFixed(2),
                         userId: payment.userId,
-                    }).catch(err => logger.warn('subscription PAYMENT_RECEIVED SMS failed (non-fatal):', err.message));
+                    }).catch(err => logger.warn('subscription WA PAYMENT_RECEIVED failed (non-fatal):', err.message));
+                    if (payment.user.smsEnabled !== false) {
+                        await sendSMS({
+                            template: 'PAYMENT_RECEIVED',
+                            mobile: payment.user.phone,
+                            variables: [payment.user.name, parseFloat(payment.amount).toFixed(2)],
+                            userId: payment.userId,
+                        }).catch(err => logger.warn('subscription PAYMENT_RECEIVED SMS failed (non-fatal):', err.message));
+                    }
                 }
             }
         }

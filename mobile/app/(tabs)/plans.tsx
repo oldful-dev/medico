@@ -7,7 +7,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIn
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useAppConfig } from '@/context/AppConfigContext';
 import { getIcon } from '@/components/sdui/SDUIRenderer';
@@ -62,7 +62,7 @@ export default function PlansScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [activeCycle, setActiveCycle] = useState<BillingCycle>('QUARTERLY');
     const [initiating, setInitiating] = useState<string | null>(null); // planId being initiated
-    const [userActiveSubscription, setUserActiveSubscription] = useState<any>(null);
+    const [userActiveSubscriptions, setUserActiveSubscriptions] = useState<any[]>([]);
 
     // ─── Fetch plans from API (same as web) ───────────────────────────────────
     const loadPlans = useCallback(async () => {
@@ -80,41 +80,52 @@ export default function PlansScreen() {
     }, []);
 
     // ─── Check if user has active subscription ────────────────────────────────
-    useEffect(() => {
-        const checkSubscription = async () => {
-            try {
-                const res = await planService.checkActiveSubscription();
-                console.log('Subscription check:', res);
-                if (res.success && res.data?.hasActiveSubscription) {
-                    setUserActiveSubscription(res.data.subscription);
-                    console.log('User has active subscription:', res.data.subscription);
+    useFocusEffect(
+        useCallback(() => {
+            const checkSubscription = async () => {
+                try {
+                    const res = await planService.checkActiveSubscription();
+                    console.log('Subscription check:', res);
+                    if (res.success && res.data) {
+                        setUserActiveSubscriptions(res.data.subscriptions || []);
+                        console.log('User has active subscriptions:', res.data.subscriptions);
+                    }
+                } catch (err) {
+                    console.warn('Could not fetch subscription status:', err);
                 }
-            } catch (err) {
-                console.warn('Could not fetch subscription status:', err);
-            }
-        };
+            };
 
-        loadPlans();
-        checkSubscription();
-    }, []);
+            loadPlans();
+            checkSubscription();
+        }, [loadPlans])
+    );
 
     // ─── CTA handler — mirrors web handleChoosePlan ───────────────────────────
     const handleChoosePlan = useCallback(async (plan: Plan) => {
         console.log('handleChoosePlan called for:', plan.name);
-        console.log('userActiveSubscription state:', userActiveSubscription);
+        console.log('userActiveSubscriptions state:', userActiveSubscriptions);
 
         if (!profile) {
             Alert.alert(t('plans.login_required'), t('plans.login_required_desc'));
             return;
         }
 
-        // Check if user already has active subscription
-        if (userActiveSubscription) {
-            const expiryDate = new Date(userActiveSubscription.expiryDate).toLocaleDateString();
-            console.log('Blocking plan selection - user has active subscription until:', expiryDate);
+        // Check if user already has active subscription in the same category
+        const activeSubForCategory = userActiveSubscriptions.find(sub => sub.planType === plan.planType);
+        if (activeSubForCategory) {
+            if (plan.tierLevel < (activeSubForCategory.tierLevel ?? 0)) {
+                Alert.alert(
+                    t('plans.active_plan_title') || 'Active Plan',
+                    t('plans.downgrade_blocked_msg') || 'You currently have an active membership. Downgrades can only be processed through support after your current plan expires.',
+                    [{ text: t('common.ok'), onPress: () => {} }]
+                );
+                return;
+            }
+            const expiryDate = new Date(activeSubForCategory.expiryDate).toLocaleDateString();
+            console.log('Blocking plan selection - user has active subscription in this category until:', expiryDate);
             Alert.alert(
                 t('plans.active_plan_title'),
-                t('plans.active_plan_desc', { planName: userActiveSubscription.planName, expiry: expiryDate }),
+                t('plans.active_plan_desc', { planName: activeSubForCategory.planName, expiry: expiryDate }),
                 [{ text: t('common.ok'), onPress: () => {} }]
             );
             return;
@@ -167,7 +178,7 @@ export default function PlansScreen() {
         } finally {
             setInitiating(null);
         }
-    }, [profile, activeCycle, userActiveSubscription, router, params]);
+    }, [profile, activeCycle, userActiveSubscriptions, router, params]);
 
     if (isLoading) {
         return (
@@ -177,7 +188,6 @@ export default function PlansScreen() {
         );
     }
 
-    const activeSub = userActiveSubscription;
     const cycleInfo = BILLING_CYCLES.find(c => c.key === activeCycle)!;
 
     return (
@@ -208,25 +218,25 @@ export default function PlansScreen() {
                 </View>
 
                 {/* ─── Active Subscription Banner ─── */}
-                {activeSub && (
-                    <View style={styles.activeSubBanner}>
+                {userActiveSubscriptions.map(sub => (
+                    <View key={sub.id} style={styles.activeSubBanner}>
                         <View style={styles.activeSubIconBox}>
                             <Ionicons name="shield-checkmark" size={20} color={colors.textWhite} />
                         </View>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.activeSubLabel}>{t('plans.your_active_plan')}</Text>
-                            <Text style={styles.activeSubName}>{activeSub.planName ?? activeSub.plan?.name ?? t('plans.tab_title')}</Text>
+                            <Text style={styles.activeSubName}>{sub.planName ?? sub.plan?.name ?? t('plans.tab_title')}</Text>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
                             <Text style={styles.activeSubExpLabel}>{t('plans.expires')}</Text>
                             <Text style={styles.activeSubExpDate}>
-                                {activeSub.expiryDate
-                                    ? new Date(activeSub.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                                {sub.expiryDate
+                                    ? new Date(sub.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
                                     : 'N/A'}
                             </Text>
                         </View>
                     </View>
-                )}
+                ))}
 
                 {/* ─── Billing Cycle Tabs ─── */}
                 <View style={styles.cycleTabsRow}>
@@ -253,7 +263,8 @@ export default function PlansScreen() {
                         const accent = planAccents[idx % planAccents.length];
                         const price = getPriceForCycle(plan, activeCycle);
                         const isPro = idx === 1;
-                        const isActivePlan = (activeSub?.planName ?? activeSub?.plan?.name) === plan.name;
+                        const activeSubForCategory = userActiveSubscriptions.find(sub => sub.planType === plan.planType);
+                        const isActivePlan = activeSubForCategory?.planId === plan.id || (activeSubForCategory?.planName ?? activeSubForCategory?.plan?.name) === plan.name;
                         const isInitiating = initiating === plan.id;
 
                         return (
@@ -313,17 +324,17 @@ export default function PlansScreen() {
                                         styles.planActionButton,
                                         { backgroundColor: isPro ? '#0EDD94' : colors.primary },
                                         isActivePlan && styles.planActionButtonDisabled,
-                                        (userActiveSubscription && !isActivePlan) && styles.planActionButtonDisabled,
+                                        (activeSubForCategory && !isActivePlan) && styles.planActionButtonDisabled,
                                     ]}
                                     activeOpacity={0.8}
                                     onPress={() => handleChoosePlan(plan)}
-                                    disabled={isActivePlan || isInitiating || (userActiveSubscription && !isActivePlan)}
+                                    disabled={isActivePlan || isInitiating || (activeSubForCategory && !isActivePlan)}
                                 >
                                     {isInitiating ? (
                                         <ActivityIndicator size="small" color={isPro ? colors.primary : colors.textWhite} />
                                     ) : (
                                         <Text style={[styles.planActionText, isPro && { color: colors.primary }]}>
-                                            {isActivePlan ? t('plans.cta_active') : (userActiveSubscription ? t('plans.cta_locked') : t('plans.cta_choose'))}
+                                            {isActivePlan ? t('plans.cta_active') : (activeSubForCategory ? t('plans.cta_locked') : t('plans.cta_choose'))}
                                         </Text>
                                     )}
                                 </TouchableOpacity>

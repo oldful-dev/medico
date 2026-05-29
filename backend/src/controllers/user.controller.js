@@ -512,7 +512,6 @@ const getMyProfile = async (req, res, next) => {
                 subscriptions: {
                     where: { status: 'ACTIVE' },
                     include: { plan: true },
-                    take: 1,
                 },
             },
         });
@@ -644,7 +643,6 @@ const uploadProfileAvatar = async (req, res, next) => {
                 subscriptions: {
                     where: { status: 'ACTIVE' },
                     include: { plan: true },
-                    take: 1,
                 },
             },
         });
