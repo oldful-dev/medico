@@ -520,7 +520,10 @@
     "social_label_twitter": "एक्स (ट्विटर)",
     "social_label_whatsapp": "व्हॉट्सॲप चॅनेल",
     "social_handle_whatsapp": "आमच्या चॅनेलमध्ये सामील व्हा",
-    "tab_title": "खाते"
+    "tab_title": "खाते",
+    "live_chat_subtitle": "WhatsApp वर आमच्या सहाय्य अधिकाऱ्यांशी त्वरित संपर्क साधा",
+    "live_chat_info": "आमचे सहाय्य बडीज सेवा बुकिंग, पेमेंट समस्या, डॉक्टर स्लॉट आणि इतर गोष्टींमध्ये मदत करण्यासाठी उपलब्ध आहेत.",
+    "live_chat_status": "सहाय्य ऑनलाइन सक्रिय"
   },
   "plans": {
     "tab_title": "प्लॅन्स",
@@ -603,7 +606,15 @@
     "added_to_cart_message": "{{name}} कार्टमध्ये जोडले आहे!",
     "continue_shopping": "खरेदी चालू ठेवा",
     "view_cart": "कार्ट पहा",
-    "off_badge": "{{percent}}% सूट"
+    "off_badge": "{{percent}}% सूट",
+    "filter_all": "सर्व",
+    "filter_wellness_essentials": "वेलनेस आवश्यक",
+    "filter_healthcare_devices": "आरोग्य उपकरणे",
+    "filter_fitness_recovery": "फिटनेस & रिकव्हरी",
+    "filter_mobility_aids": "चालण्यास मदत करणारी साधने",
+    "filter_health_monitors": "हेल्थ मॉनिटर",
+    "filter_supplements": "सप्लिमेंट",
+    "filter_personal_care": "वैयक्तिक काळजी"
   },
   "cart": {
     "header_title": "तुमची कार्ट",
@@ -662,7 +673,13 @@
       "emergency_alert": "आपत्कालीन अलर्ट",
       "subtext": "अ‍ॅडमिन आणि कुटुंबाशी संपर्क साधत आहे",
       "cancel": "रद्द करा"
-    }
+    },
+    "calling_emergency_title": "आपत्कालीन कॉल...",
+    "contacting_services_title": "सेवांशी संपर्क...",
+    "press_button": "कॉल सुरू करण्यासाठी बटण दाबा",
+    "contacting_services_desc": "आपत्कालीन सेवांशी संपर्क साधत आहे...",
+    "notifying_contacts_text": "आपत्कालीन संपर्कांना सूचित करत आहे",
+    "contacts_notified_text": "आपत्कालीन संपर्कांना सूचना पाठवत आहे..."
   },
   "language_selection": {
     "header": "भाषा निवडा",
@@ -675,11 +692,27 @@
     "header": "तुमचे शहर निवडा",
     "subtitle": "आम्ही तुम्हाला तुमच्या शहरातील उपलब्ध सेवा दाखवू.",
     "coming_soon": "लवकरच येत आहे",
-    "continue": "पुढे जा"
+    "continue": "पुढे जा",
+    "location_question": "तुम्ही कुठे आहात?",
+    "location_sub": "तुमचे शहर निवडा आणि जवळच्या सेवा पाहा.",
+    "detect_location": "माझे स्थान स्वयंचलितपणे शोधा",
+    "available_now": "आत्ता उपलब्ध",
+    "coming_soon_label": "लवकरच येत आहे",
+    "notify_banner": "तुमचे शहर दिसत नाही? लॉन्चची माहिती मिळवा!",
+    "notify_modal_title": "लॉन्चवर सूचित करा",
+    "notify_modal_sub": "Ayuxa तुमच्या शहरात लॉन्च झाल्यावर आम्ही ईमेल करू.",
+    "your_name": "तुमचे नाव *",
+    "your_name_label": "तुमचे नाव टाका",
+    "email_label": "ईमेल पत्ता *",
+    "email_placeholder": "तुमचा ईमेल टाका",
+    "city_optional": "तुमचे शहर (ऐच्छिक)",
+    "city_placeholder": "उदा: पुणे, चेन्नई, कोलकाता",
+    "notify_submit": "सूचित करा",
+    "active": "सक्रिय"
   },
   "notifications": {
-    "header_title": "नोटिफिकेशन्स",
-    "empty_title": "अद्याप नोटिफिकेशन्स नाहीत",
+    "header_title": "सूचना",
+    "empty_title": "अद्याप कोणत्याही सूचना नाहीत",
     "empty_subtitle": "तुम्हाला येथे बुक्यिंग अपडेट्स, स्मरणपत्रे आणि ऑफर्स दिसतील.",
     "section_today": "आज",
     "section_earlier": "पूर्वी",
@@ -689,7 +722,16 @@
     "time_hours_ago_plural": "{{count}} तासांपूर्वी",
     "time_yesterday": "काल",
     "time_days_ago": "{{count}} दिवसांपूर्वी",
-    "default_title": "नोटिफिकेशन"
+    "default_title": "नोटिफिकेशन",
+    "today": "आज",
+    "earlier": "आधी",
+    "empty_sub": "बुकिंग अपडेट, रिमाइंडर आणि ऑफर येथे दिसतील.",
+    "just_now": "आत्ता",
+    "min_ago": "{{count}} मिनिटांपूर्वी",
+    "hour_ago": "{{count}} तासापूर्वी",
+    "hours_ago": "{{count}} तासांपूर्वी",
+    "yesterday": "काल",
+    "days_ago": "{{count}} दिवसांपूर्वी"
   },
   "help_support": {
     "header": "मदत आणि सपोर्ट",
@@ -1265,7 +1307,11 @@
   "legal": {
     "failed_load": "कागदपत्र लोड करता आले नाही",
     "last_updated": "शेवटचे अपडेट: {{date}}",
-    "loading": "लोड होत आहे..."
+    "loading": "लोड होत आहे...",
+    "try_again": "पुन्हा प्रयत्न करा",
+    "privacy_policy": "गोपनीयता धोरण",
+    "terms_conditions": "अटी व शर्ती",
+    "refund_policy": "परतावा धोरण"
   },
   "privacy_policy": {
     "header_title": "गोपनीयता धोरण"
@@ -1301,7 +1347,26 @@
     "card": "क्रेडिट / डेबिट कार्ड",
     "cod": "कॅश ऑन डिलिव्हरी (COD)",
     "razorpay_secure": "Razorpay द्वारे सुरक्षित. तुमचे पेमेंट सुरक्षित आहे.",
-    "cod_note": "कृपया सुट्टे पैसे तयार ठेवा."
+    "cod_note": "कृपया सुट्टे पैसे तयार ठेवा.",
+    "header_title": "चेकआउट",
+    "included_in_charge": "सेवा शुल्कात समाविष्ट",
+    "pickup_details": "पिकअप तपशील",
+    "coupon_discount": "कूपन सूट",
+    "default_address": "डीफॉल्ट पत्ता",
+    "address_required_title": "पत्ता आवश्यक",
+    "address_required_msg": "कृपया सेवा पत्ता निवडा.",
+    "book_now": "आता बुक करा",
+    "processing": "प्रक्रिया होत आहे...",
+    "total": "एकूण",
+    "free": "मोफत",
+    "no_address_saved": "कोणताही जतन केलेला पत्ता नाही",
+    "change": "बदला",
+    "venue_label": "ठिकाण",
+    "pickup_enabled": "पिकअप आवश्यक",
+    "pickup_disabled": "स्वतःची व्यवस्था",
+    "pickup_time_label": "पिकअप वेळ",
+    "organizer_label": "आयोजक",
+    "plan_benefit_applied": "प्लॅन लाभ लागू!"
   },
   "service_confirmation": {
     "booking_confirmed": "बुकिंग निश्चित झाले",
@@ -1838,7 +1903,7 @@
     "header": "टेक मदतनीस",
     "title": "टेक मदतनीस",
     "subtitle": "आम्ही फोन, वाय-फाय आणि टीव्ही रिमोट दुरुस्त करतो.",
-    "missing_info": "कृपया समस्येचे वर्णन करा, तारीख निवडा आणि पत्ता असल्याची खात्री करा.",
+    "missing_info": "माहिती अपूर्ण",
     "whats_issue": "काय समस्या आहे?",
     "phone_help": "फोन मदत (WhatsApp, Zoom, कॉन्टॅक्ट्स सेटअप)",
     "tv_wifi": "टीव्ही आणि वाय-फाय (Netflix लॉगिन, रिमोट दुरुस्ती)",
@@ -1848,14 +1913,33 @@
     "date_time": "पसंतीची तारीख आणि वेळ",
     "date_placeholder": "तारीख आणि वेळ निवडा",
     "upload_title": "फोटो अपलोड करा (पर्यायी)",
-    "upload_subtitle": "आम्हाला एरर मेसेज किंवा बिघडलेले उपकरण दाखवा",
-    "select_mode": "माध्यम निवडा",
-    "home_visit": "घरगुती भेट",
-    "home_visit_desc": "एक साहाय्यक शिकवण्यासाठी घरी येईल",
-    "phone_call": "phone कॉल",
-    "phone_call_desc": "रिमोट मदत",
+    "upload_subtitle": "समस्या दाखवा — जास्तीत जास्त 4 चित्रे",
+    "select_mode": "मोड निवडा",
+    "home_visit": "घरी भेट",
+    "home_visit_desc": "तज्ञ तुमच्या घरी येतील",
+    "phone_call": "फोन / व्हिडिओ कॉल",
+    "phone_call_desc": "कॉलवर दूरस्थ मार्गदर्शन",
     "book": "टेक सपोर्ट बुक करा",
-    "invalid_time": "कृपया भविष्यातील वेळ निवडा."
+    "invalid_time": "कृपया भविष्यातील वेळ निवडा.",
+    "main_title": "तंत्रज्ञान मदत तुमच्या दारावर",
+    "sub_title": "आम्ही तुमचे डिव्हाइस आणि अॅप्स दुरुस्त करतो.",
+    "select_issue": "समस्या काय आहे?",
+    "issue_phone": "फोन / टॅबलेट मदत",
+    "issue_phone_sub": "सेटअप, स्लो फोन, अॅप समस्या",
+    "issue_tv_wifi": "TV / Wi-Fi मदत",
+    "issue_tv_wifi_sub": "Wi-Fi सेटअप, स्मार्ट TV, OTT",
+    "issue_banking": "बँकिंग आणि UPI अॅप मदत",
+    "issue_banking_sub": "मोबाइल बँकिंग, UPI सेटअप",
+    "something_else": "दुसरे काही?",
+    "describe_placeholder": "तुमची समस्या तपशीलवार सांगा...",
+    "preferred_date_time": "पसंतीची तारीख आणि वेळ",
+    "upload_photos": "फोटो अपलोड करा (ऐच्छिक)",
+    "book_btn": "टेक हेल्प बुक करा",
+    "initializing": "सेट होत आहे...",
+    "missing_info_desc": "कृपया समस्या, तारीख आणि पत्ता निवडा.",
+    "error": "त्रुटी",
+    "init_error": "सेवा कॉन्फिगर नाही. पुन्हा प्रयत्न करा.",
+    "generic_error": "काहीतरी चूक झाली. पुन्हा प्रयत्न करा."
   },
   "trip_travels": {
     "header": "ट्रिप आणि ट्रॅव्हल",
@@ -2649,7 +2733,16 @@
     "products_unavailable_msg": "तुमच्या कार्टमधील काही उत्पादने आता उपलब्ध नाहीत. कृपया तुमची कार्ट अपडेट करा।",
     "upi": "UPI (GPay / PhonePe / Paytm)",
     "card": "क्रेडिट / डेबिट कार्ड",
-    "cod": "कॅश ऑन डिलिव्हरी"
+    "cod": "कॅश ऑन डिलिव्हरी",
+    "delivery_address": "डिलिव्हरी पत्ता",
+    "service_address": "सेवा पत्ता",
+    "included_in_charge": "सेवा शुल्कात समाविष्ट",
+    "additional_charges": "अतिरिक्त शुल्क",
+    "pickup_details": "पिकअप तपशील",
+    "pickup_address": "पत्ता:",
+    "pickup_landmark": "खूण:",
+    "pickup_time": "वेळ:",
+    "pickup_contact": "संपर्क:"
   },
   "success_screen": {
     "title": "पेमेंट यशस्वी!",
@@ -3048,5 +3141,24 @@
     "tip_area": "परिसर किंवा स्थानिकतेनुसार शोधा",
     "tip_landmark": "लँडमार्क किंवा रस्ता वापरून पहा",
     "tip_address": "पूर्ण पत्ता किंवा पिनकोड प्रविष्ट करा"
+  },
+  "live_updates": {
+    "header_title": "लाइव्ह अपडेट",
+    "header_sub": "ॲक्टिव्हिटी सेंटर",
+    "live_label": "लाइव्ह",
+    "loading": "अपडेट मिळवत आहे…",
+    "empty_title": "कोणतेही सक्रिय अपडेट नाहीत",
+    "empty_sub": "डॉक्टर नियुक्ती, सॅम्पल संकलन, डिलिव्हरी आणि पेमेंट येथे रिअल टाइममध्ये दिसतील.",
+    "call": "कॉल करा",
+    "eta": "ETA",
+    "doctor_assigned": "डॉक्टर नियुक्त",
+    "caregiver_assigned": "काळजीवाहक नियुक्त",
+    "nurse_assigned": "नर्स नियुक्त",
+    "appointment_confirmed": "भेट निश्चित",
+    "sample_collected": "लॅब सॅम्पल घेतले",
+    "out_for_delivery": "ऑर्डर डिलिव्हरीवर",
+    "medicine_delivered": "औषध वितरित",
+    "service_rescheduled": "सेवा पुनर्निर्धारित",
+    "payment_confirmed": "पेमेंट निश्चित"
   }
 }

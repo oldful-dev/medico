@@ -7,6 +7,8 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { paymentService, SavedCard, AddCardPayload } from '@/services/api/paymentService';
 import { useTranslation } from 'react-i18next';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 
 const CARD_BRAND_ICON: Record<string, { name: any; color: string }> = {
     Visa:       { name: 'card-outline',   color: '#1A1F71' },
@@ -26,6 +28,9 @@ function cardIcon(card: SavedCard) {
 export default function PaymentsWalletScreen() {
     const { t } = useTranslation();
     const router = useRouter();
+    const colors = useThemeColors();
+    const { isDarkMode } = useTheme();
+    const styles = makeStyles(colors, isDarkMode);
     const [cards, setCards] = useState<SavedCard[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -147,10 +152,10 @@ export default function PaymentsWalletScreen() {
 
                 {/* ─── Card List ─── */}
                 {loading ? (
-                    <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
+                    <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
                 ) : cards.length === 0 ? (
                     <View style={styles.emptyState}>
-                        <Ionicons name="card-outline" size={48} color={Colors.textLight} />
+                        <Ionicons name="card-outline" size={48} color={colors.textMuted} />
                         <Text style={styles.emptyText}>{t('payments_wallet.empty_title')}</Text>
                         <Text style={styles.emptySubtext}>{t('payments_wallet.empty_subtitle')}</Text>
                     </View>
@@ -338,88 +343,91 @@ export default function PaymentsWalletScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: Colors.primary },
-    headerSafe: { backgroundColor: Colors.primary },
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.primary },
+    headerSafe: { backgroundColor: colors.primary },
     headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
     backBtn: { padding: 4, marginRight: 8 },
     headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: '#FFFFFF', flex: 1 },
 
-    scrollView: { flex: 1, backgroundColor: Colors.bgScreen, borderTopLeftRadius: 30, borderTopRightRadius: 30 },
+    scrollView: { flex: 1, backgroundColor: colors.bgScreen, borderTopLeftRadius: 30, borderTopRightRadius: 30 },
     scrollContent: { padding: Spacing.lg, paddingBottom: Spacing.xl },
 
-    sectionTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: Colors.textDark, marginBottom: 4 },
-    sectionSubtitle: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textMuted, marginBottom: 20 },
+    sectionTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: colors.textDark, marginBottom: 4 },
+    sectionSubtitle: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: colors.textMuted, marginBottom: 20 },
 
     emptyState: { alignItems: 'center', paddingVertical: 48 },
-    emptyText: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textMuted, marginTop: 12 },
-    emptySubtext: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textLight, marginTop: 4 },
+    emptyText: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: colors.textMuted, marginTop: 12 },
+    emptySubtext: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: colors.textMuted, marginTop: 4 },
 
     cardRow: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.bgCard,
+        flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgCard,
         borderRadius: Radius.md, padding: 14, marginBottom: 10,
-        borderWidth: 1, borderColor: Colors.borderLight,
+        borderWidth: 1, borderColor: colors.borderLight,
         ...Shadow.card,
     },
-    cardRowDefault: { borderColor: Colors.primary, borderWidth: 1.5 },
+    cardRowDefault: { borderColor: colors.primary, borderWidth: 1.5 },
     cardIconBox: { width: 42, height: 42, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
     cardInfo: { flex: 1 },
-    cardTitle: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textDark },
-    cardSub: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: Colors.textMuted, marginTop: 2 },
+    cardTitle: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: colors.textDark },
+    cardSub: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: colors.textMuted, marginTop: 2 },
     cardActions: { alignItems: 'flex-end', gap: 6 },
-    defaultBadge: { backgroundColor: Colors.primary + '18', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-    defaultBadgeText: { fontFamily: Fonts.medium, fontSize: 10, color: Colors.primary },
+    defaultBadge: { backgroundColor: colors.primary + '18', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+    defaultBadgeText: { fontFamily: Fonts.medium, fontSize: 10, color: colors.primary },
     setDefaultBtn: { paddingHorizontal: 6, paddingVertical: 3 },
-    setDefaultText: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted },
+    setDefaultText: { fontFamily: Fonts.regular, fontSize: 11, color: colors.textMuted },
     deleteBtn: { padding: 4 },
 
     addMethodBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-        paddingVertical: 14, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.primary,
-        borderStyle: 'dashed', backgroundColor: Colors.primary + '08', marginTop: 8,
+        paddingVertical: 14, borderRadius: Radius.md, borderWidth: 1.5, borderColor: colors.primary,
+        borderStyle: 'dashed', backgroundColor: colors.primary + '08', marginTop: 8,
     },
-    addMethodText: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.primary },
+    addMethodText: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: colors.primary },
 
     // Modal
-    modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
+    modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.55)' },
     modalSheet: {
-        backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24,
+        backgroundColor: colors.bgCard,
+        borderTopLeftRadius: 24, borderTopRightRadius: 24,
         padding: Spacing.lg, paddingBottom: Platform.OS === 'ios' ? 40 : Spacing.lg,
     },
-    modalHandle: { width: 40, height: 4, backgroundColor: '#E0E0E0', borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
-    modalTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: Colors.textDark, marginBottom: 20 },
+    modalHandle: { width: 40, height: 4, backgroundColor: colors.borderLight, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
+    modalTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: colors.textDark, marginBottom: 20 },
 
     typeToggle: { flexDirection: 'row', gap: 10, marginBottom: 20 },
     typeBtn: {
         flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-        paddingVertical: 10, borderRadius: Radius.sm, borderWidth: 1.5, borderColor: Colors.borderLight,
+        paddingVertical: 10, borderRadius: Radius.sm, borderWidth: 1.5, borderColor: colors.borderLight,
     },
-    typeBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-    typeBtnText: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: Colors.textMuted },
+    typeBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    typeBtnText: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: colors.textMuted },
     typeBtnTextActive: { color: '#FFF' },
 
-    fieldLabel: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: Colors.textBody, marginBottom: 6, marginTop: 12 },
+    fieldLabel: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: colors.textBody ?? colors.textDark, marginBottom: 6, marginTop: 12 },
     input: {
-        borderWidth: 1, borderColor: Colors.borderLight ?? '#E0E0E0', borderRadius: Radius.sm,
+        borderWidth: 1, borderColor: colors.borderLight, borderRadius: Radius.sm,
         paddingHorizontal: 14, paddingVertical: Platform.OS === 'ios' ? 12 : 10,
-        fontFamily: Fonts.regular, fontSize: FontSize.body, color: Colors.textDark,
+        fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textDark,
+        backgroundColor: colors.bgCardMuted,
     },
     brandRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
     brandChip: {
         paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8,
-        borderWidth: 1.5, borderColor: Colors.borderLight ?? '#E0E0E0',
+        borderWidth: 1.5, borderColor: colors.borderLight,
     },
-    brandChipActive: { borderColor: Colors.primary, backgroundColor: Colors.primary + '12' },
-    brandChipText: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: Colors.textMuted },
-    brandChipTextActive: { color: Colors.primary, fontFamily: Fonts.medium },
+    brandChipActive: { borderColor: colors.primary, backgroundColor: colors.primary + '12' },
+    brandChipText: { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textMuted },
+    brandChipTextActive: { color: colors.primary, fontFamily: Fonts.medium },
     expiryRow: { flexDirection: 'row' },
 
     modalBtns: { flexDirection: 'row', gap: 12, marginTop: 24 },
     cancelBtn: {
         flex: 1, paddingVertical: 13, borderRadius: Radius.sm,
-        borderWidth: 1, borderColor: Colors.borderLight ?? '#E0E0E0', alignItems: 'center',
+        borderWidth: 1, borderColor: colors.borderLight, alignItems: 'center',
+        backgroundColor: colors.bgCardMuted,
     },
-    cancelBtnText: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: Colors.textMuted },
-    saveBtn: { flex: 1, paddingVertical: 13, borderRadius: Radius.sm, backgroundColor: Colors.primary, alignItems: 'center' },
+    cancelBtnText: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: colors.textMuted },
+    saveBtn: { flex: 1, paddingVertical: 13, borderRadius: Radius.sm, backgroundColor: colors.primary, alignItems: 'center' },
     saveBtnText: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: '#FFF' },
 });

@@ -520,7 +520,10 @@
     "social_label_twitter": "ఎక్స్ (ట్విట్టర్)",
     "social_label_whatsapp": "వాట్సాప్ ఛానెల్",
     "social_handle_whatsapp": "మా ఛానెల్‌లో చేరండి",
-    "tab_title": "ఖాతా"
+    "tab_title": "ఖాతా",
+    "live_chat_subtitle": "WhatsApp లో మా సపోర్ట్ ఎగ్జిక్యూటివ్‌లతో తక్షణం కనెక్ట్ అవ్వండి",
+    "live_chat_info": "మా సపోర్ట్ బడ్డీలు సేవా బుకింగ్, పేమెంట్ సమస్యలు, డాక్టర్ స్లాట్లు మరియు మరింత సహాయం అందుబాటులో ఉన్నారు.",
+    "live_chat_status": "సపోర్ట్ ఆన్‌లైన్‌లో యాక్టివ్"
   },
   "plans": {
     "tab_title": "ప్రణాళికలు",
@@ -603,7 +606,15 @@
     "added_to_cart_message": "కార్ట్‌కి {{name}} జోడించబడింది!",
     "continue_shopping": "షాపింగ్ కొనసాగించండి",
     "view_cart": "కార్ట్ చూడండి",
-    "off_badge": "{{percent}}% తగ్గింపు"
+    "off_badge": "{{percent}}% తగ్గింపు",
+    "filter_all": "అన్నీ",
+    "filter_wellness_essentials": "వెల్నెస్ ఎసెన్షియల్స్",
+    "filter_healthcare_devices": "హెల్త్‌కేర్ పరికరాలు",
+    "filter_fitness_recovery": "ఫిట్‌నెస్ & రికవరీ",
+    "filter_mobility_aids": "మోబిలిటీ ఎయిడ్స్",
+    "filter_health_monitors": "హెల్త్ మానిటర్లు",
+    "filter_supplements": "సప్లిమెంట్లు",
+    "filter_personal_care": "వ్యక్తిగత సంరక్షణ"
   },
   "cart": {
     "header_title": "మీ కార్ట్",
@@ -662,7 +673,13 @@
       "emergency_alert": "అత్యవసర హెచ్చరిక",
       "subtext": "అడ్మిన్ మరియు కుటుంబ సభ్యులను సంప్రదిస్తున్నాను",
       "cancel": "రద్దు చేయి"
-    }
+    },
+    "calling_emergency_title": "అత్యవసర కాల్...",
+    "contacting_services_title": "సేవలను సంప్రదిస్తోంది...",
+    "press_button": "కాల్ ప్రారంభించడానికి బటన్ నొక్కండి",
+    "contacting_services_desc": "అత్యవసర సేవలను సంప్రదిస్తోంది...",
+    "notifying_contacts_text": "అత్యవసర సంప్రదింపులకు తెలియజేయబడుతోంది",
+    "contacts_notified_text": "అత్యవసర సంప్రదింపులకు నోటిఫికేషన్ పంపుతోంది..."
   },
   "language_selection": {
     "header": "భాషను ఎంచుకోండి",
@@ -675,11 +692,27 @@
     "header": "మీ నగరాన్ని ఎంచుకోండి",
     "subtitle": "మేము మీ నగరంలో అందుబాటులో ఉన్న సేవలను మీకు చూపుతాము.",
     "coming_soon": "త్వరలో వస్తుంది",
-    "continue": "కొనసాగించు"
+    "continue": "కొనసాగించు",
+    "location_question": "మీరు ఎక్కడ ఉన్నారు?",
+    "location_sub": "మీ నగరాన్ని ఎంచుకోండి మరియు దగ్గరిలోని సేవలు చూడండి.",
+    "detect_location": "నా స్థానాన్ని స్వయంచాలకంగా గుర్తించండి",
+    "available_now": "ఇప్పుడు అందుబాటులో ఉంది",
+    "coming_soon_label": "త్వరలో వస్తోంది",
+    "notify_banner": "మీ నగరం కనిపించడం లేదా? లాంచ్ అయినప్పుడు తెలుసుకోండి!",
+    "notify_modal_title": "లాంచ్ అయినప్పుడు తెలియజేయండి",
+    "notify_modal_sub": "Ayuxa మీ నగరంలో లాంచ్ అయిన వెంటనే ఇమెయిల్ చేస్తాం.",
+    "your_name": "మీ పేరు *",
+    "your_name_label": "మీ పేరు నమోదు చేయండి",
+    "email_label": "ఇమెయిల్ చిరునామా *",
+    "email_placeholder": "మీ ఇమెయిల్ నమోదు చేయండి",
+    "city_optional": "మీ నగరం (ఐచ్ఛికం)",
+    "city_placeholder": "ఉదా: పుణే, చెన్నై, కోల్‌కతా",
+    "notify_submit": "తెలియజేయండి",
+    "active": "సక్రియం"
   },
   "notifications": {
-    "header_title": "నోటిఫికేషన్‌లు",
-    "empty_title": "ఇంకా నోటిఫికేషన్‌లు లేవు",
+    "header_title": "నోటిఫికేషన్లు",
+    "empty_title": "ఇంకా నోటిఫికేషన్లు లేవు",
     "empty_subtitle": "మీరు ఇక్కడ బుకింగ్ అప్‌డేట్‌లు, రిమైండర్‌లు మరియు ఆఫర్‌లను చూస్తారు.",
     "section_today": "ఈరోజు",
     "section_earlier": "అంతకుముందు",
@@ -689,7 +722,16 @@
     "time_hours_ago_plural": "{{count}} గంటల క్రితం",
     "time_yesterday": "నిన్న",
     "time_days_ago": "{{count}} రోజుల క్రితం",
-    "default_title": "నోటిఫికేషన్"
+    "default_title": "నోటిఫికేషన్",
+    "today": "ఈరోజు",
+    "earlier": "ముందు",
+    "empty_sub": "బుకింగ్ అప్‌డేట్‌లు, రిమైండర్లు మరియు ఆఫర్లు ఇక్కడ కనిపిస్తాయి.",
+    "just_now": "ఇప్పుడే",
+    "min_ago": "{{count}} నిమిషాల క్రితం",
+    "hour_ago": "{{count}} గంట క్రితం",
+    "hours_ago": "{{count}} గంటల క్రితం",
+    "yesterday": "నిన్న",
+    "days_ago": "{{count}} రోజుల క్రితం"
   },
   "help_support": {
     "header": "సహాయం & మద్దతు",
@@ -1265,7 +1307,11 @@
   "legal": {
     "failed_load": "పత్రాన్ని లోడ్ చేయడంలో విఫలమైంది",
     "last_updated": "చివరిగా నవీకరించబడింది: {{date}}",
-    "loading": "లోడ్ అవుతోంది..."
+    "loading": "లోడ్ అవుతోంది...",
+    "try_again": "మళ్ళీ ప్రయత్నించండి",
+    "privacy_policy": "గోప్యతా విధానం",
+    "terms_conditions": "నిబంధనలు & షరతులు",
+    "refund_policy": "రిఫండ్ విధానం"
   },
   "privacy_policy": {
     "header_title": "గోప్యతా విధానం"
@@ -1301,7 +1347,26 @@
     "card": "క్రెడిట్ / డెబిట్ కార్డ్",
     "cod": "క్యాష్ ఆన్ డెలివరీ",
     "razorpay_secure": "Razorpay ద్వారా సురక్షితం. మీ చెల్లింపు రక్షించబడింది.",
-    "cod_note": "దయచేసి నగదులో ఖచ్చితమైన మార్పును సిద్ధం చేయండి."
+    "cod_note": "దయచేసి నగదులో ఖచ్చితమైన మార్పును సిద్ధం చేయండి.",
+    "header_title": "చెక్‌అవుట్",
+    "included_in_charge": "సేవా రుసుముతో చేర్చబడింది",
+    "pickup_details": "పికప్ వివరాలు",
+    "coupon_discount": "కూపన్ తగ్గింపు",
+    "default_address": "డిఫాల్ట్ చిరునామా",
+    "address_required_title": "చిరునామా అవసరం",
+    "address_required_msg": "సేవా చిరునామాను ఎంచుకోండి.",
+    "book_now": "ఇప్పుడు బుక్ చేయండి",
+    "processing": "ప్రాసెస్ అవుతోంది...",
+    "total": "మొత్తం",
+    "free": "ఉచితం",
+    "no_address_saved": "సేవ్ చేసిన చిరునామా లేదు",
+    "change": "మార్చు",
+    "venue_label": "వేదిక",
+    "pickup_enabled": "పికప్ అవసరం",
+    "pickup_disabled": "స్వంత ఏర్పాటు",
+    "pickup_time_label": "పికప్ సమయం",
+    "organizer_label": "నిర్వాహకుడు",
+    "plan_benefit_applied": "ప్లాన్ ప్రయోజనం వర్తించబడింది!"
   },
   "service_confirmation": {
     "booking_confirmed": "బుకింగ్ నిర్ధారించబడింది",
@@ -1838,7 +1903,7 @@
     "header": "టెక్ హెల్పర్",
     "title": "టెక్ హెల్పర్",
     "subtitle": "మేము ఫోన్‌లు, Wi-Fi మరియు టీవీ రిమోట్‌లను సరిచేస్తాము.",
-    "missing_info": "దయచేసి సమస్యను వివరించండి, తేదీని ఎంచుకోండి మరియు చిరునామా ఉందని నిర్ధారించుకోండి.",
+    "missing_info": "సమాచారం అసంపూర్ణం",
     "whats_issue": "సమస్య ఏమిటి?",
     "phone_help": "ఫోన్ సహాయం (WhatsApp, జూమ్, పరిచయాల సెటప్)",
     "tv_wifi": "టీవీ & వై-ఫై (నెట్‌ఫ్లిక్స్ లాగిన్, రిమోట్ ఫిక్స్)",
@@ -1848,14 +1913,33 @@
     "date_time": "ప్రాధాన్య తేదీ & సమయం",
     "date_placeholder": "తేదీ & సమయాన్ని ఎంచుకోండి",
     "upload_title": "ఫోటోలను అప్‌లోడ్ చేయండి (ఐచ్ఛికం)",
-    "upload_subtitle": "దోష సందేశం లేదా విరిగిన పరికరాన్ని మాకు చూపండి",
-    "select_mode": "మోడ్‌ని ఎంచుకోండి",
-    "home_visit": "గృహ సందర్శన",
-    "home_visit_desc": "ఒక స్నేహితుడు బోధించడానికి వస్తాడు",
-    "phone_call": "ఫోన్ కాల్",
-    "phone_call_desc": "రిమోట్ సహాయం",
+    "upload_subtitle": "సమస్య చూపించండి — గరిష్ఠం 4 చిత్రాలు",
+    "select_mode": "మోడ్ ఎంచుకోండి",
+    "home_visit": "ఇంటి విజిట్",
+    "home_visit_desc": "నిపుణుడు మీ ఇంటికి వస్తారు",
+    "phone_call": "ఫోన్ / వీడియో కాల్",
+    "phone_call_desc": "కాల్ ద్వారా రిమోట్ మార్గదర్శనం",
     "book": "బుక్ టెక్ సపోర్ట్",
-    "invalid_time": "దయచేసి భవిష్యత్ సమయ స్లాట్‌ను ఎంచుకోండి."
+    "invalid_time": "దయచేసి భవిష్యత్ సమయ స్లాట్‌ను ఎంచుకోండి.",
+    "main_title": "మీ ఇంటికే టెక్ సహాయం",
+    "sub_title": "మేము మీ పరికరాలు మరియు అప్లికేషన్‌లు సరిచేస్తాం.",
+    "select_issue": "సమస్య ఏమిటి?",
+    "issue_phone": "ఫోన్ / టాబ్లెట్ సహాయం",
+    "issue_phone_sub": "సెటప్, నెమ్మది ఫోన్, యాప్ సమస్య",
+    "issue_tv_wifi": "TV / Wi-Fi సహాయం",
+    "issue_tv_wifi_sub": "Wi-Fi సెటప్, స్మార్ట్ TV, OTT",
+    "issue_banking": "బ్యాంకింగ్ & UPI యాప్ సహాయం",
+    "issue_banking_sub": "మొబైల్ బ్యాంకింగ్, UPI సెటప్",
+    "something_else": "వేరే ఏదైనా?",
+    "describe_placeholder": "మీ సమస్యను వివరంగా చెప్పండి...",
+    "preferred_date_time": "ఇష్టమైన తేదీ మరియు సమయం",
+    "upload_photos": "ఫోటోలు అప్‌లోడ్ చేయండి (ఐచ్ఛికం)",
+    "book_btn": "టెక్ హెల్ప్ బుక్ చేయండి",
+    "initializing": "సెటప్ అవుతోంది...",
+    "missing_info_desc": "దయచేసి సమస్య, తేదీ మరియు చిరునామా నిర్ధారించండి.",
+    "error": "లోపం",
+    "init_error": "సేవ కాన్ఫిగర్ కాలేదు. మళ్ళీ ప్రయత్నించండి.",
+    "generic_error": "ఏదో తప్పు జరిగింది. మళ్ళీ ప్రయత్నించండి."
   },
   "trip_travels": {
     "header": "ప్రయాణం & ప్రయాణం",
@@ -2649,7 +2733,16 @@
     "products_unavailable_msg": "మీ కార్ట్‌లోని కొన్ని ఉత్పత్తులు ఇకపై అందుబాటులో లేవు. దయచేసి మీ కార్ట్‌ను నవీకరించండి.",
     "upi": "UPI (GPay / PhonePe / Paytm)",
     "card": "క్రెడిట్ / డెబిట్ కార్డ్",
-    "cod": "క్యాష్ ఆన్ డెలివరీ"
+    "cod": "క్యాష్ ఆన్ డెలివరీ",
+    "delivery_address": "డెలివరీ చిరునామా",
+    "service_address": "సేవా చిరునామా",
+    "included_in_charge": "సేవా చార్జ్‌లో చేర్చబడింది",
+    "additional_charges": "అదనపు చార్జీలు",
+    "pickup_details": "పికప్ వివరాలు",
+    "pickup_address": "చిరునామా:",
+    "pickup_landmark": "లాండ్‌మార్క్:",
+    "pickup_time": "సమయం:",
+    "pickup_contact": "సంప్రదింపు:"
   },
   "success_screen": {
     "title": "చెల్లింపు విజయవంతమైంది!",
@@ -3048,5 +3141,24 @@
     "tip_area": "ప్రాంతం లేదా మొహల్లా ఆధారంగా వెతకండి",
     "tip_landmark": "ల్యాండ్‌మార్క్ లేదా వీధి ప్రయత్నించండి",
     "tip_address": "పూర్తి చిరునామా లేదా పిన్‌కోడ్ నమోదు చేయండి"
+  },
+  "live_updates": {
+    "header_title": "లైవ్ అప్‌డేట్‌లు",
+    "header_sub": "యాక్టివిటీ సెంటర్",
+    "live_label": "లైవ్",
+    "loading": "అప్‌డేట్‌లు తీసుకుంటోంది…",
+    "empty_title": "చురుకైన అప్‌డేట్‌లు లేవు",
+    "empty_sub": "డాక్టర్ నియామకాలు, నమూనా సేకరణ, డెలివరీ మరియు చెల్లింపులు ఇక్కడ రియల్ టైమ్‌లో కనిపిస్తాయి.",
+    "call": "కాల్ చేయండి",
+    "eta": "ETA",
+    "doctor_assigned": "డాక్టర్ నియమితులయ్యారు",
+    "caregiver_assigned": "సంరక్షకుడు నియమితులయ్యారు",
+    "nurse_assigned": "నర్స్ నియమితురాలయ్యారు",
+    "appointment_confirmed": "అపాయింట్‌మెంట్ నిర్ధారించబడింది",
+    "sample_collected": "లాబ్ నమూనా సేకరించబడింది",
+    "out_for_delivery": "ఆర్డర్ డెలివరీలో ఉంది",
+    "medicine_delivered": "మందు డెలివర్ చేయబడింది",
+    "service_rescheduled": "సేవ పునర్నిర్ధారించబడింది",
+    "payment_confirmed": "చెల్లింపు నిర్ధారించబడింది"
   }
 }

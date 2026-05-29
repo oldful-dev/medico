@@ -21,10 +21,10 @@ import { useTheme } from '@/context/ThemeContext';
 const imgHeartOutline = require('@/assets/images/37d35bff48c57182eb08ca96ee07ef22d24fd2db.png');
 
 // ─── Billing cycle helpers ─────────────────────────────────────────────────────
-const BILLING_CYCLES: { key: BillingCycle; label: string; suffix: string; days: string }[] = [
-    { key: 'QUARTERLY', label: 'Quarterly',  suffix: '/ quarter',  days: '90 days' },
-    { key: 'BIANNUAL',  label: 'Biannually', suffix: '/ 6 months', days: '180 days' },
-    { key: 'YEARLY',    label: 'Yearly',     suffix: '/ year',     days: '365 days' },
+const BILLING_CYCLES: { key: BillingCycle; labelKey: string; suffixKey: string; daysKey: string }[] = [
+    { key: 'QUARTERLY', labelKey: 'plans.quarterly', suffixKey: 'plans.quarterly_suffix', daysKey: 'plans.quarterly_days' },
+    { key: 'BIANNUAL',  labelKey: 'plans.biannually', suffixKey: 'plans.biannually_suffix', daysKey: 'plans.biannually_days' },
+    { key: 'YEARLY',    labelKey: 'plans.yearly', suffixKey: 'plans.yearly_suffix', daysKey: 'plans.yearly_days' },
 ];
 
 function getPriceForCycle(plan: Plan, cycle: BillingCycle): number {
@@ -104,7 +104,7 @@ export default function PlansScreen() {
         console.log('userActiveSubscription state:', userActiveSubscription);
 
         if (!profile) {
-            Alert.alert('Login Required', 'Please login to subscribe to a plan.');
+            Alert.alert(t('plans.login_required'), t('plans.login_required_desc'));
             return;
         }
 
@@ -113,16 +113,16 @@ export default function PlansScreen() {
             const expiryDate = new Date(userActiveSubscription.expiryDate).toLocaleDateString();
             console.log('Blocking plan selection - user has active subscription until:', expiryDate);
             Alert.alert(
-                'Active Plan',
-                `You already have an active ${userActiveSubscription.planName} plan until ${expiryDate}.\n\nCancel your current plan to subscribe to another.`,
-                [{ text: 'OK', onPress: () => {} }]
+                t('plans.active_plan_title'),
+                t('plans.active_plan_desc', { planName: userActiveSubscription.planName, expiry: expiryDate }),
+                [{ text: t('common.ok'), onPress: () => {} }]
             );
             return;
         }
 
         const price = getPriceForCycle(plan, activeCycle);
         if (!price || price <= 0) {
-            Alert.alert('Unavailable', 'This plan is not available for the selected period.');
+            Alert.alert(t('plans.unavailable'), t('plans.unavailable_desc'));
             return;
         }
 
@@ -136,7 +136,7 @@ export default function PlansScreen() {
             });
 
             if (!subRes.success || !subRes.data) {
-                Alert.alert('Error', subRes.message ?? 'Could not initiate plan. Please try again.');
+                Alert.alert(t('common.error'), subRes.message ?? t('plans.initiate_error'));
                 return;
             }
 
@@ -151,7 +151,7 @@ export default function PlansScreen() {
                 params: {
                     subscriptionId,
                     amount: String(price),
-                    label: `${plan.name} — ${BILLING_CYCLES.find(c => c.key === activeCycle)?.label ?? activeCycle}`,
+                    label: `${plan.name} — ${t(BILLING_CYCLES.find(c => c.key === activeCycle)?.labelKey ?? 'plans.quarterly')}`,
                     userName: profile.name ?? '',
                     phone: profile.phone ?? '',
                     email: profile.email ?? '',
@@ -163,7 +163,7 @@ export default function PlansScreen() {
                 },
             });
         } catch (e: any) {
-            Alert.alert('Error', e?.message || 'Failed to initiate subscription');
+            Alert.alert(t('common.error'), e?.message || t('plans.subscribe_error'));
         } finally {
             setInitiating(null);
         }
@@ -214,11 +214,11 @@ export default function PlansScreen() {
                             <Ionicons name="shield-checkmark" size={20} color={colors.textWhite} />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.activeSubLabel}>Your Active Plan</Text>
-                            <Text style={styles.activeSubName}>{activeSub.planName ?? activeSub.plan?.name ?? 'Care Plan'}</Text>
+                            <Text style={styles.activeSubLabel}>{t('plans.your_active_plan')}</Text>
+                            <Text style={styles.activeSubName}>{activeSub.planName ?? activeSub.plan?.name ?? t('plans.tab_title')}</Text>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={styles.activeSubExpLabel}>Expires</Text>
+                            <Text style={styles.activeSubExpLabel}>{t('plans.expires')}</Text>
                             <Text style={styles.activeSubExpDate}>
                                 {activeSub.expiryDate
                                     ? new Date(activeSub.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -240,7 +240,7 @@ export default function PlansScreen() {
                                 activeOpacity={0.8}
                             >
                                 <Text style={[styles.cycleTabText, isActive && styles.cycleTabTextActive]}>
-                                    {cycle.label}
+                                    {t(cycle.labelKey)}
                                 </Text>
                             </TouchableOpacity>
                         );
@@ -282,10 +282,10 @@ export default function PlansScreen() {
                                             ₹{price.toLocaleString('en-IN')}
                                         </Text>
                                         <Text style={[styles.priceSuffix, isPro && { color: 'rgba(2,116,63,0.8)' }]}>
-                                            {cycleInfo.suffix}
+                                            {t(cycleInfo.suffixKey)}
                                         </Text>
                                         <Text style={[styles.validityText, isPro && { color: 'rgba(255,255,255,0.6)' }]}>
-                                            {cycleInfo.days}
+                                            {t(cycleInfo.daysKey)}
                                         </Text>
                                     </View>
                                 </View>
@@ -323,7 +323,7 @@ export default function PlansScreen() {
                                         <ActivityIndicator size="small" color={isPro ? colors.primary : colors.textWhite} />
                                     ) : (
                                         <Text style={[styles.planActionText, isPro && { color: colors.primary }]}>
-                                            {isActivePlan ? '✓ Active Plan' : (userActiveSubscription ? '🔒 Plan Active' : 'Choose Plan')}
+                                            {isActivePlan ? t('plans.cta_active') : (userActiveSubscription ? t('plans.cta_locked') : t('plans.cta_choose'))}
                                         </Text>
                                     )}
                                 </TouchableOpacity>

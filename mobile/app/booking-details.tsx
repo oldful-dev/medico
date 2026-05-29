@@ -10,6 +10,7 @@ import { meetupService } from '@/services/api/meetupService';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useTranslation } from 'react-i18next';
+import { useCart } from '@/context/CartContext';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -42,6 +43,10 @@ interface BookingDetail {
     reportGeneratedAt?: string;
     createdAt: string;
     amount: number;
+    packagePrice?: number; // Redcliffe package cost for rebook pricing
+    // For re-booking service orders
+    serviceId?: string;
+    cityId?: string;
 }
 
 // Map LabOrder to BookingDetail
@@ -55,6 +60,8 @@ function normalizeLabOrderDetail(order: LabOrderListItem): BookingDetail {
         if (s === 'CONFIRMED' || s === 'HOLD_CREATED') return 'confirmed';
         return 'pending';
     };
+    // pkg.cost = Redcliffe package price; payment.amount = actual paid
+    const packagePrice = pkg?.cost || (pkg as any)?.price || (pkg as any)?.discounted_cost || 0;
     return {
         id: order.id,
         bookingId: order.clientRefId,
@@ -78,7 +85,9 @@ function normalizeLabOrderDetail(order: LabOrderListItem): BookingDetail {
         reportReady: order.status === 'REPORT_GENERATED' && !!order.reportUrl,
         reportUrl: order.reportUrl,
         createdAt: order.createdAt,
-        amount: payment?.amount || 0,
+        // Use payment amount for display; fall back to package cost
+        amount: payment?.amount || packagePrice,
+        packagePrice,
     };
 }
 
@@ -128,6 +137,8 @@ function normalizeServiceDetail(b: any): BookingDetail {
         reportReady: false,
         createdAt: b.createdAt ? String(b.createdAt) : '',
         amount: b.amount || 0,
+        serviceId: b.serviceId,
+        cityId: b.cityId,
         assignedPersonnel: b.caregiver?.name,
     };
 }
@@ -140,6 +151,7 @@ export default function BookingDetailsScreen() {
     const colors = useThemeColors();
     const styles = makeStyles(isDarkMode, colors);
     const { t } = useTranslation();
+    const { addItem, clearCategory } = useCart();
     const [booking, setBooking] = useState<BookingDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [downloading, setDownloading] = useState(false);
@@ -240,7 +252,54 @@ export default function BookingDetailsScreen() {
     };
 
     const handleBookAgain = () => {
-        router.push('/blood-test');
+        if (!booking) return;
+
+        if (type === 'lab') {
+            // Blood test re-booking: add package to cart, then go to unified checkout
+            // Checkout will show the date/time slot picker dynamically (category='blood-test')
+            const price = booking.packagePrice || booking.amount || 0;
+            clearCategory('blood-test'); // clear old items first
+            addItem({
+                id: booking.packageCode || booking.id,
+                serviceType: 'Bloodwork',
+                title: booking.packageName,
+                price,
+                quantity: 1,
+                details: {
+                    code: booking.packageCode,
+                    name: booking.packageName,
+                    cost: price,
+                },
+            });
+            router.push({
+                pathname: '/payment/checkout',
+                params: {
+                    category: 'blood-test',
+                    amount: String(price),
+                    label: booking.packageName,
+                    skipUpsell: '1',
+                },
+            } as any);
+            return;
+        }
+
+        // Service / meetup re-booking → directly to unified checkout (skip form)
+        const bookingPayload = JSON.stringify({
+            serviceId: booking.serviceId,
+            cityId: booking.cityId,
+            scheduledDate: new Date().toISOString(),
+            formDataJson: {},
+        });
+
+        router.push({
+            pathname: '/payment/checkout',
+            params: {
+                bookingPayload,
+                amount: String(booking.amount),
+                label: booking.packageName,
+                skipUpsell: '1',
+            },
+        } as any);
     };
 
     const handleRescheduleClick = () => {

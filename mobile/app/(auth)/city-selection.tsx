@@ -94,9 +94,9 @@ export default function CitySelectionScreen() {
                     {/* Illustration */}
                     <View style={styles.illustrationCard}>
                         <Ionicons name="map" size={40} color="#048357" style={styles.illustrationIcon} />
-                        <Text style={[styles.illustrationTitle, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}>Where are you located?</Text>
+                        <Text style={[styles.illustrationTitle, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}>{t('city_selection.location_question')}</Text>
                         <Text style={[styles.illustrationSubtitle, { color: isDarkMode ? '#A0A0A0' : '#777777' }]}>
-                            Select your city to see available services near you.
+                            {t('city_selection.location_sub')}
                         </Text>
                     </View>
 
@@ -146,13 +146,13 @@ export default function CitySelectionScreen() {
                         }}
                     >
                         <Ionicons name="navigate" size={18} color="#048357" />
-                        <Text style={styles.autoDetectText}>Detect My Location Automatically</Text>
+                        <Text style={styles.autoDetectText}>{t('city_selection.detect_location')}</Text>
                     </TouchableOpacity>
 
                     {/* Available Cities (SDUI) */}
                     {availableCities.length > 0 && (
                         <>
-                            <Text style={styles.sectionLabel}>Available Now</Text>
+                            <Text style={styles.sectionLabel}>{t('city_selection.available_now')}</Text>
                             {availableCities.map(city => {
                                 const isSelected = city.id === selectedId;
                                 return (
@@ -176,7 +176,7 @@ export default function CitySelectionScreen() {
                                         </View>
                                         {isSelected && (
                                             <View style={styles.activeTag}>
-                                                <Text style={styles.activeTagText}>Active</Text>
+                                                <Text style={styles.activeTagText}>{t('city_selection.active')}</Text>
                                             </View>
                                         )}
                                         <Ionicons
@@ -193,7 +193,7 @@ export default function CitySelectionScreen() {
                     {/* Coming Soon Cities (SDUI) */}
                     {comingSoonCities.length > 0 && (
                         <>
-                            <Text style={[styles.sectionLabel, { marginTop: 20 }]}>Coming Soon</Text>
+                            <Text style={[styles.sectionLabel, { marginTop: 20 }]}>{t('city_selection.coming_soon_label')}</Text>
                             {comingSoonCities.map(city => (
                                 <View key={city.id} style={[styles.cityCard, styles.cityCardDisabled, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FFFFFF' }]}>
                                     <View style={styles.cityIconCircle}>
@@ -214,9 +214,7 @@ export default function CitySelectionScreen() {
                     {/* Notify Banner */}
                     <TouchableOpacity style={styles.notifyBanner} activeOpacity={0.8} onPress={() => setShowNotifyModal(true)}>
                         <Ionicons name="notifications-outline" size={20} color="#02743F" />
-                        <Text style={styles.notifyText}>
-                            Don&apos;t see your city? Tap to get notified when we launch near you!
-                        </Text>
+                        <Text style={styles.notifyText}>{t('city_selection.notify_banner')}</Text>
                         <Ionicons name="chevron-forward" size={16} color="#02743F" />
                     </TouchableOpacity>
                 </ScrollView>
@@ -237,37 +235,37 @@ export default function CitySelectionScreen() {
                         style={[styles.modalSheet, { backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF' }]}
                     >
                         <View style={[styles.modalHeader, { borderBottomColor: isDarkMode ? '#3A3A3A' : '#F0F0F0' }]}>
-                            <Text style={[styles.modalTitle, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}>Notify Me When You Launch</Text>
+                            <Text style={[styles.modalTitle, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}>{t('city_selection.notify_modal_title')}</Text>
                             <TouchableOpacity onPress={() => setShowNotifyModal(false)}>
                                 <Ionicons name="close" size={22} color={isDarkMode ? '#B0B0B0' : '#2F2F2F'} />
                             </TouchableOpacity>
                         </View>
                         <Text style={[styles.modalSubtitle, { color: isDarkMode ? '#A0A0A0' : '#777777' }]}>
-                            We&apos;ll send you an email the moment Ayuxa goes live in your city.
+                            {t('city_selection.notify_modal_sub')}
                         </Text>
                         <View style={styles.modalBody}>
-                            <Text style={[styles.inputLabel, { color: isDarkMode ? '#C0C0C0' : '#555555' }]}>Your Name *</Text>
+                            <Text style={[styles.inputLabel, { color: isDarkMode ? '#C0C0C0' : '#555555' }]}>{t('city_selection.your_name')}</Text>
                             <TextInput
                                 style={[styles.modalInput, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FAFAFA', color: isDarkMode ? '#E0E0E0' : '#2F2F2F', borderColor: isDarkMode ? '#4A4A4A' : '#E0E0E0' }]}
-                                placeholder="Enter your name"
+                                placeholder={t('city_selection.your_name_label')}
                                 placeholderTextColor={isDarkMode ? '#808080' : '#AAAEAC'}
                                 value={notifyName}
                                 onChangeText={setNotifyName}
                             />
-                            <Text style={[styles.inputLabel, { color: isDarkMode ? '#C0C0C0' : '#555555' }]}>Email Address *</Text>
+                            <Text style={[styles.inputLabel, { color: isDarkMode ? '#C0C0C0' : '#555555' }]}>{t('city_selection.email_label')}</Text>
                             <TextInput
                                 style={[styles.modalInput, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FAFAFA', color: isDarkMode ? '#E0E0E0' : '#2F2F2F', borderColor: isDarkMode ? '#4A4A4A' : '#E0E0E0' }]}
-                                placeholder="Enter your email"
+                                placeholder={t('city_selection.email_placeholder')}
                                 placeholderTextColor={isDarkMode ? '#808080' : '#AAAEAC'}
                                 keyboardType="email-address"
                                 autoCapitalize="none"
                                 value={notifyEmail}
                                 onChangeText={setNotifyEmail}
                             />
-                            <Text style={[styles.inputLabel, { color: isDarkMode ? '#C0C0C0' : '#555555' }]}>Your City (optional)</Text>
+                            <Text style={[styles.inputLabel, { color: isDarkMode ? '#C0C0C0' : '#555555' }]}>{t('city_selection.city_optional')}</Text>
                             <TextInput
                                 style={[styles.modalInput, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FAFAFA', color: isDarkMode ? '#E0E0E0' : '#2F2F2F', borderColor: isDarkMode ? '#4A4A4A' : '#E0E0E0' }]}
-                                placeholder="e.g. Pune, Chennai, Kolkata"
+                                placeholder={t('city_selection.city_placeholder')}
                                 placeholderTextColor={isDarkMode ? '#808080' : '#AAAEAC'}
                                 value={notifyCity}
                                 onChangeText={setNotifyCity}
@@ -280,7 +278,7 @@ export default function CitySelectionScreen() {
                             >
                                 {notifyLoading
                                     ? <ActivityIndicator color="#FFFFFF" />
-                                    : <Text style={styles.notifySubmitText}>Notify Me</Text>
+                                    : <Text style={styles.notifySubmitText}>{t('city_selection.notify_submit')}</Text>
                                 }
                             </TouchableOpacity>
                         </View>

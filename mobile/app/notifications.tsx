@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { apiClient } from '@/services/api/apiClient';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
+import { useTranslation } from 'react-i18next';
 
 
 // ─── Types ───────────────────────────────────────────────
@@ -94,6 +95,7 @@ export default function NotificationsScreen() {
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const { t } = useTranslation();
     const styles = makeStyles(isDarkMode, colors);
 
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -193,7 +195,7 @@ export default function NotificationsScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Notifications</Text>
+                <Text style={styles.headerTitle}>{t('notifications.header_title')}</Text>
                 <TouchableOpacity style={styles.headerAction} onPress={handleMarkAllRead}>
                     <Ionicons name="checkmark-done" size={22} color="#FFFFFF" />
                 </TouchableOpacity>
@@ -208,8 +210,8 @@ export default function NotificationsScreen() {
                 ) : notifications.length === 0 ? (
                     <View style={styles.centerState}>
                         <Ionicons name="notifications-off-outline" size={48} color={isDarkMode ? '#555555' : '#CCCCCC'} />
-                        <Text style={[styles.emptyTitle, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}>No notifications yet</Text>
-                        <Text style={[styles.emptySubtitle, { color: isDarkMode ? '#A0A0A0' : '#AAAEAC' }]}>You&apos;ll see booking updates, reminders, and offers here.</Text>
+                        <Text style={[styles.emptyTitle, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}>{t('notifications.empty_title')}</Text>
+                        <Text style={[styles.emptySubtitle, { color: isDarkMode ? '#A0A0A0' : '#AAAEAC' }]}>{t('notifications.empty_sub')}</Text>
                     </View>
                 ) : (
                     <ScrollView
@@ -219,13 +221,13 @@ export default function NotificationsScreen() {
                     >
                         {todayItems.length > 0 && (
                             <>
-                                <Text style={[styles.sectionLabel, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>Today</Text>
+                                <Text style={[styles.sectionLabel, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>{t('notifications.today')}</Text>
                                 {todayItems.map(renderCard)}
                             </>
                         )}
                         {earlierItems.length > 0 && (
                             <>
-                                <Text style={[styles.sectionLabel, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>Earlier</Text>
+                                <Text style={[styles.sectionLabel, { color: isDarkMode ? '#52C77A' : '#02743F' }]}>{t('notifications.earlier')}</Text>
                                 {earlierItems.map(renderCard)}
                             </>
                         )}

@@ -9,12 +9,14 @@ import { legalService, LegalDocument } from '@/services/api/legalService';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import RenderHtml from 'react-native-render-html';
+import { useTranslation } from 'react-i18next';
 
 export default function TermsPolicyScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const { t } = useTranslation();
     const [document, setDocument] = useState<LegalDocument | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -50,20 +52,20 @@ export default function TermsPolicyScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Terms & Conditions</Text>
+                <Text style={styles.headerTitle}>{t('legal.terms_conditions')}</Text>
             </View>
 
             {loading ? (
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color={Colors.primary} />
-                    <Text style={styles.loadingText}>Loading...</Text>
+                    <Text style={styles.loadingText}>{t('legal.loading')}</Text>
                 </View>
             ) : !document ? (
                 <View style={styles.center}>
                     <Ionicons name="alert-circle-outline" size={64} color={Colors.textMuted} />
-                    <Text style={styles.errorText}>Failed to load document</Text>
+                    <Text style={styles.errorText}>{t('legal.failed_load')}</Text>
                     <TouchableOpacity style={styles.retryButton} onPress={fetchTermsAndConditions}>
-                        <Text style={styles.retryButtonText}>Try Again</Text>
+                        <Text style={styles.retryButtonText}>{t('legal.try_again')}</Text>
                     </TouchableOpacity>
                 </View>
             ) : (
@@ -71,7 +73,7 @@ export default function TermsPolicyScreen() {
                     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                         {document.publishedAt && (
                             <Text style={styles.lastUpdated}>
-                                Last Updated: {new Date(document.publishedAt).toLocaleDateString('en-IN')}
+                                {t('legal.last_updated', { date: new Date(document.publishedAt).toLocaleDateString('en-IN') })}
                             </Text>
                         )}
 
