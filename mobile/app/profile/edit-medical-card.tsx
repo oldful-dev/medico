@@ -10,6 +10,7 @@ import { useUser } from '@/context/UserContext';
 import { userService } from '@/services/api/userService';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
@@ -18,6 +19,7 @@ export default function EditMedicalCardScreen() {
     const { profile, setProfile } = useUser();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const { t } = useTranslation();
     const styles = makeStyles(colors, isDarkMode);
     const [saving, setSaving] = useState(false);
 
@@ -42,7 +44,7 @@ export default function EditMedicalCardScreen() {
 
     const handleSave = async () => {
         if (!profile?.id) {
-            Alert.alert('Error', 'Profile not loaded yet.');
+            Alert.alert(t('edit_medical_card.alerts.error_title'), t('edit_medical_card.alerts.profile_not_loaded'));
             return;
         }
         setSaving(true);
@@ -65,14 +67,14 @@ export default function EditMedicalCardScreen() {
                 if (profileRes.success && profileRes.data) {
                     setProfile(profileRes.data);
                 }
-                Alert.alert('Success', 'Medical card updated.', [
-                    { text: 'OK', onPress: () => router.back() },
+                Alert.alert(t('edit_medical_card.alerts.success_title'), t('edit_medical_card.alerts.updated_success'), [
+                    { text: t('common.ok'), onPress: () => router.back() },
                 ]);
             } else {
-                Alert.alert('Error', res.message || 'Failed to update medical card.');
+                Alert.alert(t('edit_medical_card.alerts.error_title'), res.message || t('edit_medical_card.alerts.failed_update'));
             }
         } catch (err: any) {
-            Alert.alert('Error', err.message || 'Something went wrong.');
+            Alert.alert(t('edit_medical_card.alerts.error_title'), err.message || t('edit_medical_card.alerts.something_went_wrong'));
         } finally {
             setSaving(false);
         }
@@ -86,7 +88,7 @@ export default function EditMedicalCardScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>My Medical Card</Text>
+                    <Text style={styles.headerTitle}>{t('edit_medical_card.header_title')}</Text>
                 </View>
             </SafeAreaView>
 
@@ -94,7 +96,7 @@ export default function EditMedicalCardScreen() {
             <KeyboardAwareScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} enableOnAndroid={true} extraScrollHeight={20} keyboardShouldPersistTaps="handled">
 
                     {/* Blood Group */}
-                    <Text style={styles.label}>Blood Group</Text>
+                    <Text style={styles.label}>{t('edit_medical_card.blood_group_label')}</Text>
                     <View style={styles.chipRow}>
                         {BLOOD_GROUPS.map(bg => (
                             <TouchableOpacity key={bg} style={[styles.chip, bloodGroup === bg && styles.chipActive]} onPress={() => setBloodGroup(bg)}>
@@ -107,10 +109,10 @@ export default function EditMedicalCardScreen() {
                     <View style={styles.toggleCard}>
                         <View style={styles.toggleLeft}>
                             <Ionicons name="water-outline" size={20} color={colors.primary} />
-                            <Text style={styles.toggleLabel}>Diabetic</Text>
+                            <Text style={styles.toggleLabel}>{t('edit_medical_card.diabetic_label')}</Text>
                         </View>
                         <View style={styles.toggleRight}>
-                            <Text style={styles.toggleValue}>{isDiabetic ? 'Yes' : 'No'}</Text>
+                            <Text style={styles.toggleValue}>{isDiabetic ? t('edit_medical_card.yes') : t('edit_medical_card.no')}</Text>
                             <Switch
                                 trackColor={{ false: colors.textMuted, true: colors.primary }}
                                 thumbColor="#FFFFFF"
@@ -125,10 +127,10 @@ export default function EditMedicalCardScreen() {
                     <View style={styles.toggleCard}>
                         <View style={styles.toggleLeft}>
                             <Ionicons name="heart-outline" size={20} color={colors.primary} />
-                            <Text style={styles.toggleLabel}>Hypertension</Text>
+                            <Text style={styles.toggleLabel}>{t('edit_medical_card.hypertension_label')}</Text>
                         </View>
                         <View style={styles.toggleRight}>
-                            <Text style={styles.toggleValue}>{isHypertension ? 'Yes' : 'No'}</Text>
+                            <Text style={styles.toggleValue}>{isHypertension ? t('edit_medical_card.yes') : t('edit_medical_card.no')}</Text>
                             <Switch
                                 trackColor={{ false: colors.textMuted, true: colors.primary }}
                                 thumbColor="#FFFFFF"
@@ -140,25 +142,25 @@ export default function EditMedicalCardScreen() {
                     </View>
 
                     {/* Allergies */}
-                    <Text style={styles.label}>Allergies (comma separated)</Text>
-                    <TextInput style={styles.input} value={allergies} onChangeText={setAllergies} placeholder="e.g. Peanuts, Penicillin" placeholderTextColor={colors.textMuted} />
+                    <Text style={styles.label}>{t('edit_medical_card.allergies_label')}</Text>
+                    <TextInput style={styles.input} value={allergies} onChangeText={setAllergies} placeholder={t('edit_medical_card.allergies_placeholder')} placeholderTextColor={colors.textMuted} />
 
                     {/* Other Chronic Conditions */}
-                    <Text style={styles.label}>Other Chronic Conditions (comma separated)</Text>
-                    <TextInput style={styles.input} value={otherConditions} onChangeText={setOtherConditions} placeholder="e.g. Arthritis, Thyroid" placeholderTextColor={colors.textMuted} />
+                    <Text style={styles.label}>{t('edit_medical_card.other_conditions_label')}</Text>
+                    <TextInput style={styles.input} value={otherConditions} onChangeText={setOtherConditions} placeholder={t('edit_medical_card.other_conditions_placeholder')} placeholderTextColor={colors.textMuted} />
 
                     {/* Current Medications */}
-                    <Text style={styles.label}>Current Medications (comma separated)</Text>
-                    <TextInput style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]} value={medications} onChangeText={setMedications} placeholder="e.g. Metformin 500mg, Aspirin" placeholderTextColor={colors.textMuted} multiline />
+                    <Text style={styles.label}>{t('edit_medical_card.medications_label')}</Text>
+                    <TextInput style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]} value={medications} onChangeText={setMedications} placeholder={t('edit_medical_card.medications_placeholder')} placeholderTextColor={colors.textMuted} multiline />
 
                     {/* Emergency Info */}
                     <View style={styles.emergencyNote}>
                         <Ionicons name="information-circle" size={18} color={colors.primary} />
-                        <Text style={styles.emergencyNoteText}>In an emergency, your app will show this card instantly to medical professionals.</Text>
+                        <Text style={styles.emergencyNoteText}>{t('edit_medical_card.emergency_note')}</Text>
                     </View>
 
                     <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving} activeOpacity={0.7}>
-                        {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveBtnText}>Save Medical Card</Text>}
+                        {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveBtnText}>{t('edit_medical_card.save_btn')}</Text>}
                     </TouchableOpacity>
             </KeyboardAwareScrollView>
         </KeyboardAvoidingView>

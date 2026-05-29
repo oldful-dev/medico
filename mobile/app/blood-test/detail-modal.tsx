@@ -415,7 +415,7 @@ export function BloodTestDetailModal({
                     </ScrollView>
 
                     {/* ── Sticky Footer ── */}
-                    <View style={[styles.footer, { paddingBottom: styles.footer.paddingBottom + insets.bottom }]}>
+                    <View style={[styles.footer, { paddingBottom: 12 + insets.bottom }]}>
                         <TouchableOpacity
                             style={styles.cartBtn}
                             onPress={() => {

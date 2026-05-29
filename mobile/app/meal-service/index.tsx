@@ -8,6 +8,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { useTranslation } from 'react-i18next';
 
 
 // ─── Figma Assets ───
@@ -15,6 +16,7 @@ const imgThali = require('@/assets/images/6fdd60a0eb22e90770fb958a6ddcf54c1c9dc6
 const imgCheckmark = require('@/assets/images/019640d27de157c119b045c46aae6a6559dd3a79.png'); // Green Check Circle
 
 export default function MealServiceScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
@@ -33,19 +35,19 @@ export default function MealServiceScreen() {
 
     const handleBookService = async () => {
         if (!mealType) {
-            Alert.alert('Required', 'Please select a meal type.');
+            Alert.alert(t('common.required'), t('meal_service.meal_type_required'));
             return;
         }
         if (!subMode) {
-            Alert.alert('Required', 'Please select a subscription mode.');
+            Alert.alert(t('common.required'), t('meal_service.mode_required'));
             return;
         }
         if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert('Address Required', 'Could not fetch your address. Please wait or try again.');
+            Alert.alert(t('common.required'), t('errors.address_required'));
             return;
         }
         if (!cityId || !serviceId) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            Alert.alert(t('common.error'), t('booking.init_incomplete'));
             return;
         }
         try {
@@ -72,7 +74,7 @@ export default function MealServiceScreen() {
             });
         } catch (error) {
             console.error('Meal service error:', error);
-            Alert.alert('Error', 'Something went wrong. Please try again.');
+            Alert.alert(t('common.error'), t('booking.something_wrong'));
         } finally {
             setIsBooking(false);
         }
@@ -108,7 +110,7 @@ export default function MealServiceScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={dynamicStyles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={dynamicStyles.headerTitle}>Select Meal Plan</Text>
+                <Text style={dynamicStyles.headerTitle}>{t('meal_service.header')}</Text>
             </View>
 
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -121,24 +123,24 @@ export default function MealServiceScreen() {
                         <TouchableOpacity style={dynamicStyles.mealOptionItem} onPress={() => setMealType('Diabetic Friendly')} activeOpacity={0.7}>
                             {mealType === 'Diabetic Friendly' ? <CheckedRadio /> : <UncheckedRadio />}
                             <View>
-                                <Text style={dynamicStyles.mealOptionTitle}>Diabetic Friendly</Text>
-                                <Text style={dynamicStyles.mealOptionDesc}>(Low GI, Less rice)</Text>
+                                <Text style={dynamicStyles.mealOptionTitle}>{t('meal_service.diabetic_title')}</Text>
+                                <Text style={dynamicStyles.mealOptionDesc}>{t('meal_service.diabetic_desc')}</Text>
                             </View>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={dynamicStyles.mealOptionItem} onPress={() => setMealType('Home Style')} activeOpacity={0.7}>
                             {mealType === 'Home Style' ? <CheckedRadio /> : <UncheckedRadio />}
                             <View>
-                                <Text style={dynamicStyles.mealOptionTitle}>Home Style</Text>
-                                <Text style={dynamicStyles.mealOptionDesc}>(Roti,Dal, Sabzi)</Text>
+                                <Text style={dynamicStyles.mealOptionTitle}>{t('meal_service.home_style_title')}</Text>
+                                <Text style={dynamicStyles.mealOptionDesc}>{t('meal_service.home_style_desc')}</Text>
                             </View>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={dynamicStyles.mealOptionItem} onPress={() => setMealType('Soft Food')} activeOpacity={0.7}>
                             {mealType === 'Soft Food' ? <CheckedRadio /> : <UncheckedRadio />}
                             <View>
-                                <Text style={dynamicStyles.mealOptionTitle}>Soft Food</Text>
-                                <Text style={dynamicStyles.mealOptionDesc}>(Khichdi/porridge - for{'\n'}recovering patients)</Text>
+                                <Text style={dynamicStyles.mealOptionTitle}>{t('meal_service.soft_food_title')}</Text>
+                                <Text style={dynamicStyles.mealOptionDesc}>{t('meal_service.soft_food_desc')}</Text>
                             </View>
                         </TouchableOpacity>
 
@@ -158,28 +160,28 @@ export default function MealServiceScreen() {
                 </View>
 
                 {/* ─── Subscription Mode ─── */}
-                <Text style={dynamicStyles.sectionTitle}>Subscription Mode</Text>
+                <Text style={dynamicStyles.sectionTitle}>{t('meal_service.subscription_mode')}</Text>
                 <View style={dynamicStyles.sectionCard}>
                     <TouchableOpacity style={dynamicStyles.optionRow} onPress={() => setSubMode('Trial')} activeOpacity={0.7}>
                         {subMode === 'Trial' ? <CheckedSolidRadio /> : <UncheckedRadio />}
-                        <Text style={dynamicStyles.optionMainText}>Trial<Text style={dynamicStyles.optionSubText}>(3 Days)</Text></Text>
+                        <Text style={dynamicStyles.optionMainText}>{t('meal_service.trial')}<Text style={dynamicStyles.optionSubText}> {t('meal_service.trial_days')}</Text></Text>
                     </TouchableOpacity>
                     <View style={{ height: 18 }} />
                     <TouchableOpacity style={dynamicStyles.optionRow} onPress={() => setSubMode('Monthly Subscription')} activeOpacity={0.7}>
                         {subMode === 'Monthly Subscription' ? <CheckedSolidRadio /> : <UncheckedRadio />}
-                        <Text style={dynamicStyles.optionMainText}>Monthly Subscription</Text>
+                        <Text style={dynamicStyles.optionMainText}>{t('meal_service.monthly')}</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* ─── Dietary Preferences ─── */}
-                <Text style={dynamicStyles.sectionTitle}>Dietary Preferences</Text>
+                <Text style={dynamicStyles.sectionTitle}>{t('meal_service.dietary')}</Text>
                 <View style={dynamicStyles.sectionCard}>
 
                     <TouchableOpacity style={dynamicStyles.preferenceRow} onPress={() => setNoOnionGarlic(!noOnionGarlic)} activeOpacity={0.7}>
                         <View style={dynamicStyles.switchBox}>
                             {noOnionGarlic ? <Image source={imgCheckmark} style={dynamicStyles.checkedSwitchIcon} /> : <View style={dynamicStyles.uncheckedRadioCircle} />}
                         </View>
-                        <Text style={dynamicStyles.preferenceText}>No Onion/Garlic?</Text>
+                        <Text style={dynamicStyles.preferenceText}>{t('meal_service.no_onion')}</Text>
                     </TouchableOpacity>
 
                     <View style={{ height: 16 }} />
@@ -188,17 +190,17 @@ export default function MealServiceScreen() {
                         <View style={dynamicStyles.switchBox}>
                             {spicy ? <Image source={imgCheckmark} style={dynamicStyles.checkedSwitchIcon} /> : <View style={dynamicStyles.uncheckedRadioCircle} />}
                         </View>
-                        <Text style={dynamicStyles.preferenceText}>Spicy / Non-Spicy?</Text>
+                        <Text style={dynamicStyles.preferenceText}>{t('meal_service.spicy')}</Text>
                     </TouchableOpacity>
 
                 </View>
 
                 {/* ─── Something Else? ─── */}
-                <Text style={dynamicStyles.sectionTitle}>Something Else?</Text>
+                <Text style={dynamicStyles.sectionTitle}>{t('meal_service.other')}</Text>
                 <View style={[dynamicStyles.textAreaContainer, { paddingHorizontal: 0 }]}>
                     <TextInput
                         style={[dynamicStyles.textAreaPlaceholder, { flex: 1, paddingHorizontal: 15 }]}
-                        placeholder="Enter any other requirement (e.g. No Salt)"
+                        placeholder={t('meal_service.other_placeholder')}
                         placeholderTextColor="#898989"
                         value={otherReq}
                         onChangeText={setOtherReq}
@@ -213,11 +215,11 @@ export default function MealServiceScreen() {
                     onPress={handleBookService}
                 >
                     {isLoadingInit ? (
-                        <Text style={dynamicStyles.submitButtonText}>Initializing...</Text>
+                        <Text style={dynamicStyles.submitButtonText}>{t('common.initializing')}</Text>
                     ) : isBooking ? (
                         <ActivityIndicator color="#FFFFFF" />
                     ) : (
-                        <Text style={dynamicStyles.submitButtonText}>Request Tiffin</Text>
+                        <Text style={dynamicStyles.submitButtonText}>{t('meal_service.request_tiffin')}</Text>
                     )}
                 </TouchableOpacity>
 
@@ -291,7 +293,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     mealOptionDesc: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 12,
-        color: '#777777',
+        color: isDarkMode ? '#CCCCCC' : '#777777',
         marginTop: 2,
     },
     mealImageContainer: {
@@ -360,6 +362,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     optionSubText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        color: isDarkMode ? '#CCCCCC' : '#555555',
         fontWeight: 'normal',
     },
 
@@ -376,7 +379,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     preferenceText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 16,
-        color: '#898989',
+        color: isDarkMode ? '#CCCCCC' : '#898989',
     },
     checkedSwitchIcon: {
         width: 20,
@@ -418,7 +421,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         height: 16,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#777777', // subtle gray
+        borderColor: isDarkMode ? '#888' : '#777777', // subtle gray
     },
     solidCheckedRadio: {
         width: 16,

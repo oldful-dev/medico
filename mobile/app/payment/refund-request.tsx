@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 
 // ─── Refund Reason Options ───
@@ -21,6 +22,16 @@ const REFUND_REASONS = [
 export default function RefundRequestScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { t } = useTranslation();
+
+    const REFUND_REASONS = [
+        { id: '1', label: t('refund_request.reason_1'), selected: true },
+        { id: '2', label: t('refund_request.reason_2'), selected: false },
+        { id: '3', label: t('refund_request.reason_3'), selected: false },
+        { id: '4', label: t('refund_request.reason_4'), selected: false },
+        { id: '5', label: t('refund_request.reason_5'), selected: false },
+        { id: '6', label: t('refund_request.reason_6'), selected: false },
+    ];
 
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -32,7 +43,7 @@ export default function RefundRequestScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Refund Request</Text>
+                <Text style={styles.headerTitle}>{t('refund_request.header_title')}</Text>
             </View>
 
             {/* ─── Content Card ─── */}
@@ -46,38 +57,38 @@ export default function RefundRequestScreen() {
                     <View style={styles.infoBanner}>
                         <Ionicons name="shield-checkmark" size={20} color="#02743F" />
                         <Text style={styles.infoBannerText}>
-                            We review all refund requests within 24-48 hours. Your money is safe with us.
+                            {t('refund_request.info_banner')}
                         </Text>
                     </View>
 
                     {/* Order Details Card */}
                     <View style={styles.orderCard}>
-                        <Text style={styles.orderCardTitle}>Order Details</Text>
+                        <Text style={styles.orderCardTitle}>{t('refund_request.order_details')}</Text>
                         <View style={styles.orderRow}>
-                            <Text style={styles.orderLabel}>Booking ID</Text>
+                            <Text style={styles.orderLabel}>{t('refund_request.booking_id')}</Text>
                             <Text style={styles.orderValue}>MED-2026-03-02-001</Text>
                         </View>
                         <View style={styles.orderDivider} />
                         <View style={styles.orderRow}>
-                            <Text style={styles.orderLabel}>Service</Text>
+                            <Text style={styles.orderLabel}>{t('refund_request.service')}</Text>
                             <Text style={styles.orderValue}>Doctor Home Visit</Text>
                         </View>
                         <View style={styles.orderDivider} />
                         <View style={styles.orderRow}>
-                            <Text style={styles.orderLabel}>Amount Paid</Text>
+                            <Text style={styles.orderLabel}>{t('refund_request.amount_paid')}</Text>
                             <Text style={styles.orderValueHighlight}>₹499.00</Text>
                         </View>
                         <View style={styles.orderDivider} />
                         <View style={styles.orderRow}>
-                            <Text style={styles.orderLabel}>Date</Text>
+                            <Text style={styles.orderLabel}>{t('refund_request.date')}</Text>
                             <Text style={styles.orderValue}>02 Mar 2026</Text>
                         </View>
                     </View>
 
                     {/* Reason Selection */}
                     <View style={styles.reasonCard}>
-                        <Text style={styles.reasonCardTitle}>Reason for Refund</Text>
-                        <Text style={styles.reasonSubtitle}>Please select the most appropriate reason:</Text>
+                        <Text style={styles.reasonCardTitle}>{t('refund_request.reason_for_refund')}</Text>
+                        <Text style={styles.reasonSubtitle}>{t('refund_request.reason_subtitle')}</Text>
 
                         {REFUND_REASONS.map((reason) => (
                             <TouchableOpacity
@@ -104,14 +115,14 @@ export default function RefundRequestScreen() {
 
                     {/* Additional Details */}
                     <View style={styles.detailsInputCard}>
-                        <Text style={styles.detailsInputTitle}>Additional Details</Text>
+                        <Text style={styles.detailsInputTitle}>{t('refund_request.additional_details')}</Text>
                         <Text style={styles.detailsInputSubtitle}>
-                            Provide more context to help us process your request faster.
+                            {t('refund_request.additional_details_subtitle')}
                         </Text>
                         <View style={styles.textAreaContainer}>
                             <TextInput
                                 style={styles.textArea}
-                                placeholder="Describe your issue in detail..."
+                                placeholder={t('refund_request.describe_placeholder')}
                                 placeholderTextColor="#AAAEAC"
                                 multiline
                                 numberOfLines={4}
@@ -124,10 +135,10 @@ export default function RefundRequestScreen() {
                     <View style={styles.uploadCard}>
                         <View style={styles.uploadDashedBox}>
                             <Ionicons name="cloud-upload-outline" size={32} color="#048357" />
-                            <Text style={styles.uploadTitle}>Attach Supporting Documents</Text>
-                            <Text style={styles.uploadSubtitle}>JPG, PNG or PDF, max 10MB</Text>
+                            <Text style={styles.uploadTitle}>{t('refund_request.attach_docs')}</Text>
+                            <Text style={styles.uploadSubtitle}>{t('refund_request.file_hint')}</Text>
                             <TouchableOpacity style={styles.uploadButton}>
-                                <Text style={styles.uploadButtonText}>SELECT FILE</Text>
+                                <Text style={styles.uploadButtonText}>{t('refund_request.select_file')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -136,8 +147,7 @@ export default function RefundRequestScreen() {
                     <View style={styles.policyNote}>
                         <Ionicons name="information-circle-outline" size={16} color="#777777" />
                         <Text style={styles.policyNoteText}>
-                            Refunds are processed within 5-7 business days to the original payment method.
-                            Compassionate Clause refunds are prioritized.
+                            {t('refund_request.policy_note')}
                         </Text>
                     </View>
                 </ScrollView>
@@ -145,7 +155,7 @@ export default function RefundRequestScreen() {
                 {/* ─── Submit Button ─── */}
                 <View style={styles.bottomBar}>
                     <TouchableOpacity style={styles.submitButton} activeOpacity={0.8}>
-                        <Text style={styles.submitButtonText}>Submit Refund Request</Text>
+                        <Text style={styles.submitButtonText}>{t('refund_request.submit_btn')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>

@@ -8,12 +8,14 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { planService } from '@/services/api/planService';
 import { useUser } from '@/context/UserContext';
+import { useTranslation } from 'react-i18next';
 
 // ─── Figma Assets ───
 const imgLightning = require('@/assets/images/50ffab5c68d190752695666bb7ec8bee1bc4842a.png'); // Lightning bolt
 const imgChart = require('@/assets/images/45958abae6d20cd413b2ccd515807fab5af92fa7.png'); // Pricing table chart
 
 export default function SmartUpgradeScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { profile } = useUser();
@@ -28,14 +30,14 @@ export default function SmartUpgradeScreen() {
 
     const handleUpgrade = async () => {
         if (!profile) {
-            Alert.alert('Login Required', 'Please login to upgrade your plan.');
+            Alert.alert(t('smart_upgrade.login_required'), t('smart_upgrade.login_required_desc'));
             return;
         }
 
         // Check if already on an active plan
         const hasActivePlan = profile.subscriptions?.some((s: any) => s.status === 'ACTIVE');
         if (hasActivePlan) {
-            Alert.alert('Already Subscribed', 'You already have an active Ayuxa Care plan. Manage it from the Plans tab.');
+            Alert.alert(t('smart_upgrade.already_subscribed'), t('smart_upgrade.already_subscribed_desc'));
             return;
         }
 
@@ -45,7 +47,7 @@ export default function SmartUpgradeScreen() {
             // Step 1: Fetch plans to get the Homemaker Plan ID + quarterly price
             const plansRes = await planService.getPlans();
             if (!plansRes.success || !plansRes.data?.length) {
-                Alert.alert('Error', 'Could not load plan details. Please try again.');
+                Alert.alert(t('smart_upgrade.error'), t('smart_upgrade.load_plan_error'));
                 return;
             }
 
@@ -64,7 +66,7 @@ export default function SmartUpgradeScreen() {
             });
 
             if (!subRes.success || !subRes.data) {
-                Alert.alert('Upgrade Failed', subRes.message ?? 'Could not initiate plan. Please try again.');
+                Alert.alert(t('smart_upgrade.upgrade_failed'), subRes.message ?? t('smart_upgrade.initiate_error'));
                 return;
             }
 
@@ -84,7 +86,7 @@ export default function SmartUpgradeScreen() {
             });
         } catch (error) {
             console.error('Upgrade error:', error);
-            Alert.alert('Error', 'Failed to process upgrade. Please check your connection.');
+            Alert.alert(t('smart_upgrade.error'), t('smart_upgrade.process_error'));
         } finally {
             setIsBooking(false);
         }
@@ -101,7 +103,7 @@ export default function SmartUpgradeScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Smart Upgrade</Text>
+                <Text style={styles.headerTitle}>{t('smart_upgrade.header')}</Text>
             </View>
 
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -120,15 +122,15 @@ export default function SmartUpgradeScreen() {
                 >
                     {/* Title with Emoji */}
                     <View style={styles.titleGroup}>
-                        <Text style={styles.cardTitle}>Smart Upgrade</Text>
+                        <Text style={styles.cardTitle}>{t('smart_upgrade.card_title')}</Text>
                         <Text style={styles.lightningEmoji}>⚡</Text>
                     </View>
 
-                    <Text style={styles.cardSubtitleMain}>Stop Paying Booking Fees.</Text>
-                    <Text style={styles.cardSubtitleMain}>Get Total Home Managment.</Text>
+                    <Text style={styles.cardSubtitleMain}>{t('smart_upgrade.tagline_1')}</Text>
+                    <Text style={styles.cardSubtitleMain}>{t('smart_upgrade.tagline_2')}</Text>
 
                     <Text style={styles.priceIntroText}>
-                        Join the ayuxacare Homemaker Plan for Just <Text style={styles.priceBold}>₹3,499/ month</Text>
+                        {t('smart_upgrade.price_intro')} <Text style={styles.priceBold}>{t('smart_upgrade.price_bold')}</Text>
                     </Text>
 
                     {/* ─── Pricing Chart Image ─── */}
@@ -144,36 +146,36 @@ export default function SmartUpgradeScreen() {
                         onPress={handleUpgrade}
                     >
                         <Text style={styles.upgradeButtonText}>
-                        {isBooking ? 'Processing...' : 'View Plan Details & Upgrade'}
+                        {isBooking ? t('smart_upgrade.processing') : t('smart_upgrade.upgrade_btn')}
                         </Text>
                     </TouchableOpacity>
 
                     {/* ─── Important Disclaimer ─── */}
                     <Text style={styles.disclaimerHeader}>
-                        Important Note <Text style={styles.disclaimerSubtitle}>(Disclaimer)</Text>
+                        {t('smart_upgrade.disclaimer_header')} <Text style={styles.disclaimerSubtitle}>{t('smart_upgrade.disclaimer_sub')}</Text>
                     </Text>
 
                     <View style={styles.disclaimerBox}>
                         <View style={styles.disclaimerItem}>
                            <Text style={styles.disclaimerText}>
-                                <Text style={styles.disclaimerBold}>Booking Fee: </Text>
-                                This fee covers the admimisistrative cost of finding, verifying, and scheduling the professional.
+                                <Text style={styles.disclaimerBold}>{t('smart_upgrade.disc_booking_fee_label')} </Text>
+                                {t('smart_upgrade.disc_booking_fee_text')}
                             </Text>
                         </View>
                         <View style={styles.divider} />
 
                         <View style={styles.disclaimerItem}>
                             <Text style={styles.disclaimerText}>
-                                <Text style={styles.disclaimerBold}>Vendor Payments: </Text>
-                                The actual cost of repair (spare parts, labour charges, materials) or utility bill amounts must be paid directly to the vendor/provider upon completion.
+                                <Text style={styles.disclaimerBold}>{t('smart_upgrade.disc_vendor_label')} </Text>
+                                {t('smart_upgrade.disc_vendor_text')}
                             </Text>
                         </View>
                         <View style={styles.divider} />
 
                         <View style={styles.disclaimerItem}>
                             <Text style={styles.disclaimerText}>
-                                <Text style={styles.disclaimerBold}>Supervision: </Text>
-                                “Pay-Per-Use” Bookings Include remote Coordination.for physical on-site supervision (having an Ayuxa Care staff member stand guard while work is done),you must have an active Ayuxa Care plan.
+                                <Text style={styles.disclaimerBold}>{t('smart_upgrade.disc_supervision_label')} </Text>
+                                {t('smart_upgrade.disc_supervision_text')}
                             </Text>
                         </View>
                     </View>

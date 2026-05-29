@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { Fonts } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTranslation } from 'react-i18next';
 
 // Service grid images
 const doctorVisitImg = require('@/assets/images/32a4661f97e2fa2dd2c85c403a7c530b7214e7f7.png');
@@ -33,11 +34,24 @@ const SERVICE_GRID = [
     { image: medicalReportIcon, label1: 'Insurance', label2: '& Claims', route: '/insurance' },
 ];
 
+const ROUTE_KEY_MAP: Record<string, string> = {
+    '/doctor-visit': 'services.doctor_visit',
+    '/nurse-care': 'services.nurse_care',
+    '/blood-test': 'services.blood_test',
+    '/physio-fitness': 'services.physio_fitness',
+    '/medical-equipment': 'services.medical_equipment',
+    '/order-medicines': 'services.order_medicines',
+    '/meal-service': 'services.meal_service',
+    '/hospital-trip': 'services.hospital_trip',
+    '/insurance': 'services.insurance',
+};
+
 export default function AllAyuxaServicesScreen() {
     const router = useRouter();
     const { width } = useWindowDimensions();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const { t } = useTranslation();
     const styles = makeStyles(isDarkMode, colors, Fonts);
 
     // Screen padding corresponds to marginHorizontal of the card mapping on Home Screen
@@ -55,14 +69,14 @@ export default function AllAyuxaServicesScreen() {
     }
 
     return (
-        <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bgScreen }]} edges={['top']}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
             <StatusBar style={isDarkMode ? 'light' : 'dark'} />
             {/* ─── Header ─── */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color={colors.textDark} />
+                    <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#FFFFFF' : colors.textDark} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: colors.textDark }]}>All Ayuxa Services</Text>
+                <Text style={styles.headerTitle}>{t('home.all_ayuxa_services', 'All Ayuxa Services')}</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -71,10 +85,14 @@ export default function AllAyuxaServicesScreen() {
                         if ('empty' in item) {
                             return <View key={`empty-${i}`} style={{ width: exactItemWidth }} />;
                         }
+                        const translationKey = ROUTE_KEY_MAP[item.route];
+                        const translatedLabel = translationKey ? t(translationKey) : '';
+                        const fallbackLabel = `${item.label1}\n${item.label2 || ''}`;
+                        const displayName = translatedLabel && translatedLabel !== translationKey ? translatedLabel : fallbackLabel;
                         return (
                             <TouchableOpacity
                                 key={`service-${i}`}
-                                style={[styles.gridItem, { width: exactItemWidth, height: exactCardHeight, backgroundColor: colors.bgCard }]}
+                                style={[styles.gridItem, { width: exactItemWidth, height: exactCardHeight }]}
                                 onPress={() => router.push(item.route as any)}
                             >
                                 <Image
@@ -83,8 +101,9 @@ export default function AllAyuxaServicesScreen() {
                                     resizeMode="cover"
                                 />
                                 <View style={styles.gridLabelContainer}>
-                                    <Text style={[styles.gridLabel, { color: colors.textDark }]}>{item.label1}</Text>
-                                    {item.label2 ? <Text style={[styles.gridLabel, { color: colors.textDark }]}>{item.label2}</Text> : null}
+                                    <Text style={styles.gridLabel} numberOfLines={2}>
+                                        {displayName}
+                                    </Text>
                                 </View>
                             </TouchableOpacity>
                         );
@@ -98,16 +117,16 @@ export default function AllAyuxaServicesScreen() {
 const makeStyles = (isDarkMode: boolean, colors: ThemeColors, fonts: typeof Fonts) => StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFE3',
+        backgroundColor: isDarkMode ? colors.bgScreen : '#FFFFE3',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 20,
         paddingVertical: 15,
-        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
+        backgroundColor: isDarkMode ? colors.bgHeader : '#FFFFFF',
         borderBottomWidth: 1,
-        borderBottomColor: isDarkMode ? '#3A3A3A' : '#E5E7EB',
+        borderBottomColor: isDarkMode ? colors.borderLight : '#E5E7EB',
     },
     backButton: {
         paddingRight: 15,
@@ -115,7 +134,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors, fonts: typeof Font
     headerTitle: {
         fontFamily: fonts.bold,
         fontSize: 20,
-        color: isDarkMode ? '#E0E0E0' : '#034C2A',
+        color: isDarkMode ? '#FFFFFF' : '#034C2A',
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -130,7 +149,9 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors, fonts: typeof Font
     gridItem: {
         marginBottom: 15,
         borderRadius: 12,
-        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
+        backgroundColor: isDarkMode ? colors.bgCard : '#FFFFFF',
+        borderWidth: isDarkMode ? 1 : 0,
+        borderColor: isDarkMode ? '#475569' : 'transparent',
         overflow: 'hidden',
         alignItems: 'center',
         shadowColor: '#000000',
@@ -153,7 +174,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors, fonts: typeof Font
     gridLabel: {
         fontFamily: fonts.medium,
         fontSize: 11,
-        color: isDarkMode ? '#E0E0E0' : '#085B34',
+        color: isDarkMode ? '#F8FAFC' : '#085B34',
         textAlign: 'center',
         lineHeight: 14,
     },

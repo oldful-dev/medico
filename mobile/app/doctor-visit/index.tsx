@@ -50,8 +50,24 @@ const PROBLEMS: { label: string; icon?: any; empty?: boolean }[] = [
     { label: 'Other', icon: otherIcon },
 ];
 
+const translateSymptomLabel = (label: string, t: any) => {
+  const keyMap: Record<string, string> = {
+    'fever/flu': 'doctor_visit.fever_flu',
+    'bp/sugar check': 'doctor_visit.bp_sugar',
+    'general weakness': 'doctor_visit.general_weakness',
+    'body pain/joint pain': 'doctor_visit.body_pain',
+    'poster-surgery rehab': 'doctor_visit.post_surgery',
+    'post-surgery rehab': 'doctor_visit.post_surgery',
+    'stroke recovery': 'doctor_visit.stroke_recovery',
+    'frozen shoulder': 'doctor_visit.frozen_shoulder',
+    'other': 'doctor_visit.other',
+  };
+  const key = keyMap[label.toLowerCase()];
+  return key ? t(key) : label;
+};
+
 export default function DoctorVisitScreen() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const router = useRouter();
     const { width } = useWindowDimensions();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
@@ -185,7 +201,7 @@ export default function DoctorVisitScreen() {
         setSelectedDoctorType(isPhysio ? 'Physio' : 'GP');
         setSelectedWhen('ASAP');
         
-        Alert.alert('Applied', 'Your previous booking details have been auto-selected.');
+        Alert.alert(t('doctor_visit.applied_title'), t('doctor_visit.applied_msg'));
     };
 
     // ─── Date/Time helpers for inline picker ───
@@ -239,25 +255,25 @@ export default function DoctorVisitScreen() {
 
     const handleBookService = async () => {
         if (!selectedProblem) {
-            Alert.alert('Select Problem', 'Please select a health problem first.');
+            Alert.alert(t('common.required'), t('doctor_visit.please_select_problem'));
             return;
         }
         if (selectedProblem === 'Other' && !otherProblemText.trim()) {
-            Alert.alert('Describe Problem', 'Please describe your health problem in the text field.');
+            Alert.alert(t('common.required'), t('doctor_visit.describe_problem_alert'));
             return;
         }
         if (selectedWhen === 'Later' && scheduledDate <= new Date()) {
-            Alert.alert('Invalid Time', 'Please select a future date and time for the visit.');
+            Alert.alert(t('common.error'), t('doctor_visit.invalid_time_alert'));
             return;
         }
         if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert('Address Required', locationDenied
-                ? 'Please type your full address manually so the doctor can reach you.'
-                : 'Could not fetch your address. Please wait or try again.');
+            Alert.alert(t('common.required'), locationDenied
+                ? t('doctor_visit.address_required_gps_denied')
+                : t('doctor_visit.address_required_failed'));
             return;
         }
         if (!isReady) {
-            Alert.alert('Error', 'Service initialization incomplete. Please check your internet connection or try logging out and back in.');
+            Alert.alert(t('common.error'), t('booking.init_incomplete'));
             return;
         }
         try {
@@ -357,10 +373,12 @@ export default function DoctorVisitScreen() {
                         <TouchableOpacity style={[styles.repeatBanner, { backgroundColor: colors.bgCardMuted, borderColor: colors.primary }]} onPress={applyRepeatOrder} activeOpacity={0.85}>
                             <Ionicons name="refresh-circle-outline" size={22} color={colors.primary} />
                             <View style={{ flex: 1 }}>
-                                <Text style={[styles.repeatBannerTitle, { color: colors.textDark }]}>Book Same as Last Time</Text>
+                                <Text style={[styles.repeatBannerTitle, { color: colors.textDark }]}>{t('doctor_visit.book_same_last_time')}</Text>
                                 <Text style={[styles.repeatBannerSub, { color: colors.textMuted }]}>
-                                    {(Array.isArray(lastPhysioBooking.symptoms) ? lastPhysioBooking.symptoms[0] :
-                                      (lastPhysioBooking.formDataJson?.symptoms?.[0] || lastPhysioBooking.formDataJson?.reason || lastPhysioBooking.symptoms)) || 'Last visit'} · {lastPhysioBooking.doctorType === 'physiotherapist' ? 'Physiotherapist' : 'General Physician'}
+                                    {translateSymptomLabel(
+                                      ((Array.isArray(lastPhysioBooking.symptoms) ? lastPhysioBooking.symptoms[0] :
+                                        (lastPhysioBooking.formDataJson?.symptoms?.[0] || lastPhysioBooking.formDataJson?.reason || lastPhysioBooking.symptoms)) || 'Last visit'), t
+                                    )} · {lastPhysioBooking.doctorType === 'physiotherapist' ? t('doctor_visit.physiotherapist') : t('doctor_visit.general_physician')}
                                 </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.primary} />
@@ -370,9 +388,9 @@ export default function DoctorVisitScreen() {
                     {/* Description Card */}
                     <View style={[styles.descCard, { backgroundColor: colors.bgCardMuted }]}>
                         <Text style={styles.descText}>
-                            <Text style={[styles.descTextBold, { color: colors.textDark }]}>Booking a doctor or </Text>
-                            <Text style={[styles.descTextGreen, { color: colors.primary }]}>physiotherapist </Text>
-                            <Text style={[styles.descTextNormal, { color: colors.textMuted }]}>to visit your home for non-emergency issues.</Text>
+                            <Text style={[styles.descTextBold, { color: colors.textDark }]}>{t('doctor_visit.description_bold')}</Text>
+                            <Text style={[styles.descTextGreen, { color: colors.primary }]}>{t('doctor_visit.description_green')}</Text>
+                            <Text style={[styles.descTextNormal, { color: colors.textMuted }]}>{t('doctor_visit.description_normal')}</Text>
                         </Text>
                     </View>
 
@@ -400,7 +418,7 @@ export default function DoctorVisitScreen() {
                                         <View style={[styles.problemIconContainer, { height: exactIconHeight }]}>
                                             <Image source={item.icon} style={styles.problemIcon} resizeMode="cover" />
                                         </View>
-                                        <Text style={[styles.problemLabel, { color: colors.textDark }, selectedProblem === item.label && [styles.problemLabelActive, { color: colors.primary }]]}>{item.label}</Text>
+                                        <Text style={[styles.problemLabel, { color: colors.textDark }, selectedProblem === item.label && [styles.problemLabelActive, { color: colors.primary }]]}>{translateSymptomLabel(item.label, t)}</Text>
                                     </TouchableOpacity>
                                 );
                             })}
@@ -410,7 +428,7 @@ export default function DoctorVisitScreen() {
                         {selectedProblem === 'Other' && (
                             <TextInput
                                 style={[styles.otherInput, { backgroundColor: colors.bgScreen, color: colors.textDark, borderColor: colors.borderLight }]}
-                                placeholder="Describe your health problem..."
+                                placeholder={t('doctor_visit.describe_problem_placeholder')}
                                 placeholderTextColor={colors.textMuted}
                                 value={otherProblemText}
                                 onChangeText={setOtherProblemText}
@@ -422,10 +440,10 @@ export default function DoctorVisitScreen() {
                         {/* Smart Banner */}
                         <View style={styles.smartBanner}>
                             <View style={styles.smartTag}>
-                                <Text style={[styles.smartTagText, { color: colors.textDark }]}>Smart :</Text>
+                                <Text style={[styles.smartTagText, { color: colors.textDark }]}>{t('doctor_visit.smart_label')}</Text>
                             </View>
                             <Text style={[styles.smartBannerText, { color: colors.primary }]}>
-                                Post-surgery, frozen shoulder & stroke visits will auto-select physiotherapist
+                                {t('doctor_visit.smart_banner')}
                             </Text>
                         </View>
                     </View>
@@ -480,7 +498,7 @@ export default function DoctorVisitScreen() {
                         {/* Inline date + time chips — shown when Later is selected */}
                         {selectedWhen === 'Later' && (
                             <>
-                                <Text style={styles.slotSectionLabel}>Select Date</Text>
+                                <Text style={styles.slotSectionLabel}>{t('doctor_visit.select_date')}</Text>
                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
                                     {LATER_DATES.map((d, idx) => (
                                         <TouchableOpacity
@@ -492,16 +510,16 @@ export default function DoctorVisitScreen() {
                                             }}
                                         >
                                             <Text style={[styles.chipLabel, selectedDateIdx === idx && styles.chipLabelActive]}>
-                                                {d.toLocaleDateString('en-US', { weekday: 'short' })}
+                                                {d.toLocaleDateString(i18n.language, { weekday: 'short' })}
                                             </Text>
                                             <Text style={[styles.chipSub, selectedDateIdx === idx && styles.chipLabelActive]}>
-                                                {d.getDate()} {d.toLocaleDateString('en-US', { month: 'short' })}
+                                                {d.getDate()} {d.toLocaleDateString(i18n.language, { month: 'short' })}
                                             </Text>
                                         </TouchableOpacity>
                                     ))}
                                 </ScrollView>
 
-                                <Text style={styles.slotSectionLabel}>Select Time</Text>
+                                <Text style={styles.slotSectionLabel}>{t('doctor_visit.select_time')}</Text>
                                 <View style={styles.timeSlotsGrid}>
                                     {TIME_SLOTS.map((slot) => (
                                         <TouchableOpacity
@@ -541,7 +559,7 @@ export default function DoctorVisitScreen() {
                             <TextInput
                                 value={address}
                                 onChangeText={setAddress}
-                                placeholder="Enter your full address"
+                                placeholder={t('nurse_care.address_placeholder')}
                                 placeholderTextColor={colors.textMuted}
                                 multiline
                                 numberOfLines={2}
@@ -551,7 +569,7 @@ export default function DoctorVisitScreen() {
 
                         {/* Landmark field */}
                         <TextInput
-                            placeholder="Landmark (optional, e.g. Near Apollo Hospital)"
+                            placeholder={t('nurse_care.landmark_placeholder')}
                             placeholderTextColor={colors.textMuted}
                             value={landmark}
                             onChangeText={setLandmark}
@@ -560,8 +578,8 @@ export default function DoctorVisitScreen() {
 
                         <Text style={styles.addressHelper}>
                             {locationDenied
-                                ? "GPS access denied — using saved address. Tap above to edit."
-                                : "Auto-fetched from your location. Tap above to edit."}
+                                ? t('doctor_visit.gps_denied_using_saved')
+                                : t('doctor_visit.gps_auto_fetched')}
                         </Text>
                     </View>
 

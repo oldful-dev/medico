@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { paymentService } from '@/services/api/paymentService';
+import { useTheme } from '@/context/ThemeContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 
 const mapLabelToCategory = (label: string): string => {
     const lower = label.toLowerCase();
@@ -28,6 +31,10 @@ const mapLabelToCategory = (label: string): string => {
 export default function UpgradePromptScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const { t } = useTranslation();
+    const styles = makeStyles(colors, isDarkMode);
     const params = useLocalSearchParams<{
         bookingPayload: string;
         amount: string;
@@ -78,13 +85,12 @@ export default function UpgradePromptScreen() {
     const platformFee = calculatedPrices ? calculatedPrices.breakdown.platformFee : 50;
     const taxes = calculatedPrices ? calculatedPrices.breakdown.taxes : Math.round(serviceCharge * 0.06);
     const activeOffers = parseFloat(params.discount || '0');
-    
+
     // Savings amount is booking + platform fees waivable by plan
     const planBenefitDiscount = bookingFee + platformFee;
 
     // Calculate total checkout price without subscription upgrade
     const totalWithoutUpgrade = serviceCharge + bookingFee + platformFee + taxes - activeOffers;
-
 
     const handleUpgrade = () => {
         router.push({
@@ -121,96 +127,95 @@ export default function UpgradePromptScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Checkout Details</Text>
+                <Text style={styles.headerTitle}>{t('upgrade_prompt.header_title')}</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {/* Upgrade Offer Card */}
                 <View style={styles.promoCard}>
-                    <Text style={styles.promoTitle}>Smart Upgrade ⚡</Text>
-                    <Text style={styles.promoHeading}>Stop Paying Booking Fees.</Text>
-                    <Text style={styles.promoHeading}>Get Total Home Management.</Text>
-                    <Text style={styles.promoSub}>Join the ayuxacare Homemaker Plan for Just ₹3,499/month</Text>
+                    <Text style={styles.promoTitle}>{t('upgrade_prompt.smart_upgrade')}</Text>
+                    <Text style={styles.promoHeading}>{t('upgrade_prompt.stop_paying_fees')}</Text>
+                    <Text style={styles.promoHeading}>{t('upgrade_prompt.get_home_management')}</Text>
+                    <Text style={styles.promoSub}>{t('upgrade_prompt.plan_price')}</Text>
 
                     {/* Comparison Table */}
                     <View style={styles.table}>
                         {/* Table Header */}
                         <View style={[styles.tableRow, styles.tableHeader]}>
-                            <Text style={[styles.cell, styles.headerCell, { flex: 1.2 }]}>Feature</Text>
-                            <Text style={[styles.cell, styles.headerCell]}>Pay-Per-Use</Text>
-                            <Text style={[styles.cell, styles.headerCell, styles.highlightHeader]}>Homemaker Plan</Text>
+                            <Text style={[styles.cell, styles.headerCell, { flex: 1.2 }]}>{t('upgrade_prompt.table_feature')}</Text>
+                            <Text style={[styles.cell, styles.headerCell]}>{t('upgrade_prompt.table_pay_per_use')}</Text>
+                            <Text style={[styles.cell, styles.headerCell, styles.highlightHeader]}>{t('upgrade_prompt.table_homemaker')}</Text>
                         </View>
 
                         {/* Booking Fee */}
                         <View style={styles.tableRow}>
-                            <Text style={[styles.cell, styles.featureName, { flex: 1.2 }]}>Booking Fee</Text>
+                            <Text style={[styles.cell, styles.featureName, { flex: 1.2 }]}>{t('upgrade_prompt.row_booking_fee')}</Text>
                             <Text style={styles.cell}>
-                                {calcLoading ? <ActivityIndicator size="small" color={Colors.textBody} /> : `₹${bookingFee} per visit`}
+                                {calcLoading ? <ActivityIndicator size="small" color={Colors.textBody} /> : t('upgrade_prompt.row_booking_fee_per_visit', { amount: bookingFee })}
                             </Text>
-                            <Text style={[styles.cell, styles.highlightCell]}>₹0 (Unlimited)</Text>
+                            <Text style={[styles.cell, styles.highlightCell]}>{t('upgrade_prompt.row_booking_fee_plan')}</Text>
                         </View>
 
                         {/* Supervision */}
                         <View style={styles.tableRow}>
-                            <Text style={[styles.cell, styles.featureName, { flex: 1.2 }]}>Supervision</Text>
-                            <Text style={styles.cell}>❌ No (Remote only)</Text>
-                            <Text style={[styles.cell, styles.highlightCell]}>✅ On-Site Supervision (We stay while they work)</Text>
+                            <Text style={[styles.cell, styles.featureName, { flex: 1.2 }]}>{t('upgrade_prompt.row_supervision')}</Text>
+                            <Text style={styles.cell}>{t('upgrade_prompt.row_supervision_no')}</Text>
+                            <Text style={[styles.cell, styles.highlightCell]}>{t('upgrade_prompt.row_supervision_yes')}</Text>
                         </View>
 
                         {/* Bill Payment */}
                         <View style={styles.tableRow}>
-                            <Text style={[styles.cell, styles.featureName, { flex: 1.2 }]}>Bill Payment</Text>
-                            <Text style={styles.cell}>₹299 per request</Text>
-                            <Text style={[styles.cell, styles.highlightCell]}>✅ Included</Text>
+                            <Text style={[styles.cell, styles.featureName, { flex: 1.2 }]}>{t('upgrade_prompt.row_bill_payment')}</Text>
+                            <Text style={styles.cell}>{t('upgrade_prompt.row_bill_payment_cost')}</Text>
+                            <Text style={[styles.cell, styles.highlightCell]}>{t('upgrade_prompt.row_bill_payment_plan')}</Text>
                         </View>
 
                         {/* Proactive Checks */}
                         <View style={styles.tableRow}>
-                            <Text style={[styles.cell, styles.featureName, { flex: 1.2 }]}>Proactive Checks</Text>
-                            <Text style={styles.cell}>❌ None</Text>
-                            <Text style={[styles.cell, styles.highlightCell]}>✅ Monthly Audit</Text>
+                            <Text style={[styles.cell, styles.featureName, { flex: 1.2 }]}>{t('upgrade_prompt.row_proactive')}</Text>
+                            <Text style={styles.cell}>{t('upgrade_prompt.row_proactive_no')}</Text>
+                            <Text style={[styles.cell, styles.highlightCell]}>{t('upgrade_prompt.row_proactive_yes')}</Text>
                         </View>
                     </View>
                 </View>
 
                 {/* Price Summary Breakdown */}
                 <View style={styles.breakdownCard}>
-                    <Text style={styles.breakdownTitle}>Checkout Price Summary</Text>
-                    
+                    <Text style={styles.breakdownTitle}>{t('upgrade_prompt.checkout_price_summary')}</Text>
+
                     <View style={styles.breakdownRow}>
-                        <Text style={styles.breakdownLabel}>Service Charge ({params.label || 'Service'})</Text>
+                        <Text style={styles.breakdownLabel}>{t('upgrade_prompt.service_charge', { label: params.label || 'Service' })}</Text>
                         <Text style={styles.breakdownValue}>₹{serviceCharge.toLocaleString('en-IN')}</Text>
                     </View>
 
                     <View style={styles.breakdownRow}>
-                        <Text style={styles.breakdownLabel}>Booking Fee</Text>
+                        <Text style={styles.breakdownLabel}>{t('upgrade_prompt.booking_fee')}</Text>
                         <Text style={styles.breakdownValue}>
                             {calcLoading ? <ActivityIndicator size="small" color={Colors.primary} /> : `₹${bookingFee.toLocaleString('en-IN')}`}
                         </Text>
                     </View>
 
                     <View style={styles.breakdownRow}>
-                        <Text style={styles.breakdownLabel}>Platform Fee</Text>
+                        <Text style={styles.breakdownLabel}>{t('upgrade_prompt.platform_fee')}</Text>
                         <Text style={styles.breakdownValue}>
                             {calcLoading ? <ActivityIndicator size="small" color={Colors.primary} /> : `₹${platformFee.toLocaleString('en-IN')}`}
                         </Text>
                     </View>
 
                     <View style={styles.breakdownRow}>
-                        <Text style={styles.breakdownLabel}>Estimated Taxes (GST)</Text>
+                        <Text style={styles.breakdownLabel}>{t('upgrade_prompt.estimated_taxes')}</Text>
                         <Text style={styles.breakdownValue}>₹{Math.round(taxes).toLocaleString('en-IN')}</Text>
                     </View>
 
-
                     {activeOffers > 0 && (
                         <View style={styles.breakdownRow}>
-                            <Text style={[styles.breakdownLabel, styles.greenText]}>Offers & Discounts</Text>
+                            <Text style={[styles.breakdownLabel, styles.greenText]}>{t('upgrade_prompt.offers_discounts')}</Text>
                             <Text style={[styles.breakdownValue, styles.greenText]}>-₹{activeOffers.toLocaleString('en-IN')}</Text>
                         </View>
                     )}
 
                     <View style={[styles.breakdownRow, styles.totalRow]}>
-                        <Text style={styles.totalLabel}>Total Price (without Upgrade)</Text>
+                        <Text style={styles.totalLabel}>{t('upgrade_prompt.total_without_upgrade')}</Text>
                         <Text style={styles.totalValue}>
                             {calcLoading ? <ActivityIndicator size="small" color={Colors.primary} /> : `₹${Math.round(totalWithoutUpgrade).toLocaleString('en-IN')}`}
                         </Text>
@@ -220,22 +225,22 @@ export default function UpgradePromptScreen() {
                 {/* Bottom CTAs */}
                 <View style={styles.actionContainer}>
                     <TouchableOpacity style={styles.btnUpgrade} onPress={handleUpgrade} disabled={calcLoading}>
-                        <Text style={styles.btnUpgradeText}>Upgrade Now & Save ₹{planBenefitDiscount}</Text>
+                        <Text style={styles.btnUpgradeText}>{t('upgrade_prompt.upgrade_now', { amount: planBenefitDiscount })}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.btnNoUpgrade} onPress={handleNoUpgrade} disabled={calcLoading}>
-                        <Text style={styles.btnNoUpgradeText}>Pay ₹{Math.round(totalWithoutUpgrade).toLocaleString('en-IN')} Without Upgrade</Text>
+                        <Text style={styles.btnNoUpgradeText}>{t('upgrade_prompt.pay_without_upgrade', { amount: Math.round(totalWithoutUpgrade).toLocaleString('en-IN') })}</Text>
                     </TouchableOpacity>
 
-                    <Text style={styles.helperText}>You will be redirected to secure payment</Text>
+                    <Text style={styles.helperText}>{t('upgrade_prompt.redirect_notice')}</Text>
                 </View>
             </ScrollView>
         </View>
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: Colors.bgScreen },
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.bgScreen },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
         backgroundColor: Colors.primary,
@@ -244,10 +249,10 @@ const styles = StyleSheet.create({
     backBtn: { position: 'absolute', left: 20, padding: 5, zIndex: 10 },
     headerTitle: {
         fontFamily: Fonts.semiBold, fontSize: FontSize.heading2,
-        color: Colors.textWhite, textAlign: 'center',
+        color: colors.textWhite, textAlign: 'center',
     },
     scrollContent: { padding: Spacing.lg, paddingBottom: 40 },
-    
+
     promoCard: {
         backgroundColor: '#80F9E7',
         borderRadius: Radius.lg,
@@ -270,7 +275,7 @@ const styles = StyleSheet.create({
 
     // Table styles
     table: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.bgCard,
         borderRadius: Radius.md,
         overflow: 'hidden',
         borderWidth: 1,
@@ -319,13 +324,13 @@ const styles = StyleSheet.create({
         padding: Spacing.lg,
         marginBottom: Spacing.xl,
         borderWidth: 1,
-        borderColor: '#EEEEEE',
+        borderColor: colors.borderLight,
         ...Shadow.card,
     },
     breakdownTitle: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.textDark,
+        color: colors.textDark,
         marginBottom: Spacing.md,
     },
     breakdownRow: {
@@ -333,20 +338,20 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingVertical: 8,
         borderBottomWidth: 1,
-        borderBottomColor: '#F5F5F5',
+        borderBottomColor: colors.borderLight,
     },
     breakdownLabel: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.caption,
-        color: Colors.textLight,
+        color: colors.textMuted,
     },
     breakdownValue: {
         fontFamily: Fonts.medium,
         fontSize: FontSize.caption,
-        color: Colors.textDark,
+        color: colors.textDark,
     },
     greenText: {
-        color: '#2e7d32',
+        color: colors.primary,
     },
     totalRow: {
         borderBottomWidth: 0,
@@ -356,19 +361,19 @@ const styles = StyleSheet.create({
     totalLabel: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.textDark,
+        color: colors.textDark,
     },
     totalValue: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.primary,
+        color: colors.primary,
     },
 
     actionContainer: {
         gap: Spacing.md,
     },
     btnUpgrade: {
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         borderRadius: Radius.md,
         height: 52,
         alignItems: 'center',
@@ -377,12 +382,12 @@ const styles = StyleSheet.create({
     },
     btnUpgradeText: {
         fontFamily: Fonts.semiBold, fontSize: FontSize.body,
-        color: Colors.textWhite,
+        color: colors.textWhite,
     },
     btnNoUpgrade: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.bgCard,
         borderWidth: 1,
-        borderColor: Colors.primary,
+        borderColor: colors.primary,
         borderRadius: Radius.md,
         height: 52,
         alignItems: 'center',
@@ -390,10 +395,10 @@ const styles = StyleSheet.create({
     },
     btnNoUpgradeText: {
         fontFamily: Fonts.semiBold, fontSize: FontSize.body,
-        color: Colors.primary,
+        color: colors.primary,
     },
     helperText: {
         fontFamily: Fonts.regular, fontSize: FontSize.caption,
-        color: Colors.textMuted, textAlign: 'center', marginTop: 4,
+        color: colors.textMuted, textAlign: 'center', marginTop: 4,
     },
 });

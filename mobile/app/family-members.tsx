@@ -10,7 +10,7 @@ import { familyMemberService, FamilyMember } from '@/services/api/familyMemberSe
 import { useUser } from '@/context/UserContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
-import { Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
+import { useTranslation } from 'react-i18next';
 
 const RELATIONS = ['Father', 'Mother', 'Spouse', 'Son', 'Daughter', 'Sibling', 'Dependent', 'Other'];
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-', 'Unknown'];
@@ -32,6 +32,7 @@ export default function FamilyMembersScreen() {
     const { profile } = useUser();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const { t } = useTranslation();
     const styles = makeStyles(colors, isDarkMode);
 
     const [members, setMembers] = useState<FamilyMember[]>([]);
@@ -49,6 +50,19 @@ export default function FamilyMembersScreen() {
     });
 
     const userId = profile?.id || '';
+
+    // Translation helpers
+    const getTranslatedRelation = (relation: string) => {
+        if (!relation) return '';
+        const key = `family_members.relations.${relation.toLowerCase().replace(/\s+/g, '_')}`;
+        return t(key, { defaultValue: relation });
+    };
+
+    const getTranslatedGender = (gender: string) => {
+        if (!gender) return '';
+        const key = `family_members.genders.${gender.toLowerCase().replace(/\s+/g, '_')}`;
+        return t(key, { defaultValue: gender });
+    };
 
     // Fetch family members on focus
     useFocusEffect(
@@ -109,7 +123,7 @@ export default function FamilyMembersScreen() {
 
     const saveMember = async () => {
         if (!form.name.trim() || !form.relation) {
-            Alert.alert('Missing Info', 'Please enter name and relationship.');
+            Alert.alert(t('family_members.alerts.missing_info_title'), t('family_members.alerts.missing_info_msg'));
             return;
         }
         setSaving(true);
@@ -124,34 +138,34 @@ export default function FamilyMembersScreen() {
             if (res.success) {
                 await fetchMembers();
                 resetForm();
-                Alert.alert('Success', editingId ? 'Family member updated.' : 'Family member added.');
+                Alert.alert(t('family_members.alerts.success_title'), editingId ? t('family_members.alerts.member_updated') : t('family_members.alerts.member_added'));
             } else {
-                Alert.alert('Error', res.message || 'Failed to save family member.');
+                Alert.alert(t('family_members.alerts.error_title'), res.message || t('family_members.alerts.failed_save'));
             }
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'Something went wrong.');
+            Alert.alert(t('family_members.alerts.error_title'), error.message || t('family_members.alerts.something_went_wrong'));
         } finally {
             setSaving(false);
         }
     };
 
     const deleteMember = (member: FamilyMember) => {
-        Alert.alert('Remove Member', `Remove ${member.name}?`, [
-            { text: 'Cancel', style: 'cancel' },
+        Alert.alert(t('family_members.alerts.remove_member_title'), t('family_members.alerts.remove_member_msg', { name: member.name }), [
+            { text: t('family_members.cancel'), style: 'cancel' },
             {
-                text: 'Remove',
+                text: t('family_members.remove'),
                 style: 'destructive',
                 onPress: async () => {
                     try {
                         const res = await familyMemberService.deleteFamilyMember(userId, member.id);
                         if (res.success) {
                             setMembers(prev => prev.filter(m => m.id !== member.id));
-                            Alert.alert('Success', 'Family member removed.');
+                            Alert.alert(t('family_members.alerts.success_title'), t('family_members.alerts.member_removed'));
                         } else {
-                            Alert.alert('Error', res.message || 'Failed to remove family member.');
+                            Alert.alert(t('family_members.alerts.error_title'), res.message || t('family_members.alerts.failed_remove'));
                         }
                     } catch (error: any) {
-                        Alert.alert('Error', error.message || 'Failed to remove family member.');
+                        Alert.alert(t('family_members.alerts.error_title'), error.message || t('family_members.alerts.failed_remove'));
                     }
                 }
             },
@@ -166,7 +180,7 @@ export default function FamilyMembersScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Family Members</Text>
+                    <Text style={styles.headerTitle}>{t('family_members.header_title')}</Text>
                 </View>
             </SafeAreaView>
 
@@ -189,8 +203,8 @@ export default function FamilyMembersScreen() {
                 ) : members.length === 0 && !showForm ? (
                     <View style={styles.emptyState}>
                         <Ionicons name="people-outline" size={56} color={colors.textMuted} />
-                        <Text style={styles.emptyTitle}>No Family Members</Text>
-                        <Text style={styles.emptyDesc}>Add family members to manage their health profiles and share bookings.</Text>
+                        <Text style={styles.emptyTitle}>{t('family_members.no_family_members')}</Text>
+                        <Text style={styles.emptyDesc}>{t('family_members.add_to_manage')}</Text>
                     </View>
                 ) : null}
 
@@ -207,7 +221,7 @@ export default function FamilyMembersScreen() {
                                 </View>
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.memberName}>{member.name}</Text>
-                                    <Text style={styles.memberRel}>{member.relation}{member.gender ? ` • ${member.gender}` : ''}</Text>
+                                    <Text style={styles.memberRel}>{getTranslatedRelation(member.relation)}{member.gender ? ` • ${getTranslatedGender(member.gender)}` : ''}</Text>
                                 </View>
                             </View>
                             <View style={styles.cardTopRight}>
@@ -225,19 +239,19 @@ export default function FamilyMembersScreen() {
                                 {member.dateOfBirth ? (
                                     <View style={styles.detailRow}>
                                         <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
-                                        <Text style={styles.detailText}>DOB: {member.dateOfBirth}</Text>
+                                        <Text style={styles.detailText}>{t('family_members.dob_label', { dob: member.dateOfBirth })}</Text>
                                     </View>
                                 ) : null}
                                 {member.allergies ? (
                                     <View style={styles.detailRow}>
                                         <Ionicons name="warning-outline" size={14} color="#F59E0B" />
-                                        <Text style={styles.detailText}>Allergies: {member.allergies}</Text>
+                                        <Text style={styles.detailText}>{t('family_members.allergies_label', { allergies: member.allergies })}</Text>
                                     </View>
                                 ) : null}
                                 {member.chronicConditions ? (
                                     <View style={styles.detailRow}>
                                         <Ionicons name="medkit-outline" size={14} color="#EF4444" />
-                                        <Text style={styles.detailText}>Conditions: {member.chronicConditions}</Text>
+                                        <Text style={styles.detailText}>{t('family_members.conditions_label', { conditions: member.chronicConditions })}</Text>
                                     </View>
                                 ) : null}
                                 {member.emergencyNotes ? (
@@ -249,11 +263,11 @@ export default function FamilyMembersScreen() {
                                 <View style={styles.cardActions}>
                                     <TouchableOpacity style={styles.editBtn} onPress={() => startEdit(member)}>
                                         <Ionicons name="pencil-outline" size={14} color={colors.primary} />
-                                        <Text style={styles.editBtnText}>Edit</Text>
+                                        <Text style={styles.editBtnText}>{t('family_members.edit')}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity style={styles.removeBtn} onPress={() => deleteMember(member)}>
                                         <Ionicons name="trash-outline" size={14} color="#FF3B30" />
-                                        <Text style={styles.removeBtnText}>Remove</Text>
+                                        <Text style={styles.removeBtnText}>{t('family_members.remove')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -263,11 +277,11 @@ export default function FamilyMembersScreen() {
 
                 {showForm && (
                     <View style={styles.addForm}>
-                        <Text style={styles.formTitle}>{editingId ? 'Edit Family Member' : 'Add Family Member'}</Text>
+                        <Text style={styles.formTitle}>{editingId ? t('family_members.edit_family_member') : t('family_members.add_family_member')}</Text>
 
                         <TextInput
                             style={styles.input}
-                            placeholder="Full Name *"
+                            placeholder={t('family_members.full_name_placeholder')}
                             placeholderTextColor={colors.textMuted}
                             value={form.name}
                             onChangeText={v => setForm(f => ({ ...f, name: v }))}
@@ -283,12 +297,12 @@ export default function FamilyMembersScreen() {
                             <View style={styles.dateInputContent}>
                                 <Ionicons name="calendar-outline" size={16} color={colors.primary} />
                                 <Text style={[styles.dateInputText, !form.dateOfBirth && { color: colors.textMuted }]}>
-                                    {form.dateOfBirth ? new Date(form.dateOfBirth).toLocaleDateString('en-GB') : 'Date of Birth (optional)'}
+                                    {form.dateOfBirth ? new Date(form.dateOfBirth).toLocaleDateString('en-GB') : t('family_members.dob_placeholder')}
                                 </Text>
                             </View>
                         </TouchableOpacity>
 
-                        <Text style={styles.chipLabel}>Relationship *</Text>
+                        <Text style={styles.chipLabel}>{t('family_members.relationship_label')}</Text>
                         <View style={styles.chipRow}>
                             {RELATIONS.map(r => (
                                 <TouchableOpacity
@@ -296,12 +310,12 @@ export default function FamilyMembersScreen() {
                                     style={[styles.chip, form.relation === r && styles.chipActive]}
                                     onPress={() => setForm(f => ({ ...f, relation: r }))}
                                 >
-                                    <Text style={[styles.chipText, form.relation === r && styles.chipTextActive]}>{r}</Text>
+                                    <Text style={[styles.chipText, form.relation === r && styles.chipTextActive]}>{getTranslatedRelation(r)}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
 
-                        <Text style={styles.chipLabel}>Gender</Text>
+                        <Text style={styles.chipLabel}>{t('family_members.gender_label')}</Text>
                         <View style={styles.chipRow}>
                             {GENDERS.map(g => (
                                 <TouchableOpacity
@@ -309,12 +323,12 @@ export default function FamilyMembersScreen() {
                                     style={[styles.chip, form.gender === g && styles.chipActive]}
                                     onPress={() => setForm(f => ({ ...f, gender: g }))}
                                 >
-                                    <Text style={[styles.chipText, form.gender === g && styles.chipTextActive]}>{g}</Text>
+                                    <Text style={[styles.chipText, form.gender === g && styles.chipTextActive]}>{getTranslatedGender(g)}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
 
-                        <Text style={styles.chipLabel}>Blood Group</Text>
+                        <Text style={styles.chipLabel}>{t('family_members.blood_group_label')}</Text>
                         <View style={styles.chipRow}>
                             {BLOOD_GROUPS.map(bg => (
                                 <TouchableOpacity
@@ -322,28 +336,28 @@ export default function FamilyMembersScreen() {
                                     style={[styles.chip, form.bloodGroup === bg && styles.chipActive]}
                                     onPress={() => setForm(f => ({ ...f, bloodGroup: bg }))}
                                 >
-                                    <Text style={[styles.chipText, form.bloodGroup === bg && styles.chipTextActive]}>{bg}</Text>
+                                    <Text style={[styles.chipText, form.bloodGroup === bg && styles.chipTextActive]}>{bg === 'Unknown' ? t('common.unknown') : bg}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
 
                         <TextInput
                             style={styles.input}
-                            placeholder="Allergies (if any)"
+                            placeholder={t('family_members.allergies_placeholder')}
                             placeholderTextColor={colors.textMuted}
                             value={form.allergies}
                             onChangeText={v => setForm(f => ({ ...f, allergies: v }))}
                         />
                         <TextInput
                             style={styles.input}
-                            placeholder="Chronic Conditions (if any)"
+                            placeholder={t('family_members.chronic_conditions_placeholder')}
                             placeholderTextColor={colors.textMuted}
                             value={form.chronicConditions}
                             onChangeText={v => setForm(f => ({ ...f, chronicConditions: v }))}
                         />
                         <TextInput
                             style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
-                            placeholder="Emergency Notes (optional)"
+                            placeholder={t('family_members.emergency_notes_placeholder')}
                             placeholderTextColor={colors.textMuted}
                             multiline
                             value={form.emergencyNotes}
@@ -352,10 +366,10 @@ export default function FamilyMembersScreen() {
 
                         <View style={styles.formActions}>
                             <TouchableOpacity style={styles.cancelBtn} onPress={resetForm}>
-                                <Text style={styles.cancelBtnText}>Cancel</Text>
+                                <Text style={styles.cancelBtnText}>{t('family_members.cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.saveBtn} onPress={saveMember} disabled={saving}>
-                                {saving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveBtnText}>{editingId ? 'Update Member' : 'Save Member'}</Text>}
+                                {saving ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.saveBtnText}>{editingId ? t('family_members.update_member') : t('family_members.save_member')}</Text>}
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -363,12 +377,12 @@ export default function FamilyMembersScreen() {
 
                 <TouchableOpacity style={styles.addButton} onPress={() => setShowForm(!showForm)} activeOpacity={0.7}>
                     <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
-                    <Text style={styles.addButtonText}>Add Family Member</Text>
+                    <Text style={styles.addButtonText}>{t('family_members.add_family_member')}</Text>
                 </TouchableOpacity>
 
                 <View style={styles.infoBox}>
                     <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
-                    <Text style={styles.infoText}>Family member health profiles help our care team provide personalised service recommendations.</Text>
+                    <Text style={styles.infoText}>{t('family_members.info_box_text')}</Text>
                 </View>
             </KeyboardAwareScrollView>
         </KeyboardAvoidingView>

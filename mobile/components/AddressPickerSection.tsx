@@ -7,12 +7,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useUser } from '@/context/UserContext';
 import { locationService } from '@/services/device/locationService';
 import { LocationPickerModal } from './LocationPickerModal';
-
-const PRIMARY_GREEN = '#02743F';
-const TEXT_DARK = '#2F2F2F';
-const TEXT_MUTED = '#888888';
-const CARD_BORDER = '#E5E7EB';
-const LIGHT_GREEN_BG = '#F0FDF4';
+import { useTheme } from '@/context/ThemeContext';
+import { useThemeColors } from '@/hooks/use-theme-colors';
+import { useTranslation } from 'react-i18next';
 
 export interface AddressData {
     line1: string;
@@ -62,22 +59,35 @@ export const AddressPickerSection = ({
     onPhoneChange,
     landmark = '',
     onLandmarkChange,
-    title = 'Delivery Address',
+    title,
     showPhoneField = true,
     showLandmarkField = true,
     allowManualEntry = true,
     initialLat = 28.7041,
     initialLng = 77.1025,
 }: AddressPickerSectionProps) => {
+    const { t } = useTranslation();
+    const resolvedTitle = title ?? t('location_picker.delivery_address');
     const { profile } = useUser();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
     const [detectingLocation, setDetectingLocation] = useState(false);
     const [locationPickerVisible, setLocationPickerVisible] = useState(false);
     const [manualPincodeInput, setManualPincodeInput] = useState(selectedAddress?.pincode || '');
 
+    // Dynamic color tokens
+    const primaryGreen = colors.primaryDark;
+    const textDark = colors.textDark;
+    const textMuted = colors.textMuted;
+    const cardBorder = colors.borderLight;
+    const lightGreenBg = isDarkMode ? 'rgba(4, 131, 87, 0.15)' : '#F0FDF4';
+
+    const styles = makeStyles(isDarkMode, colors, primaryGreen, textDark, textMuted, cardBorder, lightGreenBg);
+
     // Auto-fill from profile address (primary option)
     const handleAutoFillAddress = useCallback(() => {
         if (!profile?.addresses?.length) {
-            Alert.alert('No Saved Addresses', 'Please add an address in your profile first.');
+            Alert.alert(t('location_picker.no_saved_addresses_title'), t('location_picker.no_saved_addresses_message'));
             return;
         }
 
@@ -101,7 +111,7 @@ export const AddressPickerSection = ({
                 checkServiceabilityFn(String(addressData.latitude), String(addressData.longitude));
             }
         }
-    }, [profile, onAddressChange, showServiceabilityCheck, onServiceabilityChange, checkServiceabilityFn, initialLat, initialLng]);
+    }, [profile, onAddressChange, showServiceabilityCheck, onServiceabilityChange, checkServiceabilityFn, initialLat, initialLng, t]);
 
     // GPS location detection (secondary option)
     const handleDetectLocation = useCallback(async () => {
@@ -134,14 +144,14 @@ export const AddressPickerSection = ({
                 await checkServiceabilityFn(String(coords.latitude), String(coords.longitude));
             }
 
-            Alert.alert('Success', 'Your location has been detected.');
+            Alert.alert(t('location_picker.success_title'), t('location_picker.location_detected'));
         } catch (error: any) {
-            Alert.alert('Location Error', error.message || 'Unable to detect your location. Please search manually.');
+            Alert.alert(t('location_picker.location_error_title'), error.message || t('location_picker.unable_to_detect'));
             console.error('Location detection failed:', error);
         } finally {
             setDetectingLocation(false);
         }
-    }, [onAddressChange, showServiceabilityCheck, onServiceabilityChange, checkServiceabilityFn]);
+    }, [onAddressChange, showServiceabilityCheck, onServiceabilityChange, checkServiceabilityFn, t]);
 
     // Google Maps location picker (tertiary option)
     const handleLocationConfirmed = useCallback((location: any) => {
@@ -203,26 +213,26 @@ export const AddressPickerSection = ({
             case 'checking':
                 return '#F59E0B';
             default:
-                return TEXT_MUTED;
+                return textMuted;
         }
     };
 
     const getServiceabilityLabel = () => {
         switch (serviceabilityStatus) {
             case 'serviceable':
-                return 'Available at this location';
+                return t('location_picker.available_location');
             case 'non-serviceable':
-                return 'Not available at this location';
+                return t('location_picker.not_available_location');
             case 'checking':
-                return 'Checking availability...';
+                return t('location_picker.checking_availability');
             default:
-                return 'Location not verified';
+                return t('location_picker.location_not_verified');
         }
     };
 
     return (
         <View style={styles.card}>
-            <Text style={styles.cardTitle}>{title}</Text>
+            <Text style={styles.cardTitle}>{resolvedTitle}</Text>
 
             {/* Option Buttons Row */}
             <View style={styles.optionsRow}>
@@ -231,8 +241,8 @@ export const AddressPickerSection = ({
                         style={styles.optionBtn}
                         onPress={handleAutoFillAddress}
                     >
-                        <Ionicons name="home-outline" size={16} color={PRIMARY_GREEN} />
-                        <Text style={styles.optionBtnText}>My Address</Text>
+                        <Ionicons name="home-outline" size={16} color={isDarkMode ? '#34D399' : primaryGreen} />
+                        <Text style={styles.optionBtnText}>{t('location_picker.my_address')}</Text>
                     </TouchableOpacity>
                 )}
 
@@ -242,12 +252,12 @@ export const AddressPickerSection = ({
                     disabled={detectingLocation}
                 >
                     {detectingLocation ? (
-                        <ActivityIndicator size={16} color={PRIMARY_GREEN} />
+                        <ActivityIndicator size={16} color={isDarkMode ? '#34D399' : primaryGreen} />
                     ) : (
-                        <Ionicons name="locate-outline" size={16} color={PRIMARY_GREEN} />
+                        <Ionicons name="locate-outline" size={16} color={isDarkMode ? '#34D399' : primaryGreen} />
                     )}
                     <Text style={styles.optionBtnText}>
-                        {detectingLocation ? 'Detecting...' : 'My Location'}
+                        {detectingLocation ? t('location_picker.detecting') : t('location_picker.my_location')}
                     </Text>
                 </TouchableOpacity>
 
@@ -255,15 +265,15 @@ export const AddressPickerSection = ({
                     style={styles.optionBtn}
                     onPress={() => setLocationPickerVisible(true)}
                 >
-                    <Ionicons name="search-outline" size={16} color={PRIMARY_GREEN} />
-                    <Text style={styles.optionBtnText}>Search</Text>
+                    <Ionicons name="search-outline" size={16} color={isDarkMode ? '#34D399' : primaryGreen} />
+                    <Text style={styles.optionBtnText}>{t('location_picker.search')}</Text>
                 </TouchableOpacity>
             </View>
 
             {/* Selected Address Display */}
             {selectedAddress && (
                 <View style={styles.addressDisplay}>
-                    <Ionicons name="location" size={18} color={PRIMARY_GREEN} />
+                    <Ionicons name="location" size={18} color={isDarkMode ? '#34D399' : primaryGreen} />
                     <View style={{ flex: 1, marginLeft: 12 }}>
                         <Text style={styles.addressLine1}>{selectedAddress.line1}</Text>
                         <Text style={styles.addressSecondary}>
@@ -299,29 +309,29 @@ export const AddressPickerSection = ({
                 <View style={styles.fieldsSection}>
                     {/* Pincode Field */}
                     <View style={styles.field}>
-                        <Text style={styles.fieldLabel}>Pincode *</Text>
+                        <Text style={styles.fieldLabel}>{t('location_picker.pincode_label')}</Text>
                         <TextInput
-                            style={styles.fieldInput}
-                            placeholder="Enter 6-digit pincode"
-                            placeholderTextColor={TEXT_MUTED}
-                            maxLength={6}
-                            keyboardType="numeric"
-                            value={manualPincodeInput}
-                            onChangeText={handlePincodeChange}
+                             style={styles.fieldInput}
+                             placeholder={t('location_picker.pincode_placeholder')}
+                             placeholderTextColor={textMuted}
+                             maxLength={6}
+                             keyboardType="numeric"
+                             value={manualPincodeInput}
+                             onChangeText={handlePincodeChange}
                         />
                     </View>
 
                     {/* Phone Number Field */}
                     {showPhoneField && onPhoneChange && (
                         <View style={styles.field}>
-                            <Text style={styles.fieldLabel}>Contact Number *</Text>
+                            <Text style={styles.fieldLabel}>{t('location_picker.contact_number_label')}</Text>
                             <View style={styles.phoneInputContainer}>
                                 <Text style={styles.phonePrefix}>+91</Text>
                                 <View style={styles.phoneDivider} />
                                 <TextInput
                                     style={styles.phoneInput}
-                                    placeholder="Enter phone number"
-                                    placeholderTextColor={TEXT_MUTED}
+                                    placeholder={t('location_picker.contact_number_placeholder')}
+                                    placeholderTextColor={textMuted}
                                     maxLength={10}
                                     keyboardType="phone-pad"
                                     value={phoneNumber.startsWith('+91') ? phoneNumber.slice(3) : phoneNumber}
@@ -337,11 +347,11 @@ export const AddressPickerSection = ({
                     {/* Landmark Field */}
                     {showLandmarkField && onLandmarkChange && (
                         <View style={styles.field}>
-                            <Text style={styles.fieldLabel}>Landmark (Optional)</Text>
+                            <Text style={styles.fieldLabel}>{t('location_picker.landmark_label')}</Text>
                             <TextInput
                                 style={styles.fieldInput}
-                                placeholder="e.g., Near hospital, opposite park"
-                                placeholderTextColor={TEXT_MUTED}
+                                placeholder={t('location_picker.landmark_placeholder')}
+                                placeholderTextColor={textMuted}
                                 value={landmark}
                                 onChangeText={onLandmarkChange}
                             />
@@ -362,19 +372,27 @@ export const AddressPickerSection = ({
     );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (
+    isDarkMode: boolean,
+    colors: any,
+    primaryGreen: string,
+    textDark: string,
+    textMuted: string,
+    cardBorder: string,
+    lightGreenBg: string
+) => StyleSheet.create({
     card: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: CARD_BORDER,
+        borderColor: cardBorder,
         padding: 16,
         marginBottom: 16,
     },
     cardTitle: {
         fontSize: 14,
         fontWeight: '600',
-        color: TEXT_DARK,
+        color: textDark,
         marginBottom: 12,
     },
     optionsRow: {
@@ -391,18 +409,18 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 12,
         borderRadius: 8,
-        backgroundColor: LIGHT_GREEN_BG,
+        backgroundColor: lightGreenBg,
     },
     optionBtnText: {
         fontSize: 12,
         fontWeight: '500',
-        color: PRIMARY_GREEN,
+        color: isDarkMode ? '#34D399' : primaryGreen,
     },
     addressDisplay: {
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: 10,
-        backgroundColor: LIGHT_GREEN_BG,
+        backgroundColor: lightGreenBg,
         borderRadius: 8,
         padding: 12,
         marginBottom: 12,
@@ -410,11 +428,11 @@ const styles = StyleSheet.create({
     addressLine1: {
         fontSize: 13,
         fontWeight: '500',
-        color: TEXT_DARK,
+        color: textDark,
     },
     addressSecondary: {
         fontSize: 12,
-        color: TEXT_MUTED,
+        color: textMuted,
         marginTop: 2,
     },
     serviceabilityBanner: {
@@ -424,7 +442,7 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 12,
         borderRadius: 8,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: isDarkMode ? '#0F172A' : '#F9FAFB',
         borderLeftWidth: 3,
         marginBottom: 12,
     },
@@ -441,42 +459,44 @@ const styles = StyleSheet.create({
     fieldLabel: {
         fontSize: 12,
         fontWeight: '500',
-        color: TEXT_DARK,
+        color: textDark,
     },
     fieldInput: {
         borderWidth: 1,
-        borderColor: CARD_BORDER,
+        borderColor: cardBorder,
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 10,
         fontSize: 13,
-        color: TEXT_DARK,
+        color: textDark,
+        backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF',
     },
     phoneInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: CARD_BORDER,
+        borderColor: cardBorder,
         borderRadius: 8,
         paddingHorizontal: 12,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF',
     },
     phonePrefix: {
         fontSize: 13,
         fontWeight: '500',
-        color: TEXT_DARK,
+        color: textDark,
         paddingRight: 8,
     },
     phoneDivider: {
         width: 1,
         height: 16,
-        backgroundColor: CARD_BORDER,
+        backgroundColor: cardBorder,
         marginRight: 8,
     },
     phoneInput: {
         flex: 1,
         paddingVertical: 10,
         fontSize: 13,
-        color: TEXT_DARK,
+        color: textDark,
+        backgroundColor: 'transparent',
     },
 });

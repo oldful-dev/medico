@@ -5,10 +5,12 @@ import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 const imgHero = require('@/assets/images/056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png');
 
 export default function BankPaperworkScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
@@ -20,11 +22,11 @@ export default function BankPaperworkScreen() {
 
     const handleBook = async () => {
         if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert('Address Required', 'Could not fetch your address. Please wait or try again.');
+            Alert.alert(t('service_detail.address_required'), t('service_detail.address_required_desc'));
             return;
         }
         if (!isReady) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            Alert.alert(t('service_detail.error'), t('service_detail.init_error'));
             return;
         }
         try {
@@ -48,7 +50,7 @@ export default function BankPaperworkScreen() {
                 },
             });
         } catch {
-            Alert.alert('Error', 'Something went wrong. Please check your connection.');
+            Alert.alert(t('service_detail.error'), t('service_detail.generic_error'));
         } finally {
             setIsBooking(false);
         }
@@ -56,18 +58,18 @@ export default function BankPaperworkScreen() {
 
     return (
         <ServiceDetailScreen
-            headerTitle="Bank / Paperwork"
-            heroTitle="Bank / Paper Work"
-            heroSubtitle="Concierge Services"
-            description="Get professional help with bank visits, passbook updates, KYC, and other paperwork — all at your doorstep."
+            headerTitle={t('service_detail.bank_paperwork.header')}
+            heroTitle={t('service_detail.bank_paperwork.hero')}
+            heroSubtitle={t('service_detail.concierge_services')}
+            description={t('service_detail.bank_paperwork.description')}
             heroImage={imgHero}
-            pricingLabel={servicePrice > 0 ? `₹${servicePrice} Per Visit (Concierge Fee)` : 'Fetching price...'}
-            pricingNote="*Charges cover the assistant's visit + travel. Bank charges are separate."
+            pricingLabel={servicePrice > 0 ? t('service_detail.bank_paperwork.pricing', { price: servicePrice }) : t('service_detail.fetching_price')}
+            pricingNote={t('service_detail.bank_paperwork.pricing_note')}
             bulletItems={[
-                'Passbook Update & KYC',
-                'Cheque Deposit & Withdrawal',
-                'Fixed Deposit & Account Opening',
-                'Statement & Certificate Collection',
+                t('service_detail.bank_paperwork.bullet_1'),
+                t('service_detail.bank_paperwork.bullet_2'),
+                t('service_detail.bank_paperwork.bullet_3'),
+                t('service_detail.bank_paperwork.bullet_4'),
             ]}
             address={address}
             landmark={landmark}
@@ -76,8 +78,8 @@ export default function BankPaperworkScreen() {
             isLoading={isLoading || isBooking}
         >
             <ImageUploadBox
-                title="Select An Image Of Scrap Items"
-                subtitle="JPG, PNG or PDF, file size no more than 10MB"
+                title={t('service_detail.bank_paperwork.upload_title')}
+                subtitle={t('service_detail.image_upload_subtitle')}
                 onImagesChange={setSelectedImages}
                 maxImages={3}
             />

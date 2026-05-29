@@ -5,10 +5,12 @@ import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 const imgHero = require('@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png');
 
 export default function ApplianceRepairScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
@@ -20,11 +22,11 @@ export default function ApplianceRepairScreen() {
 
     const handleBook = async () => {
         if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert('Address Required', 'Could not fetch your address. Please wait or try again.');
+            Alert.alert(t('service_detail.address_required'), t('service_detail.address_required_desc'));
             return;
         }
         if (!isReady) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            Alert.alert(t('service_detail.error'), t('service_detail.init_error'));
             return;
         }
         try {
@@ -43,12 +45,12 @@ export default function ApplianceRepairScreen() {
                         formDataJson: { attachments: uploadedImageUrls },
                     }),
                     amount: String(servicePrice),
-                    label: serviceName || 'Appliance Repair',
+                    label: serviceName || t('service_detail.appliance_repair.header'),
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
         } catch {
-            Alert.alert('Error', 'Failed to upload. Please check your connection.');
+            Alert.alert(t('service_detail.error'), t('service_detail.upload_error'));
         } finally {
             setIsBooking(false);
         }
@@ -56,18 +58,18 @@ export default function ApplianceRepairScreen() {
 
     return (
         <ServiceDetailScreen
-            headerTitle="AC & Appliance Repair"
-            heroTitle="AC & Appliance Repair"
-            heroSubtitle="Concierge Services"
-            description="Book a reliable technician for AC, refrigerator, washing machine, and other household appliance repairs."
+            headerTitle={t('service_detail.appliance_repair.header')}
+            heroTitle={t('service_detail.appliance_repair.hero')}
+            heroSubtitle={t('service_detail.concierge_services')}
+            description={t('service_detail.appliance_repair.description')}
             heroImage={imgHero}
-            pricingLabel={servicePrice > 0 ? `₹${servicePrice} Booking Fee + Vendor's Bill` : 'Fetching price...'}
-            pricingNote="*The vendor's bill depends on the actual work needed."
+            pricingLabel={servicePrice > 0 ? t('service_detail.appliance_repair.pricing', { price: servicePrice }) : t('service_detail.fetching_price')}
+            pricingNote={t('service_detail.appliance_repair.pricing_note')}
             bulletItems={[
-                'AC Servicing & Repair (Split & Window ACs)',
-                'Refrigerator Repair',
-                'Washing Machine Repair',
-                'Microwave & Other Appliances',
+                t('service_detail.appliance_repair.bullet_1'),
+                t('service_detail.appliance_repair.bullet_2'),
+                t('service_detail.appliance_repair.bullet_3'),
+                t('service_detail.appliance_repair.bullet_4'),
             ]}
             address={address}
             landmark={landmark}
@@ -76,8 +78,8 @@ export default function ApplianceRepairScreen() {
             isLoading={isLoading || isBooking}
         >
             <ImageUploadBox
-                title="Select An Image Of Scrap Items"
-                subtitle="JPG, PNG or PDF, file size no more than 10MB"
+                title={t('service_detail.appliance_repair.upload_title')}
+                subtitle={t('service_detail.image_upload_subtitle')}
                 onImagesChange={setSelectedImages}
                 maxImages={5}
             />

@@ -10,6 +10,7 @@ import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { meetupService } from '@/services/api/meetupService';
 import type { Meetup } from '@/services/api/meetupService';
 import { locationService } from '@/services/device/locationService';
+import { useTranslation } from 'react-i18next';
 
 const PRIMARY = '#02743F';
 const BG = '#F5FAF7';
@@ -27,6 +28,7 @@ export default function MeetupsListScreen() {
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const { t } = useTranslation();
     const [meetups, setMeetups] = useState<Meetup[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -72,11 +74,11 @@ export default function MeetupsListScreen() {
     };
 
     const seatsLabel = (available: number | undefined, total: number) => {
-        if (!total || available === undefined) return { text: 'Seats Available', color: PRIMARY, bg: '#D1FAE5' };
+        if (!total || available === undefined) return { text: t('meetup.seats_available', 'Seats Available'), color: PRIMARY, bg: '#D1FAE5' };
         const pct = available / total;
-        if (pct <= 0.2) return { text: 'Almost Full', color: '#DC2626', bg: '#FEE2E2' };
-        if (pct <= 0.4) return { text: 'Limited Seats', color: '#D97706', bg: '#FEF3C7' };
-        return { text: 'Seats Available', color: PRIMARY, bg: '#D1FAE5' };
+        if (pct <= 0.2) return { text: t('meetup.almost_full', 'Almost Full'), color: '#DC2626', bg: '#FEE2E2' };
+        if (pct <= 0.4) return { text: t('meetup.limited_seats', 'Limited Seats'), color: '#D97706', bg: '#FEF3C7' };
+        return { text: t('meetup.seats_available', 'Seats Available'), color: PRIMARY, bg: '#D1FAE5' };
     };
 
     return (
@@ -89,12 +91,12 @@ export default function MeetupsListScreen() {
                     <Ionicons name="arrow-back" size={22} color="#fff" />
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
-                    <Text style={makeStyles(isDarkMode, colors).headerTitle}>Local Meetups</Text>
-                    <Text style={makeStyles(isDarkMode, colors).headerSub}>Senior community events near you</Text>
+                    <Text style={makeStyles(isDarkMode, colors).headerTitle}>{t('meetup.header_title', 'Local Meetups')}</Text>
+                    <Text style={makeStyles(isDarkMode, colors).headerSub}>{t('meetup.header_subtitle', 'Senior community events near you')}</Text>
                 </View>
                 <View style={makeStyles(isDarkMode, colors).liveBadge}>
                     <View style={makeStyles(isDarkMode, colors).liveDot} />
-                    <Text style={makeStyles(isDarkMode, colors).liveText}>LIVE</Text>
+                    <Text style={makeStyles(isDarkMode, colors).liveText}>{t('meetup.live', 'LIVE')}</Text>
                 </View>
             </View>
 
@@ -112,7 +114,7 @@ export default function MeetupsListScreen() {
                             {/* Banner image / placeholder */}
                             <View style={makeStyles(isDarkMode, colors).bannerImg}>
                                 <Ionicons name="people" size={48} color="rgba(255,255,255,0.4)" />
-                                <Text style={makeStyles(isDarkMode, colors).bannerImgLabel}>Community Event</Text>
+                                <Text style={makeStyles(isDarkMode, colors).bannerImgLabel}>{t('meetup.community_event', 'Community Event')}</Text>
                             </View>
 
                             {/* Seats badge */}
@@ -132,7 +134,7 @@ export default function MeetupsListScreen() {
                                     </View>
                                     <View style={makeStyles(isDarkMode, colors).metaItem}>
                                         <Ionicons name="time-outline" size={14} color={PRIMARY} />
-                                        <Text style={makeStyles(isDarkMode, colors).metaText}>{featuredMeetup.startTime} Onwards</Text>
+                                        <Text style={makeStyles(isDarkMode, colors).metaText}>{featuredMeetup.startTime} {t('meetup.onwards', 'Onwards')}</Text>
                                     </View>
                                     <View style={makeStyles(isDarkMode, colors).metaItem}>
                                         <Ionicons name="location-outline" size={14} color={PRIMARY} />
@@ -142,7 +144,7 @@ export default function MeetupsListScreen() {
 
                                 <View style={makeStyles(isDarkMode, colors).pinRow}>
                                     <Ionicons name="pin" size={13} color="#fff" />
-                                    <Text style={makeStyles(isDarkMode, colors).pinText}>PARK – PIN CODE {featuredMeetup.pinCode}</Text>
+                                    <Text style={makeStyles(isDarkMode, colors).pinText}>{t('meetup.pin_code_label', { pinCode: featuredMeetup.pinCode })}</Text>
                                 </View>
 
                                 <TouchableOpacity
@@ -150,9 +152,9 @@ export default function MeetupsListScreen() {
                                     onPress={() => router.push({ pathname: '/meetup/details', params: { id: featuredMeetup.id } } as any)}
                                     activeOpacity={0.85}
                                 >
-                                    <Text style={makeStyles(isDarkMode, colors).joinBtnText}>Join Meetup — ₹{featuredMeetup.serviceCharge}</Text>
+                                    <Text style={makeStyles(isDarkMode, colors).joinBtnText}>{t('meetup.join_meetup_price', { price: featuredMeetup.serviceCharge })}</Text>
                                 </TouchableOpacity>
-                                <Text style={makeStyles(isDarkMode, colors).extraNote}>Snacks, transportation and additional assistance charges are extra.</Text>
+                                <Text style={makeStyles(isDarkMode, colors).extraNote}>{t('meetup.extra_charges_note', 'Snacks, transportation and additional assistance charges are extra.')}</Text>
                             </View>
                         </View>
                     );
@@ -162,7 +164,7 @@ export default function MeetupsListScreen() {
                 {upcomingMeetups.length > 0 && (
                     <View style={makeStyles(isDarkMode, colors).upcomingSection}>
                         <View style={makeStyles(isDarkMode, colors).sectionHeaderRow}>
-                            <Text style={makeStyles(isDarkMode, colors).sectionTitle}>Upcoming Local Meetups</Text>
+                            <Text style={makeStyles(isDarkMode, colors).sectionTitle}>{t('meetup.upcoming_section_title', 'Upcoming Local Meetups')}</Text>
                         </View>
 
                         {upcomingMeetups.map(meetup => {
@@ -206,7 +208,7 @@ export default function MeetupsListScreen() {
                     <View style={makeStyles(isDarkMode, colors).loader}>
                         <ActivityIndicator size="large" color={PRIMARY} />
                         <Text style={{ fontFamily: Fonts.regular, fontSize: 13, color: Colors.textMuted, marginTop: 12 }}>
-                            Loading meetups...
+                            {t('meetup.loading', 'Loading meetups...')}
                         </Text>
                     </View>
                 )}
@@ -214,7 +216,7 @@ export default function MeetupsListScreen() {
                     <View style={makeStyles(isDarkMode, colors).loader}>
                         <Ionicons name="wifi-outline" size={40} color={Colors.textMuted} />
                         <Text style={{ fontFamily: Fonts.semiBold, fontSize: 15, color: Colors.textDark, marginTop: 12 }}>
-                            Couldn&apos;t load meetups
+                            {t('meetup.could_not_load', "Couldn't load meetups")}
                         </Text>
                         <Text style={{ fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, marginTop: 4, textAlign: 'center' }}>
                             {error}
@@ -223,7 +225,7 @@ export default function MeetupsListScreen() {
                             onPress={() => fetchMeetups()}
                             style={{ marginTop: 16, backgroundColor: PRIMARY, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10 }}
                         >
-                            <Text style={{ fontFamily: Fonts.semiBold, fontSize: 14, color: '#fff' }}>Retry</Text>
+                            <Text style={{ fontFamily: Fonts.semiBold, fontSize: 14, color: '#fff' }}>{t('meetup.retry', 'Retry')}</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -231,10 +233,10 @@ export default function MeetupsListScreen() {
                     <View style={makeStyles(isDarkMode, colors).loader}>
                         <Ionicons name="calendar-outline" size={40} color={Colors.textMuted} />
                         <Text style={{ fontFamily: Fonts.semiBold, fontSize: 15, color: Colors.textDark, marginTop: 12 }}>
-                            No meetups available
+                            {t('meetup.no_meetups_available', 'No meetups available')}
                         </Text>
                         <Text style={{ fontFamily: Fonts.regular, fontSize: 13, color: Colors.textMuted, marginTop: 6, textAlign: 'center' }}>
-                            Check back soon for upcoming community events
+                            {t('meetup.check_back_soon', 'Check back soon for upcoming community events')}
                         </Text>
                     </View>
                 )}

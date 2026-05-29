@@ -8,6 +8,7 @@ import { Colors, Fonts, FontSize, Spacing } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { AddressPickerSection, AddressData } from '@/components/AddressPickerSection';
+import { useTranslation } from 'react-i18next';
 
 const PRIMARY = '#02743F';
 
@@ -21,6 +22,7 @@ export default function MeetupPickupScreen() {
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const { t } = useTranslation();
     const params = useLocalSearchParams<any>();
 
     React.useEffect(() => {
@@ -36,8 +38,8 @@ export default function MeetupPickupScreen() {
     const handleSave = () => {
         console.log('🚗 [MEETUP PICKUP] handleSave called, pickupEnabled:', pickupEnabled);
         if (pickupEnabled) {
-            if (!selectedAddress) { Alert.alert('Required', 'Please select pickup address'); return; }
-            if (!preferredTime) { Alert.alert('Required', 'Please select preferred pickup time'); return; }
+            if (!selectedAddress) { Alert.alert(t('common.required', 'Required'), t('meetup.alert_address_required', 'Please select pickup address')); return; }
+            if (!preferredTime) { Alert.alert(t('common.required', 'Required'), t('meetup.alert_time_required', 'Please select preferred pickup time')); return; }
         }
 
         const serviceCharge = params.meetupServiceCharge ? parseFloat(params.meetupServiceCharge) : 299;
@@ -87,13 +89,13 @@ export default function MeetupPickupScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={makeStyles(isDarkMode, colors).backBtn}>
                     <Ionicons name="arrow-back" size={22} color="#fff" />
                 </TouchableOpacity>
-                <Text style={makeStyles(isDarkMode, colors).headerTitle}>Pickup Support Details</Text>
+                <Text style={makeStyles(isDarkMode, colors).headerTitle}>{t('meetup.pickup_header', 'Pickup Support Details')}</Text>
                 <View style={{ width: 30 }} />
             </View>
 
             {/* Step indicator */}
             <View style={makeStyles(isDarkMode, colors).stepBar}>
-                {['Registration', 'Pickup', 'Checkout'].map((step, i) => (
+                {[t('meetup.step_registration', 'Registration'), t('meetup.step_pickup', 'Pickup'), t('meetup.step_checkout', 'Checkout')].map((step, i) => (
                     <React.Fragment key={step}>
                         <View style={makeStyles(isDarkMode, colors).stepItem}>
                             <View style={[makeStyles(isDarkMode, colors).stepDot, i <= 1 && styles.stepDotActive]}>
@@ -117,8 +119,8 @@ export default function MeetupPickupScreen() {
                 <View style={makeStyles(isDarkMode, colors).section}>
                     <View style={makeStyles(isDarkMode, colors).toggleRow}>
                         <View style={{ flex: 1 }}>
-                            <Text style={makeStyles(isDarkMode, colors).toggleTitle}>Pickup Support Required</Text>
-                            <Text style={makeStyles(isDarkMode, colors).toggleSub}>Enable to provide pickup details</Text>
+                            <Text style={makeStyles(isDarkMode, colors).toggleTitle}>{t('meetup.pickup_required', 'Pickup Support Required')}</Text>
+                            <Text style={makeStyles(isDarkMode, colors).toggleSub}>{t('meetup.pickup_required_sub', 'Enable to provide pickup details')}</Text>
                         </View>
                         <Switch
                             value={pickupEnabled}
@@ -134,7 +136,7 @@ export default function MeetupPickupScreen() {
                         <AddressPickerSection
                             selectedAddress={selectedAddress}
                             onAddressChange={setSelectedAddress}
-                            title="Pickup Address"
+                            title={t('meetup.pickup_address', 'Pickup Address')}
                             showPhoneField={false}
                             showLandmarkField={true}
                             landmark={selectedAddress?.landmark || ''}
@@ -147,10 +149,10 @@ export default function MeetupPickupScreen() {
                         />
 
                         <View style={makeStyles(isDarkMode, colors).section}>
-                            <Text style={makeStyles(isDarkMode, colors).fieldLabel}>Landmark (Optional)</Text>
+                            <Text style={makeStyles(isDarkMode, colors).fieldLabel}>{t('meetup.landmark_label', 'Landmark (Optional)')}</Text>
                             <TextInput
                                 style={makeStyles(isDarkMode, colors).input}
-                                placeholder="Enter landmark"
+                                placeholder={t('meetup.enter_landmark', 'Enter landmark')}
                                 placeholderTextColor={Colors.textLight}
                                 value={selectedAddress?.landmark || ''}
                                 onChangeText={(newLandmark) => {
@@ -162,20 +164,20 @@ export default function MeetupPickupScreen() {
 
                             {selectedAddress?.pincode && (
                                 <>
-                                    <Text style={makeStyles(isDarkMode, colors).fieldLabel}>PIN Code</Text>
+                                    <Text style={makeStyles(isDarkMode, colors).fieldLabel}>{t('meetup.pincode_label', 'PIN Code')}</Text>
                                     <View style={[makeStyles(isDarkMode, colors).input, styles.readOnlyInput]}>
                                         <Text style={makeStyles(isDarkMode, colors).readOnlyText}>{selectedAddress.pincode}</Text>
                                     </View>
                                 </>
                             )}
 
-                            <Text style={makeStyles(isDarkMode, colors).fieldLabel}>Alternate Contact Number</Text>
+                            <Text style={makeStyles(isDarkMode, colors).fieldLabel}>{t('meetup.alternate_contact', 'Alternate Contact Number')}</Text>
                             <View style={makeStyles(isDarkMode, colors).phoneInputContainer}>
                                 <Text style={makeStyles(isDarkMode, colors).phonePrefix}>+91</Text>
                                 <View style={makeStyles(isDarkMode, colors).phoneDivider} />
                                 <TextInput
                                     style={makeStyles(isDarkMode, colors).phoneInput}
-                                    placeholder="Enter alternate number"
+                                    placeholder={t('meetup.enter_alternate_number', 'Enter alternate number')}
                                     placeholderTextColor={Colors.textLight}
                                     value={alternateContact.startsWith('+91') ? alternateContact.slice(3) : alternateContact}
                                     onChangeText={(val) => {
@@ -187,28 +189,28 @@ export default function MeetupPickupScreen() {
                                 />
                             </View>
 
-                            <Text style={makeStyles(isDarkMode, colors).fieldLabel}>Preferred Pickup Time <Text style={makeStyles(isDarkMode, colors).required}>*</Text></Text>
+                            <Text style={makeStyles(isDarkMode, colors).fieldLabel}>{t('meetup.preferred_pickup_time', 'Preferred Pickup Time')} <Text style={makeStyles(isDarkMode, colors).required}>*</Text></Text>
                             <TouchableOpacity
                                 style={[makeStyles(isDarkMode, colors).input, styles.selectInput]}
                                 onPress={() => setShowTimePicker(!showTimePicker)}
                                 activeOpacity={0.7}
                             >
                                 <Text style={[makeStyles(isDarkMode, colors).selectText, !preferredTime && styles.placeholderText]}>
-                                    {preferredTime || 'Select time'}
+                                    {preferredTime || t('meetup.select_time', 'Select time')}
                                 </Text>
                                 <Ionicons name={showTimePicker ? 'chevron-up' : 'chevron-down'} size={18} color={Colors.textMuted} />
                             </TouchableOpacity>
 
                             {showTimePicker && (
                                 <View style={makeStyles(isDarkMode, colors).timePicker}>
-                                    {TIME_OPTIONS.map(t => (
+                                    {TIME_OPTIONS.map(tOption => (
                                         <TouchableOpacity
-                                            key={t}
-                                            style={[makeStyles(isDarkMode, colors).timeOption, preferredTime === t && styles.timeOptionActive]}
-                                            onPress={() => { setPreferredTime(t); setShowTimePicker(false); }}
+                                            key={tOption}
+                                            style={[makeStyles(isDarkMode, colors).timeOption, preferredTime === tOption && styles.timeOptionActive]}
+                                            onPress={() => { setPreferredTime(tOption); setShowTimePicker(false); }}
                                         >
-                                            <Ionicons name="time-outline" size={14} color={preferredTime === t ? '#fff' : Colors.textMuted} />
-                                            <Text style={[makeStyles(isDarkMode, colors).timeText, preferredTime === t && styles.timeTextActive]}>{t}</Text>
+                                            <Ionicons name="time-outline" size={14} color={preferredTime === tOption ? '#fff' : Colors.textMuted} />
+                                            <Text style={[makeStyles(isDarkMode, colors).timeText, preferredTime === tOption && styles.timeTextActive]}>{tOption}</Text>
                                         </TouchableOpacity>
                                     ))}
                                 </View>
@@ -218,7 +220,7 @@ export default function MeetupPickupScreen() {
                         <View style={makeStyles(isDarkMode, colors).infoBox}>
                             <Ionicons name="information-circle-outline" size={16} color={PRIMARY} />
                             <Text style={makeStyles(isDarkMode, colors).infoText}>
-                                Our team will arrange pickup from the given address. Additional transportation charges may apply.
+                                {t('meetup.pickup_info_note', 'Our team will arrange pickup from the given address. Additional transportation charges may apply.')}
                             </Text>
                         </View>
                     </>
@@ -227,8 +229,8 @@ export default function MeetupPickupScreen() {
                 {!pickupEnabled && (
                     <View style={makeStyles(isDarkMode, colors).skippedBox}>
                         <Ionicons name="walk-outline" size={32} color={Colors.textMuted} />
-                        <Text style={makeStyles(isDarkMode, colors).skippedTitle}>No Pickup Required</Text>
-                        <Text style={makeStyles(isDarkMode, colors).skippedSub}>You&apos;ll arrange your own transportation to the venue.</Text>
+                        <Text style={makeStyles(isDarkMode, colors).skippedTitle}>{t('meetup.no_pickup_required', 'No Pickup Required')}</Text>
+                        <Text style={makeStyles(isDarkMode, colors).skippedSub}>{t('meetup.skipped_pickup_sub', "You'll arrange your own transportation to the venue.")}</Text>
                     </View>
                 )}
 
@@ -237,7 +239,7 @@ export default function MeetupPickupScreen() {
 
             <View style={[makeStyles(isDarkMode, colors).footer, { paddingBottom: insets.bottom + 12 }]}>
                 <TouchableOpacity style={makeStyles(isDarkMode, colors).saveBtn} onPress={handleSave} activeOpacity={0.85}>
-                    <Text style={makeStyles(isDarkMode, colors).saveBtnText}>Save & Continue</Text>
+                    <Text style={makeStyles(isDarkMode, colors).saveBtnText}>{t('meetup.save_continue', 'Save & Continue')}</Text>
                     <Ionicons name="arrow-forward" size={18} color="#fff" />
                 </TouchableOpacity>
             </View>

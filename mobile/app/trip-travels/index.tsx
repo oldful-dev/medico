@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, Modal, FlatList, ScrollView, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, Modal, FlatList, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -9,6 +9,7 @@ import { useTheme } from '@/context/ThemeContext';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { bookingService } from '@/services/api/bookingService';
+import { useTranslation } from 'react-i18next';
 
 const PRIMARY = '#02743F';
 const PRIMARY_LIGHT = '#E8F5E9';
@@ -19,19 +20,20 @@ const TEXT_LABEL = '#374151';
 const BG = '#F8FAF9';
 const RED = '#EF4444';
 
-const purposes = [
-    { id: '1', label: 'Leisure / Vacation',  icon: 'sunny-outline' },
-    { id: '2', label: 'Business Travel',      icon: 'briefcase-outline' },
-    { id: '3', label: 'Family Getaway',       icon: 'people-outline' },
-    { id: '4', label: 'Adventure Trip',       icon: 'bicycle-outline' },
-    { id: '5', label: 'Wellness Retreat',     icon: 'flower-outline' },
-    { id: '6', label: 'Cultural Tour',        icon: 'earth-outline' },
-    { id: '7', label: 'Other',                icon: 'ellipsis-horizontal-circle-outline' },
+const purposeOptions = [
+    { id: '1', labelKey: 'leisure', icon: 'sunny-outline' },
+    { id: '2', labelKey: 'business', icon: 'briefcase-outline' },
+    { id: '3', labelKey: 'family', icon: 'people-outline' },
+    { id: '4', labelKey: 'adventure', icon: 'bicycle-outline' },
+    { id: '5', labelKey: 'wellness', icon: 'flower-outline' },
+    { id: '6', labelKey: 'cultural', icon: 'earth-outline' },
+    { id: '7', labelKey: 'other', icon: 'ellipsis-horizontal-circle-outline' },
 ];
 
 const travellerCounts = Array.from({ length: 10 }, (_, i) => (i + 1).toString());
 
 export default function TripTravelsScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
@@ -45,8 +47,6 @@ export default function TripTravelsScreen() {
     const [specialRequirements, setSpecialRequirements] = useState('');
     const [additionalDetails, setAdditionalDetails] = useState('');
     const [isBooking, setIsBooking]                 = useState(false);
-
-    const [showDatePicker, setShowDatePicker]         = useState(false);
     const [showTravellerPicker, setShowTravellerPicker] = useState(false);
     const [showPurposePicker, setShowPurposePicker]   = useState(false);
 
@@ -56,14 +56,14 @@ export default function TripTravelsScreen() {
         ? travelDates.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
         : '';
 
-    const selectedPurpose = purposes.find(p => p.label === purposeOfTravel);
+    const selectedPurpose = purposeOptions.find(p => t(`trip_travels.${p.labelKey}`) === purposeOfTravel);
 
     const handleSubmit = async () => {
-        if (!destination.trim())  { Alert.alert('Required', 'Please enter your destination'); return; }
-        if (!travelDates)         { Alert.alert('Required', 'Please select travel dates'); return; }
-        if (!numTravellers)       { Alert.alert('Required', 'Please select number of travellers'); return; }
-        if (!purposeOfTravel)     { Alert.alert('Required', 'Please select purpose of travel'); return; }
-        if (!cityId || !serviceId) { Alert.alert('Error', 'Service initialization incomplete.'); return; }
+        if (!destination.trim())  { Alert.alert(t('common.required'), t('trip_travels.destination_required')); return; }
+        if (!travelDates)         { Alert.alert(t('common.required'), t('trip_travels.dates_required')); return; }
+        if (!numTravellers)       { Alert.alert(t('common.required'), t('trip_travels.travellers_required')); return; }
+        if (!purposeOfTravel)     { Alert.alert(t('common.required'), t('trip_travels.purpose_required')); return; }
+        if (!cityId || !serviceId) { Alert.alert(t('common.error'), t('booking.init_incomplete')); return; }
 
         try {
             setIsBooking(true);
@@ -85,11 +85,11 @@ export default function TripTravelsScreen() {
             if (res.success && res.data) {
                 router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
             } else {
-                Alert.alert('Booking Failed', res.message || 'Something went wrong.');
+                Alert.alert(t('booking.booking_failed'), res.message || t('booking.something_wrong'));
             }
         } catch (error) {
             console.error('Trip booking error:', error);
-            Alert.alert('Error', 'Failed to submit inquiry. Please check your connection.');
+            Alert.alert(t('common.error'), t('service_detail.generic_error'));
         } finally {
             setIsBooking(false);
         }
@@ -110,7 +110,7 @@ export default function TripTravelsScreen() {
                 >
                     <Ionicons name="arrow-back" size={22} color={WHITE} />
                 </TouchableOpacity>
-                <Text style={dynamicStyles.headerTitle}>Trip & Travel</Text>
+                <Text style={dynamicStyles.headerTitle}>{t('trip_travels.header')}</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -119,9 +119,9 @@ export default function TripTravelsScreen() {
                 <View style={dynamicStyles.heroIconCircle}>
                     <Ionicons name="airplane" size={32} color={PRIMARY} />
                 </View>
-                <Text style={dynamicStyles.heroTitle}>Where do you want to go?</Text>
+                <Text style={dynamicStyles.heroTitle}>{t('trip_travels.hero_title')}</Text>
                 <Text style={dynamicStyles.heroSubtitle}>
-                    Share your travel plan and we&apos;ll assist you better.
+                    {t('trip_travels.hero_subtitle')}
                 </Text>
             </View>
 
@@ -137,40 +137,30 @@ export default function TripTravelsScreen() {
                 <View style={dynamicStyles.formCard}>
 
                     {/* Destination */}
-                    <FormField label="Destination (Preferred)" required>
+                    <FormField label={t('trip_travels.destination')} required>
                         <View style={dynamicStyles.inputRow}>
                             <Ionicons name="location-outline" size={18} color={PRIMARY} style={dynamicStyles.inputIcon} />
                             <TextInput
                                 style={dynamicStyles.inputText}
-                                placeholder="Enter destination"
+                                placeholder={t('trip_travels.destination_placeholder')}
                                 placeholderTextColor={TEXT_MUTED}
                                 value={destination}
                                 onChangeText={setDestination}
-                                editable={!isLoadingInit}
                                 returnKeyType="next"
                             />
                         </View>
                     </FormField>
-
-                    {/* Travel Dates */}
-                    <FormField label="Travel Dates" required>
-                        <TouchableOpacity
-                            style={dynamicStyles.inputRow}
-                            onPress={() => setShowDatePicker(true)}
-                            activeOpacity={0.7}
-                        >
-                            <Ionicons name="calendar-outline" size={18} color={PRIMARY} style={dynamicStyles.inputIcon} />
-                            <Text style={[dynamicStyles.inputText, !formattedDate && dynamicStyles.placeholder]}>
-                                {formattedDate || 'Select travel dates'}
-                            </Text>
-                            <Ionicons name="chevron-forward" size={16} color={TEXT_MUTED} />
-                        </TouchableOpacity>
-                    </FormField>
+                    <CustomDateTimePicker
+                        label={`${t('trip_travels.travel_dates')} *`}
+                        value={travelDates}
+                        onChange={setTravelDates}
+                        daysToShow={21}
+                    />
 
                     {/* Two-column row: Travellers + Purpose */}
                     <View style={dynamicStyles.rowTwo}>
                         <View style={{ flex: 1, marginRight: 8 }}>
-                            <FormField label="Travellers" required compact>
+                            <FormField label={t('trip_travels.travellers')} required compact>
                                 <TouchableOpacity
                                     style={dynamicStyles.inputRow}
                                     onPress={() => setShowTravellerPicker(true)}
@@ -178,14 +168,14 @@ export default function TripTravelsScreen() {
                                 >
                                     <Ionicons name="people-outline" size={18} color={PRIMARY} style={dynamicStyles.inputIcon} />
                                     <Text style={[dynamicStyles.inputText, !numTravellers && dynamicStyles.placeholder]} numberOfLines={1}>
-                                        {numTravellers ? `${numTravellers} ${numTravellers === '1' ? 'person' : 'people'}` : 'Select'}
+                                        {numTravellers ? `${numTravellers} ${numTravellers === '1' ? 'person' : 'people'}` : t('trip_travels.select')}
                                     </Text>
                                     <Ionicons name="chevron-down" size={14} color={TEXT_MUTED} />
                                 </TouchableOpacity>
                             </FormField>
                         </View>
                         <View style={{ flex: 1, marginLeft: 8 }}>
-                            <FormField label="Purpose" required compact>
+                            <FormField label={t('trip_travels.purpose')} required compact>
                                 <TouchableOpacity
                                     style={dynamicStyles.inputRow}
                                     onPress={() => setShowPurposePicker(true)}
@@ -198,7 +188,7 @@ export default function TripTravelsScreen() {
                                         style={dynamicStyles.inputIcon}
                                     />
                                     <Text style={[dynamicStyles.inputText, !purposeOfTravel && dynamicStyles.placeholder]} numberOfLines={1}>
-                                        {purposeOfTravel ? purposeOfTravel.split(' ')[0] : 'Select'}
+                                        {purposeOfTravel ? purposeOfTravel.split(' ')[0] : t('trip_travels.select')}
                                     </Text>
                                     <Ionicons name="chevron-down" size={14} color={TEXT_MUTED} />
                                 </TouchableOpacity>
@@ -210,36 +200,34 @@ export default function TripTravelsScreen() {
                     <View style={dynamicStyles.divider} />
 
                     {/* Special Requirements */}
-                    <FormField label="Special Requirements / Assistance">
+                    <FormField label={t('trip_travels.special_requirements')}>
                         <View style={[dynamicStyles.inputRow, dynamicStyles.textareaRow]}>
                             <Ionicons name="list-outline" size={18} color={PRIMARY} style={[dynamicStyles.inputIcon, { alignSelf: 'flex-start', marginTop: 2 }]} />
                             <TextInput
                                 style={[dynamicStyles.inputText, dynamicStyles.textareaText]}
-                                placeholder="Wheelchair access, dietary needs, medical equipment…"
+                                placeholder={t('trip_travels.requirements_placeholder')}
                                 placeholderTextColor={TEXT_MUTED}
                                 value={specialRequirements}
                                 onChangeText={setSpecialRequirements}
                                 multiline
                                 numberOfLines={3}
-                                editable={!isLoadingInit}
                                 textAlignVertical="top"
                             />
                         </View>
                     </FormField>
 
                     {/* Additional Details */}
-                    <FormField label="Additional Details" optional>
+                    <FormField label={t('trip_travels.additional')} optional>
                         <View style={[dynamicStyles.inputRow, dynamicStyles.textareaRow]}>
                             <Ionicons name="create-outline" size={18} color={PRIMARY} style={[dynamicStyles.inputIcon, { alignSelf: 'flex-start', marginTop: 2 }]} />
                             <TextInput
                                 style={[dynamicStyles.inputText, dynamicStyles.textareaText]}
-                                placeholder="Preferred airlines, seat preferences, hotel tier…"
+                                placeholder={t('trip_travels.additional_placeholder')}
                                 placeholderTextColor={TEXT_MUTED}
                                 value={additionalDetails}
                                 onChangeText={setAdditionalDetails}
                                 multiline
                                 numberOfLines={3}
-                                editable={!isLoadingInit}
                                 textAlignVertical="top"
                             />
                         </View>
@@ -257,48 +245,23 @@ export default function TripTravelsScreen() {
                         ) : (
                             <>
                                 <Ionicons name="paper-plane-outline" size={18} color={WHITE} style={{ marginRight: 8 }} />
-                                <Text style={dynamicStyles.submitBtnText}>Submit Enquiry</Text>
+                                <Text style={dynamicStyles.submitBtnText}>{t('trip_travels.submit')}</Text>
                             </>
                         )}
                     </TouchableOpacity>
 
                     <Text style={dynamicStyles.footerNote}>
-                        Our team will contact you within 24 hours to confirm your travel plan.
+                        {t('trip_travels.footer_note')}
                     </Text>
                 </View>
             </KeyboardAwareScrollView>
         </KeyboardAvoidingView>
 
-            {/* ── Date Picker Modal ── */}
-            {showDatePicker && (
-                <Modal transparent visible={showDatePicker} animationType="slide">
-                    <View style={dynamicStyles.modalOverlay}>
-                        <View style={[dynamicStyles.modal, dynamicStyles.datePickerModal]}>
-                            <ModalHeader title="Select Travel Date" onClose={() => setShowDatePicker(false)} />
-                            <ScrollView
-                                showsVerticalScrollIndicator={false}
-                                contentContainerStyle={{ paddingBottom: 16 }}
-                                keyboardShouldPersistTaps="handled"
-                            >
-                                <CustomDateTimePicker
-                                    value={travelDates}
-                                    onChange={(date) => {
-                                        setTravelDates(date);
-                                        setShowDatePicker(false);
-                                    }}
-                                    daysToShow={21}
-                                />
-                            </ScrollView>
-                        </View>
-                    </View>
-                </Modal>
-            )}
-
-            {/* ── Travellers Picker Modal ── */}
+            {/* Travellers Picker Modal */}
             <Modal transparent visible={showTravellerPicker} animationType="slide">
                 <View style={dynamicStyles.modalOverlay}>
                     <View style={dynamicStyles.modal}>
-                        <ModalHeader title="Number of Travellers" onClose={() => setShowTravellerPicker(false)} />
+                        <ModalHeader title={t('trip_travels.travellers')} onClose={() => setShowTravellerPicker(false)} />
                         <FlatList
                             data={travellerCounts}
                             keyExtractor={(item) => item}
@@ -332,17 +295,18 @@ export default function TripTravelsScreen() {
             <Modal transparent visible={showPurposePicker} animationType="slide">
                 <View style={dynamicStyles.modalOverlay}>
                     <View style={dynamicStyles.modal}>
-                        <ModalHeader title="Purpose of Travel" onClose={() => setShowPurposePicker(false)} />
+                        <ModalHeader title={t('trip_travels.purpose')} onClose={() => setShowPurposePicker(false)} />
                         <FlatList
-                            data={purposes}
+                            data={purposeOptions}
                             keyExtractor={(item) => item.id}
                             renderItem={({ item }) => {
-                                const active = purposeOfTravel === item.label;
+                                const label = t(`trip_travels.${item.labelKey}`);
+                                const active = purposeOfTravel === label;
 
                                 return (
                                     <TouchableOpacity
                                         style={[dynamicStyles.optionItem, active && dynamicStyles.optionItemActive]}
-                                        onPress={() => { setPurposeOfTravel(item.label); setShowPurposePicker(false); }}
+                                        onPress={() => { setPurposeOfTravel(label); setShowPurposePicker(false); }}
                                         activeOpacity={0.7}
                                     >
                                         <View style={dynamicStyles.optionLeft}>
@@ -350,7 +314,7 @@ export default function TripTravelsScreen() {
                                                 <Ionicons name={item.icon as any} size={16} color={active ? WHITE : PRIMARY} />
                                             </View>
                                             <Text style={[dynamicStyles.optionLabel, active && dynamicStyles.optionLabelActive]}>
-                                                {item.label}
+                                                {label}
                                             </Text>
                                         </View>
                                         {active && <Ionicons name="checkmark-circle" size={20} color={PRIMARY} />}
@@ -373,6 +337,7 @@ function FormField({
     label: string; required?: boolean; optional?: boolean; compact?: boolean; children: React.ReactNode;
 }) {
     const { isDarkMode } = useTheme();
+    const { t } = useTranslation();
     const dynamicStyles = makeStyles(isDarkMode);
 
     return (
@@ -380,7 +345,7 @@ function FormField({
             <View style={dynamicStyles.labelRow}>
                 <Text style={dynamicStyles.label}>{label}</Text>
                 {required && <Text style={dynamicStyles.requiredDot}> *</Text>}
-                {optional && <Text style={dynamicStyles.optionalTag}> Optional</Text>}
+                {optional && <Text style={dynamicStyles.optionalTag}> {t('trip_travels.optional')}</Text>}
             </View>
             {children}
         </View>

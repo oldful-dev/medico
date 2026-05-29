@@ -12,6 +12,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useToast } from '@/context/ToastContext';
+import { useTranslation } from 'react-i18next';
 
 const CATEGORIES = ['All', 'Popular', 'Health Checks', 'Wellness'];
 
@@ -41,6 +42,9 @@ const PackageCard = memo(({
     onBookNow: (pkg: LabPackage) => void;
     themeColors: ReturnType<typeof useThemeColors>;
 }) => {
+    const { t } = useTranslation();
+    const { isDarkMode } = useTheme();
+    const styles = makeStyles(themeColors, isDarkMode);
     const { lib, icon, color, bg } = getTestIcon(item.name);
     const IconComp = lib === 'mci' ? MaterialCommunityIcons : Ionicons;
     const discountPct = item.discounted_cost
@@ -52,7 +56,7 @@ const PackageCard = memo(({
         <View style={[styles.card, { backgroundColor: themeColors.bgCard }]}>
             {discountPct > 0 && (
                 <View style={styles.ribbon}>
-                    <Text style={styles.ribbonText}>{discountPct}% OFF</Text>
+                    <Text style={styles.ribbonText}>{t('blood_test.save_pct', { pct: discountPct })}</Text>
                 </View>
             )}
 
@@ -71,11 +75,11 @@ const PackageCard = memo(({
                     <View style={styles.metaRow}>
                         <Ionicons name="flask-outline" size={11} color={themeColors.textMuted} />
                         <Text style={[styles.metaText, { color: themeColors.textMuted }]}>
-                            {item.tests_count || 0} {item.tests_count === 1 ? 'Parameter' : 'Parameters'}
+                            {item.tests_count || 0} {item.tests_count === 1 ? t('blood_test.parameter_one') : t('blood_test.parameter_other')}
                         </Text>
                         <Text style={[styles.metaDot, { color: themeColors.textMuted }]}>·</Text>
                         <Ionicons name="home-outline" size={11} color={themeColors.textMuted} />
-                        <Text style={[styles.metaText, { color: themeColors.textMuted }]}>Home / Lab</Text>
+                        <Text style={[styles.metaText, { color: themeColors.textMuted }]}>{t('blood_test.home_lab')}</Text>
                     </View>
 
                     <View style={styles.cardFooter}>
@@ -92,18 +96,18 @@ const PackageCard = memo(({
 
                         <View style={styles.btnRow}>
                             <TouchableOpacity
-                                style={[styles.detailsBtn, { borderColor: Colors.primaryDark }]}
+                                style={[styles.detailsBtn, { borderColor: themeColors.primary }]}
                                 onPress={() => onViewDetails(item.code)}
                                 activeOpacity={0.75}
                             >
-                                <Text style={[styles.detailsBtnText, { color: Colors.primaryDark }]}>Details</Text>
+                                <Text style={[styles.detailsBtnText, { color: themeColors.primary }]}>{t('blood_test.details_btn')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.bookBtn}
                                 onPress={() => onBookNow(item)}
                                 activeOpacity={0.8}
                             >
-                                <Text style={styles.bookBtnText}>Book Now</Text>
+                                <Text style={styles.bookBtnText}>{t('booking.book_now')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -116,12 +120,14 @@ PackageCard.displayName = 'PackageCard';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 export default function BloodTestScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const themeColors = useThemeColors();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const styles = makeStyles(colors, isDarkMode);
 
     const [packages, setPackages] = useState<LabPackage[]>([]);
     const [loading, setLoading] = useState(false);
@@ -165,8 +171,8 @@ export default function BloodTestScreen() {
     const handleAddToCart = useCallback((pkg: LabPackage) => {
         addItem({ id: pkg.code, serviceType: 'Bloodwork', title: pkg.name, price: pkg.discounted_cost || pkg.cost, quantity: 1, details: pkg });
         setDetailModalVisible(false);
-        showToast('Item added to cart');
-    }, [addItem, showToast]);
+        showToast(t('blood_test.added_to_cart_msg', { name: pkg.name }));
+    }, [addItem, showToast, t]);
 
     const handleBookNow = useCallback((pkg: LabPackage) => {
         setDetailModalVisible(false);
@@ -192,8 +198,8 @@ export default function BloodTestScreen() {
     ), [handleViewDetails, handleBookNow, themeColors]);
 
     return (
-        <View style={[styles.screen, { backgroundColor: Colors.primaryDark, paddingTop: insets.top }]}>
-            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={Colors.primaryDark} />
+        <View style={[styles.screen, { backgroundColor: colors.primary, paddingTop: insets.top }]}>
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={colors.primary} />
 
             {/* ── Green Header ── */}
             <View style={styles.header}>
@@ -201,8 +207,8 @@ export default function BloodTestScreen() {
                     <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
-                    <Text style={styles.headerTitle}>Blood Tests</Text>
-                    <Text style={styles.headerSub}>NABL Certified · Home Collection</Text>
+                    <Text style={styles.headerTitle}>{t('blood_test.page_title')}</Text>
+                    <Text style={styles.headerSub}>{t('blood_test.nabl_sub')}</Text>
                 </View>
                 {!isFromCheckout ? (
                     <TouchableOpacity
@@ -224,9 +230,9 @@ export default function BloodTestScreen() {
             {/* ── Trust strip inside green area ── */}
             <View style={styles.trustStrip}>
                 {[
-                    { icon: 'home-outline' as const, label: 'Free Home Collection' },
-                    { icon: 'time-outline' as const, label: 'Reports in 24h' },
-                    { icon: 'shield-checkmark-outline' as const, label: 'NABL Certified' },
+                    { icon: 'home-outline' as const, label: t('blood_test.trust_home') },
+                    { icon: 'time-outline' as const, label: t('blood_test.trust_reports') },
+                    { icon: 'shield-checkmark-outline' as const, label: t('blood_test.trust_nabl') },
                 ].map((b, i) => (
                     <View key={i} style={styles.trustItem}>
                         <Ionicons name={b.icon} size={12} color="rgba(255,255,255,0.8)" />
@@ -241,7 +247,7 @@ export default function BloodTestScreen() {
                 <View style={[styles.searchBar, { backgroundColor: themeColors.bgCard, borderColor: themeColors.borderLight }]}>
                     <Ionicons name="search-outline" size={16} color={themeColors.textMuted} style={{ marginRight: 8 }} />
                     <TextInput
-                        placeholder="Search tests & packages..."
+                        placeholder={t('blood_test.search_placeholder')}
                         placeholderTextColor={themeColors.textMuted}
                         style={[styles.searchInput, { color: themeColors.textDark }]}
                         value={searchText}
@@ -263,6 +269,7 @@ export default function BloodTestScreen() {
                 >
                     {CATEGORIES.map((cat, idx) => {
                         const active = activeCategory === idx;
+                        const catKeys = ['cat_all', 'cat_popular', 'cat_health_checks', 'cat_wellness'];
                         return (
                             <TouchableOpacity
                                 key={idx}
@@ -270,13 +277,13 @@ export default function BloodTestScreen() {
                                 style={[
                                     styles.chip,
                                     active
-                                        ? { backgroundColor: Colors.primaryDark, borderColor: Colors.primaryDark }
+                                        ? { backgroundColor: colors.primary, borderColor: colors.primary }
                                         : { backgroundColor: themeColors.bgCard, borderColor: themeColors.borderLight },
                                 ]}
                                 activeOpacity={0.75}
                             >
                                 <Text style={[styles.chipText, active ? { color: '#FFFFFF' } : { color: themeColors.textMuted }]}>
-                                    {cat}
+                                    {t(`blood_test.${catKeys[idx]}`)}
                                 </Text>
                             </TouchableOpacity>
                         );
@@ -286,8 +293,8 @@ export default function BloodTestScreen() {
                 {/* List */}
                 {loading ? (
                     <View style={styles.loadingBox}>
-                        <ActivityIndicator size="large" color={Colors.primaryDark} />
-                        <Text style={[styles.loadingText, { color: themeColors.textMuted }]}>Loading packages...</Text>
+                        <ActivityIndicator size="large" color={colors.primary} />
+                        <Text style={[styles.loadingText, { color: themeColors.textMuted }]}>{t('blood_test.loading_packages')}</Text>
                     </View>
                 ) : (
                     <FlatList
@@ -298,14 +305,16 @@ export default function BloodTestScreen() {
                         showsVerticalScrollIndicator={false}
                         ListHeaderComponent={
                             <Text style={[styles.countLabel, { color: themeColors.textMuted }]}>
-                                {filteredPackages.length} {filteredPackages.length === 1 ? 'package' : 'packages'} available
+                                {filteredPackages.length === 1
+                                    ? t('blood_test.packages_count_one', { count: 1 })
+                                    : t('blood_test.packages_count_other', { count: filteredPackages.length })}
                             </Text>
                         }
                         ListEmptyComponent={
                             <View style={styles.emptyBox}>
                                 <Ionicons name="search-outline" size={42} color={themeColors.textMuted} style={{ opacity: 0.35, marginBottom: 10 }} />
-                                <Text style={[styles.emptyTitle, { color: themeColors.textDark }]}>No packages found</Text>
-                                <Text style={[styles.emptySub, { color: themeColors.textMuted }]}>Try a different search term</Text>
+                                <Text style={[styles.emptyTitle, { color: themeColors.textDark }]}>{t('blood_test.empty_title')}</Text>
+                                <Text style={[styles.emptySub, { color: themeColors.textMuted }]}>{t('blood_test.empty_sub')}</Text>
                             </View>
                         }
                         maxToRenderPerBatch={10}
@@ -325,7 +334,7 @@ export default function BloodTestScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (themeColors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
     screen: { flex: 1 },
 
     // Header
@@ -370,7 +379,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1.5,
-        borderColor: Colors.primaryDark,
+        borderColor: themeColors.primary,
     },
     cartBadgeText: { fontFamily: Fonts.semiBold, fontSize: 9, color: '#FFFFFF' },
 
@@ -505,7 +514,7 @@ const styles = StyleSheet.create({
     finalPrice: {
         fontFamily: Fonts.bold,
         fontSize: FontSize.heading2,
-        color: Colors.primaryDark,
+        color: themeColors.primary,
         letterSpacing: -0.5,
     },
     btnRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
@@ -520,7 +529,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.md,
         paddingVertical: 7,
         borderRadius: Radius.sm,
-        backgroundColor: Colors.primaryDark,
+        backgroundColor: themeColors.primary,
     },
     bookBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: '#FFFFFF' },
 

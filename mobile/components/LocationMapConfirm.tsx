@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
 import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.ayuxacare.com/api';
 
@@ -35,6 +36,7 @@ export const LocationMapConfirm = ({
     onConfirm,
     onCancel,
 }: LocationMapConfirmProps) => {
+    const { t } = useTranslation();
     const { isDarkMode } = useTheme();
     const mapRef = useRef<MapView>(null);
     const [region, setRegion] = useState({
@@ -126,7 +128,7 @@ export const LocationMapConfirm = ({
                     coordinate={markerCoord}
                     draggable
                     onDragEnd={handleMarkerDragEnd}
-                    title="Drop pin here"
+                    title={t('location_picker.drop_pin_marker')}
                     pinColor={PRIMARY_GREEN}
                 />
             </MapView>
@@ -149,7 +151,7 @@ export const LocationMapConfirm = ({
                 {loading && (
                     <View style={styles.loadingContainer}>
                         <ActivityIndicator size="small" color={PRIMARY_GREEN} />
-                        <Text style={styles.loadingText}>Updating address...</Text>
+                        <Text style={styles.loadingText}>{t('location_picker.updating_address')}</Text>
                     </View>
                 )}
 
@@ -159,7 +161,7 @@ export const LocationMapConfirm = ({
                         <View style={styles.addressContainer}>
                             <Ionicons name="location" size={20} color={PRIMARY_GREEN} style={{ marginRight: 12 }} />
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.addressTitle}>Drop pin to confirm</Text>
+                                <Text style={styles.addressTitle}>{t('location_picker.drop_pin_confirm')}</Text>
                                 <Text style={[styles.addressText, { color: textColor }]} numberOfLines={3}>{address}</Text>
                             </View>
                         </View>
@@ -167,11 +169,11 @@ export const LocationMapConfirm = ({
                         {/* Coordinates Info */}
                         <View style={[styles.coordsContainer, { backgroundColor: cardBg, borderColor: borderColor }]}>
                             <View style={styles.coordRow}>
-                                <Text style={styles.coordLabel}>Latitude:</Text>
+                                <Text style={styles.coordLabel}>{t('location_picker.latitude')}</Text>
                                 <Text style={[styles.coordValue, { color: textColor }]}>{markerCoord.latitude.toFixed(6)}</Text>
                             </View>
                             <View style={styles.coordRow}>
-                                <Text style={styles.coordLabel}>Longitude:</Text>
+                                <Text style={styles.coordLabel}>{t('location_picker.longitude')}</Text>
                                 <Text style={[styles.coordValue, { color: textColor }]}>{markerCoord.longitude.toFixed(6)}</Text>
                             </View>
                         </View>
@@ -181,7 +183,7 @@ export const LocationMapConfirm = ({
                 {/* Action Buttons */}
                 <View style={styles.buttonRow}>
                     <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-                        <Text style={styles.cancelButtonText}>Cancel</Text>
+                        <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.confirmButton, loading && styles.confirmButtonDisabled]}
@@ -192,7 +194,7 @@ export const LocationMapConfirm = ({
                         disabled={loading}
                     >
                         <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-                        <Text style={styles.confirmButtonText}>Confirm Location</Text>
+                        <Text style={styles.confirmButtonText}>{t('location_picker.confirm_location')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>

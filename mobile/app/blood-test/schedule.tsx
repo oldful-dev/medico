@@ -11,6 +11,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { userService } from '@/services/api/userService';
 import { LocationPickerModal } from '@/components/LocationPickerModal';
+import { useTranslation } from 'react-i18next';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -19,11 +20,13 @@ const CARD_BORDER = '#E5E7EB';
 const LIGHT_GREEN_BG = '#F0FDF4';
 
 export default function BloodTestScheduleScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { profile, setProfile } = useUser();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const styles = makeStyles(isDarkMode, colors);
     const params = useLocalSearchParams<{ packagePayload?: string }>();
 
     const [pkg, setPkg] = useState<LabPackage | null>(null);
@@ -158,7 +161,7 @@ export default function BloodTestScheduleScreen() {
             }
             checkServiceability(String(coords.latitude), String(coords.longitude));
         } catch (error) {
-            Alert.alert('Location Error', 'Unable to detect your location. Please search manually.');
+            Alert.alert(t('blood_test_schedule.location_error_title'), t('blood_test_schedule.unable_detect_location_alert'));
             console.error('Location detection failed:', error);
         } finally {
             setDetectingLocation(false);
@@ -182,11 +185,11 @@ export default function BloodTestScheduleScreen() {
 
     const handleSaveNewAddress = async () => {
         if (!newAddrText.trim()) {
-            Alert.alert('Required', 'Please select or enter an address');
+            Alert.alert(t('blood_test_schedule.required_title'), t('blood_test_schedule.enter_address_alert'));
             return;
         }
         if (newAddrPincode.length !== 6) {
-            Alert.alert('Required', 'Please enter a valid 6-digit pincode');
+            Alert.alert(t('blood_test_schedule.required_title'), t('blood_test_schedule.valid_pincode_alert'));
             return;
         }
         if (!profile?.id) return;
@@ -220,7 +223,7 @@ export default function BloodTestScheduleScreen() {
             setNewAddrLabel('Home');
             setAddingNewAddr(false);
         } catch {
-            Alert.alert('Error', 'Could not save address. Please try again.');
+            Alert.alert(t('common.error'), t('blood_test_schedule.save_address_error'));
         } finally {
             setSavingNewAddr(false);
         }
@@ -229,22 +232,22 @@ export default function BloodTestScheduleScreen() {
     const handleContinue = async () => {
         if (step === 1) {
             if (!selectedDate || !selectedTime) {
-                Alert.alert('Required', 'Please select date and time');
+                Alert.alert(t('blood_test_schedule.required_title'), t('blood_test_schedule.select_date_time_alert'));
                 return;
             }
             setStep(2);
         } else if (step === 2) {
             if (collectionType === 'HOME') {
                 if (!selectedAddress.trim()) {
-                    Alert.alert('Required', 'Please enter collection address');
+                    Alert.alert(t('blood_test_schedule.required_title'), t('blood_test_schedule.enter_collection_address_alert'));
                     return;
                 }
                 if (pincode.length !== 6) {
-                    Alert.alert('Required', 'Please enter valid 6-digit pincode');
+                    Alert.alert(t('blood_test_schedule.required_title'), t('blood_test_schedule.enter_valid_pincode_alert'));
                     return;
                 }
                 if (serviceabilityStatus === 'non-serviceable') {
-                    Alert.alert('Not Serviceable', 'This location is not serviceable. Please select another address.');
+                    Alert.alert(t('blood_test_schedule.not_serviceable_title'), t('blood_test_schedule.not_serviceable_msg'));
                     return;
                 }
             }
@@ -258,7 +261,7 @@ export default function BloodTestScheduleScreen() {
         if (!pkg || !selectedDate || !selectedTime) return;
 
         if (!phoneNumber.trim()) {
-            Alert.alert('Required', 'Please enter a valid phone number');
+            Alert.alert(t('blood_test_schedule.required_title'), t('blood_test_schedule.valid_phone_alert'));
             return;
         }
 
@@ -323,7 +326,7 @@ export default function BloodTestScheduleScreen() {
                 },
             } as any);
         } catch (error) {
-            Alert.alert('Error', 'Failed to proceed with booking');
+            Alert.alert(t('common.error'), t('blood_test_schedule.failed_proceed_booking_alert'));
         } finally {
             setIsBooking(false);
         }
@@ -333,7 +336,7 @@ export default function BloodTestScheduleScreen() {
         <ScrollView showsVerticalScrollIndicator={false} style={styles.stepContent}>
             {/* Date Selection */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Select Date</Text>
+                <Text style={styles.sectionTitle}>{t('blood_test_schedule.select_date')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.datesScroll}>
                     {generateDays().map((day, idx) => (
                         <TouchableOpacity
@@ -359,10 +362,10 @@ export default function BloodTestScheduleScreen() {
 
             {/* Time Slots */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Select Time Slot</Text>
+                <Text style={styles.sectionTitle}>{t('blood_test_schedule.select_time_slot')}</Text>
                 {slotsLoading ? (
                     <View style={{ paddingVertical: 20 }}>
-                        <ActivityIndicator size="small" color={PRIMARY_GREEN} />
+                        <ActivityIndicator size="small" color={colors.primary} />
                     </View>
                 ) : (
                     <View style={styles.slotsGrid}>
@@ -394,21 +397,21 @@ export default function BloodTestScheduleScreen() {
     const renderStep2 = () => (
         <ScrollView showsVerticalScrollIndicator={false} style={styles.stepContent}>
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Collection Type</Text>
+                <Text style={styles.sectionTitle}>{t('blood_test_schedule.collection_type')}</Text>
                 <TouchableOpacity
                     style={[styles.collectionOption, collectionType === 'HOME' && styles.collectionOptionActive]}
                     onPress={() => setCollectionType('HOME')}
                     activeOpacity={0.75}
                 >
-                    <Ionicons name="home" size={20} color={collectionType === 'HOME' ? PRIMARY_GREEN : TEXT_MUTED} style={{ marginRight: 12 }} />
+                    <Ionicons name="home" size={20} color={collectionType === 'HOME' ? colors.primary : TEXT_MUTED} style={{ marginRight: 12 }} />
                     <View style={{ flex: 1 }}>
-                        <Text style={styles.optionTitle}>Home Collection</Text>
-                        <Text style={styles.optionDesc}>We&apos;ll collect sample from your home</Text>
+                        <Text style={styles.optionTitle}>{t('blood_test_schedule.home_collection')}</Text>
+                        <Text style={styles.optionDesc}>{t('blood_test_schedule.home_collection_desc')}</Text>
                     </View>
                     <Ionicons
                         name={collectionType === 'HOME' ? 'checkmark-circle' : 'radio-button-off'}
                         size={24}
-                        color={collectionType === 'HOME' ? PRIMARY_GREEN : '#D1D5DB'}
+                        color={collectionType === 'HOME' ? colors.primary : '#D1D5DB'}
                     />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -416,27 +419,27 @@ export default function BloodTestScheduleScreen() {
                     onPress={() => setCollectionType('LAB')}
                     activeOpacity={0.75}
                 >
-                    <Ionicons name="business" size={20} color={collectionType === 'LAB' ? PRIMARY_GREEN : TEXT_MUTED} style={{ marginRight: 12 }} />
+                    <Ionicons name="business" size={20} color={collectionType === 'LAB' ? colors.primary : TEXT_MUTED} style={{ marginRight: 12 }} />
                     <View style={{ flex: 1 }}>
-                        <Text style={styles.optionTitle}>Lab Visit</Text>
-                        <Text style={styles.optionDesc}>Drop your sample at the nearest lab</Text>
+                        <Text style={styles.optionTitle}>{t('blood_test_schedule.lab_visit')}</Text>
+                        <Text style={styles.optionDesc}>{t('blood_test_schedule.lab_visit_desc')}</Text>
                     </View>
                     <Ionicons
                         name={collectionType === 'LAB' ? 'checkmark-circle' : 'radio-button-off'}
                         size={24}
-                        color={collectionType === 'LAB' ? PRIMARY_GREEN : '#D1D5DB'}
+                        color={collectionType === 'LAB' ? colors.primary : '#D1D5DB'}
                     />
                 </TouchableOpacity>
             </View>
 
             {collectionType === 'HOME' && (
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Collection Address</Text>
+                <Text style={styles.sectionTitle}>{t('blood_test_schedule.collection_address')}</Text>
 
                 {/* Saved Addresses + Add New chip */}
                 <View style={{ marginBottom: 12 }}>
                     {((profile?.addresses?.length || 0) > 0 || true) && (
-                        <Text style={styles.subLabel}>Saved Addresses</Text>
+                        <Text style={styles.subLabel}>{t('blood_test_schedule.saved_addresses')}</Text>
                     )}
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
                         {(profile?.addresses || []).map((addr: any, idx: number) => {
@@ -455,9 +458,9 @@ export default function BloodTestScheduleScreen() {
                                     }}
                                     activeOpacity={0.75}
                                 >
-                                    <Ionicons name="location" size={13} color={isSelected ? '#FFFFFF' : PRIMARY_GREEN} style={{ marginRight: 4 }} />
+                                    <Ionicons name="location" size={13} color={isSelected ? '#FFFFFF' : colors.primary} style={{ marginRight: 4 }} />
                                     <Text style={[styles.savedAddrChipText, isSelected && styles.savedAddrChipTextActive]} numberOfLines={1}>
-                                        {addr.label || `Address ${idx + 1}`}
+                                        {addr.label === 'Home' ? t('blood_test_schedule.label_home') : addr.label === 'Office' ? t('blood_test_schedule.label_office') : addr.label === 'Other' ? t('blood_test_schedule.label_other') : (addr.label || `${t('blood_test_schedule.address')} ${idx + 1}`)}
                                     </Text>
                                 </TouchableOpacity>
                             );
@@ -467,8 +470,8 @@ export default function BloodTestScheduleScreen() {
                             onPress={() => { setAddingNewAddr(v => !v); setSelectedAddress(''); }}
                             activeOpacity={0.75}
                         >
-                            <Ionicons name="add" size={13} color={addingNewAddr ? '#FFFFFF' : PRIMARY_GREEN} style={{ marginRight: 4 }} />
-                            <Text style={[styles.savedAddrChipText, addingNewAddr && styles.savedAddrChipTextActive]}>Add New</Text>
+                            <Ionicons name="add" size={13} color={addingNewAddr ? '#FFFFFF' : colors.primary} style={{ marginRight: 4 }} />
+                            <Text style={[styles.savedAddrChipText, addingNewAddr && styles.savedAddrChipTextActive]}>{t('blood_test_schedule.add_new')}</Text>
                         </TouchableOpacity>
                     </ScrollView>
                 </View>
@@ -476,7 +479,7 @@ export default function BloodTestScheduleScreen() {
                 {/* Inline Add New Address form */}
                 {addingNewAddr && (
                     <View style={styles.newAddrBox}>
-                        <Text style={styles.newAddrTitle}>New Address</Text>
+                        <Text style={styles.newAddrTitle}>{t('blood_test_schedule.new_address')}</Text>
 
                         {/* Label picker */}
                         <View style={styles.labelRow}>
@@ -486,7 +489,9 @@ export default function BloodTestScheduleScreen() {
                                     style={[styles.labelChip, newAddrLabel === lbl && styles.labelChipActive]}
                                     onPress={() => setNewAddrLabel(lbl)}
                                 >
-                                    <Text style={[styles.labelChipText, newAddrLabel === lbl && styles.labelChipTextActive]}>{lbl}</Text>
+                                    <Text style={[styles.labelChipText, newAddrLabel === lbl && styles.labelChipTextActive]}>
+                                        {lbl === 'Home' ? t('blood_test_schedule.label_home') : lbl === 'Office' ? t('blood_test_schedule.label_office') : t('blood_test_schedule.label_other')}
+                                    </Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -496,15 +501,15 @@ export default function BloodTestScheduleScreen() {
                             style={styles.pickLocationBtn}
                             onPress={() => setNewAddrPickerVisible(true)}
                         >
-                            <Ionicons name="search" size={16} color={PRIMARY_GREEN} style={{ marginRight: 8 }} />
+                            <Ionicons name="search" size={16} color={colors.primary} style={{ marginRight: 8 }} />
                             <Text style={styles.pickLocationBtnText} numberOfLines={1}>
-                                {newAddrText || 'Search & pick location'}
+                                {newAddrText || t('blood_test_schedule.search_pick_location')}
                             </Text>
                         </TouchableOpacity>
 
                         {/* Manual address override */}
                         <TextInput
-                            placeholder="Full address"
+                            placeholder={t('blood_test_schedule.full_address_placeholder')}
                             placeholderTextColor={TEXT_MUTED}
                             value={newAddrText}
                             onChangeText={setNewAddrText}
@@ -514,7 +519,7 @@ export default function BloodTestScheduleScreen() {
 
                         <View style={styles.row}>
                             <TextInput
-                                placeholder="Pincode *"
+                                placeholder={t('blood_test_schedule.pincode_placeholder_required')}
                                 placeholderTextColor={TEXT_MUTED}
                                 value={newAddrPincode}
                                 onChangeText={setNewAddrPincode}
@@ -523,7 +528,7 @@ export default function BloodTestScheduleScreen() {
                                 style={[styles.input, { flex: 1, marginRight: 8 }]}
                             />
                             <TextInput
-                                placeholder="Landmark (optional)"
+                                placeholder={t('blood_test_schedule.landmark_placeholder_optional')}
                                 placeholderTextColor={TEXT_MUTED}
                                 value={newAddrLandmark}
                                 onChangeText={setNewAddrLandmark}
@@ -536,7 +541,7 @@ export default function BloodTestScheduleScreen() {
                                 style={[styles.backButton, { flex: 1 }]}
                                 onPress={() => setAddingNewAddr(false)}
                             >
-                                <Text style={styles.backButtonText}>Cancel</Text>
+                                <Text style={styles.backButtonText}>{t('blood_test_schedule.cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.continueButton, { flex: 1 }, savingNewAddr && styles.continueButtonDisabled]}
@@ -545,7 +550,7 @@ export default function BloodTestScheduleScreen() {
                             >
                                 {savingNewAddr
                                     ? <ActivityIndicator size="small" color="#FFFFFF" />
-                                    : <Text style={styles.continueButtonText}>Save & Use</Text>
+                                    : <Text style={styles.continueButtonText}>{t('blood_test_schedule.save_use')}</Text>
                                 }
                             </TouchableOpacity>
                         </View>
@@ -561,12 +566,12 @@ export default function BloodTestScheduleScreen() {
                             disabled={detectingLocation}
                         >
                             {detectingLocation ? (
-                                <ActivityIndicator size="small" color={PRIMARY_GREEN} />
+                                <ActivityIndicator size="small" color={colors.primary} />
                             ) : (
                                 <>
-                                    <Ionicons name="locate" size={28} color={PRIMARY_GREEN} style={{ marginBottom: 8 }} />
-                                    <Text style={styles.locationOptionTitle}>Auto Detect</Text>
-                                    <Text style={styles.locationOptionDesc}>Current location</Text>
+                                    <Ionicons name="locate" size={28} color={colors.primary} style={{ marginBottom: 8 }} />
+                                    <Text style={styles.locationOptionTitle}>{t('blood_test_schedule.auto_detect')}</Text>
+                                    <Text style={styles.locationOptionDesc}>{t('blood_test_schedule.current_location')}</Text>
                                 </>
                             )}
                         </TouchableOpacity>
@@ -575,9 +580,9 @@ export default function BloodTestScheduleScreen() {
                             style={[styles.locationOptionBtn, { flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }]}
                             onPress={() => setLocationPickerVisible(true)}
                         >
-                            <Ionicons name="search" size={28} color={PRIMARY_GREEN} style={{ marginBottom: 8 }} />
-                            <Text style={styles.locationOptionTitle}>Manual</Text>
-                            <Text style={styles.locationOptionDesc}>Search & select</Text>
+                            <Ionicons name="search" size={28} color={colors.primary} style={{ marginBottom: 8 }} />
+                            <Text style={styles.locationOptionTitle}>{t('blood_test_schedule.manual')}</Text>
+                            <Text style={styles.locationOptionDesc}>{t('blood_test_schedule.search_select')}</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -586,33 +591,33 @@ export default function BloodTestScheduleScreen() {
 
                 {/* Serviceability Status */}
                 {serviceabilityStatus === 'checking' && (
-                    <View style={[styles.serviceabilityBanner, { backgroundColor: '#FEF3C7' }]}>
+                    <View style={[styles.serviceabilityBanner, { backgroundColor: isDarkMode ? '#2A2000' : '#FEF3C7' }]}>
                         <ActivityIndicator size="small" color="#D97706" style={{ marginRight: 10 }} />
-                        <Text style={{ fontSize: 12, color: '#92400E', fontWeight: '500' }}>
-                            Checking serviceability...
+                        <Text style={{ fontSize: 12, color: isDarkMode ? '#F59E0B' : '#92400E', fontWeight: '500' }}>
+                            {t('blood_test_schedule.checking_serviceability')}
                         </Text>
                     </View>
                 )}
                 {serviceabilityStatus === 'serviceable' && (
-                    <View style={[styles.serviceabilityBanner, { backgroundColor: '#D1FAE5' }]}>
-                        <Ionicons name="checkmark-circle" size={16} color={PRIMARY_GREEN} style={{ marginRight: 10 }} />
-                        <Text style={{ fontSize: 12, color: PRIMARY_GREEN, fontWeight: '600' }}>
-                            Location is serviceable
+                    <View style={[styles.serviceabilityBanner, { backgroundColor: isDarkMode ? 'rgba(52, 199, 89, 0.14)' : LIGHT_GREEN_BG }]}>
+                        <Ionicons name="checkmark-circle" size={16} color={colors.primary} style={{ marginRight: 10 }} />
+                        <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '600' }}>
+                            {t('blood_test_schedule.location_serviceable')}
                         </Text>
                     </View>
                 )}
                 {serviceabilityStatus === 'non-serviceable' && (
-                    <View style={[styles.serviceabilityBanner, { backgroundColor: '#FEE2E2' }]}>
+                    <View style={[styles.serviceabilityBanner, { backgroundColor: isDarkMode ? '#2A0808' : '#FEE2E2' }]}>
                         <Ionicons name="alert-circle" size={16} color="#DC2626" style={{ marginRight: 10 }} />
                         <Text style={{ fontSize: 12, color: '#DC2626', fontWeight: '600' }}>
-                            Location not serviceable
+                            {t('blood_test_schedule.location_not_serviceable')}
                         </Text>
                     </View>
                 )}
 
                 {/* Address Input */}
                 <TextInput
-                    placeholder="Enter full address"
+                    placeholder={t('blood_test_schedule.enter_full_address')}
                     placeholderTextColor={TEXT_MUTED}
                     value={selectedAddress}
                     onChangeText={setSelectedAddress}
@@ -623,7 +628,7 @@ export default function BloodTestScheduleScreen() {
                 {/* Pincode & Landmark Row */}
                 <View style={styles.row}>
                     <TextInput
-                        placeholder="Pincode"
+                        placeholder={t('blood_test_schedule.pincode')}
                         placeholderTextColor={TEXT_MUTED}
                         value={pincode}
                         onChangeText={setPincode}
@@ -632,7 +637,7 @@ export default function BloodTestScheduleScreen() {
                         style={[styles.input, { flex: 1, marginRight: 8 }]}
                     />
                     <TextInput
-                        placeholder="Landmark (optional)"
+                        placeholder={t('blood_test_schedule.landmark_placeholder_optional')}
                         placeholderTextColor={TEXT_MUTED}
                         value={landmark}
                         onChangeText={setLandmark}
@@ -645,7 +650,7 @@ export default function BloodTestScheduleScreen() {
                     <Text style={styles.phonePrefix}>+91</Text>
                     <View style={styles.phoneDivider} />
                     <TextInput
-                        placeholder="Phone Number"
+                        placeholder={t('blood_test_schedule.phone_number')}
                         placeholderTextColor={TEXT_MUTED}
                         value={phoneNumber.startsWith('+91') ? phoneNumber.slice(3) : phoneNumber}
                         onChangeText={(val) => {
@@ -666,36 +671,36 @@ export default function BloodTestScheduleScreen() {
         <ScrollView showsVerticalScrollIndicator={false} style={styles.stepContent}>
             <View style={styles.summaryCard}>
                 <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Test</Text>
+                    <Text style={styles.summaryLabel}>{t('blood_test_schedule.test')}</Text>
                     <Text style={styles.summaryValue}>{pkg?.name}</Text>
                 </View>
                 <View style={[styles.summaryRow, styles.summaryRowDivider]}>
-                    <Text style={styles.summaryLabel}>Parameters</Text>
+                    <Text style={styles.summaryLabel}>{t('blood_test_schedule.parameters')}</Text>
                     <Text style={styles.summaryValue}>{pkg?.tests_count || 0}</Text>
                 </View>
                 <View style={[styles.summaryRow, styles.summaryRowDivider]}>
-                    <Text style={styles.summaryLabel}>Date & Time</Text>
+                    <Text style={styles.summaryLabel}>{t('blood_test_schedule.date_time')}</Text>
                     <Text style={styles.summaryValue}>
                         {selectedDate?.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}, {selectedTime}
                     </Text>
                 </View>
                 <View style={[styles.summaryRow, styles.summaryRowDivider]}>
-                    <Text style={styles.summaryLabel}>Collection Type</Text>
-                    <Text style={styles.summaryValue}>{collectionType === 'HOME' ? 'Home Collection' : 'Lab Visit'}</Text>
+                    <Text style={styles.summaryLabel}>{t('blood_test_schedule.collection_type_label')}</Text>
+                    <Text style={styles.summaryValue}>{collectionType === 'HOME' ? t('blood_test_schedule.home_collection') : t('blood_test_schedule.lab_visit')}</Text>
                 </View>
                 {collectionType === 'HOME' && !!selectedAddress && (
                     <View style={[styles.summaryRow, styles.summaryRowDivider]}>
-                        <Text style={styles.summaryLabel}>Address</Text>
+                        <Text style={styles.summaryLabel}>{t('blood_test_schedule.address')}</Text>
                         <Text style={[styles.summaryValue, { maxWidth: '60%' }]} numberOfLines={2}>{selectedAddress}</Text>
                     </View>
                 )}
                 <View style={[styles.summaryRow, styles.summaryRowDivider]}>
-                    <Text style={styles.summaryLabel}>Convenience Fee</Text>
-                    <Text style={styles.summaryValue}>₹0 (Free)</Text>
+                    <Text style={styles.summaryLabel}>{t('blood_test_schedule.convenience_fee')}</Text>
+                    <Text style={styles.summaryValue}>₹0 ({t('blood_test_schedule.free')})</Text>
                 </View>
                 <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Payable Amount</Text>
-                    <Text style={styles.summaryAmount}>₹{pkg?.discounted_cost || pkg?.cost}</Text>
+                    <Text style={styles.summaryLabel}>{t('blood_test_schedule.payable_amount')}</Text>
+                    <Text style={[styles.summaryAmount, { color: colors.primary }]}>₹{pkg?.discounted_cost || pkg?.cost}</Text>
                 </View>
             </View>
         </ScrollView>
@@ -717,9 +722,9 @@ export default function BloodTestScheduleScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color={TEXT_DARK} />
+                    <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#FFFFFF' : TEXT_DARK} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Schedule Your Blood Test</Text>
+                <Text style={styles.headerTitle}>{t('blood_test_schedule.schedule_header')}</Text>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -751,9 +756,9 @@ export default function BloodTestScheduleScreen() {
 
             {/* Step Labels */}
             <View style={styles.stepLabels}>
-                <Text style={[styles.stepLabel, step === 1 && styles.stepLabelActive]}>Date & Time</Text>
-                <Text style={[styles.stepLabel, step === 2 && styles.stepLabelActive]}>Address</Text>
-                <Text style={[styles.stepLabel, step === 3 && styles.stepLabelActive]}>Confirm</Text>
+                <Text style={[styles.stepLabel, step === 1 && styles.stepLabelActive]}>{t('blood_test_schedule.step_date_time')}</Text>
+                <Text style={[styles.stepLabel, step === 2 && styles.stepLabelActive]}>{t('blood_test_schedule.step_address')}</Text>
+                <Text style={[styles.stepLabel, step === 3 && styles.stepLabelActive]}>{t('blood_test_schedule.step_confirm')}</Text>
             </View>
 
             {/* Content */}
@@ -766,7 +771,7 @@ export default function BloodTestScheduleScreen() {
                         style={styles.backButton}
                         onPress={() => setStep((s) => (s - 1) as 1 | 2 | 3)}
                     >
-                        <Text style={styles.backButtonText}>Back</Text>
+                        <Text style={styles.backButtonText}>{t('blood_test_schedule.back')}</Text>
                     </TouchableOpacity>
                 )}
                 <TouchableOpacity
@@ -781,7 +786,7 @@ export default function BloodTestScheduleScreen() {
                         <ActivityIndicator size="small" color="#FFFFFF" />
                     ) : (
                         <Text style={styles.continueButtonText}>
-                            {step === 3 ? 'Continue to Payment' : 'Continue'}
+                            {step === 3 ? t('blood_test_schedule.continue_to_payment') : t('blood_test_schedule.continue_label')}
                         </Text>
                     )}
                 </TouchableOpacity>
@@ -1335,4 +1340,3 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
         flex: 1,
     },
 });
-const styles = makeStyles(false, {} as ThemeColors);

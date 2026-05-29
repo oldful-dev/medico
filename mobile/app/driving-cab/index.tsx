@@ -5,10 +5,12 @@ import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 const imgHero = require('@/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png');
 
 export default function DrivingCabScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const [selectedImages, setSelectedImages] = React.useState<string[]>([]);
@@ -20,11 +22,11 @@ export default function DrivingCabScreen() {
 
     const handleBook = async () => {
         if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert('Address Required', 'Could not fetch your address. Please wait or try again.');
+            Alert.alert(t('service_detail.address_required'), t('service_detail.address_required_desc'));
             return;
         }
         if (!isReady) {
-            Alert.alert('Error', 'Service initialization incomplete. Please try again.');
+            Alert.alert(t('service_detail.error'), t('service_detail.init_error'));
             return;
         }
         try {
@@ -48,7 +50,7 @@ export default function DrivingCabScreen() {
                 },
             });
         } catch {
-            Alert.alert('Error', 'Something went wrong. Please check your connection.');
+            Alert.alert(t('service_detail.error'), t('service_detail.generic_error'));
         } finally {
             setIsBooking(false);
         }
@@ -56,18 +58,18 @@ export default function DrivingCabScreen() {
 
     return (
         <ServiceDetailScreen
-            headerTitle="Driving / Cab Booking"
-            heroTitle="Driver / Cab Booking"
-            heroSubtitle="Concierge Services"
-            description="Book a reliable driver or cab for hospital visits, errands, or any destination — safe and comfortable."
+            headerTitle={t('service_detail.driving_cab.header')}
+            heroTitle={t('service_detail.driving_cab.hero')}
+            heroSubtitle={t('service_detail.concierge_services')}
+            description={t('service_detail.driving_cab.description')}
             heroImage={imgHero}
-            pricingLabel={servicePrice > 0 ? `₹${servicePrice} Booking Fee + Distance Fare` : 'Fetching price...'}
-            pricingNote="*Distance fare depends on pickup to drop distance."
+            pricingLabel={servicePrice > 0 ? t('service_detail.driving_cab.pricing', { price: servicePrice }) : t('service_detail.fetching_price')}
+            pricingNote={t('service_detail.driving_cab.pricing_note')}
             bulletItems={[
-                'Door-to-Door Cab Booking',
-                'Hospital & Clinic Trips',
-                'Airport Transfers',
-                'Daily Commute Arrangements',
+                t('service_detail.driving_cab.bullet_1'),
+                t('service_detail.driving_cab.bullet_2'),
+                t('service_detail.driving_cab.bullet_3'),
+                t('service_detail.driving_cab.bullet_4'),
             ]}
             address={address}
             landmark={landmark}
@@ -76,8 +78,8 @@ export default function DrivingCabScreen() {
             isLoading={isLoading || isBooking}
         >
             <ImageUploadBox
-                title="Select An Image Of Scrap Items"
-                subtitle="JPG, PNG or PDF, file size no more than 10MB"
+                title={t('service_detail.driving_cab.upload_title')}
+                subtitle={t('service_detail.image_upload_subtitle')}
                 onImagesChange={setSelectedImages}
                 maxImages={2}
             />

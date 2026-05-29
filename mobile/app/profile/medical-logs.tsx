@@ -12,6 +12,7 @@ import { userService } from '@/services/api/userService';
 import { useUser } from '@/context/UserContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 // ─── Types ────────────────────────────────────────────────
 interface HealthReport {
@@ -54,8 +55,14 @@ function ReportCard({ item, onOpen, onDownload, onDelete }: {
 }) {
     const colors = useThemeColors();
     const { isDarkMode } = useTheme();
+    const { t } = useTranslation();
     const styles = makeStyles(colors, isDarkMode);
     const cat = getCategoryConfig(item.category || 'Other');
+
+    const getTranslatedCategory = (key: string) => {
+        const tKey = `medical_logs.categories.${key.toLowerCase().replace(/\s+/g, '_')}`;
+        return t(tKey, { defaultValue: key });
+    };
 
     return (
         <View style={styles.card}>
@@ -67,7 +74,7 @@ function ReportCard({ item, onOpen, onDownload, onDelete }: {
                     <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
                     <View style={styles.cardMeta}>
                         <View style={[styles.catBadge, { backgroundColor: `${cat.color}15` }]}>
-                            <Text style={[styles.catBadgeText, { color: cat.color }]}>{item.category || 'Other'}</Text>
+                            <Text style={[styles.catBadgeText, { color: cat.color }]}>{getTranslatedCategory(item.category || 'Other')}</Text>
                         </View>
                         <Text style={styles.cardDate}>{formatDate(item.createdAt)}</Text>
                     </View>
@@ -76,15 +83,15 @@ function ReportCard({ item, onOpen, onDownload, onDelete }: {
             <View style={styles.cardActions}>
                 <TouchableOpacity style={styles.actionBtn} onPress={() => onOpen(item.fileUrl)} activeOpacity={0.7}>
                     <Ionicons name="eye-outline" size={15} color={colors.primary} />
-                    <Text style={styles.actionBtnText}>View</Text>
+                    <Text style={styles.actionBtnText}>{t('common.view')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionBtn} onPress={() => onDownload(item.fileUrl)} activeOpacity={0.7}>
                     <Ionicons name="download-outline" size={15} color="#7C3AED" />
-                    <Text style={[styles.actionBtnText, { color: '#7C3AED' }]}>Download</Text>
+                    <Text style={[styles.actionBtnText, { color: '#7C3AED' }]}>{t('common.download')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.actionBtn, { borderColor: isDarkMode ? '#7F1D1D' : '#FEE2E2' }]} onPress={() => onDelete(item.id)} activeOpacity={0.7}>
                     <Ionicons name="trash-outline" size={15} color="#DC2626" />
-                    <Text style={[styles.actionBtnText, { color: '#DC2626' }]}>Delete</Text>
+                    <Text style={[styles.actionBtnText, { color: '#DC2626' }]}>{t('common.delete')}</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -97,6 +104,7 @@ export default function MedicalLogsScreen() {
     const { profile } = useUser();
     const colors = useThemeColors();
     const { isDarkMode } = useTheme();
+    const { t } = useTranslation();
     const styles = makeStyles(colors, isDarkMode);
 
     const [reports, setReports] = useState<HealthReport[]>([]);
@@ -108,6 +116,11 @@ export default function MedicalLogsScreen() {
     const [uploadModalVisible, setUploadModalVisible] = useState(false);
     const [uploadTitle, setUploadTitle] = useState('');
     const [uploadCategory, setUploadCategory] = useState('Other');
+
+    const getTranslatedCategory = (key: string) => {
+        const tKey = `medical_logs.categories.${key.toLowerCase().replace(/\s+/g, '_')}`;
+        return t(tKey, { defaultValue: key });
+    };
 
     const fetchReports = useCallback(async (silent = false) => {
         if (!silent) setLoading(true);
@@ -140,23 +153,23 @@ export default function MedicalLogsScreen() {
     });
 
     const handleOpenFile = (url: string) => {
-        Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open file.'));
+        Linking.openURL(url).catch(() => Alert.alert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_open')));
     };
 
     const handleDownload = (url: string) => {
-        Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not download file.'));
+        Linking.openURL(url).catch(() => Alert.alert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_download')));
     };
 
     const handleDelete = (id: string) => {
-        Alert.alert('Delete Document', 'Are you sure you want to delete this document?', [
-            { text: 'Cancel', style: 'cancel' },
+        Alert.alert(t('medical_logs.alerts.delete_confirm_title'), t('medical_logs.alerts.delete_confirm_msg'), [
+            { text: t('common.cancel'), style: 'cancel' },
             {
-                text: 'Delete', style: 'destructive', onPress: async () => {
+                text: t('medical_logs.alerts.delete_btn'), style: 'destructive', onPress: async () => {
                     try {
                         await userService.deleteHealthReport(id);
                         setReports(prev => prev.filter(r => r.id !== id));
                     } catch {
-                        Alert.alert('Error', 'Failed to delete document');
+                        Alert.alert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_delete'));
                     }
                 }
             },
@@ -171,19 +184,19 @@ export default function MedicalLogsScreen() {
 
     const doUpload = async (file: any) => {
         if (!profile?.id) return;
-        if (!uploadTitle.trim()) { Alert.alert('Title required', 'Please enter a title for this document.'); return; }
+        if (!uploadTitle.trim()) { Alert.alert(t('medical_logs.alerts.title_required_title'), t('medical_logs.alerts.title_required_msg')); return; }
         setUploading(true);
         setUploadModalVisible(false);
         try {
             const res = await userService.uploadHealthReport(profile.id, file, uploadTitle.trim(), uploadCategory);
             if (res.success) {
-                Alert.alert('Uploaded', 'Document saved successfully.');
+                Alert.alert(t('medical_logs.alerts.uploaded_title'), t('medical_logs.alerts.uploaded_msg'));
                 fetchReports(true);
             } else {
-                Alert.alert('Error', res.message || 'Upload failed.');
+                Alert.alert(t('medical_logs.alerts.error_title'), res.message || t('medical_logs.alerts.failed_upload'));
             }
         } catch {
-            Alert.alert('Error', 'Upload failed. Please try again.');
+            Alert.alert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_upload_retry'));
         } finally {
             setUploading(false);
         }
@@ -191,7 +204,7 @@ export default function MedicalLogsScreen() {
 
     const pickFromCamera = async () => {
         const perm = await ImagePicker.requestCameraPermissionsAsync();
-        if (!perm.granted) { Alert.alert('Permission required', 'Camera access needed'); return; }
+        if (!perm.granted) { Alert.alert(t('medical_logs.alerts.permission_required_title'), t('medical_logs.alerts.camera_access_needed')); return; }
         const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8, allowsEditing: true });
         if (!result.canceled && result.assets[0]) {
             const asset = result.assets[0];
@@ -201,7 +214,7 @@ export default function MedicalLogsScreen() {
 
     const pickFromGallery = async () => {
         const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!perm.granted) { Alert.alert('Permission required', 'Gallery access needed'); return; }
+        if (!perm.granted) { Alert.alert(t('medical_logs.alerts.permission_required_title'), t('medical_logs.alerts.gallery_access_needed')); return; }
         const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
         if (!result.canceled && result.assets[0]) {
             const asset = result.assets[0];
@@ -218,7 +231,7 @@ export default function MedicalLogsScreen() {
                 <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="arrow-back" size={24} color={colors.textDark} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Medical Logs</Text>
+                <Text style={styles.headerTitle}>{t('medical_logs.header_title')}</Text>
                 <TouchableOpacity
                     style={styles.uploadHeaderBtn}
                     onPress={handleUpload}
@@ -236,7 +249,7 @@ export default function MedicalLogsScreen() {
                 <Ionicons name="search-outline" size={16} color={colors.textMuted} />
                 <TextInput
                     style={styles.searchInput}
-                    placeholder="Search documents…"
+                    placeholder={t('medical_logs.search_placeholder')}
                     placeholderTextColor={colors.textMuted}
                     value={searchText}
                     onChangeText={setSearchText}
@@ -268,7 +281,7 @@ export default function MedicalLogsScreen() {
                                 color={activeCategory === cat.key ? '#fff' : cat.color}
                             />
                             <Text style={[styles.tabText, activeCategory === cat.key && { color: '#fff' }]}>
-                                {cat.label}
+                                {getTranslatedCategory(cat.key)}
                             </Text>
                         </TouchableOpacity>
                     )}
@@ -279,7 +292,7 @@ export default function MedicalLogsScreen() {
             {loading ? (
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={styles.loadingText}>Loading documents…</Text>
+                    <Text style={styles.loadingText}>{t('medical_logs.loading_documents')}</Text>
                 </View>
             ) : (
                 <FlatList
@@ -299,14 +312,14 @@ export default function MedicalLogsScreen() {
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
                             <Ionicons name="documents-outline" size={64} color={isDarkMode ? '#374151' : '#E5E7EB'} />
-                            <Text style={styles.emptyTitle}>No documents yet</Text>
+                            <Text style={styles.emptyTitle}>{t('medical_logs.no_documents_title')}</Text>
                             <Text style={styles.emptySubtitle}>
-                                {searchText ? 'No documents match your search.' : 'Upload prescriptions, reports, and medical documents.'}
+                                {searchText ? t('medical_logs.no_documents_search') : t('medical_logs.no_documents_subtitle')}
                             </Text>
                             {!searchText && (
                                 <TouchableOpacity style={styles.emptyUploadBtn} onPress={handleUpload}>
                                     <Ionicons name="cloud-upload-outline" size={18} color="#fff" />
-                                    <Text style={styles.emptyUploadText}>Upload Document</Text>
+                                    <Text style={styles.emptyUploadText}>{t('medical_logs.upload_document_btn')}</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -318,18 +331,18 @@ export default function MedicalLogsScreen() {
             {uploadModalVisible && (
                 <View style={styles.modalOverlay}>
                     <KeyboardAvoidingView style={styles.modal} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                        <Text style={styles.modalTitle}>Upload Document</Text>
+                        <Text style={styles.modalTitle}>{t('medical_logs.modal_title')}</Text>
 
-                        <Text style={styles.fieldLabel}>Title</Text>
+                        <Text style={styles.fieldLabel}>{t('medical_logs.field_title_label')}</Text>
                         <TextInput
                             style={styles.fieldInput}
-                            placeholder="e.g. Blood test report Jan 2026"
+                            placeholder={t('medical_logs.title_placeholder')}
                             placeholderTextColor={colors.textMuted}
                             value={uploadTitle}
                             onChangeText={setUploadTitle}
                         />
 
-                        <Text style={styles.fieldLabel}>Category</Text>
+                        <Text style={styles.fieldLabel}>{t('medical_logs.field_category_label')}</Text>
                         <FlatList
                             horizontal
                             data={CATEGORIES.slice(1)}
@@ -342,7 +355,7 @@ export default function MedicalLogsScreen() {
                                     onPress={() => setUploadCategory(cat.key)}
                                 >
                                     <Text style={[styles.catChipText, uploadCategory === cat.key && { color: '#fff' }]}>
-                                        {cat.label}
+                                        {getTranslatedCategory(cat.key)}
                                     </Text>
                                 </TouchableOpacity>
                             )}
@@ -351,16 +364,16 @@ export default function MedicalLogsScreen() {
                         <View style={styles.uploadOptions}>
                             <TouchableOpacity style={styles.uploadOptionBtn} onPress={pickFromCamera}>
                                 <Ionicons name="camera-outline" size={22} color={colors.primary} />
-                                <Text style={styles.uploadOptionText}>Camera</Text>
+                                <Text style={styles.uploadOptionText}>{t('medical_logs.camera_btn')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.uploadOptionBtn} onPress={pickFromGallery}>
                                 <Ionicons name="image-outline" size={22} color={colors.primary} />
-                                <Text style={styles.uploadOptionText}>Gallery</Text>
+                                <Text style={styles.uploadOptionText}>{t('medical_logs.gallery_btn')}</Text>
                             </TouchableOpacity>
                         </View>
 
                         <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setUploadModalVisible(false)}>
-                            <Text style={styles.modalCancelText}>Cancel</Text>
+                            <Text style={styles.modalCancelText}>{t('medical_logs.cancel')}</Text>
                         </TouchableOpacity>
                     </KeyboardAvoidingView>
                 </View>

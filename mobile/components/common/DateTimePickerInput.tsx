@@ -54,13 +54,12 @@ export default function DateTimePickerInput({
 
     const formatDate = (d: Date) => {
         const day = d.getDate().toString().padStart(2, '0');
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const month = months[d.getMonth()];
+        const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        const month = t(`months.${monthKeys[d.getMonth()]}`);
         const year = d.getFullYear();
         let hours = d.getHours();
         const mins = d.getMinutes().toString().padStart(2, '0');
-        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const ampm = hours >= 12 ? t('common.pm') : t('common.am');
         hours = hours % 12 || 12;
         return `${day} ${month} ${year}  •  ${hours}:${mins} ${ampm}`;
     };

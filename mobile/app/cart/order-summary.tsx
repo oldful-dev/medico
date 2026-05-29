@@ -152,7 +152,7 @@ export default function CartOrderSummaryScreen() {
                     email: profile?.email || '',
                     method: selectedMethod.toLowerCase(),
                 },
-                theme: { color: PRIMARY_GREEN },
+                theme: { color: colors.primary },
                 config: {
                     display: {
                         blocks: {
@@ -229,7 +229,7 @@ export default function CartOrderSummaryScreen() {
 
                 <View style={dynamicStyles.card}>
                     <View style={dynamicStyles.detailRow}>
-                        <View style={dynamicStyles.detailIcon}><Ionicons name="calendar" size={16} color={PRIMARY_GREEN} /></View>
+                        <View style={dynamicStyles.detailIcon}><Ionicons name="calendar" size={16} color={colors.primary} /></View>
                         <View style={{ flex: 1 }}>
                             <Text style={dynamicStyles.detailLabel}>Date & Time</Text>
                             <Text style={dynamicStyles.detailValue}>{bookingData?.slot?.date}, {bookingData?.slot?.time}</Text>
@@ -238,9 +238,9 @@ export default function CartOrderSummaryScreen() {
 
                     <View style={dynamicStyles.divider} />
 
-                    <View style={styles.detailRow}>
-                        <View style={styles.detailIcon}>
-                            <Ionicons name={params.collectionType === 'LAB' ? 'business' : 'home'} size={16} color={PRIMARY_GREEN} />
+                    <View style={dynamicStyles.detailRow}>
+                        <View style={dynamicStyles.detailIcon}>
+                            <Ionicons name={params.collectionType === 'LAB' ? 'business' : 'home'} size={16} color={colors.primary} />
                         </View>
                         <View style={{ flex: 1 }}>
                             <Text style={dynamicStyles.detailLabel}>Collection Type</Text>
@@ -251,11 +251,11 @@ export default function CartOrderSummaryScreen() {
                     {params.collectionType !== 'LAB' && bookingData?.address?.line1 && (
                         <>
                             <View style={dynamicStyles.divider} />
-                            <View style={styles.detailRow}>
-                                <View style={dynamicStyles.detailIcon}><Ionicons name="location" size={16} color={PRIMARY_GREEN} /></View>
+                            <View style={dynamicStyles.detailRow}>
+                                <View style={dynamicStyles.detailIcon}><Ionicons name="location" size={16} color={colors.primary} /></View>
                                 <View style={{ flex: 1 }}>
                                     <Text style={dynamicStyles.detailLabel}>Address</Text>
-                                    <Text style={styles.detailValue} numberOfLines={2}>
+                                    <Text style={dynamicStyles.detailValue} numberOfLines={2}>
                                         {bookingData?.address?.line1}, {bookingData?.address?.pincode}
                                     </Text>
                                 </View>
@@ -264,7 +264,7 @@ export default function CartOrderSummaryScreen() {
                     )}
                 </View>
 
-                <View style={styles.card}>
+                <View style={dynamicStyles.card}>
                     <View style={dynamicStyles.breakdownRow}>
                         <Text style={dynamicStyles.breakdownLabel}>Subtotal</Text>
                         <Text style={dynamicStyles.breakdownValue}>₹{baseAmount.toFixed(2)}</Text>
@@ -275,8 +275,8 @@ export default function CartOrderSummaryScreen() {
                     </View>
                     {discount > 0 && (
                         <View style={dynamicStyles.breakdownRow}>
-                            <Text style={[styles.breakdownLabel, { color: PRIMARY_GREEN }]}>Discount</Text>
-                            <Text style={[styles.breakdownValue, { color: PRIMARY_GREEN }]}>-₹{discount.toFixed(2)}</Text>
+                            <Text style={[dynamicStyles.breakdownLabel, { color: colors.primary }]}>Discount</Text>
+                            <Text style={[dynamicStyles.breakdownValue, { color: colors.primary }]}>-₹{discount.toFixed(2)}</Text>
                         </View>
                     )}
                     <View style={dynamicStyles.breakdownDivider} />
@@ -286,12 +286,12 @@ export default function CartOrderSummaryScreen() {
                     </View>
                 </View>
 
-                <View style={styles.card}>
+                <View style={dynamicStyles.card}>
                     <Text style={dynamicStyles.sectionTitle}>Apply Coupon Code</Text>
                     <View style={dynamicStyles.couponRow}>
                         <TextInput
                             placeholder="Enter coupon code"
-                            placeholderTextColor={TEXT_MUTED}
+                            placeholderTextColor={isDarkMode ? '#94A3B8' : TEXT_MUTED}
                             value={couponCode}
                             onChangeText={setCouponCode}
                             editable={!couponApplied}
@@ -303,13 +303,13 @@ export default function CartOrderSummaryScreen() {
                     </View>
                 </View>
 
-                <View style={styles.card}>
+                <View style={dynamicStyles.card}>
                     <Text style={dynamicStyles.sectionTitle}>Payment Method</Text>
                     {PAYMENT_METHODS.map(m => (
                         <TouchableOpacity key={m.type} style={[dynamicStyles.methodRow, selectedMethod === m.type && dynamicStyles.methodRowActive]} onPress={() => setSelectedMethod(m.type)} activeOpacity={0.8}>
-                            <Ionicons name={m.icon as any} size={20} color={selectedMethod === m.type ? PRIMARY_GREEN : TEXT_MUTED} />
+                            <Ionicons name={m.icon as any} size={20} color={selectedMethod === m.type ? colors.primary : (isDarkMode ? '#94A3B8' : TEXT_MUTED)} />
                             <Text style={[dynamicStyles.methodLabel, selectedMethod === m.type && dynamicStyles.methodLabelActive]}>{m.label}</Text>
-                            <Ionicons name={selectedMethod === m.type ? 'radio-button-on' : 'radio-button-off'} size={20} color={selectedMethod === m.type ? PRIMARY_GREEN : TEXT_MUTED} />
+                            <Ionicons name={selectedMethod === m.type ? 'radio-button-on' : 'radio-button-off'} size={20} color={selectedMethod === m.type ? colors.primary : (isDarkMode ? '#94A3B8' : TEXT_MUTED)} />
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -336,9 +336,8 @@ const makeStyles = (isDarkMode: boolean) => {
     const textSecondary = isDarkMode ? '#A0A0A0' : TEXT_MUTED;
     const inputBg = isDarkMode ? '#303030' : '#FFFFFF';
     const inputBorder = isDarkMode ? '#404040' : CARD_BORDER;
-    const iconBg = isDarkMode ? '#2D2D2D' : LIGHT_GREEN_BG;
-    const iconBgDark = isDarkMode ? '#1A4A32' : LIGHT_GREEN_BG;
-
+    const iconBg = isDarkMode ? 'rgba(52, 199, 89, 0.14)' : LIGHT_GREEN_BG;
+    
     return StyleSheet.create({
         container: { flex: 1, backgroundColor: bgLight },
         header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: borderColor, backgroundColor: bgCard },
@@ -349,7 +348,7 @@ const makeStyles = (isDarkMode: boolean) => {
         testName: { fontSize: 14, fontWeight: '600', color: textPrimary, marginBottom: 4 },
         parametersText: { fontSize: 12, color: textSecondary },
         priceTag: { backgroundColor: iconBg, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: isDarkMode ? '#1A5A41' : '#D1FAE5' },
-        priceAmount: { fontSize: 14, fontWeight: '700', color: PRIMARY_GREEN },
+        priceAmount: { fontSize: 14, fontWeight: '700', color: isDarkMode ? '#34C759' : PRIMARY_GREEN },
         itemRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
         itemText: { fontSize: 13, color: textSecondary, flex: 1, paddingRight: 10 },
         itemPrice: { fontSize: 13, color: textPrimary, fontWeight: '500' },
@@ -364,7 +363,7 @@ const makeStyles = (isDarkMode: boolean) => {
         breakdownDivider: { height: 1, backgroundColor: borderColor, marginVertical: 10 },
         totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
         totalLabel: { fontSize: 14, fontWeight: '600', color: textPrimary },
-        totalValue: { fontSize: 16, fontWeight: '700', color: PRIMARY_GREEN },
+        totalValue: { fontSize: 16, fontWeight: '700', color: isDarkMode ? '#34C759' : PRIMARY_GREEN },
         sectionTitle: { fontSize: 13, fontWeight: '600', color: textPrimary, marginBottom: 10 },
         couponRow: { flexDirection: 'row', gap: 8 },
         couponInput: { flex: 1, borderWidth: 1, borderColor: inputBorder, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: textPrimary, backgroundColor: inputBg },

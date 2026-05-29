@@ -10,10 +10,12 @@ import { useUser } from '@/context/UserContext';
 import { userService } from '@/services/api/userService';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const GENDER_OPTIONS = ['MALE', 'FEMALE', 'OTHER'];
 
 export default function EditProfileScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const { profile, setProfile } = useUser();
     const { isDarkMode } = useTheme();
@@ -29,7 +31,7 @@ export default function EditProfileScreen() {
 
     const handleSave = async () => {
         if (!name.trim()) {
-            Alert.alert('Required', 'Name cannot be empty.');
+            Alert.alert(t('account.required'), t('edit_profile.name_empty'));
             return;
         }
         setSaving(true);
@@ -48,14 +50,14 @@ export default function EditProfileScreen() {
                 if (profileRes.success && profileRes.data) {
                     setProfile(profileRes.data);
                 }
-                Alert.alert('Success', 'Profile updated successfully.', [
-                    { text: 'OK', onPress: () => router.back() },
+                Alert.alert(t('common.success'), t('edit_profile.success_msg'), [
+                    { text: t('common.ok'), onPress: () => router.back() },
                 ]);
             } else {
-                Alert.alert('Error', res.message || 'Failed to update profile.');
+                Alert.alert(t('common.error'), res.message || t('edit_profile.failed_update'));
             }
         } catch (err: any) {
-            Alert.alert('Error', err.message || 'Something went wrong.');
+            Alert.alert(t('common.error'), err.message || t('common.something_wrong'));
         } finally {
             setSaving(false);
         }
@@ -69,39 +71,39 @@ export default function EditProfileScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Edit Profile</Text>
+                    <Text style={styles.headerTitle}>{t('account.edit_profile')}</Text>
                 </View>
             </SafeAreaView>
 
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <KeyboardAwareScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} enableOnAndroid={true} extraScrollHeight={20} keyboardShouldPersistTaps="handled">
 
-                <Text style={styles.label}>Full Name *</Text>
-                <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Enter your name" placeholderTextColor={colors.textMuted} />
+                <Text style={styles.label}>{t('edit_profile.full_name')} *</Text>
+                <TextInput style={styles.input} value={name} onChangeText={setName} placeholder={t('edit_profile.placeholder_name')} placeholderTextColor={colors.textMuted} />
 
-                <Text style={styles.label}>Email</Text>
-                <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="Enter your email" placeholderTextColor={colors.textMuted} keyboardType="email-address" autoCapitalize="none" />
+                <Text style={styles.label}>{t('edit_profile.email')}</Text>
+                <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder={t('edit_profile.placeholder_email')} placeholderTextColor={colors.textMuted} keyboardType="email-address" autoCapitalize="none" />
 
-                <Text style={styles.label}>Phone (Read Only)</Text>
+                <Text style={styles.label}>{t('edit_profile.phone_read_only')}</Text>
                 <TextInput style={[styles.input, styles.inputDisabled]} value={profile?.phone || ''} editable={false} />
 
-                <Text style={styles.label}>Gender</Text>
+                <Text style={styles.label}>{t('edit_profile.gender')}</Text>
                 <View style={styles.genderRow}>
                     {GENDER_OPTIONS.map(g => (
                         <TouchableOpacity key={g} style={[styles.genderBtn, gender === g && styles.genderBtnActive]} onPress={() => setGender(g)}>
-                            <Text style={[styles.genderText, gender === g && styles.genderTextActive]}>{g}</Text>
+                            <Text style={[styles.genderText, gender === g && styles.genderTextActive]}>{t('edit_profile.gender_' + g.toLowerCase())}</Text>
                         </TouchableOpacity>
                     ))}
                 </View>
 
-                <Text style={styles.label}>Date of Birth (YYYY-MM-DD)</Text>
-                <TextInput style={styles.input} value={dateOfBirth} onChangeText={setDateOfBirth} placeholder="e.g. 1960-05-15" placeholderTextColor={colors.textMuted} />
+                <Text style={styles.label}>{t('edit_profile.dob')}</Text>
+                <TextInput style={styles.input} value={dateOfBirth} onChangeText={setDateOfBirth} placeholder={t('edit_profile.placeholder_dob')} placeholderTextColor={colors.textMuted} />
 
-                <Text style={styles.label}>Preferred Language</Text>
-                <TextInput style={styles.input} value={preferredLanguage} onChangeText={setPreferredLanguage} placeholder="en, kn, hi, ta, te" placeholderTextColor={colors.textMuted} />
+                <Text style={styles.label}>{t('edit_profile.preferred_language')}</Text>
+                <TextInput style={styles.input} value={preferredLanguage} onChangeText={setPreferredLanguage} placeholder={t('edit_profile.placeholder_lang')} placeholderTextColor={colors.textMuted} />
 
                 <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving} activeOpacity={0.7}>
-                    {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
+                    {saving ? <ActivityIndicator color="#FFF" /> : <Text style={styles.saveBtnText}>{t('edit_profile.save_changes')}</Text>}
                 </TouchableOpacity>
             </KeyboardAwareScrollView>
         </KeyboardAvoidingView>

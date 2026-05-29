@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { paymentService, SavedCard, AddCardPayload } from '@/services/api/paymentService';
+import { useTranslation } from 'react-i18next';
 
 const CARD_BRAND_ICON: Record<string, { name: any; color: string }> = {
     Visa:       { name: 'card-outline',   color: '#1A1F71' },
@@ -23,6 +24,7 @@ function cardIcon(card: SavedCard) {
 }
 
 export default function PaymentsWalletScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const [cards, setCards] = useState<SavedCard[]>([]);
     const [loading, setLoading] = useState(true);
@@ -55,17 +57,17 @@ export default function PaymentsWalletScreen() {
 
     const handleDelete = (card: SavedCard) => {
         Alert.alert(
-            'Remove Card',
-            `Remove ${card.cardType === 'UPI' ? card.upiId : `•••• ${card.cardLast4}`}?`,
+            t('payments_wallet.remove_title'),
+            t('payments_wallet.remove_confirm', { details: card.cardType === 'UPI' ? card.upiId : `•••• ${card.cardLast4}` }),
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: 'Remove', style: 'destructive', onPress: async () => {
+                    text: t('common.remove'), style: 'destructive', onPress: async () => {
                         try {
                             await paymentService.deleteSavedCard(card.id);
                             setCards(prev => prev.filter(c => c.id !== card.id));
                         } catch {
-                            Alert.alert('Error', 'Could not remove card. Please try again.');
+                            Alert.alert(t('common.error'), t('payments_wallet.remove_failed'));
                         }
                     }
                 },
@@ -79,7 +81,7 @@ export default function PaymentsWalletScreen() {
             await paymentService.setDefaultCard(card.id);
             setCards(prev => prev.map(c => ({ ...c, isDefault: c.id === card.id })));
         } catch {
-            Alert.alert('Error', 'Could not update default. Please try again.');
+            Alert.alert(t('common.error'), t('payments_wallet.set_default_failed'));
         }
     };
 
@@ -92,12 +94,12 @@ export default function PaymentsWalletScreen() {
     const handleAdd = async () => {
         if (addType === 'CARD') {
             if (cardLast4.length !== 4 || !/^\d{4}$/.test(cardLast4))
-                return Alert.alert('Invalid', 'Enter last 4 digits of your card number.');
+                return Alert.alert(t('common.invalid'), t('payments_wallet.invalid_card_last4'));
             if (!expiryMonth || !expiryYear)
-                return Alert.alert('Invalid', 'Enter card expiry.');
+                return Alert.alert(t('common.invalid'), t('payments_wallet.invalid_expiry'));
         } else {
             if (!upiId.includes('@'))
-                return Alert.alert('Invalid', 'Enter a valid UPI ID (e.g. name@upi).');
+                return Alert.alert(t('common.invalid'), t('payments_wallet.invalid_upi'));
         }
 
         const payload: AddCardPayload = addType === 'CARD'
@@ -116,10 +118,10 @@ export default function PaymentsWalletScreen() {
                 setShowAddModal(false);
                 resetForm();
             } else {
-                Alert.alert('Error', res.message || 'Failed to save card.');
+                Alert.alert(t('common.error'), res.message || t('payments_wallet.save_failed'));
             }
         } catch {
-            Alert.alert('Error', 'Network error. Please try again.');
+            Alert.alert(t('common.error'), t('payments_wallet.network_error'));
         } finally {
             setSaving(false);
         }
@@ -133,15 +135,15 @@ export default function PaymentsWalletScreen() {
                     <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Payments & Wallet</Text>
+                    <Text style={styles.headerTitle}>{t('payments_wallet.header_title')}</Text>
                 </View>
             </SafeAreaView>
 
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
                 {/* ─── Section Title ─── */}
-                <Text style={styles.sectionTitle}>Saved Cards & UPI</Text>
-                <Text style={styles.sectionSubtitle}>Saved methods are used for faster, one-tap checkout</Text>
+                <Text style={styles.sectionTitle}>{t('payments_wallet.section_title')}</Text>
+                <Text style={styles.sectionSubtitle}>{t('payments_wallet.section_subtitle')}</Text>
 
                 {/* ─── Card List ─── */}
                 {loading ? (
@@ -149,8 +151,8 @@ export default function PaymentsWalletScreen() {
                 ) : cards.length === 0 ? (
                     <View style={styles.emptyState}>
                         <Ionicons name="card-outline" size={48} color={Colors.textLight} />
-                        <Text style={styles.emptyText}>No saved methods yet</Text>
-                        <Text style={styles.emptySubtext}>Add a card or UPI for quick checkout</Text>
+                        <Text style={styles.emptyText}>{t('payments_wallet.empty_title')}</Text>
+                        <Text style={styles.emptySubtext}>{t('payments_wallet.empty_subtitle')}</Text>
                     </View>
                 ) : (
                     cards.map(card => {
@@ -167,7 +169,7 @@ export default function PaymentsWalletScreen() {
                                         <Text style={styles.cardTitle}>{card.cardBrand} •••• {card.cardLast4}</Text>
                                     )}
                                     {card.expiryMonth && card.expiryYear && (
-                                        <Text style={styles.cardSub}>Expires {card.expiryMonth}/{card.expiryYear}</Text>
+                                        <Text style={styles.cardSub}>{t('payments_wallet.expires')} {card.expiryMonth}/{card.expiryYear}</Text>
                                     )}
                                     {card.cardholderName ? (
                                         <Text style={styles.cardSub}>{card.cardholderName}</Text>
@@ -176,11 +178,11 @@ export default function PaymentsWalletScreen() {
                                 <View style={styles.cardActions}>
                                     {card.isDefault ? (
                                         <View style={styles.defaultBadge}>
-                                            <Text style={styles.defaultBadgeText}>Default</Text>
+                                            <Text style={styles.defaultBadgeText}>{t('payments_wallet.default')}</Text>
                                         </View>
                                     ) : (
                                         <TouchableOpacity onPress={() => handleSetDefault(card)} style={styles.setDefaultBtn}>
-                                            <Text style={styles.setDefaultText}>Set default</Text>
+                                            <Text style={styles.setDefaultText}>{t('payments_wallet.set_default')}</Text>
                                         </TouchableOpacity>
                                     )}
                                     <TouchableOpacity onPress={() => handleDelete(card)} style={styles.deleteBtn}>
@@ -195,7 +197,7 @@ export default function PaymentsWalletScreen() {
                 {/* ─── Add Method Button ─── */}
                 <TouchableOpacity style={styles.addMethodBtn} activeOpacity={0.7} onPress={() => setShowAddModal(true)}>
                     <Ionicons name="add-circle-outline" size={20} color={Colors.primary} />
-                    <Text style={styles.addMethodText}>Add Card or UPI</Text>
+                    <Text style={styles.addMethodText}>{t('payments_wallet.add_method')}</Text>
                 </TouchableOpacity>
 
                 <View style={{ height: 60 }} />
@@ -210,7 +212,7 @@ export default function PaymentsWalletScreen() {
                         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
                     >
                         <View style={styles.modalHandle} />
-                        <Text style={styles.modalTitle}>Add Payment Method</Text>
+                        <Text style={styles.modalTitle}>{t('payments_wallet.add_title')}</Text>
 
                         {/* Type Toggle */}
                         <View style={styles.typeToggle}>
@@ -219,14 +221,14 @@ export default function PaymentsWalletScreen() {
                                 onPress={() => setAddType('CARD')}
                             >
                                 <Ionicons name="card-outline" size={16} color={addType === 'CARD' ? '#fff' : Colors.textMuted} />
-                                <Text style={[styles.typeBtnText, addType === 'CARD' && styles.typeBtnTextActive]}>Debit / Credit Card</Text>
+                                <Text style={[styles.typeBtnText, addType === 'CARD' && styles.typeBtnTextActive]}>{t('payments_wallet.type_card')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.typeBtn, addType === 'UPI' && styles.typeBtnActive]}
                                 onPress={() => setAddType('UPI')}
                             >
                                 <Ionicons name="wallet-outline" size={16} color={addType === 'UPI' ? '#fff' : Colors.textMuted} />
-                                <Text style={[styles.typeBtnText, addType === 'UPI' && styles.typeBtnTextActive]}>UPI</Text>
+                                <Text style={[styles.typeBtnText, addType === 'UPI' && styles.typeBtnTextActive]}>{t('payments_wallet.type_upi')}</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -239,7 +241,7 @@ export default function PaymentsWalletScreen() {
                             {addType === 'CARD' ? (
                                 <>
                                     {/* Brand Selector */}
-                                    <Text style={styles.fieldLabel}>Card Network</Text>
+                                    <Text style={styles.fieldLabel}>{t('payments_wallet.card_network')}</Text>
                                     <View style={styles.brandRow}>
                                         {CARD_BRANDS.map(b => (
                                             <TouchableOpacity
@@ -252,10 +254,10 @@ export default function PaymentsWalletScreen() {
                                         ))}
                                     </View>
 
-                                    <Text style={styles.fieldLabel}>Last 4 Digits</Text>
+                                    <Text style={styles.fieldLabel}>{t('payments_wallet.last_4_digits')}</Text>
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="e.g. 4532"
+                                        placeholder={t('payments_wallet.placeholder_last_4_digits')}
                                         placeholderTextColor={Colors.textLight}
                                         keyboardType="number-pad"
                                         maxLength={4}
@@ -263,10 +265,10 @@ export default function PaymentsWalletScreen() {
                                         onChangeText={setCardLast4}
                                     />
 
-                                    <Text style={styles.fieldLabel}>Cardholder Name (optional)</Text>
+                                    <Text style={styles.fieldLabel}>{t('payments_wallet.cardholder_name')}</Text>
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="Name on card"
+                                        placeholder={t('payments_wallet.placeholder_cardholder_name')}
                                         placeholderTextColor={Colors.textLight}
                                         autoCapitalize="words"
                                         value={cardholderName}
@@ -275,10 +277,10 @@ export default function PaymentsWalletScreen() {
 
                                     <View style={styles.expiryRow}>
                                         <View style={{ flex: 1 }}>
-                                            <Text style={styles.fieldLabel}>Expiry Month</Text>
+                                            <Text style={styles.fieldLabel}>{t('payments_wallet.expiry_month')}</Text>
                                             <TextInput
                                                 style={styles.input}
-                                                placeholder="MM"
+                                                placeholder={t('payments_wallet.placeholder_expiry_month')}
                                                 placeholderTextColor={Colors.textLight}
                                                 keyboardType="number-pad"
                                                 maxLength={2}
@@ -288,10 +290,10 @@ export default function PaymentsWalletScreen() {
                                         </View>
                                         <View style={{ width: 12 }} />
                                         <View style={{ flex: 1 }}>
-                                            <Text style={styles.fieldLabel}>Expiry Year</Text>
+                                            <Text style={styles.fieldLabel}>{t('payments_wallet.expiry_year')}</Text>
                                             <TextInput
                                                 style={styles.input}
-                                                placeholder="YYYY"
+                                                placeholder={t('payments_wallet.placeholder_expiry_year')}
                                                 placeholderTextColor={Colors.textLight}
                                                 keyboardType="number-pad"
                                                 maxLength={4}
@@ -303,10 +305,10 @@ export default function PaymentsWalletScreen() {
                                 </>
                             ) : (
                                 <>
-                                    <Text style={styles.fieldLabel}>UPI ID</Text>
+                                    <Text style={styles.fieldLabel}>{t('payments_wallet.upi_id')}</Text>
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="yourname@upi"
+                                        placeholder={t('payments_wallet.placeholder_upi_id')}
                                         placeholderTextColor={Colors.textLight}
                                         keyboardType="email-address"
                                         autoCapitalize="none"
@@ -319,13 +321,13 @@ export default function PaymentsWalletScreen() {
 
                         <View style={styles.modalBtns}>
                             <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowAddModal(false); resetForm(); }}>
-                                <Text style={styles.cancelBtnText}>Cancel</Text>
+                                <Text style={styles.cancelBtnText}>{t('common.cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.saveBtn} onPress={handleAdd} disabled={saving}>
                                 {saving ? (
                                     <ActivityIndicator color="#fff" size="small" />
                                 ) : (
-                                    <Text style={styles.saveBtnText}>Save</Text>
+                                    <Text style={styles.saveBtnText}>{t('common.save')}</Text>
                                 )}
                             </TouchableOpacity>
                         </View>

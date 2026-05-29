@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import RazorpayCheckout from 'react-native-razorpay';
+import { useTranslation } from 'react-i18next';
 import { Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { paymentService, PaymentMethod } from '@/services/api/paymentService';
 import { bookingService } from '@/services/api/bookingService';
@@ -51,6 +52,7 @@ const mapLabelToCategory = (label: string): string => {
 
 export default function CheckoutScreen() {
     const router = useRouter();
+    const { t } = useTranslation();
     const { profile, refreshData, isLoading } = useUser();
     const { items, clearCategory } = useCart();
 
@@ -256,11 +258,11 @@ export default function CheckoutScreen() {
                     setPendingRecovery(true);
                     sessionBookingId.current = pendingBookingId;
                     Alert.alert(
-                        'Pending Payment Found',
-                        'You have a payment that was interrupted. Would you like to check its status?',
+                        t('checkout.pending_payment_title'),
+                        t('checkout.pending_payment_msg'),
                         [
                             {
-                                text: 'Dismiss',
+                                text: t('checkout.dismiss'),
                                 style: 'cancel',
                                 onPress: async () => {
                                     // Clear stale pending order
@@ -270,7 +272,7 @@ export default function CheckoutScreen() {
                                 },
                             },
                             {
-                                text: 'Check Status',
+                                text: t('checkout.check_status'),
                                 onPress: async () => {
                                     // Navigate to service-confirmation which fetches booking from backend
                                     // The backend will have the real payment status from Razorpay webhooks
@@ -302,12 +304,12 @@ export default function CheckoutScreen() {
                 setDiscount(res.data.discount);
                 setFinalAmount(amountWithTaxAndFee - res.data.discount);
                 setCouponApplied(true);
-                Alert.alert('Coupon Applied!', `You saved ₹${res.data.discount.toLocaleString('en-IN')}`);
+                Alert.alert(t('checkout.coupon_applied_title'), t('checkout.coupon_saved', { amount: res.data.discount.toLocaleString('en-IN') }));
             } else {
-                Alert.alert('Invalid Coupon', 'This coupon code is not valid or has expired.');
+                Alert.alert(t('checkout.invalid_coupon'), t('checkout.invalid_coupon_msg'));
             }
         } catch {
-            Alert.alert('Error', 'Could not apply coupon. Please try again.');
+            Alert.alert(t('common.error'), t('checkout.coupon_error'));
         } finally {
             setCouponLoading(false);
         }
@@ -352,9 +354,9 @@ export default function CheckoutScreen() {
                 });
                 if (disabledItems.length > 0) {
                     Alert.alert(
-                        'Products Unavailable',
-                        `${disabledItems.join(', ')} ${disabledItems.length === 1 ? 'is' : 'are'} no longer available. Please update your cart.`,
-                        [{ text: 'OK', onPress: () => router.back() }]
+                        t('checkout.products_unavailable'),
+                        t('checkout.products_unavailable_msg'),
+                        [{ text: t('common.ok'), onPress: () => router.back() }]
                     );
                     setPayLoading(false);
                     return;
@@ -364,11 +366,11 @@ export default function CheckoutScreen() {
             }
 
             if (!selectedAddress || !selectedAddress.line1) {
-                Alert.alert('Address Required', 'Please select a delivery address.');
+                Alert.alert(t('checkout.address_required'), t('checkout.address_required_msg'));
                 return;
             }
             if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) {
-                Alert.alert('Pincode Required', 'Please enter a valid 6-digit pincode');
+                Alert.alert(t('checkout.pincode_required'), t('checkout.pincode_required_msg'));
                 return;
             }
         }
@@ -433,7 +435,7 @@ export default function CheckoutScreen() {
                         const bookingRes = await labService.holdBooking(bookingPayload);
                         if (!bookingRes || !(bookingRes as any)?.id) {
                             setFlowState('failed');
-                            Alert.alert('Booking Error', `Could not create booking for ${item.title || 'Blood Test'}. Please try again.`);
+                            Alert.alert(t('checkout.booking_error'), t('checkout.blood_test_booking_error', { name: item.title || 'Blood Test' }));
                             return;
                         }
                         lastBookingId = (bookingRes as any).id;
@@ -450,7 +452,7 @@ export default function CheckoutScreen() {
                     });
                     if (!bookingRes.success || !bookingRes.data) {
                         setFlowState('failed');
-                        Alert.alert('Booking Error', bookingRes.message ?? 'Could not create booking. Please try again.');
+                        Alert.alert(t('checkout.booking_error'), bookingRes.message ?? t('checkout.booking_error'));
                         return;
                     }
                     sessionBookingId.current = bookingRes.data.id;
@@ -464,9 +466,9 @@ export default function CheckoutScreen() {
                 if (isBloodTest) {
                     clearCategory('blood-test');
                     Alert.alert(
-                        'Booking Confirmed',
-                        `Your blood test collection is scheduled. Please pay ₹${finalAmount.toLocaleString('en-IN')} in cash to the phlebotomist when they arrive.`,
-                        [{ text: 'OK', onPress: () => router.replace({
+                        t('checkout.booking_confirmed'),
+                        t('checkout.blood_test_confirmed_msg', { amount: finalAmount.toLocaleString('en-IN') }),
+                        [{ text: t('common.ok'), onPress: () => router.replace({
                             pathname: '/blood-test/success',
                             params: { bookingId: sessionBookingId.current!, amount: String(finalAmount), packageName: label }
                         }) }]
@@ -477,9 +479,9 @@ export default function CheckoutScreen() {
                         clearCategory(params.category);
                     }
                     Alert.alert(
-                        'Booking Received',
-                        'Your service has been scheduled. Please pay ₹' + finalAmount + ' in cash to our provider when they arrive.',
-                        [{ text: 'OK', onPress: () => router.replace({
+                        t('checkout.booking_received'),
+                        t('checkout.booking_received_msg', { amount: finalAmount }),
+                        [{ text: t('common.ok'), onPress: () => router.replace({
                             pathname: '/service-confirmation',
                             params: { bookingId: sessionBookingId.current! }
                         }) }]
@@ -507,7 +509,7 @@ export default function CheckoutScreen() {
 
             if (!initiateRes.success || !initiateRes.data) {
                 setFlowState('failed');
-                Alert.alert('Payment Error', initiateRes.message ?? 'Could not initiate payment.');
+                Alert.alert(t('checkout.payment_error'), initiateRes.message ?? t('checkout.payment_error'));
                 return;
             }
 
@@ -537,8 +539,8 @@ export default function CheckoutScreen() {
             // ─── STEP 5: Guard — native module must exist (fails in Expo Go)
             if (!NativeModules.RNRazorpayCheckout) {
                 Alert.alert(
-                    'Build Required',
-                    'Razorpay involves native code and cannot run in standard Expo Go.\nRun `npx expo run:android` to build a Custom Dev Client.',
+                    t('checkout.build_required'),
+                    t('checkout.build_required_msg'),
                 );
                 return;
             }
@@ -645,8 +647,8 @@ export default function CheckoutScreen() {
             } else {
                 setFlowState('failed');
                 Alert.alert(
-                    'Verification Failed',
-                    'Payment was received but could not be verified. Our team will resolve this within 24 hours. Please do NOT retry the payment.',
+                    t('checkout.verification_failed'),
+                    t('checkout.verification_failed_msg'),
                 );
             }
         } catch (error: any) {
@@ -664,9 +666,9 @@ export default function CheckoutScreen() {
                 await cancelPaymentOnBackend();
                 await clearPendingOrder();
                 Alert.alert(
-                    'Payment Cancelled',
-                    'You can try again whenever you are ready. Your booking details have been saved.',
-                    [{ text: 'OK' }],
+                    t('checkout.payment_cancelled'),
+                    t('checkout.payment_cancelled_msg'),
+                    [{ text: t('common.ok') }],
                 );
                 return;
             }
@@ -675,13 +677,13 @@ export default function CheckoutScreen() {
             setFlowState('failed');
             await cancelPaymentOnBackend();
             await clearPendingOrder();
-            const msg = error?.description ?? error?.message ?? 'Something went wrong.';
+            const msg = error?.description ?? error?.message ?? t('errors.generic');
             Alert.alert(
-                'Payment Failed',
+                t('checkout.payment_failed'),
                 msg,
                 [
-                    { text: 'Go Back', style: 'cancel', onPress: () => router.back() },
-                    { text: 'Retry Payment', onPress: () => {
+                    { text: t('checkout.go_back'), style: 'cancel', onPress: () => router.back() },
+                    { text: t('checkout.retry_payment'), onPress: () => {
                         setFlowState('idle');
                         // handlePay will be called again by the user pressing the button
                     }},
@@ -699,29 +701,29 @@ export default function CheckoutScreen() {
         // ─── Blood Test Validation ────────────────────────────────────────────
         if (isBloodTest) {
             if (!selectedDate || !selectedTime) {
-                Alert.alert('Required', 'Please select collection date and time');
+                Alert.alert(t('checkout.required'), t('checkout.select_date_time'));
                 return;
             }
             if (collectionType === 'HOME') {
                 if (!selectedAddress || !selectedAddress.line1) {
-                    Alert.alert('Address Required', 'Please select a collection address');
+                    Alert.alert(t('checkout.address_required'), t('checkout.address_required_msg2'));
                     return;
                 }
                 if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) {
-                    Alert.alert('Pincode Required', 'Please enter a valid 6-digit pincode');
+                    Alert.alert(t('checkout.pincode_required'), t('checkout.pincode_required_msg'));
                     return;
                 }
                 if (serviceabilityStatus === 'non-serviceable') {
-                    Alert.alert('Location Not Serviceable', 'Collection is not available at this location. Please select a different address.');
+                    Alert.alert(t('checkout.location_not_serviceable'), t('checkout.location_not_serviceable_msg'));
                     return;
                 }
                 if (serviceabilityStatus !== 'serviceable') {
-                    Alert.alert('Address Verification Needed', 'Please wait for address verification to complete, or try a different location.');
+                    Alert.alert(t('checkout.address_verification_needed'), t('checkout.address_verification_needed_msg'));
                     return;
                 }
             }
             if (!phoneNumber?.trim() || phoneNumber.length < 10) {
-                Alert.alert('Phone Required', 'Please enter a valid 10-digit phone number');
+                Alert.alert(t('checkout.phone_required'), t('checkout.phone_required_msg'));
                 return;
             }
             // Show summary confirmation before Razorpay
@@ -743,14 +745,14 @@ export default function CheckoutScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                     <Ionicons name="arrow-back" size={24} color={colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Checkout</Text>
+                <Text style={styles.headerTitle}>{t('checkout.header_title')}</Text>
             </View>
 
             <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} showsVerticalScrollIndicator={false}>
 
                 {/* Order Summary */}
                 <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Secure Payment Summary</Text>
+                    <Text style={styles.cardTitle}>{t('checkout.secure_payment_summary')}</Text>
                     <View style={styles.row}>
                         <Text style={styles.rowLabel}>{label}</Text>
                         <Text style={styles.rowValue}>₹{baseAmount.toLocaleString('en-IN')}</Text>
@@ -760,37 +762,37 @@ export default function CheckoutScreen() {
                     {!isSubscription && (
                         <View style={styles.breakdownSection}>
                             <View style={styles.breakdownRow}>
-                                <Text style={styles.breakdownLabel}>Consultation / Service Fee</Text>
+                                <Text style={styles.breakdownLabel}>{t('checkout.consultation_service_fee')}</Text>
                                 <Text style={styles.breakdownValue}>₹{baseAmount.toLocaleString('en-IN')}</Text>
                             </View>
                             <View style={styles.breakdownRow}>
-                                <Text style={styles.breakdownLabel}>Booking Fee</Text>
+                                <Text style={styles.breakdownLabel}>{t('checkout.booking_fee')}</Text>
                                 {benefitApplied ? (
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                         <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>₹{originalBookingFee}</Text>
-                                        <Text style={[styles.breakdownValue, { color: '#2e7d32', fontFamily: Fonts.semiBold }]}> FREE</Text>
+                                        <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
                                     </View>
                                 ) : (
                                     <Text style={styles.breakdownValue}>₹{bookingFee}</Text>
                                 )}
                             </View>
                             <View style={styles.breakdownRow}>
-                                <Text style={styles.breakdownLabel}>Platform Fee</Text>
+                                <Text style={styles.breakdownLabel}>{t('checkout.platform_fee')}</Text>
                                 {benefitApplied ? (
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                         <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>₹{originalPlatformFee}</Text>
-                                        <Text style={[styles.breakdownValue, { color: '#2e7d32', fontFamily: Fonts.semiBold }]}> FREE</Text>
+                                        <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
                                     </View>
                                 ) : (
                                     <Text style={styles.breakdownValue}>₹{platformFee}</Text>
                                 )}
                             </View>
                             <View style={styles.breakdownRow}>
-                                <Text style={styles.breakdownLabel}>Taxes & GST</Text>
+                                <Text style={styles.breakdownLabel}>{t('checkout.taxes_gst')}</Text>
                                 <Text style={styles.breakdownValue}>₹{taxes.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</Text>
                             </View>
                             {benefitApplied && (
-                                <Text style={styles.benefitNote}>(Subscription Benefits Applied)</Text>
+                                <Text style={styles.benefitNote}>{t('checkout.subscription_benefits_applied')}</Text>
                             )}
                         </View>
                     )}
@@ -798,19 +800,19 @@ export default function CheckoutScreen() {
 
                     {couponApplied && (
                         <View style={styles.row}>
-                            <Text style={[styles.rowLabel, { color: '#2e7d32' }]}>Coupon Discount</Text>
-                            <Text style={[styles.rowValue, { color: '#2e7d32' }]}>- ₹{discount.toLocaleString('en-IN')}</Text>
+                            <Text style={[styles.rowLabel, { color: isDarkMode ? colors.primary : '#2e7d32' }]}>{t('checkout.coupon_discount')}</Text>
+                            <Text style={[styles.rowValue, { color: isDarkMode ? colors.primary : '#2e7d32' }]}>- ₹{discount.toLocaleString('en-IN')}</Text>
                         </View>
                     )}
                     <View style={[styles.row, styles.totalRow]}>
-                        <Text style={styles.totalLabel}>Total</Text>
+                        <Text style={styles.totalLabel}>{t('checkout.total')}</Text>
                         <Text style={styles.totalValue}>₹{(amountWithTaxAndFee - discount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</Text>
                     </View>
 
                     {benefitApplied && (
                         <View style={styles.savingsBadge}>
                             <Text style={styles.savingsText}>
-                                💰 You saved ₹{(Math.round((originalBookingFee - bookingFee) + (originalPlatformFee - platformFee))).toLocaleString('en-IN')} on fees!
+                                {t('checkout.you_saved', { amount: (Math.round((originalBookingFee - bookingFee) + (originalPlatformFee - platformFee))).toLocaleString('en-IN') })}
                             </Text>
                         </View>
                     )}
@@ -818,21 +820,21 @@ export default function CheckoutScreen() {
 
                 {/* Coupon */}
                 <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Promo Code</Text>
+                    <Text style={styles.cardTitle}>{t('checkout.promo_code')}</Text>
                     {couponApplied ? (
                         <View style={styles.couponApplied}>
-                            <Ionicons name="checkmark-circle" size={18} color="#2e7d32" />
-                            <Text style={styles.couponAppliedText}>&quot;{couponCode}&quot; applied — saved ₹{discount}</Text>
+                            <Ionicons name="checkmark-circle" size={18} color={isDarkMode ? colors.primary : "#2e7d32"} />
+                            <Text style={styles.couponAppliedText}>{t('checkout.coupon_applied_text', { code: couponCode, amount: discount })}</Text>
                             <TouchableOpacity onPress={handleRemoveCoupon}>
-                                <Ionicons name="close-circle-outline" size={18} color="#999" />
+                                <Ionicons name="close-circle-outline" size={18} color={colors.textMuted} />
                             </TouchableOpacity>
                         </View>
                     ) : (
                         <View style={styles.couponRow}>
                             <TextInput
                                 style={styles.couponInput}
-                                placeholder="Enter coupon code"
-                                placeholderTextColor="#AAAAAA"
+                                placeholder={t('checkout.enter_coupon')}
+                                placeholderTextColor={colors.textMuted}
                                 value={couponCode}
                                 onChangeText={setCouponCode}
                                 autoCapitalize="characters"
@@ -846,7 +848,7 @@ export default function CheckoutScreen() {
                             >
                                 {couponLoading
                                     ? <ActivityIndicator size="small" color={colors.textWhite} />
-                                    : <Text style={styles.couponBtnText}>Apply</Text>
+                                    : <Text style={styles.couponBtnText}>{t('checkout.apply')}</Text>
                                 }
                             </TouchableOpacity>
                         </View>
@@ -856,8 +858,8 @@ export default function CheckoutScreen() {
                 {/* Blood Test: Collection Date & Time */}
                 {isBloodTest && (
                     <View style={styles.card}>
-                        <Text style={styles.cardTitle}>Collection Date & Time</Text>
-                        <Text style={styles.sectionLabel}>Preferred Collection Date</Text>
+                        <Text style={styles.cardTitle}>{t('checkout.collection_date_time')}</Text>
+                        <Text style={styles.sectionLabel}>{t('checkout.preferred_collection_date')}</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.daysScroll}>
                             {(() => {
                                 const days = [];
@@ -887,7 +889,7 @@ export default function CheckoutScreen() {
                             ))}
                         </ScrollView>
 
-                        <Text style={[styles.sectionLabel, { marginTop: Spacing.md }]}>Collection Time</Text>
+                        <Text style={[styles.sectionLabel, { marginTop: Spacing.md }]}>{t('checkout.collection_time')}</Text>
                         {slotsLoading ? (
                             <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: Spacing.md }} />
                         ) : slots.length > 0 ? (
@@ -914,7 +916,7 @@ export default function CheckoutScreen() {
                                 ))}
                             </View>
                         ) : (
-                            <Text style={styles.noSlotsText}>No slots available for this date</Text>
+                            <Text style={styles.noSlotsText}>{t('checkout.no_slots')}</Text>
                         )}
                     </View>
                 )}
@@ -922,16 +924,16 @@ export default function CheckoutScreen() {
                 {/* Blood Test: Collection Type */}
                 {isBloodTest && (
                     <View style={styles.card}>
-                        <Text style={styles.cardTitle}>Collection Type</Text>
+                        <Text style={styles.cardTitle}>{t('checkout.collection_type')}</Text>
                         <TouchableOpacity
                             style={[styles.collectionOption, collectionType === 'HOME' && styles.collectionOptionActive]}
                             onPress={() => setCollectionType('HOME')}
                             activeOpacity={0.75}
                         >
-                            <Ionicons name="home" size={20} color={collectionType === 'HOME' ? colors.primary : colors.textLight} style={{ marginRight: 12 }} />
+                            <Ionicons name="home" size={20} color={collectionType === 'HOME' ? colors.primary : colors.textMuted} style={{ marginRight: 12 }} />
                             <View style={{ flex: 1 }}>
-                                <Text style={[styles.collectionOptionTitle, collectionType === 'HOME' && { color: colors.textDark }]}>Home Collection</Text>
-                                <Text style={styles.collectionOptionDesc}>We&apos;ll collect sample from your home</Text>
+                                <Text style={[styles.collectionOptionTitle, collectionType === 'HOME' && { color: colors.textDark }]}>{t('checkout.home_collection')}</Text>
+                                <Text style={styles.collectionOptionDesc}>{t('checkout.home_collection_desc')}</Text>
                             </View>
                             <Ionicons name={collectionType === 'HOME' ? 'checkmark-circle' : 'radio-button-off'} size={22} color={collectionType === 'HOME' ? colors.primary : '#D1D5DB'} />
                         </TouchableOpacity>
@@ -940,10 +942,10 @@ export default function CheckoutScreen() {
                             onPress={() => setCollectionType('LAB')}
                             activeOpacity={0.75}
                         >
-                            <Ionicons name="business" size={20} color={collectionType === 'LAB' ? colors.primary : colors.textLight} style={{ marginRight: 12 }} />
+                            <Ionicons name="business" size={20} color={collectionType === 'LAB' ? colors.primary : colors.textMuted} style={{ marginRight: 12 }} />
                             <View style={{ flex: 1 }}>
-                                <Text style={[styles.collectionOptionTitle, collectionType === 'LAB' && { color: colors.textDark }]}>Lab Visit</Text>
-                                <Text style={styles.collectionOptionDesc}>Drop your sample at the nearest lab</Text>
+                                <Text style={[styles.collectionOptionTitle, collectionType === 'LAB' && { color: colors.textDark }]}>{t('checkout.lab_visit')}</Text>
+                                <Text style={styles.collectionOptionDesc}>{t('checkout.lab_visit_desc')}</Text>
                             </View>
                             <Ionicons name={collectionType === 'LAB' ? 'checkmark-circle' : 'radio-button-off'} size={22} color={collectionType === 'LAB' ? colors.primary : '#D1D5DB'} />
                         </TouchableOpacity>
@@ -973,7 +975,7 @@ export default function CheckoutScreen() {
                         onPhoneChange={setPhoneNumber}
                         landmark={landmark}
                         onLandmarkChange={setLandmark}
-                        title="Collection Address"
+                        title={t('checkout.collection_address')}
                         showPhoneField={true}
                         showLandmarkField={true}
                         allowManualEntry={true}
@@ -990,7 +992,7 @@ export default function CheckoutScreen() {
                         showServiceabilityCheck={false}
                         phoneNumber={phoneNumber}
                         onPhoneChange={setPhoneNumber}
-                        title="Delivery Address"
+                        title={t('checkout.delivery_address')}
                         showPhoneField={true}
                         showLandmarkField={false}
                         allowManualEntry={true}
@@ -999,7 +1001,7 @@ export default function CheckoutScreen() {
 
                 {/* Payment Method */}
                 <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Payment Method</Text>
+                    <Text style={styles.cardTitle}>{t('checkout.payment_method')}</Text>
                     {availableMethods.map(m => (
                         <TouchableOpacity
                             key={m.type}
@@ -1007,14 +1009,14 @@ export default function CheckoutScreen() {
                             onPress={() => setSelectedMethod(m.type)}
                             activeOpacity={0.8}
                         >
-                            <Ionicons name={m.icon} size={20} color={selectedMethod === m.type ? colors.primary : colors.textLight} />
+                            <Ionicons name={m.icon} size={20} color={selectedMethod === m.type ? colors.primary : colors.textMuted} />
                             <Text style={[styles.methodLabel, selectedMethod === m.type && styles.methodLabelActive]}>
-                                {m.label}
+                                {m.type === 'UPI' ? t('checkout.upi') : m.type === 'CARD' ? t('checkout.card') : t('checkout.cod')}
                             </Text>
                             <Ionicons
                                 name={selectedMethod === m.type ? 'radio-button-on' : 'radio-button-off'}
                                 size={20}
-                                color={selectedMethod === m.type ? colors.primary : colors.textLight}
+                                color={selectedMethod === m.type ? colors.primary : colors.textMuted}
                                 style={{ marginLeft: 'auto' }}
                             />
                         </TouchableOpacity>
@@ -1026,8 +1028,8 @@ export default function CheckoutScreen() {
                     <Ionicons name={selectedMethod === 'CASH' ? "information-circle-outline" : "shield-checkmark-outline"} size={16} color="#666" />
                     <Text style={styles.securityText}>
                         {selectedMethod === 'CASH' 
-                            ? 'Please prepare exact change if possible. Our provider will collect the amount upon arrival.'
-                            : 'Secured by Razorpay. Your payment information is encrypted and safe.'
+                            ? t('checkout.security_cash')
+                            : t('checkout.security_razorpay')
                         }
                     </Text>
                 </View>
@@ -1039,7 +1041,7 @@ export default function CheckoutScreen() {
                 <View style={styles.warningBanner}>
                     <Ionicons name="alert-circle" size={18} color="#DC2626" />
                     <Text style={styles.warningText}>
-                        Collection unavailable here. Please select a different address.
+                        {t('checkout.collection_unavailable')}
                     </Text>
                 </View>
             )}
@@ -1061,8 +1063,8 @@ export default function CheckoutScreen() {
                             <Ionicons name={selectedMethod === 'CASH' ? "checkmark-circle-outline" : "lock-closed-outline"} size={18} color={colors.textWhite} />
                             <Text style={styles.payBtnText}>
                                 {selectedMethod === 'CASH'
-                                    ? `Confirm Booking (₹${finalAmount.toLocaleString('en-IN')})`
-                                    : `Pay ₹${finalAmount.toLocaleString('en-IN')}`
+                                    ? t('checkout.confirm_booking_btn', { amount: finalAmount.toLocaleString('en-IN') })
+                                    : t('checkout.pay_btn', { amount: finalAmount.toLocaleString('en-IN') })
                                 }
                             </Text>
                         </>
@@ -1076,7 +1078,7 @@ export default function CheckoutScreen() {
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalSheet}>
                             <View style={styles.modalHandle} />
-                            <Text style={styles.modalTitle}>Confirm Your Booking</Text>
+                            <Text style={styles.modalTitle}>{t('checkout.confirm_your_booking')}</Text>
 
                             <View style={styles.modalSummary}>
                                 {bloodTestItems.map((item, idx) => (
@@ -1089,7 +1091,7 @@ export default function CheckoutScreen() {
 
                                 <View style={[styles.modalRow, styles.modalDivider]}>
                                     <Ionicons name="calendar-outline" size={15} color={colors.primary} style={{ marginRight: 8 }} />
-                                    <Text style={styles.modalRowLabel}>Date & Time</Text>
+                                    <Text style={styles.modalRowLabel}>{t('checkout.date_and_time')}</Text>
                                     <Text style={styles.modalRowValue} numberOfLines={1}>
                                         {selectedDate?.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}, {selectedTime}
                                     </Text>
@@ -1097,21 +1099,21 @@ export default function CheckoutScreen() {
 
                                 <View style={[styles.modalRow, styles.modalDivider]}>
                                     <Ionicons name={collectionType === 'LAB' ? 'business-outline' : 'home-outline'} size={15} color={colors.primary} style={{ marginRight: 8 }} />
-                                    <Text style={styles.modalRowLabel}>Collection</Text>
-                                    <Text style={styles.modalRowValue}>{collectionType === 'LAB' ? 'Lab Visit' : 'Home Collection'}</Text>
+                                    <Text style={styles.modalRowLabel}>{t('checkout.collection')}</Text>
+                                    <Text style={styles.modalRowValue}>{collectionType === 'LAB' ? t('checkout.lab_visit') : t('checkout.home_collection')}</Text>
                                 </View>
 
                                 {collectionType === 'HOME' && selectedAddress?.line1 && (
                                     <View style={[styles.modalRow, styles.modalDivider]}>
                                         <Ionicons name="location-outline" size={15} color={colors.primary} style={{ marginRight: 8 }} />
-                                        <Text style={styles.modalRowLabel}>Address</Text>
+                                        <Text style={styles.modalRowLabel}>{t('checkout.address')}</Text>
                                         <Text style={[styles.modalRowValue, { maxWidth: '55%' }]} numberOfLines={2}>{selectedAddress.line1}</Text>
                                     </View>
                                 )}
 
                                 <View style={[styles.modalRow, styles.modalDivider, { marginTop: 4 }]}>
                                     <Ionicons name="cash-outline" size={15} color={colors.primary} style={{ marginRight: 8 }} />
-                                    <Text style={[styles.modalRowLabel, { fontFamily: Fonts.semiBold, color: colors.textDark }]}>Total Payable</Text>
+                                    <Text style={[styles.modalRowLabel, { fontFamily: Fonts.semiBold, color: colors.textDark }]}>{t('checkout.total_payable')}</Text>
                                     <Text style={[styles.modalRowValue, { fontFamily: Fonts.semiBold, fontSize: 16, color: colors.primary }]}>
                                         ₹{finalAmount.toLocaleString('en-IN')}
                                     </Text>
@@ -1123,7 +1125,7 @@ export default function CheckoutScreen() {
                                     style={styles.modalCancelBtn}
                                     onPress={() => setConfirmModalVisible(false)}
                                 >
-                                    <Text style={styles.modalCancelText}>Edit</Text>
+                                    <Text style={styles.modalCancelText}>{t('checkout.edit')}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     style={styles.modalConfirmBtn}
@@ -1135,7 +1137,7 @@ export default function CheckoutScreen() {
                                     {payLoading
                                         ? <ActivityIndicator size="small" color="#FFFFFF" />
                                         : <Text style={styles.modalConfirmText}>
-                                            {selectedMethod === 'CASH' ? 'Confirm Booking' : `Confirm & Pay`}
+                                            {selectedMethod === 'CASH' ? t('checkout.confirm_booking') : t('checkout.confirm_and_pay')}
                                           </Text>
                                     }
                                 </TouchableOpacity>
@@ -1173,7 +1175,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     cardTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textDark, marginBottom: Spacing.xs ?? 4 },
 
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    rowLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textLight },
+    rowLabel: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textMuted },
     rowValue: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: colors.textDark },
 
     breakdownSection: {
@@ -1216,7 +1218,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     couponBtnDisabled: { opacity: 0.45 },
     couponBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textWhite },
     couponApplied: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: isDarkMode ? 'rgba(46,125,50,0.1)' : '#E8F5E9', padding: Spacing.md, borderRadius: Radius.sm },
-    couponAppliedText: { flex: 1, fontFamily: Fonts.medium, fontSize: FontSize.caption ?? 13, color: '#2e7d32' },
+    couponAppliedText: { flex: 1, fontFamily: Fonts.medium, fontSize: FontSize.caption ?? 13, color: isDarkMode ? colors.primary : '#2e7d32' },
 
     methodRow: { 
         flexDirection: 'row', 
@@ -1230,7 +1232,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         backgroundColor: colors.bgCard,
     },
     methodRowActive: { borderColor: colors.primary, backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : '#F0FAF4' },
-    methodLabel: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textLight },
+    methodLabel: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textMuted },
     methodLabelActive: { color: colors.textDark, fontFamily: Fonts.medium },
 
     securityNote: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: Spacing.md },
@@ -1266,7 +1268,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     benefitNote: {
         fontFamily: Fonts.medium,
         fontSize: 10,
-        color: '#2e7d32',
+        color: isDarkMode ? colors.primary : '#2e7d32',
         textAlign: 'right',
         marginTop: -2,
     },
@@ -1282,7 +1284,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     savingsText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.caption ?? 12,
-        color: '#2e7d32',
+        color: isDarkMode ? colors.primary : '#2e7d32',
     },
 
     addressCard: {
