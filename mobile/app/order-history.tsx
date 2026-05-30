@@ -1,35 +1,61 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl, Platform, Alert } from 'react-native';
+import {
+    View, Text, StyleSheet, TouchableOpacity, ScrollView,
+    ActivityIndicator, RefreshControl, Platform, Alert, Image,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Radius, Shadow, Spacing } from '@/constants/theme';
 import { bookingService, Booking } from '@/services/api/bookingService';
+import { storeService, ProductOrder } from '@/services/api/storeService';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 
-type TabType = 'Active' | 'Payment' | 'History';
+type TabType = 'Active' | 'Payment' | 'History' | 'Products';
+
+const PRODUCT_STATUS_META: Record<string, { labelKey: string; bg: string; color: string; icon: keyof typeof Ionicons.glyphMap }> = {
+    PENDING:    { labelKey: 'wellness.stage_placed',  bg: '#FFF8E1', color: '#F59E0B', icon: 'time-outline' },
+    PAID:       { labelKey: 'wellness.stage_paid',  bg: '#EFF6FF', color: '#3B82F6', icon: 'checkmark-circle-outline' },
+    CONFIRMED:  { labelKey: 'wellness.stage_confirmed',   bg: '#F5F3FF', color: '#8B5CF6', icon: 'cube-outline' },
+    DISPATCHED: { labelKey: 'wellness.stage_dispatched',   bg: '#FFF7ED', color: '#F97316', icon: 'car-outline' },
+    DELIVERED:  { labelKey: 'wellness.stage_delivered',    bg: '#ECFDF5', color: '#10B981', icon: 'checkmark-done-circle-outline' },
+    CANCELLED:  { labelKey: 'wellness.stage_cancelled',    bg: '#FEF2F2', color: '#EF4444', icon: 'close-circle-outline' },
+};
 
 /**
- * ORDER HISTORY — Restored Tabbed UI
- * Strict post-booking tracking.
+ * ORDER HISTORY — Service Bookings + Product Orders
+ * Tabs: Active | Payment | History | Products
  */
 export default function OrderHistoryScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const styles = makeStyles(colors, isDarkMode);
 
+    const params = useLocalSearchParams<{ tab?: string }>();
     const [bookings, setBookings] = useState<Booking[]>([]);
+    const [productOrders, setProductOrders] = useState<ProductOrder[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [activeTab, setActiveTab] = useState<TabType>('Active');
+    const [activeTab, setActiveTab] = useState<TabType>((params.tab as TabType) || 'Active');
 
-    const fetchBookings = useCallback(async () => {
+    const fetchAll = useCallback(async () => {
         try {
             if (!refreshing) setLoading(true);
-            const res = await bookingService.getMyBookings();
-            if (res.success && res.data) {
-                setBookings(res.data);
+            const [bookRes, orderRes] = await Promise.allSettled([
+                bookingService.getMyBookings(),
+                storeService.getMyOrders({ limit: 50 }),
+            ]);
+            if (bookRes.status === 'fulfilled' && bookRes.value.success && bookRes.value.data) {
+                setBookings(bookRes.value.data);
+            }
+            if (orderRes.status === 'fulfilled' && orderRes.value.success && orderRes.value.data) {
+                setProductOrders(Array.isArray(orderRes.value.data) ? orderRes.value.data : []);
             }
         } catch (err) {
             console.error('Failed to fetch orders:', err);
@@ -39,16 +65,9 @@ export default function OrderHistoryScreen() {
         }
     }, [refreshing]);
 
-    useFocusEffect(
-        useCallback(() => {
-            fetchBookings();
-        }, [fetchBookings])
-    );
+    useFocusEffect(useCallback(() => { fetchAll(); }, [fetchAll]));
 
-    const onRefresh = () => {
-        setRefreshing(true);
-        fetchBookings();
-    };
+    const onRefresh = () => { setRefreshing(true); fetchAll(); };
 
     const [cancellingId, setCancellingId] = useState<string | null>(null);
 
@@ -64,46 +83,41 @@ export default function OrderHistoryScreen() {
         const message = isStale
             ? `Cancel booking #${booking.bookingCode}? The service date has passed. If you paid online, a refund will be initiated.`
             : `Cancel booking #${booking.bookingCode}? This cannot be undone.`;
-        Alert.alert(
-            'Cancel Booking',
-            message,
-            [
-                { text: 'Keep', style: 'cancel' },
-                {
-                    text: 'Cancel Booking', style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            setCancellingId(booking.id);
-                            const res = await bookingService.cancelBooking(booking.id);
-                            if (res.success) {
-                                setBookings(prev => prev.map(b =>
-                                    b.id === booking.id ? { ...b, status: 'CANCELLED' } : b
-                                ));
-                                Alert.alert('Booking Cancelled', 'Your booking has been cancelled successfully.' + (isStale ? '\n\nIf a payment was made, a refund will be processed.' : ''));
-                            } else {
-                                Alert.alert('Error', 'Could not cancel booking. Please contact support.');
-                            }
-                        } catch {
+        Alert.alert('Cancel Booking', message, [
+            { text: 'Keep', style: 'cancel' },
+            {
+                text: 'Cancel Booking', style: 'destructive',
+                onPress: async () => {
+                    try {
+                        setCancellingId(booking.id);
+                        const res = await bookingService.cancelBooking(booking.id);
+                        if (res.success) {
+                            setBookings(prev => prev.map(b =>
+                                b.id === booking.id ? { ...b, status: 'CANCELLED' } : b
+                            ));
+                            Alert.alert('Booking Cancelled', 'Your booking has been cancelled successfully.' +
+                                (isStale ? '\n\nIf a payment was made, a refund will be processed.' : ''));
+                        } else {
                             Alert.alert('Error', 'Could not cancel booking. Please contact support.');
-                        } finally {
-                            setCancellingId(null);
                         }
+                    } catch {
+                        Alert.alert('Error', 'Could not cancel booking. Please contact support.');
+                    } finally {
+                        setCancellingId(null);
                     }
                 },
-            ]
-        );
+            },
+        ]);
     };
 
     // ─── Filtering Logic ───
     const filteredBookings = useMemo(() => {
         return bookings.filter(b => {
             if (activeTab === 'Active') {
-                // Active: upcoming bookings with active statuses
                 return ['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS', 'PENDING'].includes(b.status) && !isPastBooking(b);
             }
             if (activeTab === 'Payment') return ['PAYMENT_PENDING', 'PAYMENT_FAILED'].includes(b.status);
             if (activeTab === 'History') {
-                // History: completed, cancelled, OR past-date confirmed/assigned (stale)
                 if (['COMPLETED', 'CANCELLED'].includes(b.status)) return true;
                 if (['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'].includes(b.status) && isPastBooking(b)) return true;
                 return false;
@@ -112,46 +126,134 @@ export default function OrderHistoryScreen() {
         }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }, [bookings, activeTab]);
 
-    // ─── Render Components ───
-
-    const renderEmptyState = () => (
+    // ─── Render Empty State ───
+    const renderEmptyState = (message: string, sub: string, icon: keyof typeof Ionicons.glyphMap) => (
         <View style={styles.emptyContainer}>
             <View style={styles.emptyIconCircle}>
-                <Ionicons
-                    name={activeTab === 'History' ? 'receipt-outline' : 'calendar-clear-outline'}
-                    size={40} color={Colors.primary}
-                />
+                <Ionicons name={icon} size={40} color={colors.primary} />
             </View>
-            <Text style={styles.emptyTitle}>No {activeTab.toLowerCase()} bookings</Text>
-            <Text style={styles.emptySubtitle}>Your entries for this category will appear here once you take action.</Text>
-            <TouchableOpacity style={styles.exploreBtn} onPress={() => router.push('/')}>
-                <Text style={styles.exploreBtnText}>Book New Service</Text>
+            <Text style={styles.emptyTitle}>{message}</Text>
+            <Text style={styles.emptySubtitle}>{sub}</Text>
+            <TouchableOpacity style={styles.exploreBtn} onPress={() => router.push('/' as any)}>
+                <Text style={styles.exploreBtnText}>
+                    {activeTab === 'Products' ? t('order_history.shop_now') || 'Shop Now' : t('order_history.book_new_service') || 'Book New Service'}
+                </Text>
             </TouchableOpacity>
         </View>
     );
 
+    // ─── Product Order Card ───
+    const renderProductCard = (order: ProductOrder) => {
+        const meta = PRODUCT_STATUS_META[order.status] || PRODUCT_STATUS_META.PENDING;
+        const isActive = !['DELIVERED', 'CANCELLED'].includes(order.status);
+        const items = Array.isArray(order.items) ? order.items : [];
+        const itemCount = items.reduce((sum: number, i: any) => sum + (i.quantity || 1), 0);
+
+        return (
+            <TouchableOpacity
+                key={order.id}
+                style={styles.bookingCard}
+                onPress={() => router.push({ pathname: '/order-tracking', params: { orderId: order.id } } as any)}
+                activeOpacity={0.8}
+                accessibilityLabel={`Order ${order.orderCode}`}
+            >
+                {/* Header */}
+                <View style={styles.cardHeader}>
+                    <View style={styles.serviceInfo}>
+                        <View style={[styles.iconBox, { backgroundColor: meta.bg }]}>
+                            <Ionicons name={meta.icon} size={20} color={meta.color} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.serviceName}>
+                                {order.product?.name
+                                    ? order.product.name
+                                    : items.length > 0
+                                        ? `${items[0].name}${items.length > 1 ? t('order_history.more_items', { count: items.length - 1 }) : ''}`
+                                        : t('order_history.wellness_product_fallback')}
+                            </Text>
+                            <Text style={styles.bookingCode}>#{order.orderCode}</Text>
+                        </View>
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: meta.bg }]}>
+                        <Text style={[styles.statusText, { color: meta.color }]}>{t(meta.labelKey) || meta.labelKey}</Text>
+                    </View>
+                </View>
+
+                {/* Details */}
+                <View style={styles.cardDetails}>
+                    <View style={styles.detailRow}>
+                        <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
+                        <Text style={styles.detailText}>
+                            {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                                day: 'numeric', month: 'short', year: 'numeric',
+                            })}
+                        </Text>
+                    </View>
+                    {order.courierName && (
+                        <View style={styles.detailRow}>
+                            <Ionicons name="cube-outline" size={14} color={colors.textMuted} />
+                            <Text style={styles.detailText}>{order.courierName}</Text>
+                        </View>
+                    )}
+                    {order.awbCode && (
+                        <View style={styles.detailRow}>
+                            <Ionicons name="barcode-outline" size={14} color={colors.textMuted} />
+                            <Text style={styles.detailText}>AWB: {order.awbCode}</Text>
+                        </View>
+                    )}
+                    {order.trackingStatus && (
+                        <View style={styles.detailRow}>
+                            <Ionicons name="navigate-outline" size={14} color={colors.textMuted} />
+                            <Text style={styles.detailText}>{order.trackingStatus}</Text>
+                        </View>
+                    )}
+                </View>
+
+                {/* Footer */}
+                <View style={styles.cardFooter}>
+                    <Text style={styles.priceText}>₹{order.amount.toFixed(2)}</Text>
+                    <View style={styles.footerActions}>
+                        {isActive && (
+                            <TouchableOpacity
+                                style={styles.trackBtn}
+                                onPress={() => router.push({ pathname: '/order-tracking', params: { orderId: order.id } } as any)}
+                            >
+                                <Ionicons name="navigate" size={13} color="#fff" />
+                                <Text style={styles.trackBtnText}>{t('order_history.track_btn') || 'Track'}</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+            </TouchableOpacity>
+        );
+    };
+
     return (
         <View style={styles.screen}>
-            <StatusBar style="dark" />
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} />
 
             {/* ─── Header ─── */}
             <View style={[styles.header, { paddingTop: insets.top + (Platform.OS === 'ios' ? 10 : 20) }]}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.textDark} />
+                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityLabel="Go back">
+                    <Ionicons name="arrow-back" size={24} color={colors.textDark} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>My Bookings</Text>
+                <Text style={styles.headerTitle}>{t('order_history.header_title') || 'My Orders'}</Text>
             </View>
 
-            {/* ─── Custom Tab Bar (Old Style) ─── */}
+            {/* ─── Tab Bar ─── */}
             <View style={styles.tabBar}>
-                {(['Active', 'Payment', 'History'] as TabType[]).map((tab) => (
+                {(['Active', 'Payment', 'History', 'Products'] as TabType[]).map((tab) => (
                     <TouchableOpacity
                         key={tab}
                         onPress={() => setActiveTab(tab)}
                         style={[styles.tabItem, activeTab === tab && styles.tabItemActive]}
+                        accessibilityLabel={`${tab} tab`}
                     >
                         <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                            {tab}
+                            {tab === 'Active' ? t('order_history.tab_active') || 'Active'
+                                : tab === 'Payment' ? t('order_history.tab_payment') || 'Payment'
+                                : tab === 'History' ? t('order_history.tab_history') || 'History'
+                                : t('order_history.tab_products') || 'Products'}
                         </Text>
                         {activeTab === tab && <View style={styles.tabUnderline} />}
                     </TouchableOpacity>
@@ -161,190 +263,202 @@ export default function OrderHistoryScreen() {
             <ScrollView
                 style={styles.container}
                 contentContainerStyle={styles.scrollContent}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
+                showsVerticalScrollIndicator={false}
             >
                 {loading && !refreshing ? (
-                    <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 50 }} />
-                ) : filteredBookings.length === 0 ? renderEmptyState() : (
-                    filteredBookings.map((booking) => (
-                        <TouchableOpacity
-                            key={booking.id}
-                            style={styles.bookingCard}
-                            onPress={() => router.push({ pathname: '/service-confirmation', params: { bookingId: booking.id } })}
-                        >
-                            <View style={styles.cardHeader}>
-                                <View style={styles.serviceInfo}>
-                                    <View style={styles.iconBox}>
-                                        <MaterialCommunityIcons name="medical-bag" size={20} color={Colors.primary} />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={styles.serviceName}>{booking.service?.name || 'Service'}</Text>
-                                        <Text style={styles.bookingCode}>#{booking.bookingCode}</Text>
-                                    </View>
-                                </View>
-                                {(() => {
-                                    const isStale = isPastBooking(booking) && ['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'].includes(booking.status);
-                                    const badgeBg = booking.status === 'COMPLETED' ? '#E8F5E9'
-                                        : booking.status === 'CANCELLED' ? '#FFEBEE'
-                                        : isStale ? '#FFF8E1'
-                                        : '#FFF3E0';
-                                    const badgeColor = booking.status === 'COMPLETED' ? '#2E7D32'
-                                        : booking.status === 'CANCELLED' ? '#C62828'
-                                        : isStale ? '#F57F17'
-                                        : '#EF6C00';
-                                    const badgeLabel = isStale ? 'AWAITING CLOSE' : booking.status.replace('_', ' ');
-                                    return (
-                                        <View style={[styles.statusBadge, { backgroundColor: badgeBg }]}>
-                                            <Text style={[styles.statusText, { color: badgeColor }]}>{badgeLabel}</Text>
+                    <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 50 }} />
+                ) : activeTab === 'Products' ? (
+                    // ── Products Tab ──────────────────────────────────────────
+                    productOrders.length === 0
+                        ? renderEmptyState(t('order_history.empty_products_title') || 'No product orders yet', t('order_history.empty_products_desc') || 'Shop our Wellness Store to see orders here.', 'bag-outline')
+                        : productOrders.map(renderProductCard)
+                ) : (
+                    // ── Service Booking Tabs ──────────────────────────────────
+                    filteredBookings.length === 0
+                        ? renderEmptyState(
+                            `No ${activeTab.toLowerCase()} bookings`,
+                            'Your entries for this category will appear here once you take action.',
+                            activeTab === 'History' ? 'receipt-outline' : 'calendar-clear-outline',
+                        )
+                        : filteredBookings.map((booking) => (
+                            <TouchableOpacity
+                                key={booking.id}
+                                style={styles.bookingCard}
+                                onPress={() => router.push({ pathname: '/service-confirmation', params: { bookingId: booking.id } })}
+                            >
+                                <View style={styles.cardHeader}>
+                                    <View style={styles.serviceInfo}>
+                                        <View style={styles.iconBox}>
+                                            <MaterialCommunityIcons name="medical-bag" size={20} color={colors.primary} />
                                         </View>
-                                    );
-                                })()}
-                            </View>
-
-                            <View style={styles.cardDetails}>
-                                <View style={styles.detailRow}>
-                                    <Ionicons name="calendar-outline" size={14} color={Colors.textMuted} />
-                                    <Text style={styles.detailText}>
-                                        {new Date(booking.scheduledDate).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })} • {booking.scheduledTime || 'ASAP'}
-                                    </Text>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.serviceName}>{booking.service?.name || 'Service'}</Text>
+                                            <Text style={styles.bookingCode}>#{booking.bookingCode}</Text>
+                                        </View>
+                                    </View>
+                                    {(() => {
+                                        const isStale = isPastBooking(booking) && ['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS'].includes(booking.status);
+                                        const badgeBg = booking.status === 'COMPLETED' ? '#E8F5E9'
+                                            : booking.status === 'CANCELLED' ? '#FFEBEE'
+                                                : isStale ? '#FFF8E1' : '#FFF3E0';
+                                        const badgeColor = booking.status === 'COMPLETED' ? '#2E7D32'
+                                            : booking.status === 'CANCELLED' ? '#C62828'
+                                                : isStale ? '#F57F17' : '#EF6C00';
+                                        const badgeLabel = isStale ? 'AWAITING CLOSE' : booking.status.replace('_', ' ');
+                                        return (
+                                            <View style={[styles.statusBadge, { backgroundColor: badgeBg }]}>
+                                                <Text style={[styles.statusText, { color: badgeColor }]}>{badgeLabel}</Text>
+                                            </View>
+                                        );
+                                    })()}
                                 </View>
-                                <View style={styles.detailRow}>
-                                    <Ionicons name="location-outline" size={14} color={Colors.textMuted} />
-                                    <Text style={styles.detailText} numberOfLines={1}>{booking.addressLine || 'Home Address'}</Text>
-                                </View>
-                            </View>
 
-                            <View style={styles.cardFooter}>
-                                <Text style={styles.priceText}>₹{booking.amount}</Text>
-                                <View style={styles.footerActions}>
-                                    {activeTab === 'Payment' && (
-                                        <TouchableOpacity
-                                            style={styles.payBtn}
-                                            onPress={() => router.push({
-                                                pathname: '/payment/checkout',
-                                                params: { bookingId: booking.id, amount: String(booking.amount), label: booking.service?.name }
-                                            })}
-                                        >
-                                            <Text style={styles.payBtnText}>Pay Now</Text>
-                                        </TouchableOpacity>
-                                    )}
-                                    {activeTab === 'History' && ['COMPLETED', 'CANCELLED'].includes(booking.status) && (
-                                        <TouchableOpacity 
-                                            style={styles.rebookBtn}
-                                            onPress={() => {
-                                                let route = booking.service?.slug;
-                                                if (!route) {
-                                                    router.push('/' as any);
-                                                    return;
+                                <View style={styles.cardDetails}>
+                                    <View style={styles.detailRow}>
+                                        <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
+                                        <Text style={styles.detailText}>
+                                            {new Date(booking.scheduledDate).toLocaleDateString([], {
+                                                day: 'numeric', month: 'short', year: 'numeric',
+                                            })} • {booking.scheduledTime || 'ASAP'}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.detailRow}>
+                                        <Ionicons name="location-outline" size={14} color={colors.textMuted} />
+                                        <Text style={styles.detailText} numberOfLines={1}>{booking.addressLine || 'Home Address'}</Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.cardFooter}>
+                                    <Text style={styles.priceText}>₹{booking.amount}</Text>
+                                    <View style={styles.footerActions}>
+                                        {activeTab === 'Payment' && (
+                                            <TouchableOpacity
+                                                style={styles.payBtn}
+                                                onPress={() => router.push({
+                                                    pathname: '/payment/checkout',
+                                                    params: { bookingId: booking.id, amount: String(booking.amount), label: booking.service?.name },
+                                                })}
+                                            >
+                                                <Text style={styles.payBtnText}>Pay Now</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                        {activeTab === 'History' && ['COMPLETED', 'CANCELLED'].includes(booking.status) && (
+                                            <TouchableOpacity
+                                                style={styles.rebookBtn}
+                                                onPress={() => router.push('/' as any)}
+                                            >
+                                                <Text style={styles.rebookBtnText}>Re-order</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                        {(activeTab === 'Active' || activeTab === 'Payment' ||
+                                            (activeTab === 'History' && !['COMPLETED', 'CANCELLED'].includes(booking.status))
+                                        ) && (
+                                            <TouchableOpacity
+                                                style={styles.cancelBtn}
+                                                onPress={() => handleCancel(booking)}
+                                                disabled={cancellingId === booking.id}
+                                            >
+                                                {cancellingId === booking.id
+                                                    ? <ActivityIndicator size="small" color="#E53935" />
+                                                    : <Text style={styles.cancelBtnText}>Cancel</Text>
                                                 }
-
-                                                // Normalize path (leading slash and brand cleaning)
-                                                let path = route.startsWith('/') ? route : `/${route}`;
-                                                const clean = path.toLowerCase();
-
-                                                if (clean.includes('doctor')) {
-                                                    router.push('/doctor-visit' as any);
-                                                } else if (clean.includes('nurse')) {
-                                                    router.push('/nurse-care' as any);
-                                                } else if (clean.includes('medicine')) {
-                                                    router.push('/order-medicines' as any);
-                                                } else if (clean.includes('all-ayuxa') || clean.includes('all-ayuxacare') || clean.includes('all-oldful')) {
-                                                    router.push('/all-ayuxa-services' as any);
-                                                } else if (clean.includes('home-essentials') || clean.includes('home essentials')) {
-                                                    router.push('/all-home-essentials' as any);
-                                                } else {
-                                                    // General brand name cleaning for other routes (stripping suffixes)
-                                                    const finalPath = path
-                                                        .replace(/-oldful/gi, '')
-                                                        .replace(/-ayuxacare/gi, '')
-                                                        .replace(/-ayuxa/gi, '')
-                                                        .replace(/oldful/gi, 'ayuxa')
-                                                        .replace(/ayuxacare/gi, 'ayuxa');
-                                                    router.push(finalPath as any);
-                                                }
-                                            }}
-                                        >
-                                            <Text style={styles.rebookBtnText}>
-                                                Re-order
-                                            </Text>
-                                        </TouchableOpacity>
-                                    )}
-                                    {/* Cancel button: show for Active/Payment tabs, OR for stale past-date bookings in History */}
-                                    {(activeTab === 'Active' || activeTab === 'Payment' ||
-                                        (activeTab === 'History' && !['COMPLETED', 'CANCELLED'].includes(booking.status))
-                                    ) && (
-                                        <TouchableOpacity
-                                            style={styles.cancelBtn}
-                                            onPress={() => handleCancel(booking)}
-                                            disabled={cancellingId === booking.id}
-                                        >
-                                            {cancellingId === booking.id
-                                                ? <ActivityIndicator size="small" color="#E53935" />
-                                                : <Text style={styles.cancelBtnText}>Cancel</Text>
-                                            }
-                                        </TouchableOpacity>
-                                    )}
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
                                 </View>
-                            </View>
-                        </TouchableOpacity>
-                    ))
+                            </TouchableOpacity>
+                        ))
                 )}
             </ScrollView>
         </View>
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: '#FAFAFA' },
+const makeStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.bgScreen },
     header: {
         flexDirection: 'row', alignItems: 'center',
-        paddingHorizontal: 20, paddingBottom: 15, backgroundColor: '#FFF'
+        paddingHorizontal: 20, paddingBottom: 15,
+        backgroundColor: colors.bgCard,
+        borderBottomWidth: 1, borderBottomColor: colors.borderLight,
     },
-    backBtn: { width: 44, height: 44, justifyContent: 'center', marginRight: -8 },
-    headerTitle: { fontFamily: Fonts.bold, fontSize: 18, color: Colors.textDark, flex: 1, textAlign: 'left' },
+    backBtn: { width: 44, height: 44, justifyContent: 'center', marginRight: 8 },
+    headerTitle: { fontFamily: Fonts.bold, fontSize: 18, color: colors.textDark },
     container: { flex: 1 },
-    scrollContent: { padding: 20, paddingBottom: 50 },
+    scrollContent: { padding: 16, paddingBottom: 50 },
 
     /* Tab Bar */
-    tabBar: { flexDirection: 'row', backgroundColor: '#FFF', paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
-    tabItem: { flex: 1, paddingVertical: 15, alignItems: 'center', position: 'relative' },
-    tabItemActive: {},
-    tabText: { fontFamily: Fonts.medium, fontSize: 14, color: Colors.textMuted },
-    tabTextActive: { color: Colors.primary, fontFamily: Fonts.bold },
-    tabUnderline: { position: 'absolute', bottom: 0, width: '60%', height: 3, backgroundColor: Colors.primary, borderTopLeftRadius: 3, borderTopRightRadius: 3 },
-
-    /* Booking Card */
-    bookingCard: {
-        backgroundColor: '#FFF', borderRadius: 20, padding: 18, marginBottom: 16,
-        ...Shadow.card, borderWidth: 1, borderColor: '#F0F0F0'
+    tabBar: {
+        flexDirection: 'row', backgroundColor: colors.bgCard,
+        paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: colors.borderLight,
     },
-    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15, gap: 10 },
+    tabItem: { flex: 1, paddingVertical: 14, alignItems: 'center', position: 'relative' },
+    tabItemActive: {},
+    tabText: { fontFamily: Fonts.medium, fontSize: 12, color: colors.textMuted },
+    tabTextActive: { color: colors.primary, fontFamily: Fonts.bold },
+    tabUnderline: {
+        position: 'absolute', bottom: 0, width: '70%', height: 3,
+        backgroundColor: colors.primary, borderTopLeftRadius: 3, borderTopRightRadius: 3,
+    },
+
+    /* Booking / Product Card */
+    bookingCard: {
+        backgroundColor: colors.bgCard, borderRadius: 16, padding: 16, marginBottom: 12,
+        borderWidth: 1, borderColor: colors.borderLight,
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
+            android: { elevation: 2 },
+        }),
+    },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, gap: 10 },
     serviceInfo: { flexDirection: 'row', gap: 12, alignItems: 'center', flex: 1 },
-    iconBox: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(4, 131, 87, 0.05)', justifyContent: 'center', alignItems: 'center' },
-    serviceName: { fontFamily: Fonts.bold, fontSize: 16, color: Colors.textDark, flexShrink: 1 },
-    bookingCode: { fontFamily: Fonts.medium, fontSize: 11, color: Colors.textMuted, marginTop: 2 },
+    iconBox: {
+        width: 44, height: 44, borderRadius: 14,
+        backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(4,131,87,0.06)',
+        justifyContent: 'center', alignItems: 'center',
+    },
+    serviceName: { fontFamily: Fonts.bold, fontSize: 15, color: colors.textDark, flexShrink: 1 },
+    bookingCode: { fontFamily: Fonts.medium, fontSize: 11, color: colors.textMuted, marginTop: 2 },
     statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
     statusText: { fontSize: 10, fontFamily: Fonts.bold, textTransform: 'uppercase' },
 
-    cardDetails: { gap: 10, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
+    cardDetails: { gap: 8, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
     detailRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    detailText: { fontFamily: Fonts.medium, fontSize: 12, color: Colors.textLight, flex: 1 },
+    detailText: { fontFamily: Fonts.medium, fontSize: 12, color: colors.textMuted, flex: 1 },
 
-    cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 15 },
+    cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 },
     footerActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-    priceText: { fontFamily: Fonts.bold, fontSize: 18, color: Colors.textDark },
-    payBtn: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 10 },
+    priceText: { fontFamily: Fonts.bold, fontSize: 18, color: colors.textDark },
+
+    trackBtn: {
+        backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 7,
+        borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 4,
+    },
+    trackBtnText: { color: '#FFF', fontFamily: Fonts.bold, fontSize: 12 },
+    payBtn: { backgroundColor: colors.primary, paddingHorizontal: 18, paddingVertical: 7, borderRadius: 10 },
     payBtnText: { color: '#FFF', fontFamily: Fonts.bold, fontSize: 13 },
-    rebookBtn: { borderWidth: 1, borderColor: Colors.primary, paddingHorizontal: 15, paddingVertical: 6, borderRadius: 10 },
-    rebookBtnText: { color: Colors.primary, fontFamily: Fonts.bold, fontSize: 12 },
-    cancelBtn: { borderWidth: 1, borderColor: '#E53935', paddingHorizontal: 15, paddingVertical: 6, borderRadius: 10, minWidth: 70, alignItems: 'center' },
+    rebookBtn: { borderWidth: 1, borderColor: colors.primary, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 10 },
+    rebookBtnText: { color: colors.primary, fontFamily: Fonts.bold, fontSize: 12 },
+    cancelBtn: { borderWidth: 1, borderColor: '#E53935', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 10, minWidth: 68, alignItems: 'center' },
     cancelBtnText: { color: '#E53935', fontFamily: Fonts.bold, fontSize: 12 },
 
     /* Empty State */
     emptyContainer: { alignItems: 'center', paddingVertical: 60 },
-    emptyIconCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#F9F9F9', justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#EEE' },
-    emptyTitle: { fontFamily: Fonts.bold, fontSize: 18, color: Colors.textDark, marginBottom: 8 },
-    emptySubtitle: { fontFamily: Fonts.medium, fontSize: 13, color: Colors.textMuted, textAlign: 'center', paddingHorizontal: 40, lineHeight: 18, marginBottom: 25 },
-    exploreBtn: { backgroundColor: Colors.primaryDark, paddingHorizontal: 30, paddingVertical: 12, borderRadius: 15, ...Shadow.card },
+    emptyIconCircle: {
+        width: 100, height: 100, borderRadius: 50,
+        backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F9F9F9',
+        justifyContent: 'center', alignItems: 'center',
+        marginBottom: 20, borderWidth: 1, borderColor: colors.borderLight,
+    },
+    emptyTitle: { fontFamily: Fonts.bold, fontSize: 18, color: colors.textDark, marginBottom: 8 },
+    emptySubtitle: {
+        fontFamily: Fonts.medium, fontSize: 13, color: colors.textMuted,
+        textAlign: 'center', paddingHorizontal: 40, lineHeight: 18, marginBottom: 25,
+    },
+    exploreBtn: {
+        backgroundColor: colors.primary, paddingHorizontal: 30, paddingVertical: 12,
+        borderRadius: 15,
+    },
     exploreBtnText: { fontFamily: Fonts.bold, color: '#FFF', fontSize: 14 },
 });

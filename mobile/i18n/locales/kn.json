@@ -176,7 +176,8 @@
     "trip_travels": "ಪ್ರಯಾಣ",
     "smart_upgrade": "ಸ್ಮಾರ್ಟ್ ಅಪ್‌ಗ್ರೇಡ್",
     "caregiver_support": "ಪಾಲಕರ\nಬೆಂಬಲ",
-    "emergency_assist": "ತುರ್ತು\nಸಹಾಯ"
+    "emergency_assist": "ತುರ್ತು\nಸಹಾಯ",
+    "tech_helper_essentials": "ಟೆಕ್ ಹೆಲ್ಪರ್"
   },
   "booking": {
     "book_service": "ಸೇವೆ ಬುಕ್ ಮಾಡಿ",
@@ -369,7 +370,11 @@
     "note_share": "ಹಿಂದಿನ ವರದಿಗಳನ್ನು ವೈದ್ಯರಿಗೆ ತೋರಿಸಿ",
     "add_to_cart": "ಕಾರ್ಟ್‌ಗೆ ಸೇರಿಸು",
     "unable_to_load": "ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ",
-    "load_error_desc": "ವಿವರ ಲೋಡ್ ಮಾಡಲು ದೋಷ. ಮತ್ತೆ ಯತ್ನಿಸಿ."
+    "load_error_desc": "ವಿವರ ಲೋಡ್ ಮಾಡಲು ದೋಷ. ಮತ್ತೆ ಯತ್ನಿಸಿ.",
+    "package_one": "ಪ್ಯಾಕೇಜ್",
+    "package_other": "ಪ್ಯಾಕೇಜುಗಳು",
+    "includes_packages_params": "ಇದರಲ್ಲಿ {{packages}} ಪ್ಯಾಕೇಜ್ ಮತ್ತು {{parameters}} ಪರೀಕ್ಷೆಗಳು ಇವೆ",
+    "note_nabl": "NABL ಪ್ರಮಾಣೀಕೃತ ಲ್ಯಾಬ್‌ಗಳು, ಗುಣಮಟ್ಟದ ಖಾತರಿ"
   },
   "bill_payment": {
     "header": "ಬಿಲ್ ಪಾವತಿ",
@@ -523,7 +528,8 @@
     "tab_title": "ಖಾತೆ",
     "live_chat_subtitle": "WhatsApp ನಲ್ಲಿ ನಮ್ಮ ಬೆಂಬಲ ಅಧಿಕಾರಿಗಳೊಂದಿಗೆ ತಕ್ಷಣ ಸಂಪರ್ಕಿಸಿ",
     "live_chat_info": "ನಮ್ಮ ಬೆಂಬಲ ಸ್ನೇಹಿತರು ಸೇವೆ ಬುಕಿಂಗ್, ಪಾವತಿ ಸಮಸ್ಯೆ, ವೈದ್ಯರ ಸ್ಲಾಟ್ ಮತ್ತು ಹೆಚ್ಚಿನ ವಿಷಯಗಳಲ್ಲಿ ಸಹಾಯ ಮಾಡಲು ಲಭ್ಯರಿದ್ದಾರೆ.",
-    "live_chat_status": "ಸಹಾಯ ಆನ್‌ಲೈನ್‌ನಲ್ಲಿ ಸಕ್ರಿಯ"
+    "live_chat_status": "ಸಹಾಯ ಆನ್‌ಲೈನ್‌ನಲ್ಲಿ ಸಕ್ರಿಯ",
+    "live_chat": "ಲೈವ್ ಚಾಟ್"
   },
   "plans": {
     "tab_title": "ಪ್ಲಾನ್‌ಗಳು",
@@ -570,7 +576,7 @@
     "subtotal": "ಮೊತ್ತ: ₹{{amount}}",
     "checkout_category": "{{category}} ಪಾವತಿ",
     "grand_total": "ಒಟ್ಟು ಮೊತ್ತ: ₹{{amount}}",
-    "checkout_all": "ಎಲ್ಲ ಪಾವತಿ (ಶೀಘ್ರದಲ್ಲೇ)",
+    "checkout_all": "ಎಲ್ಲ ಪಾವತಿ",
     "coming_soon": "ಶೀಘ್ರದಲ್ಲೇ",
     "unified_coming_soon": "ವಿವಿಧ ವರ್ಗಗಳ ಒಟ್ಟಾರೆ ಪಾವತಿ ಶೀಘ್ರದಲ್ಲೇ ಬರಲಿದೆ. ಸದ್ಯಕ್ಕೆ ಪ್ರತ್ಯೇಕವಾಗಿ ಪಾವತಿಸಿ.",
     "browse_services": "ಸೇವೆಗಳನ್ನು ಹುಡುಕಿ",
@@ -596,7 +602,9 @@
     "category_services_desc": "ಸಹಾಯಕ ಸೇವೆಗಳು",
     "category_other": "ಇತರೆ",
     "category_other_desc": "ಇತರ ವಸ್ತುಗಳು",
-    "blood_test_package": "ರಕ್ತ ಪರೀಕ್ಷೆ ಪ್ಯಾಕೇಜ್"
+    "blood_test_package": "ರಕ್ತ ಪರೀಕ್ಷೆ ಪ್ಯಾಕೇಜ್",
+    "checkout_all_label": "ಸಂಯೋಜಿತ ಪಾವತಿ",
+    "selected_total": "ಆಯ್ದ ಒಟ್ಟು"
   },
   "sos": {
     "title": "ನನ್ನ SOS ಅಲರ್ಟ್‌ಗಳು",
@@ -785,7 +793,8 @@
       "health": "ಆರೋಗ್ಯ",
       "concierge": "ಕಾನ್ಸಿಯರ್ಜ್",
       "meetup": "ಮೀಟಪ್",
-      "lab": "ಲ್ಯಾಬ್ ಟೆಸ್ಟ್"
+      "lab": "ಲ್ಯಾಬ್ ಟೆಸ್ಟ್",
+      "wellness_product": "ವೆಲ್ನೆಸ್ ಉತ್ಪನ್ನಗಳು"
     },
     "statuses": {
       "confirmed": "ದೃಢೀಕರಿಸಲಾಗಿದೆ",
@@ -1160,7 +1169,18 @@
     "cancel": "ರದ್ದು",
     "cancel_booking_title": "ಬುಕಿಂಗ್ ರದ್ದು",
     "cancel_booking_message": "ಬುಕಿಂಗ್ ರದ್ದು ಮಾಡಲು ಖಚಿತವೇ?",
-    "cancelled_success": "ಬುಕಿಂಗ್ ರದ್ದು ಯಶಸ್ವಿ."
+    "cancelled_success": "ಬುಕಿಂಗ್ ರದ್ದು ಯಶಸ್ವಿ.",
+    "header_title": "ನನ್ನ ಆರ್ಡರ್‌ಗಳು",
+    "tab_products": "ಉತ್ಪನ್ನಗಳು",
+    "empty_products_title": "ಇನ್ನೂ ಯಾವುದೇ ಉತ್ಪನ್ನ ಆರ್ಡರ್‌ಗಳಿಲ್ಲ",
+    "empty_products_desc": "ಇಲ್ಲಿ ಆರ್ಡರ್‌ಗಳನ್ನು ನೋಡಲು ನಮ್ಮ ವೆಲ್‌ನೆಸ್ ಸ್ಟೋರ್‌ನಲ್ಲಿ ಶಾಪಿಂಗ್ ಮಾಡಿ.",
+    "shop_now": "ಈಗಲೇ ಖರೀದಿಸಿ",
+    "book_new_service": "ಹೊಸ ಸೇವೆ ಬುಕ್ ಮಾಡಿ",
+    "wellness_product_fallback": "ವೆಲ್‌ನೆಸ್ ಉತ್ಪನ್ನ",
+    "more_items": "+{{count}} ಇನ್ನುಳಿದವು",
+    "track_btn": "ಟ್ರ್ಯಾಕ್",
+    "reorder_btn": "ಮರು-ಆರ್ಡರ್",
+    "cancel_btn": "ರದ್ದುಮಾಡಿ"
   },
   "payments_wallet": {
     "header": "ಪಾವತಿ ಮತ್ತು ವಾಲೆಟ್",
@@ -1256,7 +1276,13 @@
     "try_again": "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ",
     "privacy_policy": "ಗೌಪ್ಯತಾ ನೀತಿ",
     "terms_conditions": "ನಿಯಮಗಳು ಮತ್ತು ಷರತ್ತುಗಳು",
-    "refund_policy": "ಮರುಪಾವತಿ ನೀತಿ"
+    "refund_policy": "ಮರುಪಾವತಿ ನೀತಿ",
+    "disclaimer": "ಹಕ್ಕುತ್ಯಾಗ",
+    "service_policy": "ಸೇವಾ ವ್ಯಾಪ್ತಿ ಮತ್ತು ಕಾರ್ಯಾಚರಣೆಯ ನೀತಿ",
+    "statutory_disclosures": "ಶಾಸನಬದ್ಧ ಪ್ರಕಟಣೆಗಳು",
+    "download_pdf": "ಪಿಡಿಎಫ್ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ",
+    "download_title": "ದಾಖಲೆಗಳನ್ನು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ",
+    "download_started": "ನಿಮ್ಮ ಡಾಕ್ಯುಮೆಂಟ್ ಡೌನ್‌ಲೋಡ್ ಯಶಸ್ವಿಯಾಗಿ ಪ್ರಾರಂಭವಾಗಿದೆ."
   },
   "privacy_policy": {
     "header_title": "ಗೊಪ್ಯತಾ ನೀತಿ"
@@ -2692,7 +2718,9 @@
     "pickup_address": "ವಿಳಾಸ:",
     "pickup_landmark": "ಲ್ಯಾಂಡ್‌ಮಾರ್ಕ್:",
     "pickup_time": "ಸಮಯ:",
-    "pickup_contact": "ಸಂಪರ್ಕ:"
+    "pickup_contact": "ಸಂಪರ್ಕ:",
+    "diagnostic_services": "ಡಯಾಗ್ನೋಸ್ಟಿಕ್ ಸೇವೆಗಳು",
+    "wellness_products": "ವೆಲ್ನೆಸ್ ಉತ್ಪನ್ನಗಳು"
   },
   "success_screen": {
     "title": "ಪಾವತಿ ಯಶಸ್ವಿ!",
@@ -2874,7 +2902,44 @@
     "filter_mobility_aids": "ಚಲನ ಸಾಧನಗಳು",
     "filter_health_monitors": "ಆರೋಗ್ಯ ಮಾನಿಟರ್",
     "filter_supplements": "ಸಪ್ಲಿಮೆಂಟ್",
-    "filter_personal_care": "ವೈಯಕ್ತಿಕ ಆರೈಕೆ"
+    "filter_personal_care": "ವೈಯಕ್ತಿಕ ಆರೈಕೆ",
+    "shipping_charge": "ಶಿಪ್ಪಿಂಗ್ ಶುಲ್ಕ",
+    "courier": "ಕೊರಿಯರ್ ಪಾಲುದಾರ",
+    "estimated_delivery": "ಅಂದಾಜು ವಿತರಣೆ",
+    "delivery_in_days": "{{days}} ದಿನಗಳಲ್ಲಿ ವಿತರಣೆ",
+    "track_order_title": "ಆರ್ಡರ್ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ",
+    "fetching_tracking": "ಟ್ರ್ಯಾಕಿಂಗ್ ವಿವರಗಳನ್ನು ಪಡೆಯಲಾಗುತ್ತಿದೆ…",
+    "load_tracking_error": "ಟ್ರ್ಯಾಕಿಂಗ್ ಮಾಹಿತಿ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    "load_tracking_fail": "ಟ್ರ್ಯಾಕಿಂಗ್ ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೊಮ್ಮೆ ಪ್ರಯತ್ನಿಸಿ.",
+    "try_again": "ಮತ್ತೊಮ್ಮೆ ಪ್ರಯತ್ನಿಸಿ",
+    "expected_by": "{{date}} ರೊಳಗೆ ನಿರೀಕ್ಷಿಸಲಾಗಿದೆ",
+    "awb_code": "AWB: {{code}}",
+    "order_progress": "ಆರ್ಡರ್ ಪ್ರಗತಿ",
+    "packing_status_msg": "ನಿಮ್ಮ ಆರ್ಡರ್ ಪ್ಯಾಕ್ ಆಗುತ್ತಿದೆ. ಶಿಪ್ ಆದ ನಂತರ ಟ್ರ್ಯಾಕಿಂಗ್ ಅಪ್‌ಡೇಟ್‌ಗಳು ಕಾಣಿಸಿಕೊಳ್ಳುತ್ತವೆ.",
+    "track_on_courier_website": "ಕೊರಿಯರ್ ವೆಬ್‌ಸೈಟ್‌ನಲ್ಲಿ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ",
+    "stage_placed": "ಆರ್ಡರ್ ಮಾಡಲಾಗಿದೆ",
+    "stage_paid": "ಪಾವತಿ ಸ್ವೀಕರಿಸಲಾಗಿದೆ",
+    "stage_confirmed": "ಪ್ರಕ್ರಿಯೆಯಲ್ಲಿದೆ",
+    "stage_dispatched": "ಕಳುಹಿಸಲಾಗಿದೆ",
+    "stage_delivered": "ತಲುಪಿಸಲಾಗಿದೆ",
+    "stage_cancelled": "ರದ್ದುಗೊಳಿಸಲಾಗಿದೆ",
+    "order_details": "ಆರ್ಡರ್ ವಿವರಗಳು",
+    "delivery_address": "ಡೆಲಿವರಿ ವಿಳಾಸ",
+    "payment_summary": "ಪಾವತಿ ಸಾರಾಂಶ",
+    "product_total": "ಉತ್ಪನ್ನದ ಒಟ್ಟು",
+    "shipping_charges": "ಶಿಪ್ಪಿಂಗ್ ಶುಲ್ಕಗಳು",
+    "tax_gst": "ತೆರಿಗೆಗಳು ಮತ್ತು ಜಿಎಸ್ಟಿ",
+    "discount": "ರಿಯಾಯಿತಿ",
+    "order_total": "ಒಟ್ಟು ಆರ್ಡರ್",
+    "payment_method": "ಪಾವತಿ ವಿಧಾನ",
+    "prepaid": "ಪ್ರಿಪೇಯ್ಡ್",
+    "cash_on_delivery": "ಕ್ಯಾಶ್ ಆನ್ ಡೆಲಿವರಿ",
+    "sku": "SKU",
+    "qty": "ಪ್ರಮಾಣ",
+    "unit_price": "ಘಟಕ ಬೆಲೆ",
+    "weight": "ತೂಕ",
+    "dimensions": "ಆಯಾಮಗಳು (ಉದ್ದ × ಅಗಲ × ಎತ್ತರ)",
+    "specifications": "ಉತ್ಪನ್ನದ ವಿವರಣೆಗಳು"
   },
   "service_detail": {
     "concierge_services": "ಸಹಾಯ ಸೇವೆಗಳು",
@@ -3004,7 +3069,9 @@
     "go_home": "ಹೋಮ್‌ಗೆ ಹೋಗಿ",
     "proceed_booking": "ಬುಕಿಂಗ್‌ಗೆ ಮುಂದುವರಿಯಿರಿ",
     "view_booking": "ಬುಕಿಂಗ್ ವಿವರ ನೋಡಿ",
-    "view_all_bookings": "ಎಲ್ಲ ಬುಕಿಂಗ್ಸ್ ನೋಡಿ"
+    "view_all_bookings": "ಎಲ್ಲ ಬುಕಿಂಗ್ಸ್ ನೋಡಿ",
+    "track_order": "ಆರ್ಡರ್ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ",
+    "view_all_orders": "ಎಲ್ಲಾ ಆರ್ಡರ್‌ಗಳನ್ನು ನೋಡಿ"
   },
   "refund_request": {
     "header_title": "ಮರುಪಾವತಿ ವಿನಂತಿ",

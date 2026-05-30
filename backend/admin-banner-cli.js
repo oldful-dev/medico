@@ -41,7 +41,8 @@ async function main() {
           process.argv[5],
           process.argv[6],
           process.argv[7],
-          process.argv[8]
+          process.argv[8],
+          process.argv[9]
         );
         break;
       case 'update':
@@ -69,7 +70,7 @@ Commands:
   list                            List all banners
   home                            Get active banners (home screen)
   get <id>                        Get banner by ID
-  create <url> <heading> <sub> [cta] [route] [order]
+  create <url> <heading> <sub> [cta] [route] [order] [category]
                                   Create new banner
   update <id> field=value...      Update banner
   delete <id>                     Delete banner
@@ -80,7 +81,9 @@ Examples:
   node admin-banner-cli.js home
   node admin-banner-cli.js list
   node admin-banner-cli.js create "https://example.com/img.jpg" "Title" "Subtitle"
+  node admin-banner-cli.js create "https://example.com/img.jpg" "Title" "Subtitle" "" "" 1 "WELLNESS"
   node admin-banner-cli.js update banner_01 heading="New Title" order=2
+  node admin-banner-cli.js update banner_01 category="WELLNESS"
   node admin-banner-cli.js delete banner_01
   node admin-banner-cli.js toggle banner_01 false
         `);
@@ -103,7 +106,7 @@ async function listBanners() {
     console.log(`  Heading: ${b.heading}`);
     console.log(`  Subheading: ${b.subheading}`);
     console.log(`  CTA: ${b.ctaText || 'N/A'} → ${b.ctaRoute || 'N/A'}`);
-    console.log(`  Order: ${b.order}, Active: ${b.isActive}`);
+    console.log(`  Order: ${b.order}, Active: ${b.isActive}, Category: ${b.category}`);
     console.log(`  Image: ${b.imageUrl.substring(0, 60)}...`);
     console.log('');
   });
@@ -112,7 +115,7 @@ async function listBanners() {
 
 async function getHomeBanners() {
   const banners = await prisma.banner.findMany({
-    where: { isActive: true },
+    where: { category: 'HOME', isActive: true },
     orderBy: { order: 'asc' },
   });
   console.log('\n🏠 Home Screen Banners (Active):\n');
@@ -136,7 +139,7 @@ async function getBanner(id) {
   console.log('');
 }
 
-async function createBanner(imageUrl, heading, subheading, ctaText, ctaRoute, order) {
+async function createBanner(imageUrl, heading, subheading, ctaText, ctaRoute, order, category) {
   if (!imageUrl || !heading || !subheading) {
     console.log('❌ Required: imageUrl, heading, subheading');
     return;
@@ -148,6 +151,7 @@ async function createBanner(imageUrl, heading, subheading, ctaText, ctaRoute, or
       subheading,
       ctaText: ctaText || null,
       ctaRoute: ctaRoute || null,
+      category: category || 'HOME',
       order: order ? parseInt(order) : 0,
       isActive: true,
     },
@@ -164,7 +168,10 @@ async function updateBanner(id, args) {
   }
   const data = {};
   args.forEach((arg) => {
-    const [key, value] = arg.split('=');
+    const eqIdx = arg.indexOf('=');
+    if (eqIdx === -1) return;
+    const key = arg.substring(0, eqIdx);
+    const value = arg.substring(eqIdx + 1);
     if (key === 'order') {
       data[key] = parseInt(value);
     } else if (key === 'isActive') {

@@ -10,6 +10,7 @@ export interface Banner {
   subheading: string;       // Description (max 80 chars)
   ctaText?: string;         // Button text (max 30 chars)
   ctaRoute?: string;        // Deep-link route (e.g., "/travel-inquiry")
+  category?: string;        // Screen target category (e.g., "HOME", "WELLNESS")
   order: number;            // Sort order (ascending)
   isActive: boolean;        // Show/hide flag
   createdAt: string;
@@ -41,6 +42,22 @@ class BannerService {
       return [];
     } catch (error) {
       console.error('Failed to fetch home banners:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all active banners for the wellness store
+   */
+  async getWellnessBanners(): Promise<Banner[]> {
+    try {
+      const response = await apiClient.get<Banner[]>('/wellness/banners');
+      if (response.success && Array.isArray(response.data)) {
+        return response.data.sort((a, b) => a.order - b.order);
+      }
+      return [];
+    } catch (error) {
+      console.error('Failed to fetch wellness banners:', error);
       return [];
     }
   }

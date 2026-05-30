@@ -100,8 +100,8 @@ export default function SmartUpgradeScreen() {
     return (
         <View style={styles.screen}>
             {/* Header extension */}
-            <View style={{ backgroundColor: colors.primary, height: insets.top }} />
-            <StatusBar style="light" backgroundColor={colors.primary} />
+            <View style={{ backgroundColor: isDarkMode ? colors.bgHeader : colors.primary, height: insets.top }} />
+            <StatusBar style="light" backgroundColor={isDarkMode ? colors.bgHeader : colors.primary} />
 
             {/* ─── Header ─── */}
             <View style={styles.headerContainer}>
@@ -120,7 +120,7 @@ export default function SmartUpgradeScreen() {
             >
                 {/* ─── Main Content Box (Gradient) ─── */}
                 <LinearGradient
-                    colors={['#7BFBCE', '#FFFFFF']} // Reversing to match the mint-top visual
+                    colors={isDarkMode ? ['#143D30', colors.bgCard] : ['#7BFBCE', '#FFFFFF']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 0, y: 1 }}
                     style={styles.gradientCard}
@@ -194,10 +194,10 @@ export default function SmartUpgradeScreen() {
 const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: colors.primary,
+        backgroundColor: isDarkMode ? colors.bgScreen : colors.primary,
     },
     headerContainer: {
-        backgroundColor: colors.primary,
+        backgroundColor: isDarkMode ? colors.bgHeader : colors.primary,
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 15,
@@ -231,7 +231,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     cardTitle: {
         fontSize: 22,
         fontWeight: '800',
-        color: '#1A1A1A',
+        color: isDarkMode ? colors.textDark : '#1A1A1A',
         flex: 1,
     },
     lightningEmoji: {
@@ -240,30 +240,33 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     cardSubtitleMain: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#2F2F2F',
+        color: isDarkMode ? colors.textBody : '#2F2F2F',
         marginBottom: 2,
     },
     priceIntroText: {
         fontSize: 13,
-        color: '#444',
+        color: isDarkMode ? colors.textMuted : '#444',
         marginTop: 10,
         marginBottom: 4,
     },
     priceBold: {
         fontWeight: '800',
-        color: '#02743F',
+        color: isDarkMode ? colors.primaryText : '#02743F',
         fontSize: 15,
     },
     chartContainer: {
         alignItems: 'center',
         marginVertical: 16,
+        backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.95)' : 'transparent',
+        borderRadius: 12,
+        padding: 10,
     },
     chartImage: {
         width: '100%',
         height: 180,
     },
     upgradeButton: {
-        backgroundColor: '#02743F',
+        backgroundColor: colors.primary,
         borderRadius: 14,
         paddingVertical: 15,
         alignItems: 'center',
@@ -277,12 +280,12 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     disclaimerHeader: {
         fontSize: 13,
         fontWeight: '700',
-        color: '#1A1A1A',
+        color: isDarkMode ? colors.textDark : '#1A1A1A',
         marginBottom: 8,
     },
     disclaimerSubtitle: {
         fontWeight: '400',
-        color: '#666',
+        color: isDarkMode ? colors.textMuted : '#666',
     },
     disclaimerBox: {
         backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',

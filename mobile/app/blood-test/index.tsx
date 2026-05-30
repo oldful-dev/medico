@@ -73,6 +73,11 @@ const PackageCard = memo(({
                     </Text>
 
                     <View style={styles.metaRow}>
+                        <MaterialCommunityIcons name="package-variant-closed" size={11} color={themeColors.textMuted} />
+                        <Text style={[styles.metaText, { color: themeColors.textMuted }]}>
+                            {item.packages_count || 1} {item.packages_count === 1 ? t('blood_test.package_one') : t('blood_test.package_other')}
+                        </Text>
+                        <Text style={[styles.metaDot, { color: themeColors.textMuted }]}>·</Text>
                         <Ionicons name="flask-outline" size={11} color={themeColors.textMuted} />
                         <Text style={[styles.metaText, { color: themeColors.textMuted }]}>
                             {item.tests_count || 0} {item.tests_count === 1 ? t('blood_test.parameter_one') : t('blood_test.parameter_other')}
@@ -179,7 +184,7 @@ export default function BloodTestScreen() {
         addItem({ id: pkg.code, serviceType: 'Bloodwork', title: pkg.name, price: pkg.discounted_cost || pkg.cost, quantity: 1, details: pkg });
         router.push({
             pathname: '/payment/checkout',
-            params: { category: 'blood-test', amount: String(pkg.discounted_cost || pkg.cost), label: pkg.name, skipUpsell: '1' },
+            params: { category: 'blood-test', amount: String(pkg.discounted_cost || pkg.cost), label: pkg.name, skipUpsell: '1', selectedItemIds: pkg.code },
         } as any);
     }, [router, addItem]);
 

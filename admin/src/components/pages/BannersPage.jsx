@@ -42,6 +42,7 @@ export default function BannersPage() {
         subheading: "",
         ctaText: "",
         ctaRoute: "",
+        category: "HOME",
         order: 0,
         isActive: true,
     });
@@ -74,6 +75,7 @@ export default function BannersPage() {
             subheading: "",
             ctaText: "",
             ctaRoute: "",
+            category: "HOME",
             order: banners.length,
             isActive: true,
         });
@@ -88,6 +90,7 @@ export default function BannersPage() {
             subheading: banner.subheading,
             ctaText: banner.ctaText || "",
             ctaRoute: banner.ctaRoute || "",
+            category: banner.category || "HOME",
             order: banner.order,
             isActive: banner.isActive,
         });
@@ -465,6 +468,9 @@ export default function BannersPage() {
                                         <span className="badge badge-purple" style={{ fontWeight: 600 }}>
                                             Order Position: {banner.order}
                                         </span>
+                                        <span className="badge" style={{ fontWeight: 600, backgroundColor: banner.category === 'WELLNESS' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(59, 130, 246, 0.15)', color: banner.category === 'WELLNESS' ? '#10b981' : '#3b82f6', padding: '4px 8px', borderRadius: 4, fontSize: 11 }}>
+                                            Category: {banner.category || "HOME"}
+                                        </span>
                                     </div>
                                     <h3 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: "var(--text-primary)" }}>
                                         {banner.heading}
@@ -713,6 +719,18 @@ export default function BannersPage() {
                                                     min={0}
                                                     className="form-input"
                                                 />
+                                            </div>
+                                            <div>
+                                                <label className="form-label">Category</label>
+                                                <select
+                                                    value={form.category}
+                                                    onChange={(e) => setForm({ ...form, category: e.target.value })}
+                                                    className="form-select"
+                                                    style={{ width: "100%", height: 40 }}
+                                                >
+                                                    <option value="HOME">Home Screen</option>
+                                                    <option value="WELLNESS">Wellness Store</option>
+                                                </select>
                                             </div>
                                             <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft: 4 }}>
                                                 <span className="form-label" style={{ margin: 0 }}>Publish Status</span>

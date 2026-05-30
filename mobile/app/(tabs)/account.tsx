@@ -19,6 +19,7 @@ import { userService } from '@/services/api/userService';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
+import { legalService, LegalDocument } from '@/services/api/legalService';
 
 const avatarImg = require('@/assets/images/65a7d95e579c06bade85c7970d17cfcc5d7b7c55.png');
 
@@ -40,6 +41,35 @@ const SOCIAL_LINKS = [
     { key: 'whatsapp',  icon: 'logo-whatsapp',  color: '#25D366', label: 'WhatsApp Channel', handle: 'Join our channel',       url: 'https://whatsapp.com/channel/ayuxacare' },
 ];
 
+const getDocStyle = (type: string, isDarkMode: boolean) => {
+    switch (type) {
+        case 'TERMS_AND_CONDITIONS':
+            return {
+                icon: 'document-text-outline' as const,
+                bg: isDarkMode ? '#2D1F0A' : '#FFF3E0',
+                color: '#F57C00',
+            };
+        case 'PRIVACY_POLICY':
+            return {
+                icon: 'shield-checkmark-outline' as const,
+                bg: isDarkMode ? '#0A2010' : '#E8F5E9',
+                color: '#2E7D32',
+            };
+        case 'REFUND_POLICY':
+            return {
+                icon: 'receipt-outline' as const,
+                bg: isDarkMode ? '#2D0A1A' : '#FCE4EC',
+                color: '#C2185B',
+            };
+        default:
+            return {
+                icon: 'document-text-outline' as const,
+                bg: isDarkMode ? '#0A1A2E' : '#E3F2FD',
+                color: '#0284C7',
+            };
+    }
+};
+
 export default function AccountScreen() {
     const router = useRouter();
     const { profile, setProfile } = useUser();
@@ -57,6 +87,29 @@ export default function AccountScreen() {
     const [docsExpanded, setDocsExpanded] = useState(false);
     const [supportExpanded, setSupportExpanded] = useState(false);
     const [socialExpanded, setSocialExpanded] = useState(false);
+
+    const [publishedDocs, setPublishedDocs] = useState<LegalDocument[]>([]);
+    const [loadingDocs, setLoadingDocs] = useState(false);
+
+    const fetchPublishedDocs = async () => {
+        try {
+            setLoadingDocs(true);
+            const res = await legalService.getPublishedDocuments();
+            if (res.success && res.data) {
+                setPublishedDocs(res.data);
+            }
+        } catch (error) {
+            console.error('Failed to load published documents', error);
+        } finally {
+            setLoadingDocs(false);
+        }
+    };
+
+    React.useEffect(() => {
+        if (docsExpanded) {
+            fetchPublishedDocs();
+        }
+    }, [docsExpanded]);
 
     const handleToggle = async (key: string, value: boolean) => {
         if (!profile) return;
@@ -554,12 +607,35 @@ export default function AccountScreen() {
                     colors={colors}
                     isDarkMode={isDarkMode}
                 >
-                    <MenuRow icon="document-text-outline" iconBg={isDarkMode ? '#2D1F0A' : '#FFF3E0'} iconColor="#F57C00"
-                        title={t('account.terms_conditions')} onPress={() => router.push('/terms-policy' as any)} colors={colors} />
-                    <MenuRow icon="shield-checkmark-outline" iconBg={isDarkMode ? '#0A2010' : '#E8F5E9'} iconColor="#2E7D32"
-                        title={t('account.privacy_policy')} onPress={() => router.push('/privacy-policy' as any)} colors={colors} />
-                    <MenuRow icon="receipt-outline" iconBg={isDarkMode ? '#2D0A1A' : '#FCE4EC'} iconColor="#C2185B"
-                        title={t('account.refund_policy')} onPress={() => router.push('/refund-policy' as any)} colors={colors} />
+                    {loadingDocs ? (
+                        <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: Spacing.md }} />
+                    ) : (
+                        publishedDocs.map(doc => {
+                            const style = getDocStyle(doc.type, isDarkMode);
+                            let displayTitle = doc.title;
+                            if (doc.type === 'TERMS_AND_CONDITIONS') displayTitle = t('account.terms_conditions');
+                            else if (doc.type === 'PRIVACY_POLICY') displayTitle = t('account.privacy_policy');
+                            else if (doc.type === 'REFUND_POLICY') displayTitle = t('account.refund_policy');
+                            else if (doc.type === 'DISCLAIMER') displayTitle = t('legal.disclaimer');
+                            else if (doc.type === 'SERVICE_POLICY') displayTitle = t('legal.service_policy');
+                            else if (doc.type === 'STATUTORY_DISCLOSURES') displayTitle = t('legal.statutory_disclosures');
+
+                            return (
+                                <MenuRow
+                                    key={doc.id}
+                                    icon={style.icon}
+                                    iconBg={style.bg}
+                                    iconColor={style.color}
+                                    title={displayTitle}
+                                    onPress={() => router.push({
+                                        pathname: '/profile/legal-detail',
+                                        params: { type: doc.type, title: displayTitle }
+                                    } as any)}
+                                    colors={colors}
+                                />
+                            );
+                        })
+                    )}
                     <MenuRow icon="checkmark-done-circle-outline" iconBg={isDarkMode ? '#1E1340' : '#F3E5F5'} iconColor="#6A1B9A"
                         title={t('account.consent_forms')} onPress={() => router.push('/profile/consent-forms' as any)} colors={colors} />
                     <MenuRow icon="clipboard-outline" iconBg={isDarkMode ? '#001A18' : '#E0F2F1'} iconColor="#00796B"

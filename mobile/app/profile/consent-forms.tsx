@@ -1,149 +1,109 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Dimensions, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
+import { legalService, LegalDocument } from '@/services/api/legalService';
+import { useTheme } from '@/context/ThemeContext';
+import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import RenderHtml from 'react-native-render-html';
+import { useTranslation } from 'react-i18next';
 
 export default function ConsentFormsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const [expandedForm, setExpandedForm] = useState<string | null>(null);
+    const { isDarkMode } = useTheme();
+    const colors = useThemeColors();
+    const { t } = useTranslation();
+    const [document, setDocument] = useState<LegalDocument | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    // TODO: Fetch from backend
-    // const forms = [
-    //     {
-    //         id: 'medical_consent',
-    //         title: 'Medical Treatment Consent',
-    //         description: 'Authorize medical examination and treatment',
-    //         date: 'Never signed',
-    //         status: 'pending',
-    //     },
-    //     {
-    //         id: 'data_privacy',
-    //         title: 'Data Privacy Consent',
-    //         description: 'Consent for collection and processing of personal data',
-    //         date: 'Never signed',
-    //         status: 'pending',
-    //     },
-    //     {
-    //         id: 'emergency_contact',
-    //         title: 'Emergency Contact Consent',
-    //         description: 'Authorize contact in case of medical emergencies',
-    //         date: 'Never signed',
-    //         status: 'pending',
-    //     },
-    // ];
-    const forms: any[] = [];
+    useEffect(() => {
+        fetchConsentForm();
+    }, []);
 
-    const handleSignForm = (formId: string) => {
-        Alert.alert(
-            'Sign Consent Form',
-            'This feature is coming soon. You will be able to electronically sign and store consent forms here.',
-            [{ text: 'OK' }]
-        );
+    const fetchConsentForm = async () => {
+        setLoading(true);
+        try {
+            const res = await legalService.getPublishedDocument('DISCLAIMER');
+            if (res.success && res.data) {
+                setDocument(res.data);
+            } else {
+                Alert.alert('Error', res.message || 'Failed to load document');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to load document');
+        } finally {
+            setLoading(false);
+        }
     };
+
+    const styles = makeStyles(isDarkMode, colors);
 
     return (
         <View style={styles.screen}>
             <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
-            <StatusBar style="light" backgroundColor={Colors.primary} />
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={Colors.primary} />
 
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Consent Forms</Text>
+                <Text style={styles.headerTitle}>{t('account.consent_forms') || 'Consent Forms'}</Text>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                {forms.length === 0 ? (
-                    <View style={styles.emptyState}>
-                        <Ionicons name="document-text-outline" size={64} color={Colors.textMuted} />
-                        <Text style={styles.emptyTitle}>Coming Soon</Text>
-                        <Text style={styles.emptySubtitle}>Consent forms management will be available soon</Text>
-                    </View>
-                ) : (
-                    <>
-                        <Text style={styles.description}>
-                            Manage and sign digital consent forms for medical treatment, data privacy, and emergency authorizations.
-                        </Text>
-
-                        {forms.map((form) => (
-                    <View key={form.id} style={styles.formCard}>
-                        <TouchableOpacity
-                            style={styles.formHeader}
-                            onPress={() => setExpandedForm(expandedForm === form.id ? null : form.id)}
-                            activeOpacity={0.7}
-                        >
-                            <View style={{ flex: 1 }}>
-                                <Text style={styles.formTitle}>{form.title}</Text>
-                                <Text style={styles.formDescription}>{form.description}</Text>
-                            </View>
-                            <Ionicons
-                                name={expandedForm === form.id ? "chevron-up" : "chevron-down"}
-                                size={20}
-                                color={Colors.textMuted}
-                            />
-                        </TouchableOpacity>
-
-                        {expandedForm === form.id && (
-                            <View style={styles.formContent}>
-                                <View style={styles.statusRow}>
-                                    <Text style={styles.label}>Status:</Text>
-                                    <View style={[styles.statusBadge, { backgroundColor: '#FEE2E2' }]}>
-                                        <Text style={[styles.statusText, { color: '#D32F2F' }]}>
-                                            {form.status.toUpperCase()}
-                                        </Text>
-                                    </View>
-                                </View>
-
-                                <View style={styles.statusRow}>
-                                    <Text style={styles.label}>Last Signed:</Text>
-                                    <Text style={styles.value}>{form.date}</Text>
-                                </View>
-
-                                <TouchableOpacity
-                                    style={styles.signButton}
-                                    onPress={() => handleSignForm(form.id)}
-                                >
-                                    <Ionicons name="create-outline" size={16} color="#FFFFFF" />
-                                    <Text style={styles.signButtonText}>Sign Form</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity style={styles.viewButton}>
-                                    <Ionicons name="eye-outline" size={16} color={Colors.primary} />
-                                    <Text style={styles.viewButtonText}>View Full Form</Text>
-                                </TouchableOpacity>
-                            </View>
+            {loading ? (
+                <View style={styles.center}>
+                    <ActivityIndicator size="large" color={Colors.primary} />
+                    <Text style={styles.loadingText}>{t('legal.loading') || 'Loading...'}</Text>
+                </View>
+            ) : !document ? (
+                <View style={styles.center}>
+                    <Ionicons name="alert-circle-outline" size={64} color={Colors.textMuted} />
+                    <Text style={styles.errorText}>{t('legal.failed_load') || 'Failed to load document'}</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={fetchConsentForm}>
+                        <Text style={styles.retryButtonText}>{t('legal.try_again') || 'Try Again'}</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : (
+                <View style={styles.contentCard}>
+                    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                        {document.publishedAt && (
+                            <Text style={styles.lastUpdated}>
+                                Last {t('legal.last_updated', { date: new Date(document.publishedAt).toLocaleDateString('en-IN') }) || `Updated: ${new Date(document.publishedAt).toLocaleDateString('en-IN')}`}
+                            </Text>
                         )}
-                    </View>
-                        ))}
 
-                        <View style={styles.infoBox}>
-                            <Ionicons name="information-circle-outline" size={20} color={Colors.primary} />
-                            <View style={{ flex: 1, marginLeft: 10 }}>
-                                <Text style={styles.infoTitle}>About Consent Forms</Text>
-                                <Text style={styles.infoText}>
-                                    Signed consent forms are securely stored and can be accessed anytime. Digital signatures are legally binding.
-                                </Text>
-                            </View>
-                        </View>
-                    </>
-                )}
+                        <RenderHtml
+                            contentWidth={Dimensions.get('window').width - Spacing.lg * 2}
+                            source={{ html: document.content }}
+                            baseStyle={styles.contentText}
+                            tagsStyles={{
+                                h2: { ...styles.h2, marginTop: Spacing.lg, marginBottom: Spacing.md },
+                                h3: { ...styles.h3, marginTop: Spacing.md, marginBottom: Spacing.sm },
+                                p: { ...styles.paragraph, marginBottom: Spacing.md },
+                                li: { ...styles.listItem, marginBottom: Spacing.sm },
+                                ul: { marginBottom: Spacing.md, paddingLeft: Spacing.lg },
+                                strong: styles.strong,
+                                div: { marginBottom: Spacing.md },
+                            }}
+                        />
 
-                <View style={{ height: 40 }} />
-            </ScrollView>
+                        <View style={{ height: 40 }} />
+                    </ScrollView>
+                </View>
+            )}
         </View>
     );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: Colors.bgScreen,
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
     },
     header: {
         flexDirection: 'row',
@@ -162,142 +122,83 @@ const styles = StyleSheet.create({
         fontSize: FontSize.heading2,
         color: Colors.textWhite,
     },
+    contentCard: {
+        flex: 1,
+        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
+        borderTopLeftRadius: Radius.lg,
+        borderTopRightRadius: Radius.lg,
+    },
     scrollContent: {
         paddingHorizontal: Spacing.lg,
         paddingVertical: Spacing.lg,
     },
-    emptyState: {
+    lastUpdated: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.caption,
+        color: isDarkMode ? '#999999' : Colors.textMuted,
+        marginBottom: Spacing.lg,
+    },
+    contentText: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: isDarkMode ? '#E0E0E0' : Colors.textBody,
+        lineHeight: 22,
+    },
+    h2: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.heading3,
+        color: isDarkMode ? '#FFFFFF' : Colors.textDark,
+        fontWeight: '600',
+    },
+    h3: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.body,
+        color: isDarkMode ? '#E0E0E0' : Colors.textBody,
+        fontWeight: '600',
+    },
+    paragraph: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: isDarkMode ? '#E0E0E0' : Colors.textBody,
+        lineHeight: 22,
+    },
+    listItem: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: isDarkMode ? '#E0E0E0' : Colors.textBody,
+        lineHeight: 22,
+    },
+    strong: {
+        fontWeight: '600',
+        color: isDarkMode ? '#FFFFFF' : Colors.textDark,
+    },
+    center: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: 100,
+        gap: Spacing.lg,
     },
-    emptyTitle: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.heading2,
-        color: Colors.textDark,
-        marginTop: Spacing.lg,
-        marginBottom: Spacing.sm,
-    },
-    emptySubtitle: {
+    loadingText: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
-        color: Colors.textMuted,
-        textAlign: 'center',
+        color: isDarkMode ? '#999999' : Colors.textMuted,
     },
-    description: {
-        fontFamily: Fonts.regular,
-        fontSize: FontSize.body,
-        color: Colors.textMuted,
-        marginBottom: Spacing.lg,
-        lineHeight: 20,
-    },
-    formCard: {
-        backgroundColor: Colors.bgCard,
-        borderRadius: Radius.md,
-        borderWidth: 1,
-        borderColor: Colors.borderLight,
-        marginBottom: Spacing.md,
-        overflow: 'hidden',
-    },
-    formHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: Spacing.md,
-    },
-    formTitle: {
+    errorText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.textDark,
-        marginBottom: Spacing.sm,
+        color: isDarkMode ? '#FFFFFF' : Colors.textDark,
+        marginTop: Spacing.md,
     },
-    formDescription: {
-        fontFamily: Fonts.regular,
-        fontSize: FontSize.bodySmall,
-        color: Colors.textMuted,
-    },
-    formContent: {
-        borderTopWidth: 1,
-        borderTopColor: Colors.borderLight,
-        padding: Spacing.md,
-        backgroundColor: '#FAFAFA',
-    },
-    statusRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: Spacing.md,
-    },
-    label: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.bodySmall,
-        color: Colors.textMuted,
-    },
-    value: {
-        fontFamily: Fonts.regular,
-        fontSize: FontSize.body,
-        color: Colors.textDark,
-    },
-    statusBadge: {
-        paddingHorizontal: Spacing.sm,
-        paddingVertical: 4,
-        borderRadius: Radius.sm,
-    },
-    statusText: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.caption,
-    },
-    signButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: Spacing.sm,
+    retryButton: {
         backgroundColor: Colors.primary,
+        paddingHorizontal: Spacing.lg,
         paddingVertical: Spacing.md,
-        borderRadius: Radius.sm,
-        marginBottom: Spacing.sm,
-    },
-    signButtonText: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.body,
-        color: Colors.textWhite,
-    },
-    viewButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: Spacing.sm,
-        borderWidth: 1,
-        borderColor: Colors.primary,
-        paddingVertical: Spacing.md,
-        borderRadius: Radius.sm,
-    },
-    viewButtonText: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.body,
-        color: Colors.primary,
-    },
-    infoBox: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        backgroundColor: `${Colors.primary}10`,
-        borderLeftWidth: 4,
-        borderLeftColor: Colors.primary,
-        padding: Spacing.md,
-        borderRadius: Radius.sm,
+        borderRadius: Radius.md,
         marginTop: Spacing.lg,
     },
-    infoTitle: {
+    retryButtonText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: Colors.primary,
-        marginBottom: 4,
-    },
-    infoText: {
-        fontFamily: Fonts.regular,
-        fontSize: FontSize.bodySmall,
-        color: Colors.textMuted,
-        lineHeight: 18,
+        color: '#FFFFFF',
     },
 });

@@ -7,6 +7,7 @@ export interface LabPackage {
     discounted_cost?: number;
     fasting: boolean;
     tests_count?: number;
+    packages_count?: number;
     tests?: string[];
     preparation?: string;
     collectionType?: string;
@@ -176,6 +177,15 @@ export const labService = {
 
     cancelLabOrder: async (id: string) => {
         const response = await apiClient.post(`/labs/booking/${id}/cancel`, {});
+        return response;
+    },
+
+    confirmBooking: async (payload: {
+        labOrderId: string;
+        razorpayOrderId?: string;
+        isPaid?: boolean;
+    }) => {
+        const response = await apiClient.post<any>('/labs/book/confirm', payload);
         return response;
     }
 };

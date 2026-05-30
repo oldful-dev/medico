@@ -28,7 +28,7 @@ export default function CartOrderSummaryScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { profile } = useUser();
-    const { clearCategory } = useCart();
+    const { clearCategory, removeItems } = useCart();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     
@@ -37,6 +37,7 @@ export default function CartOrderSummaryScreen() {
         bookingPayload?: string;
         amount?: string;
         collectionType?: string;
+        selectedItemIds?: string;
     }>();
 
     const category = params.category || 'Bloodwork';
@@ -81,8 +82,12 @@ export default function CartOrderSummaryScreen() {
     };
 
     const handlePaymentSuccess = (bookingId: string) => {
-        // Clear only the checked-out category
-        clearCategory(category);
+        // Clear only the checked-out items if provided, otherwise clear the category
+        if (params.selectedItemIds) {
+            removeItems(params.selectedItemIds.split(','));
+        } else {
+            clearCategory(category);
+        }
         
         router.replace({
             pathname: '/cart/success',

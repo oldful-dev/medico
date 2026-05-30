@@ -289,6 +289,61 @@ const initCronJobs = () => {
         }
     });
 
+    // ─── 7. Shiprocket Tracking Sync (Every 30 minutes) ─────
+    // Syncs live tracking status for all in-transit product orders
+    cron.schedule('*/30 * * * *', async () => {
+        logger.info('⏰ CRON: Running Shiprocket tracking sync...');
+        try {
+            const shiprocket = require('../services/shiprocket.service');
+            if (!(await shiprocket.isAvailable())) {
+                logger.info('[CRON] Shiprocket unavailable — skipping tracking sync');
+                return;
+            }
+
+            // Find all in-transit orders that have an AWB code
+            const inTransitOrders = await prisma.productOrder.findMany({
+                where: {
+                    status: { in: ['CONFIRMED', 'DISPATCHED'] },
+                    awbCode: { not: null },
+                },
+                select: { id: true, awbCode: true, orderCode: true },
+                take: 50, // Rate-limit: max 50 per run
+            });
+
+            let updated = 0;
+            for (const order of inTransitOrders) {
+                try {
+                    const tracking = await shiprocket.trackShipment(order.awbCode);
+                    const newStatus = tracking.currentStatus || 'Unknown';
+
+                    // Map Shiprocket status to our status
+                    let dbStatus = order.status;
+                    const upper = newStatus.toUpperCase();
+                    if (upper.includes('DELIVERED')) dbStatus = 'DELIVERED';
+                    else if (upper.includes('OUT FOR DELIVERY')) dbStatus = 'DISPATCHED';
+                    else if (upper.includes('CANCELLED') || upper.includes('RTO')) dbStatus = 'CANCELLED';
+
+                    await prisma.productOrder.update({
+                        where: { id: order.id },
+                        data: {
+                            trackingStatus: newStatus,
+                            trackingData: tracking,
+                            shippingStatus: newStatus,
+                            status: dbStatus,
+                        },
+                    });
+                    updated++;
+                } catch (trackErr) {
+                    logger.warn(`[CRON] Tracking sync failed for order ${order.orderCode}: ${trackErr.message}`);
+                }
+            }
+
+            logger.info(`⏰ CRON: Synced tracking for ${updated}/${inTransitOrders.length} orders`);
+        } catch (error) {
+            logger.error('CRON Shiprocket tracking sync error:', error);
+        }
+    });
+
     logger.info('✅ All cron jobs registered');
 };
 

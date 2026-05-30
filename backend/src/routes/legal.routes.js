@@ -4,6 +4,7 @@ const { authenticateAdmin } = require('../middleware/auth');
 const ctrl = require('../controllers/legal.controller');
 
 // Public (App)
+router.get('/published', ctrl.getPublishedDocuments);
 router.get('/published/:type', ctrl.getPublishedDocument);
 
 // Admin

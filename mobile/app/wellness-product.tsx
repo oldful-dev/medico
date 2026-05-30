@@ -16,7 +16,7 @@ export default function WellnessProductScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { addItem, items } = useCart();
+    const { addItem, items, updateQuantity, removeItem } = useCart();
     const { showToast } = useToast();
     const { t } = useTranslation();
 
@@ -28,6 +28,9 @@ export default function WellnessProductScreen() {
     const [related, setRelated] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [imageError, setImageError] = useState(false);
+
+    const cartItem = items.find(i => i.id === product?.id);
+    const quantityInCart = cartItem ? cartItem.quantity : 0;
 
     useEffect(() => {
         if (!id) return;
@@ -249,6 +252,23 @@ export default function WellnessProductScreen() {
                         </View>
                     )}
 
+                    {/* Specifications */}
+                    <View style={styles.specSection}>
+                        <Text style={styles.sectionTitle}>{t('wellness.specifications') || 'Product Specifications'}</Text>
+                        <View style={styles.specTable}>
+                            {[
+                                { label: 'SKU', value: product.sku || 'N/A' },
+                                { label: t('wellness.weight') || 'Weight', value: product.weight ? `${product.weight} kg` : '0.1 kg' },
+                                { label: t('wellness.dimensions') || 'Dimensions (L × W × H)', value: product.length && product.width && product.height ? `${product.length} × ${product.width} × ${product.height} cm` : '10 × 10 × 10 cm' },
+                            ].map((spec, idx, arr) => (
+                                <View key={spec.label} style={[styles.specRow, idx === arr.length - 1 && { borderBottomWidth: 0 }]}>
+                                    <Text style={styles.specLabel}>{spec.label}</Text>
+                                    <Text style={styles.specValue}>{spec.value}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+
                     {/* Related Products */}
                     {related.length > 0 && (
                         <View style={styles.relatedSection}>
@@ -295,19 +315,55 @@ export default function WellnessProductScreen() {
                 </View>
             </ScrollView>
 
-            {/* Sticky Add to Cart */}
+            {/* Sticky Add to Cart / Quantity Selector */}
             <View style={[styles.stickyBar, { paddingBottom: insets.bottom + 12 }]}>
-                <TouchableOpacity
-                    style={[styles.addBtn, stockStatus === 'out' && styles.addBtnDisabled]}
-                    onPress={handleAddToCart}
-                    disabled={stockStatus === 'out'}
-                    activeOpacity={0.85}
-                >
-                    <Ionicons name="cart-outline" size={20} color="#fff" />
-                    <Text style={styles.addBtnText}>
-                    {stockStatus === 'out' ? t('wellness.out_of_stock') : t('wellness.add_to_cart')}
-                    </Text>
-                </TouchableOpacity>
+                {stockStatus === 'out' ? (
+                    <TouchableOpacity
+                        style={[styles.addBtn, styles.addBtnDisabled]}
+                        disabled={true}
+                    >
+                        <Text style={styles.addBtnText}>{t('wellness.out_of_stock')}</Text>
+                    </TouchableOpacity>
+                ) : quantityInCart > 0 ? (
+                    <View style={styles.quantitySelectorContainer}>
+                        <TouchableOpacity
+                            style={styles.quantityBtn}
+                            onPress={() => {
+                                if (quantityInCart > 1) {
+                                    updateQuantity(product.id, quantityInCart - 1);
+                                } else {
+                                    removeItem(product.id);
+                                }
+                            }}
+                        >
+                            <Ionicons name="remove" size={20} color="#fff" />
+                        </TouchableOpacity>
+                        <Text style={styles.quantityText}>
+                            {quantityInCart}
+                        </Text>
+                        <TouchableOpacity
+                            style={styles.quantityBtn}
+                            onPress={() => {
+                                if (quantityInCart < product.stock) {
+                                    updateQuantity(product.id, quantityInCart + 1);
+                                } else {
+                                    Alert.alert(t('common.error'), t('wellness.only_left', { count: product.stock }));
+                                }
+                            }}
+                        >
+                            <Ionicons name="add" size={20} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <TouchableOpacity
+                        style={styles.addBtn}
+                        onPress={handleAddToCart}
+                        activeOpacity={0.85}
+                    >
+                        <Ionicons name="cart-outline" size={20} color="#fff" />
+                        <Text style={styles.addBtnText}>{t('wellness.add_to_cart')}</Text>
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     );
@@ -573,6 +629,35 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.textDark,
         lineHeight: 24,
     },
+    specSection: {
+        gap: 8,
+        marginTop: Spacing.md,
+    },
+    specTable: {
+        backgroundColor: colors.bgCard,
+        borderRadius: Radius.md,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        overflow: 'hidden',
+    },
+    specRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        paddingHorizontal: Spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.borderLight,
+    },
+    specLabel: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.body,
+        color: colors.textMuted,
+    },
+    specValue: {
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.body,
+        color: colors.textDark,
+    },
 
     // Related
     relatedSection: {
@@ -665,6 +750,26 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
         backgroundColor: colors.primary,
         borderRadius: Radius.lg,
         paddingVertical: 16,
+    },
+    quantitySelectorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: colors.primary,
+        borderRadius: Radius.lg,
+        paddingHorizontal: Spacing.md,
+        height: 54,
+    },
+    quantityBtn: {
+        width: 44,
+        height: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    quantityText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.body,
+        color: '#fff',
     },
     addBtnDisabled: {
         backgroundColor: colors.bgCardMuted,

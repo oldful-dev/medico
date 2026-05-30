@@ -20,6 +20,11 @@ export interface AddressData {
     latitude: number;
     longitude: number;
     placeId?: string;
+    id?: string;
+    fullName?: string;
+    phone?: string;
+    state?: string;
+    country?: string;
 }
 
 export interface AddressPickerSectionProps {

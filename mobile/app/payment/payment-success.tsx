@@ -25,6 +25,7 @@ export default function PaymentSuccessScreen() {
         bookingAmount?: string;
         bookingLabel?: string;
         checkoutRoute?: string;
+        category?: string;
     }>();
 
     const isSubscriptionSuccess = params.isSubscription === '1';
@@ -144,20 +145,41 @@ export default function PaymentSuccessScreen() {
 
                 {params.bookingId && !isSubscriptionSuccess ? (
                     <>
-                        <TouchableOpacity
-                            style={styles.secondaryBtn}
-                            onPress={() => router.replace({ pathname: '/service-confirmation', params: { bookingId: params.bookingId } })}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={styles.secondaryBtnText}>{t('payment_success.view_booking')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.tertiaryBtn}
-                            onPress={() => router.replace('/my-bookings')}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={styles.tertiaryBtnText}>{t('payment_success.view_all_bookings')}</Text>
-                        </TouchableOpacity>
+                        {params.category === 'wellness' ? (
+                            <>
+                                <TouchableOpacity
+                                    style={styles.secondaryBtn}
+                                    onPress={() => router.replace({ pathname: '/order-tracking', params: { orderId: params.bookingId } } as any)}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.secondaryBtnText}>{t('payment_success.track_order') || 'Track Order'}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.tertiaryBtn}
+                                    onPress={() => router.replace({ pathname: '/order-history', params: { tab: 'Products' } } as any)}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.tertiaryBtnText}>{t('payment_success.view_all_orders') || 'View All Orders'}</Text>
+                                </TouchableOpacity>
+                            </>
+                        ) : (
+                            <>
+                                <TouchableOpacity
+                                    style={styles.secondaryBtn}
+                                    onPress={() => router.replace({ pathname: '/service-confirmation', params: { bookingId: params.bookingId } })}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.secondaryBtnText}>{t('payment_success.view_booking')}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.tertiaryBtn}
+                                    onPress={() => router.replace('/my-bookings')}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.tertiaryBtnText}>{t('payment_success.view_all_bookings')}</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
                     </>
                 ) : null}
             </View>

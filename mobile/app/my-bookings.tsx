@@ -9,6 +9,7 @@ import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { labService, LabOrderListItem } from '@/services/api/labService';
 import { bookingService, Booking as ServiceBooking } from '@/services/api/bookingService';
 import { meetupService } from '@/services/api/meetupService';
+import { storeService, ProductOrder } from '@/services/api/storeService';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '@/context/CartContext';
 
@@ -36,7 +37,7 @@ function serviceCategory(serviceType: string): 'wellness' | 'health' | 'concierg
 // ─── Booking shape ─────────────────────────────────────────────────────────────
 interface Booking {
     id: string;
-    category: 'wellness' | 'health' | 'concierge' | 'meetup' | 'lab';
+    category: 'wellness' | 'health' | 'concierge' | 'meetup' | 'lab' | 'wellness_product';
     serviceName: string;
     bookingId: string;
     scheduledDate: string;
@@ -85,6 +86,7 @@ const CATEGORY_META: Record<string, { icon: string; color: string; label: string
     concierge: { icon: 'briefcase',      color: '#F59E0B', label: 'Concierge' },
     meetup:    { icon: 'people',         color: '#8B5CF6', label: 'Meetup'    },
     lab:       { icon: 'flask',          color: '#06B6D4', label: 'Lab Test'  },
+    wellness_product: { icon: 'basket',  color: '#10B981', label: 'Product'   },
 };
 
 // ─── Normalizers ───────────────────────────────────────────────────────────────
@@ -173,6 +175,41 @@ function normalizeMeetup(reg: any): Booking {
     };
 }
 
+function mapProductStatus(s: string): Booking['status'] {
+    if (s === 'DELIVERED') return 'completed';
+    if (s === 'CANCELLED') return 'cancelled';
+    if (s === 'CONFIRMED' || s === 'DISPATCHED' || s === 'PAID') return 'confirmed';
+    return 'pending';
+}
+
+function normalizeProductOrder(order: ProductOrder): Booking {
+    const items = Array.isArray(order.items) ? order.items : [];
+    let serviceName = '';
+    if (order.product?.name) {
+        serviceName = order.product.name;
+    } else if (items.length > 0) {
+        serviceName = items[0].name || 'Wellness Product';
+        if (items.length > 1) {
+            serviceName += ` + ${items.length - 1} more items`;
+        }
+    } else {
+        serviceName = 'Wellness Product';
+    }
+
+    return {
+        id: order.id,
+        category: 'wellness_product',
+        serviceName,
+        bookingId: order.orderCode,
+        scheduledDate: order.createdAt,
+        status: mapProductStatus(order.status),
+        paymentStatus: order.status === 'PENDING' ? 'pending' : (order.status === 'CANCELLED' ? 'failed' : 'paid'),
+        reportReady: false,
+        createdAt: order.createdAt,
+        amount: order.amount,
+    };
+}
+
 // ─── Screen ────────────────────────────────────────────────────────────────────
 export default function MyBookingsScreen() {
     const { t } = useTranslation();
@@ -194,10 +231,11 @@ export default function MyBookingsScreen() {
     const fetchAll = async () => {
         try {
             setLoading(true);
-            const [labRes, svcRes, meetupRes] = await Promise.allSettled([
+            const [labRes, svcRes, meetupRes, productRes] = await Promise.allSettled([
                 labService.getUserLabOrders(),
                 bookingService.getMyBookings(),
                 meetupService.getMyRegistrations(),
+                storeService.getMyOrders({ limit: 50 }),
             ]);
             const all: Booking[] = [];
             if (labRes.status === 'fulfilled' && labRes.value.success && Array.isArray(labRes.value.data))
@@ -206,6 +244,8 @@ export default function MyBookingsScreen() {
                 all.push(...(svcRes.value.data as ServiceBooking[]).map(normalizeServiceBooking));
             if (meetupRes.status === 'fulfilled' && meetupRes.value.success && Array.isArray(meetupRes.value.data))
                 all.push(...(meetupRes.value.data as any[]).map(normalizeMeetup));
+            if (productRes.status === 'fulfilled' && productRes.value.success && Array.isArray(productRes.value.data))
+                all.push(...(productRes.value.data as ProductOrder[]).map(normalizeProductOrder));
             all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             setBookings(all);
         } catch (e) {
@@ -221,7 +261,7 @@ export default function MyBookingsScreen() {
     const now = new Date();
     const counts: Record<FilterTab, number> = {
         all:         bookings.length,
-        wellness:    bookings.filter(b => b.category === 'wellness').length,
+        wellness:    bookings.filter(b => b.category === 'wellness' || b.category === 'wellness_product').length,
         health:      bookings.filter(b => b.category === 'health' || b.category === 'lab').length,
         concierge:   bookings.filter(b => b.category === 'concierge').length,
         upcoming:    bookings.filter(b => new Date(b.scheduledDate) > now && b.status !== 'cancelled' && b.status !== 'completed').length,
@@ -233,7 +273,7 @@ export default function MyBookingsScreen() {
     const filtered = bookings.filter(b => {
         switch (activeTab) {
             case 'all':         return true;
-            case 'wellness':    return b.category === 'wellness';
+            case 'wellness':    return b.category === 'wellness' || b.category === 'wellness_product';
             case 'health':      return b.category === 'health' || b.category === 'lab';
             case 'concierge':   return b.category === 'concierge';
             case 'upcoming':    return new Date(b.scheduledDate) > now && b.status !== 'cancelled' && b.status !== 'completed';
@@ -289,9 +329,13 @@ export default function MyBookingsScreen() {
         const showDate = !!booking.scheduledDate;
 
         const navToDetail = () => {
-            const type = booking.category === 'lab' ? 'lab'
-                : booking.category === 'meetup' ? 'meetup' : 'service';
-            router.push({ pathname: '/booking-details', params: { bookingId: booking.id, type } } as any);
+            if (booking.category === 'wellness_product') {
+                router.push({ pathname: '/order-tracking', params: { orderId: booking.id } } as any);
+            } else {
+                const type = booking.category === 'lab' ? 'lab'
+                    : booking.category === 'meetup' ? 'meetup' : 'service';
+                router.push({ pathname: '/booking-details', params: { bookingId: booking.id, type } } as any);
+            }
         };
 
         const collectionTypeKey = booking.collectionType
@@ -403,7 +447,7 @@ export default function MyBookingsScreen() {
                     )}
 
                     {/* Rebook — completed/cancelled bookings */}
-                    {(booking.status === 'completed' || booking.status === 'cancelled') && (
+                    {(booking.status === 'completed' || booking.status === 'cancelled') && booking.category !== 'wellness_product' && (
                         <TouchableOpacity
                             style={[S.actionBtn, S.rebookBtn]}
                             onPress={(e) => {
@@ -459,7 +503,7 @@ export default function MyBookingsScreen() {
                     )}
 
                     {/* Cancel — upcoming only */}
-                    {isUpcoming && (
+                    {isUpcoming && booking.category !== 'wellness_product' && (
                         <TouchableOpacity
                             style={[S.actionBtn, S.cancelBtn]}
                             onPress={(e) => { e.stopPropagation(); handleCancel(booking); }}

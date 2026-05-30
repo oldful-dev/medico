@@ -22,6 +22,7 @@ function getPriceForCycle(plan: Plan, cycle: BillingCycle): number {
         case 'QUARTERLY': return plan.quarterlyPrice;
         case 'BIANNUAL':  return plan.biannualPrice;
         case 'YEARLY':    return plan.yearlyPrice;
+        default:          return 0;
     }
 }
 

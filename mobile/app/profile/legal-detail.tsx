@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { legalService, LegalDocument } from '@/services/api/legalService';
 import { useTheme } from '@/context/ThemeContext';
@@ -11,36 +11,41 @@ import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import RenderHtml from 'react-native-render-html';
 import { useTranslation } from 'react-i18next';
 
-export default function ViewDocumentsScreen() {
+export default function LegalDetailScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     const { t } = useTranslation();
+    const { type, title } = useLocalSearchParams<{ type: string; title: string }>();
+
     const [document, setDocument] = useState<LegalDocument | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchStatutoryDisclosures();
-    }, []);
+        if (type) {
+            fetchDocument();
+        }
+    }, [type]);
 
-    const fetchStatutoryDisclosures = async () => {
+    const fetchDocument = async () => {
         setLoading(true);
         try {
-            const res = await legalService.getPublishedDocument('STATUTORY_DISCLOSURES');
+            const res = await legalService.getPublishedDocument(type);
             if (res.success && res.data) {
                 setDocument(res.data);
             } else {
-                Alert.alert('Error', res.message || 'Failed to load document');
+                Alert.alert(t('common.error'), res.message || t('legal.failed_load'));
             }
         } catch (error) {
-            Alert.alert('Error', 'Failed to load document');
+            Alert.alert(t('common.error'), t('legal.failed_load'));
         } finally {
             setLoading(false);
         }
     };
 
     const styles = makeStyles(isDarkMode, colors);
+    const displayTitle = title || document?.title || t('account.docs_title');
 
     return (
         <View style={styles.screen}>
@@ -52,20 +57,20 @@ export default function ViewDocumentsScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('account.view_documents') || 'View Documents'}</Text>
+                <Text style={styles.headerTitle} numberOfLines={1}>{displayTitle}</Text>
             </View>
 
             {loading ? (
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color={Colors.primary} />
-                    <Text style={styles.loadingText}>{t('legal.loading') || 'Loading...'}</Text>
+                    <Text style={styles.loadingText}>{t('legal.loading')}</Text>
                 </View>
             ) : !document ? (
                 <View style={styles.center}>
                     <Ionicons name="alert-circle-outline" size={64} color={Colors.textMuted} />
-                    <Text style={styles.errorText}>{t('legal.failed_load') || 'Failed to load document'}</Text>
-                    <TouchableOpacity style={styles.retryButton} onPress={fetchStatutoryDisclosures}>
-                        <Text style={styles.retryButtonText}>{t('legal.try_again') || 'Try Again'}</Text>
+                    <Text style={styles.errorText}>{t('legal.failed_load')}</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={fetchDocument}>
+                        <Text style={styles.retryButtonText}>{t('legal.try_again')}</Text>
                     </TouchableOpacity>
                 </View>
             ) : (
@@ -73,7 +78,7 @@ export default function ViewDocumentsScreen() {
                     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                         {document.publishedAt && (
                             <Text style={styles.lastUpdated}>
-                                Last {t('legal.last_updated', { date: new Date(document.publishedAt).toLocaleDateString('en-IN') }) || `Updated: ${new Date(document.publishedAt).toLocaleDateString('en-IN')}`}
+                                {t('legal.last_updated', { date: new Date(document.publishedAt).toLocaleDateString('en-IN') })}
                             </Text>
                         )}
 
@@ -89,6 +94,9 @@ export default function ViewDocumentsScreen() {
                                 ul: { marginBottom: Spacing.md, paddingLeft: Spacing.lg },
                                 strong: styles.strong,
                                 div: { marginBottom: Spacing.md },
+                            }}
+                            classesStyles={{
+                                'styled-box': styles.styledBox,
                             }}
                         />
 
@@ -171,6 +179,14 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     strong: {
         fontWeight: '600',
         color: isDarkMode ? '#FFFFFF' : Colors.textDark,
+    },
+    styledBox: {
+        backgroundColor: isDarkMode ? '#2D2D2D' : '#FFF0F5',
+        borderWidth: 1,
+        borderColor: isDarkMode ? '#404040' : '#FFD1DC',
+        padding: Spacing.lg,
+        borderRadius: Radius.md,
+        marginVertical: Spacing.lg,
     },
     center: {
         flex: 1,

@@ -176,7 +176,8 @@
     "trip_travels": "Trip & Travels",
     "smart_upgrade": "Smart Upgrade",
     "caregiver_support": "Caregiver\nSupport",
-    "emergency_assist": "Emergency\nAssist"
+    "emergency_assist": "Emergency\nAssist",
+    "tech_helper_essentials": "Tech Helper"
   },
   "booking": {
     "book_service": "Book Service",
@@ -369,7 +370,11 @@
     "note_share": "Always share your previous reports with the doctor",
     "add_to_cart": "Add to Cart",
     "unable_to_load": "Unable to load",
-    "load_error_desc": "There was an issue loading the package details. Please try again."
+    "load_error_desc": "There was an issue loading the package details. Please try again.",
+    "package_one": "Package",
+    "package_other": "Packages",
+    "includes_packages_params": "Includes {{packages}} Package(s) & {{parameters}} Parameter(s)",
+    "note_nabl": "NABL certified labs, quality guaranteed"
   },
   "bill_payment": {
     "header": "Bill Payment",
@@ -523,7 +528,8 @@
     "tab_title": "Account",
     "live_chat_subtitle": "Connect with our support executives instantly on WhatsApp",
     "live_chat_info": "Our support buddies are available to help you with service bookings, payment issues, doctor slots, and more.",
-    "live_chat_status": "Support Active Online"
+    "live_chat_status": "Support Active Online",
+    "live_chat": "Live Chat"
   },
   "plans": {
     "tab_title": "Plans",
@@ -570,7 +576,7 @@
     "subtotal": "Subtotal: ₹{{amount}}",
     "checkout_category": "Checkout {{category}}",
     "grand_total": "Grand Total: ₹{{amount}}",
-    "checkout_all": "Checkout All (Coming Soon)",
+    "checkout_all": "Checkout All",
     "coming_soon": "Coming Soon",
     "unified_coming_soon": "Unified mixed-category checkout is coming soon. Please checkout each category separately for now.",
     "browse_services": "Browse Services",
@@ -596,7 +602,9 @@
     "category_services_desc": "Concierge services",
     "category_other": "Other",
     "category_other_desc": "Other items",
-    "blood_test_package": "Blood Test Package"
+    "blood_test_package": "Blood Test Package",
+    "checkout_all_label": "Combined Checkout",
+    "selected_total": "Selected Total"
   },
   "sos": {
     "title": "My SOS Alerts",
@@ -785,7 +793,8 @@
       "health": "Health",
       "concierge": "Concierge",
       "meetup": "Meetup",
-      "lab": "Lab Test"
+      "lab": "Lab Test",
+      "wellness_product": "Wellness Product"
     },
     "statuses": {
       "confirmed": "Confirmed",
@@ -1160,7 +1169,18 @@
     "cancel": "Cancel",
     "cancel_booking_title": "Cancel Booking",
     "cancel_booking_message": "Are you sure you want to cancel this booking?",
-    "cancelled_success": "Booking cancelled successfully."
+    "cancelled_success": "Booking cancelled successfully.",
+    "header_title": "My Orders",
+    "tab_products": "Products",
+    "empty_products_title": "No product orders yet",
+    "empty_products_desc": "Shop our Wellness Store to see orders here.",
+    "shop_now": "Shop Now",
+    "book_new_service": "Book New Service",
+    "wellness_product_fallback": "Wellness Product",
+    "more_items": "+{{count}} more",
+    "track_btn": "Track",
+    "reorder_btn": "Re-order",
+    "cancel_btn": "Cancel"
   },
   "payments_wallet": {
     "header": "Payments & Wallet",
@@ -1256,7 +1276,13 @@
     "try_again": "Try Again",
     "privacy_policy": "Privacy Policy",
     "terms_conditions": "Terms & Conditions",
-    "refund_policy": "Refund Policy"
+    "refund_policy": "Refund Policy",
+    "disclaimer": "Disclaimer",
+    "service_policy": "Service Scope & Operational Policy",
+    "statutory_disclosures": "Statutory Disclosures",
+    "download_pdf": "Download PDF",
+    "download_title": "Download Documents",
+    "download_started": "Your document download has started successfully."
   },
   "privacy_policy": {
     "header_title": "Privacy Policy"
@@ -2692,7 +2718,9 @@
     "pickup_address": "Address:",
     "pickup_landmark": "Landmark:",
     "pickup_time": "Time:",
-    "pickup_contact": "Contact:"
+    "pickup_contact": "Contact:",
+    "diagnostic_services": "Diagnostic Services",
+    "wellness_products": "Wellness Products"
   },
   "success_screen": {
     "title": "Payment Successful!",
@@ -2874,7 +2902,44 @@
     "filter_mobility_aids": "Mobility Aids",
     "filter_health_monitors": "Health Monitors",
     "filter_supplements": "Supplements",
-    "filter_personal_care": "Personal Care"
+    "filter_personal_care": "Personal Care",
+    "shipping_charge": "Shipping Charge",
+    "courier": "Courier Partner",
+    "estimated_delivery": "Estimated Delivery",
+    "delivery_in_days": "Delivery in {{days}} Days",
+    "track_order_title": "Track Order",
+    "fetching_tracking": "Fetching tracking details…",
+    "load_tracking_error": "Could not load tracking information.",
+    "load_tracking_fail": "Failed to load tracking. Please try again.",
+    "try_again": "Try Again",
+    "expected_by": "Expected by {{date}}",
+    "awb_code": "AWB: {{code}}",
+    "order_progress": "Order Progress",
+    "packing_status_msg": "Your order is being packed. Tracking updates will appear once it's shipped.",
+    "track_on_courier_website": "Track on Courier Website",
+    "stage_placed": "Order Placed",
+    "stage_paid": "Payment Received",
+    "stage_confirmed": "Processing",
+    "stage_dispatched": "Dispatched",
+    "stage_delivered": "Delivered",
+    "stage_cancelled": "Cancelled",
+    "order_details": "Order Details",
+    "delivery_address": "Delivery Address",
+    "payment_summary": "Payment Summary",
+    "product_total": "Product Total",
+    "shipping_charges": "Shipping Charges",
+    "tax_gst": "Taxes & GST",
+    "discount": "Discount",
+    "order_total": "Order Total",
+    "payment_method": "Payment Method",
+    "prepaid": "Prepaid",
+    "cash_on_delivery": "Cash on Delivery",
+    "sku": "SKU",
+    "qty": "Qty",
+    "unit_price": "Unit Price",
+    "weight": "Weight",
+    "dimensions": "Dimensions (L × W × H)",
+    "specifications": "Product Specifications"
   },
   "service_detail": {
     "concierge_services": "Concierge Services",
@@ -3004,7 +3069,9 @@
     "go_home": "Go to Home",
     "proceed_booking": "Proceed to Booking",
     "view_booking": "View Booking Details",
-    "view_all_bookings": "View All Bookings"
+    "view_all_bookings": "View All Bookings",
+    "track_order": "Track Order",
+    "view_all_orders": "View All Orders"
   },
   "refund_request": {
     "header_title": "Refund Request",

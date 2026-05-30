@@ -176,7 +176,8 @@
     "trip_travels": "യാത്ര",
     "smart_upgrade": "സ്മാർട്ട് അപ്ഗ്രേഡ്",
     "caregiver_support": "പരിചാരക പിന്തുണ",
-    "emergency_assist": "അടിയന്തര സഹായം"
+    "emergency_assist": "അടിയന്തര സഹായം",
+    "tech_helper_essentials": "ടെക് ഹെൽപർ"
   },
   "booking": {
     "book_service": "സേവനം ബുക്ക്",
@@ -369,7 +370,11 @@
     "note_share": "പഴയ റിപ്പോർട്ട് ഡോക്ടറെ കാണിക്കുക",
     "add_to_cart": "കാർട്ടിൽ ചേർക്കുക",
     "unable_to_load": "ലോഡ് ചെയ്യാനായില്ല",
-    "load_error_desc": "വിവരം ലോഡിൽ പിശക്. വീണ്ടും ശ്രമിക്കുക."
+    "load_error_desc": "വിവരം ലോഡിൽ പിശക്. വീണ്ടും ശ്രമിക്കുക.",
+    "package_one": "പാക്കേജ്",
+    "package_other": "പാക്കേജുകൾ",
+    "includes_packages_params": "ഇതിൽ {{packages}} പാക്കേജും {{parameters}} പാരാമീറ്ററും അടങ്ങിയിരിക്കുന്നു",
+    "note_nabl": "NABL സാക്ഷ്യപ്പെടുത്തിയ ലാബുകൾ, ഗുണനിലവാരം ഉറപ്പ്"
   },
   "bill_payment": {
     "header": "ബിൽ പേയ്മെന്റ്",
@@ -523,7 +528,8 @@
     "tab_title": "അക്കൗണ്ട്",
     "live_chat_subtitle": "WhatsApp-ൽ ഞങ്ങളുടെ സഹായ ഉദ്യോഗസ്ഥരുമായി ഉടൻ ബന്ധപ്പെടൂ",
     "live_chat_info": "ഞങ്ങളുടെ സഹായ ബഡ്ഡികൾ സേവന ബുക്കിംഗ്, പേയ്‌മെന്റ് പ്രശ്‌നങ്ങൾ, ഡോക്ടർ സ്ലോട്ടുകൾ എന്നിവ സഹായിക്കാൻ ലഭ്യമാണ്.",
-    "live_chat_status": "സഹായം ഓൺലൈനിൽ സജീവം"
+    "live_chat_status": "സഹായം ഓൺലൈനിൽ സജീവം",
+    "live_chat": "ലൈവ് ചാറ്റ്"
   },
   "plans": {
     "tab_title": "പ്ലാനുകൾ",
@@ -615,7 +621,44 @@
     "filter_mobility_aids": "ചലന സഹായ ഉപകരണങ്ങൾ",
     "filter_health_monitors": "ഹെൽത്ത് മോണിറ്ററുകൾ",
     "filter_supplements": "സപ്ലിമെന്റുകൾ",
-    "filter_personal_care": "വ്യക്തിഗത പരിചരണം"
+    "filter_personal_care": "വ്യക്തിഗത പരിചരണം",
+    "shipping_charge": "ഷിപ്പിംഗ് ചാർജ്",
+    "courier": "കൊറിയർ പങ്കാളി",
+    "estimated_delivery": "പ്രതീക്ഷിക്കുന്ന ഡെലിവറി",
+    "delivery_in_days": "{{days}} ദിവസത്തിനുള്ളിൽ ഡെലിവറി",
+    "track_order_title": "ഓർഡർ ട്രാക്ക് ചെയ്യുക",
+    "fetching_tracking": "ട്രാക്കിംഗ് വിവരങ്ങൾ ശേഖരിക്കുന്നു…",
+    "load_tracking_error": "ട്രാക്കിംഗ് വിവരങ്ങൾ ലോഡ് ചെയ്യാനായില്ല.",
+    "load_tracking_fail": "ട്രാക്കിംഗ് ലോഡ് ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു. ദയവായി വീണ്ടും ശ്രമിക്കുക.",
+    "try_again": "വീണ്ടും ശ്രമിക്കുക",
+    "expected_by": "{{date}} തീയതിയോടെ പ്രതീക്ഷിക്കുന്നു",
+    "awb_code": "AWB: {{code}}",
+    "order_progress": "ഓർഡർ പുരോഗതി",
+    "packing_status_msg": "നിങ്ങളുടെ ഓർഡർ പാക്ക് ചെയ്യുകയാണ്. ഷിപ്പ് ചെയ്ത ശേഷം ട്രാക്കിംഗ് വിവരങ്ങൾ ലഭ്യമാകും.",
+    "track_on_courier_website": "കൊറിയർ വെബ്സൈറ്റിൽ ട്രാക്ക് ചെയ്യുക",
+    "stage_placed": "ഓർഡർ നൽകി",
+    "stage_paid": "പേയ്‌മെന്റ് ലഭിച്ചു",
+    "stage_confirmed": "പ്രോസസ്സ് ചെയ്യുന്നു",
+    "stage_dispatched": "അയച്ചു",
+    "stage_delivered": "ഡെലിവറി ചെയ്തു",
+    "stage_cancelled": "റദ്ദാക്കി",
+    "order_details": "ഓർഡർ വിവരങ്ങൾ",
+    "delivery_address": "ഡെലിവറി വിലാസം",
+    "payment_summary": "പേയ്‌മെന്റ് സംഗ്രഹം",
+    "product_total": "ഉൽപ്പന്ന ആകെ",
+    "shipping_charges": "ഷിപ്പിംഗ് ചാർജ്ജ്",
+    "tax_gst": "നികുതിയും ജിഎസ്ടിയും",
+    "discount": "ഡിസ്കൗണ്ട്",
+    "order_total": "ഓർഡർ ആകെ",
+    "payment_method": "പേയ്‌മെന്റ് രീതി",
+    "prepaid": "പ്രീപെയ്ഡ്",
+    "cash_on_delivery": "ക്യാഷ് ഓൺ ഡെലിവറി",
+    "sku": "SKU",
+    "qty": "അളവ്",
+    "unit_price": "യൂണിറ്റ് വില",
+    "weight": "ഭാരം",
+    "dimensions": "അളവുകൾ (നീളം × വീതി × ഉയരം)",
+    "specifications": "ഉൽപ്പന്ന സവിശേഷതകൾ"
   },
   "cart": {
     "header_title": "നിങ്ങളുടെ കാർട്ട്",
@@ -626,7 +669,7 @@
     "subtotal": "ഉപ-ആകെ: ₹{{amount}}",
     "checkout_category": "ചെക്ക്ഔട്ട് {{category}}",
     "grand_total": "ആകെ: ₹{{amount}}",
-    "checkout_all": "എല്ലാം ചെക്ക്ഔട്ട് (ഉടൻ)",
+    "checkout_all": "എല്ലാം ചെക്ക്ഔട്ട്",
     "coming_soon": "ഉടൻ വരുന്നു",
     "unified_coming_soon": "ഏകീകൃത ചെക്ക്ഔട്ട് ഉടൻ. ഇപ്പോൾ വെവ്വേറെ ചെയ്യുക.",
     "browse_services": "സേവനങ്ങൾ ബ്രൗസ് ചെയ്യുക",
@@ -652,7 +695,9 @@
     "category_services_desc": "കൺസേർജ് സേവനങ്ങൾ",
     "category_other": "മറ്റുള്ളവ",
     "category_other_desc": "മറ്റ് ഇനങ്ങൾ",
-    "blood_test_package": "രക്തപരിശോധന പാക്കേജ്"
+    "blood_test_package": "രക്തപരിശോധന പാക്കേജ്",
+    "checkout_all_label": "സംയുക്ത ചെക്ക്ഔട്ട്",
+    "selected_total": "തിരഞ്ഞെടുത്ത ആകെ"
   },
   "sos": {
     "title": "SOS അലേർട്ടുകൾ",
@@ -841,7 +886,8 @@
       "health": "ആരോഗ്യം",
       "concierge": "കൺസേർജ്",
       "meetup": "മീറ്റപ്പ്",
-      "lab": "ലാബ് ടെസ്റ്റ്"
+      "lab": "ലാബ് ടെസ്റ്റ്",
+      "wellness_product": "വെൽനസ് ഉൽപ്പന്നങ്ങൾ"
     },
     "statuses": {
       "confirmed": "സ്ഥിരീകരിച്ചു",
@@ -1206,7 +1252,7 @@
   "order_history": {
     "header": "ഓർഡർ ചരിത്രം",
     "tab_active": "സജീവം",
-    "tab_payment": "പേയ്മെന്റ്",
+    "tab_payment": "പേയ്‌മെന്റ്",
     "tab_history": "ചരിത്രം",
     "no_bookings": "{{tab}} ബുക്കിംഗില്ല",
     "no_bookings_subtitle": "നടപടിയെടുത്താൽ ഇവിടെ കാണാം",
@@ -1216,7 +1262,18 @@
     "cancel": "റദ്ദാക്കുക",
     "cancel_booking_title": "റദ്ദാക്കുക",
     "cancel_booking_message": "ഉറപ്പായും റദ്ദാക്കണോ?",
-    "cancelled_success": "റദ്ദാക്കി"
+    "cancelled_success": "റദ്ദാക്കി",
+    "header_title": "എന്റെ ഓർഡറുകൾ",
+    "tab_products": "ഉൽപ്പന്നങ്ങൾ",
+    "empty_products_title": "ഇതുവരെ ഉൽപ്പന്ന ഓർഡറുകൾ ഇല്ല",
+    "empty_products_desc": "ഇവിടെ ഓർഡറുകൾ കാണാൻ ഞങ്ങളുടെ വെൽനസ് സ്റ്റോറിൽ ഷോപ്പ് ചെയ്യുക.",
+    "shop_now": "ഇപ്പോൾ വാങ്ങുക",
+    "book_new_service": "പുതിയ സേവനം ബുക്ക് ചെയ്യുക",
+    "wellness_product_fallback": "വെൽനസ് ഉൽപ്പന്നം",
+    "more_items": "+{{count}} എണ്ണം കൂടി",
+    "track_btn": "ട്രാക്ക്",
+    "reorder_btn": "വീണ്ടും ഓർഡർ ചെയ്യുക",
+    "cancel_btn": "റദ്ദാക്കുക"
   },
   "payments_wallet": {
     "header": "പേയ്മെന്റ് & വാലറ്റ്",
@@ -1312,7 +1369,13 @@
     "try_again": "വീണ്ടും ശ്രമിക്കൂ",
     "privacy_policy": "സ്വകാര്യതാ നയം",
     "terms_conditions": "നിബന്ധനകളും വ്യവസ്ഥകളും",
-    "refund_policy": "റീഫണ്ട് നയം"
+    "refund_policy": "റീഫണ്ട് നയം",
+    "disclaimer": "നിരാകരണം",
+    "service_policy": "സേവന വ്യാപ്തിയും പ്രവർത്തന നയവും",
+    "statutory_disclosures": "നിയമപരമായ വെളിപ്പെടുത്തലുകൾ",
+    "download_pdf": "പിഡിഎഫ് ഡൗൺലോഡ് ചെയ്യുക",
+    "download_title": "രേഖകൾ ഡൗൺലോഡ് ചെയ്യുക",
+    "download_started": "നിങ്ങളുടെ ഡോക്യുമെന്റ് ഡൗൺലോഡ് വിജയകരമായി ആരംഭിച്ചു."
   },
   "privacy_policy": {
     "header_title": "സ്വകാര്യത"
@@ -2748,7 +2811,9 @@
     "pickup_address": "വിലാസം:",
     "pickup_landmark": "ലാൻഡ്മാർക്ക്:",
     "pickup_time": "സമയം:",
-    "pickup_contact": "ബന്ധപ്പെടൽ:"
+    "pickup_contact": "ബന്ധപ്പെടൽ:",
+    "diagnostic_services": "ഡയഗ്നോസ്റ്റിക് സേവനങ്ങൾ",
+    "wellness_products": "വെൽനസ് ഉൽപ്പന്നങ്ങൾ"
   },
   "success_screen": {
     "title": "പേയ്മെന്റ് വിജയം!",
@@ -3004,7 +3069,9 @@
     "go_home": "ഹോമിലേക്ക് പോകുക",
     "proceed_booking": "ബുക്കിംഗ് തുടരുക",
     "view_booking": "ബുക്കിംഗ് വിവരം കാണുക",
-    "view_all_bookings": "എല്ലാ ബുക്കിംഗും കാണുക"
+    "view_all_bookings": "എല്ലാ ബുക്കിംഗും കാണുക",
+    "track_order": "ഓർഡർ ട്രാക്ക് ചെയ്യുക",
+    "view_all_orders": "എല്ലാ ഓർഡറുകളും കാണുക"
   },
   "refund_request": {
     "header_title": "റീഫണ്ട് അഭ്യർത്ഥന",
