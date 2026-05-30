@@ -66,8 +66,7 @@ export function BannerSlider({ banners, colors }: BannerSliderProps) {
     })(event);
   };
 
-  const handleBannerPress = () => {
-    const banner = activeBanners[currentIndex];
+  const handleBannerPress = (banner: Banner) => {
     if (!banner?.ctaRoute) return;
     router.push(banner.ctaRoute as any);
   };
@@ -86,7 +85,7 @@ export function BannerSlider({ banners, colors }: BannerSliderProps) {
             <TouchableOpacity
               style={s.bannerCard}
               activeOpacity={0.95}
-              onPress={handleBannerPress}
+              onPress={() => handleBannerPress(item)}
             >
               {/* Background Image */}
               <Image

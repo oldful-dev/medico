@@ -28,6 +28,8 @@ export default function LegalPage() {
     const [form, setForm] = useState({ type: 'TERMS_AND_CONDITIONS', title: '', content: '' });
     const [saving, setSaving] = useState(false);
     const [publishing, setPublishing] = useState(false);
+    const [customTypeKey, setCustomTypeKey] = useState('');
+    const [customTypeLabel, setCustomTypeLabel] = useState('');
 
     useEffect(() => { loadDocs(); }, []);
 
@@ -59,17 +61,46 @@ export default function LegalPage() {
         setView('preview');
     }
 
+    function prepareForm() {
+        let submissionForm = { ...form };
+        if (form.type === 'CUSTOM') {
+            if (!customTypeLabel.trim()) {
+                showToast('Custom Page Title is required', 'error');
+                return null;
+            }
+            if (!customTypeKey.trim()) {
+                showToast('Custom Page Key is required', 'error');
+                return null;
+            }
+            const cleanKey = customTypeKey.toUpperCase().trim().replace(/[^A-Z0-9_]/g, '_');
+            if (!cleanKey) {
+                showToast('Invalid Custom Page Key', 'error');
+                return null;
+            }
+            submissionForm.type = cleanKey;
+            submissionForm.title = customTypeLabel.trim();
+        } else {
+            if (!form.title.trim()) {
+                showToast('Title is required', 'error');
+                return null;
+            }
+            submissionForm.title = form.title.trim();
+        }
+        return submissionForm;
+    }
+
     async function handleSave() {
-        if (!form.title.trim()) return showToast('Title is required', 'error');
+        const submissionForm = prepareForm();
+        if (!submissionForm) return;
         setSaving(true);
         try {
             let saved;
             if (editing?.id) {
-                const r = await legalAPI.update(editing.id, form);
+                const r = await legalAPI.update(editing.id, submissionForm);
                 saved = r.data?.data;
                 showToast('Document saved');
             } else {
-                const r = await legalAPI.create(form);
+                const r = await legalAPI.create(submissionForm);
                 saved = r.data?.data;
                 showToast('Document created');
             }
@@ -83,14 +114,15 @@ export default function LegalPage() {
     }
 
     async function handleSaveAndPublish() {
-        if (!form.title.trim()) return showToast('Title is required', 'error');
+        const submissionForm = prepareForm();
+        if (!submissionForm) return;
         setSaving(true);
         try {
             let docId = editing?.id;
             if (docId) {
-                await legalAPI.update(docId, form);
+                await legalAPI.update(docId, submissionForm);
             } else {
-                const r = await legalAPI.create(form);
+                const r = await legalAPI.create(submissionForm);
                 docId = r.data?.data?.id;
             }
             await legalAPI.publish(docId);
@@ -129,8 +161,15 @@ export default function LegalPage() {
         }
     }
 
+    const allDocTypes = { ...DOC_TYPES };
+    docs.forEach(d => {
+        if (!allDocTypes[d.type]) {
+            allDocTypes[d.type] = d.type.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+        }
+    });
+
     // Group docs by type, latest version first
-    const grouped = Object.keys(DOC_TYPES).reduce((acc, type) => {
+    const grouped = Object.keys(allDocTypes).reduce((acc, type) => {
         acc[type] = docs.filter(d => d.type === type).sort((a, b) => b.version - a.version);
         return acc;
     }, {});
@@ -142,7 +181,7 @@ export default function LegalPage() {
                 <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                         <h2>{previewDoc.title}</h2>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Preview — {DOC_TYPES[previewDoc.type]} · v{previewDoc.version}</p>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Preview — {allDocTypes[previewDoc.type] || previewDoc.type} · v{previewDoc.version}</p>
                     </div>
                     <div className="flex gap-2">
                         <button className="btn btn-secondary" onClick={() => setView('list')}><ChevronLeft size={16} /> Back</button>
@@ -190,7 +229,7 @@ export default function LegalPage() {
                     <div>
                         <h2>{isNew ? 'New Legal Document' : 'Edit Document'}</h2>
                         <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-                            {isNew ? 'Create a draft — publish when ready to go live' : `v${editing?.version || 1} · ${DOC_TYPES[form.type]}`}
+                            {isNew ? 'Create a draft — publish when ready to go live' : `v${editing?.version || 1} · ${allDocTypes[form.type] || form.type}`}
                         </p>
                     </div>
                     <div className="flex gap-2">
@@ -223,16 +262,39 @@ export default function LegalPage() {
 
                 <div className="card" style={{ marginBottom: 16 }}>
                     <div className="card-body">
-                        <div className="form-row">
-                            <div className="form-group" style={{ flex: 2 }}>
-                                <label className="form-label">Title *</label>
-                                <input
-                                    className="form-input"
-                                    placeholder="e.g. Terms and Conditions"
-                                    value={form.title}
-                                    onChange={e => setForm({ ...form, title: e.target.value })}
-                                />
-                            </div>
+                        <div className="form-row" style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                            {form.type !== 'CUSTOM' ? (
+                                <div className="form-group" style={{ flex: 2 }}>
+                                    <label className="form-label">Title *</label>
+                                    <input
+                                        className="form-input"
+                                        placeholder="e.g. Terms and Conditions"
+                                        value={form.title}
+                                        onChange={e => setForm({ ...form, title: e.target.value })}
+                                    />
+                                </div>
+                            ) : (
+                                <div style={{ flex: 2, display: 'flex', gap: 12 }}>
+                                    <div className="form-group" style={{ flex: 1 }}>
+                                        <label className="form-label">Custom Page Title *</label>
+                                        <input
+                                            className="form-input"
+                                            placeholder="e.g. Cookie Policy"
+                                            value={customTypeLabel}
+                                            onChange={e => setCustomTypeLabel(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="form-group" style={{ flex: 1 }}>
+                                        <label className="form-label">Custom Page Key *</label>
+                                        <input
+                                            className="form-input"
+                                            placeholder="e.g. COOKIE_POLICY"
+                                            value={customTypeKey}
+                                            onChange={e => setCustomTypeKey(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            )}
                             <div className="form-group" style={{ flex: 1 }}>
                                 <label className="form-label">Document Type</label>
                                 <select
@@ -241,7 +303,8 @@ export default function LegalPage() {
                                     onChange={e => setForm({ ...form, type: e.target.value })}
                                     disabled={!isNew}
                                 >
-                                    {Object.entries(DOC_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                                    {Object.entries(allDocTypes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                                    {isNew && <option value="CUSTOM">+ New Custom Document Page</option>}
                                 </select>
                             </div>
                         </div>
@@ -292,7 +355,7 @@ export default function LegalPage() {
 
             {loading ? <p className="text-muted">Loading…</p> : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
-                    {Object.entries(DOC_TYPES).map(([type, label]) => {
+                    {Object.entries(allDocTypes).map(([type, label]) => {
                         const versions = grouped[type] || [];
                         const published = versions.find(d => d.status === 'PUBLISHED');
 

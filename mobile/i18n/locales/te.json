@@ -176,7 +176,8 @@
     "trip_travels": "ట్రిప్ & ట్రావెల్స్",
     "smart_upgrade": "స్మార్ట్ అప్‌గ్రేడ్",
     "caregiver_support": "సంరక్షకుడు\nసహాయం",
-    "emergency_assist": "అత్యవసర\nసహాయం"
+    "emergency_assist": "అత్యవసర\nసహాయం",
+    "tech_helper_essentials": "టెక్ హెల్పర్"
   },
   "booking": {
     "book_service": "బుక్ సర్వీస్",
@@ -369,7 +370,11 @@
     "note_share": "మీ గత రిపోర్ట్‌లను ఎల్లప్పుడూ డాక్టర్‌తో పంచుకోండి",
     "add_to_cart": "కార్ట్‌కు జోడించు",
     "unable_to_load": "లోడ్ చేయలేకపోయాం",
-    "load_error_desc": "ప్యాకేజీ వివరాలు లోడ్ చేయడంలో సమస్య. దయచేసి మళ్లీ ప్రయత్నించండి."
+    "load_error_desc": "ప్యాకేజీ వివరాలు లోడ్ చేయడంలో సమస్య. దయచేసి మళ్లీ ప్రయత్నించండి.",
+    "package_one": "ప్యాకేజీ",
+    "package_other": "ప్యాకేజీలు",
+    "includes_packages_params": "దీనిలో {{packages}} ప్యాకేజీ(లు) & {{parameters}} పరీక్షలు ఉన్నాయి",
+    "note_nabl": "NABL ధృవీకరించబడిన ల్యాబ్‌లు, నాణ్యత హామీ"
   },
   "bill_payment": {
     "header": "బిల్లు చెల్లింపు",
@@ -523,7 +528,8 @@
     "tab_title": "ఖాతా",
     "live_chat_subtitle": "WhatsApp లో మా సపోర్ట్ ఎగ్జిక్యూటివ్‌లతో తక్షణం కనెక్ట్ అవ్వండి",
     "live_chat_info": "మా సపోర్ట్ బడ్డీలు సేవా బుకింగ్, పేమెంట్ సమస్యలు, డాక్టర్ స్లాట్లు మరియు మరింత సహాయం అందుబాటులో ఉన్నారు.",
-    "live_chat_status": "సపోర్ట్ ఆన్‌లైన్‌లో యాక్టివ్"
+    "live_chat_status": "సపోర్ట్ ఆన్‌లైన్‌లో యాక్టివ్",
+    "live_chat": "లైవ్ చాట్"
   },
   "plans": {
     "tab_title": "ప్రణాళికలు",
@@ -615,7 +621,44 @@
     "filter_mobility_aids": "మోబిలిటీ ఎయిడ్స్",
     "filter_health_monitors": "హెల్త్ మానిటర్లు",
     "filter_supplements": "సప్లిమెంట్లు",
-    "filter_personal_care": "వ్యక్తిగత సంరక్షణ"
+    "filter_personal_care": "వ్యక్తిగత సంరక్షణ",
+    "shipping_charge": "షిప్పింగ్ ఛార్జ్",
+    "courier": "కొరియర్ భాగస్వామి",
+    "estimated_delivery": "అంచనా వేసిన డెలివరీ",
+    "delivery_in_days": "{{days}} రోజుల్లో డెలివరీ",
+    "track_order_title": "ఆర్డర్ ట్రాక్ చేయండి",
+    "fetching_tracking": "ట్రాకింగ్ వివరాలు సేకరిస్తున్నాము…",
+    "load_tracking_error": "ట్రాకింగ్ సమాచారం లోడ్ చేయలేకపోయాము.",
+    "load_tracking_fail": "ట్రాకింగ్ లోడ్ చేయడం విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.",
+    "try_again": "మళ్లీ ప్రయత్నించండి",
+    "expected_by": "{{date}} నాటికి అంచనా",
+    "awb_code": "AWB: {{code}}",
+    "order_progress": "ఆర్డర్ పురోగతి",
+    "packing_status_msg": "మీ ఆర్డర్ ప్యాక్ చేయబడుతోంది. షిప్ అయిన తర్వాత ట్రాకింగ్ అప్‌డేట్స్ కనిపిస్తాయి.",
+    "track_on_courier_website": "కొరియర్ వెబ్‌సైట్‌లో ట్రాక్ చేయండి",
+    "stage_placed": "ఆర్డర్ చేయబడింది",
+    "stage_paid": "చెల్లింపు అందింది",
+    "stage_confirmed": "ప్రాసెస్ అవుతోంది",
+    "stage_dispatched": "పంపబడింది",
+    "stage_delivered": "డెలివరీ చేయబడింది",
+    "stage_cancelled": "రద్దు చేయబడింది",
+    "order_details": "ఆర్డర్ వివరాలు",
+    "delivery_address": "డెలివరీ చిరునామా",
+    "payment_summary": "చెల్లింపు సారాంశం",
+    "product_total": "ఉత్పత్తి మొత్తం",
+    "shipping_charges": "షిప్పింగ్ ఛార్జీలు",
+    "tax_gst": "పన్నులు & జీఎస్‌టీ",
+    "discount": "డిస్కౌంట్",
+    "order_total": "ఆర్డర్ మొత్తం",
+    "payment_method": "చెల్లింపు విధానం",
+    "prepaid": "ప్రీపెయిడ్",
+    "cash_on_delivery": "క్యాష్ ఆన్ డెలివరీ",
+    "sku": "SKU",
+    "qty": "పరిమాణం",
+    "unit_price": "యూనిట్ ధర",
+    "weight": "బరువు",
+    "dimensions": "కొలతలు (పొడవు × వెడల్పు × ఎత్తు)",
+    "specifications": "ఉత్పత్తి వివరాలు"
   },
   "cart": {
     "header_title": "మీ కార్ట్",
@@ -626,7 +669,7 @@
     "subtotal": "ఉపమొత్తం: ₹{{amount}}",
     "checkout_category": "చెక్అవుట్ {{category}}",
     "grand_total": "గ్రాండ్ మొత్తం: ₹{{amount}}",
-    "checkout_all": "అన్నింటినీ చెక్అవుట్ చేయండి (త్వరలో వస్తుంది)",
+    "checkout_all": "అన్నింటినీ చెక్అవుట్ చేయండి",
     "coming_soon": "త్వరలో వస్తుంది",
     "unified_coming_soon": "ఏకీకృత మిశ్రమ-కేటగిరీ చెక్అవుట్ త్వరలో రాబోతోంది. దయచేసి ప్రస్తుతానికి ప్రతి వర్గాన్ని విడిగా చెక్అవుట్ చేయండి.",
     "browse_services": "సేవలను బ్రౌజ్ చేయండి",
@@ -652,7 +695,9 @@
     "category_services_desc": "కన్సార్జ్ సేవలు",
     "category_other": "ఇతర",
     "category_other_desc": "ఇతర వస్తువులు",
-    "blood_test_package": "రక్త పరీక్ష ప్యాకేజీ"
+    "blood_test_package": "రక్త పరీక్ష ప్యాకేజీ",
+    "checkout_all_label": "కలిసి చెక్అవుట్",
+    "selected_total": "ఎంపిక చేసిన మొత్తం"
   },
   "sos": {
     "title": "నా SOS హెచ్చరికలు",
@@ -841,7 +886,8 @@
       "health": "ఆరోగ్యం",
       "concierge": "కన్సియర్జ్",
       "meetup": "మీటప్",
-      "lab": "ల్యాబ్ టెస్ట్"
+      "lab": "ల్యాబ్ టెస్ట్",
+      "wellness_product": "వెల్నెస్ ఉత్పత్తులు"
     },
     "statuses": {
       "confirmed": "ధృవీకరించబడింది",
@@ -1205,7 +1251,7 @@
   },
   "order_history": {
     "header": "ఆర్డర్ చరిత్ర",
-    "tab_active": "చురుకుగా",
+    "tab_active": "యాక్టివ్",
     "tab_payment": "చెల్లింపు",
     "tab_history": "చరిత్ర",
     "no_bookings": "{{tab}} బుకింగ్‌లు లేవు",
@@ -1216,7 +1262,18 @@
     "cancel": "రద్దు చేయి",
     "cancel_booking_title": "బుకింగ్ రద్దు చేయండి",
     "cancel_booking_message": "మీరు ఖచ్చితంగా ఈ బుకింగ్‌ని రద్దు చేయాలనుకుంటున్నారా?",
-    "cancelled_success": "బుకింగ్ విజయవంతంగా రద్దు చేయబడింది."
+    "cancelled_success": "బుకింగ్ విజయవంతంగా రద్దు చేయబడింది.",
+    "header_title": "నా ఆర్డర్లు",
+    "tab_products": "ఉత్పత్తులు",
+    "empty_products_title": "ఇంకా ఎలాంటి ఉత్పత్తుల ఆర్డర్లు లేవు",
+    "empty_products_desc": "ఆర్డర్లను ఇక్కడ చూడటానికి మా వెల్‌నెస్ స్టోర్‌లో షాపింగ్ చేయండి.",
+    "shop_now": "ఇప్పుడే కొనండి",
+    "book_new_service": "కొత్త సేవను బుక్ చేయండి",
+    "wellness_product_fallback": "వెల్‌నెస్ ఉత్పత్తి",
+    "more_items": "+{{count}} మరికొన్ని",
+    "track_btn": "ట్రాక్",
+    "reorder_btn": "మళ్లీ ఆర్డర్ చేయండి",
+    "cancel_btn": "రద్దు చేయండి"
   },
   "payments_wallet": {
     "header": "చెల్లింపులు & వాలెట్",
@@ -1312,7 +1369,13 @@
     "try_again": "మళ్ళీ ప్రయత్నించండి",
     "privacy_policy": "గోప్యతా విధానం",
     "terms_conditions": "నిబంధనలు & షరతులు",
-    "refund_policy": "రిఫండ్ విధానం"
+    "refund_policy": "రిఫండ్ విధానం",
+    "disclaimer": "నిరాకరణ",
+    "service_policy": "సేవా పరిధి & కార్యాచరణ విధానం",
+    "statutory_disclosures": "చట్టబద్ధమైన ప్రకటనలు",
+    "download_pdf": "PDF డౌన్లోడ్ చేయండి",
+    "download_title": "పత్రాలను డౌన్లోడ్ చేయండి",
+    "download_started": "మీ పత్రం డౌన్లోడ్ విజయవంతంగా ప్రారంభించబడింది."
   },
   "privacy_policy": {
     "header_title": "గోప్యతా విధానం"
@@ -2748,7 +2811,9 @@
     "pickup_address": "చిరునామా:",
     "pickup_landmark": "లాండ్‌మార్క్:",
     "pickup_time": "సమయం:",
-    "pickup_contact": "సంప్రదింపు:"
+    "pickup_contact": "సంప్రదింపు:",
+    "diagnostic_services": "డయాగ్నస్టిక్ సేవలు",
+    "wellness_products": "వెల్నెస్ ఉత్పత్తులు"
   },
   "success_screen": {
     "title": "చెల్లింపు విజయవంతమైంది!",
@@ -3004,7 +3069,9 @@
     "go_home": "హోమ్‌కు వెళ్ళండి",
     "proceed_booking": "బుకింగ్ కొనసాగించండి",
     "view_booking": "బుకింగ్ వివరాలు చూడండి",
-    "view_all_bookings": "అన్ని బుకింగ్‌లు చూడండి"
+    "view_all_bookings": "అన్ని బుకింగ్‌లు చూడండి",
+    "track_order": "ఆర్డర్ ట్రాక్ చేయండి",
+    "view_all_orders": "అన్ని ఆర్డర్లు చూడండి"
   },
   "refund_request": {
     "header_title": "రిఫండ్ అభ్యర్థన",

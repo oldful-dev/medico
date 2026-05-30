@@ -63,6 +63,7 @@ const serviceChargeRoutes = require('./routes/serviceCharge.routes');
 const activityRoutes = require('./routes/activity.routes');
 const familyMemberRoutes = require('./routes/familyMember.routes');
 const meetupRoutes = require('./routes/meetup.routes');
+const orderRoutes = require('./routes/order.routes');
 
 // Initialize cron jobs
 const { initCronJobs } = require('./cron');
@@ -257,6 +258,9 @@ app.use('/api/meetups', meetupRoutes);
 
 // Wellness Store
 app.use('/api/wellness', require('./routes/wellness.routes'));
+
+// Orders (Shiprocket logistics)
+app.use('/api/orders', paymentLimiter, orderRoutes);
 
 
 // ═══ ERROR HANDLING ═════════════════════════════════════════

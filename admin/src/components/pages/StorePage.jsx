@@ -4,7 +4,7 @@ import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, Package, Tag, Layers, 
 import { productAPI, categoryAPI } from "@/lib/api";
 import { showToast, formatCurrency } from "@/lib/hooks";
 
-const EMPTY_FORM = { name: '', description: '', price: 0, mrp: 0, stock: 0, isEnabled: true, categoryId: '', imageUrl: '' };
+const EMPTY_FORM = { name: '', description: '', price: 0, mrp: 0, stock: 0, isEnabled: true, categoryId: '', imageUrl: '', sku: '', weight: 0.1, length: 10, width: 10, height: 10 };
 
 export default function StorePage() {
     const [products, setProducts] = useState([]);
@@ -47,7 +47,21 @@ export default function StorePage() {
     }
     function openEdit(p) {
         setEditing(p);
-        setForm({ name: p.name, description: p.description || '', price: p.price, mrp: p.mrp, stock: p.stock, isEnabled: p.isEnabled, categoryId: p.categoryId, imageUrl: p.imageUrl || '' });
+        setForm({
+            name: p.name,
+            description: p.description || '',
+            price: p.price,
+            mrp: p.mrp,
+            stock: p.stock,
+            isEnabled: p.isEnabled,
+            categoryId: p.categoryId,
+            imageUrl: p.imageUrl || '',
+            sku: p.sku || '',
+            weight: p.weight !== undefined && p.weight !== null ? p.weight : 0.1,
+            length: p.length !== undefined && p.length !== null ? p.length : 10,
+            width: p.width !== undefined && p.width !== null ? p.width : 10,
+            height: p.height !== undefined && p.height !== null ? p.height : 10
+        });
         setShowModal(true);
     }
 
@@ -262,6 +276,23 @@ export default function StorePage() {
                                 </div>
                             )}
 
+                            {/* Logistics Details */}
+                            <div style={{ borderTop: '1px solid #eee', paddingTop: 16 }}>
+                                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: '#aaa', marginBottom: 6 }}>Logistics (Shiprocket)</p>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                                    {[
+                                        { label: 'SKU', value: detail.sku || 'Not set', color: 'var(--text-primary)' },
+                                        { label: 'Weight', value: `${detail.weight ?? 0.1} kg`, color: 'var(--text-primary)' },
+                                        { label: 'Dimensions (L x W x H)', value: `${detail.length ?? 10} x ${detail.width ?? 10} x ${detail.height ?? 10} cm`, color: 'var(--text-primary)' },
+                                    ].map(s => (
+                                        <div key={s.label} style={{ background: '#f9fafb', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: '#aaa' }}>{s.label}</span>
+                                            <span style={{ fontSize: 13, fontWeight: 700, color: s.color }}>{s.value}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
                             {/* Image URL */}
                             {detail.imageUrl && (
                                 <div>
@@ -334,6 +365,33 @@ export default function StorePage() {
                                             <img src={form.imageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none'; }} />
                                         </div>
                                     )}
+                                </div>
+                                <div style={{ borderTop: '1px solid #eee', margin: '16px 0', paddingTop: 16 }}>
+                                    <p style={{ fontSize: 12, fontWeight: 700, color: '#666', marginBottom: 12 }}>Shiprocket Logistics Parameters</p>
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label className="form-label">SKU</label>
+                                            <input className="form-input" value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} placeholder="e.g. WELL-KNEE-CAP" />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Weight (kg) *</label>
+                                            <input className="form-input" type="number" step="0.01" min={0} value={form.weight} onChange={e => setForm({ ...form, weight: parseFloat(e.target.value) || 0.1 })} />
+                                        </div>
+                                    </div>
+                                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                                        <div className="form-group">
+                                            <label className="form-label">Length (cm) *</label>
+                                            <input className="form-input" type="number" min={0} value={form.length} onChange={e => setForm({ ...form, length: parseFloat(e.target.value) || 10 })} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Width (cm) *</label>
+                                            <input className="form-input" type="number" min={0} value={form.width} onChange={e => setForm({ ...form, width: parseFloat(e.target.value) || 10 })} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Height (cm) *</label>
+                                            <input className="form-input" type="number" min={0} value={form.height} onChange={e => setForm({ ...form, height: parseFloat(e.target.value) || 10 })} />
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>

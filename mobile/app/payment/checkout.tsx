@@ -54,7 +54,8 @@ export default function CheckoutScreen() {
     const router = useRouter();
     const { t } = useTranslation();
     const { profile, refreshData, isLoading } = useUser();
-    const { items, clearCategory } = useCart();
+    const { items, clearCategory, removeItems } = useCart();
+    const rupee = <Text style={{ fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif' }}>₹</Text>;
 
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
@@ -77,13 +78,29 @@ export default function CheckoutScreen() {
         bookingAmount?: string;
         bookingLabel?: string;
         checkoutRoute?: string;
+        selectedItemIds?: string;
     }>();
 
-    // Get blood test items from cart if blood-test category
-    const isBloodTest = params.category === 'blood-test';
-    const bloodTestItems = isBloodTest
-        ? items.filter(i => i.serviceType?.toLowerCase().includes('blood') || i.serviceType === 'Bloodwork')
+    const [productOrderId, setProductOrderId] = useState<string | null>(null);
+
+    // Split items if category is 'all' or specific categories
+    const selectedIds = params.selectedItemIds ? params.selectedItemIds.split(',') : [];
+    const selectedItems = items.filter(i => selectedIds.length === 0 || selectedIds.includes(i.id));
+
+    const isCategoryAll = params.category === 'all';
+    
+    // Blood test items: if category is 'blood-test' or 'all' (with blood test items selected)
+    const bloodTestItems = (params.category === 'blood-test' || isCategoryAll)
+        ? selectedItems.filter(i => i.serviceType?.toLowerCase().includes('blood') || i.serviceType === 'Bloodwork')
         : [];
+
+    // Wellness items: if category is 'wellness' or 'all' (with wellness items selected)
+    const wellnessItems = (params.category === 'wellness' || isCategoryAll)
+        ? selectedItems.filter(i => i.serviceType === 'product')
+        : [];
+
+    const isBloodTest = bloodTestItems.length > 0;
+    const isWellness = wellnessItems.length > 0;
 
     // ─── Intercept and redirect to Smart Upgrade Prompt if no active plan
     useEffect(() => {
@@ -107,7 +124,9 @@ export default function CheckoutScreen() {
         ? PAYMENT_METHODS.filter(m => m.type !== 'CASH')
         : PAYMENT_METHODS;
 
-    const baseAmount = parseFloat(params.amount ?? '0');
+    const bloodTestBaseAmount = bloodTestItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+    const wellnessBaseAmount = wellnessItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
+    const baseAmount = isCategoryAll ? (bloodTestBaseAmount + wellnessBaseAmount) : parseFloat(params.amount ?? '0');
     const label  = params.label ?? 'Service Booking';
     const isSubscription = !!params.subscriptionId;
 
@@ -119,6 +138,15 @@ export default function CheckoutScreen() {
     const [payLoading,     setPayLoading]     = useState(false);
     const [, setFlowState] = useState<PaymentFlowState>('idle');
     const [, setPendingRecovery] = useState(false);
+
+    // ─── Wellness Specific State ───────────────────────────────────────────
+    const [shippingDetails, setShippingDetails] = useState<{
+        rate: number;
+        courierName: string;
+        estimatedDays: string;
+        available: boolean;
+    } | null>(null);
+    const [shippingLoading, setShippingLoading] = useState(false);
 
     // ─── Address Selection (for product/wellness/blood-test deliveries) ──────
     const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
@@ -132,6 +160,29 @@ export default function CheckoutScreen() {
             setPhoneNumber(cleanPhone);
         }
     }, [profile?.phone]);
+
+    // ─── Sync default address from profile when it loads (for wellness & blood-test)
+    useEffect(() => {
+        if (profile?.addresses?.length && !selectedAddress) {
+            const defaultAddr = (profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0]) as any;
+            if (defaultAddr) {
+                setSelectedAddress({
+                    id: defaultAddr.id,
+                    line1: defaultAddr.line1 || '',
+                    line2: defaultAddr.line2,
+                    cityName: defaultAddr.cityName || '',
+                    pincode: defaultAddr.pincode || '',
+                    landmark: defaultAddr.landmark,
+                    latitude: defaultAddr.latitude || 28.7041,
+                    longitude: defaultAddr.longitude || 77.1025,
+                    fullName: defaultAddr.fullName || profile.name || '',
+                    phone: defaultAddr.phone || '',
+                    state: defaultAddr.state || '',
+                    country: defaultAddr.country || 'India',
+                });
+            }
+        }
+    }, [profile?.addresses, selectedAddress, profile?.name]);
 
     // ─── Blood Test Specific State ─────────────────────────────────────────
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -160,20 +211,16 @@ export default function CheckoutScreen() {
         benefitApplied: boolean;
     } | null>(null);
 
-    // ─── Calculate checkout with benefits
-    // Applies plan benefits based on authenticated user's active subscription
-    // Runs for:
-    // 1. Service bookings (bookingPayload from service screens)
-    // 2. Product/Wellness (cart passing amount + label)
     useEffect(() => {
-        if (params.bookingPayload || (params.amount && params.category && !params.subscriptionId)) {
+        if (params.bookingPayload || (isBloodTest && !isSubscription)) {
             const fetchCalculation = async () => {
                 setCalcLoading(true);
                 try {
-                    const category = mapLabelToCategory(label);
+                    const category = params.bookingPayload ? mapLabelToCategory(label) : 'BLOOD_TEST';
+                    const fee = params.bookingPayload ? baseAmount : bloodTestBaseAmount;
                     const res = await paymentService.calculateCheckout({
                         serviceCategory: category,
-                        vendorFee: baseAmount,
+                        vendorFee: fee,
                         baseAyuxaFee: 0, // dynamic on backend now
                         diagnosticFee: 0
                     });
@@ -187,21 +234,36 @@ export default function CheckoutScreen() {
                 }
             };
             fetchCalculation();
+        } else {
+            setCalculatedPrices(null);
         }
-    }, [params.bookingPayload, params.amount, params.category, label]);
+    }, [params.bookingPayload, isBloodTest, bloodTestBaseAmount, isSubscription, label]);
 
     const benefitApplied = !!calculatedPrices?.benefitApplied;
     const bookingFee = calculatedPrices ? calculatedPrices.breakdown.bookingFee : (isSubscription ? 0 : 299);
     const platformFee = calculatedPrices ? calculatedPrices.breakdown.platformFee : (isSubscription ? 0 : 50);
-    const taxes = calculatedPrices ? calculatedPrices.breakdown.taxes : (isSubscription ? 0 : Math.round(baseAmount * 0.06));
+    const taxes = calculatedPrices ? calculatedPrices.breakdown.taxes : (isSubscription ? 0 : Math.round(bloodTestBaseAmount * 0.06));
     
     // Original charges before waiver (for displaying stroke-through / FREE)
     const originalBookingFee = calculatedPrices?.benefitApplied ? (Math.abs(calculatedPrices.breakdown.benefitDiscount) > 50 ? Math.abs(calculatedPrices.breakdown.benefitDiscount) - 50 : 299) : bookingFee;
     const originalPlatformFee = calculatedPrices?.benefitApplied ? 50 : platformFee;
 
-    const amountWithTaxAndFee = isSubscription
+    const bloodTestTotal = isSubscription 
+        ? bloodTestBaseAmount 
+        : (calculatedPrices ? calculatedPrices.totalAmount : (bloodTestBaseAmount + bookingFee + platformFee + taxes));
+
+    const wellnessTax = Math.round(wellnessBaseAmount * 0.18);
+    const wellnessShipping = Math.round(shippingDetails?.rate || 0);
+    const wellnessTotal = wellnessBaseAmount + wellnessTax + wellnessShipping;
+
+    const isLegacyService = !isBloodTest && !isWellness;
+    const legacyServiceTotal = isSubscription
         ? baseAmount
         : (calculatedPrices ? calculatedPrices.totalAmount : (baseAmount + bookingFee + platformFee + taxes));
+
+    const amountWithTaxAndFee = isLegacyService
+        ? legacyServiceTotal
+        : ((isBloodTest ? bloodTestTotal : 0) + (isWellness ? wellnessTotal : 0));
 
     const [finalAmount,    setFinalAmount]    = useState(amountWithTaxAndFee);
 
@@ -242,6 +304,33 @@ export default function CheckoutScreen() {
             });
         }
     }, [selectedAddress?.latitude, selectedAddress?.longitude]);
+
+    // ─── Wellness: Fetch shipping rate when address changes
+    useEffect(() => {
+        if (!isWellness || !selectedAddress || !selectedAddress.pincode) {
+            return;
+        }
+        const fetchShippingRate = async () => {
+            setShippingLoading(true);
+            try {
+                const res = await storeService.getShippingRate({
+                    pincode: selectedAddress.pincode,
+                    items: wellnessItems.map(i => ({
+                        productId: i.id,
+                        quantity: i.quantity || 1,
+                    })),
+                });
+                if (res.success && res.data) {
+                    setShippingDetails(res.data);
+                }
+            } catch (e) {
+                console.warn('Failed to fetch shipping rate:', e);
+            } finally {
+                setShippingLoading(false);
+            }
+        };
+        fetchShippingRate();
+    }, [selectedAddress?.id, selectedAddress?.pincode, params.category]);
 
     // ─── EDGE CASE: Recover pending payment after app crash/close ──────
     // On mount, check if there's a pending Razorpay order in AsyncStorage.
@@ -341,12 +430,12 @@ export default function CheckoutScreen() {
     const executePayment = useCallback(async () => {
 
         // ─── Wellness/Product Validation ───────────────────────────────────────
-        if (params.category === 'wellness') {
+        if (isWellness) {
             // Check if all wellness products are still enabled
             try {
                 const res = await storeService.getProducts({ limit: 1000 });
                 const disabledItems: string[] = [];
-                bloodTestItems.forEach(item => {
+                wellnessItems.forEach(item => {
                     const product = (res.data || []).find(p => p.id === item.id);
                     if (!product || !product.isEnabled) {
                         disabledItems.push(item.title);
@@ -377,135 +466,204 @@ export default function CheckoutScreen() {
 
         setPayLoading(true);
         try {
-            // ─── STEP 1: Create booking ONLY if we don't already have one
-            // (Mirrors Next.js: bookingId guard with createdBookingIds state)
-            // The booking starts as PENDING and is only CONFIRMED after payment verify.
+            // ─── STEP 1: Create bookings ONLY if we don't already have them
             setFlowState('creating_booking');
-            if (!sessionBookingId.current) {
-                if (isBloodTest) {
-                    // ─── Blood Test Booking ───────────────────────────────────────
-                    // Create separate booking for each blood test package
-                    const calculateAge = (dob: string | undefined) => {
-                        if (!dob) return 0;
-                        const today = new Date();
-                        const birthDate = new Date(dob);
-                        let age = today.getFullYear() - birthDate.getFullYear();
-                        if (today.getMonth() < birthDate.getMonth() ||
-                            (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) {
-                            age--;
-                        }
-                        return age;
-                    };
+            let lastBookingId = isBloodTest ? sessionBookingId.current : null;
+            let lastProductOrderId = isWellness ? productOrderId : null;
 
-                    // Create a booking for each package (Redcliffe requires separate bookings)
-                    const basePayload = {
-                        bookingType: collectionType,
-                        patient: {
-                            name: profile?.name || '',
-                            age: calculateAge(profile?.dateOfBirth),
-                            gender: profile?.gender || 'M',
-                            phone: phoneNumber.startsWith('+91') ? phoneNumber : `+91${phoneNumber}`,
-                            email: profile?.email || '',
-                        },
-                        address: {
-                            lat: coords.lat,
-                            long: coords.long,
-                            pincode: selectedAddress?.pincode || '',
-                            line1: selectedAddress?.line1 || '',
-                            line2: selectedAddress?.line2,
-                            landmark,
-                        },
-                        slot: {
-                            date: selectedDate?.toISOString().split('T')[0] || '',
-                            time: selectedTime,
-                            slotId: selectedSlotId,
-                        },
-                    };
-
-                    let lastBookingId: string | null = null;
-                    for (const item of bloodTestItems) {
-                        const bookingPayload = {
-                            ...basePayload,
-                            packages: [{
-                                code: item.details?.code || item.id,
-                                name: item.details?.name || item.title || '',
-                                cost: item.price || 0,
-                            }],
-                        };
-                        const bookingRes = await labService.holdBooking(bookingPayload);
-                        if (!bookingRes || !(bookingRes as any)?.id) {
-                            setFlowState('failed');
-                            Alert.alert(t('checkout.booking_error'), t('checkout.blood_test_booking_error', { name: item.title || 'Blood Test' }));
-                            return;
-                        }
-                        lastBookingId = (bookingRes as any).id;
+            if (isBloodTest && !lastBookingId) {
+                // ─── Blood Test Booking ───────────────────────────────────────
+                const calculateAge = (dob: string | undefined) => {
+                    if (!dob) return 0;
+                    const today = new Date();
+                    const birthDate = new Date(dob);
+                    let age = today.getFullYear() - birthDate.getFullYear();
+                    if (today.getMonth() < birthDate.getMonth() ||
+                        (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) {
+                        age--;
                     }
-                    // Use the last booking ID for display (or we could use the first one)
-                    sessionBookingId.current = lastBookingId;
-                } else if (params.bookingPayload && !params.subscriptionId) {
-                    // ─── Service/Product Booking ──────────────────────────────────
-                    const payload = JSON.parse(params.bookingPayload as string);
-                    const bookingRes = await bookingService.createBooking({
-                        ...payload,
-                        amount: finalAmount,
-                        paymentMethod: selectedMethod,
-                    });
-                    if (!bookingRes.success || !bookingRes.data) {
+                    return age;
+                };
+
+                // Create a booking for each package (Redcliffe requires separate bookings)
+                const basePayload = {
+                    bookingType: collectionType,
+                    patient: {
+                        name: profile?.name || '',
+                        age: calculateAge(profile?.dateOfBirth),
+                        gender: profile?.gender || 'M',
+                        phone: phoneNumber.startsWith('+91') ? phoneNumber : `+91${phoneNumber}`,
+                        email: profile?.email || '',
+                    },
+                    address: {
+                        lat: coords.lat,
+                        long: coords.long,
+                        pincode: selectedAddress?.pincode || '',
+                        line1: selectedAddress?.line1 || '',
+                        line2: selectedAddress?.line2,
+                        landmark,
+                    },
+                    slot: {
+                        date: selectedDate?.toISOString().split('T')[0] || '',
+                        time: selectedTime,
+                        slotId: selectedSlotId,
+                    },
+                };
+
+                for (const item of bloodTestItems) {
+                    const bookingPayload = {
+                        ...basePayload,
+                        packages: [{
+                            code: item.details?.code || item.id,
+                            name: item.details?.name || item.title || '',
+                            cost: item.price || 0,
+                        }],
+                    };
+                    const bookingRes = await labService.holdBooking(bookingPayload);
+                    if (!bookingRes || !(bookingRes as any)?.id) {
                         setFlowState('failed');
-                        Alert.alert(t('checkout.booking_error'), bookingRes.message ?? t('checkout.booking_error'));
+                        Alert.alert(t('checkout.booking_error'), t('checkout.blood_test_booking_error', { name: item.title || 'Blood Test' }));
                         return;
                     }
-                    sessionBookingId.current = bookingRes.data.id;
+                    lastBookingId = (bookingRes as any).id;
                 }
+                sessionBookingId.current = lastBookingId;
+            }
+
+            if (isWellness && !lastProductOrderId) {
+                // Create multi-item product order
+                const checkoutPayload = {
+                    items: wellnessItems.map(i => ({
+                        productId: i.id,
+                        quantity: i.quantity || 1,
+                    })),
+                    addressId: selectedAddress?.id,
+                    address: selectedAddress ? JSON.stringify({
+                        fullName: selectedAddress.fullName || profile?.name || '',
+                        phone: phoneNumber || selectedAddress.phone || '',
+                        line1: selectedAddress.line1,
+                        line2: selectedAddress.line2,
+                        city: selectedAddress.cityName,
+                        state: selectedAddress.state,
+                        pincode: selectedAddress.pincode,
+                        country: selectedAddress.country || 'India',
+                    }) : undefined,
+                    pincode: selectedAddress?.pincode,
+                };
+                const checkoutRes = await storeService.checkoutCart(checkoutPayload);
+                if (!checkoutRes.success || !checkoutRes.data?.order) {
+                    setFlowState('failed');
+                    Alert.alert(t('checkout.booking_error'), checkoutRes.message || t('checkout.booking_error'));
+                    return;
+                }
+                lastProductOrderId = checkoutRes.data.order.id;
+                setProductOrderId(lastProductOrderId);
+            }
+
+            if (isLegacyService && !sessionBookingId.current && params.bookingPayload && !params.subscriptionId) {
+                // ─── Service/Product Booking ──────────────────────────────────
+                const payload = JSON.parse(params.bookingPayload as string);
+                const bookingRes = await bookingService.createBooking({
+                    ...payload,
+                    amount: finalAmount,
+                    paymentMethod: selectedMethod,
+                });
+                if (!bookingRes.success || !bookingRes.data) {
+                    setFlowState('failed');
+                    Alert.alert(t('checkout.booking_error'), bookingRes.message ?? t('checkout.booking_error'));
+                    return;
+                }
+                sessionBookingId.current = bookingRes.data.id;
             }
 
             // ─── STEP 2: Handle COD (Cash on Delivery) vs Razorpay
             if (selectedMethod === 'CASH') {
                 // COD Flow — Direct success (Booking is already PENDING)
                 setFlowState('success');
-                if (isBloodTest) {
-                    clearCategory('blood-test');
-                    Alert.alert(
-                        t('checkout.booking_confirmed'),
-                        t('checkout.blood_test_confirmed_msg', { amount: finalAmount.toLocaleString('en-IN') }),
-                        [{ text: t('common.ok'), onPress: () => router.replace({
-                            pathname: '/blood-test/success',
-                            params: { bookingId: sessionBookingId.current!, amount: String(finalAmount), packageName: label }
-                        }) }]
-                    );
-                } else {
-                    // Clear cart for wellness/services/products
-                    if (params.category) {
-                        clearCategory(params.category);
+                
+                // Confirm the lab order at partner end!
+                if (isBloodTest && lastBookingId) {
+                    try {
+                        await labService.confirmBooking({
+                            labOrderId: lastBookingId,
+                            razorpayOrderId: 'COD',
+                            isPaid: false
+                        });
+                    } catch (err) {
+                        console.warn('Failed to confirm COD lab booking:', err);
                     }
-                    Alert.alert(
-                        t('checkout.booking_received'),
-                        t('checkout.booking_received_msg', { amount: finalAmount }),
-                        [{ text: t('common.ok'), onPress: () => router.replace({
-                            pathname: '/service-confirmation',
-                            params: { bookingId: sessionBookingId.current! }
-                        }) }]
-                    );
                 }
+
+                // Clear cart categories
+                if (params.selectedItemIds) {
+                    removeItems(params.selectedItemIds.split(','));
+                } else {
+                    if (isBloodTest) clearCategory('blood-test');
+                    if (isWellness) clearCategory('product');
+                    if (isLegacyService && params.category) {
+                        clearCategory(params.category === 'wellness' ? 'product' : params.category);
+                    }
+                }
+
+                let alertMsg = '';
+                if (isBloodTest && isWellness) {
+                    alertMsg = t('checkout.combined_confirmed_msg') || `Your blood test and wellness product orders have been confirmed successfully via Cash on Delivery.`;
+                } else if (isBloodTest) {
+                    alertMsg = t('checkout.blood_test_confirmed_msg', { amount: finalAmount.toLocaleString('en-IN') });
+                } else if (isWellness) {
+                    alertMsg = t('checkout.booking_received_msg', { amount: finalAmount.toLocaleString('en-IN') }) || `Your order of ₹${finalAmount} has been placed successfully via Cash on Delivery.`;
+                } else {
+                    alertMsg = t('checkout.booking_received_msg', { amount: finalAmount });
+                }
+
+                Alert.alert(
+                    t('checkout.booking_confirmed') || 'Booking Confirmed',
+                    alertMsg,
+                    [{ text: t('common.ok'), onPress: () => {
+                        if (isBloodTest && !isWellness) {
+                            router.replace({
+                                pathname: '/blood-test/success',
+                                params: { bookingId: lastBookingId!, amount: String(finalAmount), packageName: label }
+                            });
+                        } else if (isWellness || (isBloodTest && isWellness)) {
+                            router.replace({
+                                pathname: '/my-bookings',
+                                params: { tab: 'wellness' }
+                            } as any);
+                        } else {
+                            router.replace({
+                                pathname: '/service-confirmation',
+                                params: { bookingId: sessionBookingId.current! }
+                            });
+                        }
+                    }}]
+                );
                 return;
             }
 
             // ─── STEP 3: Create Razorpay order on backend
             setFlowState('initiating_order');
-            const initiateRes = isBloodTest
-                ? await paymentService.initiatePayment({
-                    labOrderId: sessionBookingId.current ?? undefined,
-                    amount: finalAmount,
-                    paymentMethod: selectedMethod,
-                    couponCode: couponApplied ? couponCode : undefined,
-                })
-                : await paymentService.initiatePayment({
-                    bookingId: sessionBookingId.current ?? undefined,
-                    subscriptionId: params.subscriptionId,
-                    amount: finalAmount,
-                    paymentMethod: selectedMethod,
-                    couponCode: couponApplied ? couponCode : undefined,
-                });
+            const initiatePayload: any = {
+                amount: finalAmount,
+                paymentMethod: selectedMethod,
+                couponCode: couponApplied ? couponCode : undefined,
+            };
+
+            if (isBloodTest) {
+                initiatePayload.labOrderId = lastBookingId ?? undefined;
+            }
+            if (isWellness) {
+                initiatePayload.productOrderId = lastProductOrderId ?? undefined;
+            }
+            if (isLegacyService) {
+                if (params.bookingPayload && !params.subscriptionId) {
+                    initiatePayload.bookingId = sessionBookingId.current ?? undefined;
+                } else {
+                    initiatePayload.subscriptionId = params.subscriptionId;
+                }
+            }
+
+            const initiateRes = await paymentService.initiatePayment(initiatePayload);
 
             if (!initiateRes.success || !initiateRes.data) {
                 setFlowState('failed');
@@ -612,23 +770,35 @@ export default function CheckoutScreen() {
                     try { await refreshData(); } catch { /* non-blocking */ }
                 }
 
-                if (isBloodTest) {
+                // Clear cart categories
+                if (params.selectedItemIds) {
+                    removeItems(params.selectedItemIds.split(','));
+                } else {
+                    if (isBloodTest) clearCategory('blood-test');
+                    if (isWellness) clearCategory('product');
+                    if (isLegacyService && params.category) {
+                        clearCategory(params.category === 'wellness' ? 'product' : params.category);
+                    }
+                }
+
+                if (isBloodTest && !isWellness) {
                     // ─── Blood Test Success Route ──────────────────────────────
-                    clearCategory('blood-test');
                     router.replace({
                         pathname: '/blood-test/success',
                         params: {
-                            bookingId: sessionBookingId.current ?? '',
+                            bookingId: lastBookingId ?? '',
                             amount: String(finalAmount),
                             packageName: label,
                         },
                     });
+                } else if (isWellness || (isBloodTest && isWellness)) {
+                    // ─── Wellness or Combined Success Route ─────────────────────
+                    router.replace({
+                        pathname: '/my-bookings',
+                        params: { tab: 'wellness' }
+                    } as any);
                 } else {
-                    // ─── Service/Product Success Route ────────────────────────
-                    // Clear cart for wellness/services/products
-                    if (params.category) {
-                        clearCategory(params.category);
-                    }
+                    // ─── Service Success Route ──────────────────────────────────
                     router.replace({
                         pathname: '/payment/payment-success',
                         params: {
@@ -641,6 +811,7 @@ export default function CheckoutScreen() {
                             bookingAmount: params.bookingAmount || '',
                             bookingLabel: params.bookingLabel || '',
                             checkoutRoute: params.checkoutRoute || '',
+                            category: params.category || '',
                         },
                     });
                 }
@@ -692,7 +863,7 @@ export default function CheckoutScreen() {
         } finally {
             setPayLoading(false);
         }
-    }, [payLoading, finalAmount, selectedMethod, couponApplied, couponCode, params, label, router, collectionType, selectedDate, selectedTime, selectedAddress, serviceabilityStatus, phoneNumber]);
+    }, [payLoading, finalAmount, selectedMethod, couponApplied, couponCode, params, label, router, collectionType, selectedDate, selectedTime, selectedAddress, serviceabilityStatus, phoneNumber, wellnessItems, shippingDetails]);
 
     // ─── Open Razorpay native popup ─────────────────────────
     const handlePay = useCallback(async () => {
@@ -753,60 +924,171 @@ export default function CheckoutScreen() {
                 {/* Order Summary */}
                 <View style={styles.card}>
                     <Text style={styles.cardTitle}>{t('checkout.secure_payment_summary')}</Text>
-                    <View style={styles.row}>
-                        <Text style={styles.rowLabel}>{label}</Text>
-                        <Text style={styles.rowValue}>₹{baseAmount.toLocaleString('en-IN')}</Text>
-                    </View>
 
-                    {/* Breakdown Section */}
-                    {!isSubscription && (
-                        <View style={styles.breakdownSection}>
-                            <View style={styles.breakdownRow}>
-                                <Text style={styles.breakdownLabel}>{t('checkout.consultation_service_fee')}</Text>
-                                <Text style={styles.breakdownValue}>₹{baseAmount.toLocaleString('en-IN')}</Text>
-                            </View>
-                            <View style={styles.breakdownRow}>
-                                <Text style={styles.breakdownLabel}>{t('checkout.booking_fee')}</Text>
-                                {benefitApplied ? (
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                        <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>₹{originalBookingFee}</Text>
-                                        <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
-                                    </View>
-                                ) : (
-                                    <Text style={styles.breakdownValue}>₹{bookingFee}</Text>
+                    {isBloodTest && (
+                        <View style={{ marginBottom: Spacing.md }}>
+                            <Text style={styles.sectionLabel}>{t('checkout.diagnostic_services') || 'Diagnostic Services'}</Text>
+                            {bloodTestItems.map((item, idx) => (
+                                <View key={`bt-summary-${idx}`} style={[styles.row, { paddingVertical: Spacing.xs }]}>
+                                    <Text style={[styles.rowLabel, { flex: 1 }]} numberOfLines={1}>
+                                        {item.title} {item.quantity > 1 ? `x${item.quantity}` : ''}
+                                    </Text>
+                                    <Text style={styles.rowValue}>{rupee}{((item.price || 0) * (item.quantity || 1)).toLocaleString('en-IN')}</Text>
+                                </View>
+                            ))}
+                            <View style={styles.breakdownSection}>
+                                <View style={styles.breakdownRow}>
+                                    <Text style={styles.breakdownLabel}>{t('checkout.tests_subtotal') || 'Tests Subtotal'}</Text>
+                                    <Text style={styles.breakdownValue}>{rupee}{bloodTestBaseAmount.toLocaleString('en-IN')}</Text>
+                                </View>
+                                {!isSubscription && (
+                                    <>
+                                        <View style={styles.breakdownRow}>
+                                            <Text style={styles.breakdownLabel}>{t('checkout.booking_fee')}</Text>
+                                            {benefitApplied ? (
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                    <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{rupee}{originalBookingFee}</Text>
+                                                    <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
+                                                </View>
+                                            ) : (
+                                                <Text style={styles.breakdownValue}>{rupee}{bookingFee}</Text>
+                                            )}
+                                        </View>
+                                        <View style={styles.breakdownRow}>
+                                            <Text style={styles.breakdownLabel}>{t('checkout.platform_fee')}</Text>
+                                            {benefitApplied ? (
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                    <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{rupee}{originalPlatformFee}</Text>
+                                                    <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
+                                                </View>
+                                            ) : (
+                                                <Text style={styles.breakdownValue}>{rupee}{platformFee}</Text>
+                                            )}
+                                        </View>
+                                        <View style={styles.breakdownRow}>
+                                            <Text style={styles.breakdownLabel}>{t('checkout.taxes_gst')}</Text>
+                                            <Text style={styles.breakdownValue}>{rupee}{taxes.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</Text>
+                                        </View>
+                                    </>
+                                )}
+                                {benefitApplied && (
+                                    <Text style={styles.benefitNote}>{t('checkout.subscription_benefits_applied')}</Text>
                                 )}
                             </View>
-                            <View style={styles.breakdownRow}>
-                                <Text style={styles.breakdownLabel}>{t('checkout.platform_fee')}</Text>
-                                {benefitApplied ? (
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                        <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>₹{originalPlatformFee}</Text>
-                                        <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
-                                    </View>
-                                ) : (
-                                    <Text style={styles.breakdownValue}>₹{platformFee}</Text>
-                                )}
-                            </View>
-                            <View style={styles.breakdownRow}>
-                                <Text style={styles.breakdownLabel}>{t('checkout.taxes_gst')}</Text>
-                                <Text style={styles.breakdownValue}>₹{taxes.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</Text>
-                            </View>
-                            {benefitApplied && (
-                                <Text style={styles.benefitNote}>{t('checkout.subscription_benefits_applied')}</Text>
-                            )}
                         </View>
                     )}
 
+                    {isWellness && (
+                        <View style={{ marginBottom: Spacing.md }}>
+                            <Text style={styles.sectionLabel}>{t('checkout.wellness_products') || 'Wellness Products'}</Text>
+                            {wellnessItems.map((item, idx) => (
+                                <View key={`wl-summary-${idx}`} style={[styles.row, { paddingVertical: Spacing.xs }]}>
+                                    <Text style={[styles.rowLabel, { flex: 1 }]} numberOfLines={1}>
+                                        {item.title} {item.quantity > 1 ? `x${item.quantity}` : ''}
+                                    </Text>
+                                    <Text style={styles.rowValue}>{rupee}{((item.price || 0) * (item.quantity || 1)).toLocaleString('en-IN')}</Text>
+                                </View>
+                            ))}
+                            <View style={styles.breakdownSection}>
+                                <View style={styles.breakdownRow}>
+                                    <Text style={styles.breakdownLabel}>{t('checkout.subtotal') || 'Subtotal'}</Text>
+                                    <Text style={styles.breakdownValue}>{rupee}{wellnessBaseAmount.toLocaleString('en-IN')}</Text>
+                                </View>
+                                <View style={styles.breakdownRow}>
+                                    <Text style={styles.breakdownLabel}>{t('checkout.taxes_gst') || 'GST (18%)'}</Text>
+                                    <Text style={styles.breakdownValue}>{rupee}{wellnessTax.toLocaleString('en-IN')}</Text>
+                                </View>
+                                <View style={styles.breakdownRow}>
+                                    <Text style={styles.breakdownLabel}>{t('wellness.shipping_charge') || 'Shipping Charge'}</Text>
+                                    {shippingLoading ? (
+                                        <ActivityIndicator size="small" color={colors.primary} />
+                                    ) : (
+                                        <Text style={styles.breakdownValue}>
+                                            {!selectedAddress 
+                                                ? t('checkout.select_address_to_calculate') || 'Select address' 
+                                                : wellnessShipping > 0 
+                                                    ? <Text>{rupee}{wellnessShipping}</Text> 
+                                                    : t('checkout.free') || 'FREE'}
+                                        </Text>
+                                    )}
+                                </View>
+                                {shippingDetails && shippingDetails.courierName ? (
+                                    <View style={styles.breakdownRow}>
+                                        <Text style={styles.breakdownLabel}>{t('wellness.courier') || 'Courier Partner'}</Text>
+                                        <Text style={[styles.breakdownValue, { fontFamily: Fonts.semiBold }]}>
+                                            {shippingDetails.courierName}
+                                        </Text>
+                                    </View>
+                                ) : null}
+                                {shippingDetails && shippingDetails.estimatedDays ? (
+                                    <View style={styles.breakdownRow}>
+                                        <Text style={styles.breakdownLabel}>{t('wellness.estimated_delivery') || 'Estimated Delivery'}</Text>
+                                        <Text style={styles.breakdownValue}>
+                                            {t('wellness.delivery_in_days', { days: shippingDetails.estimatedDays }) || `Delivery in ${shippingDetails.estimatedDays} days`}
+                                        </Text>
+                                    </View>
+                                ) : null}
+                            </View>
+                        </View>
+                    )}
+
+                    {isLegacyService && (
+                        <View style={{ marginBottom: Spacing.md }}>
+                            <View style={styles.row}>
+                                <Text style={styles.rowLabel}>{label}</Text>
+                                <Text style={styles.rowValue}>{rupee}{baseAmount.toLocaleString('en-IN')}</Text>
+                            </View>
+                            <View style={styles.breakdownSection}>
+                                <View style={styles.breakdownRow}>
+                                    <Text style={styles.breakdownLabel}>{t('checkout.consultation_service_fee')}</Text>
+                                    <Text style={styles.breakdownValue}>{rupee}{baseAmount.toLocaleString('en-IN')}</Text>
+                                </View>
+                                {!isSubscription && (
+                                    <>
+                                        <View style={styles.breakdownRow}>
+                                            <Text style={styles.breakdownLabel}>{t('checkout.booking_fee')}</Text>
+                                            {benefitApplied ? (
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                    <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{rupee}{originalBookingFee}</Text>
+                                                    <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
+                                                </View>
+                                            ) : (
+                                                <Text style={styles.breakdownValue}>{rupee}{bookingFee}</Text>
+                                            )}
+                                        </View>
+                                        <View style={styles.breakdownRow}>
+                                            <Text style={styles.breakdownLabel}>{t('checkout.platform_fee')}</Text>
+                                            {benefitApplied ? (
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                    <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{rupee}{originalPlatformFee}</Text>
+                                                    <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
+                                                </View>
+                                            ) : (
+                                                <Text style={styles.breakdownValue}>{rupee}{platformFee}</Text>
+                                            )}
+                                        </View>
+                                        <View style={styles.breakdownRow}>
+                                            <Text style={styles.breakdownLabel}>{t('checkout.taxes_gst')}</Text>
+                                            <Text style={styles.breakdownValue}>{rupee}{taxes.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</Text>
+                                        </View>
+                                    </>
+                                )}
+                                {benefitApplied && (
+                                    <Text style={styles.benefitNote}>{t('checkout.subscription_benefits_applied')}</Text>
+                                )}
+                            </View>
+                        </View>
+                    )}
 
                     {couponApplied && (
                         <View style={styles.row}>
                             <Text style={[styles.rowLabel, { color: isDarkMode ? colors.primary : '#2e7d32' }]}>{t('checkout.coupon_discount')}</Text>
-                            <Text style={[styles.rowValue, { color: isDarkMode ? colors.primary : '#2e7d32' }]}>- ₹{discount.toLocaleString('en-IN')}</Text>
+                            <Text style={[styles.rowValue, { color: isDarkMode ? colors.primary : '#2e7d32' }]}>- {rupee}{discount.toLocaleString('en-IN')}</Text>
                         </View>
                     )}
                     <View style={[styles.row, styles.totalRow]}>
                         <Text style={styles.totalLabel}>{t('checkout.total')}</Text>
-                        <Text style={styles.totalValue}>₹{(amountWithTaxAndFee - discount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</Text>
+                        <Text style={styles.totalValue}>{rupee}{(amountWithTaxAndFee - discount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</Text>
                     </View>
 
                     {benefitApplied && (
@@ -952,15 +1234,15 @@ export default function CheckoutScreen() {
                     </View>
                 )}
 
-                {/* Blood Test: Collection Address — Using AddressPickerSection */}
-                {isBloodTest && collectionType === 'HOME' && (
+                {/* Single Merged Address Picker Section */}
+                {((isBloodTest && collectionType === 'HOME') || isWellness) && (
                     <AddressPickerSection
                         selectedAddress={selectedAddress}
                         onAddressChange={setSelectedAddress}
-                        showServiceabilityCheck={true}
+                        showServiceabilityCheck={isBloodTest}
                         serviceabilityStatus={serviceabilityStatus}
                         onServiceabilityChange={setServiceabilityStatus}
-                        checkServiceabilityFn={async (lat: string, lng: string) => {
+                        checkServiceabilityFn={isBloodTest ? async (lat: string, lng: string) => {
                             try {
                                 const result: any = await labService.checkServiceability(lat, lng);
                                 const isServiceable = result?.status === 'success' || result?.data?.status === 'success' || result?.serviceable === true;
@@ -970,32 +1252,17 @@ export default function CheckoutScreen() {
                                 setServiceabilityStatus('non-serviceable');
                                 return false;
                             }
-                        }}
+                        } : undefined}
                         phoneNumber={phoneNumber}
                         onPhoneChange={setPhoneNumber}
                         landmark={landmark}
                         onLandmarkChange={setLandmark}
-                        title={t('checkout.collection_address')}
+                        title={isBloodTest ? t('checkout.collection_address') : t('checkout.delivery_address')}
                         showPhoneField={true}
-                        showLandmarkField={true}
+                        showLandmarkField={isBloodTest}
                         allowManualEntry={true}
-                        initialLat={parseFloat(coords.lat)}
-                        initialLng={parseFloat(coords.long)}
-                    />
-                )}
-
-                {/* Delivery Address — Only for wellness/products — Using AddressPickerSection */}
-                {params.category === 'wellness' && (
-                    <AddressPickerSection
-                        selectedAddress={selectedAddress}
-                        onAddressChange={setSelectedAddress}
-                        showServiceabilityCheck={false}
-                        phoneNumber={phoneNumber}
-                        onPhoneChange={setPhoneNumber}
-                        title={t('checkout.delivery_address')}
-                        showPhoneField={true}
-                        showLandmarkField={false}
-                        allowManualEntry={true}
+                        initialLat={isBloodTest ? parseFloat(coords.lat) : undefined}
+                        initialLng={isBloodTest ? parseFloat(coords.long) : undefined}
                     />
                 )}
 
@@ -1072,7 +1339,7 @@ export default function CheckoutScreen() {
                 </TouchableOpacity>
             </View>
 
-            {/* Blood Test: Order Confirmation Modal */}
+            {/* Blood Test / Combined: Order Confirmation Modal */}
             {isBloodTest && (
                 <Modal visible={confirmModalVisible} transparent animationType="slide">
                     <View style={styles.modalOverlay}>
@@ -1082,10 +1349,20 @@ export default function CheckoutScreen() {
 
                             <View style={styles.modalSummary}>
                                 {bloodTestItems.map((item, idx) => (
-                                    <View key={idx} style={styles.modalRow}>
+                                    <View key={`bt-modal-${idx}`} style={styles.modalRow}>
                                         <Ionicons name="flask-outline" size={15} color={colors.primary} style={{ marginRight: 8 }} />
                                         <Text style={styles.modalRowLabel} numberOfLines={1}>{item.title}</Text>
                                         <Text style={styles.modalRowValue}>₹{item.price}</Text>
+                                    </View>
+                                ))}
+
+                                {wellnessItems.map((item, idx) => (
+                                    <View key={`wl-modal-${idx}`} style={styles.modalRow}>
+                                        <Ionicons name="cube-outline" size={15} color={colors.primary} style={{ marginRight: 8 }} />
+                                        <Text style={styles.modalRowLabel} numberOfLines={1}>
+                                            {item.title} {item.quantity > 1 ? `(x${item.quantity})` : ''}
+                                        </Text>
+                                        <Text style={styles.modalRowValue}>₹{(item.price || 0) * (item.quantity || 1)}</Text>
                                     </View>
                                 ))}
 
@@ -1103,11 +1380,13 @@ export default function CheckoutScreen() {
                                     <Text style={styles.modalRowValue}>{collectionType === 'LAB' ? t('checkout.lab_visit') : t('checkout.home_collection')}</Text>
                                 </View>
 
-                                {collectionType === 'HOME' && selectedAddress?.line1 && (
+                                {((collectionType === 'HOME' && isBloodTest) || isWellness) && selectedAddress?.line1 && (
                                     <View style={[styles.modalRow, styles.modalDivider]}>
                                         <Ionicons name="location-outline" size={15} color={colors.primary} style={{ marginRight: 8 }} />
                                         <Text style={styles.modalRowLabel}>{t('checkout.address')}</Text>
-                                        <Text style={[styles.modalRowValue, { maxWidth: '55%' }]} numberOfLines={2}>{selectedAddress.line1}</Text>
+                                        <Text style={[styles.modalRowValue, { maxWidth: '55%' }]} numberOfLines={2}>
+                                            {selectedAddress.line1}{selectedAddress.cityName ? `, ${selectedAddress.cityName}` : ''}
+                                        </Text>
                                     </View>
                                 )}
 

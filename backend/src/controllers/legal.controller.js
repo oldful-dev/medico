@@ -35,6 +35,30 @@ const getLegalDocumentById = async (req, res, next) => {
     }
 };
 
+// GET /api/legal/published  (Public — app users)
+const getPublishedDocuments = async (req, res, next) => {
+    try {
+        const docs = await prisma.legalDocument.findMany({
+            where: { status: 'PUBLISHED' },
+            orderBy: [{ type: 'asc' }, { version: 'desc' }],
+        });
+
+        // Deduplicate by type (keep first one which is latest version because of ordering)
+        const latestDocs = [];
+        const seenTypes = new Set();
+        for (const doc of docs) {
+            if (!seenTypes.has(doc.type)) {
+                seenTypes.add(doc.type);
+                latestDocs.push(doc);
+            }
+        }
+
+        sendResponse(res, 200, latestDocs);
+    } catch (error) {
+        next(error);
+    }
+};
+
 // GET /api/legal/published/:type  (Public — app users)
 const getPublishedDocument = async (req, res, next) => {
     try {
@@ -141,6 +165,6 @@ const deleteLegalDocument = async (req, res, next) => {
 };
 
 module.exports = {
-    getLegalDocuments, getLegalDocumentById, getPublishedDocument,
+    getLegalDocuments, getLegalDocumentById, getPublishedDocument, getPublishedDocuments,
     createLegalDocument, updateLegalDocument, publishLegalDocument, deleteLegalDocument,
 };

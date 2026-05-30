@@ -354,6 +354,15 @@ const verifyPayment = async (req, res, next) => {
                 data: { status: 'CONFIRMED' }
             });
 
+            if (payment.labOrder.redcliffeBookingId) {
+                try {
+                    logger.info(`Finalizing Redcliffe booking ${payment.labOrder.redcliffeBookingId} for labOrder ${payment.labOrder.clientRefId}`);
+                    await rc.confirmBooking(payment.labOrder.redcliffeBookingId);
+                } catch (rcErr) {
+                    logger.error(`Redcliffe confirmation failed for labOrder ${payment.labOrder.clientRefId}: ${rcErr.message}`);
+                }
+            }
+
             const { sendPushToUser } = require('../utils/pushNotification.service');
             await sendPushToUser(payment.userId, {
                 title: 'Blood Test Booked!',
@@ -551,11 +560,108 @@ const verifyPayment = async (req, res, next) => {
             }
         }
 
-        // ─── Promote product order: PENDING → PAID ────────────────────────────
+        // ─── Promote product order: PENDING → PAID → auto-push to Shiprocket ────
         if (payment.productOrderId) {
             await prisma.productOrder.update({
                 where: { id: payment.productOrderId },
                 data: { status: 'PAID' },
+            });
+
+            // Fire-and-forget: create Shiprocket order in background
+            setImmediate(async () => {
+                try {
+                    const shiprocket = require('../services/shiprocket.service');
+                    if (!(await shiprocket.isAvailable())) {
+                        logger.warn('[Payment] Shiprocket not available — skipping auto-fulfillment');
+                        return;
+                    }
+                    const { fulfillOrder: srFulfill } = require('./order.controller');
+                    // Build a fake req/res to reuse the controller logic
+                    const orderRecord = await prisma.productOrder.findUnique({
+                        where: { id: payment.productOrderId },
+                        include: {
+                            user: { select: { name: true, phone: true, email: true } },
+                            product: { select: { name: true, sku: true } },
+                        },
+                    });
+                    if (!orderRecord || orderRecord.shiprocketOrderId) return;
+
+                    // Inline fulfillment (mirrors order.controller fulfillOrder)
+                    let addr = {};
+                    try { addr = JSON.parse(orderRecord.address || '{}'); } catch {}
+
+                    const lineItemsRaw = orderRecord.items
+                        ? (Array.isArray(orderRecord.items) ? orderRecord.items : [])
+                        : [{
+                            name: orderRecord.product?.name || 'Product',
+                            sku: orderRecord.product?.sku || orderRecord.orderCode,
+                            units: orderRecord.quantity,
+                            selling_price: String(orderRecord.amount),
+                        }];
+
+                    const WAREHOUSE_PINCODE = process.env.WAREHOUSE_PINCODE || '560001';
+                    const srPayload = {
+                        order_id: orderRecord.orderCode,
+                        order_date: orderRecord.createdAt.toISOString().slice(0, 10),
+                        pickup_location: 'Primary',
+                        billing_customer_name: addr.fullName || orderRecord.user.name || 'Customer',
+                        billing_last_name: '',
+                        billing_address: addr.line1 || 'Address not provided',
+                        billing_address_2: addr.line2 || '',
+                        billing_city: addr.city || 'Bangalore',
+                        billing_pincode: addr.pincode || WAREHOUSE_PINCODE,
+                        billing_state: addr.state || 'Karnataka',
+                        billing_country: addr.country || 'India',
+                        billing_email: orderRecord.user.email || '',
+                        billing_phone: addr.phone || orderRecord.user.phone || '',
+                        shipping_is_billing: 1,
+                        order_items: lineItemsRaw.map(i => {
+                            const qty = i.quantity || i.units || 1;
+                            const unitPrice = parseFloat(i.price) || parseFloat(i.selling_price) || (parseFloat(i.lineTotal) / qty) || (parseFloat(orderRecord.subtotal) / (orderRecord.quantity || 1));
+                            const gstRate = parseFloat(process.env.GST_RATE) || 18;
+                            const unitTax = Math.round((unitPrice * gstRate) / 100);
+                            const sellingPriceInclusive = unitPrice + unitTax;
+                            return {
+                                name: i.name,
+                                sku: i.sku || i.productId,
+                                units: qty,
+                                selling_price: String(sellingPriceInclusive),
+                                discount: '0',
+                                tax: String(gstRate),
+                                hsn: '',
+                            };
+                        }),
+                        payment_method: 'Prepaid',
+                        shipping_charges: orderRecord.shippingCharge || 0,
+                        sub_total: (orderRecord.subtotal || orderRecord.amount) + (orderRecord.tax || 0),
+                        total_discount: orderRecord.discount || 0,
+                        length: 10, breadth: 10, height: 10, weight: 0.5,
+                    };
+
+                    const { shiprocketOrderId, shipmentId } = await shiprocket.createOrder(srPayload);
+                    let awbCode = '', courierName = '', trackingUrl = '';
+                    if (shipmentId) {
+                        const awbResult = await shiprocket.generateAWB(shipmentId).catch(() => ({}));
+                        awbCode = awbResult.awbCode || '';
+                        courierName = awbResult.courierName || '';
+                        trackingUrl = awbResult.trackingUrl || '';
+                    }
+
+                    await prisma.productOrder.update({
+                        where: { id: orderRecord.id },
+                        data: {
+                            shiprocketOrderId,
+                            shipmentId,
+                            ...(awbCode && { awbCode, courierName, trackingUrl }),
+                            status: 'CONFIRMED',
+                            shippingStatus: 'CONFIRMED',
+                        },
+                    });
+
+                    logger.info(`[Payment] SR order auto-created for ${orderRecord.orderCode} → SR:${shiprocketOrderId}, AWB:${awbCode}`);
+                } catch (srErr) {
+                    logger.error('[Payment] Shiprocket auto-fulfillment failed (non-fatal):', srErr.message);
+                }
             });
         }
 

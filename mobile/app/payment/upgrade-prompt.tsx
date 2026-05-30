@@ -119,13 +119,13 @@ export default function UpgradePromptScreen() {
 
     return (
         <View style={styles.screen}>
-            <View style={{ backgroundColor: Colors.primary, height: insets.top }} />
-            <StatusBar style="light" backgroundColor={Colors.primary} />
+            <View style={{ backgroundColor: isDarkMode ? colors.bgHeader : colors.primary, height: insets.top }} />
+            <StatusBar style="light" backgroundColor={isDarkMode ? colors.bgHeader : colors.primary} />
 
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
+                    <Ionicons name="arrow-back" size={24} color={colors.textWhite || '#FFFFFF'} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{t('upgrade_prompt.header_title')}</Text>
             </View>
@@ -151,7 +151,7 @@ export default function UpgradePromptScreen() {
                         <View style={styles.tableRow}>
                             <Text style={[styles.cell, styles.featureName, { flex: 1.2 }]}>{t('upgrade_prompt.row_booking_fee')}</Text>
                             <Text style={styles.cell}>
-                                {calcLoading ? <ActivityIndicator size="small" color={Colors.textBody} /> : t('upgrade_prompt.row_booking_fee_per_visit', { amount: bookingFee })}
+                                {calcLoading ? <ActivityIndicator size="small" color={colors.textMuted} /> : t('upgrade_prompt.row_booking_fee_per_visit', { amount: bookingFee })}
                             </Text>
                             <Text style={[styles.cell, styles.highlightCell]}>{t('upgrade_prompt.row_booking_fee_plan')}</Text>
                         </View>
@@ -191,14 +191,14 @@ export default function UpgradePromptScreen() {
                     <View style={styles.breakdownRow}>
                         <Text style={styles.breakdownLabel}>{t('upgrade_prompt.booking_fee')}</Text>
                         <Text style={styles.breakdownValue}>
-                            {calcLoading ? <ActivityIndicator size="small" color={Colors.primary} /> : `₹${bookingFee.toLocaleString('en-IN')}`}
+                            {calcLoading ? <ActivityIndicator size="small" color={colors.primary} /> : `₹${bookingFee.toLocaleString('en-IN')}`}
                         </Text>
                     </View>
 
                     <View style={styles.breakdownRow}>
                         <Text style={styles.breakdownLabel}>{t('upgrade_prompt.platform_fee')}</Text>
                         <Text style={styles.breakdownValue}>
-                            {calcLoading ? <ActivityIndicator size="small" color={Colors.primary} /> : `₹${platformFee.toLocaleString('en-IN')}`}
+                            {calcLoading ? <ActivityIndicator size="small" color={colors.primary} /> : `₹${platformFee.toLocaleString('en-IN')}`}
                         </Text>
                     </View>
 
@@ -217,7 +217,7 @@ export default function UpgradePromptScreen() {
                     <View style={[styles.breakdownRow, styles.totalRow]}>
                         <Text style={styles.totalLabel}>{t('upgrade_prompt.total_without_upgrade')}</Text>
                         <Text style={styles.totalValue}>
-                            {calcLoading ? <ActivityIndicator size="small" color={Colors.primary} /> : `₹${Math.round(totalWithoutUpgrade).toLocaleString('en-IN')}`}
+                            {calcLoading ? <ActivityIndicator size="small" color={colors.primary} /> : `₹${Math.round(totalWithoutUpgrade).toLocaleString('en-IN')}`}
                         </Text>
                     </View>
                 </View>
@@ -243,7 +243,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     screen: { flex: 1, backgroundColor: colors.bgScreen },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        backgroundColor: Colors.primary,
+        backgroundColor: isDarkMode ? colors.bgHeader : colors.primary,
         paddingHorizontal: Spacing.lg, paddingBottom: 20, paddingTop: 10, position: 'relative',
     },
     backBtn: { position: 'absolute', left: 20, padding: 5, zIndex: 10 },
@@ -254,23 +254,25 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     scrollContent: { padding: Spacing.lg, paddingBottom: 40 },
 
     promoCard: {
-        backgroundColor: '#80F9E7',
+        backgroundColor: isDarkMode ? 'rgba(2, 116, 63, 0.15)' : '#E8F5E9',
         borderRadius: Radius.lg,
         padding: Spacing.lg,
         marginBottom: Spacing.lg,
+        borderWidth: 1,
+        borderColor: isDarkMode ? 'rgba(2, 116, 63, 0.3)' : '#C8E6C9',
         ...Shadow.card,
     },
     promoTitle: {
         fontFamily: Fonts.semiBold, fontSize: FontSize.heading1,
-        color: Colors.primary, marginBottom: 8,
+        color: colors.primary, marginBottom: 8,
     },
     promoHeading: {
         fontFamily: Fonts.semiBold, fontSize: FontSize.heading2,
-        color: Colors.textDark, lineHeight: 24,
+        color: colors.textDark, lineHeight: 24,
     },
     promoSub: {
         fontFamily: Fonts.medium, fontSize: FontSize.caption,
-        color: Colors.textBody, marginTop: 12, marginBottom: 16,
+        color: colors.textMuted, marginTop: 12, marginBottom: 16,
     },
 
     // Table styles
@@ -279,47 +281,47 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         borderRadius: Radius.md,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.05)',
+        borderColor: colors.borderLight,
     },
     tableRow: {
         flexDirection: 'row',
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(0,0,0,0.05)',
+        borderBottomColor: colors.borderLight,
         alignItems: 'center',
     },
     tableHeader: {
-        backgroundColor: '#FFF0EA',
+        backgroundColor: isDarkMode ? colors.bgScreen : '#F9FAFB',
     },
     cell: {
         flex: 1,
         padding: 10,
         fontFamily: Fonts.regular,
         fontSize: 11,
-        color: Colors.textBody,
+        color: colors.textMuted,
         textAlign: 'center',
     },
     featureName: {
         fontFamily: Fonts.medium,
-        color: Colors.textDark,
+        color: colors.textDark,
         textAlign: 'left',
     },
     headerCell: {
         fontFamily: Fonts.semiBold,
-        color: '#D46A43',
+        color: isDarkMode ? colors.primary : '#D46A43',
     },
     highlightHeader: {
-        backgroundColor: Colors.primary,
-        color: Colors.textWhite,
+        backgroundColor: colors.primary,
+        color: colors.textWhite || '#FFFFFF',
     },
     highlightCell: {
         fontFamily: Fonts.medium,
-        color: Colors.primary,
-        backgroundColor: '#F0FFF8',
+        color: colors.primary,
+        backgroundColor: isDarkMode ? 'rgba(4, 131, 87, 0.1)' : '#E8F5E9',
     },
 
     // Breakdown styles
     breakdownCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.bgCard,
         borderRadius: Radius.lg,
         padding: Spacing.lg,
         marginBottom: Spacing.xl,
@@ -382,7 +384,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     },
     btnUpgradeText: {
         fontFamily: Fonts.semiBold, fontSize: FontSize.body,
-        color: colors.textWhite,
+        color: colors.textWhite || '#FFFFFF',
     },
     btnNoUpgrade: {
         backgroundColor: colors.bgCard,

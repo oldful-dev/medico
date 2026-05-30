@@ -93,21 +93,28 @@ model User {
 }
 
 model Address {
-  id        String   @id @default(uuid())
-  userId    String
-  label     String   @default("Home")
-  line1     String
-  line2     String?
-  cityName  String
-  state     String
-  pincode   String
-  landmark  String?
-  latitude  Float?
-  longitude Float?
-  isDefault Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String   @id @default(uuid())
+  userId       String
+  label        String   @default("Home")
+  line1        String
+  line2        String?
+  cityName     String
+  state        String
+  pincode      String
+  landmark     String?
+  latitude     Float?
+  longitude    Float?
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  // --- Shiprocket exact address fields ---
+  fullName     String?
+  phone        String?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  country      String   @default("India")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("addresses")
 }
@@ -512,7 +519,7 @@ model NotificationTemplate {
 
 model LegalDocument {
   id          String         @id @default(uuid())
-  type        LegalDocType
+  type        String
   title       String
   content     String
   version     Int            @default(1)
@@ -537,6 +544,13 @@ model Product {
   categoryId  String
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+  // --- Shiprocket specifications ---
+  sku         String?
+  weight      Float           @default(0.1)
+  length      Float           @default(10)
+  width       Float           @default(10)
+  height      Float           @default(10)
+  images      String[]        @default([])
   orders      ProductOrder[]
   category    Category        @relation(fields: [categoryId], references: [id])
   waitlist    WaitlistEntry[]
@@ -737,24 +751,33 @@ model WellnessWaitlist {
 }
 
 model ProductOrder {
-  id             String    @id @default(uuid())
-  orderCode      String    @unique
-  userId         String
-  productId      String
-  quantity       Int       @default(1)
-  amount         Float
-  shippingCharge Float     @default(0)
-  status         String    @default("PENDING")
-  address        String?
-  courierName    String?
-  awbCode        String?
-  trackingUrl    String?
-  shippingStatus String    @default("PENDING")
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  payments       Payment[]
-  product        Product   @relation(fields: [productId], references: [id])
-  user           User      @relation(fields: [userId], references: [id])
+  id                String    @id @default(uuid())
+  orderCode         String    @unique
+  userId            String
+  productId         String?
+  quantity          Int       @default(1)
+  amount            Float
+  shippingCharge    Float     @default(0)
+  status            String    @default("PENDING")
+  address           String?
+  courierName       String?
+  awbCode           String?
+  trackingUrl       String?
+  shippingStatus    String    @default("PENDING")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  // --- Shiprocket integration ---
+  subtotal          Float     @default(0)
+  tax               Float     @default(0)
+  discount          Float     @default(0)
+  shiprocketOrderId String?
+  shipmentId        String?
+  trackingStatus    String?
+  trackingData      Json?
+  items             Json?
+  payments          Payment[]
+  product           Product?  @relation(fields: [productId], references: [id])
+  user              User      @relation(fields: [userId], references: [id])
 
   @@map("product_orders")
 }
@@ -836,6 +859,7 @@ model Banner {
   subheading  String    @db.VarChar(80)
   ctaText     String?   @db.VarChar(30)
   ctaRoute    String?   @db.VarChar(100)
+  category    String    @db.VarChar(20) @default("HOME")
   order       Int       @default(0)
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())

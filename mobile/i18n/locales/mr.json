@@ -176,7 +176,8 @@
     "trip_travels": "ट्रिप आणि ट्रॅव्हल्स",
     "smart_upgrade": "स्मार्ट अपग्रेड",
     "caregiver_support": "केअरगिव्हर\nसपोर्ट",
-    "emergency_assist": "अत्यावश्यक\nमदत"
+    "emergency_assist": "अत्यावश्यक\nमदत",
+    "tech_helper_essentials": "टेक हेल्पर"
   },
   "booking": {
     "book_service": "सेवा बुक करा",
@@ -369,7 +370,11 @@
     "note_share": "तुमचे जुने रिपोर्ट नेहमी डॉक्टरांना दाखवा",
     "add_to_cart": "कार्टमध्ये जोडा",
     "unable_to_load": "लोड होऊ शकले नाही",
-    "load_error_desc": "तपशील लोड करण्यात समस्या आली. पुन्हा प्रयत्न करा."
+    "load_error_desc": "तपशील लोड करण्यात समस्या आली. पुन्हा प्रयत्न करा.",
+    "package_one": "पॅकेज",
+    "package_other": "पॅकेजेस",
+    "includes_packages_params": "यात {{packages}} पॅकेज आणि {{parameters}} टेस्ट समाविष्ट आहेत",
+    "note_nabl": "NABL प्रमाणित लॅब्स, गुणवत्तेची humee"
   },
   "bill_payment": {
     "header": "बिल पेमेंट",
@@ -523,7 +528,8 @@
     "tab_title": "खाते",
     "live_chat_subtitle": "WhatsApp वर आमच्या सहाय्य अधिकाऱ्यांशी त्वरित संपर्क साधा",
     "live_chat_info": "आमचे सहाय्य बडीज सेवा बुकिंग, पेमेंट समस्या, डॉक्टर स्लॉट आणि इतर गोष्टींमध्ये मदत करण्यासाठी उपलब्ध आहेत.",
-    "live_chat_status": "सहाय्य ऑनलाइन सक्रिय"
+    "live_chat_status": "सहाय्य ऑनलाइन सक्रिय",
+    "live_chat": "लाइव चॅट"
   },
   "plans": {
     "tab_title": "प्लॅन्स",
@@ -615,7 +621,44 @@
     "filter_mobility_aids": "चालण्यास मदत करणारी साधने",
     "filter_health_monitors": "हेल्थ मॉनिटर",
     "filter_supplements": "सप्लिमेंट",
-    "filter_personal_care": "वैयक्तिक काळजी"
+    "filter_personal_care": "वैयक्तिक काळजी",
+    "shipping_charge": "शिपिंग शुल्क",
+    "courier": "कुरियर भागीदार",
+    "estimated_delivery": "अंदाजे डिलिव्हरी",
+    "delivery_in_days": "{{days}} दिवसांत डिलिव्हरी",
+    "track_order_title": "ऑर्डर ट्रॅक करा",
+    "fetching_tracking": "ट्रॅकिंग तपशील आणत आहे…",
+    "load_tracking_error": "ट्रॅकिंग माहिती लोड होऊ शकली नाही.",
+    "load_tracking_fail": "ट्रॅकिंग लोड करण्यात अयशस्वी. कृपया पुन्हा प्रयत्न करा.",
+    "try_again": "पुन्हा प्रयत्न करा",
+    "expected_by": "{{date}} पर्यंत अपेक्षित",
+    "awb_code": "AWB: {{code}}",
+    "order_progress": "ऑर्डर प्रगती",
+    "packing_status_msg": "तुमचा ऑर्डर पॅक केला जात आहे. शिप केल्यानंतर ट्रॅकिंग अपडेट्स दिसतील.",
+    "track_on_courier_website": "कुरियर वेबसाइटवर ट्रॅक करा",
+    "stage_placed": "ऑर्डर नोंदवली",
+    "stage_paid": "पेमेंट मिळाले",
+    "stage_confirmed": "प्रक्रिया सुरू आहे",
+    "stage_dispatched": "पाठवले",
+    "stage_delivered": "वितरित केले",
+    "stage_cancelled": "रद्द केले",
+    "order_details": "ऑर्डर तपशील",
+    "delivery_address": "डिलिव्हरी पत्ता",
+    "payment_summary": "पेमेंट सारांश",
+    "product_total": "उत्पादन एकूण",
+    "shipping_charges": "शिपिंग शुल्क",
+    "tax_gst": "कर आणि जीएसटी",
+    "discount": "सवलत",
+    "order_total": "एकूण ऑर्डर",
+    "payment_method": "पेमेंट पद्धत",
+    "prepaid": "प्रीपेड",
+    "cash_on_delivery": "कॅश ऑन डिलिव्हरी",
+    "sku": "एसकेयू",
+    "qty": "प्रमाण",
+    "unit_price": "इतका दर",
+    "weight": "वजन",
+    "dimensions": "आयाम (लांबी × रुंदी × उंची)",
+    "specifications": "उत्पादन तपशील"
   },
   "cart": {
     "header_title": "तुमची कार्ट",
@@ -626,7 +669,7 @@
     "subtotal": "एकूण: ₹{{amount}}",
     "checkout_category": "चेकआऊट {{category}}",
     "grand_total": "सर्व एकूण: ₹{{amount}}",
-    "checkout_all": "सर्व चेकआऊट करा (लवकरच)",
+    "checkout_all": "सर्व चेकआऊट करा",
     "coming_soon": "लवकरच येत आहे",
     "unified_coming_soon": "सर्व वस्तूंचे एकत्रित चेकआऊट लवकरच उपलब्ध होईल. तोपर्यंत कृपया प्रत्येक श्रेणीचे वेगळे चेकआऊट करा.",
     "browse_services": "सेवा ब्राउझ करा",
@@ -652,7 +695,9 @@
     "category_services_desc": "कन्सिएर्ज सेवा",
     "category_other": "इतर",
     "category_other_desc": "इतर वस्तू",
-    "blood_test_package": "रक्त तपासणी पॅकेज"
+    "blood_test_package": "रक्त तपासणी पॅकेज",
+    "checkout_all_label": "संयुक्त चेकआऊट",
+    "selected_total": "निवडलेले एकूण"
   },
   "sos": {
     "title": "माझे SOS अलर्ट्स",
@@ -841,7 +886,8 @@
       "health": "आरोग्य",
       "concierge": "कंसीयज",
       "meetup": "मीटअप",
-      "lab": "लॅब टेस्ट"
+      "lab": "लॅब टेस्ट",
+      "wellness_product": "कल्याण उत्पादने"
     },
     "statuses": {
       "confirmed": "निश्चित",
@@ -1216,7 +1262,18 @@
     "cancel": "रद्द करा",
     "cancel_booking_title": "बुकिंग रद्द करा",
     "cancel_booking_message": "तुम्हाला खात्री आहे की तुम्ही हे बुक्यिंग रद्द करू इच्छिता?",
-    "cancelled_success": "बुकिंग यशस्वीरित्या रद्द केले."
+    "cancelled_success": "बुकिंग यशस्वीरित्या रद्द केले.",
+    "header_title": "माझे ऑर्डर्स",
+    "tab_products": "उत्पादने",
+    "empty_products_title": "अद्याप कोणतेही उत्पादन ऑर्डर्स नाहीत",
+    "empty_products_desc": "येथे ऑर्डर्स पाहण्यासाठी आमच्या वेलनेस स्टोअरमधून खरेदी करा.",
+    "shop_now": "आता खरेदी करा",
+    "book_new_service": "नवीन सेवा बुक करा",
+    "wellness_product_fallback": "वेलनेस उत्पादन",
+    "more_items": "+{{count}} अधिक",
+    "track_btn": "ट्रॅक",
+    "reorder_btn": "पुन्हा ऑर्डर करा",
+    "cancel_btn": "रद्द करा"
   },
   "payments_wallet": {
     "header": "पेमेंट्स आणि वॉलेट",
@@ -1312,7 +1369,13 @@
     "try_again": "पुन्हा प्रयत्न करा",
     "privacy_policy": "गोपनीयता धोरण",
     "terms_conditions": "अटी व शर्ती",
-    "refund_policy": "परतावा धोरण"
+    "refund_policy": "परतावा धोरण",
+    "disclaimer": "अस्वीकरण",
+    "service_policy": "सेवा व्याप्ती आणि परिचालन धोरण",
+    "statutory_disclosures": "वैधानिक खुलासे",
+    "download_pdf": "पीडीएफ डाउनलोड करा",
+    "download_title": "दस्तऐवज डाउनलोड करा",
+    "download_started": "तुमचे दस्तऐवज डाउनलोड यशस्वीरित्या सुरू झाले आहे।"
   },
   "privacy_policy": {
     "header_title": "गोपनीयता धोरण"
@@ -2748,7 +2811,9 @@
     "pickup_address": "पत्ता:",
     "pickup_landmark": "खूण:",
     "pickup_time": "वेळ:",
-    "pickup_contact": "संपर्क:"
+    "pickup_contact": "संपर्क:",
+    "diagnostic_services": "डायग्नोस्टिक सेवा",
+    "wellness_products": "वेलनेस उत्पादने"
   },
   "success_screen": {
     "title": "पेमेंट यशस्वी!",
@@ -3004,7 +3069,9 @@
     "go_home": "मुख्यपृष्ठावर जा",
     "proceed_booking": "बुकिंगसाठी पुढे जा",
     "view_booking": "बुकिंग तपशील पहा",
-    "view_all_bookings": "सर्व बुकिंग्स पहा"
+    "view_all_bookings": "सर्व बुकिंग्स पहा",
+    "track_order": "ऑर्डर ट्रॅक करा",
+    "view_all_orders": "सर्व ऑर्डर्स पहा"
   },
   "refund_request": {
     "header_title": "रिफंड विनंती",

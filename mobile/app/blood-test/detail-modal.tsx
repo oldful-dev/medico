@@ -14,6 +14,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { labService, type LabPackage } from '@/services/api/labService';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
+import { useTranslation } from 'react-i18next';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -54,6 +55,7 @@ export function BloodTestDetailModal({
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const { t } = useTranslation();
     // useSafeAreaInsets must be called INSIDE the modal component — Modals render
     // outside the normal React tree so the provider context is still inherited,
     // but the inset values are only meaningful when read here, not from a parent.
@@ -181,7 +183,7 @@ export function BloodTestDetailModal({
                                     )}
                                 </View>
 
-                                {/* ── Info Grid — Report Time / Collection / Parameters ── */}
+                                {/* ── Info Grid — Report Time / Collection / Packages / Parameters ── */}
                                 <View style={styles.infoGrid}>
                                     <View style={styles.infoItem}>
                                         <MaterialCommunityIcons
@@ -189,7 +191,7 @@ export function BloodTestDetailModal({
                                             size={18}
                                             color={PRIMARY_GREEN}
                                         />
-                                        <Text style={styles.infoLabel}>Report Time</Text>
+                                        <Text style={styles.infoLabel}>{t('blood_test.report_time') || 'Report Time'}</Text>
                                         <Text style={styles.infoValue}>
                                             {(pkg as any).reportTime || '12-24 Hrs'}
                                         </Text>
@@ -200,12 +202,23 @@ export function BloodTestDetailModal({
                                             size={18}
                                             color={PRIMARY_GREEN}
                                         />
-                                        <Text style={styles.infoLabel}>Collection</Text>
-                                        <Text style={styles.infoValue}>Home</Text>
+                                        <Text style={styles.infoLabel}>{t('blood_test.collection') || 'Collection'}</Text>
+                                        <Text style={styles.infoValue}>{t('blood_test.home_collection') || 'Home'}</Text>
+                                    </View>
+                                    <View style={styles.infoItem}>
+                                        <MaterialCommunityIcons
+                                            name="package-variant-closed"
+                                            size={18}
+                                            color={PRIMARY_GREEN}
+                                        />
+                                        <Text style={styles.infoLabel}>{t('blood_test.package_other') || 'Packages'}</Text>
+                                        <Text style={styles.infoValue}>
+                                            {paramGroups.length > 0 ? paramGroups.length : pkg.packages_count || 1}
+                                        </Text>
                                     </View>
                                     <View style={styles.infoItem}>
                                         <Ionicons name="flask" size={18} color={PRIMARY_GREEN} />
-                                        <Text style={styles.infoLabel}>Parameters</Text>
+                                        <Text style={styles.infoLabel}>{t('blood_test.parameters') || 'Parameters'}</Text>
                                         <Text style={styles.infoValue}>
                                             {totalParams > 0 ? totalParams : pkg.tests_count || 0}
                                         </Text>
@@ -222,9 +235,9 @@ export function BloodTestDetailModal({
                                             style={{ marginRight: 8 }}
                                         />
                                         <View style={{ flex: 1 }}>
-                                            <Text style={styles.fastingTitle}>Fasting Required</Text>
+                                            <Text style={styles.fastingTitle}>{t('blood_test.fasting_required') || 'Fasting Required'}</Text>
                                             <Text style={styles.fastingDesc}>
-                                                Avoid food & water for 10-12 hours before collection
+                                                {t('blood_test.fasting_desc') || 'Avoid food & water for 10-12 hours before collection'}
                                             </Text>
                                         </View>
                                     </View>
@@ -240,9 +253,10 @@ export function BloodTestDetailModal({
                                             style={{ marginRight: 6 }}
                                         />
                                         <Text style={styles.sectionTitle}>
-                                            Includes{' '}
-                                            {totalParams > 0 ? totalParams : pkg.tests_count || 0}{' '}
-                                            Parameters
+                                            {t('blood_test.includes_packages_params', {
+                                                packages: paramGroups.length > 0 ? paramGroups.length : pkg.packages_count || 1,
+                                                parameters: totalParams > 0 ? totalParams : pkg.tests_count || 0
+                                            }) || `Includes ${paramGroups.length > 0 ? paramGroups.length : pkg.packages_count || 1} Package(s) & ${totalParams > 0 ? totalParams : pkg.tests_count || 0} Parameter(s)`}
                                         </Text>
                                     </View>
 
@@ -272,7 +286,7 @@ export function BloodTestDetailModal({
                                                         </View>
                                                         <View style={styles.groupHeaderRight}>
                                                             <Text style={styles.groupCount}>
-                                                                {group.package_detail.length} tests
+                                                                {group.package_detail.length} {group.package_detail.length === 1 ? t('blood_test.parameter_one') : t('blood_test.parameter_other') || 'tests'}
                                                             </Text>
                                                             <Ionicons
                                                                 name={
@@ -325,8 +339,10 @@ export function BloodTestDetailModal({
                                                 style={{ marginRight: 8 }}
                                             />
                                             <Text style={styles.parametersText}>
-                                                Complete analysis with{' '}
-                                                {pkg.tests_count || 0} comprehensive parameters
+                                                {pkg.tests_count === 1
+                                                    ? t('blood_test.complete_analysis_one', { count: 1 })
+                                                    : t('blood_test.complete_analysis_other', { count: pkg.tests_count || 0 })
+                                                }
                                             </Text>
                                         </View>
                                     )}
@@ -334,7 +350,7 @@ export function BloodTestDetailModal({
 
                                 {/* ── Preparation ── */}
                                 <View style={styles.section}>
-                                    <Text style={styles.sectionTitle}>Preparation</Text>
+                                    <Text style={styles.sectionTitle}>{t('blood_test.preparation') || 'Preparation'}</Text>
                                     <View style={styles.prepBox}>
                                         <Ionicons
                                             name={
@@ -349,19 +365,19 @@ export function BloodTestDetailModal({
                                         <Text style={styles.prepText}>
                                             {(pkg as any).preparation ||
                                                 (pkg.fasting
-                                                    ? 'Fast for 10-12 hours before sample collection'
-                                                    : 'No special preparation required')}
+                                                    ? t('blood_test.fasting_desc') || 'Avoid food & water for 10-12 hours before collection'
+                                                    : t('blood_test.no_prep') || 'No special preparation required')}
                                         </Text>
                                     </View>
                                 </View>
 
                                 {/* ── Important Notes ── */}
                                 <View style={styles.section}>
-                                    <Text style={styles.sectionTitle}>Important Notes</Text>
+                                    <Text style={styles.sectionTitle}>{t('blood_test.important_notes') || 'Important Notes'}</Text>
                                     {[
-                                        'Report time may vary slightly by location',
-                                        'Always share your previous reports with the doctor',
-                                        'NABL certified labs, quality guaranteed',
+                                        t('blood_test.note_vary') || 'Report time may vary slightly by location',
+                                        t('blood_test.note_share') || 'Always share your previous reports with the doctor',
+                                        t('blood_test.note_nabl') || 'NABL certified labs, quality guaranteed',
                                     ].map((note, i) => (
                                         <View key={i} style={styles.noteItem}>
                                             <Ionicons
@@ -397,7 +413,7 @@ export function BloodTestDetailModal({
                                         marginBottom: 6,
                                     }}
                                 >
-                                    Unable to load
+                                    {t('blood_test.unable_to_load') || 'Unable to load'}
                                 </Text>
                                 <Text
                                     style={{
@@ -407,15 +423,14 @@ export function BloodTestDetailModal({
                                         lineHeight: 18,
                                     }}
                                 >
-                                    There was an issue loading the package details. Please try
-                                    again.
+                                    {t('blood_test.load_error_desc') || 'There was an issue loading the package details. Please try again.'}
                                 </Text>
                             </View>
                         )}
                     </ScrollView>
 
                     {/* ── Sticky Footer ── */}
-                    <View style={[styles.footer, { paddingBottom: 12 + insets.bottom }]}>
+                    <View style={[styles.footer, { paddingBottom: Math.max(24, 16 + insets.bottom) }]}>
                         <TouchableOpacity
                             style={styles.cartBtn}
                             onPress={() => {
@@ -429,7 +444,7 @@ export function BloodTestDetailModal({
                                 color={PRIMARY_GREEN}
                                 style={{ marginRight: 6 }}
                             />
-                            <Text style={styles.cartBtnText}>Add to Cart</Text>
+                            <Text style={styles.cartBtnText}>{t('blood_test.add_to_cart') || 'Add to Cart'}</Text>
                         </TouchableOpacity>
 
                         {onBookNow && (
@@ -442,7 +457,7 @@ export function BloodTestDetailModal({
                                     }
                                 }}
                             >
-                                <Text style={styles.bookBtnText}>Book Now</Text>
+                                <Text style={styles.bookBtnText}>{t('booking.book_now') || 'Book Now'}</Text>
                             </TouchableOpacity>
                         )}
                     </View>

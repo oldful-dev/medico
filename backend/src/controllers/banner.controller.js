@@ -9,7 +9,7 @@ const { sendResponse } = require('../utils/helpers');
 const getHomeBanners = async (req, res, next) => {
   try {
     const banners = await prisma.banner.findMany({
-      where: { isActive: true },
+      where: { category: 'HOME', isActive: true },
       orderBy: { order: 'asc' },
     });
     sendResponse(res, 200, banners);
@@ -68,7 +68,7 @@ const getAllBanners = async (req, res, next) => {
 // POST /api/banners - Admin only: Create new banner
 const createBanner = async (req, res, next) => {
   try {
-    const { imageUrl, heading, subheading, ctaText, ctaRoute, order, isActive } = req.body;
+    const { imageUrl, heading, subheading, ctaText, ctaRoute, category, order, isActive } = req.body;
 
     if (!imageUrl || !heading || !subheading) {
       return res.status(400).json({
@@ -84,6 +84,7 @@ const createBanner = async (req, res, next) => {
         subheading,
         ctaText: ctaText || null,
         ctaRoute: ctaRoute || null,
+        category: category || 'HOME',
         order: order || 0,
         isActive: isActive !== undefined ? isActive : true,
       },
@@ -98,7 +99,7 @@ const createBanner = async (req, res, next) => {
 // PUT /api/banners/:id - Admin only: Update banner
 const updateBanner = async (req, res, next) => {
   try {
-    const { imageUrl, heading, subheading, ctaText, ctaRoute, order, isActive } = req.body;
+    const { imageUrl, heading, subheading, ctaText, ctaRoute, category, order, isActive } = req.body;
 
     const banner = await prisma.banner.findUnique({
       where: { id: req.params.id },
@@ -116,6 +117,7 @@ const updateBanner = async (req, res, next) => {
         ...(subheading && { subheading }),
         ...(ctaText !== undefined && { ctaText: ctaText || null }),
         ...(ctaRoute !== undefined && { ctaRoute: ctaRoute || null }),
+        ...(category !== undefined && { category }),
         ...(order !== undefined && { order }),
         ...(isActive !== undefined && { isActive }),
       },

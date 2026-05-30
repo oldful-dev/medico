@@ -176,7 +176,8 @@
     "trip_travels": "यात्रा",
     "smart_upgrade": "स्मार्ट अपग्रेड",
     "caregiver_support": "देखभाल सहायता",
-    "emergency_assist": "आपातकाल सहायता"
+    "emergency_assist": "आपातकाल सहायता",
+    "tech_helper_essentials": "टेक हेल्पर"
   },
   "booking": {
     "book_service": "सेवा बुक",
@@ -369,7 +370,11 @@
     "note_share": "पुरानी रिपोर्ट डॉक्टर को दिखाएँ",
     "add_to_cart": "कार्ट में जोड़ें",
     "unable_to_load": "लोड नहीं हुआ",
-    "load_error_desc": "विवरण लोड में गड़बड़। फिर कोशिश करें।"
+    "load_error_desc": "विवरण लोड में गड़बड़। फिर कोशिश करें।",
+    "package_one": "पैकेज",
+    "package_other": "पैकेज",
+    "includes_packages_params": "इसमें {{packages}} पैकेज और {{parameters}} टेस्ट शामिल हैं",
+    "note_nabl": "NABL प्रमाणित प्रयोगशालाएं, गुणवत्ता की गारंटी"
   },
   "bill_payment": {
     "header": "बिल भुगतान",
@@ -523,7 +528,8 @@
     "tab_title": "खाता",
     "live_chat_subtitle": "WhatsApp पर हमारे सहायता अधिकारियों से तुरंत जुड़ें",
     "live_chat_info": "हमारे सहायता साथी सेवा बुकिंग, भुगतान समस्याओं, डॉक्टर स्लॉट और अन्य में मदद के लिए उपलब्ध हैं।",
-    "live_chat_status": "सहायता ऑनलाइन सक्रिय"
+    "live_chat_status": "सहायता ऑनलाइन सक्रिय",
+    "live_chat": "लाइव चैट"
   },
   "plans": {
     "tab_title": "योजनाएँ",
@@ -615,7 +621,44 @@
     "filter_mobility_aids": "चलने-फिरने के उपकरण",
     "filter_health_monitors": "हेल्थ मॉनिटर",
     "filter_supplements": "सप्लीमेंट",
-    "filter_personal_care": "व्यक्तिगत देखभाल"
+    "filter_personal_care": "व्यक्तिगत देखभाल",
+    "shipping_charge": "शिपिंग शुल्क",
+    "courier": "कूरियर पार्टनर",
+    "estimated_delivery": "अनुमानित डिलीवरी",
+    "delivery_in_days": "{{days}} दिनों में डिलीवरी",
+    "track_order_title": "ऑर्डर ट्रैक करें",
+    "fetching_tracking": "ट्रैकिंग विवरण प्राप्त किया जा रहा है…",
+    "load_tracking_error": "ट्रैकिंग जानकारी लोड नहीं की जा सकी।",
+    "load_tracking_fail": "ट्रैकिंग लोड करने में विफल। कृपया पुनः प्रयास करें।",
+    "try_again": "पुनः प्रयास करें",
+    "expected_by": "{{date}} तक अपेक्षित",
+    "awb_code": "AWB: {{code}}",
+    "order_progress": "ऑर्डर की प्रगति",
+    "packing_status_msg": "आपका ऑर्डर पैक किया जा रहा है। शिप होने के बाद ट्रैकिंग अपडेट दिखाई देंगे।",
+    "track_on_courier_website": "कूरियर वेबसाइट पर ट्रैक करें",
+    "stage_placed": "ऑर्डर दिया गया",
+    "stage_paid": "भुगतान प्राप्त हुआ",
+    "stage_confirmed": "प्रसंस्करण हो रहा है",
+    "stage_dispatched": "भेज दिया गया",
+    "stage_delivered": "वितरित किया गया",
+    "stage_cancelled": "रद्द किया गया",
+    "order_details": "ऑर्डर का विवरण",
+    "delivery_address": "वितरण का पता",
+    "payment_summary": "भुगतान का सारांश",
+    "product_total": "उत्पाद का कुल",
+    "shipping_charges": "शिपिंग शुल्क",
+    "tax_gst": "कर और जीएसटी",
+    "discount": "छूट",
+    "order_total": "कुल ऑर्डर",
+    "payment_method": "भुगतान का तरीका",
+    "prepaid": "प्रीपेड",
+    "cash_on_delivery": "कैश ऑन डिलीवरी",
+    "sku": "एसकेयू",
+    "qty": "मात्रा",
+    "unit_price": "इकाई मूल्य",
+    "weight": "वजन",
+    "dimensions": "आयाम (लंबाई × चौड़ाई × ऊंचाई)",
+    "specifications": "उत्पाद निर्दिष्टीकरण"
   },
   "cart": {
     "header_title": "आपकी कार्ट",
@@ -626,7 +669,7 @@
     "subtotal": "उप-योग: ₹{{amount}}",
     "checkout_category": "चेकआउट {{category}}",
     "grand_total": "कुल: ₹{{amount}}",
-    "checkout_all": "सभी चेकआउट (जल्द)",
+    "checkout_all": "सभी चेकआउट",
     "coming_soon": "जल्द आ रहा",
     "unified_coming_soon": "एकीकृत चेकआउट जल्द। अभी अलग-अलग करें।",
     "browse_services": "सेवाएं ब्राउज़ करें",
@@ -652,7 +695,9 @@
     "category_services_desc": "द्वारपाल सेवाएं",
     "category_other": "अन्य",
     "category_other_desc": "अन्य वस्तुएं",
-    "blood_test_package": "रक्त परीक्षण पैकेज"
+    "blood_test_package": "रक्त परीक्षण पैकेज",
+    "checkout_all_label": "संयुक्त चेकआउट",
+    "selected_total": "चयनित कुल"
   },
   "sos": {
     "title": "SOS अलर्ट",
@@ -841,7 +886,8 @@
       "health": "स्वास्थ्य",
       "concierge": "कंसीयज",
       "meetup": "मीटअप",
-      "lab": "लैब टेस्ट"
+      "lab": "लैब टेस्ट",
+      "wellness_product": "कल्याण उत्पाद"
     },
     "statuses": {
       "confirmed": "पुष्टि की गई",
@@ -1216,7 +1262,18 @@
     "cancel": "रद्द",
     "cancel_booking_title": "रद्द",
     "cancel_booking_message": "पक्का रद्द करना है?",
-    "cancelled_success": "रद्द हो गया"
+    "cancelled_success": "रद्द हो गया",
+    "header_title": "मेरे ऑर्डर",
+    "tab_products": "उत्पाद",
+    "empty_products_title": "अभी तक कोई उत्पाद ऑर्डर नहीं है",
+    "empty_products_desc": "यहाँ ऑर्डर देखने के लिए हमारे वेलनेस स्टोर पर जाएँ।",
+    "shop_now": "अभी खरीदें",
+    "book_new_service": "नई सेवा बुक करें",
+    "wellness_product_fallback": "वेलनेस उत्पाद",
+    "more_items": "+{{count}} और",
+    "track_btn": "ट्रैक करें",
+    "reorder_btn": "पुनः ऑर्डर करें",
+    "cancel_btn": "रद्द करें"
   },
   "payments_wallet": {
     "header": "भुगतान और वॉलेट",
@@ -1312,7 +1369,13 @@
     "try_again": "फिर से कोशिश करें",
     "privacy_policy": "गोपनीयता नीति",
     "terms_conditions": "नियम और शर्तें",
-    "refund_policy": "रिफंड नीति"
+    "refund_policy": "रिफंड नीति",
+    "disclaimer": "अस्वीकरण",
+    "service_policy": "सेवा का दायरा और परिचालन नीति",
+    "statutory_disclosures": "वैधानिक खुलासे",
+    "download_pdf": "पीडीएफ डाउनलोड करें",
+    "download_title": "दस्तावेज़ डाउनलोड करें",
+    "download_started": "आपका दस्तावेज़ डाउनलोड सफलतापूर्वक शुरू हो गया है।"
   },
   "privacy_policy": {
     "header_title": "गोपनीयता"
@@ -2748,7 +2811,9 @@
     "pickup_address": "पता:",
     "pickup_landmark": "लैंडमार्क:",
     "pickup_time": "समय:",
-    "pickup_contact": "संपर्क:"
+    "pickup_contact": "संपर्क:",
+    "diagnostic_services": "जांच सेवाएं",
+    "wellness_products": "वेलनेस उत्पाद"
   },
   "success_screen": {
     "title": "भुगतान सफल!",
@@ -3004,7 +3069,9 @@
     "go_home": "होम जाएँ",
     "proceed_booking": "बुकिंग जारी रखें",
     "view_booking": "बुकिंग विवरण देखें",
-    "view_all_bookings": "सभी बुकिंग देखें"
+    "view_all_bookings": "सभी बुकिंग देखें",
+    "track_order": "ऑर्डर ट्रैक करें",
+    "view_all_orders": "सभी ऑर्डर देखें"
   },
   "refund_request": {
     "header_title": "रिफंड अनुरोध",

@@ -94,7 +94,10 @@ export default function CartScreen() {
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     const styles = makeStyles(colors, isDarkMode);
-    const { items, removeItem, clearCategory } = useCart();
+    const { 
+        items, removeItem, clearCategory, selectedItemIds, toggleItemSelection, 
+        selectItemsOfCategory, isItemSelected 
+    } = useCart();
 
     const getCategoryLabel = (category: ServiceCategory) => {
         return t(`cart.category_${category === 'blood-test' ? 'bloodwork' : category === 'service' ? 'services' : category}`);
@@ -173,10 +176,11 @@ export default function CartScreen() {
     const handleCategoryCheckout = (category: ServiceCategory) => {
         const config = CATEGORY_CONFIG[category];
         const categoryItems = groupedByCategory[category];
+        const categorySelectedItems = categoryItems.filter(item => selectedItemIds.includes(item.id));
 
         // Check if any wellness items are disabled
         if (category === 'wellness') {
-            const disabledItems = categoryItems.filter(item => disabledProductIds.has(item.id));
+            const disabledItems = categorySelectedItems.filter(item => disabledProductIds.has(item.id));
             if (disabledItems.length > 0) {
                 Alert.alert(
                     t('checkout.products_unavailable'),
@@ -190,7 +194,7 @@ export default function CartScreen() {
             }
         }
 
-        const categoryTotal = categoryItems.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
+        const categoryTotal = categorySelectedItems.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
 
         if (category === 'blood-test') {
             router.push({
@@ -199,8 +203,9 @@ export default function CartScreen() {
                     category: 'blood-test',
                     amount: String(categoryTotal),
                     label: t('cart.blood_test_package'),
-                    itemCount: categoryItems.length,
+                    itemCount: categorySelectedItems.length,
                     skipUpsell: '1',
+                    selectedItemIds: categorySelectedItems.map(i => i.id).join(','),
                 },
             } as any);
         } else if (category === 'doctor') {
@@ -227,13 +232,47 @@ export default function CartScreen() {
                     amount: String(categoryTotal),
                     label: getCategoryLabel(category),
                     category,
-                    itemCount: categoryItems.length,
+                    itemCount: categorySelectedItems.length,
+                    selectedItemIds: categorySelectedItems.map(i => i.id).join(','),
                     // Pass plan info for benefit calculation at checkout
                     ...(hasActivePlan && activePlanId && { subscriptionId: activePlanId }),
                     skipUpsell: hasActivePlan ? '1' : '0',
                 },
             } as any);
         }
+    };
+
+    const handleCheckoutAll = () => {
+        const selectedItems = items.filter(i => selectedItemIds.includes(i.id));
+        const selectedTotal = selectedItems.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
+
+        // Check for disabled wellness products among selected items
+        const disabledSelected = selectedItems.filter(item => disabledProductIds.has(item.id));
+        if (disabledSelected.length > 0) {
+            Alert.alert(
+                t('checkout.products_unavailable'),
+                t('checkout.products_unavailable_msg'),
+                [
+                    { text: t('common.remove'), onPress: () => disabledSelected.forEach(i => removeItem(i.id)) },
+                    { text: t('common.keep'), style: 'cancel' },
+                ]
+            );
+            return;
+        }
+
+        // Navigate to payment checkout
+        router.push({
+            pathname: '/payment/checkout',
+            params: {
+                category: 'all',
+                amount: String(selectedTotal),
+                label: t('cart.checkout_all_label') || 'Combined Checkout',
+                itemCount: selectedItems.length,
+                selectedItemIds: selectedItems.map(i => i.id).join(','),
+                ...(hasActivePlan && activePlanId && { subscriptionId: activePlanId }),
+                skipUpsell: '1',
+            },
+        } as any);
     };
 
     return (
@@ -288,13 +327,27 @@ export default function CartScreen() {
                 {/* ── Category Sections ── */}
                 {categories.map(category => {
                     const categoryItems = groupedByCategory[category];
-                    const categoryTotal = categoryItems.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
+                    const categorySelectedItems = categoryItems.filter(item => selectedItemIds.includes(item.id));
+                    const categoryTotal = categorySelectedItems.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
                     const config = CATEGORY_CONFIG[category];
 
                     return (
                         <View key={category} style={styles.categorySection}>
                             {/* Category Header */}
                             <View style={[styles.categoryHeader, { borderLeftColor: config.color }]}>
+                                <TouchableOpacity 
+                                    onPress={() => {
+                                        const isAllSelected = categoryItems.every(i => selectedItemIds.includes(i.id));
+                                        selectItemsOfCategory(category, !isAllSelected);
+                                    }}
+                                    style={{ marginRight: 8 }}
+                                >
+                                    <Ionicons 
+                                        name={categoryItems.every(i => selectedItemIds.includes(i.id)) ? "checkmark-circle" : "ellipse-outline"} 
+                                        size={22} 
+                                        color={categoryItems.every(i => selectedItemIds.includes(i.id)) ? config.color : colors.textMuted} 
+                                    />
+                                </TouchableOpacity>
                                 <View style={[styles.categoryIcon, { backgroundColor: `${config.color}15` }]}>
                                     <MaterialCommunityIcons name={config.icon as any} size={20} color={config.color} />
                                 </View>
@@ -322,6 +375,17 @@ export default function CartScreen() {
                                                 </View>
                                             )}
                                             <View style={[styles.itemContent, isDisabled && { opacity: 0.5 }]}>
+                                                <TouchableOpacity 
+                                                    onPress={() => !isDisabled && toggleItemSelection(item.id)}
+                                                    disabled={isDisabled}
+                                                    style={{ marginRight: 8, justifyContent: 'center' }}
+                                                >
+                                                    <Ionicons 
+                                                        name={selectedItemIds.includes(item.id) ? "checkmark-circle" : "ellipse-outline"} 
+                                                        size={20} 
+                                                        color={selectedItemIds.includes(item.id) ? config.color : colors.textMuted} 
+                                                    />
+                                                </TouchableOpacity>
                                                 <View style={[styles.itemIcon, { backgroundColor: `${config.color}08` }]}>
                                                     <MaterialCommunityIcons name={icon as any} size={18} color={config.color} />
                                                 </View>
@@ -349,16 +413,41 @@ export default function CartScreen() {
 
                             {/* Category Checkout Button */}
                             <TouchableOpacity
-                                style={[styles.categoryCheckoutBtn, { backgroundColor: config.color }]}
+                                style={[
+                                    styles.categoryCheckoutBtn, 
+                                    { backgroundColor: config.color },
+                                    categorySelectedItems.length === 0 && { backgroundColor: colors.borderLight, opacity: 0.5 }
+                                ]}
                                 onPress={() => handleCategoryCheckout(category)}
+                                disabled={categorySelectedItems.length === 0}
                                 activeOpacity={0.88}
                             >
-                                <Ionicons name="arrow-forward" size={16} color="#fff" />
-                                <Text style={styles.categoryCheckoutText}>{t('cart.checkout')}</Text>
+                                <Ionicons name="arrow-forward" size={16} color={categorySelectedItems.length === 0 ? colors.textMuted : "#fff"} />
+                                <Text style={[styles.categoryCheckoutText, categorySelectedItems.length === 0 && { color: colors.textMuted }]}>{t('cart.checkout')}</Text>
                             </TouchableOpacity>
                         </View>
                     );
                 })}
+
+                {/* ── Grand Total & Checkout All ── */}
+                {items.filter(i => selectedItemIds.includes(i.id)).length > 0 && (
+                    <View style={styles.grandTotalContainer}>
+                        <View style={styles.grandTotalRow}>
+                            <Text style={styles.grandTotalLabel}>{t('cart.selected_total') || 'Selected Total'}</Text>
+                            <Text style={styles.grandTotalValue}>₹{items.filter(i => selectedItemIds.includes(i.id)).reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0).toLocaleString('en-IN')}</Text>
+                        </View>
+                        <TouchableOpacity
+                            style={styles.checkoutAllBtn}
+                            onPress={() => handleCheckoutAll()}
+                            activeOpacity={0.88}
+                        >
+                            <Ionicons name="cart" size={18} color="#fff" />
+                            <Text style={styles.checkoutAllBtnText}>
+                                {t('cart.checkout_all')?.replace(' (Coming Soon)', '') || 'Checkout All'} ({items.filter(i => selectedItemIds.includes(i.id)).length})
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
                 {/* ── Trust Row ── */}
                 <View style={styles.trustRow}>
@@ -458,6 +547,45 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     mixedCartText: { fontFamily: Fonts.regular, fontSize: 12, color: isDarkMode ? '#FFE0B2' : '#B45309' },
 
     // Category Section
+    grandTotalContainer: {
+        backgroundColor: colors.bgCard,
+        borderRadius: Radius.lg,
+        padding: Spacing.md,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        marginTop: Spacing.xs,
+        ...Shadow.card,
+    },
+    grandTotalRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: Spacing.md,
+    },
+    grandTotalLabel: {
+        fontFamily: Fonts.semiBold,
+        fontSize: 16,
+        color: colors.textDark,
+    },
+    grandTotalValue: {
+        fontFamily: Fonts.bold,
+        fontSize: 20,
+        color: colors.primary,
+    },
+    checkoutAllBtn: {
+        backgroundColor: colors.primary,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        paddingVertical: 14,
+        borderRadius: Radius.md,
+    },
+    checkoutAllBtnText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: 15,
+        color: '#fff',
+    },
     categorySection: {
         backgroundColor: colors.bgCard,
         borderRadius: Radius.lg,

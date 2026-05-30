@@ -71,6 +71,9 @@ const getTimeSlots = async (req, res, next) => {
     }
 };
 
+const groupsCache = new Map(); // key: code -> { packages_count, tests_count, timestamp }
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
 // GET /api/labs/packages?search=
 const getPackages = async (req, res, next) => {
     try {
@@ -87,7 +90,58 @@ const getPackages = async (req, res, next) => {
             fasting: !!(pkg.fasting_time ?? pkg.fasting ?? pkg.is_fasting),
             type: pkg.type ?? null,
         }));
-        sendResponse(res, 200, packages);
+
+        // Enrich with packages_count and verified tests_count
+        const enriched = await Promise.all(packages.map(async (pkg) => {
+            const now = Date.now();
+            const cached = groupsCache.get(pkg.code);
+            if (cached && (now - cached.timestamp < CACHE_TTL)) {
+                return {
+                    ...pkg,
+                    packages_count: cached.packages_count,
+                    tests_count: cached.tests_count,
+                };
+            }
+
+            try {
+                const details = await rc.getPackageDetails(pkg.code);
+                const groupsCount = details?.data?.length || 1;
+                let totalTests = 0;
+                if (details?.data && Array.isArray(details.data)) {
+                    const groupMap = new Map();
+                    for (const g of details.data) {
+                        if (!g.package_detail) continue;
+                        const existing = groupMap.get(g.name) || new Set();
+                        for (const p of g.package_detail) {
+                            existing.add(p.name);
+                        }
+                        groupMap.set(g.name, existing);
+                    }
+                    totalTests = Array.from(groupMap.values()).reduce((sum, set) => sum + set.size, 0);
+                }
+
+                const data = {
+                    packages_count: groupsCount,
+                    tests_count: totalTests || pkg.tests_count || 1,
+                    timestamp: now,
+                };
+                groupsCache.set(pkg.code, data);
+
+                return {
+                    ...pkg,
+                    packages_count: data.packages_count,
+                    tests_count: data.tests_count,
+                };
+            } catch (err) {
+                logger.warn(`[LabCtrl] Failed to fetch details for enriched package ${pkg.code}: ${err.message}`);
+                return {
+                    ...pkg,
+                    packages_count: 1, // Fallback
+                };
+            }
+        }));
+
+        sendResponse(res, 200, enriched);
     } catch (error) {
         if (error.response?.status === 400) {
             return sendResponse(res, 200, [], 'No packages found');

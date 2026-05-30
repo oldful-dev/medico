@@ -176,7 +176,8 @@
     "trip_travels": "பயணம்",
     "smart_upgrade": "ஸ்மார்ட் மேம்பாடு",
     "caregiver_support": "பராமரிப்பாளர் ஆதரவு",
-    "emergency_assist": "அவசர உதவி"
+    "emergency_assist": "அவசர உதவி",
+    "tech_helper_essentials": "டெக் ஹெல்பர்"
   },
   "booking": {
     "book_service": "சேவை பதிவு",
@@ -369,7 +370,11 @@
     "note_share": "பழைய அறிக்கை மருத்துவரிடம் காட்டு",
     "add_to_cart": "கார்ட்டில் சேர்",
     "unable_to_load": "ஏற்ற முடியவில்லை",
-    "load_error_desc": "விவரம் ஏற்றுவதில் பிழை. மீண்டும் முயல்"
+    "load_error_desc": "விவரம் ஏற்றுவதில் பிழை. மீண்டும் முயல்",
+    "package_one": "தொகுப்பு",
+    "package_other": "தொகுப்புகள்",
+    "includes_packages_params": "இதில் {{packages}} தொகுப்பு(கள்) & {{parameters}} அளவுருக்கள் உள்ளன",
+    "note_nabl": "NABL சான்றளிக்கப்பட்ட ஆய்வகங்கள், தரத்திற்கு உத்தரவாதம்"
   },
   "bill_payment": {
     "header": "பில் செலுத்து",
@@ -523,7 +528,8 @@
     "tab_title": "கணக்கு",
     "live_chat_subtitle": "WhatsApp-ல் எங்கள் ஆதரவு நிர்வாகிகளுடன் உடனடியாக இணையுங்கள்",
     "live_chat_info": "எங்கள் ஆதரவு நண்பர்கள் சேவை முன்பதிவு, கட்டண சிக்கல்கள், மருத்துவர் ஸ்லாட்கள் மற்றும் பலவற்றில் உதவ கிடைக்கின்றனர்.",
-    "live_chat_status": "ஆதரவு ஆன்லைனில் செயலில்"
+    "live_chat_status": "ஆதரவு ஆன்லைனில் செயலில்",
+    "live_chat": "நேரடி அரட்டை"
   },
   "plans": {
     "tab_title": "திட்டங்கள்",
@@ -615,7 +621,44 @@
     "filter_mobility_aids": "இயக்க உதவி சாதனங்கள்",
     "filter_health_monitors": "ஆரோக்கிய கண்காணிப்பாளர்கள்",
     "filter_supplements": "சப்ளிமென்ட்கள்",
-    "filter_personal_care": "தனிப்பட்ட பராமரிப்பு"
+    "filter_personal_care": "தனிப்பட்ட பராமரிப்பு",
+    "shipping_charge": "ஷிப்பிங் கட்டணம்",
+    "courier": "கொரியர் பார்ட்னர்",
+    "estimated_delivery": "மதிப்பிடされた டெலிவரி",
+    "delivery_in_days": "{{days}} நாட்களில் டெலிவரி",
+    "track_order_title": "ஆர்டரை டிராக் செய்யவும்",
+    "fetching_tracking": "டிராக்கிங் விபரங்கள் பெறப்படுகிறது…",
+    "load_tracking_error": "டிராக்கிங் விபரங்களை ஏற்ற முடியவில்லை.",
+    "load_tracking_fail": "டிராக்கிங் விபரங்களை ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
+    "try_again": "மீண்டும் முயற்சி செய்",
+    "expected_by": "{{date}}க்குள் எதிர்பார்க்கப்படுகிறது",
+    "awb_code": "AWB: {{code}}",
+    "order_progress": "ஆர்டர் முன்னேற்றம்",
+    "packing_status_msg": "உங்கள் ஆர்டர் பேக் செய்யப்படுகிறது. அனுப்பப்பட்டவுடன் டிராக்கிங் விபரங்கள் காட்டப்படும்.",
+    "track_on_courier_website": "கொரியர் இணையதளத்தில் டிராக் செய்யவும்",
+    "stage_placed": "ஆர்டர் செய்யப்பட்டது",
+    "stage_paid": "பணம் பெறப்பட்டது",
+    "stage_confirmed": "செயலாக்கத்தில் உள்ளது",
+    "stage_dispatched": "அனுப்பப்பட்டது",
+    "stage_delivered": "வழங்கப்பட்டது",
+    "stage_cancelled": "ரத்து செய்யப்பட்டது",
+    "order_details": "ஆர்டர் விவரங்கள்",
+    "delivery_address": "டெலிவரி முகவரி",
+    "payment_summary": "பணம் செலுத்திய சுருக்கம்",
+    "product_total": "தயாரிப்பு மொத்தம்",
+    "shipping_charges": "ஷிப்பிங் கட்டணங்கள்",
+    "tax_gst": "வரிகள் மற்றும் ஜிஎஸ்டி",
+    "discount": "தள்ளுபடி",
+    "order_total": "ஆர்டர் மொத்தம்",
+    "payment_method": "பணம் செலுத்தும் முறை",
+    "prepaid": "முன்பணம் செலுத்தியது",
+    "cash_on_delivery": "கேஷ் ஆன் டெலிவரி",
+    "sku": "SKU",
+    "qty": "அளவு",
+    "unit_price": "அலகு விலை",
+    "weight": "எடை",
+    "dimensions": "பரிமாணங்கள் (நீளம் × அகலம் × உயரம்)",
+    "specifications": "தயாரிப்பு விவரக்குறிப்புகள்"
   },
   "cart": {
     "header_title": "உங்கள் கார்ட்",
@@ -626,7 +669,7 @@
     "subtotal": "கூட்டு: ₹{{amount}}",
     "checkout_category": "செக்அவுட் {{category}}",
     "grand_total": "மொத்தம்: ₹{{amount}}",
-    "checkout_all": "அனைத்தும் செக்அவுட் (விரைவில்)",
+    "checkout_all": "அனைத்தும் செக்அவுட்",
     "coming_soon": "விரைவில்",
     "unified_coming_soon": "ஒருங்கிணைந்த செக்அவுட் விரைவில். தனித்தனியே செய்க.",
     "browse_services": "சேவைகளை உலாவுக",
@@ -652,7 +695,9 @@
     "category_services_desc": "உதவிச் சேவைகள்",
     "category_other": "மற்றவை",
     "category_other_desc": "இதர பொருட்கள்",
-    "blood_test_package": "இரத்த பரிசோதனை தொகுப்பு"
+    "blood_test_package": "இரத்த பரிசோதனை தொகுப்பு",
+    "checkout_all_label": "ஒருங்கிணைந்த செக்அவுட்",
+    "selected_total": "தேர்ந்தெடுக்கப்பட்ட மொத்தம்"
   },
   "sos": {
     "title": "SOS எச்சரிக்கைகள்",
@@ -841,7 +886,8 @@
       "health": "ஆரோக்கியம்",
       "concierge": "கான்சியர்ஜ்",
       "meetup": "சந்திப்பு",
-      "lab": "ஆய்வக சோதனை"
+      "lab": "ஆய்வக சோதனை",
+      "wellness_product": "வெல்னஸ் தயாரிப்புகள்"
     },
     "statuses": {
       "confirmed": "உறுதிசெய்யப்பட்டது",
@@ -1205,8 +1251,8 @@
   },
   "order_history": {
     "header": "ஆர்டர் வரலாறு",
-    "tab_active": "செயலில்",
-    "tab_payment": "கட்டணம்",
+    "tab_active": "செயலில் உள்ளவை",
+    "tab_payment": "பணம் செலுத்துதல்",
     "tab_history": "வரலாறு",
     "no_bookings": "{{tab}} பதிவுகள் இல்லை",
     "no_bookings_subtitle": "செயல் எடுத்ததும் இங்கே தோன்றும்",
@@ -1216,7 +1262,18 @@
     "cancel": "ரத்து",
     "cancel_booking_title": "ரத்து",
     "cancel_booking_message": "நிச்சயமாக ரத்து செய்யவா?",
-    "cancelled_success": "ரத்து செய்யப்பட்டது"
+    "cancelled_success": "ரத்து செய்யப்பட்டது",
+    "header_title": "எனது ஆர்டர்கள்",
+    "tab_products": "தயாரிப்புகள்",
+    "empty_products_title": "இன்னும் தயாரிப்பு ஆர்டர்கள் எதுவும் இல்லை",
+    "empty_products_desc": "ஆர்டர்களை இங்கே காண எங்களது வெல்னஸ் ஸ்டோரில் ஷாப்பிங் செய்யுங்கள்.",
+    "shop_now": "இப்பொழுதே வாங்குங்கள்",
+    "book_new_service": "புதிய சேவை புக் செய்க",
+    "wellness_product_fallback": "வெல்னஸ் தயாரிப்பு",
+    "more_items": "+{{count}} மேலும்",
+    "track_btn": "டிராக்",
+    "reorder_btn": "மீண்டும் ஆர்டர் செய்",
+    "cancel_btn": "ரத்து செய்"
   },
   "payments_wallet": {
     "header": "கட்டணம் & பணப்பை",
@@ -1312,7 +1369,13 @@
     "try_again": "மீண்டும் முயற்சிக்கவும்",
     "privacy_policy": "தனியுரிமை கொள்கை",
     "terms_conditions": "விதிமுறைகள் & நிபந்தனைகள்",
-    "refund_policy": "திரும்பப்பெறும் கொள்கை"
+    "refund_policy": "திரும்பப்பெறும் கொள்கை",
+    "disclaimer": "மறுப்பு",
+    "service_policy": "சேவை நோக்கம் & செயல்பாட்டுக் கொள்கை",
+    "statutory_disclosures": "சட்டப்பூர்வ வெளிப்பாடுகள்",
+    "download_pdf": "PDF ஐப் பதிவிறக்கவும்",
+    "download_title": "ஆவணங்களைப் பதிவிறக்கவும்",
+    "download_started": "உங்கள் ஆவணப் பதிவிறக்கம் வெற்றிகரமாகத் தொடங்கப்பட்டது."
   },
   "privacy_policy": {
     "header_title": "தனியுரிமை"
@@ -2748,7 +2811,9 @@
     "pickup_address": "முகவரி:",
     "pickup_landmark": "அடையாளம்:",
     "pickup_time": "நேரம்:",
-    "pickup_contact": "தொடர்பு:"
+    "pickup_contact": "தொடர்பு:",
+    "diagnostic_services": "நோயறிதல் சேவைகள்",
+    "wellness_products": "வெல்னஸ் தயாரிப்புகள்"
   },
   "success_screen": {
     "title": "கட்டணம் வெற்றி!",
@@ -3004,7 +3069,9 @@
     "go_home": "முகப்புக்கு செல்",
     "proceed_booking": "பதிவுக்கு தொடர்க",
     "view_booking": "பதிவு விவரம் காண்க",
-    "view_all_bookings": "அனைத்து பதிவுகளும் காண்க"
+    "view_all_bookings": "அனைத்து பதிவுகளும் காண்க",
+    "track_order": "ஆர்டரை டிராக் செய்யவும்",
+    "view_all_orders": "அனைத்து ஆர்டர்களையும் காண்க"
   },
   "refund_request": {
     "header_title": "பணத்திருப்பு கோரிக்கை",

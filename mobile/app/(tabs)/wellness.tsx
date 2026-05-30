@@ -5,11 +5,13 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useTranslation } from 'react-i18next';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { storeService, Product } from '@/services/api/storeService';
 import { useCart } from '@/context/CartContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useToast } from '@/context/ToastContext';
+import { bannerService, Banner } from '@/services/api/bannerService';
+import { BannerSlider } from '@/components/BannerSlider';
 
 // Using local images or placeholder for Hero if a specific illustration isn't explicitly supplied
 // For this teaser, we'll build a vibrant Hero with a prominent 'Ayuxa Care' logo or generic medical icon
@@ -19,7 +21,8 @@ export default function WellnessScreen() {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const { addItem, items } = useCart();
+    const { category } = useLocalSearchParams<{ category?: string }>();
+    const { addItem, items, updateQuantity, removeItem } = useCart();
     const { showToast } = useToast();
     const colors = useThemeColors();
 
@@ -44,6 +47,7 @@ export default function WellnessScreen() {
 
     const [allProducts, setAllProducts] = useState<Product[]>([]);
     const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
+    const [wellnessBanners, setWellnessBanners] = useState<Banner[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [search, setSearch] = useState('');
@@ -52,17 +56,28 @@ export default function WellnessScreen() {
 
     const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
+    useEffect(() => {
+        if (category) {
+            setSelectedCategory(category);
+        }
+    }, [category]);
+
     const fetchProducts = useCallback(async () => {
         try {
-            const res = await storeService.getProducts({ isEnabled: true, limit: 100 });
-            const filtered = (res.data || []).filter(p => p.stock > 0);
+            const [prodRes, bannerRes] = await Promise.all([
+                storeService.getProducts({ isEnabled: true, limit: 100 }),
+                bannerService.getWellnessBanners(),
+            ]);
+            const filtered = (prodRes.data || []).filter(p => p.stock > 0);
             setAllProducts(filtered);
             // Show first 9 items
             setDisplayedProducts(filtered.slice(0, ITEMS_PER_PAGE));
             setPage(0);
+            setWellnessBanners(bannerRes || []);
         } catch {
             setAllProducts([]);
             setDisplayedProducts([]);
+            setWellnessBanners([]);
         }
     }, []);
 
@@ -201,6 +216,13 @@ export default function WellnessScreen() {
                             }
                         }}
                         onEndReachedThreshold={0.5}
+                        ListHeaderComponent={
+                            wellnessBanners.length > 0 ? (
+                                <View style={{ marginHorizontal: -Spacing.md, marginBottom: Spacing.sm }}>
+                                    <BannerSlider banners={wellnessBanners} colors={colors} />
+                                </View>
+                            ) : null
+                        }
                         ListEmptyComponent={
                             <View style={styles.emptyBox}>
                                 <Text style={[styles.emptyText, { color: colors.textMuted }]}>{t('wellness.no_products_found')}</Text>
@@ -218,6 +240,8 @@ export default function WellnessScreen() {
                                 ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
                                 : 0;
                             const lowStock = product.stock <= 5 && product.stock > 0;
+                            const cartItem = items.find(i => i.id === product.id);
+                            const quantityInCart = cartItem ? cartItem.quantity : 0;
                             return (
                                 <TouchableOpacity
                                     style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }]}
@@ -255,10 +279,40 @@ export default function WellnessScreen() {
                                             )}
                                         </View>
                                         <View style={styles.ctaRow}>
-                                            <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={() => handleAddToCart(product)}>
-                                                <Ionicons name="cart-outline" size={14} color="#fff" />
-                                                <Text style={styles.addBtnText}>{t('wellness.add')}</Text>
-                                            </TouchableOpacity>
+                                            {quantityInCart > 0 ? (
+                                                <View style={[styles.addBtn, { backgroundColor: colors.primary, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4 }]}>
+                                                    <TouchableOpacity
+                                                        style={styles.qtyBtnMini}
+                                                        onPress={() => {
+                                                            if (quantityInCart > 1) {
+                                                                updateQuantity(product.id, quantityInCart - 1);
+                                                            } else {
+                                                                removeItem(product.id);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Ionicons name="remove" size={14} color="#fff" />
+                                                    </TouchableOpacity>
+                                                    <Text style={styles.addBtnText}>{quantityInCart}</Text>
+                                                    <TouchableOpacity
+                                                        style={styles.qtyBtnMini}
+                                                        onPress={() => {
+                                                            if (quantityInCart < product.stock) {
+                                                                updateQuantity(product.id, quantityInCart + 1);
+                                                            } else {
+                                                                Alert.alert(t('common.error'), t('wellness.only_left', { count: product.stock }));
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Ionicons name="add" size={14} color="#fff" />
+                                                    </TouchableOpacity>
+                                                </View>
+                                            ) : (
+                                                <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={() => handleAddToCart(product)}>
+                                                    <Ionicons name="cart-outline" size={14} color="#fff" />
+                                                    <Text style={styles.addBtnText}>{t('wellness.add')}</Text>
+                                                </TouchableOpacity>
+                                            )}
                                             <TouchableOpacity
                                                 style={[styles.detailBtn, { borderColor: colors.borderLight }]}
                                                 onPress={() => router.push(`/wellness-product?id=${product.id}` as any)}
@@ -672,6 +726,12 @@ const styles = StyleSheet.create({
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.bodySmall,
         color: '#fff',
+    },
+    qtyBtnMini: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     detailBtn: {
         width: 34,

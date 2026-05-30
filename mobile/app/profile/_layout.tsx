@@ -7,6 +7,7 @@ export default function ProfileLayout() {
             <Stack.Screen name="activity-center" />
             <Stack.Screen name="medical-logs" />
             <Stack.Screen name="subscription" />
+            <Stack.Screen name="legal-detail" />
         </Stack>
     );
 }

@@ -15,12 +15,40 @@ const TEXT_MUTED = '#888888';
 
 export default function CartScreen() {
     const router = useRouter();
-    const { groupedItems, removeItem, itemCount, getCategoryTotal, getGrandTotal } = useCart();
+    const { 
+        groupedItems, removeItem, itemCount, getCategoryTotal, getGrandTotal, items,
+        selectedItemIds, toggleItemSelection, selectItemsOfCategory, isItemSelected,
+        updateQuantity
+    } = useCart();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
     const handleCheckoutCategory = (category: string) => {
-        router.push({ pathname: '/cart/schedule', params: { category } } as any);
+        const categorySelectedItems = groupedItems[category]?.filter(i => selectedItemIds.includes(i.id)) || [];
+        router.push({ 
+            pathname: '/cart/schedule', 
+            params: { 
+                category, 
+                selectedItemIds: categorySelectedItems.map(i => i.id).join(',') 
+            } 
+        } as any);
+    };
+
+    const handleCheckoutAll = () => {
+        const selectedItems = items.filter(i => selectedItemIds.includes(i.id));
+        const selectedTotal = selectedItems.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
+
+        router.push({
+            pathname: '/payment/checkout',
+            params: {
+                category: 'all',
+                amount: String(selectedTotal),
+                label: 'Combined Purchase',
+                itemCount: selectedItems.length,
+                selectedItemIds: selectedItems.map(i => i.id).join(','),
+                skipUpsell: '1',
+            },
+        } as any);
     };
 
     const dynamicStyles = makeStyles(isDarkMode);
@@ -59,34 +87,103 @@ export default function CartScreen() {
             <ScrollView style={dynamicStyles.content} contentContainerStyle={dynamicStyles.contentContainer} showsVerticalScrollIndicator={false}>
                 {Object.entries(groupedItems).map(([category, items]) => {
                     if (items.length === 0) return null;
-                    const categoryTotal = getCategoryTotal(category);
+                    const categorySelectedItems = items.filter(item => selectedItemIds.includes(item.id));
+                    const categoryTotal = categorySelectedItems.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
 
                     return (
                         <View key={category} style={dynamicStyles.categoryCard}>
                             <View style={dynamicStyles.categoryHeader}>
+                                <TouchableOpacity 
+                                    onPress={() => {
+                                        const isAll = items.every(i => selectedItemIds.includes(i.id));
+                                        selectItemsOfCategory(category, !isAll);
+                                    }}
+                                    style={{ marginRight: 8, justifyContent: 'center' }}
+                                >
+                                    <Ionicons 
+                                        name={items.every(i => selectedItemIds.includes(i.id)) ? "checkmark-circle" : "ellipse-outline"} 
+                                        size={20} 
+                                        color={items.every(i => selectedItemIds.includes(i.id)) ? PRIMARY_GREEN : colors.textMuted} 
+                                    />
+                                </TouchableOpacity>
                                 <Text style={dynamicStyles.categoryTitle}>{category}</Text>
                                 <Text style={dynamicStyles.itemCount}>{items.length} {items.length === 1 ? 'Item' : 'Items'}</Text>
                             </View>
 
                             {items.map(item => (
                                 <View key={item.id} style={dynamicStyles.itemRow}>
+                                    <TouchableOpacity 
+                                        onPress={() => toggleItemSelection(item.id)}
+                                        style={{ marginRight: 8, justifyContent: 'center' }}
+                                    >
+                                        <Ionicons 
+                                            name={selectedItemIds.includes(item.id) ? "checkmark-circle" : "ellipse-outline"} 
+                                            size={18} 
+                                            color={selectedItemIds.includes(item.id) ? PRIMARY_GREEN : colors.textMuted} 
+                                        />
+                                    </TouchableOpacity>
                                     <View style={dynamicStyles.itemInfo}>
                                         <Text style={dynamicStyles.itemName} numberOfLines={2}>{item.title}</Text>
-                                        <Text style={dynamicStyles.itemPrice}>₹{item.price}</Text>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                                            <Text style={dynamicStyles.itemPrice}>₹{item.price}</Text>
+                                            {item.serviceType === 'product' && (
+                                                <View style={dynamicStyles.qtyContainer}>
+                                                    <TouchableOpacity 
+                                                        style={dynamicStyles.qtyBtn} 
+                                                        onPress={() => {
+                                                            if (item.quantity > 1) {
+                                                                updateQuantity(item.id, item.quantity - 1);
+                                                            } else {
+                                                                removeItem(item.id);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Ionicons name="remove" size={14} color={isDarkMode ? '#E8E8E8' : TEXT_DARK} />
+                                                    </TouchableOpacity>
+                                                    <Text style={dynamicStyles.qtyText}>{item.quantity || 1}</Text>
+                                                    <TouchableOpacity 
+                                                        style={dynamicStyles.qtyBtn} 
+                                                        onPress={() => updateQuantity(item.id, (item.quantity || 1) + 1)}
+                                                    >
+                                                        <Ionicons name="add" size={14} color={isDarkMode ? '#E8E8E8' : TEXT_DARK} />
+                                                    </TouchableOpacity>
+                                                </View>
+                                            )}
+                                        </View>
                                     </View>
-                                    <TouchableOpacity style={dynamicStyles.removeBtn} onPress={() => removeItem(item.id)}>
-                                        <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                                    </TouchableOpacity>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                        <TouchableOpacity 
+                                            style={dynamicStyles.sepCheckoutBtn} 
+                                            onPress={() => {
+                                                router.push({
+                                                    pathname: '/cart/schedule',
+                                                    params: {
+                                                        category: item.serviceType,
+                                                        selectedItemIds: item.id,
+                                                    }
+                                                } as any);
+                                            }}
+                                        >
+                                            <Text style={dynamicStyles.sepCheckoutBtnText}>Checkout</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={dynamicStyles.removeBtn} onPress={() => removeItem(item.id)}>
+                                            <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
                             ))}
 
                             <View style={dynamicStyles.categoryFooter}>
                                 <Text style={dynamicStyles.categorySubtotal}>Subtotal: ₹{categoryTotal}</Text>
                                 <TouchableOpacity
-                                    style={dynamicStyles.checkoutBtn}
+                                    style={[
+                                        dynamicStyles.checkoutBtn,
+                                        categorySelectedItems.length === 0 && { backgroundColor: colors.borderLight, opacity: 0.5 }
+                                    ]}
                                     onPress={() => handleCheckoutCategory(category)}
+                                    disabled={categorySelectedItems.length === 0}
                                 >
-                                    <Text style={dynamicStyles.checkoutBtnText}>Checkout {category}</Text>
+                                    <Text style={[dynamicStyles.checkoutBtnText, categorySelectedItems.length === 0 && { color: colors.textMuted }]}>Checkout {category}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -94,13 +191,13 @@ export default function CartScreen() {
                 })}
 
                 <View style={dynamicStyles.grandTotalContainer}>
-                    <Text style={dynamicStyles.grandTotalText}>Grand Total: ₹{getGrandTotal()}</Text>
+                    <Text style={dynamicStyles.grandTotalText}>Grand Total: ₹{items.filter(i => selectedItemIds.includes(i.id)).reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0)}</Text>
                     <TouchableOpacity
-                        style={dynamicStyles.checkoutAllBtnDisabled}
-                        activeOpacity={1}
-                        onPress={() => Alert.alert('Coming Soon', 'Unified mixed-category checkout is coming soon. Please checkout each category separately for now.')}
+                        style={items.filter(i => selectedItemIds.includes(i.id)).length > 0 ? dynamicStyles.checkoutAllBtn : dynamicStyles.checkoutAllBtnDisabled}
+                        disabled={items.filter(i => selectedItemIds.includes(i.id)).length === 0}
+                        onPress={handleCheckoutAll}
                     >
-                        <Text style={dynamicStyles.checkoutAllText}>Checkout All (Coming Soon)</Text>
+                        <Text style={items.filter(i => selectedItemIds.includes(i.id)).length > 0 ? dynamicStyles.checkoutAllTextEnabled : dynamicStyles.checkoutAllText}>Checkout All</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
@@ -224,10 +321,44 @@ const makeStyles = (isDarkMode: boolean) => {
             fontWeight: '600',
             color: PRIMARY_GREEN,
         },
+        qtyContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: isDarkMode ? '#2D2D2D' : '#F3F4F6',
+            borderRadius: 6,
+            borderWidth: 1,
+            borderColor: borderColor,
+        },
+        qtyBtn: {
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        qtyText: {
+            fontSize: 13,
+            fontWeight: '600',
+            color: textPrimary,
+            minWidth: 16,
+            textAlign: 'center',
+        },
         removeBtn: {
             padding: 8,
             backgroundColor: removeBtn,
             borderRadius: 8,
+        },
+        sepCheckoutBtn: {
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 6,
+            backgroundColor: PRIMARY_GREEN,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        sepCheckoutBtnText: {
+            color: '#FFFFFF',
+            fontSize: 12,
+            fontWeight: '600',
         },
         categoryFooter: {
             marginTop: 8,
@@ -267,11 +398,22 @@ const makeStyles = (isDarkMode: boolean) => {
             textAlign: 'center',
             marginBottom: 16,
         },
+        checkoutAllBtn: {
+            backgroundColor: PRIMARY_GREEN,
+            paddingVertical: 14,
+            borderRadius: 8,
+            alignItems: 'center',
+        },
         checkoutAllBtnDisabled: {
             backgroundColor: disabledBg,
             paddingVertical: 14,
             borderRadius: 8,
             alignItems: 'center',
+        },
+        checkoutAllTextEnabled: {
+            color: '#FFFFFF',
+            fontSize: 14,
+            fontWeight: '600',
         },
         checkoutAllText: {
             color: disabledText,

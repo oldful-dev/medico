@@ -43,7 +43,7 @@ export const NAV_SECTIONS = [
             { id: "activity-center", href: "/activity-center", label: "Activity Center", icon: Activity, badge: "Live", roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER'] },
             { id: "sos", href: "/sos", label: "SOS Emergency", icon: AlertTriangle, badge: "Live", roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER', 'SUPPORT_AGENT'] },
             { id: "notifications", href: "/notifications", label: "Notifications", icon: Bell, roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },
-            { id: "banners", href: "/banners", label: "Home Banners", icon: Sparkles, badge: "New", roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },
+            { id: "banners", href: "/banners", label: "Home Banners", icon: Sparkles, badge: "New", roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER', 'SUPPORT_AGENT', 'BILLING_EXECUTIVE'] },
             { id: "meetups", href: "/meetups", label: "Local Meetups", icon: PartyPopper, roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },
             { id: "legal", href: "/legal", label: "Legal CMS", icon: FileText, roles: ['SUPER_ADMIN'] },
             { id: "store", href: "/store", label: "Wellness Store", icon: ShoppingBag, roles: ['SUPER_ADMIN'] },

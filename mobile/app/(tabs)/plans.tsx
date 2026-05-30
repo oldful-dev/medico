@@ -32,6 +32,7 @@ function getPriceForCycle(plan: Plan, cycle: BillingCycle): number {
         case 'QUARTERLY': return plan.quarterlyPrice;
         case 'BIANNUAL':  return plan.biannualPrice;
         case 'YEARLY':    return plan.yearlyPrice;
+        default:          return 0;
     }
 }
 
@@ -113,7 +114,7 @@ export default function PlansScreen() {
         // Check if user already has active subscription in the same category
         const activeSubForCategory = userActiveSubscriptions.find(sub => sub.planType === plan.planType);
         if (activeSubForCategory) {
-            if (plan.tierLevel < (activeSubForCategory.tierLevel ?? 0)) {
+            if ((plan.tierLevel ?? 0) < (activeSubForCategory.tierLevel ?? 0)) {
                 Alert.alert(
                     t('plans.active_plan_title') || 'Active Plan',
                     t('plans.downgrade_blocked_msg') || 'You currently have an active membership. Downgrades can only be processed through support after your current plan expires.',

@@ -23,14 +23,17 @@ export default function CartScheduleScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { profile, setProfile } = useUser();
-    const params = useLocalSearchParams<{ category?: string }>();
+    const params = useLocalSearchParams<{ category?: string, selectedItemIds?: string }>();
     const { groupedItems, getCategoryTotal } = useCart();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
     const category = params.category || 'Bloodwork';
-    const cartItems = groupedItems[category] || [];
-    const totalAmount = getCategoryTotal(category);
+    const selectedIds = params.selectedItemIds ? params.selectedItemIds.split(',') : [];
+    const cartItems = (groupedItems[category] || []).filter(item => 
+        selectedIds.length > 0 ? selectedIds.includes(item.id) : true
+    );
+    const totalAmount = cartItems.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0);
 
     const [step, setStep] = useState<1 | 2 | 3>(1);
     const [coords, setCoords] = useState({ lat: '12.9716', long: '77.5946' });
@@ -294,6 +297,7 @@ export default function CartScheduleScreen() {
                     bookingPayload: JSON.stringify(bookingPayload),
                     amount: String(totalAmount),
                     collectionType,
+                    selectedItemIds: params.selectedItemIds || '',
                 },
             } as any);
         } catch {

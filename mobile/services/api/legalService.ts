@@ -7,7 +7,7 @@ import { apiClient, ApiResponse } from './apiClient';
 
 // ─── Types (aligned with Prisma LegalDocument) ──
 
-export type LegalDocType = 'TERMS_AND_CONDITIONS' | 'PRIVACY_POLICY' | 'REFUND_POLICY' | 'DISCLAIMER' | 'SERVICE_POLICY' | 'STATUTORY_DISCLOSURES';
+export type LegalDocType = string;
 
 export interface LegalDocument {
     id: string;
@@ -24,6 +24,14 @@ export interface LegalDocument {
 // ─── Service ──────────────────────────────────
 
 export const legalService = {
+    /**
+     * GET /api/legal/published
+     * Fetch all published legal documents.
+     */
+    getPublishedDocuments: async (): Promise<ApiResponse<LegalDocument[]>> => {
+        return apiClient.get<LegalDocument[]>('/legal/published');
+    },
+
     /**
      * GET /api/legal/published/:type
      * Fetch the published version of a legal document.

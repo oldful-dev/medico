@@ -176,7 +176,8 @@
     "trip_travels": "ভ্রমণ",
     "smart_upgrade": "স্মার্ট আপগ্রেড",
     "caregiver_support": "কেয়ারগিভার\nসাপোর্ট",
-    "emergency_assist": "জরুরি\nসহায়তা"
+    "emergency_assist": "জরুরি\nসহায়তা",
+    "tech_helper_essentials": "টেক হেল্পার"
   },
   "booking": {
     "book_service": "সার্ভিস বুক করুন",
@@ -369,7 +370,11 @@
     "note_share": "আগের রিপোর্ট অবশ্যই ডাক্তারকে দেখান",
     "add_to_cart": "কার্টে রাখুন",
     "unable_to_load": "লোড করা গেল না",
-    "load_error_desc": "তথ্য লোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।"
+    "load_error_desc": "তথ্য লোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।",
+    "package_one": "প্যাকেজ",
+    "package_other": "প্যাকেজ",
+    "includes_packages_params": "এটিতে {{packages}} টি প্যাকেজ এবং {{parameters}} টি উপাদান রয়েছে",
+    "note_nabl": "NABL সার্টিফাইড ল্যাব, গুণমান নিশ্চিত"
   },
   "bill_payment": {
     "header": "বিল পেমেন্ট",
@@ -523,7 +528,8 @@
     "tab_title": "অ্যাকাউন্ট",
     "live_chat_subtitle": "হোয়াটসঅ্যাপে আমাদের সাপোর্ট এক্সিকিউটিভের সাথে তাৎক্ষণিকভাবে সংযোগ করুন",
     "live_chat_info": "আমাদের সাপোর্ট বাডিরা সেবা বুকিং, পেমেন্ট সমস্যা, ডাক্তার স্লট এবং আরও অনেক কিছুতে সাহায্য করতে উপলব্ধ।",
-    "live_chat_status": "সাপোর্ট অনলাইনে সক্রিয়"
+    "live_chat_status": "সাপোর্ট অনলাইনে সক্রিয়",
+    "live_chat": "লাইভ চ্যাট"
   },
   "plans": {
     "tab_title": "প্ল্যান",
@@ -570,7 +576,7 @@
     "subtotal": "মোট: ₹{{amount}}",
     "checkout_category": "{{category}} চেকআউট",
     "grand_total": "সর্বমোট: ₹{{amount}}",
-    "checkout_all": "সব চেকআউট (আসছে)",
+    "checkout_all": "সব চেকআউট",
     "coming_soon": "আসছে",
     "unified_coming_soon": "মিশেল আইটেমের এককালীন চেকআউট আসছে। এখন আলাদা ক্যাটাগরিতে চেকআউট করুন।",
     "browse_services": "পরিষেবাগুলি ব্রাউজ করুন",
@@ -596,7 +602,9 @@
     "category_services_desc": "দ্বারপাল সেবা",
     "category_other": "অন্যান্য",
     "category_other_desc": "অন্যান্য আইটেม",
-    "blood_test_package": "রক্ত পরীক্ষা প্যাকেজ"
+    "blood_test_package": "রক্ত পরীক্ষা প্যাকেজ",
+    "checkout_all_label": "সম্মিলিত চেকআউট",
+    "selected_total": "নির্বাচিত মোট"
   },
   "sos": {
     "title": "আমার SOS অ্যালার্ট",
@@ -785,7 +793,8 @@
       "health": "স্বাস্থ্য",
       "concierge": "কনসিয়ার্জ",
       "meetup": "মিটআপ",
-      "lab": "ল্যাব টেস্ট"
+      "lab": "ল্যাব টেস্ট",
+      "wellness_product": "ওয়েলনেস পণ্য"
     },
     "statuses": {
       "confirmed": "নিশ্চিত",
@@ -1149,7 +1158,7 @@
   },
   "order_history": {
     "header": "অর্ডারের ইতিহাস",
-    "tab_active": "চলতি",
+    "tab_active": "সক্রিয়",
     "tab_payment": "পেমেন্ট",
     "tab_history": "ইতিহাস",
     "no_bookings": "কোনো {{tab}} বুকিং নেই",
@@ -1160,7 +1169,18 @@
     "cancel": "বাতিল",
     "cancel_booking_title": "বুকিং বাতিল",
     "cancel_booking_message": "বুকিং বাতিল করতে চান?",
-    "cancelled_success": "বুকিং বাতিল সফল।"
+    "cancelled_success": "বুকিং বাতিল সফল।",
+    "header_title": "আমার অর্ডার",
+    "tab_products": "পণ্যসমূহ",
+    "empty_products_title": "এখনও কোন পণ্য অর্ডার নেই",
+    "empty_products_desc": "এখানে অর্ডার দেখতে আমাদের ওয়েলনেস স্টোরে কেনাকাটা করুন।",
+    "shop_now": "এখনই কেনাকাটা করুন",
+    "book_new_service": "নতুন পরিষেবা বুক করুন",
+    "wellness_product_fallback": "ওয়েলনেস পণ্য",
+    "more_items": "+{{count}} আরো",
+    "track_btn": "ট্র্যাক",
+    "reorder_btn": "পুনরায় অর্ডার করুন",
+    "cancel_btn": "বাতিল করুন"
   },
   "payments_wallet": {
     "header": "পেমেন্ট ও ওয়ালেট",
@@ -1256,7 +1276,13 @@
     "try_again": "আবার চেষ্টা করুন",
     "privacy_policy": "গোপনীয়তা নীতি",
     "terms_conditions": "শর্তাবলী",
-    "refund_policy": "রিফান্ড নীতি"
+    "refund_policy": "রিফান্ড নীতি",
+    "disclaimer": "সতর্কতা",
+    "service_policy": "পরিষেবার পরিধি এবং কার্যপদ্ধতি নীতি",
+    "statutory_disclosures": "বিধিবদ্ধ প্রকাশ",
+    "download_pdf": "পিডিএফ ডাউনলোড করুন",
+    "download_title": "নথিপত্র ডাউনলোড করুন",
+    "download_started": "আপনার নথি ডাউনলোড সফলভাবে শুরু হয়েছে।"
   },
   "privacy_policy": {
     "header_title": "গোপনীয়তা নীতি"
@@ -2692,7 +2718,9 @@
     "pickup_address": "ঠিকানা:",
     "pickup_landmark": "ল্যান্ডমার্ক:",
     "pickup_time": "সময়:",
-    "pickup_contact": "যোগাযোগ:"
+    "pickup_contact": "যোগাযোগ:",
+    "diagnostic_services": "ডায়াগনস্টিক পরিষেবা",
+    "wellness_products": "ওয়েলনেস প্রোডাক্ট"
   },
   "success_screen": {
     "title": "পেমেন্ট সফল!",
@@ -2874,7 +2902,44 @@
     "filter_mobility_aids": "মোবিলিটি এইডস",
     "filter_health_monitors": "হেলথ মনিটর",
     "filter_supplements": "সাপ্লিমেন্ট",
-    "filter_personal_care": "ব্যক্তিগত যত্ন"
+    "filter_personal_care": "ব্যক্তিগত যত্ন",
+    "shipping_charge": "শিপিং চার্জ",
+    "courier": "কুরিয়ার পার্টনার",
+    "estimated_delivery": "আনুমানিক ডেলিভারি",
+    "delivery_in_days": "{{days}} দিনের মধ্যে ডেলিভারি",
+    "track_order_title": "অর্ডার ট্র্যাক করুন",
+    "fetching_tracking": "ট্র্যাকিং বিবরণ আনা হচ্ছে…",
+    "load_tracking_error": "ট্র্যাকিং তথ্য লোড করা যায়নি।",
+    "load_tracking_fail": "ট্র্যাকিং লোড করতে ব্যর্থ হয়েছে। আবার চেষ্টা করুন।",
+    "try_again": "আবার চেষ্টা করুন",
+    "expected_by": "{{date}} এর মধ্যে প্রত্যাশিত",
+    "awb_code": "AWB: {{code}}",
+    "order_progress": "অর্ডারের অগ্রগতি",
+    "packing_status_msg": "আপনার অর্ডার প্যাক করা হচ্ছে। শিপমেন্ট করার পরে ট্র্যাকিং আপডেট প্রদর্শিত হবে।",
+    "track_on_courier_website": "কুরিয়ার ওয়েবসাইটে ট্র্যাক করুন",
+    "stage_placed": "অর্ডার করা হয়েছে",
+    "stage_paid": "পেমেন্ট পাওয়া গেছে",
+    "stage_confirmed": "প্রক্রিয়াকরণ চলছে",
+    "stage_dispatched": "পাঠানো হয়েছে",
+    "stage_delivered": "ডেলিভারি করা হয়েছে",
+    "stage_cancelled": "বাতিল করা হয়েছে",
+    "order_details": "অর্ডারের বিবরণ",
+    "delivery_address": "ডেলিভারি ঠিকানা",
+    "payment_summary": "পেমেন্ট সারাংশ",
+    "product_total": "পণ্য মোট",
+    "shipping_charges": "শিপিং চার্জ",
+    "tax_gst": "ট্যাক্স ও জিএসটি",
+    "discount": "ছাড়",
+    "order_total": "মোট অর্ডার",
+    "payment_method": "পেমেন্ট পদ্ধতি",
+    "prepaid": "প্রিপেইড",
+    "cash_on_delivery": "ক্যাশ অন ডেলিভারি",
+    "sku": "এসকেইউ",
+    "qty": "পরিমাণ",
+    "unit_price": "ইউনিট মূল্য",
+    "weight": "ওজন",
+    "dimensions": "মাত্রা (দৈর্ঘ্য × প্রস্থ × উচ্চতা)",
+    "specifications": "পণ্যের বিবরণ"
   },
   "service_detail": {
     "concierge_services": "কনসিয়ার্জ সার্ভিস",
@@ -3004,7 +3069,9 @@
     "go_home": "হোমে যান",
     "proceed_booking": "বুকিংয়ে এগিয়ে যান",
     "view_booking": "বুকিং তথ্য দেখুন",
-    "view_all_bookings": "সব বুকিং দেখুন"
+    "view_all_bookings": "সব বুকিং দেখুন",
+    "track_order": "অর্ডার ট্র্যাক করুন",
+    "view_all_orders": "সব অর্ডার দেখুন"
   },
   "refund_request": {
     "header_title": "রিফান্ড রিকোয়েস্ট",
