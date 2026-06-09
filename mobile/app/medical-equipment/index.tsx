@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Alert, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Alert, ActivityIndicator, KeyboardAvoidingView, TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -28,7 +28,9 @@ export default function MedicalEquipmentScreen() {
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     const [selectedEquipment, setSelectedEquipment] = useState('wheelchair');
+    const [otherType, setOtherType] = useState('');
     const [selectedDuration, setSelectedDuration] = useState('Monthly');
+    const [customDuration, setCustomDuration] = useState('');
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [isBooking, setIsBooking] = useState(false);
 
@@ -39,8 +41,16 @@ export default function MedicalEquipmentScreen() {
             Alert.alert(t('common.required'), t('medical_equipment.select_equipment'));
             return;
         }
+        if (selectedEquipment === 'other' && !otherType.trim()) {
+            Alert.alert(t('common.required'), t('medical_equipment.alert_other_required'));
+            return;
+        }
         if (!selectedDuration) {
             Alert.alert(t('common.required'), t('medical_equipment.select_duration'));
+            return;
+        }
+        if (selectedDuration === 'Custom' && !customDuration.trim()) {
+            Alert.alert(t('common.required'), t('medical_equipment.alert_custom_duration_required'));
             return;
         }
         if (!selectedDate) {
@@ -65,8 +75,8 @@ export default function MedicalEquipmentScreen() {
                 scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
                 addressLine: address || undefined,
                 formDataJson: {
-                    equipment: selectedEquipment,
-                    rentalDuration: selectedDuration,
+                    equipment: selectedEquipment === 'other' ? `Other: ${otherType}` : selectedEquipment,
+                    rentalDuration: selectedDuration === 'Custom' ? customDuration : selectedDuration,
                 },
             });
 
@@ -151,8 +161,34 @@ export default function MedicalEquipmentScreen() {
                                 <Image source={imgWalker} style={[dynamicStyles.equipmentImage, dynamicStyles.walkerImage]} resizeMode="contain" />
                                 <Text style={dynamicStyles.equipmentName}>{t('medical_equipment.walker')}</Text>
                             </TouchableOpacity>
+
+                            {/* Other */}
+                            <TouchableOpacity
+                                style={[dynamicStyles.equipmentCard, selectedEquipment === 'other' && dynamicStyles.equipmentCardActive]}
+                                onPress={() => setSelectedEquipment('other')}
+                                activeOpacity={0.7}
+                            >
+                                <Ionicons name="help-circle-outline" size={32} color={colors.primary} style={{ marginTop: 8, marginBottom: 2 }} />
+                                <Text style={dynamicStyles.equipmentName}>{t('medical_equipment.other')}</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
+
+                    {/* Conditional input for Other Type */}
+                    {selectedEquipment === 'other' && (
+                        <View style={dynamicStyles.sectionCardTintedLight}>
+                            <Text style={dynamicStyles.sectionTitle}>{t('medical_equipment.other_type')}</Text>
+                            <View style={dynamicStyles.inputCard}>
+                                <TextInput
+                                    style={dynamicStyles.textInput}
+                                    placeholder={t('medical_equipment.other_placeholder')}
+                                    placeholderTextColor={isDarkMode ? '#94A3B8' : '#888888'}
+                                    value={otherType}
+                                    onChangeText={setOtherType}
+                                />
+                            </View>
+                        </View>
+                    )}
 
                     {/* ─── Set Rental Duration Section ─── */}
                     <View style={dynamicStyles.sectionCardTintedLight}>
@@ -172,6 +208,19 @@ export default function MedicalEquipmentScreen() {
                             <Ionicons name={selectedDuration === 'Custom' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedDuration === 'Custom' ? colors.primary : (isDarkMode ? '#64748B' : '#AAAEAC')} />
                             <Text style={dynamicStyles.radioLabel}>{t('medical_equipment.custom')}</Text>
                         </TouchableOpacity>
+
+                        {/* Conditional Custom Duration text input field */}
+                        {selectedDuration === 'Custom' && (
+                            <View style={[dynamicStyles.inputCard, { marginTop: 10 }]}>
+                                <TextInput
+                                    style={dynamicStyles.textInput}
+                                    placeholder={t('medical_equipment.custom_duration_placeholder')}
+                                    placeholderTextColor={isDarkMode ? '#94A3B8' : '#888888'}
+                                    value={customDuration}
+                                    onChangeText={setCustomDuration}
+                                />
+                            </View>
+                        )}
                     </View>
 
                     {/* ─── Schedule Pick-up Section ─── */}
@@ -424,5 +473,21 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 14,
         color: '#FFFFFF',
+    },
+    inputCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        height: 53,
+        borderWidth: 1,
+        borderColor: isDarkMode ? '#334155' : '#D3DFDD',
+    },
+    textInput: {
+        flex: 1,
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 14,
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
     },
 });

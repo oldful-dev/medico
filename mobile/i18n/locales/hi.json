@@ -177,7 +177,17 @@
     "smart_upgrade": "स्मार्ट अपग्रेड",
     "caregiver_support": "देखभाल सहायता",
     "emergency_assist": "आपातकाल सहायता",
-    "tech_helper_essentials": "टेक हेल्पर"
+    "tech_helper_essentials": "टेक हेल्पर",
+    "doctor_visit_quick": "डॉक्टर का दौरा",
+    "nurse_care_quick": "नर्स एवं सहयोगी",
+    "hospital_trip_quick": "अस्पताल का दौरा",
+    "physio_quick": "फिजियो",
+    "blood_work": "दिल का रिश्ता",
+    "scan_ecg": "स्कैन एवं ईसीजी",
+    "medicine": "दवा",
+    "insurance_quick": "बीमा",
+    "fitness_quick": "स्वास्थ्य",
+    "equipment_quick": "उपकरण"
   },
   "booking": {
     "book_service": "सेवा बुक",
@@ -894,7 +904,8 @@
       "pending": "लंबित",
       "completed": "पूर्ण",
       "cancelled": "रद्द",
-      "rescheduled": "पुनर्निर्धारित"
+      "rescheduled": "पुनर्निर्धारित",
+      "expired": "समय सीमा समाप्त"
     },
     "collection_types": {
       "home_collection": "होम कलेक्शन",
@@ -967,7 +978,9 @@
     "fail_cancel": "बुकिंग रद्द करने में विफल",
     "reschedule_title": "अपॉइंटमेंट पुनर्निर्धारित करें",
     "reschedule_msg": "पुनर्निर्धारण अनुरोधों को हमारी एडमिन टीम द्वारा अनुमोदित किया जाना चाहिए।",
-    "contact_support": "सहायता से संपर्क करें"
+    "contact_support": "सहायता से संपर्क करें",
+    "service": "सेवा",
+    "expired": "समय सीमा समाप्त"
   },
   "edit_profile": {
     "full_name": "पूरा नाम",
@@ -1881,7 +1894,14 @@
     "monthly": "मासिक",
     "custom": "कस्टम",
     "when": "कब",
-    "confirm_rental": "किराया पुष्टि"
+    "confirm_rental": "किराया पुष्टि",
+    "other": "अन्य",
+    "other_type": "प्रकार",
+    "other_placeholder": "आवश्यक उपकरण निर्दिष्ट करें...",
+    "alert_other_required": "कृपया उपकरण का प्रकार निर्दिष्ट करें।",
+    "custom_duration_label": "कस्टम अवधि",
+    "custom_duration_placeholder": "जैसे 10 दिन, 3 सप्ताह",
+    "alert_custom_duration_required": "कृपया कस्टम अवधि निर्दिष्ट करें।"
   },
   "paper_legal": {
     "header": "कागजी और कानूनी",
@@ -2057,7 +2077,17 @@
     "alert_recipient_required": "बीमा किसके लिए चुनें।",
     "alert_init_failed": "सेवा शुरू नहीं हुई। फिर कोशिश करें।",
     "alert_submission_failed": "कुछ गड़बड़ हुई।",
-    "alert_request_failed": "अनुरोध नहीं भेज सके। फिर कोशिश करें।"
+    "alert_request_failed": "अनुरोध नहीं भेज सके। फिर कोशिश करें।",
+    "self": "स्वयं",
+    "family": "परिवार",
+    "spouse": "जीवनसाथी",
+    "parent": "माता-पिता",
+    "upload_aadhaar": "आधार कार्ड अपलोड करें",
+    "upload_pan": "पैन कार्ड अपलोड करें",
+    "aadhaar_required": "आधार कार्ड आवश्यक है।",
+    "pan_required": "पैन कार्ड आवश्यक है।",
+    "who_is_it_for": "यह किसके लिए है?",
+    "document_preview": "अपलोड किए गए दस्तावेज़ का पूर्वावलोकन"
   },
   "meetup": {
     "header_title": "स्थानीय मीटअप",
@@ -3313,6 +3343,51 @@
     "cancel_downgrade_btn": "डाउनग्रेड रद्द करें",
     "renew_plan_btn": "प्लान नवीनीकृत करें",
     "cancel_downgrade_confirm": "क्या आप वाकई शेड्यूल्ड डाउनग्रेड को रद्द करना चाहते हैं?",
-    "downgrade_cancelled": "डाउनग्रेड सफलतापूर्वक रद्द कर दिया गया।"
+    "downgrade_cancelled": "डाउनग्रेड सफलतापूर्वक रद्द कर दिया गया।",
+    "expired_badge": "समय सीमा समाप्त",
+    "expired_on": "{{date}} को समाप्त हुआ"
+  },
+  "scan_ecg": {
+    "header": "स्कैन और ईसीजी",
+    "header_subtitle": "घर पर स्कैन और ईसीजी नैदानिक ​​सेवाएं बुक करें",
+    "document_upload": "दस्तावेज़ अपलोड",
+    "camera_option": "कैमरा",
+    "camera_sub": "डॉक्टर के पर्चे की फोटो लें",
+    "gallery_option": "गैलरी",
+    "gallery_sub": "गैलरी से डॉक्टर का पर्चा अपलोड करें",
+    "schedule_service": "सेवा निर्धारित करें",
+    "service_addons": "अतिरिक्त सेवाएँ",
+    "pickup_drop": "पिकअप-ड्रॉप सहायता",
+    "assistance_required": "सहायता आवश्यक",
+    "appointment_location": "अपॉइंटमेंट का स्थान",
+    "comments": "टिप्पणियाँ",
+    "comments_placeholder": "कोई अतिरिक्त आवश्यकताएं, विशेष अनुरोध या नोट्स यहाँ दर्ज करें...",
+    "confirm": "पुष्टि करें",
+    "alert_datetime_required": "दिनांक और समय आवश्यक",
+    "alert_datetime_required_msg": "कृपया अपॉइंटमेंट के लिए दिनांक और समय चुनें।",
+    "alert_address_required": "पता आवश्यक",
+    "alert_address_required_msg": "कृपया एक वैध अपॉइंटमेंट पता दर्ज करें।"
+  },
+  "fitness": {
+    "header": "फिटनेस",
+    "header_subtitle": "योग और फिटनेस सेवाएं बुक करें",
+    "service_type": "सेवा का प्रकार",
+    "yoga_teacher_home": "घर पर योग शिक्षक",
+    "join_class": "कक्षा में शामिल हों",
+    "standard_location": "सेवा का स्थान",
+    "comments": "टिप्पणियाँ",
+    "comments_placeholder": "कोई अतिरिक्त नोट्स दर्ज करें...",
+    "book_appointment": "अपॉइंटमेंट बुक करें",
+    "confirm_btn": "पुष्टि करें"
+  },
+  "physio": {
+    "header": "फिजियोथेरेपी",
+    "header_subtitle": "घर पर फिजियोथेरेपिस्ट की विज़िट बुक करें",
+    "affected_body_parts": "प्रभावित शरीर के अंग चुनें",
+    "other_parts": "अन्य अंग",
+    "comments": "टिप्पणियाँ",
+    "comments_placeholder": "अपनी स्थिति का वर्णन करें या शरीर के अन्य अंगों को निर्दिष्ट करें...",
+    "schedule_appointment": "अपॉइंटमेंट शेड्यूल करें",
+    "book_appointment": "अपॉइंटमेंट बुक करें"
   }
 }

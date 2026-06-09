@@ -177,7 +177,17 @@
     "smart_upgrade": "സ്മാർട്ട് അപ്ഗ്രേഡ്",
     "caregiver_support": "പരിചാരക പിന്തുണ",
     "emergency_assist": "അടിയന്തര സഹായം",
-    "tech_helper_essentials": "ടെക് ഹെൽപർ"
+    "tech_helper_essentials": "ടെക് ഹെൽപർ",
+    "doctor_visit_quick": "ഡോക്ടർ സന്ദർശനം",
+    "nurse_care_quick": "നഴ്സ് & എയ്ഡ്",
+    "hospital_trip_quick": "ആശുപത്രി സന്ദർശനം",
+    "physio_quick": "ഫിസിയോ",
+    "blood_work": "ബ്ലഡ് വർക്ക്",
+    "scan_ecg": "സ്കാൻ & ഇസിജി",
+    "medicine": "മരുന്ന്",
+    "insurance_quick": "ഇൻഷുറൻസ്",
+    "fitness_quick": "ഫിറ്റ്നസ്",
+    "equipment_quick": "ഉപകരണങ്ങൾ"
   },
   "booking": {
     "book_service": "സേവനം ബുക്ക്",
@@ -894,7 +904,8 @@
       "pending": "തീരുമാനമാകാത്തത്",
       "completed": "പൂർത്തിയായി",
       "cancelled": "റദ്ദാക്കി",
-      "rescheduled": "പുനഃക്രമീകരിച്ചു"
+      "rescheduled": "പുനഃക്രമീകരിച്ചു",
+      "expired": "കാലാവധി കഴിഞ്ഞു"
     },
     "collection_types": {
       "home_collection": "ഹോം കളക്ഷൻ",
@@ -967,7 +978,9 @@
     "fail_cancel": "ബുക്കിംഗ് റദ്ദാക്കുന്നതിൽ പരാജയം",
     "reschedule_title": "അപ്പോയ്ൻ്റ്മെൻ്റ് പുനഃക്രമീകരിക്കുക",
     "reschedule_msg": "പുനഃക്രമീകരണ അഭ്യർഥനകൾ അഡ്മിൻ ടീം അംഗീകരിക്കണം.",
-    "contact_support": "സപ്പോർട്ടുമായി ബന്ധപ്പെടുക"
+    "contact_support": "സപ്പോർട്ടുമായി ബന്ധപ്പെടുക",
+    "service": "സേവനം",
+    "expired": "കാലാവധി കഴിഞ്ഞു"
   },
   "edit_profile": {
     "full_name": "പൂർണ്ണമായ പേര്",
@@ -1881,7 +1894,14 @@
     "monthly": "പ്രതിമാസ",
     "custom": "കസ്റ്റം",
     "when": "എപ്പോൾ",
-    "confirm_rental": "വാടക ഉറപ്പാക്കുക"
+    "confirm_rental": "വാടക ഉറപ്പാക്കുക",
+    "other": "മറ്റുള്ളവ",
+    "other_type": "തരം",
+    "other_placeholder": "ആവശ്യമായ ഉപകരണം വ്യക്തമാക്കുക...",
+    "alert_other_required": "ദയവായി ഉപകരണത്തിന്റെ തരം വ്യക്തമാക്കുക.",
+    "custom_duration_label": "കസ്റ്റം ദൈർഘ്യം",
+    "custom_duration_placeholder": "ഉദാ. 10 ദിവസം, 3 ആഴ്ച",
+    "alert_custom_duration_required": "ദയവായി കസ്റ്റം ദൈർഘ്യം വ്യക്തമാക്കുക."
   },
   "paper_legal": {
     "header": "പേപ്പറും നിയമവും",
@@ -2057,7 +2077,17 @@
     "alert_recipient_required": "ഇൻഷുറൻസ് ആർക്കുവേണ്ടി തിരഞ്ഞെടുക്കുക.",
     "alert_init_failed": "സേവനം തുടങ്ങാനായില്ല. വീണ്ടും ശ്രമിക്കുക.",
     "alert_submission_failed": "എന്തോ പിശക് സംഭവിച്ചു.",
-    "alert_request_failed": "അഭ്യർത്ഥന സമർപ്പിക്കാനായില്ല. വീണ്ടും ശ്രമിക്കുക."
+    "alert_request_failed": "അഭ്യർത്ഥന സമർപ്പിക്കാനായില്ല. വീണ്ടും ശ്രമിക്കുക.",
+    "self": "സ്വയം",
+    "family": "കുടുംബം",
+    "spouse": "പങ്കാളി",
+    "parent": "മാതാപിതാക്കൾ",
+    "upload_aadhaar": "ആധാർ കാർഡ് അപ്‌ലോഡ് ചെയ്യുക",
+    "upload_pan": "പാൻ കാർഡ് അപ്‌ലോഡ് ചെയ്യുക",
+    "aadhaar_required": "ആധാർ കാർഡ് ആവശ്യമാണ്.",
+    "pan_required": "പാൻ കാർഡ് ആവശ്യമാണ്.",
+    "who_is_it_for": "ഇത് ആർക്കാണ്?",
+    "document_preview": "അപ്‌ലോഡ് ചെയ്ത രേഖയുടെ പ്രിവ്യൂ"
   },
   "meetup": {
     "header_title": "പ്രാദേശിക മീറ്റപ്പുകൾ",
@@ -3313,6 +3343,51 @@
     "cancel_downgrade_btn": "ഡൗൺഗ്രേഡ് റദ്ദാക്കുക",
     "renew_plan_btn": "പ്ലാൻ പുതുക്കുക",
     "cancel_downgrade_confirm": "ഷെഡ്യൂൾ ചെയ്ത ഡൗൺഗ്രേഡ് റദ്ദാക്കണമെന്ന് നിങ്ങൾക്ക് ഉറപ്പാണോ?",
-    "downgrade_cancelled": "ഡൗൺഗ്രേഡ് വിജയകരമായി റദ്ദാക്കി."
+    "downgrade_cancelled": "ഡൗൺഗ്രേഡ് വിജയകരമായി റദ്ദാക്കി.",
+    "expired_badge": "കാലഹരണപ്പെട്ടു",
+    "expired_on": "{{date}}-ൽ കാലഹരണപ്പെട്ടു"
+  },
+  "scan_ecg": {
+    "header": "സ്കാൻ & ഇസിജി",
+    "header_subtitle": "വീട്ടിൽ സ്കാൻ, ഇസിജി ഡയഗ്നോസ്റ്റിക് സേവനങ്ങൾ ബുക്ക് ചെയ്യുക",
+    "document_upload": "രേഖ അപ്‌ലോഡ് ചെയ്യുക",
+    "camera_option": "ക്യാമറ",
+    "camera_sub": "ഡോക്ടറുടെ കുറിപ്പടിയുടെ ഫോട്ടോ എടുക്കുക",
+    "gallery_option": "ഗാലറി",
+    "gallery_sub": "ഗാലറിയിൽ നിന്ന് ഡോക്ടറുടെ കുറിപ്പടി അപ്‌ലോഡ് ചെയ്യുക",
+    "schedule_service": "സേവനം ഷെഡ്യൂൾ ചെയ്യുക",
+    "service_addons": "സേവന ആഡ്-ഓണുകൾ",
+    "pickup_drop": "പിക്ക്അപ്പ്-ഡ്രോപ്പ് സഹായം",
+    "assistance_required": "സഹായം ആവശ്യമാണ്",
+    "appointment_location": "അപ്പോയിന്റ്മെന്റ് സ്ഥലം",
+    "comments": "അഭിപ്രായങ്ങൾ",
+    "comments_placeholder": "മറ്റ് ആവശ്യങ്ങളോ പ്രത്യേക അഭ്യർത്ഥനകളോ കുറിപ്പുകളോ ഉണ്ടെങ്കിൽ ഇവിടെ രേഖപ്പെടുത്തുക...",
+    "confirm": "സ്ഥിരീകരിക്കുക",
+    "alert_datetime_required": "തീയതിയും സമയവും ആവശ്യമാണ്",
+    "alert_datetime_required_msg": "അപ്പോയിന്റ്മെന്റിനായി ഒരു തീയതിയും സമയവും ദയവായി തിരഞ്ഞെടുക്കുക.",
+    "alert_address_required": "വിലാസം ആവശ്യമാണ്",
+    "alert_address_required_msg": "സാധുവായ ഒരു അപ്പോയിന്റ്മെന്റ് വിലാസം ദയവായി നൽകുക."
+  },
+  "fitness": {
+    "header": "ഫിറ്റ്നസ്",
+    "header_subtitle": "യോഗ, ഫിറ്റ്നസ് സേവനങ്ങൾ ബുക്ക് ചെയ്യുക",
+    "service_type": "സേവന തരം",
+    "yoga_teacher_home": "വീട്ടിൽ യോഗ അധ്യാപകൻ",
+    "join_class": "ക്ലാസ്സിൽ ചേരുക",
+    "standard_location": "സേവന സ്ഥലം",
+    "comments": "അഭിപ്രായങ്ങൾ",
+    "comments_placeholder": "മറ്റ് കുറിപ്പുകൾ ഇവിടെ ചേർക്കുക...",
+    "book_appointment": "അപ്പോയിന്റ്മെന്റ് ബുക്ക് ചെയ്യുക",
+    "confirm_btn": "സ്ഥിരീകരിക്കുക"
+  },
+  "physio": {
+    "header": "ഫിസിയോതെറാപ്പി",
+    "header_subtitle": "വീട്ടിൽ ഫിസിയോതെറാപ്പിസ്റ്റ് സന്ദർശനം ബുക്ക് ചെയ്യുക",
+    "affected_body_parts": "ബാധിച്ച ശരീരഭാഗങ്ങൾ തിരഞ്ഞെടുക്കുക",
+    "other_parts": "മറ്റു ഭാഗങ്ങൾ",
+    "comments": "അഭിപ്രായങ്ങൾ",
+    "comments_placeholder": "നിങ്ങളുടെ അവസ്ഥ വിവരിക്കുക അല്ലെങ്കിൽ മറ്റ് ശരീരഭാഗങ്ങൾ വ്യക്തമാക്കുക...",
+    "schedule_appointment": "അപ്പോയിന്റ്മെന്റ് ഷെഡ്യൂൾ ചെയ്യുക",
+    "book_appointment": "അപ്പോയിന്റ്മെന്റ് ബുക്ക് ചെയ്യുക"
   }
 }

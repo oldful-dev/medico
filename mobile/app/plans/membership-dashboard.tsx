@@ -14,7 +14,7 @@ import { planService, ActiveSubscription, MembershipsResponse } from '@/services
 import { Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
 const CATEGORY_META: Record<string, { labelKey: string; icon: string; color: string }> = {
-    CARE:      { labelKey: 'membership.care_label',      icon: 'heart',            color: '#02743F' },
+    CARE:      { labelKey: 'membership.care_label',      icon: 'heart',            color: '#7C3AED' },
     HOMEMAKER: { labelKey: 'membership.homemaker_label', icon: 'home',             color: '#6366F1' },
     DEFAULT:   { labelKey: 'membership.title',           icon: 'shield-checkmark', color: '#0EA5E9' },
 };
@@ -251,8 +251,8 @@ const makeStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
     scroll:          { padding: 16, paddingTop: 20 },
     section:         { marginBottom: 24 },
     sectionTitle:    { fontFamily: Fonts.semiBold, fontSize: FontSize.caption, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 },
-    historyLink:     { flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center', paddingVertical: 14, backgroundColor: dark ? '#1E293B' : '#fff', borderRadius: Radius.lg, borderWidth: 1, borderColor: colors.borderLight },
-    historyLinkText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: colors.primary, flex: 1 },
+    historyLink:     { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: dark ? '#1E293B' : '#fff', borderRadius: Radius.lg, borderWidth: 1, borderColor: colors.borderLight },
+    historyLinkText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: colors.primary, flex: 1, textAlignVertical: 'center', includeFontPadding: false },
 });
 
 const cardStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({

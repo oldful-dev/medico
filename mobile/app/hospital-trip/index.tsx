@@ -9,8 +9,12 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
-import { FormInput } from '@/components/common';
+
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { useUser } from '@/context/UserContext';
+import { locationService } from '@/services/device/locationService';
+import { userService } from '@/services/api/userService';
+import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 
 
 // --- Figma Assets ---
@@ -21,6 +25,8 @@ const imgLungs = require('@/assets/images/2e704f53861f02d36dae70114611506893870c
 const imgCancer = require('@/assets/images/12a939ac9402eccf1948ba9378dc7ffb078381cb.png');
 const imgDental = require('@/assets/images/fde7739eae440fa8bbeccc49dfe81d9417584cdb.png');
 const imgRadioIcon = require('@/assets/images/9e6f2fbe6164dacc5707082a5ca833130f9cddd9.png');
+const imgOther = require('@/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png');
+const imgHospitalIcon = require('@/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png');
 
 export default function HospitalTripScreen() {
     const { t } = useTranslation();
@@ -30,7 +36,9 @@ export default function HospitalTripScreen() {
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
+    const { profile } = useUser();
     const [selectedSpecialist, setSelectedSpecialist] = useState<string | null>(null);
+    const [otherSpecialistText, setOtherSpecialistText] = useState('');
     const [hospitalPreference, setHospitalPreference] = useState<'preferred' | 'recommend' | null>(null);
     const [hospitalQuery, setHospitalQuery] = useState('');
     const [selectedDoctorType, setSelectedDoctorType] = useState<'preferred' | 'recommend'>('preferred');
@@ -39,6 +47,7 @@ export default function HospitalTripScreen() {
     const [transportAddon, setTransportAddon] = useState(false);
     const [supportAddon, setSupportAddon] = useState(true);
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
 
     // API state (Refactored to Hook)
     const {
@@ -55,6 +64,19 @@ export default function HospitalTripScreen() {
 
     const [isBooking, setIsBooking] = useState(false);
 
+    // Sync selectedAddress with initial fetched address on mount or when fetched
+    React.useEffect(() => {
+        if (address && address !== 'Fetching address...' && !selectedAddress) {
+            setSelectedAddress({
+                line1: address,
+                cityName: '',
+                pincode: '',
+                latitude: 28.7041,
+                longitude: 77.1025,
+            });
+        }
+    }, [address]);
+
     const SPECIALISTS = [
         { id: 'eye', label: t('hospital_trip.eye_specialist'), icon: imgEye },
         { id: 'brain', label: t('hospital_trip.brain_nerves'), icon: imgBrain },
@@ -62,11 +84,40 @@ export default function HospitalTripScreen() {
         { id: 'lungs', label: t('hospital_trip.lungs_breathing'), icon: imgLungs },
         { id: 'dental', label: t('hospital_trip.dental_care'), icon: imgDental },
         { id: 'cancer', label: t('hospital_trip.cancer_specialist'), icon: imgCancer },
+        { id: 'other', label: t('hospital_trip.other_specialist', 'Other'), icon: imgOther },
     ];
+
+    // Silently upsert the address back to profile when user books
+    const syncAddressToProfile = async (addressText: string, landmarkText: string) => {
+        if (!profile?.id || !addressText.trim()) return;
+        try {
+            const existing = profile.addresses?.find((a: any) => a.isDefault) || profile.addresses?.[0];
+            const payload = {
+                label: existing?.label || 'Home',
+                line1: addressText.trim(),
+                cityName: existing?.cityName || '',
+                state: existing?.state || '',
+                pincode: existing?.pincode || '',
+                landmark: landmarkText.trim() || undefined,
+                isDefault: true,
+            };
+            if (existing?.id) {
+                await userService.updateAddress(profile.id, existing.id, payload);
+            } else {
+                await userService.addAddress(profile.id, payload);
+            }
+        } catch {
+            // non-fatal — booking still proceeds
+        }
+    };
 
     const handleBookService = async () => {
         if (!selectedSpecialist) {
             Alert.alert(t('hospital_trip.alert_select_specialist'), t('hospital_trip.alert_select_specialist_msg'));
+            return;
+        }
+        if (selectedSpecialist === 'other' && !otherSpecialistText.trim()) {
+            Alert.alert(t('hospital_trip.alert_other_specialist_required', 'Specify Specialist'), t('hospital_trip.alert_other_specialist_msg', 'Please specify the requirement or specialist.'));
             return;
         }
         if (!hospitalPreference) {
@@ -98,6 +149,11 @@ export default function HospitalTripScreen() {
         try {
             setIsBooking(true);
 
+            // Sync address to profile (non-blocking, non-fatal)
+            syncAddressToProfile(address, landmark);
+
+            const gps = await locationService.getCurrentLocation().catch(() => null);
+
             // Navigate to checkout
             const bookingPayload = JSON.stringify({
                 serviceId,
@@ -105,8 +161,10 @@ export default function HospitalTripScreen() {
                 scheduledDate: selectedDate!.toISOString(),
                 addressLine: address || undefined,
                 landmark: landmark || undefined,
+                latitude: gps?.latitude,
+                longitude: gps?.longitude,
                 formDataJson: {
-                    specialist: selectedSpecialist || 'General',
+                    specialist: selectedSpecialist === 'other' ? otherSpecialistText : (SPECIALISTS.find(s => s.id === selectedSpecialist)?.label || selectedSpecialist),
                     hospitalPreference,
                     hospital: hospitalPreference === 'preferred' ? hospitalQuery : undefined,
                     doctorPreference: selectedDoctorType,
@@ -118,7 +176,7 @@ export default function HospitalTripScreen() {
 
             router.push({
                 pathname: '/service-checkout',
-                params: { bookingPayload, amount: String(servicePrice), label: serviceName, ...(params.subscriptionId && { subscriptionId: params.subscriptionId }) },
+                params: { bookingPayload, amount: String(servicePrice), label: serviceName || 'Hospital Visit Assistance', ...(params.subscriptionId && { subscriptionId: params.subscriptionId }) },
             });
         } catch (error) {
             console.error('Hospital trip error:', error);
@@ -173,12 +231,25 @@ export default function HospitalTripScreen() {
                         })}
                     </View>
 
+                    {/* Other specialist text input */}
+                    {selectedSpecialist === 'other' && (
+                        <View style={dynamicStyles.doctorNameInput}>
+                            <TextInput
+                                style={dynamicStyles.doctorTextInput}
+                                placeholder={t('hospital_trip.other_specialist_placeholder', 'Describe your requirement or specialist...')}
+                                placeholderTextColor={isDarkMode ? '#64748B' : '#888888'}
+                                value={otherSpecialistText}
+                                onChangeText={setOtherSpecialistText}
+                            />
+                        </View>
+                    )}
+
                     <View style={dynamicStyles.divider} />
 
-                    {/* --- Destination Details --- */}
+                    {/* --- Hospital Details --- */}
                     <View style={dynamicStyles.sectionHeaderRow}>
-                        <Image source={imgRadioIcon} style={dynamicStyles.sectionHeaderIcon} resizeMode="contain" />
-                        <Text style={[dynamicStyles.sectionTitle, { marginBottom: 0 }]}>{t('hospital_trip.destination_details')}</Text>
+                        <Ionicons name="medkit-outline" size={20} color={isDarkMode ? '#34D399' : '#02743F'} style={{ marginRight: 8 }} />
+                        <Text style={[dynamicStyles.sectionTitle, { marginBottom: 0 }]}>{t('hospital_trip.hospital_details', 'Hospital Details')}</Text>
                     </View>
 
                     <TouchableOpacity
@@ -310,39 +381,21 @@ export default function HospitalTripScreen() {
                         </View>
                     </View>
 
-                    {/* --- Confirm Pickup Address --- */}
-                    <View style={dynamicStyles.addonsContainer}>
-                        <Text style={dynamicStyles.sectionTitle}>{t('hospital_trip.confirm_pickup')}</Text>
-
-                        {locationDenied ? (
-                            <FormInput
-                                placeholder={t('hospital_trip.pickup_placeholder')}
-                                value={address}
-                                onChangeText={setAddress}
-                                multiline
-                                style={{ elevation: 0, borderWidth: 1, borderColor: '#D9D9D9' }}
-                            />
-                        ) : (
-                            <View style={[dynamicStyles.inputCard, { marginBottom: 5, backgroundColor: isDarkMode ? 'rgba(30,41,59,0.8)' : 'rgba(217, 217, 217, 0.2)' }]}>
-                                <Ionicons name="location-outline" size={18} color={isDarkMode ? '#94A3B8' : '#2F2F2F'} style={{ marginRight: 10 }} />
-                                <Text style={{ flex: 1, fontFamily: 'LexendDeca_400Regular', color: isDarkMode ? '#E2E8F0' : '#2F2F2F' }} numberOfLines={1}>
-                                    {address}
-                                </Text>
-                                <TouchableOpacity onPress={() => router.push('/(auth)/city-selection')}>
-                                    <Text style={{ color: '#02743F', fontFamily: 'LexendDeca_500Medium' }}>{t('common.edit')}</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                        <Text style={{ fontSize: 10, color: '#888', marginTop: 4, marginLeft: 2 }}>
-                            {locationDenied ? t('hospital_trip.gps_denied') : t('hospital_trip.auto_filled')}
-                        </Text>
-                        <FormInput
-                            placeholder={t('hospital_trip.landmark_placeholder')}
-                            value={landmark}
-                            onChangeText={setLandmark}
-                            style={{ marginTop: 12, elevation: 0 }}
-                        />
-                    </View>
+                    {/* --- Pickup Address (Global AddressPickerSection) --- */}
+                    <AddressPickerSection
+                        selectedAddress={selectedAddress}
+                        onAddressChange={(addr) => {
+                            setSelectedAddress(addr);
+                            setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
+                            if (addr.landmark) setLandmark(addr.landmark);
+                        }}
+                        title={t('hospital_trip.confirm_pickup')}
+                        showPhoneField={false}
+                        showLandmarkField={true}
+                        landmark={landmark}
+                        onLandmarkChange={setLandmark}
+                        allowManualEntry={true}
+                    />
 
                     {/* --- Confirm Button --- */}
                     <TouchableOpacity
@@ -451,7 +504,6 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         padding: 5,
     },
     specialistCardSelected: {
-        backgroundColor: isDarkMode ? 'rgba(2,116,63,0.15)' : '#E8F5E9',
         borderWidth: 1,
         borderColor: '#02743F',
     },

@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 // ─── Tier config ──────────────────────────────────────────
 const TIER_CONFIG: Record<string, { color: string; bg: string; gradient: string; icon: string }> = {
     'Basic Care':    { color: '#1D4ED8', bg: '#EFF6FF', gradient: '#DBEAFE', icon: 'shield-outline' },
-    'Care Plus':     { color: '#048357', bg: '#F0FDF4', gradient: '#D1FAE5', icon: 'shield-half-outline' },
+    'Care Plus':     { color: '#7C3AED', bg: '#F5F3FF', gradient: '#EDE9FE', icon: 'shield-half-outline' },
     'Premium Care':  { color: '#B45309', bg: '#FFFBEB', gradient: '#FEF3C7', icon: 'shield-checkmark-outline' },
 };
 

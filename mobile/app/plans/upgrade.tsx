@@ -335,7 +335,7 @@ const makeStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
     emptyText:        { fontFamily: Fonts.medium, fontSize: FontSize.body, color: colors.textMuted, textAlign: 'center' },
 
     planCard:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: dark ? '#1E293B' : '#fff', borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1.5, borderColor: colors.borderLight, ...Shadow.card },
-    planCardSelected: { borderColor: colors.primary, backgroundColor: dark ? '#0F2E1A' : '#F0FDF4' },
+    planCardSelected: { borderColor: colors.primary },
     planCardLeft:     { flexDirection: 'row', alignItems: 'center', gap: 12 },
     radioCircle:      { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.borderLight, justifyContent: 'center', alignItems: 'center' },
     radioSelected:    { borderColor: colors.primary },

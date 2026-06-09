@@ -20,20 +20,38 @@ export const locationService = {
     },
 
     /**
-     * Get current GPS coordinates
+     * Get current GPS coordinates.
+     * Strategy:
+     *   1. Try last-known position first (instant, no GPS spin-up needed)
+     *   2. Race a fresh GPS fix against an 8-second timeout
+     *   3. Fall back to last-known if the fresh fix loses the race
      */
     getCurrentLocation: async (): Promise<LocationCoordinates> => {
-        let location: Location.LocationObject;
+        // ── Helper: reject after N ms ─────────────────────────────────────────
+        const timeout = (ms: number) =>
+            new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('GPS timeout')), ms),
+            );
+
+        // ── 1. Try last-known first (zero latency) ────────────────────────────
+        const lastKnown = await Location.getLastKnownPositionAsync({
+            maxAge: 5 * 60 * 1000, // accept if < 5 min old
+            requiredAccuracy: 500,  // within 500 m
+        }).catch(() => null);
+
+        // ── 2. Race fresh GPS against 8-second timeout ────────────────────────
+        let freshLocation: Location.LocationObject | null = null;
         try {
-            location = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.Balanced,
-            });
+            freshLocation = await Promise.race([
+                Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+                timeout(8000),
+            ]);
         } catch {
-            // Fall back to last known position if fresh fix times out
-            const last = await Location.getLastKnownPositionAsync();
-            if (!last) throw new Error('Unable to get location');
-            location = last;
+            // Fresh fix timed-out or failed — use last-known if available
         }
+
+        const location = freshLocation ?? lastKnown;
+        if (!location) throw new Error('Unable to get location');
 
         return {
             latitude: location.coords.latitude,

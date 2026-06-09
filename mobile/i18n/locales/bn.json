@@ -177,7 +177,17 @@
     "smart_upgrade": "স্মার্ট আপগ্রেড",
     "caregiver_support": "কেয়ারগিভার\nসাপোর্ট",
     "emergency_assist": "জরুরি\nসহায়তা",
-    "tech_helper_essentials": "টেক হেল্পার"
+    "tech_helper_essentials": "টেক হেল্পার",
+    "doctor_visit_quick": "ডাক্তার দেখা",
+    "nurse_care_quick": "নার্স ও সহকারী",
+    "hospital_trip_quick": "হাসপাতাল পরিদর্শন",
+    "physio_quick": "ফিজিও",
+    "blood_work": "রক্তের কাজ",
+    "scan_ecg": "স্ক্যান এবং ইসিজি",
+    "medicine": "ওষুধ",
+    "insurance_quick": "বীমা",
+    "fitness_quick": "ফিটনেস",
+    "equipment_quick": "যন্ত্রপাতি"
   },
   "booking": {
     "book_service": "সার্ভিস বুক করুন",
@@ -801,7 +811,8 @@
       "pending": "অমীমাংসিত",
       "completed": "সম্পন্ন",
       "cancelled": "বাতিল",
-      "rescheduled": "পুনঃনির্ধারিত"
+      "rescheduled": "পুনঃনির্ধারিত",
+      "expired": "মেয়াদোত্তীর্ণ"
     },
     "collection_types": {
       "home_collection": "হোম কালেকশন",
@@ -874,7 +885,9 @@
     "fail_cancel": "বুকিং বাতিল করতে ব্যর্থ",
     "reschedule_title": "অ্যাপয়েন্টমেন্ট পুনঃনির্ধারণ",
     "reschedule_msg": "পুনঃনির্ধারণের অনুরোধ আমাদের অ্যাডমিন টিম অনুমোদন করবে।",
-    "contact_support": "সহায়তায় যোগাযোগ করুন"
+    "contact_support": "সহায়তায় যোগাযোগ করুন",
+    "service": "পরিষেবা",
+    "expired": "মেয়াদোত্তীর্ণ"
   },
   "edit_profile": {
     "full_name": "পুরো নাম",
@@ -1788,7 +1801,14 @@
     "monthly": "মাসিক",
     "custom": "কাস্টম",
     "when": "কখন?",
-    "confirm_rental": "ভাড়া নিশ্চিত করুন"
+    "confirm_rental": "ভাড়া নিশ্চিত করুন",
+    "other": "অন্যান্য",
+    "other_type": "ধরণ",
+    "other_placeholder": "প্রয়োজনীয় সরঞ্জাম উল্লেখ করুন...",
+    "alert_other_required": "অনুগ্রহ করে সরঞ্জামের ধরণ উল্লেখ করুন।",
+    "custom_duration_label": "কাস্টম মেয়াদ",
+    "custom_duration_placeholder": "যেমন ১০ দিন, ৩ সপ্তাহ",
+    "alert_custom_duration_required": "অনুগ্রহ করে কাস্টম মেয়াদ উল্লেখ করুন।"
   },
   "paper_legal": {
     "header": "কাগজ ও আইনি",
@@ -1964,7 +1984,17 @@
     "alert_recipient_required": "বিমা কার জন্য বাছুন।",
     "alert_init_failed": "সার্ভিস শুরু হয়নি। আবার চেষ্টা করুন।",
     "alert_submission_failed": "কিছু ভুল হয়েছে।",
-    "alert_request_failed": "জমা দেওয়া যায়নি। আবার চেষ্টা করুন।"
+    "alert_request_failed": "জমা দেওয়া যায়নি। আবার চেষ্টা করুন।",
+    "self": "স্বয়ং",
+    "family": "পরিবার",
+    "spouse": "স্বামী/স্ত্রী",
+    "parent": "পিতা-মাতা",
+    "upload_aadhaar": "আধার কার্ড আপলোড করুন",
+    "upload_pan": "প্যান कार्ड আপলোড করুন",
+    "aadhaar_required": "আধার কার্ড প্রয়োজন।",
+    "pan_required": "প্যান কার্ড প্রয়োজন।",
+    "who_is_it_for": "এটি কার জন্য?",
+    "document_preview": "আপলোড করা নথির পূর্বরূপ"
   },
   "meetup": {
     "header_title": "লোকাল মিটআপ",
@@ -3313,6 +3343,51 @@
     "cancel_downgrade_btn": "ডাউনগ্রেড বাতিল করুন",
     "renew_plan_btn": "প্ল্যান রিনিউ করুন",
     "cancel_downgrade_confirm": "আপনি কি নিশ্চিত যে আপনি নির্ধারিত ডাউনগ্রেড বাতিল করতে চান?",
-    "downgrade_cancelled": "ডাউনগ্রেড সফলভাবে বাতিল করা হয়েছে।"
+    "downgrade_cancelled": "ডাউনগ্রেড সফলভাবে বাতিল করা হয়েছে।",
+    "expired_badge": "মেয়াদোত্তীর্ণ",
+    "expired_on": "{{date}}-এ মেয়াদ শেষ হয়েছে"
+  },
+  "scan_ecg": {
+    "header": "স্ক্যান ও ইসিজি",
+    "header_subtitle": "বাড়িতে স্ক্যান ও ইসিজি ডায়াগনস্টিক পরিষেবা বুক করুন",
+    "document_upload": "নথি আপলোড",
+    "camera_option": "ক্যামেরা",
+    "camera_sub": "ডাক্তারের প্রেসক্রিপশনের ছবি তুলুন",
+    "gallery_option": "গ্যালারি",
+    "gallery_sub": "গ্যালারি থেকে ডাক্তারের প্রেসক্রিপশন আপলোড করুন",
+    "schedule_service": "পরিষেবা নির্ধারণ করুন",
+    "service_addons": "পরিষেবা অ্যাড-অন",
+    "pickup_drop": "পিকআপ-ড্রপ সহায়তা",
+    "assistance_required": "সহায়তা প্রয়োজন",
+    "appointment_location": "অ্যাপয়েন্টমেন্টের অবস্থান",
+    "comments": "মন্তব্য",
+    "comments_placeholder": "কোন অতিরিক্ত প্রয়োজনীয়তা, বিশেষ অনুরোধ বা নোট এখানে লিখুন...",
+    "confirm": "নিশ্চিত করুন",
+    "alert_datetime_required": "তারিখ ও সময় প্রয়োজন",
+    "alert_datetime_required_msg": "অনুগ্রহ করে আপনার অ্যাপয়েন্টমেন্টের জন্য একটি তারিখ এবং সময় নির্বাচন করুন।",
+    "alert_address_required": "ঠিকানা প্রয়োজন",
+    "alert_address_required_msg": "অনুগ্রহ করে একটি সঠিক অ্যাপয়েন্টমেন্ট ঠিকানা লিখুন।"
+  },
+  "fitness": {
+    "header": "ফিটনেস",
+    "header_subtitle": "যোগব্যায়াম ও ফিটনেস পরিষেবা বুক করুন",
+    "service_type": "পরিষেবার ধরণ",
+    "yoga_teacher_home": "বাড়িতে যোগ শিক্ষক",
+    "join_class": "ক্লাসে যোগ দিন",
+    "standard_location": "পরিষেবার অবস্থান",
+    "comments": "মন্তব্য",
+    "comments_placeholder": "কোন অতিরিক্ত নোট লিখুন...",
+    "book_appointment": "অ্যাপয়েন্টমেন্ট বুক করুন",
+    "confirm_btn": "নিশ্চিত করুন"
+  },
+  "physio": {
+    "header": "ফিজিওথেরাপি",
+    "header_subtitle": "বাড়িতে ফিজিওথেরাপিস্ট ভিজিট বুক করুন",
+    "affected_body_parts": "আক্রান্ত শরীরের অংশ নির্বাচন করুন",
+    "other_parts": "অন্যান্য অংশ",
+    "comments": "মন্তব্য",
+    "comments_placeholder": "আপনার অবস্থা বর্ণনা করুন বা শরীরের অন্যান্য অংশ নির্দিষ্ট করুন...",
+    "schedule_appointment": "অ্যাপয়েন্টমেন্ট নির্ধারণ করুন",
+    "book_appointment": "অ্যাপয়েন্টমেন্ট বুক করুন"
   }
 }

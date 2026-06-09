@@ -311,7 +311,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         borderWidth: 1.5, borderColor: 'transparent',
         shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
     },
-    cityCardSelected: { borderColor: '#048357', backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : 'rgba(4, 131, 87, 0.04)' },
+    cityCardSelected: { borderColor: '#048357' },
     cityCardDisabled: { opacity: 0.7 },
     cityIconCircle: {
         width: 40, height: 40, borderRadius: 20,

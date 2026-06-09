@@ -11,6 +11,7 @@ import { useThemeColors } from '@/hooks/use-theme-colors';
 import * as ImagePicker from 'expo-image-picker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
+import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { useTranslation } from 'react-i18next';
 
 
@@ -33,8 +34,22 @@ export default function OrderMedicinesScreen() {
     const [landmark, setLandmark] = useState('');
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
     const [isBooking, setIsBooking] = useState(false);
+    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
 
     const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('medicines');
+
+    // Sync selectedAddress with initial fetched address on mount or when fetched
+    React.useEffect(() => {
+        if (address && address !== 'Fetching address...' && !selectedAddress) {
+            setSelectedAddress({
+                line1: address,
+                cityName: '',
+                pincode: '',
+                latitude: 28.7041,
+                longitude: 77.1025,
+            });
+        }
+    }, [address]);
 
     const openCamera = async () => {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -244,37 +259,19 @@ export default function OrderMedicinesScreen() {
                     )}
 
                     {/* ─── Address Section ─── */}
-                    <Text style={dynamicStyles.addressLabel}>
-                        <Text style={dynamicStyles.addressLabelBold}>{t('order_medicines.address_label')}</Text>
-                        {t('order_medicines.address_update')}
-                    </Text>
-
-                    <View style={[dynamicStyles.uploadOptionCard, { marginBottom: 15 }]}>
-                        <Ionicons name="location" size={24} color="#85C3A8" style={{ marginLeft: 2, marginRight: 15 }} />
-                        <View style={dynamicStyles.uploadTextContainer}>
-                            {locationDenied ? (
-                                <TextInput
-                                    style={[dynamicStyles.addressText, { flex: 1 }]}
-                                    placeholder={t('order_medicines.address_manual_placeholder')}
-                                    placeholderTextColor="#898989"
-                                    value={address}
-                                    onChangeText={setAddress}
-                                />
-                            ) : (
-                                <Text style={dynamicStyles.addressText} numberOfLines={1}>{address}</Text>
-                            )}
-                        </View>
-                        <TouchableOpacity style={dynamicStyles.editAddressButton} onPress={() => setIsManualAddress(true)}>
-                            <Ionicons name="pencil-outline" size={14} color={isDarkMode ? '#F1F5F9' : '#2F2F2F'} />
-                        </TouchableOpacity>
-                    </View>
-
-                    <TextInput
-                        style={[dynamicStyles.addressText, { marginBottom: 15, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: isDarkMode ? '#1E293B' : '#FFF', borderRadius: 8, borderWidth: 1, borderColor: isDarkMode ? '#334155' : '#E5E7EB', fontFamily: 'LexendDeca_400Regular', fontSize: 12, color: isDarkMode ? '#F1F5F9' : '#2F2F2F' }]}
-                        placeholder={t('nurse_care.landmark_placeholder')}
-                        placeholderTextColor="#898989"
-                        value={landmark}
-                        onChangeText={setLandmark}
+                    <AddressPickerSection
+                        selectedAddress={selectedAddress}
+                        onAddressChange={(addr) => {
+                            setSelectedAddress(addr);
+                            setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
+                            if (addr.landmark) setLandmark(addr.landmark);
+                        }}
+                        title={t('order_medicines.address_label')}
+                        showPhoneField={false}
+                        showLandmarkField={true}
+                        landmark={landmark}
+                        onLandmarkChange={setLandmark}
+                        allowManualEntry={true}
                     />
 
                     {/* ─── Auto-Refill Card ─── */}
@@ -477,6 +474,64 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         fontSize: 14,
         color: isDarkMode ? '#CCCCCC' : '#898989',
         flex: 1,
+    },
+    locationHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 15,
+        marginBottom: 10,
+    },
+    gpsButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(4, 131, 87, 0.12)',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 15,
+    },
+    gpsButtonText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontSize: 11,
+        color: '#048357',
+        marginLeft: 4,
+    },
+    multilineAddressInput: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 13,
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
+        minHeight: 60,
+        textAlignVertical: 'top',
+        width: '100%',
+    },
+    addressTypeContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 15,
+        gap: 8,
+    },
+    addressTypeChip: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        borderWidth: 1,
+        borderColor: isDarkMode ? '#334155' : '#D3DFDD',
+        borderRadius: 20,
+        paddingVertical: 8,
+    },
+    addressTypeChipActive: {
+        backgroundColor: '#048357',
+        borderColor: '#048357',
+    },
+    addressTypeChipText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontSize: 12,
+        color: isDarkMode ? '#CCCCCC' : '#555555',
+    },
+    addressTypeChipTextActive: {
+        color: '#FFFFFF',
     },
     editAddressButton: {
         width: 27,

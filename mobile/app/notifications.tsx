@@ -68,13 +68,23 @@ function formatRelativeTime(date: Date): string {
     return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
+import { cleanNotificationText } from '@/utils';
+
+function cleanText(text: string | null | undefined): string {
+    return cleanNotificationText(text);
+}
+
 function mapRaw(raw: RawNotification): NotificationItem {
     const { icon, color } = channelToIcon(raw.channel, raw.templateId);
     const createdAt = new Date(raw.createdAt);
+    
+    const cleanedTitle = cleanText(raw.subject ?? raw.templateId ?? 'Notification');
+    const cleanedMessage = cleanText(raw.body ?? '');
+    
     return {
         id: raw.id,
-        title: raw.subject ?? raw.templateId ?? 'Notification',
-        message: raw.body ?? '',
+        title: cleanedTitle || 'Notification',
+        message: cleanedMessage,
         time: formatRelativeTime(createdAt),
         read: raw.isRead,
         icon,

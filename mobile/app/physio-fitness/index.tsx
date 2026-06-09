@@ -9,16 +9,16 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { useTranslation } from 'react-i18next';
-
 
 // ─── Figma Assets ───
 const imgPainRelief = require('@/assets/images/19384cdb0d3b6490a3d5bfa98457389b6d565416.png'); // Pain relief illustration
-const imgSeniorFitnessRight = require('@/assets/images/a6d4ed0a2bd9de082ab0ad9c67504e0708c7343f.png'); // Senior fitness rigth illustration
+const imgSeniorFitnessRight = require('@/assets/images/a6d4ed0a2bd9de082ab0ad9c67504e0708c7343f.png'); // Senior fitness right illustration
 const imgSeniorFitnessLeft = require('@/assets/images/3abc2815df401d4b6b19fda9a2f8c9fd80b8f9e3.png'); // Senior fitness left illustration
 
 // Constants
-const BODY_PARTS = ['Back', 'Knee', 'Neck', 'Shoulder', 'Leg'];
+const BODY_PARTS = ['Back', 'Knee', 'Neck', 'Shoulder', 'Leg', 'Other Parts'];
 
 const translateBodyPart = (part: string, t: any) => {
     const keys: Record<string, string> = {
@@ -27,9 +27,10 @@ const translateBodyPart = (part: string, t: any) => {
         'neck': 'physio_fitness.neck',
         'shoulder': 'physio_fitness.shoulder',
         'leg': 'physio_fitness.leg',
+        'other parts': 'Other Parts',
     };
     const key = keys[part.toLowerCase()];
-    return key ? t(key) : part;
+    return key && t(key) !== key ? t(key) : part;
 };
 
 export default function PhysioFitnessScreen() {
@@ -44,37 +45,72 @@ export default function PhysioFitnessScreen() {
     const [selectedService, setSelectedService] = useState<'pain' | 'fitness'>('pain');
     const [selectedBodyPart, setSelectedBodyPart] = useState<string>('Back');
     const [otherIssue, setOtherIssue] = useState<string>('');
+    const [fitnessType, setFitnessType] = useState<'HOME' | 'CLASS'>('HOME');
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+    const [landmark, setLandmark] = useState('');
+    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
     const [isBooking, setIsBooking] = useState(false);
 
-    const { cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('physio-fitness');
+    const { cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('physio-fitness');
+
+    // Sync selectedAddress with initial fetched address on mount or when fetched
+    React.useEffect(() => {
+        if (address && address !== 'Fetching address...' && !selectedAddress) {
+            setSelectedAddress({
+                line1: address,
+                cityName: '',
+                pincode: '',
+                latitude: 28.7041,
+                longitude: 77.1025,
+            });
+        }
+    }, [address]);
 
     const handleBookService = async () => {
         if (!selectedDate) {
-            Alert.alert(t('common.required'), t('physio_fitness.date_required'));
+            Alert.alert(t('common.required'), t('physio_fitness.date_required') || 'Please select date and time');
             return;
         }
-        if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert(t('common.required'), t('errors.address_required'));
-            return;
+
+        if (selectedService === 'pain') {
+            if (selectedBodyPart === 'Other Parts' && !otherIssue.trim()) {
+                Alert.alert(t('common.required'), 'Please describe your affected body parts in comments.');
+                return;
+            }
+            if (!address || address.trim().length < 5 || address === 'Fetching address...') {
+                Alert.alert(t('common.required'), t('errors.address_required'));
+                return;
+            }
+        } else {
+            // fitness
+            if (fitnessType === 'HOME') {
+                if (!address || address.trim().length < 5 || address === 'Fetching address...') {
+                    Alert.alert(t('common.required'), t('errors.address_required'));
+                    return;
+                }
+            }
         }
+
         if (!cityId || !serviceId) {
             Alert.alert(t('common.error'), t('booking.init_incomplete'));
             return;
         }
+
         try {
             setIsBooking(true);
 
-            // Navigate to checkout — booking created inside checkout after payment succeeds
+            // Construct payload based on service type
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
-                addressLine: address || undefined,
+                addressLine: selectedService === 'pain' ? address : (fitnessType === 'HOME' ? address : 'Join the Class (No Location)'),
+                landmark: (selectedService === 'pain' || fitnessType === 'HOME') ? (landmark || undefined) : undefined,
                 formDataJson: {
                     service: selectedService === 'pain' ? 'Pain Relief' : 'Senior Fitness',
-                    bodyPart: selectedBodyPart,
-                    otherIssue: otherIssue || 'None',
+                    fitnessType: selectedService === 'fitness' ? (fitnessType === 'HOME' ? 'Yoga Teacher at Home' : 'Join the Class') : undefined,
+                    bodyPart: selectedService === 'pain' ? selectedBodyPart : undefined,
+                    otherIssue: selectedService === 'pain' && selectedBodyPart === 'Other Parts' ? otherIssue : undefined,
                 },
             });
 
@@ -82,18 +118,19 @@ export default function PhysioFitnessScreen() {
                 pathname: '/service-checkout',
                 params: {
                     bookingPayload,
-                    amount: String(servicePrice),
-                    label: serviceName,
+                    amount: selectedService === 'pain' ? '0' : String(servicePrice),
+                    label: selectedService === 'pain' ? 'Physio' : 'Fitness',
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
         } catch (error) {
-            console.error('Physio error:', error);
+            console.error('Booking error:', error);
             Alert.alert(t('common.error'), t('booking.something_wrong'));
         } finally {
             setIsBooking(false);
         }
     };
+
     const dynamicStyles = makeStyles(isDarkMode);
 
     return (
@@ -116,120 +153,166 @@ export default function PhysioFitnessScreen() {
             {/* Main Content Area (Rounded Cream Box) */}
             <View style={dynamicStyles.contentContainer}>
                 <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-            <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
+                    <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
-                    {/* ─── Select Service ─── */}
-                    <Text style={dynamicStyles.sectionTitle}>{t('physio_fitness.select_service')}</Text>
+                        {/* ─── Select Service ─── */}
+                        <Text style={dynamicStyles.sectionTitle}>{t('physio_fitness.select_service')}</Text>
 
-                    {/* Option: Pain Relief */}
-                    <TouchableOpacity
-                        style={[
-                            dynamicStyles.serviceCard,
-                            dynamicStyles.painCardVertical,
-                            selectedService === 'pain' && dynamicStyles.selectedServiceCard
-                        ]}
-                        activeOpacity={0.8}
-                        onPress={() => setSelectedService('pain')}
-                    >
-                        {/* Discount Badge */}
-                        <View style={dynamicStyles.discountBadgeTopRight}>
-                            <Text style={dynamicStyles.discountText}>{t('physio_fitness.discount')}</Text>
+                        <View style={dynamicStyles.tabsRow}>
+                            {/* Option: Pain Relief */}
+                            <TouchableOpacity
+                                style={[
+                                    dynamicStyles.tabCard,
+                                    selectedService === 'pain' && dynamicStyles.selectedTabCard
+                                ]}
+                                activeOpacity={0.8}
+                                onPress={() => setSelectedService('pain')}
+                            >
+                                <Image source={imgPainRelief} style={dynamicStyles.tabIllustration} resizeMode="contain" />
+                                <Text style={dynamicStyles.tabTitle}>{t('physio_fitness.pain_relief_title')}</Text>
+                                <Text style={dynamicStyles.tabSubtitle}>{t('physio_fitness.pain_relief_subtitle')}</Text>
+                            </TouchableOpacity>
+
+                            {/* Option: Senior Fitness */}
+                            <TouchableOpacity
+                                style={[
+                                    dynamicStyles.tabCard,
+                                    selectedService === 'fitness' && dynamicStyles.selectedTabCard
+                                ]}
+                                activeOpacity={0.8}
+                                onPress={() => setSelectedService('fitness')}
+                            >
+                                <View style={dynamicStyles.fitnessIllustrationRow}>
+                                    <Image source={imgSeniorFitnessLeft} style={dynamicStyles.fitnessIllustrationLeft} resizeMode="contain" />
+                                    <Image source={imgSeniorFitnessRight} style={dynamicStyles.fitnessIllustrationRight} resizeMode="contain" />
+                                </View>
+                                <Text style={dynamicStyles.tabTitle}>{t('physio_fitness.senior_fitness_title')}</Text>
+                                <Text style={dynamicStyles.tabSubtitle}>{t('physio_fitness.senior_fitness_subtitle')}</Text>
+                            </TouchableOpacity>
                         </View>
 
-                        <Image source={imgPainRelief} style={dynamicStyles.painIllustration} resizeMode="contain" />
+                        {/* ─── Module A: Fitness Customization ─── */}
+                        {selectedService === 'fitness' && (
+                            <View style={{ marginTop: 15 }}>
+                                <Text style={dynamicStyles.sectionTitle}>Fitness Class Type</Text>
+                                <View style={dynamicStyles.choicesContainer}>
+                                    <TouchableOpacity
+                                        style={[dynamicStyles.choiceCard, fitnessType === 'HOME' && dynamicStyles.selectedChoiceCard]}
+                                        onPress={() => setFitnessType('HOME')}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Ionicons name="home-outline" size={20} color={fitnessType === 'HOME' ? '#048357' : '#555'} />
+                                        <Text style={[dynamicStyles.choiceText, fitnessType === 'HOME' && dynamicStyles.selectedChoiceText]}>
+                                            Yoga Teacher at Home
+                                        </Text>
+                                    </TouchableOpacity>
 
-                        <View style={dynamicStyles.serviceTextGroupCentered}>
-                            <Text style={dynamicStyles.serviceTitle}>{t('physio_fitness.pain_relief_title')}</Text>
-                            <Text style={dynamicStyles.serviceSubtitle}>{t('physio_fitness.pain_relief_subtitle')}</Text>
-                            <Text style={dynamicStyles.serviceDesc}>{t('physio_fitness.pain_relief_desc')}</Text>
-                        </View>
-                    </TouchableOpacity>
-
-                    {/* Option: Senior Fitness */}
-                    <TouchableOpacity
-                        style={[
-                            dynamicStyles.serviceCard,
-                            dynamicStyles.fitnessCardVertical,
-                            selectedService === 'fitness' && dynamicStyles.selectedServiceCard
-                        ]}
-                        activeOpacity={0.8}
-                        onPress={() => setSelectedService('fitness')}
-                    >
-                        <View style={dynamicStyles.fitnessIllustrationRow}>
-                            <Image source={imgSeniorFitnessLeft} style={dynamicStyles.fitnessIllustrationLeft} resizeMode="contain" />
-                            <Image source={imgSeniorFitnessRight} style={dynamicStyles.fitnessIllustrationRight} resizeMode="contain" />
-                        </View>
-
-                        <View style={dynamicStyles.serviceTextGroupCentered}>
-                            <Text style={dynamicStyles.serviceTitle}>{t('physio_fitness.senior_fitness_title')}</Text>
-                            <Text style={dynamicStyles.serviceSubtitle}>{t('physio_fitness.senior_fitness_subtitle')}</Text>
-                            <Text style={dynamicStyles.serviceDesc}>{t('physio_fitness.senior_fitness_desc')}</Text>
-                        </View>
-                    </TouchableOpacity>
-
-                    {/* ─── Select Body Part ─── */}
-                    <Text style={dynamicStyles.sectionTitle}>{t('physio_fitness.body_part')}</Text>
-                    <View style={dynamicStyles.bodyPartGrid}>
-                        {BODY_PARTS.map((part) => {
-                            const isSelected = selectedBodyPart === part;
-
-                            return (
-                                <TouchableOpacity
-                                    key={part}
-                                    style={[dynamicStyles.bodyPartPill, isSelected && dynamicStyles.bodyPartPillSelected]}
-                                    onPress={() => setSelectedBodyPart(part)}
-                                >
-                                    <Text style={[dynamicStyles.bodyPartText, isSelected && dynamicStyles.bodyPartTextSelected]}>
-                                        {translateBodyPart(part, t)}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
-
-                    {/* ─── Other Issue ─── */}
-                    <Text style={dynamicStyles.sectionTitle}>{t('physio_fitness.other_issue')}</Text>
-                    <View style={dynamicStyles.inputCard}>
-                        {/* Light cyan icon box */}
-                        <View style={dynamicStyles.issueIconBox}>
-                            <View style={dynamicStyles.issueIconLine} />
-                            <View style={dynamicStyles.issueIconLine} />
-                        </View>
-                        <TextInput
-                            placeholder={t('physio_fitness.describe_issue')}
-                            style={dynamicStyles.textInput}
-                            placeholderTextColor={isDarkMode ? '#94A3B8' : '#555'}
-                            multiline
-                            value={otherIssue}
-                            onChangeText={setOtherIssue}
-                        />
-                    </View>
-
-                    {/* ─── Date / Time Selection ─── */}
-                    <CustomDateTimePicker
-                        label={t('physio_fitness.when')}
-                        value={selectedDate}
-                        onDateChange={setSelectedDate}
-                    />
-
-                    {/* ─── Book Appointment Button ─── */}
-                    <TouchableOpacity
-                        style={[dynamicStyles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
-                        activeOpacity={0.8}
-                        disabled={isBooking || isLoadingInit}
-                        onPress={handleBookService}
-                    >
-                        {isLoadingInit ? (
-                            <Text style={dynamicStyles.submitButtonText}>{t('common.initializing')}</Text>
-                        ) : isBooking ? (
-                            <ActivityIndicator color="#FFFFFF" />
-                        ) : (
-                            <Text style={dynamicStyles.submitButtonText}>{t('physio_fitness.book_appointment')}</Text>
+                                    <TouchableOpacity
+                                        style={[dynamicStyles.choiceCard, fitnessType === 'CLASS' && dynamicStyles.selectedChoiceCard]}
+                                        onPress={() => setFitnessType('CLASS')}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Ionicons name="people-outline" size={20} color={fitnessType === 'CLASS' ? '#048357' : '#555'} />
+                                        <Text style={[dynamicStyles.choiceText, fitnessType === 'CLASS' && dynamicStyles.selectedChoiceText]}>
+                                            Join the Class
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
                         )}
-                    </TouchableOpacity>
 
-                </KeyboardAwareScrollView>
-        </KeyboardAvoidingView>
+                        {/* ─── Module B: Physio Customization ─── */}
+                        {selectedService === 'pain' && (
+                            <View style={{ marginTop: 15 }}>
+                                {/* Select Body Part */}
+                                <Text style={dynamicStyles.sectionTitle}>{t('physio_fitness.body_part')}</Text>
+                                <View style={dynamicStyles.bodyPartGrid}>
+                                    {BODY_PARTS.map((part) => {
+                                        const isSelected = selectedBodyPart === part;
+                                        return (
+                                            <TouchableOpacity
+                                                key={part}
+                                                style={[dynamicStyles.bodyPartPill, isSelected && dynamicStyles.bodyPartPillSelected]}
+                                                onPress={() => setSelectedBodyPart(part)}
+                                            >
+                                                <Text style={[dynamicStyles.bodyPartText, isSelected && dynamicStyles.bodyPartTextSelected]}>
+                                                    {translateBodyPart(part, t)}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+
+                                {/* Other issue multiline entry comments */}
+                                {selectedBodyPart === 'Other Parts' && (
+                                    <View style={{ marginBottom: 15 }}>
+                                        <Text style={dynamicStyles.sectionTitle}>Comments / Affected Parts</Text>
+                                        <View style={dynamicStyles.inputCard}>
+                                            <View style={dynamicStyles.issueIconBox}>
+                                                <View style={dynamicStyles.issueIconLine} />
+                                                <View style={dynamicStyles.issueIconLine} />
+                                            </View>
+                                            <TextInput
+                                                placeholder="Describe the affected body parts or comments here..."
+                                                style={dynamicStyles.textInput}
+                                                placeholderTextColor={isDarkMode ? '#94A3B8' : '#555'}
+                                                multiline
+                                                value={otherIssue}
+                                                onChangeText={setOtherIssue}
+                                            />
+                                        </View>
+                                    </View>
+                                )}
+                            </View>
+                        )}
+
+                        {/* ─── Scheduling (Always Required) ─── */}
+                        <View style={{ marginVertical: 10 }}>
+                            <CustomDateTimePicker
+                                label={t('physio_fitness.when')}
+                                value={selectedDate}
+                                onDateChange={setSelectedDate}
+                            />
+                        </View>
+
+                        {/* ─── Location UI (Conditional for Fitness, Always for Physio) ─── */}
+                        {(selectedService === 'pain' || (selectedService === 'fitness' && fitnessType === 'HOME')) && (
+                            <AddressPickerSection
+                                selectedAddress={selectedAddress}
+                                onAddressChange={(addr) => {
+                                    setSelectedAddress(addr);
+                                    setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
+                                    if (addr.landmark) setLandmark(addr.landmark);
+                                }}
+                                title={t('order_medicines.address_label') || 'Address'}
+                                showPhoneField={false}
+                                showLandmarkField={true}
+                                landmark={landmark}
+                                onLandmarkChange={setLandmark}
+                                allowManualEntry={true}
+                            />
+                        )}
+
+                        {/* ─── Action Button ─── */}
+                        <TouchableOpacity
+                            style={[dynamicStyles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                            activeOpacity={0.8}
+                            disabled={isBooking || isLoadingInit}
+                            onPress={handleBookService}
+                        >
+                            {isLoadingInit ? (
+                                <Text style={dynamicStyles.submitButtonText}>{t('common.initializing')}</Text>
+                            ) : isBooking ? (
+                                <ActivityIndicator color="#FFFFFF" />
+                            ) : (
+                                <Text style={dynamicStyles.submitButtonText}>
+                                    {selectedService === 'pain' ? 'Book Appointment' : 'Continue to Checkout'}
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+
+                    </KeyboardAwareScrollView>
+                </KeyboardAvoidingView>
             </View>
         </View>
     );
@@ -238,10 +321,8 @@ export default function PhysioFitnessScreen() {
 const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: '#048357', // Solid dark green from Figma behind
+        backgroundColor: '#048357',
     },
-
-    /* ─── Header ─── */
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -269,8 +350,6 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         color: '#D9D9D9',
         letterSpacing: -0.24,
     },
-
-    /* ─── Main Content Container (Cream Box) ─── */
     contentContainer: {
         flex: 1,
         backgroundColor: isDarkMode ? '#0F172A' : '#FDFDE8',
@@ -287,129 +366,107 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         paddingHorizontal: 25,
         paddingBottom: 40,
     },
-
-    /* ─── Sections ─── */
     sectionTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 20,
+        fontSize: 18,
         color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
-        marginBottom: 15,
-        marginTop: 5,
+        marginBottom: 12,
+        marginTop: 15,
     },
-
-    /* ─── Service Cards ─── */
-    serviceCard: {
-        minHeight: 115,
-        borderRadius: 15,
-        marginBottom: 15,
+    tabsRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 15,
-        paddingVertical: 15,
-        position: 'relative',
-        borderWidth: 1,
+        gap: 12,
+        marginBottom: 15,
     },
-    selectedServiceCard: {
-        borderColor: "#02743F",
-        borderWidth: 2,
-        elevation: 4,
-        transform: [{ scale: 1.03 }],
-    },
-    painCardVertical: {
-        backgroundColor: isDarkMode ? 'rgba(255, 136, 0, 0.12)' : '#FFEBDF',
-        borderColor: isDarkMode ? 'rgba(255, 136, 0, 0.4)' : '#FF8800',
-        flexDirection: 'column',
-        alignItems: 'center',
-        paddingVertical: 20,
-        minHeight: 180,
-    },
-    fitnessCard: {
-        backgroundColor: '#D3FBFF',
-        borderColor: '#313A51', // Dark blue border
-    },
-
-    painIllustration: {
-        width: 100,
-        height: 100,
-        marginBottom: 10,
-    },
-    fitnessIllustrationLeft: {
-        width: 50,
-        height: 50,
-    },
-    fitnessIllustrationRight: {
-        width: 73,
-        height: 90,
-    },
-
-    serviceTextGroup: {
-        justifyContent: 'center',
+    tabCard: {
         flex: 1,
-        paddingRight: 60, // Give room for absolute discount badge
-    },
-    serviceTextGroupCentered: {
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
+        borderRadius: 15,
+        borderWidth: 1,
+        borderColor: isDarkMode ? '#334155' : '#D3DFDD',
+        paddingVertical: 18,
+        paddingHorizontal: 10,
         alignItems: 'center',
-        marginTop: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        elevation: 2,
     },
-    fitnessCardVertical: {
-        backgroundColor: isDarkMode ? 'rgba(49, 180, 200, 0.12)' : '#D3FBFF',
-        borderColor: isDarkMode ? 'rgba(49, 180, 200, 0.4)' : '#313A51',
-        flexDirection: 'column',
-        alignItems: 'center',
-        paddingVertical: 20,
-        minHeight: 180,
+    selectedTabCard: {
+        borderColor: '#02743F',
+        borderWidth: 2.5,
+        backgroundColor: isDarkMode ? 'rgba(4,131,87,0.15)' : '#F0FFF4',
+        transform: [{ scale: 1.02 }],
+    },
+    tabIllustration: {
+        width: 55,
+        height: 55,
+        marginBottom: 10,
     },
     fitnessIllustrationRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 20,
-        marginBottom: 5,
+        gap: 6,
+        marginBottom: 10,
+        height: 55,
     },
-    serviceTitle: {
+    fitnessIllustrationLeft: {
+        width: 25,
+        height: 25,
+    },
+    fitnessIllustrationRight: {
+        width: 36,
+        height: 45,
+    },
+    tabTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 20,
+        fontSize: 14,
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
+        textAlign: 'center',
+    },
+    tabSubtitle: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 11,
+        color: isDarkMode ? '#94A3B8' : '#777777',
+        marginTop: 2,
+        textAlign: 'center',
+    },
+    choicesContainer: {
+        flexDirection: 'column',
+        gap: 10,
+        marginBottom: 15,
+    },
+    choiceCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
+        borderRadius: 12,
+        padding: 14,
+        gap: 12,
+        borderWidth: 1,
+        borderColor: isDarkMode ? '#334155' : '#D3DFDD',
+    },
+    selectedChoiceCard: {
+        borderColor: '#048357',
+        borderWidth: 2,
+        backgroundColor: isDarkMode ? 'rgba(4,131,87,0.15)' : '#F0FFF4',
+    },
+    choiceText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontSize: 14,
         color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
     },
-    serviceSubtitle: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 16,
-        color: isDarkMode ? '#CBD5E1' : '#2F2F2F',
-        marginTop: 2,
+    selectedChoiceText: {
+        color: '#048357',
+        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
     },
-    serviceDesc: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 12,
-        color: isDarkMode ? '#94A3B8' : '#777777',
-        marginTop: 4,
-    },
-
-    discountBadgeTopRight: {
-        position: 'absolute',
-        top: 15,
-        right: 15,
-        backgroundColor: isDarkMode ? 'rgba(16, 185, 129, 0.2)' : 'rgba(15, 185, 46, 0.7)',
-        borderColor: isDarkMode ? '#34D399' : '#048357',
-        borderWidth: 1,
-        borderRadius: 23,
-        paddingHorizontal: 15,
-        height: 37,
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 10,
-    },
-    discountText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        color: isDarkMode ? '#34D399' : '#FFFFFF',
-        fontSize: 11,
-    },
-
-    /* ─── Body Parts Grid ─── */
     bodyPartGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 10,
-        marginBottom: 20,
+        marginBottom: 15,
     },
     bodyPartPill: {
         height: 35,
@@ -424,7 +481,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
     },
     bodyPartPillSelected: {
-        backgroundColor: 'rgba(4, 131, 87, 0.74)', // Teal/Green
+        backgroundColor: 'rgba(4, 131, 87, 0.74)',
         borderColor: '#02743F',
     },
     bodyPartText: {
@@ -435,8 +492,6 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     bodyPartTextSelected: {
         color: '#FFFFFF',
     },
-
-    /* ─── Input & Calendar Cards ─── */
     inputCard: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -445,14 +500,12 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         paddingHorizontal: 15,
         minHeight: 59,
         paddingVertical: 10,
-        marginBottom: 15,
         shadowColor: '#02743F',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.15,
         shadowRadius: 15,
         elevation: 3,
     },
-
     issueIconBox: {
         width: 43,
         height: 33,
@@ -477,19 +530,6 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         fontSize: 14,
         color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
     },
-
-    calendarIcon: {
-        width: 41,
-        height: 41,
-        marginRight: 12,
-    },
-    dateTimeText: {
-        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        fontSize: 14,
-        color: isDarkMode ? '#CBD5E1' : '#555555',
-    },
-
-    /* ─── Submit Button ─── */
     submitButton: {
         backgroundColor: '#02743F',
         height: 48,
@@ -498,7 +538,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         alignSelf: 'center',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 10,
+        marginTop: 20,
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),

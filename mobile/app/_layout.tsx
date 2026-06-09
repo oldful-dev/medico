@@ -111,6 +111,10 @@ export default function RootLayout() {
                   <Stack.Screen name="blood-test" options={{ headerShown: false }} />
                   <Stack.Screen name="cart" options={{ headerShown: false }} />
                   <Stack.Screen name="physio-fitness" options={{ headerShown: false }} />
+                  <Stack.Screen name="fitness" options={{ headerShown: false }} />
+                  <Stack.Screen name="physio" options={{ headerShown: false }} />
+                  <Stack.Screen name="scan-ecg" options={{ headerShown: false }} />
+                  <Stack.Screen name="scan-ecg/index" options={{ headerShown: false }} />
                   <Stack.Screen name="meal-service" options={{ headerShown: false }} />
                   <Stack.Screen name="medical-equipment" options={{ headerShown: false }} />
                   <Stack.Screen name="order-medicines" options={{ headerShown: false }} />
