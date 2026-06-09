@@ -25,7 +25,7 @@ interface BookingDetail {
     packageName: string;
     packageCode: string;
     serviceType: string;
-    status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled';
+    status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled' | 'expired';
     paymentStatus: 'pending' | 'paid' | 'failed';
     scheduledDate: string;
     scheduledTime?: string;
@@ -61,7 +61,7 @@ function normalizeLabOrderDetail(order: LabOrderListItem): BookingDetail {
         return 'pending';
     };
     // pkg.cost = Redcliffe package price; payment.amount = actual paid
-    const packagePrice = pkg?.cost || (pkg as any)?.price || (pkg as any)?.discounted_cost || 0;
+    const packagePrice = Math.round(pkg?.cost || (pkg as any)?.price || (pkg as any)?.discounted_cost || 0);
     return {
         id: order.id,
         bookingId: order.clientRefId,
@@ -86,21 +86,68 @@ function normalizeLabOrderDetail(order: LabOrderListItem): BookingDetail {
         reportUrl: order.reportUrl,
         createdAt: order.createdAt,
         // Use payment amount for display; fall back to package cost
-        amount: payment?.amount || packagePrice,
+        amount: Math.round(payment?.amount || packagePrice),
         packagePrice,
     };
 }
 
 function normalizeMeetupDetail(reg: any): BookingDetail {
     const meetup = reg.meetup || {};
+    const eventDate = meetup.eventDate;
+    const startTime = meetup.startTime;
+    const endTime = meetup.endTime;
+    const thresholdStr = endTime || startTime || "23:59";
+    
+    let isPast = false;
+    if (eventDate) {
+        const d = new Date(eventDate);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        
+        let hours = 0;
+        let minutes = 0;
+        if (thresholdStr) {
+            const ampmMatch = thresholdStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (ampmMatch) {
+                hours = parseInt(ampmMatch[1], 10);
+                minutes = parseInt(ampmMatch[2], 10);
+                const ampm = ampmMatch[3].toUpperCase();
+                if (ampm === 'PM' && hours < 12) hours += 12;
+                if (ampm === 'AM' && hours === 12) hours = 0;
+            } else {
+                const match = thresholdStr.match(/(\d+):(\d+)/);
+                if (match) {
+                    hours = parseInt(match[1], 10);
+                    minutes = parseInt(match[2], 10);
+                }
+            }
+        }
+        
+        const hh = String(hours).padStart(2, '0');
+        const min = String(minutes).padStart(2, '0');
+        const eventDateTime = new Date(`${yyyy}-${mm}-${dd}T${hh}:${min}:00+05:30`);
+        isPast = new Date() > eventDateTime;
+    }
+
+    let bookingStatus: BookingDetail['status'] = 'confirmed';
+    if (reg.status === 'CANCELLED') {
+        bookingStatus = 'cancelled';
+    } else if (reg.status === 'ATTENDED') {
+        bookingStatus = 'completed';
+    } else if (isPast) {
+        bookingStatus = 'expired';
+    } else if (reg.status === 'PENDING') {
+        bookingStatus = 'pending';
+    }
+
     return {
         id: reg.id,
         bookingId: reg.bookingCode,
         packageName: meetup.title || 'Local Meetup',
         packageCode: '',
         serviceType: 'meetup',
-        status: reg.status === 'CONFIRMED' || reg.status === 'ATTENDED' ? 'confirmed'
-            : reg.status === 'CANCELLED' ? 'cancelled' : 'pending',
+        status: bookingStatus,
         paymentStatus: reg.paymentStatus === 'PAID' ? 'paid' : 'pending',
         scheduledDate: meetup.eventDate || '',
         scheduledTime: meetup.startTime,
@@ -110,7 +157,7 @@ function normalizeMeetupDetail(reg: any): BookingDetail {
         landmark: reg.pickupLandmark || '',
         reportReady: false,
         createdAt: reg.createdAt,
-        amount: reg.amountPaid || 0,
+        amount: Math.round(reg.amountPaid || 0),
         assignedPersonnel: reg.pickupEnabled && reg.preferredPickupTime ? `Pickup at ${reg.preferredPickupTime}` : undefined,
     };
 }
@@ -136,7 +183,7 @@ function normalizeServiceDetail(b: any): BookingDetail {
         address: b.addressLine || '',
         reportReady: false,
         createdAt: b.createdAt ? String(b.createdAt) : '',
-        amount: b.amount || 0,
+        amount: Math.round(b.amount || 0),
         serviceId: b.serviceId,
         cityId: b.cityId,
         assignedPersonnel: b.caregiver?.name,
@@ -318,8 +365,9 @@ export default function BookingDetailsScreen() {
         );
     };
 
-    const isUpcoming = booking && new Date(booking.scheduledDate) > new Date() && booking.status !== 'cancelled';
+    const isUpcoming = booking && new Date(booking.scheduledDate) > new Date() && booking.status !== 'cancelled' && booking.status !== 'expired';
     const isCompleted = booking?.status === 'completed';
+    const isExpired = booking?.status === 'expired';
 
     if (loading) {
         return (
@@ -356,11 +404,11 @@ export default function BookingDetailsScreen() {
                 <View
                     style={[
                         styles.statusBadge,
-                        { backgroundColor: isCompleted ? SUCCESS_GREEN : WARNING_AMBER },
+                        { backgroundColor: isCompleted ? SUCCESS_GREEN : isExpired ? '#EF4444' : WARNING_AMBER },
                     ]}
                 >
                     <Text style={styles.statusBadgeText}>
-                        {isCompleted ? t('booking_details.completed') : t('booking_details.upcoming')}
+                        {isCompleted ? t('booking_details.completed') : isExpired ? t('booking_details.expired') : t('booking_details.upcoming')}
                     </Text>
                 </View>
             </View>
@@ -432,14 +480,20 @@ export default function BookingDetailsScreen() {
                             </Text>
                         </View>
 
-                        {/* Collection Type */}
+                        {/* Collection Type / Service Type */}
                         <View style={styles.gridItem}>
                             <View style={styles.gridIcon}>
                                 <Ionicons name="home" size={16} color={PRIMARY_GREEN} />
                             </View>
-                            <Text style={styles.gridLabel}>{t('booking_details.collection_type')}</Text>
-                             <Text style={styles.gridValue}>
-                                {booking.collectionType === 'home' ? t('booking_details.home_collection') : t('booking_details.lab_visit')}
+                            <Text style={styles.gridLabel}>
+                                {booking.serviceType === 'blood-test' 
+                                    ? t('booking_details.collection_type') 
+                                    : t('booking_details.service')}
+                            </Text>
+                            <Text style={styles.gridValue}>
+                                {booking.serviceType === 'blood-test'
+                                    ? (booking.collectionType === 'home' ? t('booking_details.home_collection') : t('booking_details.lab_visit'))
+                                    : booking.packageName}
                             </Text>
                         </View>
 
@@ -460,8 +514,8 @@ export default function BookingDetailsScreen() {
                                 <Ionicons name="checkmark-circle" size={16} color={PRIMARY_GREEN} />
                             </View>
                             <Text style={styles.gridLabel}>{t('booking_details.status')}</Text>
-                            <Text style={[styles.gridValue, { color: isCompleted ? SUCCESS_GREEN : booking?.status === 'rescheduled' ? '#8B5CF6' : WARNING_AMBER }]}>
-                                {booking?.status === 'rescheduled' ? t('booking_details.rescheduled_status') : isCompleted ? t('booking_details.completed') : t('booking_details.upcoming')}
+                            <Text style={[styles.gridValue, { color: isCompleted ? SUCCESS_GREEN : isExpired ? '#EF4444' : booking?.status === 'rescheduled' ? '#8B5CF6' : WARNING_AMBER }]}>
+                                {booking?.status === 'rescheduled' ? t('booking_details.rescheduled_status') : isExpired ? t('booking_details.expired') : isCompleted ? t('booking_details.completed') : t('booking_details.upcoming')}
                             </Text>
                         </View>
 
@@ -498,7 +552,7 @@ export default function BookingDetailsScreen() {
                     <View style={styles.paymentRow}>
                         <Text style={styles.paymentLabel}>{t('booking_details.amount_paid')}</Text>
                         <View style={styles.paymentAmount}>
-                            <Text style={styles.amountText}>₹{booking.amount}</Text>
+                            <Text style={styles.amountText}>₹{Math.round(booking.amount)}</Text>
                             <View style={[styles.paymentStatus, { backgroundColor: booking.paymentStatus === 'paid' ? SUCCESS_GREEN : '#EF4444' }]}>
                                 <Text style={styles.paymentStatusText}>{booking.paymentStatus}</Text>
                             </View>
@@ -542,8 +596,8 @@ export default function BookingDetailsScreen() {
                     </View>
                 )}
 
-                {/* Info Note (if upcoming) */}
-                {isUpcoming && (
+                {/* Info Note (if upcoming blood test) */}
+                {isUpcoming && booking.serviceType === 'blood-test' && (
                     <View style={styles.infoCard}>
                         <Ionicons name="information-circle" size={16} color={WARNING_AMBER} />
                         <Text style={styles.infoText}>

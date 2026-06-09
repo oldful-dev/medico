@@ -361,7 +361,6 @@ const makeStyles = (isDarkMode: boolean) =>
     },
     checkboxCardSelected: {
       borderColor: Colors.primary,
-      backgroundColor: 'rgba(4, 131, 87, 0.05)',
     },
     checkbox: {
       width: 22,
@@ -420,7 +419,6 @@ const makeStyles = (isDarkMode: boolean) =>
     },
     radioCardSelected: {
       borderColor: Colors.primary,
-      backgroundColor: 'rgba(4, 131, 87, 0.05)',
       borderWidth: 1.5,
     },
     radioCircle: {

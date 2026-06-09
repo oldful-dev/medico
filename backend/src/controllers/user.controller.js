@@ -428,6 +428,7 @@ const uploadHealthReport = async (req, res, next) => {
                 fileUrl: url,
                 fileType: req.file.mimetype.split('/')[1],
                 uploadedBy: req.user?.id || null,
+                category: req.body.category || 'Other',
             },
         });
 

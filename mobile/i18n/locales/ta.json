@@ -177,7 +177,17 @@
     "smart_upgrade": "ஸ்மார்ட் மேம்பாடு",
     "caregiver_support": "பராமரிப்பாளர் ஆதரவு",
     "emergency_assist": "அவசர உதவி",
-    "tech_helper_essentials": "டெக் ஹெல்பர்"
+    "tech_helper_essentials": "டெக் ஹெல்பர்",
+    "doctor_visit_quick": "மருத்துவர் வருகை",
+    "nurse_care_quick": "செவிலியர் & உதவியாளர்",
+    "hospital_trip_quick": "மருத்துவமனை வருகை",
+    "physio_quick": "பிசியோ",
+    "blood_work": "இரத்த வேலை",
+    "scan_ecg": "ஸ்கேன் & ஈசிஜி",
+    "medicine": "மருந்து",
+    "insurance_quick": "காப்பீடு",
+    "fitness_quick": "உடற்தகுதி",
+    "equipment_quick": "உபகரணங்கள்"
   },
   "booking": {
     "book_service": "சேவை பதிவு",
@@ -894,7 +904,8 @@
       "pending": "நிலுவையில் உள்ளது",
       "completed": "முடிந்தது",
       "cancelled": "ரத்து செய்யப்பட்டது",
-      "rescheduled": "தேதி மாற்றப்பட்டது"
+      "rescheduled": "தேதி மாற்றப்பட்டது",
+      "expired": "காலாவதியானது"
     },
     "collection_types": {
       "home_collection": "வீட்டு சேகரிப்பு",
@@ -967,7 +978,9 @@
     "fail_cancel": "முன்பதிவை ரத்துசெய்வதில் தோல்வி",
     "reschedule_title": "சந்திப்பு மறுதிட்டமிடல்",
     "reschedule_msg": "மறுதிட்டமிடல் கோரிக்கைகள் நிர்வாக குழுவால் அங்கீகரிக்கப்பட வேண்டும்.",
-    "contact_support": "ஆதரவை தொடர்பு கொள்ளுங்கள்"
+    "contact_support": "ஆதரவை தொடர்பு கொள்ளுங்கள்",
+    "service": "சேவை",
+    "expired": "காலாவதியானது"
   },
   "edit_profile": {
     "full_name": "முழு பெயர்",
@@ -1881,7 +1894,14 @@
     "monthly": "மாதம்",
     "custom": "தனிப்பயன்",
     "when": "எப்போது",
-    "confirm_rental": "வாடகை உறுதி"
+    "confirm_rental": "வாடகை உறுதி",
+    "other": "மற்றவை",
+    "other_type": "வகை",
+    "other_placeholder": "தேவையான உபகரணங்களை குறிப்பிடவும்...",
+    "alert_other_required": "தயவுசெய்து உபகரண வகையைக் குறிப்பிடவும்.",
+    "custom_duration_label": "தனிப்பயன் காலம்",
+    "custom_duration_placeholder": "உதாரணமாக 10 நாட்கள், 3 வாரங்கள்",
+    "alert_custom_duration_required": "தயவுசெய்து தனிப்பயன் காலத்தைக் குறிப்பிடவும்."
   },
   "paper_legal": {
     "header": "காகிதம் மற்றும் சட்டம்",
@@ -2057,7 +2077,17 @@
     "alert_recipient_required": "காப்பீடு யாருக்கென தேர்வு செய்யவும்.",
     "alert_init_failed": "சேவை தொடக்கம் முடியவில்லை. மீண்டும் முயலவும்.",
     "alert_submission_failed": "ஏதோ தவறு ஏற்பட்டது.",
-    "alert_request_failed": "கோரிக்கை அனுப்ப முடியவில்லை. மீண்டும் முயலவும்."
+    "alert_request_failed": "கோரிக்கை அனுப்ப முடியவில்லை. மீண்டும் முயலவும்.",
+    "self": "சுய",
+    "family": "குடும்பம்",
+    "spouse": "துணைவர்",
+    "parent": "பெற்றோர்",
+    "upload_aadhaar": "ஆதார் கார்டைப் பதிவேற்றவும்",
+    "upload_pan": "பான் கார்டைப் பதிவேற்றவும்",
+    "aadhaar_required": "ஆதார் கார்டு தேவை.",
+    "pan_required": "பான் கார்டு தேவை.",
+    "who_is_it_for": "இது யாருக்காக?",
+    "document_preview": "பதிவேற்றிய ஆவணத்தின் முன்னோட்டம்"
   },
   "meetup": {
     "header_title": "உள்ளூர் சந்திப்புகள்",
@@ -3313,6 +3343,51 @@
     "cancel_downgrade_btn": "தரமிறக்கத்தை ரத்துசெய்",
     "renew_plan_btn": "திட்டத்தை புதுப்பி",
     "cancel_downgrade_confirm": "திட்டமிடப்பட்ட தரமிறக்கத்தை நிச்சயமாக ரத்து செய்ய விரும்புகிறீர்களா?",
-    "downgrade_cancelled": "தரமிறக்கம் வெற்றிகரமாக ரத்து செய்யப்பட்டது."
+    "downgrade_cancelled": "தரமிறக்கம் வெற்றிகரமாக ரத்து செய்யப்பட்டது.",
+    "expired_badge": "காலாவதியானது",
+    "expired_on": "{{date}} அன்று காலாவதியானது"
+  },
+  "scan_ecg": {
+    "header": "ஸ்கேன் & ஈசிஜி",
+    "header_subtitle": "வீட்டிலேயே ஸ்கேன் & ஈசிஜி கண்டறியும் சேவைகளை பதிவு செய்யுங்கள்",
+    "document_upload": "ஆவண பதிவேற்றம்",
+    "camera_option": "கேமரா",
+    "camera_sub": "மருத்துவரின் சீட்டை புகைப்படம் எடுக்கவும்",
+    "gallery_option": "கேலரி",
+    "gallery_sub": "கேலரியில் இருந்து மருத்துவரின் சீட்டை பதிவேற்றவும்",
+    "schedule_service": "சேவையை திட்டமிடுங்கள்",
+    "service_addons": "சேவை கூடுதல் அம்சங்கள்",
+    "pickup_drop": "பிக்அப்-டிராப் உதவி",
+    "assistance_required": "உதவி தேவை",
+    "appointment_location": "நியமன இடம்",
+    "comments": "கருத்துகள்",
+    "comments_placeholder": "கூடுதல் தேவைகள், சிறப்பு கோரிக்கைகள் அல்லது குறிப்புகளை இங்கே உள்ளிடவும்...",
+    "confirm": "உறுதிப்படுத்து",
+    "alert_datetime_required": "தேதி & நேரம் தேவை",
+    "alert_datetime_required_msg": "உங்கள் சந்திப்பிற்கு ஒரு தேதி மற்றும் நேரத்தை தேர்வு செய்யவும்.",
+    "alert_address_required": "முகவரி தேவை",
+    "alert_address_required_msg": "செல்லுபடியாகும் சந்திப்பு முகவரியை உள்ளிடவும்."
+  },
+  "fitness": {
+    "header": "உடற்தகுதி",
+    "header_subtitle": "யோகா & உடற்தகுதி சேவைகளை பதிவு செய்யவும்",
+    "service_type": "சேவை வகை",
+    "yoga_teacher_home": "வீட்டில் யோகா ஆசிரியர்",
+    "join_class": "வகுப்பில் சேரவும்",
+    "standard_location": "சேவை இருப்பிடம்",
+    "comments": "கருத்துகள்",
+    "comments_placeholder": "கூடுதல் குறிப்புகளை உள்ளிடவும்...",
+    "book_appointment": "சந்திப்பை பதிவு செய்",
+    "confirm_btn": "உறுதிப்படுத்து"
+  },
+  "physio": {
+    "header": "உடலியக்க மருத்துவம் (ஃபிசியோ)",
+    "header_subtitle": "வீட்டிலேயே உடலியக்க மருத்துவர் வருகையை பதிவு செய்யுங்கள்",
+    "affected_body_parts": "பாதிக்கப்பட்ட உடல் பாகங்களை தேர்ந்தெடுக்கவும்",
+    "other_parts": "இதர பாகங்கள்",
+    "comments": "கருத்துகள்",
+    "comments_placeholder": "உங்கள் நிலையை விவரிக்கவும் அல்லது இதர உடல் பாகங்களை குறிப்பிடவும்...",
+    "schedule_appointment": "சந்திப்பை திட்டமிடுங்கள்",
+    "book_appointment": "சந்திப்பை பதிவு செய்"
   }
 }

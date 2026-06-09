@@ -1,4 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// ──────────────────────────────────────────────────────────────────────────────
+//  useServiceInitialization
+//
+//  What changed (performance fix):
+//   • isLoading now ONLY reflects the service-catalog fetch, NOT location.
+//     The booking button becomes available as soon as the catalog is ready
+//     (typically < 2 s on a good connection, instant when cached).
+//   • Location is fetched in the background in parallel. The address field
+//     updates itself once GPS resolves (or times out via locationService).
+//   • cityId falls back to profile.cityId immediately — no extra API round-trip.
+// ──────────────────────────────────────────────────────────────────────────────
+
+import { useState, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import { locationService } from '@/services/device/locationService';
 import { apiClient } from '@/services/api/apiClient';
@@ -15,44 +27,63 @@ const resolvePrice = (svc: any): number => {
 
 export function useServiceInitialization(slug: string) {
     const { profile, getServiceBySlug, services, isLoading: isCatalogLoading } = useUser();
+
     const [cityId, setCityId] = useState('');
     const [serviceId, setServiceId] = useState('');
     const [serviceName, setServiceName] = useState('');
     const [servicePrice, setServicePrice] = useState(0);
     const [address, setAddress] = useState('Fetching address...');
     const [isManualAddress, setIsManualAddress] = useState(false);
-    const [isLoadingInit, setIsLoadingInit] = useState(true);
 
+    // ── 1. Location fetch — runs in the background, does NOT block isLoading ──
     useEffect(() => {
+        let cancelled = false;
+
         (async () => {
             try {
-                setIsLoadingInit(true);
                 const hasPermission = await locationService.requestPermission();
-                if (hasPermission) {
-                    const coords = await locationService.getCurrentLocation();
-                    const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
-                    setAddress(fetchedAddress);
-                } else {
+                if (!hasPermission) {
+                    if (!cancelled) {
+                        setIsManualAddress(true);
+                        setAddress('');
+                    }
+                    return;
+                }
+
+                const coords = await locationService.getCurrentLocation();
+                if (cancelled) return;
+
+                // Kick off reverse-geocode — also non-blocking for the button
+                locationService
+                    .getAddressFromCoordinates(coords)
+                    .then(fetchedAddress => {
+                        if (!cancelled) setAddress(fetchedAddress);
+                    })
+                    .catch(() => {
+                        if (!cancelled) {
+                            setIsManualAddress(true);
+                            setAddress('');
+                        }
+                    });
+            } catch {
+                if (!cancelled) {
                     setIsManualAddress(true);
                     setAddress('');
                 }
-            } catch (err) {
-                console.warn("Location initialization failed", err);
-                setIsManualAddress(true);
-                setAddress('');
-            } finally {
-                setIsLoadingInit(false);
             }
         })();
+
+        return () => { cancelled = true; };
     }, []);
 
-    // Try context first, fallback to direct API call
+    // ── 2. Service & city resolution — drives isLoading ───────────────────────
     useEffect(() => {
-        if (profile) {
+        // City is available immediately from profile
+        if (profile?.cityId) {
             setCityId(profile.cityId);
         }
 
-        // Try from context
+        // Try context catalog first (fast path — usually already loaded)
         const svc = getServiceBySlug(slug);
         if (svc) {
             setServiceId(svc.id);
@@ -61,7 +92,7 @@ export function useServiceInitialization(slug: string) {
             return;
         }
 
-        // Fallback: direct API call if context services not loaded yet
+        // Fallback: direct API call only when catalog is confirmed empty
         if (!isCatalogLoading && services.length === 0) {
             (async () => {
                 try {
@@ -92,7 +123,9 @@ export function useServiceInitialization(slug: string) {
         setAddress,
         locationDenied: isManualAddress,
         setIsManualAddress,
-        isLoading: isLoadingInit || isCatalogLoading,
-        isReady
+        // isLoading is now ONLY the catalog loading state.
+        // Location runs in the background and never blocks the button.
+        isLoading: isCatalogLoading,
+        isReady,
     };
 }

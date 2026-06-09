@@ -6,10 +6,44 @@ const prisma = require('../config/database');
 const { sendResponse } = require('../utils/helpers');
 const { logger } = require('../config/logger');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 
 // ─── Helpers ────────────────────────────────────────────────────
 function generateBookingCode() {
     return 'MEET-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+}
+
+function getMeetupEndDateTime(eventDate, timeStr) {
+    const d = new Date(eventDate);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    
+    let hours = 0;
+    let minutes = 0;
+    
+    if (timeStr) {
+        const ampmMatch = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (ampmMatch) {
+            hours = parseInt(ampmMatch[1], 10);
+            minutes = parseInt(ampmMatch[2], 10);
+            const ampm = ampmMatch[3].toUpperCase();
+            if (ampm === 'PM' && hours < 12) hours += 12;
+            if (ampm === 'AM' && hours === 12) hours = 0;
+        } else {
+            const match = timeStr.match(/(\d+):(\d+)/);
+            if (match) {
+                hours = parseInt(match[1], 10);
+                minutes = parseInt(match[2], 10);
+            }
+        }
+    }
+    
+    const hh = String(hours).padStart(2, '0');
+    const min = String(minutes).padStart(2, '0');
+    
+    // Treat as Indian Standard Time (IST, UTC+5:30)
+    return new Date(`${yyyy}-${mm}-${dd}T${hh}:${min}:00+05:30`);
 }
 
 // ─── Public: List active meetups ────────────────────────────────
@@ -17,12 +51,50 @@ function generateBookingCode() {
 const getMeetups = async (req, res, next) => {
     try {
         const { city, pinCode, upcoming } = req.query;
-        const where = { isActive: true };
+        
+        // Differentiate admin requests to keep expired meetups visible
+        let isAdmin = false;
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const token = authHeader.split(' ')[1];
+            try {
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                if (decoded.type === 'admin') {
+                    isAdmin = true;
+                }
+            } catch (e) {
+                // ignore
+            }
+        }
+        if (!isAdmin && req.signedCookies) {
+            const token = req.signedCookies['auth-token'];
+            if (token) {
+                try {
+                    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                    if (decoded.type === 'admin') {
+                        isAdmin = true;
+                    }
+                } catch (e) {
+                    // ignore
+                }
+            }
+        }
+
+        const where = {};
+        // Users can only see active meetups
+        if (!isAdmin) {
+            where.isActive = true;
+        } else {
+            // For admin, default query param could filter, but let's respect query filters if any
+            // If admin page sends isActive queries or filters, we can map them
+            // In meetups list on admin: it shows all (active and inactive)
+        }
+
         if (city) where.city = { contains: city, mode: 'insensitive' };
         if (pinCode) where.pinCode = pinCode;
         if (upcoming === 'true') where.eventDate = { gte: new Date() };
 
-        const meetups = await prisma.meetup.findMany({
+        let meetups = await prisma.meetup.findMany({
             where,
             orderBy: [{ isFeatured: 'desc' }, { eventDate: 'asc' }],
             include: {
@@ -30,12 +102,24 @@ const getMeetups = async (req, res, next) => {
             },
         });
 
-        const result = meetups.map(m => ({
-            ...m,
-            registeredCount: m._count.registrations,
-            availableSeats: Math.max(0, m.capacity - m._count.registrations),
-            _count: undefined,
-        }));
+        // Map and compute expired state timezone-safely
+        let result = meetups.map(m => {
+            const thresholdStr = m.endTime || m.startTime || "23:59";
+            const eventDateTime = getMeetupEndDateTime(m.eventDate, thresholdStr);
+            const expired = new Date() > eventDateTime;
+            return {
+                ...m,
+                isExpired: expired,
+                registeredCount: m._count.registrations,
+                availableSeats: Math.max(0, m.capacity - m._count.registrations),
+                _count: undefined,
+            };
+        });
+
+        // For non-admin, filter out expired meetups in-memory timezone-safely
+        if (!isAdmin) {
+            result = result.filter(m => !m.isExpired);
+        }
 
         sendResponse(res, 200, result);
     } catch (error) {
@@ -57,8 +141,13 @@ const getMeetupById = async (req, res, next) => {
         });
         if (!meetup) return sendResponse(res, 404, null, 'Meetup not found');
 
+        const thresholdStr = meetup.endTime || meetup.startTime || "23:59";
+        const eventDateTime = getMeetupEndDateTime(meetup.eventDate, thresholdStr);
+        const expired = new Date() > eventDateTime;
+
         sendResponse(res, 200, {
             ...meetup,
+            isExpired: expired,
             registeredCount: meetup._count.registrations,
             availableSeats: Math.max(0, meetup.capacity - meetup._count.registrations),
             _count: undefined,
@@ -90,6 +179,13 @@ const registerForMeetup = async (req, res, next) => {
         const meetup = await prisma.meetup.findUnique({ where: { id: meetupId } });
         if (!meetup) return sendResponse(res, 404, null, 'Meetup not found');
         if (!meetup.isActive) return sendResponse(res, 400, null, 'This meetup is no longer active');
+
+        // Check if expired
+        const thresholdStr = meetup.endTime || meetup.startTime || "23:59";
+        const eventDateTime = getMeetupEndDateTime(meetup.eventDate, thresholdStr);
+        if (new Date() > eventDateTime) {
+            return sendResponse(res, 400, null, 'This meetup has expired');
+        }
 
         // Check capacity
         const regCount = await prisma.meetupRegistration.count({

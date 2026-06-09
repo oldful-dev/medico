@@ -49,6 +49,12 @@ Notifications.setNotificationHandler({
     },
 });
 
+import { cleanNotificationText } from '../../utils/sanitizeText';
+
+function cleanText(text: string | null | undefined): string {
+    return cleanNotificationText(text);
+}
+
 export const notificationService = {
     /**
      * Request push notification permission
@@ -79,7 +85,6 @@ export const notificationService = {
         if (!hasPermission) return null;
 
         try {
-            // Set up Android notification channel first
             if (Platform.OS === 'android') {
                 await Notifications.setNotificationChannelAsync('ayuxacare-default', {
                     name: 'Ayuxa Notifications',
@@ -90,8 +95,6 @@ export const notificationService = {
                 });
             }
 
-            // Use native device token (FCM on Android, APNs on iOS)
-            // This is what Firebase Admin SDK expects — NOT the Expo push token
             const tokenData = await Notifications.getDevicePushTokenAsync();
             const token = tokenData.data as string;
 
@@ -112,7 +115,7 @@ export const notificationService = {
         triggerSeconds: number = 1
     ): Promise<void> => {
         await Notifications.scheduleNotificationAsync({
-            content: { title, body, sound: 'default' },
+            content: { title: cleanText(title), body: cleanText(body), sound: 'default' },
             trigger: { seconds: triggerSeconds, type: 'timeInterval' } as any,
         });
     },
@@ -145,8 +148,8 @@ export const notificationService = {
                 const rawList = Array.isArray(res.data) ? res.data : [];
                 return rawList.map((raw: any) => ({
                     id: raw.id,
-                    title: raw.subject ?? raw.templateId ?? 'Notification',
-                    body: raw.body ?? '',
+                    title: cleanText(raw.subject ?? raw.templateId ?? 'Notification'),
+                    body: cleanText(raw.body ?? ''),
                     read: raw.isRead,
                     timestamp: new Date(raw.createdAt),
                 }));

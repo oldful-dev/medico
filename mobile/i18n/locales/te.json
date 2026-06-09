@@ -177,7 +177,17 @@
     "smart_upgrade": "స్మార్ట్ అప్‌గ్రేడ్",
     "caregiver_support": "సంరక్షకుడు\nసహాయం",
     "emergency_assist": "అత్యవసర\nసహాయం",
-    "tech_helper_essentials": "టెక్ హెల్పర్"
+    "tech_helper_essentials": "టెక్ హెల్పర్",
+    "doctor_visit_quick": "డాక్టర్ సందర్శన",
+    "nurse_care_quick": "నర్సు & సహాయకుడు",
+    "hospital_trip_quick": "ఆసుపత్రి సందర్శన",
+    "physio_quick": "ఫిజియో",
+    "blood_work": "రక్త పని",
+    "scan_ecg": "స్కాన్ & ECG",
+    "medicine": "మందు",
+    "insurance_quick": "భీమా",
+    "fitness_quick": "ఫిట్‌నెస్",
+    "equipment_quick": "పరికరాలు"
   },
   "booking": {
     "book_service": "బుక్ సర్వీస్",
@@ -894,7 +904,8 @@
       "pending": "పెండింగ్",
       "completed": "పూర్తయింది",
       "cancelled": "రద్దయింది",
-      "rescheduled": "రీషెడ్యూల్ చేయబడింది"
+      "rescheduled": "రీషెడ్యూల్ చేయబడింది",
+      "expired": "గడువు ముగిసింది"
     },
     "collection_types": {
       "home_collection": "హోమ్ కలెక్షన్",
@@ -967,7 +978,9 @@
     "fail_cancel": "బుకింగ్ రద్దు చేయడంలో విఫలమైంది",
     "reschedule_title": "అపాయింట్‌మెంట్ తిరిగి షెడ్యూల్",
     "reschedule_msg": "తిరిగి షెడ్యూల్ అభ్యర్థనలు అడ్మిన్ టీమ్ ఆమోదించాలి.",
-    "contact_support": "సపోర్ట్‌ను సంప్రదించండి"
+    "contact_support": "సపోర్ట్‌ను సంప్రదించండి",
+    "service": "సేవ",
+    "expired": "గడువు ముగిసింది"
   },
   "edit_profile": {
     "full_name": "పూర్తి పేరు",
@@ -1881,7 +1894,14 @@
     "monthly": "నెలవారీ",
     "custom": "కస్టమ్",
     "when": "ఎప్పుడు?",
-    "confirm_rental": "అద్దెను నిర్ధారించండి"
+    "confirm_rental": "అద్దెను నిర్ధారించండి",
+    "other": "ఇతర",
+    "other_type": "రకం",
+    "other_placeholder": "అవసరమైన పరికరాన్ని పేర్కొనండి...",
+    "alert_other_required": "దయచేసి పరికరం రకాన్ని పేర్కొనండి.",
+    "custom_duration_label": "అనుకూల వ్యవధి",
+    "custom_duration_placeholder": "ఉదా. 10 రోజులు, 3 వారాలు",
+    "alert_custom_duration_required": "దయచేసి అనుకూల వ్యవధిని పేర్కొనండి."
   },
   "paper_legal": {
     "header": "కాగితం మరియు న్యాయం",
@@ -2057,7 +2077,17 @@
     "alert_recipient_required": "బీమా ఎవరికో ఎంపిక చేయండి.",
     "alert_init_failed": "సేవ ప్రారంభం పూర్తికాలేదు. మళ్లీ ప్రయత్నించండి.",
     "alert_submission_failed": "ఏదో తప్పు జరిగింది.",
-    "alert_request_failed": "అభ్యర్థన పంపలేకపోయాం. మళ్లీ ప్రయత్నించండి."
+    "alert_request_failed": "అభ్యర్థన పంపలేకపోయాం. మళ్లీ ప్రయత్నించండి.",
+    "self": "స్వయంగా",
+    "family": "కుటుంబం",
+    "spouse": "భార్య/భర్త",
+    "parent": "తల్లి/తండ్రి",
+    "upload_aadhaar": "ఆధార్ కార్డ్ అప్‌లోడ్ చేయండి",
+    "upload_pan": "పాన్ కార్డ్ అప్‌లోడ్ చేయండి",
+    "aadhaar_required": "ఆధార్ కార్డ్ అవసరం.",
+    "pan_required": "పాన్ కార్డ్ అవసరం.",
+    "who_is_it_for": "ఇది ఎవరి కోసం?",
+    "document_preview": "అప్‌లోడ్ చేసిన పత్రాల ప్రివ్యూ"
   },
   "meetup": {
     "header_title": "స్థానిక సమావేశాలు",
@@ -3313,6 +3343,51 @@
     "cancel_downgrade_btn": "డౌన్‌గ్రేడ్ రద్దు చేయి",
     "renew_plan_btn": "ప్లాన్ పునరుద్ధరించు",
     "cancel_downgrade_confirm": "మీరు నిజంగా షెడ్యూల్ చేసిన డౌన్‌గ్రేడ్‌ను రద్దు చేయాలనుకుంటున్నారా?",
-    "downgrade_cancelled": "డౌన్‌గ్రేడ్ విజయవంతంగా రద్దు చేయబడింది."
+    "downgrade_cancelled": "డౌన్‌గ్రేడ్ విజయవంతంగా రద్దు చేయబడింది.",
+    "expired_badge": "గడువు ముగిసింది",
+    "expired_on": "{{date}}న గడువు ముగిసింది"
+  },
+  "scan_ecg": {
+    "header": "ಸ್ಕ್ಯಾನ್ & ಇಸಿಜಿ",
+    "header_subtitle": "ఇంటి వద్దే స్కాన్ & ఈసీజీ పరీక్షల సేవలను బుక్ చేసుకోండి",
+    "document_upload": "పత్రాల అప్‌లోడ్",
+    "camera_option": "కెమెరా",
+    "camera_sub": "వైద్యుల ప్రిస్క్రిప్షన్ ఫోటో తీయండి",
+    "gallery_option": "గ్యాలరీ",
+    "gallery_sub": "గ్యాలరీ నుండి ప్రిస్క్రిప్షన్ అప్‌లోడ్ చేయండి",
+    "schedule_service": "సేవను షెడ్యూల్ చేయండి",
+    "service_addons": "సేవా యాడ్-ఆన్స్",
+    "pickup_drop": "పికప్-డ్రాప్ సహాయం",
+    "assistance_required": "సహాయం అవసరం",
+    "appointment_location": "నియామక స్థలం",
+    "comments": "వ్యాఖ్యలు",
+    "comments_placeholder": "ఏవైనా అదనపు అవసరాలు, ప్రత్యేక అభ్యర్థనలు లేదా గమనికలను ఇక్కడ నమోదు చేయండి...",
+    "confirm": "ధృవీకరించు",
+    "alert_datetime_required": "తేదీ & సమయం అవసరం",
+    "alert_datetime_required_msg": "దయచేసి మీ అపాయింట్‌మెంట్ కోసం తేదీ మరియు సమయాన్ని ఎంచుకోండి.",
+    "alert_address_required": "చిరునామా అవసరం",
+    "alert_address_required_msg": "దయచేసి సరైన అపాయింట్‌మెంట్ చిరునామాను నమోదు చేయండి."
+  },
+  "fitness": {
+    "header": "ఫిట్‌నెస్",
+    "header_subtitle": "యోగా & ఫిట్‌నెస్ సేవలను బుక్ చేసుకోండి",
+    "service_type": "సేవ రకం",
+    "yoga_teacher_home": "ఇంటి వద్ద యోగా శిక్షకుడు",
+    "join_class": "క్లాస్‌లో చేరండి",
+    "standard_location": "సేవ స్థలం",
+    "comments": "వ్యాఖ్యలు",
+    "comments_placeholder": "అదనపు గమనికలను నమోదు చేయండి...",
+    "book_appointment": "అపాయింట్‌మెంట్ బుక్ చేయండి",
+    "confirm_btn": "ధృవీకరించు"
+  },
+  "physio": {
+    "header": "ఫిజియోథెరపీ",
+    "header_subtitle": "ఇంటి వద్దే ఫిజియోథెరపిస్ట్ సేవలను బుక్ చేసుకోండి",
+    "affected_body_parts": "బాధిత శరీర భాగాలను ఎంచుకోండి",
+    "other_parts": "ఇతర భాగాలు",
+    "comments": "వ్యాఖ్యలు",
+    "comments_placeholder": "మీ సమస్యను వివరించండి లేదా ఇతర శరీర భాగాలను పేర్కొనండి...",
+    "schedule_appointment": "అపాయింట్‌మెంట్ షెడ్యూల్ చేయండి",
+    "book_appointment": "అపాయిंట్‌మెంట్ బుక్ చేయండి"
   }
 }

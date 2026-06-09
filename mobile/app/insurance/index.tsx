@@ -1,7 +1,5 @@
-// Insurance - Landing
-// PRD: Tailored for seniors/parents with pre-existing condition tracking
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, TextInput, Alert, ActivityIndicator, Image, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, TextInput, Alert, ActivityIndicator, Image, KeyboardAvoidingView, ScrollView } from 'react-native';
 
 // ─── Figma Assets ───
 const familyIcon = require('../../assets/images/cb86876504871abc5e6db19e5612175dae2b0479.png');
@@ -17,6 +15,10 @@ import { userService } from '@/services/api/userService';
 import { bookingService } from '@/services/api/bookingService';
 import { apiClient } from '@/services/api/apiClient';
 import { useTranslation } from 'react-i18next';
+import * as ImagePicker from 'expo-image-picker';
+import { mediaService } from '@/services/api/mediaService';
+import { familyMemberService, FamilyMember } from '@/services/api/familyMemberService';
+import { useUser } from '@/context/UserContext';
 
 // ─── Initial State Constants ───
 const INITIAL_CONDITIONS = [
@@ -26,22 +28,29 @@ const INITIAL_CONDITIONS = [
     { label: 'None', selected: false, isNone: true },
 ];
 
-const INITIAL_RECIPIENTS = [
-    { label: 'Self', selected: true },
-    { label: 'Parents', selected: false },
-];
-
 export default function InsuranceScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const { profile } = useUser();
 
     // UI State
-    const [recipients, setRecipients] = React.useState(INITIAL_RECIPIENTS);
+    const [whoFor, setWhoFor] = React.useState('Self'); // 'Self' or 'Family'
+
+    // Family member state (matches Nurse & Aide module logic)
+    const [familyMembers, setFamilyMembers] = React.useState<FamilyMember[]>([]);
+    const [selectedFamilyMemberId, setSelectedFamilyMemberId] = React.useState<string | null>(null);
+    const [showAddFamilyForm, setShowAddFamilyForm] = React.useState(false);
+    const [newMemberName, setNewMemberName] = React.useState('');
+    const [newMemberRelation, setNewMemberRelation] = React.useState('Spouse');
+    const [isAddingMember, setIsAddingMember] = React.useState(false);
+
     const [conditions, setConditions] = React.useState(INITIAL_CONDITIONS);
     const [requirements, setRequirements] = React.useState('');
+    const [aadhaarUri, setAadhaarUri] = React.useState<string | null>(null);
+    const [panUri, setPanUri] = React.useState<string | null>(null);
 
     // API state
     const [cityId, setCityId] = React.useState('');
@@ -49,6 +58,54 @@ export default function InsuranceScreen() {
     const [address, setAddress] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
     const [isLoadingInit, setIsLoadingInit] = React.useState(true);
+
+    // Fetch family members when profile is loaded
+    const fetchFamilyMembers = React.useCallback(async () => {
+        if (!profile?.id) return;
+        try {
+            const res = await familyMemberService.getFamilyMembers(profile.id);
+            if (res.success && res.data) {
+                setFamilyMembers(res.data);
+                if (res.data.length > 0 && !selectedFamilyMemberId) {
+                    setSelectedFamilyMemberId(res.data[0].id);
+                }
+            }
+        } catch (error) {
+            console.error('Fetch family members error:', error);
+        }
+    }, [profile?.id]);
+
+    React.useEffect(() => {
+        fetchFamilyMembers();
+    }, [profile?.id]);
+
+    const handleAddFamilyMember = async () => {
+        if (!profile?.id) return;
+        if (!newMemberName.trim()) {
+            Alert.alert(t('common.required'), t('nurse_care.add_member_name_required', 'Please enter a name.'));
+            return;
+        }
+        try {
+            setIsAddingMember(true);
+            const res = await familyMemberService.addFamilyMember(profile.id, {
+                name: newMemberName.trim(),
+                relation: newMemberRelation,
+            });
+            if (res.success && res.data) {
+                setFamilyMembers(prev => [...prev, res.data]);
+                setSelectedFamilyMemberId(res.data.id);
+                setNewMemberName('');
+                setShowAddFamilyForm(false);
+            } else {
+                Alert.alert(t('common.error'), res.message || t('nurse_care.add_member_failed', 'Failed to add family member.'));
+            }
+        } catch (error) {
+            console.error('Add family member error:', error);
+            Alert.alert(t('common.error'), t('nurse_care.add_member_failed', 'Failed to add family member.'));
+        } finally {
+            setIsAddingMember(false);
+        }
+    };
 
     React.useEffect(() => {
         (async () => {
@@ -71,30 +128,85 @@ export default function InsuranceScreen() {
         })();
     }, []);
 
+    const handleUploadDocument = async (docType: 'aadhaar' | 'pan') => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert(t('common.permission_required'), 'Gallery permission is required to upload documents.');
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: 'images',
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            if (docType === 'aadhaar') {
+                setAadhaarUri(result.assets[0].uri);
+            } else {
+                setPanUri(result.assets[0].uri);
+            }
+        }
+    };
+
     const handleBookService = async () => {
-        const activeRecipient = recipients.find(r => r.selected);
-        if (!activeRecipient) {
+        if (!whoFor) {
             Alert.alert(t('common.required'), t('insurance.alert_recipient_required'));
+            return;
+        }
+        if (whoFor === 'Family' && !selectedFamilyMemberId) {
+            Alert.alert(t('common.required'), t('nurse_care.alert_select_who', 'Please select a family member.'));
+            return;
+        }
+        if (!aadhaarUri) {
+            Alert.alert(t('common.required'), t('insurance.aadhaar_required'));
+            return;
+        }
+        if (!panUri) {
+            Alert.alert(t('common.required'), t('insurance.pan_required'));
             return;
         }
         if (!cityId || !serviceId) {
             Alert.alert(t('common.error'), t('insurance.alert_init_failed'));
             return;
         }
-        // Insurance is a consultation request — no Razorpay payment.
-        // Booking is created immediately and goes to /service-confirmation.
+
         const activeConditions = conditions.filter(c => c.selected).map(c => c.label).join(', ') || 'None';
+        const selectedFamilyMember = familyMembers.find(m => m.id === selectedFamilyMemberId);
         try {
             setIsBooking(true);
+
+            // Upload Aadhaar & PAN Card to GCS
+            let aadhaarUrl = '';
+            let panUrl = '';
+            const toUpload: string[] = [];
+            if (aadhaarUri) toUpload.push(aadhaarUri);
+            if (panUri) toUpload.push(panUri);
+
+            if (toUpload.length > 0) {
+                const urls = await mediaService.uploadMultipleMedia(toUpload, 'insurance');
+                let urlIdx = 0;
+                if (aadhaarUri) {
+                    aadhaarUrl = urls[urlIdx];
+                    urlIdx++;
+                }
+                if (panUri) {
+                    panUrl = urls[urlIdx];
+                }
+            }
+
             const res = await bookingService.createBooking({
                 serviceId,
                 cityId,
                 scheduledDate: new Date().toISOString(),
                 addressLine: address || 'Online Consultation',
                 formDataJson: {
-                    recipient: activeRecipient.label,
+                    recipient: whoFor === 'Self' ? 'Self' : (selectedFamilyMember?.name || 'Family'),
+                    recipientRelation: whoFor === 'Self' ? 'Self' : (selectedFamilyMember?.relation || ''),
                     preExistingConditions: activeConditions,
                     requirements: requirements || undefined,
+                    aadhaarUrl: aadhaarUrl || undefined,
+                    panUrl: panUrl || undefined,
                 },
             });
             if (res.success && res.data) {
@@ -108,13 +220,6 @@ export default function InsuranceScreen() {
         } finally {
             setIsBooking(false);
         }
-    };
-    const selectRecipient = (index: number) => {
-        const newRecipients = recipients.map((r, i) => ({
-            ...r,
-            selected: i === index
-        }));
-        setRecipients(newRecipients);
     };
 
     const toggleCondition = (index: number) => {
@@ -135,15 +240,6 @@ export default function InsuranceScreen() {
         }
 
         setConditions(newConditions);
-    };
-
-    const translateRecipientLabel = (label: string) => {
-        const keyMap: Record<string, string> = {
-            'self': 'common.self',
-            'parents': 'insurance.parents',
-        };
-        const key = keyMap[label.toLowerCase()];
-        return key ? t(key) : label;
     };
 
     const translateConditionLabel = (label: string) => {
@@ -193,38 +289,145 @@ export default function InsuranceScreen() {
 
                             {/* ─── Who Is It For? ─── */}
                             <View style={dynamicStyles.sectionCard}>
-                                <Text style={dynamicStyles.sectionTitle}>{t('insurance.who_for')}</Text>
+                                <Text style={dynamicStyles.sectionTitle}>{t('insurance.who_is_it_for')}</Text>
                                 <View style={dynamicStyles.recipientRow}>
-                                    {recipients.map((item, index) => (
-                                        <TouchableOpacity
-                                            key={index}
-                                            style={[
-                                                dynamicStyles.recipientButton,
-                                                item.selected && dynamicStyles.recipientButtonSelected,
-                                            ]}
-                                            onPress={() => selectRecipient(index)}
-                                        >
-                                            <Ionicons
-                                                name={item.selected ? 'radio-button-on' : 'radio-button-off'}
-                                                size={15}
-                                                color={item.selected ? '#048357' : '#AAAEAC'}
-                                            />
-                                            {item.label === 'Parents' && (
-                                                <Image
-                                                    source={familyIcon}
-                                                    style={dynamicStyles.familyIcon}
-                                                    resizeMode="contain"
-                                                />
-                                            )}
-                                            <Text style={[
-                                                dynamicStyles.recipientText,
-                                                item.selected && dynamicStyles.recipientTextSelected,
-                                            ]}>
-                                                {translateRecipientLabel(item.label)}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    ))}
+                                    {/* Option 1: Self */}
+                                    <TouchableOpacity
+                                        style={[
+                                            dynamicStyles.recipientButton,
+                                            whoFor === 'Self' && dynamicStyles.recipientButtonSelected,
+                                        ]}
+                                        onPress={() => setWhoFor('Self')}
+                                    >
+                                        <Ionicons
+                                            name={whoFor === 'Self' ? 'radio-button-on' : 'radio-button-off'}
+                                            size={15}
+                                            color={whoFor === 'Self' ? '#048357' : '#AAAEAC'}
+                                        />
+                                        <Text style={[
+                                            dynamicStyles.recipientText,
+                                            whoFor === 'Self' && dynamicStyles.recipientTextSelected,
+                                        ]}>
+                                            {t('insurance.self')}
+                                        </Text>
+                                    </TouchableOpacity>
+
+                                    {/* Option 2: Family */}
+                                    <TouchableOpacity
+                                        style={[
+                                            dynamicStyles.recipientButton,
+                                            whoFor === 'Family' && dynamicStyles.recipientButtonSelected,
+                                        ]}
+                                        onPress={() => setWhoFor('Family')}
+                                    >
+                                        <Ionicons
+                                            name={whoFor === 'Family' ? 'radio-button-on' : 'radio-button-off'}
+                                            size={15}
+                                            color={whoFor === 'Family' ? '#048357' : '#AAAEAC'}
+                                        />
+                                        <Image
+                                            source={familyIcon}
+                                            style={dynamicStyles.familyIcon}
+                                            resizeMode="contain"
+                                        />
+                                        <Text style={[
+                                            dynamicStyles.recipientText,
+                                            whoFor === 'Family' && dynamicStyles.recipientTextSelected,
+                                        ]}>
+                                            {t('insurance.family')}
+                                        </Text>
+                                    </TouchableOpacity>
                                 </View>
+
+                                {/* Standard family member selection (Nurse & Aide module logic) */}
+                                {whoFor === 'Family' && (
+                                    <View style={{ marginTop: 12 }}>
+                                        {/* Existing family members */}
+                                        {familyMembers.length > 0 ? (
+                                            <View style={dynamicStyles.familySelectionRow}>
+                                                {familyMembers.map(member => (
+                                                    <TouchableOpacity
+                                                        key={member.id}
+                                                        style={[
+                                                            dynamicStyles.whoButton,
+                                                            selectedFamilyMemberId === member.id && dynamicStyles.whoButtonActive,
+                                                        ]}
+                                                        onPress={() => setSelectedFamilyMemberId(member.id)}
+                                                    >
+                                                        <Ionicons
+                                                            name="person-outline"
+                                                            size={13}
+                                                            color={selectedFamilyMemberId === member.id ? '#048357' : (isDarkMode ? '#94A3B8' : '#555555')}
+                                                        />
+                                                        <Text style={[
+                                                            dynamicStyles.whoButtonText,
+                                                            selectedFamilyMemberId === member.id && { color: '#048357' },
+                                                        ]}>
+                                                            {member.name}{'\n'}
+                                                            <Text style={{ fontSize: 9, opacity: 0.7 }}>{member.relation}</Text>
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+                                        ) : (
+                                            <Text style={{ fontSize: 11, color: isDarkMode ? '#94A3B8' : '#888', marginBottom: 10, fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }) }}>
+                                                {t('nurse_care.no_family_members', 'No family members added yet. Add one below.')}
+                                            </Text>
+                                        )}
+
+                                        {/* Add Family Member button / inline form */}
+                                        {!showAddFamilyForm ? (
+                                            <TouchableOpacity
+                                                style={dynamicStyles.addMemberBtn}
+                                                onPress={() => setShowAddFamilyForm(true)}
+                                            >
+                                                <Ionicons name="add-circle-outline" size={16} color="#048357" />
+                                                <Text style={dynamicStyles.addMemberText}>{t('nurse_care.add_family_member', 'Add Family Member')}</Text>
+                                            </TouchableOpacity>
+                                        ) : (
+                                            <View style={dynamicStyles.addMemberForm}>
+                                                <TextInput
+                                                    style={dynamicStyles.addMemberInput}
+                                                    placeholder={t('nurse_care.member_name_placeholder', 'Member Name')}
+                                                    placeholderTextColor={isDarkMode ? '#475569' : '#AAAAAA'}
+                                                    value={newMemberName}
+                                                    onChangeText={setNewMemberName}
+                                                />
+                                                {/* Relation chips */}
+                                                <View style={{ flexDirection: 'row', gap: 8, marginVertical: 10, flexWrap: 'wrap' }}>
+                                                    {['Spouse', 'Parent', 'Child', 'Sibling'].map(rel => (
+                                                        <TouchableOpacity
+                                                            key={rel}
+                                                            style={[dynamicStyles.whoButton, newMemberRelation === rel && dynamicStyles.whoButtonActive, { flex: 0, paddingHorizontal: 14 }]}
+                                                            onPress={() => setNewMemberRelation(rel)}
+                                                        >
+                                                            <Text style={[dynamicStyles.whoButtonText, newMemberRelation === rel && { color: '#048357' }]}>
+                                                                {t(`nurse_care.relation_${rel.toLowerCase()}`, rel)}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </View>
+                                                <View style={{ flexDirection: 'row', gap: 8 }}>
+                                                    <TouchableOpacity
+                                                        style={[dynamicStyles.addMemberBtn, { flex: 1, justifyContent: 'center', backgroundColor: isDarkMode ? '#334155' : '#F1F5F9', borderRadius: 8 }]}
+                                                        onPress={() => { setShowAddFamilyForm(false); setNewMemberName(''); }}
+                                                    >
+                                                        <Text style={[dynamicStyles.addMemberText, { color: isDarkMode ? '#94A3B8' : '#555' }]}>{t('common.cancel')}</Text>
+                                                    </TouchableOpacity>
+                                                    <TouchableOpacity
+                                                        style={[dynamicStyles.addMemberBtn, { flex: 1, justifyContent: 'center', backgroundColor: '#048357', borderRadius: 8, borderColor: 'transparent' }]}
+                                                        onPress={handleAddFamilyMember}
+                                                        disabled={isAddingMember}
+                                                    >
+                                                        {isAddingMember
+                                                            ? <ActivityIndicator size="small" color="#FFF" />
+                                                            : <Text style={[dynamicStyles.addMemberText, { color: '#FFFFFF' }]}>{t('common.save')}</Text>}
+                                                    </TouchableOpacity>
+                                                </View>
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
                             </View>
 
                             {/* ─── Pre-existing Conditions ─── */}
@@ -255,6 +458,61 @@ export default function InsuranceScreen() {
                                     </Text>
                                 </TouchableOpacity>
                             ))}
+
+                            {/* ─── Document Uploads ─── */}
+                            <View style={dynamicStyles.sectionCard}>
+                                <Text style={dynamicStyles.sectionTitle}>{t('insurance.document_preview')}</Text>
+
+                                <Text style={dynamicStyles.docSubTitle}>Aadhaar Card</Text>
+                                <TouchableOpacity
+                                    style={[dynamicStyles.uploadCard, aadhaarUri && dynamicStyles.uploadCardActive]}
+                                    activeOpacity={0.7}
+                                    onPress={() => handleUploadDocument('aadhaar')}
+                                >
+                                    {aadhaarUri ? (
+                                        <View style={dynamicStyles.uploadedPreview}>
+                                            <Image source={{ uri: aadhaarUri }} style={dynamicStyles.docThumb} />
+                                            <View style={dynamicStyles.uploadedInfo}>
+                                                <Text style={dynamicStyles.docSelectedText}>Aadhaar Selected</Text>
+                                                <TouchableOpacity onPress={() => setAadhaarUri(null)}>
+                                                    <Text style={dynamicStyles.removeText}>Change</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                            <Ionicons name="checkmark-circle" size={24} color="#048357" />
+                                        </View>
+                                    ) : (
+                                        <View style={dynamicStyles.uploadPlaceholder}>
+                                            <Ionicons name="cloud-upload-outline" size={24} color="#048357" />
+                                            <Text style={dynamicStyles.uploadPlaceholderText}>{t('insurance.upload_aadhaar')}</Text>
+                                        </View>
+                                    )}
+                                </TouchableOpacity>
+
+                                <Text style={[dynamicStyles.docSubTitle, { marginTop: 14 }]}>PAN Card</Text>
+                                <TouchableOpacity
+                                    style={[dynamicStyles.uploadCard, panUri && dynamicStyles.uploadCardActive]}
+                                    activeOpacity={0.7}
+                                    onPress={() => handleUploadDocument('pan')}
+                                >
+                                    {panUri ? (
+                                        <View style={dynamicStyles.uploadedPreview}>
+                                            <Image source={{ uri: panUri }} style={dynamicStyles.docThumb} />
+                                            <View style={dynamicStyles.uploadedInfo}>
+                                                <Text style={dynamicStyles.docSelectedText}>PAN Card Selected</Text>
+                                                <TouchableOpacity onPress={() => setPanUri(null)}>
+                                                    <Text style={dynamicStyles.removeText}>Change</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                            <Ionicons name="checkmark-circle" size={24} color="#048357" />
+                                        </View>
+                                    ) : (
+                                        <View style={dynamicStyles.uploadPlaceholder}>
+                                            <Ionicons name="cloud-upload-outline" size={24} color="#048357" />
+                                            <Text style={dynamicStyles.uploadPlaceholderText}>{t('insurance.upload_pan')}</Text>
+                                        </View>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
 
                             {/* ─── Requirements Text Area ─── */}
                             <Text style={dynamicStyles.requirementsLabel}>{t('insurance.requirements_label')}</Text>
@@ -503,5 +761,133 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 14,
         color: '#FFFFFF',
+    },
+    familySelectionRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 12,
+        gap: 8,
+    },
+    whoButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        height: 36,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: isDarkMode ? '#3A3A3A' : 'rgba(143,143,143,0.3)',
+    },
+    whoButtonActive: {
+        borderWidth: 1.5,
+        borderColor: '#02743F',
+        backgroundColor: isDarkMode ? 'rgba(4, 131, 87, 0.15)' : 'rgba(4, 131, 87, 0.05)',
+    },
+    whoButtonText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontSize: 11,
+        color: isDarkMode ? '#FFFFFF' : '#2F2F2F',
+        marginLeft: 6,
+    },
+    whoIcon: {
+        width: 14,
+        height: 14,
+    },
+    addMemberBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderWidth: 1,
+        borderColor: isDarkMode ? '#334155' : 'rgba(4, 131, 87, 0.3)',
+        borderRadius: 8,
+        marginTop: 8,
+        gap: 6,
+    },
+    addMemberText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontSize: 11,
+        color: '#048357',
+    },
+    addMemberForm: {
+        marginTop: 10,
+        padding: 12,
+        backgroundColor: isDarkMode ? '#1E293B' : '#F8FAFC',
+        borderRadius: 10,
+        borderWidth: 0.8,
+        borderColor: isDarkMode ? '#334155' : '#E2E8F0',
+    },
+    addMemberInput: {
+        height: 38,
+        borderWidth: 0.8,
+        borderColor: isDarkMode ? '#334155' : '#D1D5DB',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 12,
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
+        backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF',
+    },
+    uploadCard: {
+        borderWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: isDarkMode ? '#475569' : '#AAAEAC',
+        borderRadius: 8,
+        padding: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
+        minHeight: 56,
+        marginTop: 6,
+    },
+    uploadCardActive: {
+        borderColor: '#048357',
+        backgroundColor: isDarkMode ? 'rgba(4, 131, 87, 0.1)' : '#F0FFF4',
+        borderStyle: 'solid',
+    },
+    uploadPlaceholder: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    uploadPlaceholderText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 12,
+        color: isDarkMode ? '#94A3B8' : '#555555',
+    },
+    uploadedPreview: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
+    docThumb: {
+        width: 40,
+        height: 40,
+        borderRadius: 4,
+        marginRight: 10,
+    },
+    uploadedInfo: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    docSelectedText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontSize: 12,
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
+    },
+    removeText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 11,
+        color: '#FF6B6B',
+        marginTop: 2,
+    },
+    docSubTitle: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontSize: 12,
+        color: isDarkMode ? '#94A3B8' : '#555555',
+        marginTop: 10,
+        marginLeft: 2,
     },
 });

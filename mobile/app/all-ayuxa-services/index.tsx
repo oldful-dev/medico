@@ -22,29 +22,18 @@ const emergencyIcon = require('@/assets/images/e1baef7b977f856b4e0401f74fbf21e0c
 const medicalReportIcon = require('@/assets/images/e453f94c7e87531b0da0b6712f8dc4b3bc7084a9.png');
 
 const SERVICE_GRID = [
-    { image: doctorVisitImg, label1: 'Doctor', label2: 'Visit', route: '/doctor-visit' },
-    { image: homingNursingImg, label1: 'Homing', label2: 'Nursing', route: '/nurse-care' },
-    { image: homeBloodTestImg, label1: 'Home', label2: 'Blood Test', route: '/blood-test' },
-    { image: fitnessTherapyImg, label1: 'Fitness &', label2: 'Therapy', route: '/physio-fitness' },
-    { image: rentEquipmentImg, label1: 'Rent Medical', label2: 'Equipment', route: '/medical-equipment' },
-    { image: orderMedicineImg, label1: 'Order', label2: 'Medicines', route: '/order-medicines' },
-    { image: mealServiceImg, label1: 'Meal', label2: 'Service', route: '/meal-service' },
-    { image: physioFitnessImg, label1: 'Physio', label2: 'Fitness', route: '/physio-fitness' },
-    { image: emergencyIcon, label1: 'Hospital', label2: 'Trip', route: '/hospital-trip' },
-    { image: medicalReportIcon, label1: 'Insurance', label2: '& Claims', route: '/insurance' },
+    { image: doctorVisitImg, translationKey: 'services.doctor_visit_quick', label1: 'Doctor', label2: 'Visit', route: '/doctor-visit' },
+    { image: homingNursingImg, translationKey: 'services.nurse_care_quick', label1: 'Nurse &', label2: 'Aide', route: '/nurse-care' },
+    { image: homeBloodTestImg, translationKey: 'services.blood_work', label1: 'Blood', label2: 'Work', route: '/blood-test' },
+    { image: medicalReportIcon, translationKey: 'services.scan_ecg', label1: 'Scan &', label2: 'ECG', route: '/scan-ecg' },
+    { image: orderMedicineImg, translationKey: 'services.medicine', label1: 'Medicine', label2: '', route: '/order-medicines' },
+    { image: medicalReportIcon, translationKey: 'services.insurance_quick', label1: 'Insurance', label2: '', route: '/insurance' },
+    { image: physioFitnessImg, translationKey: 'services.physio_quick', label1: 'Physio', label2: '', route: '/physio' },
+    { image: fitnessTherapyImg, translationKey: 'services.fitness_quick', label1: 'Fitness', label2: '', route: '/fitness' },
+    { image: rentEquipmentImg, translationKey: 'services.equipment_quick', label1: 'Equipment', label2: '', route: '/medical-equipment' },
+    { image: mealServiceImg, translationKey: 'services.meal_service', label1: 'Meal', label2: 'Service', route: '/meal-service' },
+    { image: emergencyIcon, translationKey: 'services.hospital_trip_quick', label1: 'Hospital', label2: 'Visit', route: '/hospital-trip' },
 ];
-
-const ROUTE_KEY_MAP: Record<string, string> = {
-    '/doctor-visit': 'services.doctor_visit',
-    '/nurse-care': 'services.nurse_care',
-    '/blood-test': 'services.blood_test',
-    '/physio-fitness': 'services.physio_fitness',
-    '/medical-equipment': 'services.medical_equipment',
-    '/order-medicines': 'services.order_medicines',
-    '/meal-service': 'services.meal_service',
-    '/hospital-trip': 'services.hospital_trip',
-    '/insurance': 'services.insurance',
-};
 
 export default function AllAyuxaServicesScreen() {
     const router = useRouter();
@@ -85,7 +74,7 @@ export default function AllAyuxaServicesScreen() {
                         if ('empty' in item) {
                             return <View key={`empty-${i}`} style={{ width: exactItemWidth }} />;
                         }
-                        const translationKey = ROUTE_KEY_MAP[item.route];
+                        const translationKey = item.translationKey;
                         const translatedLabel = translationKey ? t(translationKey) : '';
                         const fallbackLabel = `${item.label1}\n${item.label2 || ''}`;
                         const displayName = translatedLabel && translatedLabel !== translationKey ? translatedLabel : fallbackLabel;

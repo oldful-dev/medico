@@ -265,9 +265,9 @@ export default function CheckoutScreen() {
         ? legacyServiceTotal
         : ((isBloodTest ? bloodTestTotal : 0) + (isWellness ? wellnessTotal : 0));
 
-    const [finalAmount,    setFinalAmount]    = useState(amountWithTaxAndFee);
+    const [finalAmount,    setFinalAmount]    = useState(Math.round(amountWithTaxAndFee));
 
-    useEffect(() => { setFinalAmount(amountWithTaxAndFee - discount); }, [amountWithTaxAndFee, discount]);
+    useEffect(() => { setFinalAmount(Math.round(amountWithTaxAndFee - discount)); }, [amountWithTaxAndFee, discount]);
 
     // ─── Blood Test: Initialize collection date
     useEffect(() => {

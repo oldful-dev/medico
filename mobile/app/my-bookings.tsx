@@ -44,7 +44,7 @@ interface Booking {
     scheduledTime?: string;
     rescheduledDate?: string;
     rescheduledTime?: string;
-    status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled';
+    status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled' | 'expired';
     paymentStatus: 'pending' | 'paid' | 'failed';
     assignedPersonnel?: string;
     collectionType?: string;
@@ -78,6 +78,7 @@ const STATUS_META: Record<Booking['status'], { label: string; color: string }> =
     completed:   { label: 'Completed',   color: PRIMARY },
     cancelled:   { label: 'Cancelled',   color: '#EF4444' },
     rescheduled: { label: 'Rescheduled', color: '#7C3AED' },
+    expired:     { label: 'Expired',     color: '#EF4444' },
 };
 
 const CATEGORY_META: Record<string, { icon: string; color: string; label: string }> = {
@@ -102,8 +103,8 @@ function normalizeLabOrder(order: LabOrderListItem): Booking {
     const pkg = order.packages?.[0];
     const payment = order.payments?.[0];
     // pkg.cost = Redcliffe package price; payment.amount = actual paid amount
-    const packagePrice = pkg?.cost || pkg?.price || pkg?.discounted_cost || 0;
-    const paidAmount = payment?.amount || 0;
+    const packagePrice = Math.round(pkg?.cost || pkg?.price || pkg?.discounted_cost || 0);
+    const paidAmount = Math.round(payment?.amount || 0);
     return {
         id: order.id,
         category: 'lab',
@@ -121,7 +122,7 @@ function normalizeLabOrder(order: LabOrderListItem): Booking {
         packageCode: pkg?.code || pkg?.packageCode || '',
         createdAt: order.createdAt,
         // Use paidAmount for display, packagePrice for rebook pricing
-        amount: paidAmount || packagePrice,
+        amount: Math.round(paidAmount || packagePrice),
         packagePrice,
     };
 }
@@ -152,13 +153,61 @@ function normalizeServiceBooking(b: ServiceBooking): Booking {
         assignedPersonnel: b.caregiver?.name ?? undefined,
         reportReady: false,
         createdAt: b.createdAt ? String(b.createdAt) : '',
-        amount: b.amount || 0,
+        amount: Math.round(b.amount || 0),
         serviceId: b.serviceId,
         cityId: b.cityId,
     };
 }
 
 function normalizeMeetup(reg: any): Booking {
+    const eventDate = reg.meetup?.eventDate;
+    const startTime = reg.meetup?.startTime;
+    const endTime = reg.meetup?.endTime;
+    const thresholdStr = endTime || startTime || "23:59";
+    
+    let isPast = false;
+    if (eventDate) {
+        const d = new Date(eventDate);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        
+        let hours = 0;
+        let minutes = 0;
+        if (thresholdStr) {
+            const ampmMatch = thresholdStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (ampmMatch) {
+                hours = parseInt(ampmMatch[1], 10);
+                minutes = parseInt(ampmMatch[2], 10);
+                const ampm = ampmMatch[3].toUpperCase();
+                if (ampm === 'PM' && hours < 12) hours += 12;
+                if (ampm === 'AM' && hours === 12) hours = 0;
+            } else {
+                const match = thresholdStr.match(/(\d+):(\d+)/);
+                if (match) {
+                    hours = parseInt(match[1], 10);
+                    minutes = parseInt(match[2], 10);
+                }
+            }
+        }
+        
+        const hh = String(hours).padStart(2, '0');
+        const min = String(minutes).padStart(2, '0');
+        const eventDateTime = new Date(`${yyyy}-${mm}-${dd}T${hh}:${min}:00+05:30`);
+        isPast = new Date() > eventDateTime;
+    }
+
+    let bookingStatus: Booking['status'] = 'confirmed';
+    if (reg.status === 'CANCELLED') {
+        bookingStatus = 'cancelled';
+    } else if (reg.status === 'ATTENDED') {
+        bookingStatus = 'completed';
+    } else if (isPast) {
+        bookingStatus = 'expired';
+    } else if (reg.status === 'PENDING') {
+        bookingStatus = 'pending';
+    }
+
     return {
         id: reg.id,
         category: 'meetup',
@@ -167,8 +216,7 @@ function normalizeMeetup(reg: any): Booking {
         scheduledDate: reg.meetup?.eventDate || '',
         scheduledTime: reg.meetup?.startTime ?? undefined,
         collectionType: reg.pickupEnabled ? 'Pickup' : 'Self Arranged',
-        status: reg.status === 'CONFIRMED' || reg.status === 'ATTENDED' ? 'confirmed'
-            : reg.status === 'CANCELLED' ? 'cancelled' : 'pending',
+        status: bookingStatus,
         paymentStatus: reg.paymentStatus === 'PAID' ? 'paid' : 'pending',
         reportReady: false,
         createdAt: reg.createdAt,
@@ -206,7 +254,7 @@ function normalizeProductOrder(order: ProductOrder): Booking {
         paymentStatus: order.status === 'PENDING' ? 'pending' : (order.status === 'CANCELLED' ? 'failed' : 'paid'),
         reportReady: false,
         createdAt: order.createdAt,
-        amount: order.amount,
+        amount: Math.round(order.amount),
     };
 }
 

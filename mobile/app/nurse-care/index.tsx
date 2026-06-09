@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Platform, Alert, ActivityIndicator, Linking, KeyboardAvoidingView } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Platform, Alert, ActivityIndicator, Linking, KeyboardAvoidingView, ScrollView, TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -11,6 +11,11 @@ import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
 import FormInput from '@/components/common/FormInput';
+import * as ImagePicker from 'expo-image-picker';
+import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
+import { familyMemberService, FamilyMember } from '@/services/api/familyMemberService';
+import { useUser } from '@/context/UserContext';
+import { Spacing } from '@/constants/theme';
 
 // ─── Figma Assets ───
 const familyIcon = require('@/assets/images/cb86876504871abc5e6db19e5612175dae2b0479.png');
@@ -25,14 +30,137 @@ export default function BookNursingCareScreen() {
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
+    const { profile } = useUser();
+
     // Local UI state for radio buttons/selections
     const [selectedWho, setSelectedWho] = useState('Self');
+    const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+    const [selectedFamilyMemberId, setSelectedFamilyMemberId] = useState<string | null>(null);
+    const [showAddFamilyModal, setShowAddFamilyModal] = useState(false);
+    const [newMemberName, setNewMemberName] = useState('');
+    const [newMemberRelation, setNewMemberRelation] = useState('Parent');
+
     const [selectedStaff, setSelectedStaff] = useState('Qualified Nurse');
     const [selectedDuration, setSelectedDuration] = useState('12 Hours (Night Shift)');
     const [selectedCondition, setSelectedCondition] = useState('');
     const [selectedGender, setSelectedGender] = useState('');
     const [landmark, setLandmark] = useState('');
-    const [selectedImages] = useState<string[]>([]);
+    const [selectedImages, setSelectedImages] = useState<string[]>([]);
+    const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
+    const [comments, setComments] = useState('');
+    const [addressType, setAddressType] = useState('Home');
+    const [customAddressType, setCustomAddressType] = useState('');
+    const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+
+    const fetchFamilyMembers = async () => {
+        if (!profile?.id) return;
+        try {
+            const res = await familyMemberService.getFamilyMembers(profile.id);
+            if (res.success && res.data) {
+                setFamilyMembers(res.data);
+                if (res.data.length > 0) {
+                    setSelectedFamilyMemberId(res.data[0].id);
+                }
+            }
+        } catch (error) {
+            console.error('Fetch family members error:', error);
+        }
+    };
+
+    React.useEffect(() => {
+        fetchFamilyMembers();
+    }, [profile?.id]);
+
+    const handleAddFamilyMember = async () => {
+        if (!profile?.id) return;
+        if (!newMemberName.trim()) {
+            Alert.alert('Required', 'Please enter a name.');
+            return;
+        }
+        try {
+            const res = await familyMemberService.addFamilyMember(profile.id, {
+                name: newMemberName.trim(),
+                relation: newMemberRelation,
+            });
+            if (res.success && res.data) {
+                Alert.alert('Success', 'Family member added!');
+                setFamilyMembers(prev => [...prev, res.data]);
+                setSelectedFamilyMemberId(res.data.id);
+                setNewMemberName('');
+                setShowAddFamilyModal(false);
+            } else {
+                Alert.alert('Error', res.message || 'Failed to add family member.');
+            }
+        } catch (error) {
+            console.error('Add family member error:', error);
+            Alert.alert('Error', 'Failed to add family member.');
+        }
+    };
+
+    const handleAutoFetchLocation = async () => {
+        setIsFetchingLocation(true);
+        setAddress('Fetching location...');
+        try {
+            const hasPermission = await locationService.requestPermission();
+            if (!hasPermission) {
+                Alert.alert('Permission Required', 'Location permission is required.');
+                setAddress('');
+                setIsFetchingLocation(false);
+                return;
+            }
+            const coords = await locationService.getCurrentLocation();
+            const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
+            setAddress(fetchedAddress);
+        } catch (error) {
+            console.error('Location fetch error:', error);
+            Alert.alert('Error', 'Failed to fetch location. Please type manually.');
+            setAddress('');
+        } finally {
+            setIsFetchingLocation(false);
+        }
+    };
+
+    const handlePickReport = async () => {
+        if (selectedImages.length >= 5) {
+            Alert.alert('Limit Reached', 'You can upload up to 5 files.');
+            return;
+        }
+        Alert.alert(
+            'Upload report (Optional)',
+            '',
+            [
+                { text: 'Take Photo', onPress: async () => {
+                    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+                    if (permissionResult.granted === false) {
+                        Alert.alert('Permission Required', 'Camera permission is required.');
+                        return;
+                    }
+                    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
+                    if (!result.canceled && result.assets && result.assets.length > 0) {
+                        setSelectedImages(prev => [...prev, result.assets[0].uri]);
+                    }
+                }},
+                { text: 'Choose from Gallery', onPress: async () => {
+                    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                    if (permissionResult.granted === false) {
+                        Alert.alert('Permission Required', 'Gallery permission is required.');
+                        return;
+                    }
+                    const result = await ImagePicker.launchImageLibraryAsync({
+                        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                        allowsMultipleSelection: true,
+                        selectionLimit: 5 - selectedImages.length,
+                        quality: 0.8,
+                    });
+                    if (!result.canceled && result.assets && result.assets.length > 0) {
+                        const newUris = result.assets.map(asset => asset.uri);
+                        setSelectedImages(prev => [...prev, ...newUris]);
+                    }
+                }},
+                { text: 'Cancel', style: 'cancel' }
+            ]
+        );
+    };
 
     const {
         cityId,
@@ -53,12 +181,20 @@ export default function BookNursingCareScreen() {
             Alert.alert(t('common.required'), t('nurse_care.alert_select_who'));
             return;
         }
+        if (selectedWho === 'Family' && !selectedFamilyMemberId) {
+            Alert.alert(t('common.required'), 'Please select a family member.');
+            return;
+        }
         if (!selectedStaff) {
             Alert.alert(t('common.required'), t('nurse_care.alert_select_staff'));
             return;
         }
         if (!selectedDuration) {
             Alert.alert(t('common.required'), t('nurse_care.alert_select_duration'));
+            return;
+        }
+        if (!scheduledDate) {
+            Alert.alert(t('common.required'), 'Please select a date and time slot.');
             return;
         }
         if (!address || address.trim().length < 5) {
@@ -77,6 +213,9 @@ export default function BookNursingCareScreen() {
         else if (selectedDuration.includes('12')) shiftDuration = 'TWELVE_HOUR';
         else if (selectedDuration.includes('24')) shiftDuration = 'TWENTY_FOUR_HOUR';
 
+        const selectedFamilyMember = familyMembers.find(m => m.id === selectedFamilyMemberId);
+        const resolvedAddressType = addressType === 'Other' ? customAddressType : addressType;
+
         try {
             setIsBooking(true);
 
@@ -90,17 +229,21 @@ export default function BookNursingCareScreen() {
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
-                scheduledDate: new Date().toISOString(),
+                scheduledDate: scheduledDate.toISOString(),
                 addressLine: address || undefined,
                 landmark: landmark || undefined,
                 staffType: selectedStaff === 'Qualified Nurse' ? 'qualified-nurse' : 'bedside-attendant',
                 shiftDuration,
                 formDataJson: {
-                    recipient: selectedWho,
+                    recipient: selectedWho === 'Self' ? 'Self' : selectedFamilyMember?.name || 'Family',
+                    recipientRelation: selectedWho === 'Self' ? 'Self' : selectedFamilyMember?.relation || '',
                     condition: selectedCondition || 'Not specified',
                     gender: selectedGender || 'Any',
                     duration: selectedDuration,
                     attachments: uploadedImageUrls,
+                    comments: comments || undefined,
+                    addressType: resolvedAddressType,
+                    landmark: landmark || undefined,
                 },
             });
 
@@ -156,10 +299,10 @@ export default function BookNursingCareScreen() {
                         enableOnAndroid
                         extraScrollHeight={20}
                     >
-                        {/* Description Text */}
-                        <Text style={dynamicStyles.descText}>
-                            {t('nurse_care.description')}
-                        </Text>
+                        {/* Hero / Titles */}
+                        <Text style={dynamicStyles.mainTitle}>{t('nurse_care.header')}</Text>
+                        <Text style={dynamicStyles.subTitle}>{t('nurse_care.description')}</Text>
+                        <View style={dynamicStyles.divider} />
 
                         {/* ─── Who is it for? ─── */}
                         <View style={dynamicStyles.sectionContainerBase}>
@@ -173,20 +316,101 @@ export default function BookNursingCareScreen() {
                                     <Text style={dynamicStyles.whoButtonText}>{t('common.self')}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    style={[dynamicStyles.whoButton, selectedWho === 'Spouse' && dynamicStyles.whoButtonActive]}
-                                    onPress={() => setSelectedWho('Spouse')}
+                                    style={[dynamicStyles.whoButton, selectedWho === 'Family' && dynamicStyles.whoButtonActive]}
+                                    onPress={() => setSelectedWho('Family')}
                                 >
                                     <Image source={familyIcon} style={dynamicStyles.whoIcon} resizeMode="contain" />
-                                    <Text style={dynamicStyles.whoButtonText}>{t('common.spouse')}</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[dynamicStyles.whoButton, selectedWho === 'Parent' && dynamicStyles.whoButtonActive]}
-                                    onPress={() => setSelectedWho('Parent')}
-                                >
-                                    <Image source={familyIcon} style={dynamicStyles.whoIcon} resizeMode="contain" />
-                                    <Text style={dynamicStyles.whoButtonText}>{t('common.parent')}</Text>
+                                    <Text style={dynamicStyles.whoButtonText}>Family</Text>
                                 </TouchableOpacity>
                             </View>
+
+                            {selectedWho === 'Family' && (
+                                <View style={{ marginTop: 12 }}>
+                                    <Text style={dynamicStyles.subSectionTitle}>Select Family Member</Text>
+                                    {familyMembers.length > 0 ? (
+                                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                                            {familyMembers.map((member) => (
+                                                <TouchableOpacity
+                                                    key={member.id}
+                                                    style={[
+                                                        dynamicStyles.familyChip,
+                                                        selectedFamilyMemberId === member.id && dynamicStyles.familyChipActive
+                                                    ]}
+                                                    onPress={() => setSelectedFamilyMemberId(member.id)}
+                                                >
+                                                    <Text style={[
+                                                        dynamicStyles.familyChipText,
+                                                        selectedFamilyMemberId === member.id && dynamicStyles.familyChipTextActive
+                                                    ]}>
+                                                        {member.name} ({member.relation})
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </ScrollView>
+                                    ) : (
+                                        <Text style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>No saved family members.</Text>
+                                    )}
+
+                                    <TouchableOpacity
+                                        style={dynamicStyles.addFamilyBtn}
+                                        onPress={() => setShowAddFamilyModal(true)}
+                                    >
+                                        <Ionicons name="add" size={14} color="#02743F" />
+                                        <Text style={dynamicStyles.addFamilyBtnText}>Add Family Member</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+
+                            {selectedWho === 'Family' && showAddFamilyModal && (
+                                <View style={dynamicStyles.addFamilyForm}>
+                                    <Text style={dynamicStyles.formLabel}>Full Name</Text>
+                                    <TextInput
+                                        style={dynamicStyles.formInputInline}
+                                        placeholder="Enter name"
+                                        value={newMemberName}
+                                        onChangeText={setNewMemberName}
+                                    />
+
+                                    <Text style={dynamicStyles.formLabel}>Relation</Text>
+                                    <View style={dynamicStyles.relationRow}>
+                                        {['Father', 'Mother', 'Spouse', 'Son', 'Daughter', 'Sibling', 'Other'].map((rel) => (
+                                            <TouchableOpacity
+                                                key={rel}
+                                                style={[
+                                                    dynamicStyles.relationChip,
+                                                    newMemberRelation === rel && dynamicStyles.relationChipActive
+                                                ]}
+                                                onPress={() => setNewMemberRelation(rel)}
+                                            >
+                                                <Text style={[
+                                                    dynamicStyles.relationChipText,
+                                                    newMemberRelation === rel && dynamicStyles.relationChipTextActive
+                                                ]}>
+                                                    {rel}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+
+                                    <View style={dynamicStyles.formActionRow}>
+                                        <TouchableOpacity
+                                            style={dynamicStyles.cancelFormBtn}
+                                            onPress={() => {
+                                                setShowAddFamilyModal(false);
+                                                setNewMemberName('');
+                                            }}
+                                        >
+                                            <Text style={dynamicStyles.cancelFormBtnText}>Cancel</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={dynamicStyles.saveFormBtn}
+                                            onPress={handleAddFamilyMember}
+                                        >
+                                            <Text style={dynamicStyles.saveFormBtnText}>Save</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            )}
                         </View>
 
                         {/* ─── Type of Staff Needed ─── */}
@@ -217,7 +441,7 @@ export default function BookNursingCareScreen() {
                                 activeOpacity={0.8}
                             >
                                 <View style={dynamicStyles.staffAvatarContainer}>
-                                    <Image source={nurseIcon} style={dynamicStyles.staffAvatar} resizeMode="contain" />
+                                    <Image source={familyIcon} style={dynamicStyles.staffAvatar} resizeMode="contain" />
                                 </View>
                                 <View style={dynamicStyles.staffInfo}>
                                     <Text style={[dynamicStyles.staffTitle, selectedStaff === 'Bedside Attendant' && dynamicStyles.staffTitleActive]}>
@@ -316,32 +540,132 @@ export default function BookNursingCareScreen() {
                                 <Text style={dynamicStyles.notSureSubtitle}>{t('nurse_care.not_sure_subtitle')}</Text>
                             </View>
                         </TouchableOpacity>
+
+                        {/* ─── Date & Time Picker ─── */}
+                        <View style={dynamicStyles.sectionContainer}>
+                            <CustomDateTimePicker
+                                label={t('booking.schedule_appointment', 'Schedule Appointment')}
+                                value={scheduledDate}
+                                onDateChange={setScheduledDate}
+                            />
+                        </View>
+
+                        {/* ─── Compact Document Upload UI ─── */}
+                        <View style={dynamicStyles.sectionContainer}>
+                            <View style={dynamicStyles.compactUploadContainer}>
+                                <TouchableOpacity
+                                    style={dynamicStyles.compactUploadButton}
+                                    onPress={handlePickReport}
+                                    activeOpacity={0.8}
+                                >
+                                    <Ionicons name="document-attach-outline" size={16} color="#02743F" />
+                                    <Text style={dynamicStyles.compactUploadText}>Upload report (Optional)</Text>
+                                </TouchableOpacity>
+                                {selectedImages.length > 0 && (
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={dynamicStyles.compactThumbScroll}>
+                                        {selectedImages.map((uri, idx) => (
+                                            <View key={idx} style={dynamicStyles.compactThumbWrapper}>
+                                                <Image source={{ uri }} style={dynamicStyles.compactThumb} />
+                                                <TouchableOpacity
+                                                    style={dynamicStyles.compactRemoveBtn}
+                                                    onPress={() => setSelectedImages(prev => prev.filter((_, i) => i !== idx))}
+                                                >
+                                                    <Ionicons name="close-circle" size={18} color="#EF4444" />
+                                                </TouchableOpacity>
+                                            </View>
+                                        ))}
+                                    </ScrollView>
+                                )}
+                            </View>
+                        </View>
+
+                        {/* ─── Comments input ─── */}
+                        <View style={dynamicStyles.sectionContainer}>
+                            <Text style={dynamicStyles.sectionTitle}>Comments</Text>
+                            <TextInput
+                                style={dynamicStyles.commentsInput}
+                                placeholder="Enter any additional requirements, special requests or comments..."
+                                placeholderTextColor={isDarkMode ? '#64748B' : '#888888'}
+                                value={comments}
+                                onChangeText={setComments}
+                                multiline
+                                numberOfLines={3}
+                                maxLength={300}
+                            />
+                        </View>
+
                         {/* ─── Confirm Address ─── */}
                         <View style={dynamicStyles.sectionContainer}>
-                            <Text style={dynamicStyles.sectionTitle}>{t('booking.confirm_address')}</Text>
-                            {locationDenied ? (
-                                <FormInput
-                                    placeholder={t('nurse_care.address_placeholder')}
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                <Text style={[dynamicStyles.sectionTitle, { marginBottom: 0 }]}>{t('booking.confirm_address')}</Text>
+                                <TouchableOpacity
+                                    style={dynamicStyles.autoFetchBtn}
+                                    onPress={handleAutoFetchLocation}
+                                    disabled={isFetchingLocation}
+                                >
+                                    <Ionicons name="location" size={14} color="#02743F" />
+                                    <Text style={dynamicStyles.autoFetchText}>
+                                        {isFetchingLocation ? t('common.fetching') : t('booking.auto_fetch', 'Auto-fetch')}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={dynamicStyles.addressBox}>
+                                <Ionicons name="location-outline" size={16} color={isDarkMode ? '#FFF' : '#2F2F2F'} style={dynamicStyles.addressIcon} />
+                                <TextInput
                                     value={address}
                                     onChangeText={setAddress}
+                                    placeholder={t('nurse_care.address_placeholder')}
+                                    placeholderTextColor={isDarkMode ? '#64748B' : '#888888'}
                                     multiline
-                                    style={{ elevation: 0, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF' }}
+                                    numberOfLines={2}
+                                    style={dynamicStyles.addressText}
                                 />
-                            ) : (
-                                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(217,217,217,0.3)', padding: 12, borderRadius: 8 }}>
-                                    <Ionicons name="location-outline" size={16} color={isDarkMode ? '#FFF' : '#2F2F2F'} style={{ marginRight: 8 }} />
-                                    <Text style={{ flex: 1, fontFamily: 'LexendDeca_400Regular', color: isDarkMode ? '#FFF' : '#2F2F2F' }} numberOfLines={1}>{address}</Text>
-                                    <TouchableOpacity onPress={() => router.push('/(auth)/city-selection')}>
-                                        <Text style={{ color: '#02743F', fontFamily: 'LexendDeca_500Medium', marginLeft: 8 }}>{t('common.edit')}</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            )}
-                            <FormInput
+                            </View>
+
+                            <TextInput
                                 placeholder={t('nurse_care.landmark_placeholder')}
+                                placeholderTextColor={isDarkMode ? '#64748B' : '#888888'}
                                 value={landmark}
                                 onChangeText={setLandmark}
-                                style={{ marginTop: 12, elevation: 0 }}
+                                style={dynamicStyles.landmarkInput}
                             />
+
+                            {/* Address Type selection */}
+                            <Text style={dynamicStyles.addressTypeLabel}>{t('booking.address_type', 'Address Type')}</Text>
+                            <View style={dynamicStyles.addressTypeRow}>
+                                {['Home', 'Office', 'Other'].map((type) => (
+                                    <TouchableOpacity
+                                        key={type}
+                                        style={[
+                                            dynamicStyles.addressTypeChip,
+                                            addressType === type && dynamicStyles.addressTypeChipActive,
+                                        ]}
+                                        onPress={() => setAddressType(type)}
+                                    >
+                                        <Text style={[
+                                            dynamicStyles.addressTypeChipText,
+                                            addressType === type && dynamicStyles.addressTypeChipTextActive
+                                        ]}>
+                                            {type}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            {addressType === 'Other' && (
+                                <TextInput
+                                    placeholder={t('booking.custom_address_type_placeholder', 'Specify address type (e.g. Clinic, Gym)...')}
+                                    placeholderTextColor={isDarkMode ? '#64748B' : '#888888'}
+                                    value={customAddressType}
+                                    onChangeText={customAddressType => setCustomAddressType(customAddressType)}
+                                    style={dynamicStyles.customAddressTypeInput}
+                                />
+                            )}
+
+                            <Text style={{ fontSize: 10, color: '#888', marginTop: 4, marginLeft: 2 }}>
+                                {locationDenied ? t('hospital_trip.gps_denied') : t('hospital_trip.auto_filled')}
+                            </Text>
                         </View>
                     </KeyboardAwareScrollView>
         </KeyboardAvoidingView>
@@ -428,6 +752,27 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         paddingBottom: 20, // Reduced padding since the button is no longer overlapping
     },
 
+    /* ─── Hero ─── */
+    mainTitle: {
+        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontSize: 18,
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
+        marginBottom: 5,
+        textAlign: 'left',
+    },
+    subTitle: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 14,
+        color: isDarkMode ? '#94A3B8' : '#898989',
+        textAlign: 'left',
+        marginBottom: 15,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: isDarkMode ? '#334155' : '#D9D9D9',
+        marginVertical: 15,
+    },
+
     /* ─── Text / Desc ─── */
     descText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
@@ -476,7 +821,6 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         marginHorizontal: 4,
     },
     whoButtonActive: {
-        backgroundColor: 'rgba(115,219,171,0.29)',
         borderWidth: 1,
         borderColor: '#02743F',
     },
@@ -508,7 +852,6 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         marginBottom: 12,
     },
     staffCardActive: {
-        backgroundColor: 'rgba(4,131,87,0.43)',
         borderWidth: 1.5,
         borderColor: '#0E9757',
     },
@@ -701,5 +1044,266 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 15,
         color: '#FFFFFF',
+    },
+    subSectionTitle: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontSize: 13,
+        color: '#666',
+        marginBottom: 8,
+    },
+    familyChip: {
+        borderWidth: 1,
+        borderColor: '#AAAEAC',
+        borderRadius: 15,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        marginRight: 8,
+        backgroundColor: '#FFF',
+    },
+    familyChipActive: {
+        borderColor: '#02743F',
+        borderWidth: 1.5,
+        backgroundColor: 'rgba(2,116,63,0.06)',
+    },
+    familyChipText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontSize: 12,
+        color: '#555',
+    },
+    familyChipTextActive: {
+        color: '#02743F',
+    },
+    addFamilyBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 6,
+        alignSelf: 'flex-start',
+        gap: 4,
+    },
+    addFamilyBtnText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontSize: 13,
+        color: '#02743F',
+    },
+    addFamilyForm: {
+        borderWidth: 1,
+        borderColor: '#DDD',
+        borderRadius: 8,
+        padding: 12,
+        marginTop: 12,
+        backgroundColor: '#FFF',
+    },
+    formLabel: {
+        fontSize: 11,
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        color: '#777',
+        marginBottom: 4,
+    },
+    formInputInline: {
+        borderWidth: 1,
+        borderColor: '#CCC',
+        borderRadius: 6,
+        paddingHorizontal: 8,
+        paddingVertical: 6,
+        fontSize: 13,
+        marginBottom: 8,
+        color: '#2F2F2F',
+    },
+    relationRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+        marginBottom: 12,
+    },
+    relationChip: {
+        borderWidth: 1,
+        borderColor: '#CCC',
+        borderRadius: 12,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        backgroundColor: '#FFF',
+    },
+    relationChipActive: {
+        borderColor: '#02743F',
+        backgroundColor: 'rgba(2,116,63,0.06)',
+    },
+    relationChipText: {
+        fontSize: 11,
+        color: '#555',
+    },
+    relationChipTextActive: {
+        color: '#02743F',
+        fontWeight: 'bold',
+    },
+    formActionRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: 8,
+    },
+    cancelFormBtn: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+    },
+    cancelFormBtnText: {
+        color: '#777',
+        fontSize: 12,
+    },
+    saveFormBtn: {
+        backgroundColor: '#02743F',
+        borderRadius: 4,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+    },
+    saveFormBtnText: {
+        color: '#FFF',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    commentsInput: {
+        borderWidth: 1,
+        borderColor: '#CCC',
+        borderRadius: 9,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 14,
+        color: '#2F2F2F',
+        minHeight: 72,
+        textAlignVertical: 'top',
+        backgroundColor: '#FFF',
+    },
+    autoFetchBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#02743F',
+        borderRadius: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        gap: 4,
+    },
+    autoFetchText: {
+        fontSize: 11,
+        color: '#02743F',
+        fontWeight: 'bold',
+    },
+    addressBox: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        borderWidth: 1,
+        borderColor: '#CCC',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        backgroundColor: '#FFF',
+        marginBottom: 8,
+    },
+    addressIcon: {
+        marginRight: 8,
+        marginTop: 2,
+    },
+    addressText: {
+        flex: 1,
+        fontSize: 13,
+        color: '#2F2F2F',
+        padding: 0,
+        textAlignVertical: 'top',
+    },
+    landmarkInput: {
+        borderWidth: 1,
+        borderColor: '#CCC',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        backgroundColor: '#FFF',
+        fontSize: 13,
+        color: '#2F2F2F',
+        marginBottom: 8,
+    },
+    addressTypeLabel: {
+        fontSize: 12,
+        color: '#555',
+        fontWeight: 'bold',
+        marginTop: 8,
+        marginBottom: 6,
+    },
+    addressTypeRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 8,
+    },
+    addressTypeChip: {
+        borderWidth: 1,
+        borderColor: '#CCC',
+        borderRadius: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        backgroundColor: '#FFF',
+    },
+    addressTypeChipActive: {
+        borderColor: '#02743F',
+        borderWidth: 1.5,
+        backgroundColor: 'rgba(2,116,63,0.06)',
+    },
+    addressTypeChipText: {
+        fontSize: 11,
+        color: '#666',
+    },
+    addressTypeChipTextActive: {
+        color: '#02743F',
+        fontWeight: 'bold',
+    },
+    customAddressTypeInput: {
+        borderWidth: 1,
+        borderColor: '#CCC',
+        borderRadius: 6,
+        paddingHorizontal: 8,
+        paddingVertical: 8,
+        fontSize: 13,
+        color: '#2F2F2F',
+        marginTop: 4,
+        marginBottom: 8,
+    },
+    compactUploadContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    compactUploadButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#02743F',
+        borderRadius: 4,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        gap: 6,
+        backgroundColor: '#FFF',
+    },
+    compactUploadText: {
+        fontSize: 13,
+        color: '#02743F',
+        fontWeight: 'bold',
+    },
+    compactThumbScroll: {
+        flexDirection: 'row',
+    },
+    compactThumbWrapper: {
+        position: 'relative',
+        marginRight: 8,
+    },
+    compactThumb: {
+        width: 36,
+        height: 36,
+        borderRadius: 4,
+        borderWidth: 1,
+        borderColor: '#DDD',
+    },
+    compactRemoveBtn: {
+        position: 'absolute',
+        top: -6,
+        right: -6,
     },
 });

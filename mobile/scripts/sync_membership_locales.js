@@ -35,6 +35,8 @@ const NEW_KEYS = {
     basic_tier: 'Basic',
     premium_tier: 'Premium',
     vip_tier: 'VIP',
+    expired_badge: 'Expired',
+    expired_on: 'Expired on {{date}}',
 
     // upgrade screen
     upgrade_title: 'Upgrade Plan',
@@ -126,6 +128,8 @@ const TRANSLATIONS = {
       basic_tier: 'बेसिक',
       premium_tier: 'प्रीमियम',
       vip_tier: 'वीआईपी',
+      expired_badge: 'समय सीमा समाप्त',
+      expired_on: '{{date}} को समाप्त हुआ',
       upgrade_title: 'योजना अपग्रेड करें',
       current_plan_label: 'वर्तमान: {{name}}',
       choose_new_plan: 'नई योजना चुनें',
@@ -203,6 +207,8 @@ const TRANSLATIONS = {
       history_link: 'ಅಪ್‌ಗ್ರೇಡ್ ಮತ್ತು ವಹಿವಾಟು ಇತಿಹಾಸ ವೀಕ್ಷಿಸಿ',
       scheduled_downgrade_notice: '{{date}} ರಂದು {{plan}} ಗೆ ಡೌನ್‌ಗ್ರೇಡ್ ನಿಗದಿಪಡಿಸಲಾಗಿದೆ',
       basic_tier: 'ಬೇಸಿಕ್', premium_tier: 'ಪ್ರೀಮಿಯಂ', vip_tier: 'ವಿಐಪಿ',
+      expired_badge: 'ಅವಧಿ ಮುಗಿದಿದೆ',
+      expired_on: '{{date}} ರಂದು ಅವಧಿ ಮುಗಿದಿದೆ',
       upgrade_title: 'ಯೋಜನೆ ಅಪ್‌ಗ್ರೇಡ್ ಮಾಡಿ',
       current_plan_label: 'ಪ್ರಸ್ತುತ: {{name}}',
       choose_new_plan: 'ಹೊಸ ಯೋಜನೆ ಆರಿಸಿ',

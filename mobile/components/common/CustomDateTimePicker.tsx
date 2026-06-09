@@ -16,8 +16,9 @@ interface CustomDateTimePickerProps {
 }
 
 const DEFAULT_TIME_SLOTS = [
-    '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
-    '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM',
+    '8:00 AM - 11:00 AM',
+    '12:00 PM - 3:00 PM',
+    '4:00 PM - 7:00 PM',
 ];
 
 function formatDatePill(date: Date, t: any): string {
@@ -27,11 +28,24 @@ function formatDatePill(date: Date, t: any): string {
 }
 
 function mergeDateTime(date: Date, timeStr: string): Date {
-    const [timePart, meridiem] = timeStr.split(' ');
-    const [h, m] = timePart.split(':').map(Number);
+    let cleanTimeStr = timeStr;
+    if (timeStr.includes('-')) {
+        cleanTimeStr = timeStr.split('-')[0].trim();
+    }
+    const parts = cleanTimeStr.split(' ');
+    const timePart = parts[0];
+    const meridiem = parts[1];
+    let h = 0, m = 0;
+    if (timePart.includes(':')) {
+        const [hourPart, minPart] = timePart.split(':').map(Number);
+        h = hourPart;
+        m = minPart;
+    } else {
+        h = Number(timePart);
+    }
     const hours = meridiem === 'PM' && h !== 12 ? h + 12 : meridiem === 'AM' && h === 12 ? 0 : h;
     const merged = new Date(date);
-    merged.setHours(hours, m, 0, 0);
+    merged.setHours(hours, isNaN(m) ? 0 : m, 0, 0);
     return merged;
 }
 
@@ -252,6 +266,7 @@ const makeStyles = (isDarkMode: boolean, colors: any) => StyleSheet.create({
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
         color: colors.textMuted,
+        textAlign: 'center',
     },
     timeSlotTextSelected: {
         color: '#FFFFFF',

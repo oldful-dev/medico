@@ -21,6 +21,16 @@ import { getRemoteValue, initRemoteConfig } from './firebaseConfig';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 
+export interface HomeBanner {
+    id: string;
+    image: string;
+    title: string;
+    subtitle?: string;
+    cta_route?: string;
+    enabled: boolean;
+    sort_order?: number;
+}
+
 /** A single tappable service card inside a section. */
 export interface HomeService {
     id: string;
@@ -73,6 +83,7 @@ export interface SOSBannerConfig {
 /** Full home screen config — this is the shape of the "home_config" RC parameter. */
 export interface HomeConfig {
     version: string;
+    banners?: HomeBanner[];
     sections: HomeSection[];
     trust_badges: TrustBadge[];
     sos_banner: SOSBannerConfig;
@@ -84,6 +95,16 @@ export interface HomeConfig {
 
 export const HOME_CONFIG_FALLBACK: HomeConfig = {
     version: '1.0.0',
+    banners: [
+        {
+            id: 'banner_greeting',
+            image: 'banner.png',
+            title: 'Your health, our priority',
+            subtitle: 'Book a doctor visit in minutes',
+            cta_route: '/doctor-visit',
+            enabled: true,
+        },
+    ],
     sections: [
         {
             id: 'quick_services',
@@ -92,31 +113,30 @@ export const HOME_CONFIG_FALLBACK: HomeConfig = {
             enabled: true,
             sort_order: 1,
             services: [
-                { id: 'doctor',    label: 'Ayuxa\nDoctor',     icon: '98e939543c86f26f5f26210bb160eb927b5ff057.png', route: '/doctor-visit',  enabled: true,  sort_order: 1 },
-                { id: 'nursing',   label: 'Nursing\nCare',      icon: '21e5a8a8650cf8eda36be3744c70099580173129.png', route: '/nurse-care',    enabled: true,  sort_order: 2 },
-                { id: 'caregiver', label: 'Caregiver\nSupport', icon: '2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png', route: '/nurse-care',    enabled: true,  sort_order: 3 },
-                { id: 'emergency', label: 'Emergency\nAssist',  icon: 'e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/sos-emergency', enabled: true,  sort_order: 4 },
+                { id: 'doctor_quick',    label: 'Doctor\nVisit',     icon: '98e939543c86f26f5f26210bb160eb927b5ff057.png', route: '/doctor-visit',  enabled: true,  sort_order: 1 },
+                { id: 'nurse_quick',     label: 'Nurse &\nAide',      icon: '21e5a8a8650cf8eda36be3744c70099580173129.png', route: '/nurse-care',    enabled: true,  sort_order: 2 },
+                { id: 'hospital_quick',  label: 'Hospital\nVisit',  icon: 'e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/hospital-trip', enabled: true,  sort_order: 3 },
+                { id: 'physio_quick',    label: 'Physio',          icon: '4ea419052803769fad63ff4292316ce7f8f77dbc.png', route: '/physio-fitness', enabled: true,  sort_order: 4 },
             ],
         },
         {
             id: 'ayuxa_services',
-            title: 'Ayuxa Services',
+            title: 'Diagnostics & Fitness',
             type: 'service_grid',
             enabled: true,
             sort_order: 2,
             max_items: 6,
             view_all_route: '/all-ayuxa-services',
             services: [
-                { id: 'doctor_visit',   label: 'Doctor\nVisit',           icon: '32a4661f97e2fa2dd2c85c403a7c530b7214e7f7.png', route: '/doctor-visit',     enabled: true, sort_order: 1 },
-                { id: 'homing_nursing', label: 'Homing\nNursing',         icon: 'afd8e2afab202de7ddce09bf8add378c861b9347.png', route: '/nurse-care',        enabled: true, sort_order: 2 },
-                { id: 'blood_test',     label: 'Home\nBlood Test',        icon: 'f74321d18a86a9e77628058ed35a50d284752eb2.png', route: '/blood-test',        enabled: true, sort_order: 3 },
-                { id: 'fitness',        label: 'Fitness &\nTherapy',      icon: '54f5c849cf75e776592dec8236f221da3694ca53.png', route: '/physio-fitness',    enabled: true, sort_order: 4 },
-                { id: 'equipment',      label: 'Rent Medical\nEquipment', icon: 'd3906f517597b2ef10369d92c422b16bf20e879e.png', route: '/medical-equipment', enabled: true, sort_order: 5 },
-                { id: 'medicines',      label: 'Order\nMedicines',        icon: '79c15725f6f1a73658b615886f1289634cef9408.png', route: '/order-medicines',   enabled: true, sort_order: 6 },
-                { id: 'meal',           label: 'Meal\nService',           icon: '8f136eff1200bb21c080348f6cdb7ad1c2831bdf.png', route: '/meal-service',      enabled: true, sort_order: 7 },
-                { id: 'physio',         label: 'Physio\nFitness',         icon: '4ea419052803769fad63ff4292316ce7f8f77dbc.png', route: '/physio-fitness',    enabled: true, sort_order: 8 },
-                { id: 'hospital_trip',  label: 'Hospital\nTrip',          icon: 'e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/hospital-trip',     enabled: true, sort_order: 9 },
-                { id: 'insurance',      label: 'Insurance\n& Claims',     icon: 'e453f94c7e87531b0da0b6712f8dc4b3bc7084a9.png', route: '/insurance',         enabled: true, sort_order: 10 },
+                { id: 'blood_test',     label: 'Blood\nWork',             icon: 'f74321d18a86a9e77628058ed35a50d284752eb2.png', route: '/blood-test',        enabled: true, sort_order: 1 },
+                { id: 'scan_ecg',       label: 'Scan &\nECG',             icon: 'scan&ecg.jpg',                              route: '/account/medical-logs',   enabled: true, sort_order: 2 },
+                { id: 'medicines',      label: 'Medicine',                icon: '79c15725f6f1a73658b615886f1289634cef9408.png', route: '/order-medicines',   enabled: true, sort_order: 3 },
+                { id: 'insurance',      label: 'Insurance',               icon: 'e453f94c7e87531b0da0b6712f8dc4b3bc7084a9.png', route: '/insurance',         enabled: true, sort_order: 4 },
+                { id: 'fitness',        label: 'Fitness',                 icon: '54f5c849cf75e776592dec8236f221da3694ca53.png', route: '/physio-fitness',    enabled: true, sort_order: 5 },
+                { id: 'equipment',      label: 'Equipment',               icon: 'd3906f517597b2ef10369d92c422b16bf20e879e.png', route: '/medical-equipment', enabled: true, sort_order: 6 },
+                { id: 'caregiver',      label: 'Caregiver\nSupport',      icon: '2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png', route: '/nurse-care',        enabled: true, sort_order: 7 },
+                { id: 'emergency',      label: 'Emergency\nAssist',       icon: 'e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/sos-emergency',     enabled: true, sort_order: 8 },
+                { id: 'meal',           label: 'Meal\nService',           icon: '8f136eff1200bb21c080348f6cdb7ad1c2831bdf.png', route: '/meal-service',      enabled: true, sort_order: 9 },
             ],
         },
         {
@@ -200,6 +220,9 @@ export const sduiService = {
         // Deep-filter: only enabled sections, services, badges
         return {
             ...config,
+            banners: sortByOrder(
+                (config.banners ?? HOME_CONFIG_FALLBACK.banners ?? []).filter(b => b.enabled)
+            ),
             sections: sortByOrder(
                 (config.sections ?? HOME_CONFIG_FALLBACK.sections)
                     .filter(s => s.enabled)

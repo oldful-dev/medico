@@ -176,13 +176,8 @@ export default function PaperLegalScreen() {
                         <Text style={styles.submitButtonText}>{isLoadingInit ? t('paper_legal.initializing') : isBooking ? t('paper_legal.processing') : t('paper_legal.book_btn')}</Text>
                     </TouchableOpacity>
 
-                    {/* ─── Ayuxa Care Illustration Bottom ─── */}
-                    <View style={styles.illustrationContainer}>
-                        <Image source={imllustration} style={styles.illustration} resizeMode="contain" />
-                    </View>
-
                 </KeyboardAwareScrollView>
-        </KeyboardAvoidingView>
+            </KeyboardAvoidingView>
             </View>
         </View>
     );

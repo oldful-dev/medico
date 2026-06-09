@@ -72,7 +72,7 @@ export default function MyPrescriptionsScreen() {
                 type: asset.mimeType || 'image/jpeg',
                 name: asset.fileName || 'prescription.jpg',
             };
-            const res = await userService.uploadHealthReport(profile.id, file, 'Prescription');
+            const res = await userService.uploadHealthReport(profile.id, file, 'Prescription', 'Prescription');
             if (res.success) {
                 Alert.alert('Success', 'Prescription uploaded.');
                 fetchReports();

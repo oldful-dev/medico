@@ -177,7 +177,17 @@
     "smart_upgrade": "ಸ್ಮಾರ್ಟ್ ಅಪ್‌ಗ್ರೇಡ್",
     "caregiver_support": "ಪಾಲಕರ\nಬೆಂಬಲ",
     "emergency_assist": "ತುರ್ತು\nಸಹಾಯ",
-    "tech_helper_essentials": "ಟೆಕ್ ಹೆಲ್ಪರ್"
+    "tech_helper_essentials": "ಟೆಕ್ ಹೆಲ್ಪರ್",
+    "doctor_visit_quick": "ವೈದ್ಯರ ಭೇಟಿ",
+    "nurse_care_quick": "ನರ್ಸ್ ಮತ್ತು ಸಹಾಯಕ",
+    "hospital_trip_quick": "ಆಸ್ಪತ್ರೆ ಭೇಟಿ",
+    "physio_quick": "ಫಿಸಿಯೋ",
+    "blood_work": "ರಕ್ತದ ಕೆಲಸ",
+    "scan_ecg": "ಸ್ಕ್ಯಾನ್ ಮತ್ತು ಇಸಿಜಿ",
+    "medicine": "ಔಷಧಿ",
+    "insurance_quick": "ವಿಮೆ",
+    "fitness_quick": "ಫಿಟ್ನೆಸ್",
+    "equipment_quick": "ಸಲಕರಣೆ"
   },
   "booking": {
     "book_service": "ಸೇವೆ ಬುಕ್ ಮಾಡಿ",
@@ -801,7 +811,8 @@
       "pending": "ಬಾಕಿ ಇದೆ",
       "completed": "ಪೂರ್ಣಗೊಂಡಿದೆ",
       "cancelled": "ರದ್ದುಗೊಳಿಸಲಾಗಿದೆ",
-      "rescheduled": "ಮರುನಿಗದಿಪಡಿಸಲಾಗಿದೆ"
+      "rescheduled": "ಮರುನಿಗದಿಪಡಿಸಲಾಗಿದೆ",
+      "expired": "ಅವಧಿ ಮೀರಿದೆ"
     },
     "collection_types": {
       "home_collection": "ಮನೆ ಸಂಗ್ರಹಣೆ",
@@ -874,7 +885,9 @@
     "fail_cancel": "ಬುಕಿಂಗ್ ರದ್ದು ವಿಫಲ",
     "reschedule_title": "ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಮರು-ನಿಗದಿ",
     "reschedule_msg": "ಮರು-ನಿಗದಿ ವಿನಂತಿಗಳನ್ನು ಆಡಮಿನ್ ತಂಡ ಅನುಮೋದಿಸಬೇಕು.",
-    "contact_support": "ಬೆಂಬಲ ಸಂಪರ್ಕಿಸಿ"
+    "contact_support": "ಬೆಂಬಲ ಸಂಪರ್ಕಿಸಿ",
+    "service": "ಸೇವೆ",
+    "expired": "ಅವಧಿ ಮೀರಿದೆ"
   },
   "edit_profile": {
     "full_name": "ಪೂರ್ಣ ಹೆಸರು",
@@ -1788,7 +1801,14 @@
     "monthly": "ಮಾಸಿಕ ಆಧಾರ",
     "custom": "ಕಸ್ಟಮ್",
     "when": "ಯಾವಾಗ?",
-    "confirm_rental": "ಬಾಡಿಗೆ ಖಚಿತಪಡಿಸಿ"
+    "confirm_rental": "ಬಾಡಿಗೆ ಖಚಿತಪಡಿಸಿ",
+    "other": "ಇತರ",
+    "other_type": "ಪ್ರಕಾರ",
+    "other_placeholder": "ಅಗತ್ಯವಿರುವ ಉಪಕರಣವನ್ನು ನಿರ್ದಿಷ್ಟಪಡಿಸಿ...",
+    "alert_other_required": "ದಯವಿಟ್ಟು ಉಪಕರಣದ ಪ್ರಕಾರವನ್ನು ನಿರ್ದಿಷ್ಟಪಡಿಸಿ.",
+    "custom_duration_label": "ಕಸ್ಟಮ್ ಅವಧಿ",
+    "custom_duration_placeholder": "ಉದಾ. 10 ದಿನಗಳು, 3 ವಾರಗಳು",
+    "alert_custom_duration_required": "ದಯವಿಟ್ಟು ಕಸ್ಟಮ್ ಅವಧಿಯನ್ನು ನಿರ್ದಿಷ್ಟಪಡಿಸಿ."
   },
   "paper_legal": {
     "header": "ದಾಖಲೆ ಮತ್ತು ಕಾನೂನು",
@@ -1964,7 +1984,17 @@
     "alert_recipient_required": "ವಿಮೆ ಯಾರಿಗೆ ಎಂದು ಆರಿಸಿ.",
     "alert_init_failed": "ಪ್ರಕ್ರಿಯೆ ಪೂರ್ಣಗೊಂಡಿಲ್ಲ. ಮತ್ತೆ ಯತ್ನಿಸಿ.",
     "alert_submission_failed": "ಏನೋ ತಪ್ಪಾಗಿದೆ.",
-    "alert_request_failed": "ಸಲ್ಲಿಸಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ. ಮತ್ತೆ ಯತ್ನಿಸಿ."
+    "alert_request_failed": "ಸಲ್ಲಿಸಲು ಸಾಧ್ಯವಾಗಿಲ್ಲ. ಮತ್ತೆ ಯತ್ನಿಸಿ.",
+    "self": "ಸ್ವಯಂ",
+    "family": "ಕುಟುಂಬ",
+    "spouse": "ಜೀವನ ಸಂಗಾತಿ",
+    "parent": "ಪೋಷಕರು",
+    "upload_aadhaar": "ಆಧಾರ್ ಕಾರ್ಡ್ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ",
+    "upload_pan": "ಪ್ಯಾನ್ ಕಾರ್ಡ್ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ",
+    "aadhaar_required": "ಆಧಾರ್ ಕಾರ್ಡ್ ಅಗತ್ಯವಿದೆ.",
+    "pan_required": "ಪ್ಯಾನ್ ಕಾರ್ಡ್ ಅಗತ್ಯವಿದೆ.",
+    "who_is_it_for": "ಇದು ಯಾರಿಗಾಗಿ?",
+    "document_preview": "ಅಪ್‌ಲೋಡ್ ಮಾಡಿದ ದಾಖಲೆಯ ಪೂರ್ವವೀಕ್ಷಣೆ"
   },
   "meetup": {
     "header_title": "ಸ್ಥಳೀಯ ಕೂಟಗಳು",
@@ -3313,6 +3343,51 @@
     "cancel_downgrade_btn": "ಡೌನ್‌ಗ್ರೇಡ್ ರದ್ದುಗೊಳಿಸಿ",
     "renew_plan_btn": "ಪ್ಲಾನ್ ನವೀಕರಿಸಿ",
     "cancel_downgrade_confirm": "ನಿಮ್ಮ ಡೌನ್‌ಗ್ರೇಡ್ ಅನ್ನು ರದ್ದುಗೊಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ?",
-    "downgrade_cancelled": "ಡೌನ್‌ಗ್ರೇಡ್ ಯಶಸ್ವಿಯಾಗಿ ರದ್ದುಗೊಂಡಿದೆ."
+    "downgrade_cancelled": "ಡೌನ್‌ಗ್ರೇಡ್ ಯಶಸ್ವಿಯಾಗಿ ರದ್ದುಗೊಂಡಿದೆ.",
+    "expired_badge": "ಅವಧಿ ಮುಗಿದಿದೆ",
+    "expired_on": "{{date}} ರಂದು ಅವಧಿ ಮುಗಿದಿದೆ"
+  },
+  "scan_ecg": {
+    "header": "ಸ್ಕ್ಯಾನ್ ಮತ್ತು ಇಸಿಜಿ",
+    "header_subtitle": "ಮನೆಯಲ್ಲೇ ಸ್ಕ್ಯಾನ್ ಮತ್ತು ಇಸಿಜಿ ತಪಾಸಣೆ ಸೇವೆಗಳನ್ನು ಬುಕ್ ಮಾಡಿ",
+    "document_upload": "ದಾಖಲೆ ಅಪ್‌ಲೋಡ್",
+    "camera_option": "ಕ್ಯಾಮೆರಾ",
+    "camera_sub": "ವೈದ್ಯರ ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ಫೋಟೋ ತೆಗೆದುಕೊಳ್ಳಿ",
+    "gallery_option": "ಗ್ಯಾಲರಿ",
+    "gallery_sub": "ಗ್ಯಾಲರಿಯಿಂದ ವೈದ್ಯರ ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ",
+    "schedule_service": "ಸೇವೆಯನ್ನು ನಿಗದಿಪಡಿಸಿ",
+    "service_addons": "ಸೇವಾ ಆಡ್-ಆನ್‌ಗಳು",
+    "pickup_drop": "ಪಿಕಪ್-ಡ್ರಾಪ್ ಸಹಾಯ",
+    "assistance_required": "ಸಹಾಯದ ಅಗತ್ಯವಿದೆ",
+    "appointment_location": "ನೇಮಕಾತಿ ಸ್ಥಳ",
+    "comments": "ಅಭಿಪ್ರಾಯಗಳು",
+    "comments_placeholder": "ಯಾವುದೇ ಹೆಚ್ಚುವರಿ ಅಗತ್ಯತೆಗಳು, ವಿಶೇಷ ವಿನಂತಿಗಳು ಅಥವಾ ಟಿಪ್ಪಣಿಗಳನ್ನು ಇಲ್ಲಿ ನಮೂದಿಸಿ...",
+    "confirm": "ದೃಢೀಕರಿಸಿ",
+    "alert_datetime_required": "ದಿನಾಂಕ ಮತ್ತು ಸಮಯದ ಅಗತ್ಯವಿದೆ",
+    "alert_datetime_required_msg": "ನಿಮ್ಮ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್‌ಗಾಗಿ ದಯವಿಟ್ಟು ದಿನಾಂಕ ಮತ್ತು ಸಮಯವನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
+    "alert_address_required": "ವಿಳಾಸದ ಅಗತ್ಯವಿದೆ",
+    "alert_address_required_msg": "ದಯವಿಟ್ಟು ಮಾನ್ಯವಾದ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ವಿಳಾಸವನ್ನು ನಮೂದಿಸಿ."
+  },
+  "fitness": {
+    "header": "ಫಿಟ್ನೆಸ್",
+    "header_subtitle": "ಯೋಗ ಮತ್ತು ಫಿಟ್ನೆಸ್ ಸೇವೆಗಳನ್ನು ಬುಕ್ ಮಾಡಿ",
+    "service_type": "ಸೇವೆಯ ಪ್ರಕಾರ",
+    "yoga_teacher_home": "ಮನೆಯಲ್ಲಿ ಯೋಗ ಶಿಕ್ಷಕರು",
+    "join_class": "ತರಗತಿಗೆ ಸೇರಿಕೊಳ್ಳಿ",
+    "standard_location": "ಸೇವಾ ಸ್ಥಳ",
+    "comments": "ಅಭಿಪ್ರಾಯಗಳು",
+    "comments_placeholder": "ಯಾವುದೇ ಹೆಚ್ಚುವರಿ ಟಿಪ್ಪಣಿಗಳನ್ನು ನಮೂದಿಸಿ...",
+    "book_appointment": "ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಬುಕ್ ಮಾಡಿ",
+    "confirm_btn": "ದೃಢೀಕರಿಸಿ"
+  },
+  "physio": {
+    "header": "ಫಿಸಿಯೋಥೆರಪಿ",
+    "header_subtitle": "ಮನೆಯಲ್ಲೇ ಫಿಸಿಯೋಥೆರಪಿಸ್ಟ್ ಭೇಟಿಯನ್ನು ಬುಕ್ ಮಾಡಿ",
+    "affected_body_parts": "ಬಾಧಿತ ದೇಹದ ಭಾಗಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+    "other_parts": "ಇತರ ಭಾಗಗಳು",
+    "comments": "ಅಭಿಪ್ರಾಯಗಳು",
+    "comments_placeholder": "ನಿಮ್ಮ ಸ್ಥಿತಿಯನ್ನು ವಿವರಿಸಿ ಅಥವಾ ಇತರ ದೇಹದ ಭಾಗಗಳನ್ನು ನಿರ್ದಿಷ್ಟಪಡಿಸಿ...",
+    "schedule_appointment": "ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ನಿಗದಿಪಡಿಸಿ",
+    "book_appointment": "ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಬುಕ್ ಮಾಡಿ"
   }
 }

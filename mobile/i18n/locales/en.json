@@ -147,7 +147,7 @@
     "location_perm_required_msg": "Location access was denied. Please enable it in App Settings to auto-detect your city.",
     "open_settings": "Open Settings",
     "section_quick_services": "Quick Services",
-    "section_ayuxa_services": "Ayuxa Services",
+    "section_ayuxa_services": "Diagnostics & Fitness",
     "section_essentials": "Home Essentials",
     "trust_support": "24/7 Support",
     "trust_caregivers": "Verified Caregivers",
@@ -177,7 +177,17 @@
     "smart_upgrade": "Smart Upgrade",
     "caregiver_support": "Caregiver\nSupport",
     "emergency_assist": "Emergency\nAssist",
-    "tech_helper_essentials": "Tech Helper"
+    "tech_helper_essentials": "Tech Helper",
+    "doctor_visit_quick": "Doctor Visit",
+    "nurse_care_quick": "Nurse & Aide",
+    "hospital_trip_quick": "Hospital Visit",
+    "physio_quick": "Physio",
+    "blood_work": "Blood Work",
+    "scan_ecg": "Scan & ECG",
+    "medicine": "Medicine",
+    "insurance_quick": "Insurance",
+    "fitness_quick": "Fitness",
+    "equipment_quick": "Equipment"
   },
   "booking": {
     "book_service": "Book Service",
@@ -801,7 +811,8 @@
       "pending": "Pending",
       "completed": "Completed",
       "cancelled": "Cancelled",
-      "rescheduled": "Rescheduled"
+      "rescheduled": "Rescheduled",
+      "expired": "Expired"
     },
     "collection_types": {
       "home_collection": "Home Collection",
@@ -874,7 +885,9 @@
     "fail_cancel": "Failed to cancel booking",
     "reschedule_title": "Reschedule Appointment",
     "reschedule_msg": "Reschedule requests must be approved by our admin team. You can contact our support team to request a reschedule.",
-    "contact_support": "Contact Support"
+    "contact_support": "Contact Support",
+    "service": "Service",
+    "expired": "Expired"
   },
   "edit_profile": {
     "full_name": "Full Name",
@@ -1788,7 +1801,14 @@
     "monthly": "Monthly",
     "custom": "Custom",
     "when": "When?",
-    "confirm_rental": "Confirm Rental"
+    "confirm_rental": "Confirm Rental",
+    "other": "Other",
+    "other_type": "Type",
+    "other_placeholder": "Specify equipment needed...",
+    "alert_other_required": "Please specify the equipment type.",
+    "custom_duration_label": "Custom Duration",
+    "custom_duration_placeholder": "e.g. 10 Days, 3 Weeks",
+    "alert_custom_duration_required": "Please specify custom duration."
   },
   "paper_legal": {
     "header": "Paper and Legal",
@@ -1964,7 +1984,17 @@
     "alert_recipient_required": "Please select who the insurance is for.",
     "alert_init_failed": "Service initialization incomplete. Please try again.",
     "alert_submission_failed": "Something went wrong.",
-    "alert_request_failed": "Failed to submit request. Please try again."
+    "alert_request_failed": "Failed to submit request. Please try again.",
+    "self": "Self",
+    "family": "Family",
+    "spouse": "Spouse",
+    "parent": "Parent",
+    "upload_aadhaar": "Upload Aadhaar Card",
+    "upload_pan": "Upload PAN Card",
+    "aadhaar_required": "Aadhaar Card is required.",
+    "pan_required": "PAN Card is required.",
+    "who_is_it_for": "Who is it for?",
+    "document_preview": "Uploaded Document Preview"
   },
   "meetup": {
     "header_title": "Local Meetups",
@@ -3313,6 +3343,51 @@
     "cancel_downgrade_btn": "Cancel Downgrade",
     "renew_plan_btn": "Renew Plan",
     "cancel_downgrade_confirm": "Are you sure you want to cancel the scheduled downgrade?",
-    "downgrade_cancelled": "Downgrade cancelled successfully."
+    "downgrade_cancelled": "Downgrade cancelled successfully.",
+    "expired_badge": "Expired",
+    "expired_on": "Expired on {{date}}"
+  },
+  "scan_ecg": {
+    "header": "Scan & ECG",
+    "header_subtitle": "Book Scans & ECG Diagnostic Services at Home",
+    "document_upload": "Document Upload",
+    "camera_option": "Camera",
+    "camera_sub": "Take a photo of Dr. Prescription",
+    "gallery_option": "Gallery",
+    "gallery_sub": "Upload Dr. Prescription from gallery",
+    "schedule_service": "Schedule Service",
+    "service_addons": "Service Add-ons",
+    "pickup_drop": "Pickup-Drop Assistance",
+    "assistance_required": "Assistance Required",
+    "appointment_location": "Appointment Location",
+    "comments": "Comments",
+    "comments_placeholder": "Enter any additional requirements, special requests or notes here...",
+    "confirm": "Confirm",
+    "alert_datetime_required": "Date & Time Required",
+    "alert_datetime_required_msg": "Please select a date and time slot for your appointment.",
+    "alert_address_required": "Address Required",
+    "alert_address_required_msg": "Please enter a valid appointment address."
+  },
+  "fitness": {
+    "header": "Fitness",
+    "header_subtitle": "Book Yoga & Fitness Services",
+    "service_type": "Service Type",
+    "yoga_teacher_home": "Yoga Teacher at Home",
+    "join_class": "Join the Class",
+    "standard_location": "Service Location",
+    "comments": "Comments",
+    "comments_placeholder": "Enter any additional notes...",
+    "book_appointment": "Book Appointment",
+    "confirm_btn": "Confirm"
+  },
+  "physio": {
+    "header": "Physiotherapy",
+    "header_subtitle": "Book Physiotherapist Visit at Home",
+    "affected_body_parts": "Select Affected Body Parts",
+    "other_parts": "Other Parts",
+    "comments": "Comments",
+    "comments_placeholder": "Describe your condition or specify other body parts...",
+    "schedule_appointment": "Schedule Appointment",
+    "book_appointment": "Book Appointment"
   }
 }

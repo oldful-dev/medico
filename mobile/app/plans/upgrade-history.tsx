@@ -64,8 +64,8 @@ function HistoryCard({ item }: { item: UpgradeHistoryItem }) {
                     <Ionicons name="arrow-forward" size={16} color={colors.textMuted} />
                 </View>
                 <View style={[cardS(colors, isDarkMode).planBox, { alignItems: 'flex-end' }]}>
-                    <Text style={cardS(colors, isDarkMode).planBoxLabel}>{t('membership.new_plan')}</Text>
-                    <Text style={[cardS(colors, isDarkMode).planBoxName, { color: typeMeta.color }]}>{item.newPlanName}</Text>
+                    <Text style={[cardS(colors, isDarkMode).planBoxLabel, { textAlign: 'right' }]}>{t('membership.new_plan')}</Text>
+                    <Text style={[cardS(colors, isDarkMode).planBoxName, { color: typeMeta.color, textAlign: 'right' }]}>{item.newPlanName}</Text>
                 </View>
             </View>
 
@@ -139,7 +139,7 @@ export default function UpgradeHistoryScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={S.backBtn}>
                     <Ionicons name="arrow-back" size={22} color="#fff" />
                 </TouchableOpacity>
-                <View>
+                <View style={S.headerCenter}>
                     <Text style={S.headerTitle}>{t('membership.history_title')}</Text>
                     <Text style={S.headerSub}>{t('membership.history_subtitle')}</Text>
                 </View>
@@ -207,9 +207,10 @@ const makeStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
     screen:      { flex: 1, backgroundColor: dark ? '#0F172A' : '#F0F4F8' },
     header:      { backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 14 },
     backBtn:     { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
+    headerCenter:{ flex: 1 },
     headerTitle: { fontFamily: Fonts.bold, fontSize: FontSize.heading2, color: '#fff' },
     headerSub:   { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: 'rgba(255,255,255,0.75)', marginTop: 1 },
-    legend:      { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: dark ? '#1E293B' : '#fff', borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+    legend:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: dark ? '#1E293B' : '#fff', borderBottomWidth: 1, borderBottomColor: colors.borderLight },
     legendChip:  { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1 },
     legendText:  { fontFamily: Fonts.semiBold, fontSize: 10 },
     loader:      { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },

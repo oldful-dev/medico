@@ -1,4 +1,4 @@
-﻿// Language Selection Screen — Server-Driven UI
+// Language Selection Screen — Server-Driven UI
 // Language list comes from AppConfigContext.
 // Admin can add new language options without an app release.
 import React, { useState } from 'react';
@@ -124,7 +124,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         borderWidth: 1.5, borderColor: 'transparent',
         shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
     },
-    languageCardSelected: { borderColor: '#048357', backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : 'rgba(4, 131, 87, 0.04)' },
+    languageCardSelected: { borderColor: '#048357' },
     languageTextGroup: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     languageLabel: { fontFamily: Fonts.medium, fontSize: 15 },
     languageLabelSelected: { color: '#02743F' },

@@ -66,7 +66,7 @@ export default function BookingsScreen() {
                     date: order.slot?.date || 'N/A',
                     time: order.slot?.time || 'N/A',
                     status: normStatus,
-                    amount: order.packages?.[0]?.cost || 0,
+                    amount: Math.round(order.packages?.[0]?.cost || 0),
                     address: order.address?.line1 || 'Home Collection',
                     reportUrl: order.reportUrl,
                     raw: order,

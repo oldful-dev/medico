@@ -204,8 +204,9 @@ export default function MeetupsPage() {
             m.venue.toLowerCase().includes(searchTerm.toLowerCase());
         const matchActive =
             filterActive === "ALL" ? true :
-            filterActive === "ACTIVE" ? m.isActive :
-            filterActive === "INACTIVE" ? !m.isActive :
+            filterActive === "ACTIVE" ? (m.isActive && !m.isExpired) :
+            filterActive === "INACTIVE" ? (!m.isActive && !m.isExpired) :
+            filterActive === "EXPIRED" ? m.isExpired :
             filterActive === "FEATURED" ? m.isFeatured : true;
         return matchSearch && matchActive;
     });
@@ -251,6 +252,7 @@ export default function MeetupsPage() {
                     <option value="ALL">All Meetups</option>
                     <option value="ACTIVE">Active</option>
                     <option value="INACTIVE">Inactive</option>
+                    <option value="EXPIRED">Expired</option>
                     <option value="FEATURED">Featured</option>
                 </select>
                 <div style={{ marginLeft: "auto", color: "var(--text-muted)", fontSize: 13 }}>
@@ -305,10 +307,10 @@ export default function MeetupsPage() {
                                     </span>
                                     <span style={{
                                         fontSize: 11, fontWeight: 600,
-                                        background: meetup.isActive ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)",
-                                        color: "#fff", borderRadius: 6, padding: "2px 10px",
+                                        background: meetup.isExpired ? "#FEE2E2" : meetup.isActive ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)",
+                                        color: meetup.isExpired ? "#991B1B" : "#fff", borderRadius: 6, padding: "2px 10px",
                                     }}>
-                                        {meetup.isActive ? "ACTIVE" : "INACTIVE"}
+                                        {meetup.isExpired ? "EXPIRED" : meetup.isActive ? "ACTIVE" : "INACTIVE"}
                                     </span>
                                 </div>
 

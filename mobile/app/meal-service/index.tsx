@@ -8,6 +8,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
+import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
+import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { useTranslation } from 'react-i18next';
 
 
@@ -28,10 +30,26 @@ export default function MealServiceScreen() {
     const [noOnionGarlic, setNoOnionGarlic] = useState(false);
     const [spicy, setSpicy] = useState(false);
     const [otherReq, setOtherReq] = useState('');
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+    const [landmark, setLandmark] = useState('');
+    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
 
     // Global Initialization
-    const { cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('tiffin');
+    const { cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('tiffin');
     const [isBooking, setIsBooking] = useState(false);
+
+    // Sync selectedAddress with initial fetched address on mount or when fetched
+    React.useEffect(() => {
+        if (address && address !== 'Fetching address...' && !selectedAddress) {
+            setSelectedAddress({
+                line1: address,
+                cityName: '',
+                pincode: '',
+                latitude: 28.7041,
+                longitude: 77.1025,
+            });
+        }
+    }, [address]);
 
     const handleBookService = async () => {
         if (!mealType) {
@@ -40,6 +58,10 @@ export default function MealServiceScreen() {
         }
         if (!subMode) {
             Alert.alert(t('common.required'), t('meal_service.mode_required'));
+            return;
+        }
+        if (!selectedDate) {
+            Alert.alert(t('common.required'), t('medical_equipment.select_date') || 'Please select date and time');
             return;
         }
         if (!address || address.trim().length < 5 || address === 'Fetching address...') {
@@ -57,8 +79,9 @@ export default function MealServiceScreen() {
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
-                scheduledDate: new Date().toISOString(),
+                scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
                 addressLine: address || undefined,
+                landmark: landmark || undefined,
                 formDataJson: {
                     mealType,
                     subscriptionMode: subMode,
@@ -195,6 +218,15 @@ export default function MealServiceScreen() {
 
                 </View>
 
+                {/* ─── Scheduling ─── */}
+                <View style={dynamicStyles.sectionCardTransparent}>
+                    <CustomDateTimePicker
+                        label={t('medical_equipment.when')}
+                        value={selectedDate}
+                        onDateChange={setSelectedDate}
+                    />
+                </View>
+
                 {/* ─── Something Else? ─── */}
                 <Text style={dynamicStyles.sectionTitle}>{t('meal_service.other')}</Text>
                 <View style={[dynamicStyles.textAreaContainer, { paddingHorizontal: 0 }]}>
@@ -206,6 +238,22 @@ export default function MealServiceScreen() {
                         onChangeText={setOtherReq}
                     />
                 </View>
+
+                {/* ─── Location UI Section ─── */}
+                <AddressPickerSection
+                    selectedAddress={selectedAddress}
+                    onAddressChange={(addr) => {
+                        setSelectedAddress(addr);
+                        setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
+                        if (addr.landmark) setLandmark(addr.landmark);
+                    }}
+                    title={t('order_medicines.address_label')}
+                    showPhoneField={false}
+                    showLandmarkField={true}
+                    landmark={landmark}
+                    onLandmarkChange={setLandmark}
+                    allowManualEntry={true}
+                />
 
                 {/* ─── Action Button ─── */}
                 <TouchableOpacity
@@ -428,6 +476,84 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         height: 16,
         borderRadius: 8,
         backgroundColor: '#048357',
+    },
+    locationHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 15,
+        marginBottom: 10,
+    },
+    gpsButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(4, 131, 87, 0.12)',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 15,
+    },
+    gpsButtonText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontSize: 11,
+        color: '#048357',
+        marginLeft: 4,
+    },
+    multilineAddressInput: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 13,
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
+        minHeight: 60,
+        textAlignVertical: 'top',
+        width: '100%',
+    },
+    addressTypeContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 15,
+        gap: 8,
+    },
+    addressTypeChip: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        borderWidth: 1,
+        borderColor: isDarkMode ? '#334155' : '#D3DFDD',
+        borderRadius: 20,
+        paddingVertical: 8,
+    },
+    addressTypeChipActive: {
+        backgroundColor: '#048357',
+        borderColor: '#048357',
+    },
+    addressTypeChipText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
+        fontSize: 12,
+        color: isDarkMode ? '#CCCCCC' : '#555555',
+    },
+    addressTypeChipTextActive: {
+        color: '#FFFFFF',
+    },
+    addressLabelBold: {
+        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+    },
+    addressText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 14,
+        color: isDarkMode ? '#CCCCCC' : '#898989',
+        flex: 1,
+    },
+    manualEntryContainer: {
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        borderRadius: 12,
+        padding: 10,
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: '#048357',
+    },
+    sectionCardTransparent: {
+        marginBottom: 20,
     },
 
     /* ─── Submit Button ─── */

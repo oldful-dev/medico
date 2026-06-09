@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, useWindowDimensions, ActivityIndicator, Alert, Linking } from 'react-native';
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, useWindowDimensions, Alert, Linking } from 'react-native';
 import * as Location from 'expo-location';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,11 +24,18 @@ import { meetupService } from '@/services/api/meetupService';
 
 const logoSmall = require('@/assets/images/onlylogo.png');
 
-const resolveRoute = (route?: string) => {
+const resolveRoute = (route?: string, id?: string) => {
   if (!route) return '/';
   let clean = route.toLowerCase().trim();
+  const cleanId = id ? id.toLowerCase().trim() : '';
+
+  if (cleanId === 'physio_quick' || cleanId === 'physio') return '/physio';
+  if (cleanId === 'fitness') return '/fitness';
+  if (cleanId === 'scan_ecg') return '/scan-ecg';
+
   if (clean.includes('home-essentials') || clean.includes('home essentials')) return '/all-home-essentials';
   if (clean.includes('all-ayuxa') || clean.includes('all-ayuxacare') || clean.includes('all-oldful')) return '/all-ayuxa-services';
+  if (clean.includes('account/medical-logs') || clean.includes('account/medical_logs')) return '/profile/medical-logs';
   return route.replace(/oldful/gi, 'ayuxa').replace(/ayuxacare/gi, 'ayuxa');
 };
 
@@ -40,14 +47,14 @@ const translateServiceLabel = (id: string, fallbackLabel: string, t: any) => {
     'emergency': 'services.emergency_assist',
     'doctor_visit': 'services.doctor_visit',
     'homing_nursing': 'services.nurse_care',
-    'blood_test': 'services.blood_test',
-    'fitness': 'services.physio_fitness',
-    'equipment': 'services.medical_equipment',
-    'medicines': 'services.order_medicines',
+    'blood_test': 'services.blood_work',
+    'fitness': 'services.fitness_quick',
+    'equipment': 'services.equipment_quick',
+    'medicines': 'services.medicine',
     'meal': 'services.meal_service',
     'physio': 'services.physio_fitness',
     'hospital_trip': 'services.hospital_trip',
-    'insurance': 'services.insurance',
+    'insurance': 'services.insurance_quick',
     'ac_repair': 'services.appliance_repair',
     'plumbing': 'services.plumbing_electrical',
     'cleaning': 'services.deep_cleaning',
@@ -60,6 +67,11 @@ const translateServiceLabel = (id: string, fallbackLabel: string, t: any) => {
     'trip_travel': 'services.trip_travels',
     'tech_helper': 'services.tech_helper',
     'smart_upgrade': 'services.smart_upgrade',
+    'doctor_quick': 'services.doctor_visit_quick',
+    'nurse_quick': 'services.nurse_care_quick',
+    'hospital_quick': 'services.hospital_trip_quick',
+    'physio_quick': 'services.physio_quick',
+    'scan_ecg': 'services.scan_ecg',
   };
 
   const key = keyMap[id.toLowerCase()];
@@ -119,7 +131,7 @@ function QuickServicesStrip({ section, colors }: QuickServicesProps) {
           <TouchableOpacity
             key={item.id}
             style={[s.quickServiceBox, index === 0 && { backgroundColor: 'transparent' }]}
-            onPress={() => router.push(resolveRoute(item.route) as any)}
+            onPress={() => router.push(resolveRoute(item.route, item.id) as any)}
           >
             <Image source={{ uri: getAssetUrl(item.icon) }} style={s.quickServiceIcon} resizeMode="contain" />
             <Text style={s.quickServiceLabel}>{line1}</Text>
@@ -143,27 +155,26 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors }: Se
   const { t } = useTranslation();
   const router = useRouter();
   const s = makeStyles(colors);
-  const items = section.max_items ? section.services.slice(0, section.max_items) : section.services;
+  const [expanded, setExpanded] = useState(false);
+
+  const primaryItems = section.services.slice(0, 6);
+  const remainingItems = section.services.slice(6);
+  const visibleItems = expanded ? section.services : primaryItems;
 
   return (
     <View style={s.servicesCard}>
       <View style={s.sectionHeader}>
         <Text style={s.sectionTitle}>{translateSectionTitle(section.id, section.title, t)}</Text>
-        {section.view_all_route && (
-          <TouchableOpacity onPress={() => router.push(resolveRoute(section.view_all_route) as any)}>
-            <Text style={s.viewAllText}>{t('common.view_all')}</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      </View> 
       <View style={s.serviceGrid}>
-        {items.map(item => {
+        {visibleItems.map(item => {
           const translatedLabel = translateServiceLabel(item.id, item.label, t);
           const [line1, line2] = translatedLabel.split('\n');
           return (
             <TouchableOpacity
               key={item.id}
               style={[s.serviceGridItem, { width: itemWidth, height: cardHeight }]}
-              onPress={() => router.push(resolveRoute(item.route) as any)}
+              onPress={() => router.push(resolveRoute(item.route, item.id) as any)}
             >
               <Image
                 source={{ uri: getAssetUrl(item.icon) }}
@@ -178,6 +189,22 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors }: Se
           );
         })}
       </View>
+      {remainingItems.length > 0 && (
+        <TouchableOpacity
+          onPress={() => setExpanded(!expanded)}
+          style={s.viewMoreButton}
+          activeOpacity={0.7}
+        >
+          <Text style={s.viewMoreText}>
+            {expanded ? t('common.view_less') : t('common.view_more')}
+          </Text>
+          <Ionicons
+            name={expanded ? 'chevron-up' : 'chevron-down'}
+            size={16}
+            color={colors.primary}
+          />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -219,7 +246,7 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGr
               <TouchableOpacity
                 key={item.id}
                 style={[s.essentialItem, { width: itemWidth, height: cardHeight }]}
-                onPress={() => router.push(resolveRoute(item.route) as any)}
+                onPress={() => router.push(resolveRoute(item.route, item.id) as any)}
               >
                 <View style={s.essentialIconCircle}>
                   <Image source={{ uri: getAssetUrl(item.icon) }} style={s.essentialIcon} resizeMode="contain" />
@@ -271,105 +298,84 @@ export default function HomeScreen() {
   const colors = useThemeColors();
   const { isDarkMode } = useTheme();
 
-  const [homeConfig, setHomeConfig] = useState<HomeConfig | null>(null);
+  // Initialize immediately with fallback — screen renders on first paint.
+  // Firebase RC will update this in the background.
+  const [homeConfig, setHomeConfig] = useState<HomeConfig>(() => sduiService.getHomeConfig());
   const [banners, setBanners] = useState<Banner[]>([]);
   const [currentLocationStr, setCurrentLocationStr] = useState('Loading...');
   const [isCitySupported, setIsCitySupported] = useState(true);
   const [featuredMeetup, setFeaturedMeetup] = useState<any>(null);
   const [userPinCode, setUserPinCode] = useState<string | null>(null);
 
-  const fetchFeaturedMeetup = useCallback(async () => {
-    try {
-      const coords = await locationService.getCurrentLocation();
-      const pinCode = await locationService.getPincodeFromAddress(coords);
-      if (pinCode) {
-        const res = await meetupService.getMeetups({ pinCode });
+  const CITY_SYNONYMS: Record<string, string[]> = {
+    'Bangalore': ['bengaluru', 'bangalore urban', 'bangalore rural'],
+    'Gurgaon': ['gurugram'],
+    'Delhi NCR': ['new delhi', 'delhi', 'noida', 'gurgaon', 'gurugram', 'faridabad', 'ghaziabad'],
+    'Mumbai': ['bombay', 'navi mumbai', 'thane'],
+  };
+
+  const isMatch = (cityName: string, addressStr: string) => {
+    const addr = addressStr.toLowerCase();
+    const primary = cityName.toLowerCase();
+    if (addr.includes(primary)) return true;
+    const synonyms = CITY_SYNONYMS[cityName] || [];
+    return synonyms.some(s => addr.includes(s));
+  };
+
+  const refetchAllHomeData = useCallback(() => {
+    // ── 1. Firebase RC — update SDUI config in background ─────────────────────
+    sduiService.init()
+      .then(() => setHomeConfig(sduiService.getHomeConfig()))
+      .catch(() => {});
+
+    // ── 2. Banners — parallel, background ─────────────────────────────────────
+    bannerService.getHomeBanners()
+      .then(setBanners)
+      .catch(() => {});
+
+    // ── 3. Location + city detection + meetup — all background, non-blocking ──
+    (async () => {
+      let detectedPinCode: string | null = null;
+      try {
+        const coords = await locationService.getCurrentLocation();
+        const address = await locationService.getAddressFromCoordinates(coords);
+        const locality = address.split(',')[0] || 'Unknown Location';
+        setCurrentLocationStr(locality);
+
+        const pinCode = await locationService.getPincodeFromAddress(coords, address);
+        detectedPinCode = pinCode ?? null;
+        setUserPinCode(detectedPinCode);
+
+        const detectedCityMatch = cities.find((c: any) => isMatch(c.name, address));
+        if (detectedCityMatch) {
+          setSelectedCity(detectedCityMatch.name);
+          setIsCitySupported(true);
+        } else {
+          setIsCitySupported(false);
+        }
+      } catch {
+        setCurrentLocationStr('Location Unavailable');
+        setUserPinCode(null);
+      }
+
+      // ── 4. Featured meetup ─────────────────────────────────────────────────
+      try {
+        let res = null;
+        if (detectedPinCode) {
+          res = await meetupService.getMeetups({ pinCode: detectedPinCode });
+        }
+        if (!res || !res.success || !res.data || res.data.length === 0) {
+          res = await meetupService.getMeetups();
+        }
         if (res.success && res.data && res.data.length > 0) {
-          const featured = res.data.find((m: any) => m.isFeatured);
-          setFeaturedMeetup(featured ?? null);
+          setFeaturedMeetup(res.data.find((m: any) => m.isFeatured) ?? null);
         } else {
           setFeaturedMeetup(null);
         }
-      }
-    } catch {
-      // Silently fail if GPS/meetup fetch fails
-    }
-  }, []);
-
-  const refetchAllHomeData = useCallback(async () => {
-    // Re-init SDUI config
-    await sduiService.init();
-    setHomeConfig(sduiService.getHomeConfig());
-
-    // Refetch banners
-    try {
-      const homeBanners = await bannerService.getHomeBanners();
-      setBanners(homeBanners);
-    } catch {
-      // Silently fail on banner fetch
-    }
-
-    // Refetch location and featured meetup
-    let detectedPinCode: string | null = null;
-    try {
-      const coords = await locationService.getCurrentLocation();
-      const address = await locationService.getAddressFromCoordinates(coords);
-      const locality = address.split(',')[0] || 'Unknown Location';
-      setCurrentLocationStr(locality);
-
-      // Detect pincode
-      const pinCode = await locationService.getPincodeFromAddress(coords, address);
-      detectedPinCode = pinCode ?? null;
-      setUserPinCode(detectedPinCode);
-
-      const CITY_SYNONYMS: Record<string, string[]> = {
-        'Bangalore': ['bengaluru', 'bangalore urban', 'bangalore rural'],
-        'Gurgaon': ['gurugram'],
-        'Delhi NCR': ['new delhi', 'delhi', 'noida', 'gurgaon', 'gurugram', 'faridabad', 'ghaziabad'],
-        'Mumbai': ['bombay', 'navi mumbai', 'thane'],
-      };
-
-      const isMatch = (cityName: string, addressStr: string) => {
-        const addr = addressStr.toLowerCase();
-        const primary = cityName.toLowerCase();
-        if (addr.includes(primary)) return true;
-        const synonyms = CITY_SYNONYMS[cityName] || [];
-        return synonyms.some(s => addr.includes(s));
-      };
-
-      const detectedCityMatch = cities.find((c: any) => isMatch(c.name, address));
-      if (detectedCityMatch) {
-        setSelectedCity(detectedCityMatch.name);
-        setIsCitySupported(true);
-      } else {
-        setIsCitySupported(false);
-      }
-    } catch {
-      setCurrentLocationStr('Location Unavailable');
-      setUserPinCode(null);
-    }
-
-    // Refetch featured meetup
-    try {
-      let res = null;
-      if (detectedPinCode) {
-        res = await meetupService.getMeetups({ pinCode: detectedPinCode });
-      }
-
-      // Fallback: fetch globally if pinCode query yields nothing or was skipped
-      if (!res || !res.success || !res.data || res.data.length === 0) {
-        res = await meetupService.getMeetups();
-      }
-
-      if (res.success && res.data && res.data.length > 0) {
-        const featured = res.data.find((m: any) => m.isFeatured);
-        setFeaturedMeetup(featured ?? null);
-      } else {
+      } catch {
         setFeaturedMeetup(null);
       }
-    } catch {
-      setFeaturedMeetup(null);
-    }
+    })();
   }, [cities, setSelectedCity]);
 
   useEffect(() => {
@@ -466,14 +472,6 @@ export default function HomeScreen() {
   const greeting = currentHour >= 16 ? 'Good Evening' : currentHour >= 12 ? 'Good Afternoon' : 'Good Morning';
 
   const s = makeStyles(colors);
-
-  if (!homeConfig) {
-    return (
-      <View style={[s.screen, { alignItems: 'center', justifyContent: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
 
   const { sections, trust_badges, sos_banner } = homeConfig;
 
@@ -800,6 +798,21 @@ function makeStyles(c: ThemeColors) {
     serviceGridImage: { borderTopLeftRadius: Radius.md, borderTopRightRadius: Radius.md },
     serviceGridLabelContainer: { flex: 1, width: '100%', paddingHorizontal: Spacing.xs, alignItems: 'center', justifyContent: 'center' },
     serviceGridLabel: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: c.primaryText, textAlign: 'center', lineHeight: 14 },
+    viewMoreButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 10,
+      marginTop: 5,
+      borderTopWidth: 1,
+      borderTopColor: c.borderLight,
+      gap: 6,
+    },
+    viewMoreText: {
+      fontFamily: Fonts.medium,
+      fontSize: FontSize.bodySmall,
+      color: c.primary,
+    },
 
     trustCard: {
       marginHorizontal: Spacing.cardMargin,

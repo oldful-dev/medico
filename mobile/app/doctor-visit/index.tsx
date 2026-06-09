@@ -8,7 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import ImageUploadBox from '@/components/common/ImageUploadBox';
+import * as ImagePicker from 'expo-image-picker';
+import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
@@ -80,15 +81,80 @@ export default function DoctorVisitScreen() {
     const { profile } = useUser();
 
     // ─── State ───
-    const [selectedProblem, setSelectedProblem] = React.useState<string | null>(null);
+    const [selectedProblems, setSelectedProblems] = React.useState<string[]>([]);
     const [otherProblemText, setOtherProblemText] = React.useState('');
     const [selectedDoctorType, setSelectedDoctorType] = React.useState<'GP' | 'Physio'>('GP');
-    const [selectedWhen, setSelectedWhen] = React.useState<'ASAP' | 'Later'>('ASAP');
-    const [scheduledDate, setScheduledDate] = React.useState<Date>(new Date());
-    const [selectedDateIdx, setSelectedDateIdx] = React.useState(0);
-    const [selectedTimeSlot, setSelectedTimeSlot] = React.useState('09:00 AM');
+    const [scheduledDate, setScheduledDate] = React.useState<Date | undefined>(undefined);
     const [landmark, setLandmark] = React.useState('');
+    const [addressType, setAddressType] = React.useState('Home');
+    const [customAddressType, setCustomAddressType] = React.useState('');
+    const [isFetchingLocation, setIsFetchingLocation] = React.useState(false);
     const [visitType] = React.useState<'Home'>('Home');
+
+    const handleAutoFetchLocation = async () => {
+        setIsFetchingLocation(true);
+        setAddress('Fetching location...');
+        try {
+            const hasPermission = await locationService.requestPermission();
+            if (!hasPermission) {
+                Alert.alert(t('common.permission_required'), 'Location permission is required.');
+                setAddress('');
+                setIsFetchingLocation(false);
+                return;
+            }
+            const coords = await locationService.getCurrentLocation();
+            const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
+            setAddress(fetchedAddress);
+        } catch (error) {
+            console.error('Location fetch error:', error);
+            Alert.alert(t('common.error'), 'Failed to fetch location. Please type manually.');
+            setAddress('');
+        } finally {
+            setIsFetchingLocation(false);
+        }
+    };
+
+    const handlePickReport = async () => {
+        if (selectedImages.length >= 5) {
+            Alert.alert('Limit Reached', 'You can upload up to 5 files.');
+            return;
+        }
+        Alert.alert(
+            'Upload report (Optional)',
+            '',
+            [
+                { text: 'Take Photo', onPress: async () => {
+                    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+                    if (permissionResult.granted === false) {
+                        Alert.alert('Permission Required', 'Camera permission is required.');
+                        return;
+                    }
+                    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
+                    if (!result.canceled && result.assets && result.assets.length > 0) {
+                        setSelectedImages(prev => [...prev, result.assets[0].uri]);
+                    }
+                }},
+                { text: 'Choose from Gallery', onPress: async () => {
+                    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                    if (permissionResult.granted === false) {
+                        Alert.alert('Permission Required', 'Gallery permission is required.');
+                        return;
+                    }
+                    const result = await ImagePicker.launchImageLibraryAsync({
+                        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                        allowsMultipleSelection: true,
+                        selectionLimit: 5 - selectedImages.length,
+                        quality: 0.8,
+                    });
+                    if (!result.canceled && result.assets && result.assets.length > 0) {
+                        const newUris = result.assets.map(asset => asset.uri);
+                        setSelectedImages(prev => [...prev, ...newUris]);
+                    }
+                }},
+                { text: 'Cancel', style: 'cancel' }
+            ]
+        );
+    };
 
     // ─── Auto-fill profile address only on mount when GPS address is not available ───
     const [addressInitialized, setAddressInitialized] = React.useState(false);
@@ -118,10 +184,19 @@ export default function DoctorVisitScreen() {
 
     // ─── Smart Logic: Auto-select doctor type based on problem ───
     const handleProblemSelect = (label: string) => {
-        setSelectedProblem(label);
-        if (PHYSIO_PROBLEMS.has(label)) {
+        let nextProblems: string[];
+        if (selectedProblems.includes(label)) {
+            nextProblems = selectedProblems.filter(p => p !== label);
+        } else {
+            nextProblems = [...selectedProblems, label];
+        }
+        setSelectedProblems(nextProblems);
+
+        // Smart Logic: Auto-select doctor type based on problem
+        const hasPhysio = nextProblems.some(p => PHYSIO_PROBLEMS.has(p));
+        if (hasPhysio) {
             setSelectedDoctorType('Physio');
-        } else if (label !== 'Other') {
+        } else if (nextProblems.length > 0 && !nextProblems.includes('Other')) {
             setSelectedDoctorType('GP');
         }
     };
@@ -186,20 +261,19 @@ export default function DoctorVisitScreen() {
             const matchedProblem = PROBLEMS.find(p => p.label.toLowerCase() === normalizedSymptom);
             
             if (matchedProblem) {
-                setSelectedProblem(matchedProblem.label);
+                setSelectedProblems([matchedProblem.label]);
                 setOtherProblemText('');
             } else {
-                setSelectedProblem('Other');
+                setSelectedProblems(['Other']);
                 setOtherProblemText(symptomStr);
             }
         } else {
             // Fallback if backend returned no symptoms, so the UI still visibly changes
-            setSelectedProblem(PROBLEMS[0].label);
+            setSelectedProblems([PROBLEMS[0].label]);
         }
 
         const isPhysio = lastPhysioBooking.doctorType === 'physiotherapist';
         setSelectedDoctorType(isPhysio ? 'Physio' : 'GP');
-        setSelectedWhen('ASAP');
         
         Alert.alert(t('doctor_visit.applied_title'), t('doctor_visit.applied_msg'));
     };
@@ -254,15 +328,19 @@ export default function DoctorVisitScreen() {
     };
 
     const handleBookService = async () => {
-        if (!selectedProblem) {
+        if (selectedProblems.length === 0) {
             Alert.alert(t('common.required'), t('doctor_visit.please_select_problem'));
             return;
         }
-        if (selectedProblem === 'Other' && !otherProblemText.trim()) {
+        if (selectedProblems.includes('Other') && !otherProblemText.trim()) {
             Alert.alert(t('common.required'), t('doctor_visit.describe_problem_alert'));
             return;
         }
-        if (selectedWhen === 'Later' && scheduledDate <= new Date()) {
+        if (!scheduledDate) {
+            Alert.alert(t('common.required'), 'Please select a date and time slot.');
+            return;
+        }
+        if (scheduledDate <= new Date()) {
             Alert.alert(t('common.error'), t('doctor_visit.invalid_time_alert'));
             return;
         }
@@ -285,27 +363,31 @@ export default function DoctorVisitScreen() {
                 uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'doctor-visits');
             }
 
-            const symptomLabel = selectedProblem === 'Other' ? otherProblemText.trim() : selectedProblem;
+            const symptomsList = selectedProblems.map(p => p === 'Other' ? otherProblemText.trim() : p);
 
             // Sync address back to profile (non-blocking, non-fatal)
             syncAddressToProfile(address, landmark);
 
             // Navigate to checkout — booking is created INSIDE checkout after payment succeeds
             const gps = await locationService.getCurrentLocation().catch(() => null);
+            const resolvedAddressType = addressType === 'Other' ? customAddressType : addressType;
+
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
-                scheduledDate: (selectedWhen === 'Later' ? scheduledDate : new Date()).toISOString(),
+                scheduledDate: scheduledDate.toISOString(),
                 addressLine: address || undefined,
                 landmark: landmark.trim() || undefined,
                 latitude: gps?.latitude,
                 longitude: gps?.longitude,
-                symptoms: [symptomLabel],
+                symptoms: symptomsList,
                 doctorType: selectedDoctorType === 'GP' ? 'general-physician' : 'physiotherapist',
                 formDataJson: {
                     visitType,
-                    urgency: selectedWhen,
+                    urgency: 'Later',
                     attachments: uploadedImageUrls,
+                    addressType: resolvedAddressType,
+                    landmark: landmark.trim() || undefined,
                 },
             });
 
@@ -385,14 +467,12 @@ export default function DoctorVisitScreen() {
                         </TouchableOpacity>
                     )}
 
-                    {/* Description Card */}
-                    <View style={[styles.descCard, { backgroundColor: colors.bgCardMuted }]}>
-                        <Text style={styles.descText}>
-                            <Text style={[styles.descTextBold, { color: colors.textDark }]}>{t('doctor_visit.description_bold')}</Text>
-                            <Text style={[styles.descTextGreen, { color: colors.primary }]}>{t('doctor_visit.description_green')}</Text>
-                            <Text style={[styles.descTextNormal, { color: colors.textMuted }]}>{t('doctor_visit.description_normal')}</Text>
-                        </Text>
-                    </View>
+                    {/* Hero / Titles */}
+                    <Text style={styles.mainTitle}>{t('doctor_visit.header')}</Text>
+                    <Text style={styles.subTitle}>
+                        {t('doctor_visit.description_bold') + t('doctor_visit.description_green') + t('doctor_visit.description_normal')}
+                    </Text>
+                    <View style={styles.divider} />
 
                     {/* ─── Select Problem Card ─── */}
                     <View style={[styles.sectionCard, { backgroundColor: colors.bgCard }]}>
@@ -405,27 +485,29 @@ export default function DoctorVisitScreen() {
                                     return <View key={`empty-${index}`} style={{ width: exactProblemWidth }} />;
                                 }
 
+                                const isSelected = selectedProblems.includes(item.label);
+
                                 return (
                                     <TouchableOpacity
                                         key={index}
                                         style={[
                                             styles.problemItem,
                                             { width: exactProblemWidth, backgroundColor: colors.bgScreen },
-                                            selectedProblem === item.label && [styles.problemItemActive, { borderColor: colors.primary }]
+                                            isSelected && [styles.problemItemActive, { borderColor: colors.primary }]
                                         ]}
                                         onPress={() => handleProblemSelect(item.label)}
                                     >
                                         <View style={[styles.problemIconContainer, { height: exactIconHeight }]}>
                                             <Image source={item.icon} style={styles.problemIcon} resizeMode="cover" />
                                         </View>
-                                        <Text style={[styles.problemLabel, { color: colors.textDark }, selectedProblem === item.label && [styles.problemLabelActive, { color: colors.primary }]]}>{translateSymptomLabel(item.label, t)}</Text>
+                                        <Text style={[styles.problemLabel, { color: colors.textDark }, isSelected && [styles.problemLabelActive, { color: colors.primary }]]}>{translateSymptomLabel(item.label, t)}</Text>
                                     </TouchableOpacity>
                                 );
                             })}
                         </View>
 
                         {/* "Other" free-text input — only shown when Other is selected */}
-                        {selectedProblem === 'Other' && (
+                        {selectedProblems.includes('Other') && (
                             <TextInput
                                 style={[styles.otherInput, { backgroundColor: colors.bgScreen, color: colors.textDark, borderColor: colors.borderLight }]}
                                 placeholder={t('doctor_visit.describe_problem_placeholder')}
@@ -436,16 +518,6 @@ export default function DoctorVisitScreen() {
                                 maxLength={200}
                             />
                         )}
-
-                        {/* Smart Banner */}
-                        <View style={styles.smartBanner}>
-                            <View style={styles.smartTag}>
-                                <Text style={[styles.smartTagText, { color: colors.textDark }]}>{t('doctor_visit.smart_label')}</Text>
-                            </View>
-                            <Text style={[styles.smartBannerText, { color: colors.primary }]}>
-                                {t('doctor_visit.smart_banner')}
-                            </Text>
-                        </View>
                     </View>
 
                     {/* ─── Select Doctor Type Card ─── */}
@@ -472,87 +544,59 @@ export default function DoctorVisitScreen() {
                         </View>
                     </View>
 
-                    {/* ─── When? Card ─── */}
+                    {/* ─── When? Card (Scheduling using standard slot picker) ─── */}
                     <View style={styles.sectionCardSmall}>
-                        <Text style={styles.sectionTitle}>{t('booking.when')}</Text>
-
-                        <TouchableOpacity
-                            style={styles.radioOption}
-                            onPress={() => setSelectedWhen('ASAP')}
-                        >
-                            <Ionicons name={selectedWhen === 'ASAP' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedWhen === 'ASAP' ? colors.primary : colors.textLight} />
-                            <Text style={styles.radioLabelMain}>{t('booking.come_asap')} <Text style={styles.radioLabelSub}>{t('booking.urgent')}</Text></Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.radioOption}
-                            onPress={() => {
-                                setSelectedWhen('Later');
-                                applyDateTimeSelection(selectedDateIdx, selectedTimeSlot);
-                            }}
-                        >
-                            <Ionicons name={selectedWhen === 'Later' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedWhen === 'Later' ? colors.primary : colors.textLight} />
-                            <Text style={styles.radioLabelMainGreen}>{t('booking.schedule_later')} <Text style={styles.radioLabelSub}>{t('booking.date_time_picker')}</Text></Text>
-                        </TouchableOpacity>
-
-                        {/* Inline date + time chips — shown when Later is selected */}
-                        {selectedWhen === 'Later' && (
-                            <>
-                                <Text style={styles.slotSectionLabel}>{t('doctor_visit.select_date')}</Text>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
-                                    {LATER_DATES.map((d, idx) => (
-                                        <TouchableOpacity
-                                            key={idx}
-                                            style={[styles.chip, selectedDateIdx === idx && styles.chipActive]}
-                                            onPress={() => {
-                                                setSelectedDateIdx(idx);
-                                                applyDateTimeSelection(idx, selectedTimeSlot);
-                                            }}
-                                        >
-                                            <Text style={[styles.chipLabel, selectedDateIdx === idx && styles.chipLabelActive]}>
-                                                {d.toLocaleDateString(i18n.language, { weekday: 'short' })}
-                                            </Text>
-                                            <Text style={[styles.chipSub, selectedDateIdx === idx && styles.chipLabelActive]}>
-                                                {d.getDate()} {d.toLocaleDateString(i18n.language, { month: 'short' })}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </ScrollView>
-
-                                <Text style={styles.slotSectionLabel}>{t('doctor_visit.select_time')}</Text>
-                                <View style={styles.timeSlotsGrid}>
-                                    {TIME_SLOTS.map((slot) => (
-                                        <TouchableOpacity
-                                            key={slot}
-                                            style={[styles.timeSlot, selectedTimeSlot === slot && styles.timeSlotActive]}
-                                            onPress={() => {
-                                                setSelectedTimeSlot(slot);
-                                                applyDateTimeSelection(selectedDateIdx, slot);
-                                            }}
-                                        >
-                                            <Text style={[styles.timeSlotText, selectedTimeSlot === slot && styles.timeSlotTextActive]}>
-                                                {slot}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
-                            </>
-                        )}
+                        <CustomDateTimePicker
+                            label={t('booking.schedule_appointment', 'Schedule Appointment')}
+                            value={scheduledDate}
+                            onDateChange={setScheduledDate}
+                        />
                     </View>
 
-                    {/* ─── Upload Documents ─── */}
-                    <View style={{ paddingHorizontal: 2 }}>
-                        <ImageUploadBox
-                            title={t('booking.upload_reports')}
-                            subtitle={t('booking.upload_reports_hint')}
-                            onImagesChange={setSelectedImages}
-                            maxImages={5}
-                        />
+                    {/* ─── Compact Document Upload UI ─── */}
+                    <View style={[styles.sectionCardSmall, { paddingVertical: Spacing.md }]}>
+                        <View style={styles.compactUploadContainer}>
+                            <TouchableOpacity
+                                style={[styles.compactUploadButton, { borderColor: colors.primary }]}
+                                onPress={handlePickReport}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="document-attach-outline" size={16} color={colors.primary} />
+                                <Text style={[styles.compactUploadText, { color: colors.primary }]}>Upload report (Optional)</Text>
+                            </TouchableOpacity>
+                            {selectedImages.length > 0 && (
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.compactThumbScroll}>
+                                    {selectedImages.map((uri, idx) => (
+                                        <View key={idx} style={styles.compactThumbWrapper}>
+                                            <Image source={{ uri }} style={styles.compactThumb} />
+                                            <TouchableOpacity
+                                                style={styles.compactRemoveBtn}
+                                                onPress={() => setSelectedImages(prev => prev.filter((_, i) => i !== idx))}
+                                            >
+                                                <Ionicons name="close-circle" size={18} color="#EF4444" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    ))}
+                                </ScrollView>
+                            )}
+                        </View>
                     </View>
 
                     {/* ─── Confirm Address Card ─── */}
                     <View style={styles.sectionCardSmall}>
-                        <Text style={styles.sectionTitle}>{t('booking.confirm_address')}</Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
+                            <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>{t('booking.confirm_address')}</Text>
+                            <TouchableOpacity
+                                style={[styles.autoFetchBtn, { borderColor: colors.primary }]}
+                                onPress={handleAutoFetchLocation}
+                                disabled={isFetchingLocation}
+                            >
+                                <Ionicons name="location" size={14} color={colors.primary} />
+                                <Text style={[styles.autoFetchText, { color: colors.primary }]}>
+                                    {isFetchingLocation ? t('common.fetching') : t('booking.auto_fetch', 'Auto-fetch')}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
 
                         <View style={styles.addressBox}>
                             <Ionicons name="location-outline" size={16} color={colors.textDark} style={styles.addressIcon} />
@@ -575,6 +619,38 @@ export default function DoctorVisitScreen() {
                             onChangeText={setLandmark}
                             style={styles.landmarkInput}
                         />
+
+                        {/* Address Type selection */}
+                        <Text style={[styles.addressTypeLabel, { color: colors.textDark }]}>{t('booking.address_type', 'Address Type')}</Text>
+                        <View style={styles.addressTypeRow}>
+                            {['Home', 'Office', 'Other'].map((type) => (
+                                <TouchableOpacity
+                                    key={type}
+                                    style={[
+                                        styles.addressTypeChip,
+                                        addressType === type && [styles.addressTypeChipActive, { borderColor: colors.primary, backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : 'rgba(2,116,63,0.06)' }],
+                                    ]}
+                                    onPress={() => setAddressType(type)}
+                                >
+                                    <Text style={[
+                                        styles.addressTypeChipText,
+                                        addressType === type && [styles.addressTypeChipTextActive, { color: colors.primary }]
+                                    ]}>
+                                        {type}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        {addressType === 'Other' && (
+                            <TextInput
+                                placeholder={t('booking.custom_address_type_placeholder', 'Specify address type (e.g. Clinic, Gym)...')}
+                                placeholderTextColor={colors.textMuted}
+                                value={customAddressType}
+                                onChangeText={setCustomAddressType}
+                                style={styles.customAddressTypeInput}
+                            />
+                        )}
 
                         <Text style={styles.addressHelper}>
                             {locationDenied
@@ -659,6 +735,27 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         paddingHorizontal: Spacing.xl,
         paddingTop: Spacing.lg,
         paddingBottom: Spacing.xl * 2,
+    },
+
+    /* ─── Hero ─── */
+    mainTitle: {
+        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontSize: 18,
+        color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
+        marginBottom: 5,
+        textAlign: 'left',
+    },
+    subTitle: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 14,
+        color: isDarkMode ? '#94A3B8' : '#898989',
+        textAlign: 'left',
+        marginBottom: 15,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: isDarkMode ? '#334155' : '#D9D9D9',
+        marginVertical: 15,
     },
 
     /* ─── Description Card ─── */
@@ -958,6 +1055,99 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         color: colors.textDark,
         backgroundColor: colors.bgCard,
         marginTop: 6,
+    },
+    autoFetchBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderRadius: Radius.sm,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        gap: 4,
+    },
+    autoFetchText: {
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.caption,
+    },
+    addressTypeLabel: {
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.bodySmall,
+        marginTop: 12,
+        marginBottom: 6,
+    },
+    addressTypeRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 8,
+    },
+    addressTypeChip: {
+        borderWidth: 1,
+        borderColor: '#AAAEAC',
+        borderRadius: Radius.sm,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+    },
+    addressTypeChipActive: {
+        borderWidth: 1.5,
+    },
+    addressTypeChipText: {
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.caption,
+        color: '#888',
+    },
+    addressTypeChipTextActive: {
+        fontFamily: Fonts.semiBold,
+    },
+    customAddressTypeInput: {
+        borderWidth: 1,
+        borderColor: '#AAAEAC',
+        borderRadius: Radius.sm,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: 8,
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall,
+        color: '#2F2F2F',
+        marginTop: 4,
+        marginBottom: 8,
+    },
+    compactUploadContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    compactUploadButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderRadius: Radius.sm,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        gap: 6,
+    },
+    compactUploadText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.bodySmall,
+    },
+    compactThumbScroll: {
+        flexDirection: 'row',
+    },
+    compactThumbWrapper: {
+        position: 'relative',
+        marginRight: 8,
+    },
+    compactThumb: {
+        width: 36,
+        height: 36,
+        borderRadius: Radius.sm,
+        borderWidth: 1,
+        borderColor: '#DDD',
+    },
+    compactRemoveBtn: {
+        position: 'absolute',
+        top: -6,
+        right: -6,
     },
 
     /* ─── Fixed Bottom Bar ─── */

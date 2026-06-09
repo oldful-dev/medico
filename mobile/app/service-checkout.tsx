@@ -133,6 +133,8 @@ export default function ServiceCheckoutScreen() {
 
   const baseAmount = parseFloat(params.amount ?? "0");
   const label = params.label ?? "Service Booking";
+  const category = mapLabelToCategory(label);
+  const isZeroPayment = category === "MEDICINES" || category === "TIFFIN" || label.toLowerCase().includes("physio") || label.toLowerCase().includes("scan") || label.toLowerCase().includes("ecg");
 
   // ─── Intercept and redirect to Smart Upgrade Prompt if no active plan for Home Services
   useEffect(() => {
@@ -260,34 +262,37 @@ export default function ServiceCheckoutScreen() {
     }
   }, [params.bookingPayload, label]);
 
-  const benefitApplied = !!calculatedPrices?.benefitApplied;
-  const bookingFee = calculatedPrices
-    ? calculatedPrices.breakdown.bookingFee
-    : 299;
-  const platformFee = calculatedPrices
-    ? calculatedPrices.breakdown.platformFee
-    : 50;
-  const taxes = calculatedPrices
-    ? calculatedPrices.breakdown.taxes
-    : Math.round(baseAmount * 0.06);
+  const hasActiveCarePlan = profile?.subscriptions?.some(
+    (s: any) => s.status === "ACTIVE"
+  ) ?? false;
+  const benefitApplied = hasActiveCarePlan || !!calculatedPrices?.benefitApplied;
 
-  const originalBookingFee = calculatedPrices?.benefitApplied
-    ? Math.abs(calculatedPrices.breakdown.benefitDiscount) > 50
-      ? Math.abs(calculatedPrices.breakdown.benefitDiscount) - 50
-      : 299
-    : bookingFee;
-  const originalPlatformFee = calculatedPrices?.benefitApplied
-    ? 50
-    : platformFee;
+  const baseBookingFee = isZeroPayment
+    ? 0
+    : (calculatedPrices ? calculatedPrices.breakdown.bookingFee : 299);
+  const basePlatformFee = isZeroPayment
+    ? 0
+    : (calculatedPrices ? calculatedPrices.breakdown.platformFee : 50);
 
-  const amountWithTaxAndFee = calculatedPrices
-    ? calculatedPrices.totalAmount
+  const bookingFee = hasActiveCarePlan ? 0 : baseBookingFee;
+  const platformFee = hasActiveCarePlan ? 0 : basePlatformFee;
+
+  // 18% GST strictly on platform/booking fees (Base service charge is 0% GST)
+  const taxes = isZeroPayment
+    ? 0
+    : Math.round((bookingFee + platformFee) * 0.18);
+
+  const originalBookingFee = isZeroPayment ? 0 : baseBookingFee;
+  const originalPlatformFee = isZeroPayment ? 0 : basePlatformFee;
+
+  const amountWithTaxAndFee = isZeroPayment
+    ? 0
     : baseAmount + bookingFee + platformFee + taxes;
-  const [finalAmount, setFinalAmount] = useState(amountWithTaxAndFee);
+  const [finalAmount, setFinalAmount] = useState(Math.round(amountWithTaxAndFee));
 
   useEffect(() => {
-    setFinalAmount(amountWithTaxAndFee - discount);
-  }, [amountWithTaxAndFee, discount]);
+    setFinalAmount(Math.round(isZeroPayment ? 0 : amountWithTaxAndFee - discount));
+  }, [amountWithTaxAndFee, discount, isZeroPayment]);
 
   // ─── Pending order recovery ─────────────────────────────────────────
   const sessionBookingId = useRef<string | null>(null);
@@ -401,9 +406,15 @@ export default function ServiceCheckoutScreen() {
 
   // ─── Open Razorpay native popup ─────────────────────────────────────
   const handlePay = useCallback(async () => {
-    if (payLoading) return;
+    let payloadAddressLine = "";
+    if (params.bookingPayload) {
+      try {
+        const parsed = JSON.parse(params.bookingPayload);
+        payloadAddressLine = parsed.addressLine || "";
+      } catch {}
+    }
 
-    if (!params.meetupId && !selectedAddress) {
+    if (!params.meetupId && !selectedAddress && !payloadAddressLine) {
       Alert.alert(
         t("service_checkout.address_required_title"),
         t("service_checkout.address_required_msg"),
@@ -452,8 +463,8 @@ export default function ServiceCheckoutScreen() {
 
         const bookingRes = await bookingService.createBooking({
           ...payload,
-          amount: finalAmount,
-          paymentMethod: selectedMethod,
+          amount: isZeroPayment ? 0 : finalAmount,
+          paymentMethod: isZeroPayment ? "REQUEST" : selectedMethod,
           addressLine: fullAddressLine,
           latitude: lat,
           longitude: lng,
@@ -467,6 +478,29 @@ export default function ServiceCheckoutScreen() {
           return;
         }
         sessionBookingId.current = bookingRes.data.id;
+      }
+
+      if (isZeroPayment) {
+        setFlowState("success");
+        Alert.alert(
+          "Request Submitted",
+          category === "MEDICINES"
+            ? "Your medicine order has been successfully placed."
+            : category === "TIFFIN"
+            ? "Your meal service request has been successfully submitted."
+            : "Your physio booking request has been successfully submitted.",
+          [
+            {
+              text: "OK",
+              onPress: () =>
+                router.replace({
+                  pathname: "/service-confirmation",
+                  params: { bookingId: sessionBookingId.current! },
+                }),
+            },
+          ],
+        );
+        return;
       }
 
       if (selectedMethod === "CASH") {
@@ -1101,110 +1135,114 @@ export default function ServiceCheckoutScreen() {
           )}
 
           {/* Coupon */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>
-              {t("service_checkout.promo_code")}
-            </Text>
-            {couponApplied ? (
-              <View style={styles.couponApplied}>
-                <Ionicons
-                  name="checkmark-circle"
-                  size={18}
-                  color={isDarkMode ? colors.primary : "#2e7d32"}
-                />
-                <Text style={styles.couponAppliedText}>
-                  &quot;{couponCode}&quot; applied — saved ₹{discount}
-                </Text>
-                <TouchableOpacity onPress={handleRemoveCoupon}>
+          {!isZeroPayment && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>
+                {t("service_checkout.promo_code")}
+              </Text>
+              {couponApplied ? (
+                <View style={styles.couponApplied}>
                   <Ionicons
-                    name="close-circle-outline"
+                    name="checkmark-circle"
                     size={18}
-                    color="#999"
+                    color={isDarkMode ? colors.primary : "#2e7d32"}
                   />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.couponRow}>
-                <TextInput
-                  style={styles.couponInput}
-                  placeholder="Enter coupon code"
-                  placeholderTextColor={colors.textMuted}
-                  value={couponCode}
-                  onChangeText={setCouponCode}
-                  autoCapitalize="characters"
-                  returnKeyType="done"
-                  onSubmitEditing={handleApplyCoupon}
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.couponBtn,
-                    (!couponCode.trim() || couponLoading) &&
-                      styles.couponBtnDisabled,
-                  ]}
-                  onPress={handleApplyCoupon}
-                  disabled={!couponCode.trim() || couponLoading}
-                >
-                  {couponLoading ? (
-                    <ActivityIndicator size="small" color={colors.textWhite} />
-                  ) : (
-                    <Text style={styles.couponBtnText}>
-                      {t("service_checkout.apply")}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
+                  <Text style={styles.couponAppliedText}>
+                    &quot;{couponCode}&quot; applied — saved ₹{discount}
+                  </Text>
+                  <TouchableOpacity onPress={handleRemoveCoupon}>
+                    <Ionicons
+                      name="close-circle-outline"
+                      size={18}
+                      color="#999"
+                    />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.couponRow}>
+                  <TextInput
+                    style={styles.couponInput}
+                    placeholder="Enter coupon code"
+                    placeholderTextColor={colors.textMuted}
+                    value={couponCode}
+                    onChangeText={setCouponCode}
+                    autoCapitalize="characters"
+                    returnKeyType="done"
+                    onSubmitEditing={handleApplyCoupon}
+                  />
+                  <TouchableOpacity
+                    style={[
+                      styles.couponBtn,
+                      (!couponCode.trim() || couponLoading) &&
+                        styles.couponBtnDisabled,
+                    ]}
+                    onPress={handleApplyCoupon}
+                    disabled={!couponCode.trim() || couponLoading}
+                  >
+                    {couponLoading ? (
+                      <ActivityIndicator size="small" color={colors.textWhite} />
+                    ) : (
+                      <Text style={styles.couponBtnText}>
+                        {t("service_checkout.apply")}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Payment Method */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>
-              {t("service_checkout.payment_method")}
-            </Text>
-            {PAYMENT_METHODS.map((m) => (
-              <TouchableOpacity
-                key={m.type}
-                style={[
-                  styles.methodRow,
-                  selectedMethod === m.type && styles.methodRowActive,
-                ]}
-                onPress={() => setSelectedMethod(m.type)}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={m.icon}
-                  size={20}
-                  color={
-                    selectedMethod === m.type
-                      ? colors.primary
-                      : colors.textMuted
-                  }
-                />
-                <Text
+          {!isZeroPayment && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>
+                {t("service_checkout.payment_method")}
+              </Text>
+              {PAYMENT_METHODS.map((m) => (
+                <TouchableOpacity
+                  key={m.type}
                   style={[
-                    styles.methodLabel,
-                    selectedMethod === m.type && styles.methodLabelActive,
+                    styles.methodRow,
+                    selectedMethod === m.type && styles.methodRowActive,
                   ]}
+                  onPress={() => setSelectedMethod(m.type)}
+                  activeOpacity={0.8}
                 >
-                  {m.label}
-                </Text>
-                <Ionicons
-                  name={
-                    selectedMethod === m.type
-                      ? "radio-button-on"
-                      : "radio-button-off"
-                  }
-                  size={20}
-                  color={
-                    selectedMethod === m.type
-                      ? colors.primary
-                      : colors.textMuted
-                  }
-                  style={{ marginLeft: "auto" }}
-                />
-              </TouchableOpacity>
-            ))}
-          </View>
+                  <Ionicons
+                    name={m.icon}
+                    size={20}
+                    color={
+                      selectedMethod === m.type
+                        ? colors.primary
+                        : colors.textMuted
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.methodLabel,
+                      selectedMethod === m.type && styles.methodLabelActive,
+                    ]}
+                  >
+                    {m.label}
+                  </Text>
+                  <Ionicons
+                    name={
+                      selectedMethod === m.type
+                        ? "radio-button-on"
+                        : "radio-button-off"
+                    }
+                    size={20}
+                    color={
+                      selectedMethod === m.type
+                        ? colors.primary
+                        : colors.textMuted
+                    }
+                    style={{ marginLeft: "auto" }}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
 
           {/* Security note */}
           <View style={styles.securityNote}>
@@ -1239,7 +1277,9 @@ export default function ServiceCheckoutScreen() {
               <>
                 <Ionicons
                   name={
-                    selectedMethod === "CASH"
+                    isZeroPayment
+                      ? "send-outline"
+                      : selectedMethod === "CASH"
                       ? "checkmark-circle-outline"
                       : "lock-closed-outline"
                   }
@@ -1247,7 +1287,9 @@ export default function ServiceCheckoutScreen() {
                   color={colors.textWhite}
                 />
                 <Text style={styles.payBtnText}>
-                  {selectedMethod === "CASH"
+                  {isZeroPayment
+                    ? (category === "MEDICINES" ? "Place Order" : (category === "TIFFIN" ? "Request Tiffin" : "Book Appointment"))
+                    : selectedMethod === "CASH"
                     ? `Confirm Booking (₹${finalAmount.toLocaleString("en-IN")})`
                     : `Pay ₹${finalAmount.toLocaleString("en-IN")}`}
                 </Text>
