@@ -6,6 +6,7 @@ const ctrl = require('../controllers/plan.controller');
 
 router.get('/', ctrl.getPlans);  // Public - only visible plans
 router.get('/admin/all', authenticateAdmin, ctrl.getAllPlansAdmin);  // Admin - all plans
+router.get('/by-category/:planType', ctrl.getPlansByType);  // Public - plans filtered by type (CARE/HOMEMAKER)
 router.get('/:id', ctrl.getPlanById);
 
 router.post('/', authenticateAdmin, auditMiddleware('Plan'), ctrl.createPlan);

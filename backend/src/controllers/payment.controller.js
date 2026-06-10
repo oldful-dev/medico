@@ -666,8 +666,24 @@ const verifyPayment = async (req, res, next) => {
         }
 
         // Create invoice record (fast — DB only, no PDF yet)
-        const gstRate = parseFloat(process.env.GST_RATE) || 18;
-        const subtotal = payment.amount / (1 + gstRate / 100);
+        // GST Matrix: CARE subscription → 0% (healthcare exempt) | HOMEMAKER/wellness/fees → 18%
+        let effectiveGstRate = parseFloat(process.env.GST_RATE) || 18;
+        if (payment.subscriptionId) {
+            try {
+                const subForGst = await prisma.subscription.findUnique({
+                    where: { id: payment.subscriptionId },
+                    select: { plan: { select: { planType: true } } },
+                });
+                if (subForGst?.plan?.planType === 'CARE') {
+                    effectiveGstRate = 0; // Healthcare subscriptions are GST-exempt
+                }
+            } catch (gstErr) {
+                logger.warn('GST plan-type lookup failed (defaulting to 18%):', gstErr.message);
+            }
+        }
+        const subtotal = effectiveGstRate === 0
+            ? payment.amount
+            : payment.amount / (1 + effectiveGstRate / 100);
         const gstAmount = payment.amount - subtotal;
         const invoiceNumber = await generateInvoiceNumber();
         const invoice = await prisma.invoice.create({
@@ -675,7 +691,7 @@ const verifyPayment = async (req, res, next) => {
                 paymentId: payment.id,
                 invoiceNumber,
                 subtotal,
-                gstRate,
+                gstRate: effectiveGstRate,
                 gstAmount,
                 totalAmount: payment.amount,
                 billingName: payment.user.name,
@@ -692,7 +708,7 @@ const verifyPayment = async (req, res, next) => {
                     invoiceNumber,
                     invoiceDate: new Date(),
                     subtotal,
-                    gstRate,
+                    gstRate: effectiveGstRate,
                     gstAmount,
                     totalAmount: payment.amount,
                     billingName: payment.user.name,

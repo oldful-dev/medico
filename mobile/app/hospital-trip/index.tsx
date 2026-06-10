@@ -198,7 +198,14 @@ export default function HospitalTripScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={dynamicStyles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={dynamicStyles.headerTitle} numberOfLines={1}>{t('hospital_trip.header')}</Text>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={dynamicStyles.headerTitle} numberOfLines={1}>{t('hospital_trip.header')}</Text>
+                    <Text style={dynamicStyles.headerSubtitle} numberOfLines={1}>{t('hospital_trip.header_subtitle', 'Covered under Care Plan')}</Text>
+                </View>
+                <View style={dynamicStyles.carePlanPill}>
+                    <Ionicons name="shield-checkmark" size={12} color="#fff" />
+                    <Text style={dynamicStyles.carePlanPillText}>{t('hospital_trip.care_plan_tag', 'CARE')}</Text>
+                </View>
             </View>
 
             {/* Main Content Area (Rounded Cream Box) */}
@@ -209,6 +216,13 @@ export default function HospitalTripScreen() {
                     {/* --- Hero / Titles --- */}
                     <Text style={dynamicStyles.mainTitle}>{t('hospital_trip.main_title')}</Text>
                     <Text style={dynamicStyles.subTitle}>{t('hospital_trip.select_specialist')}</Text>
+
+                    {/* Care-plan coverage chip */}
+                    <View style={dynamicStyles.coverageChip}>
+                        <Ionicons name="checkmark-circle" size={14} color="#02743F" />
+                        <Text style={dynamicStyles.coverageChipText}>{t('hospital_trip.coverage_note', 'Booking & platform fees waived with an active Care Plan')}</Text>
+                    </View>
+
                     <View style={dynamicStyles.divider} />
 
                     {/* --- Specialists Grid --- */}
@@ -222,6 +236,11 @@ export default function HospitalTripScreen() {
                                     activeOpacity={0.7}
                                     onPress={() => setSelectedSpecialist(item.id)}
                                 >
+                                    {isSelected && (
+                                        <View style={dynamicStyles.specialistCheckmark}>
+                                            <Ionicons name="checkmark" size={10} color="#fff" />
+                                        </View>
+                                    )}
                                     <Image source={item.icon} style={dynamicStyles.specialistIcon} resizeMode="contain" />
                                     <Text style={[dynamicStyles.specialistLabel, isSelected && dynamicStyles.specialistLabelSelected]}>
                                         {item.label}
@@ -409,7 +428,10 @@ export default function HospitalTripScreen() {
                         ) : isBooking ? (
                             <ActivityIndicator color="#FFFFFF" />
                         ) : (
-                            <Text style={dynamicStyles.submitButtonText}>{t('hospital_trip.confirm_btn')}</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <Ionicons name="car" size={18} color="#fff" />
+                                <Text style={dynamicStyles.submitButtonText}>{t('hospital_trip.confirm_btn')}</Text>
+                            </View>
                         )}
                     </TouchableOpacity>
 
@@ -439,12 +461,32 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         padding: 4,
     },
     headerTitle: {
-        flex: 1,
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 20,
+        fontSize: 18,
         color: '#FFFFFF',
-        marginLeft: 12,
         letterSpacing: -0.24,
+    },
+    headerSubtitle: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.7)',
+        marginTop: 1,
+    },
+    carePlanPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 20,
+        paddingHorizontal: 9,
+        paddingVertical: 5,
+        marginLeft: 8,
+    },
+    carePlanPillText: {
+        fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
+        fontSize: 10,
+        color: '#fff',
+        letterSpacing: 0.5,
     },
 
     /* --- Main Content Container (Cream Box) --- */
@@ -478,7 +520,26 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         fontSize: 14,
         color: isDarkMode ? '#94A3B8' : '#898989',
         textAlign: 'left',
-        marginBottom: 15,
+        marginBottom: 10,
+    },
+    coverageChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: isDarkMode ? 'rgba(2,116,63,0.2)' : 'rgba(2,116,63,0.08)',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 7,
+        marginBottom: 4,
+        borderWidth: 1,
+        borderColor: isDarkMode ? 'rgba(2,116,63,0.4)' : 'rgba(2,116,63,0.2)',
+    },
+    coverageChipText: {
+        fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
+        fontSize: 12,
+        color: isDarkMode ? '#34D399' : '#02743F',
+        flex: 1,
+        lineHeight: 17,
     },
     divider: {
         height: 1,
@@ -502,10 +563,23 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 5,
+        position: 'relative',
     },
     specialistCardSelected: {
-        borderWidth: 1,
+        borderWidth: 2,
         borderColor: '#02743F',
+        backgroundColor: isDarkMode ? 'rgba(2,116,63,0.15)' : 'rgba(2,116,63,0.06)',
+    },
+    specialistCheckmark: {
+        position: 'absolute',
+        top: 6,
+        right: 6,
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        backgroundColor: '#02743F',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     specialistIcon: {
         width: 60,
@@ -764,16 +838,16 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     /* --- Submit Button --- */
     submitButton: {
         backgroundColor: '#02743F',
-        height: 45,
-        borderRadius: 22.5,
-        alignSelf: 'center',
+        height: 52,
+        borderRadius: 26,
         justifyContent: 'center',
         alignItems: 'center',
-        width: 230,
+        alignSelf: 'stretch',
+        marginTop: 4,
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         color: '#FFFFFF',
-        fontSize: 14,
+        fontSize: 15,
     },
 });

@@ -118,6 +118,15 @@ export const planService = {
     },
 
     /**
+     * GET /api/plans/by-category/:planType
+     * Fetch all visible plans of a specific type (CARE or HOMEMAKER), ordered by tierLevel asc.
+     * Used by SubscriptionUpsellBanner to display the right plans for a given service.
+     */
+    getPlansByType: async (planType: 'CARE' | 'HOMEMAKER'): Promise<ApiResponse<Plan[]>> => {
+        return apiClient.get<Plan[]>(`/plans/by-category/${planType}`);
+    },
+
+    /**
      * GET /api/plans/:id
      * Fetch a single plan by ID.
      */

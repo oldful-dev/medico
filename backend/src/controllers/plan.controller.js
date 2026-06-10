@@ -107,4 +107,25 @@ const getAllPlansAdmin = async (req, res, next) => {
     }
 };
 
-module.exports = { getPlans, getPlanById, createPlan, updatePlan, deletePlan, getAllPlansAdmin };
+// GET /api/plans/by-category/:planType  (public)
+// Returns all visible plans of a given planType ordered by tierLevel asc.
+// Used by the inline upsell banner in service-checkout to fetch relevant plans.
+const getPlansByType = async (req, res, next) => {
+    try {
+        const { planType } = req.params;
+        const validTypes = ['CARE', 'HOMEMAKER'];
+        if (!validTypes.includes(planType?.toUpperCase())) {
+            return res.status(400).json({ success: false, message: 'Invalid plan type. Use CARE or HOMEMAKER.' });
+        }
+        const plans = await prisma.plan.findMany({
+            where: { planType: planType.toUpperCase(), isVisible: true },
+            orderBy: { tierLevel: 'asc' },
+            include: { planBenefits: true, billingCycles: true },
+        });
+        sendResponse(res, 200, plans);
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { getPlans, getPlanById, createPlan, updatePlan, deletePlan, getAllPlansAdmin, getPlansByType };

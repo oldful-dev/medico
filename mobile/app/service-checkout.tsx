@@ -35,6 +35,7 @@ import { meetupService } from "@/services/api/meetupService";
 import { storageService, STORAGE_KEYS } from "@/services/device/storageService";
 import { useUser } from "@/context/UserContext";
 import { useTranslation } from "react-i18next";
+import SubscriptionUpsellBanner, { PlanTypeNeeded } from "@/components/checkout/SubscriptionUpsellBanner";
 type PaymentFlowState =
   | "idle"
   | "creating_booking"
@@ -136,49 +137,43 @@ export default function ServiceCheckoutScreen() {
   const category = mapLabelToCategory(label);
   const isZeroPayment = category === "MEDICINES" || category === "TIFFIN" || label.toLowerCase().includes("physio") || label.toLowerCase().includes("scan") || label.toLowerCase().includes("ecg");
 
-  // ─── Intercept and redirect to Smart Upgrade Prompt if no active plan for Home Services
-  useEffect(() => {
-    if (
-      params.bookingPayload &&
-      !params.subscriptionId &&
-      params.skipUpsell !== "1"
-    ) {
-      const category = mapLabelToCategory(label);
-      const isHome = [
-        "PLUMBING_ELECTRICAL",
-        "APPLIANCE_REPAIR",
-        "DEEP_CLEANING",
-        "BILL_PAYMENT",
-        "BANK_PAPERWORK",
-        "LEGAL_PAPERWORK",
-        "TECH_HELPER",
-        "HOME_ESSENTIALS",
-      ].includes(category);
+  // ─── Determine which plan type covers this service (for upsell banner) ────────
+  const CARE_CATEGORIES = [
+    "DOCTOR_HOME_VISIT",
+    "HOME_NURSE",
+    "PHYSIO_FITNESS",
+    "HOSPITAL_TRIP",
+    "TRANSPORTATION",
+  ];
+  const HOME_CATEGORIES = [
+    "PLUMBING_ELECTRICAL",
+    "APPLIANCE_REPAIR",
+    "DEEP_CLEANING",
+    "BILL_PAYMENT",
+    "BANK_PAPERWORK",
+    "LEGAL_PAPERWORK",
+    "TECH_HELPER",
+    "HOME_ESSENTIALS",
+  ];
+  const upsellPlanType: PlanTypeNeeded | null = CARE_CATEGORIES.includes(category)
+    ? "CARE"
+    : HOME_CATEGORIES.includes(category)
+      ? "HOMEMAKER"
+      : null;
 
-      if (isHome) {
-        const hasActivePlan = profile?.subscriptions?.some(
-          (s: any) => s.status === "ACTIVE",
-        );
-        if (!hasActivePlan) {
-          router.replace({
-            pathname: "/payment/upgrade-prompt",
-            params: {
-              bookingPayload: params.bookingPayload,
-              amount: params.amount,
-              label: params.label,
-              checkoutRoute: "/service-checkout",
-            },
-          });
-        }
-      }
-    }
-  }, [
-    profile,
-    params.bookingPayload,
-    params.subscriptionId,
-    params.skipUpsell,
-    label,
-  ]);
+  // User has an active sub covering this specific category?
+  const hasActivePlanForCategory = profile?.subscriptions?.some(
+    (s: any) =>
+      s.status === "ACTIVE" &&
+      ((upsellPlanType === "CARE" && (s.planType === "CARE" || s.category === "CARE")) ||
+       (upsellPlanType === "HOMEMAKER" && (s.planType === "HOMEMAKER" || s.category === "HOMEMAKER")))
+  ) ?? false;
+
+  const showUpsellBanner =
+    !!upsellPlanType &&
+    !hasActivePlanForCategory &&
+    !params.subscriptionId &&
+    !!params.bookingPayload;
 
   React.useEffect(() => {
     console.log("💳 [SERVICE CHECKOUT] Screen loaded");
@@ -1063,6 +1058,16 @@ export default function ServiceCheckoutScreen() {
               </View>
             )}
           </View>
+
+          {/* ─── Subscription Upsell Banner ─────────────────────────────── */}
+          {showUpsellBanner && upsellPlanType && !isZeroPayment && (
+            <SubscriptionUpsellBanner
+              planTypeNeeded={upsellPlanType}
+              serviceLabel={label}
+              bookingFee={baseBookingFee}
+              platformFee={basePlatformFee}
+            />
+          )}
 
           {/* Service Address — hide for meetup */}
           {!params.meetupId && (
