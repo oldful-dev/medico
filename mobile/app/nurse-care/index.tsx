@@ -10,6 +10,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
+import { locationService } from '@/services/device/locationService';
 import FormInput from '@/components/common/FormInput';
 import * as ImagePicker from 'expo-image-picker';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
@@ -84,8 +85,9 @@ export default function BookNursingCareScreen() {
             });
             if (res.success && res.data) {
                 Alert.alert('Success', 'Family member added!');
-                setFamilyMembers(prev => [...prev, res.data]);
-                setSelectedFamilyMemberId(res.data.id);
+                const newMember = res.data;
+                setFamilyMembers(prev => [...prev, newMember]);
+                setSelectedFamilyMemberId(newMember.id);
                 setNewMemberName('');
                 setShowAddFamilyModal(false);
             } else {

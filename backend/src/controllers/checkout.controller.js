@@ -15,8 +15,25 @@ const HOME_CATEGORIES = [
 /**
  * Returns 'CARE', 'HOMEMAKER', or null based on service category.
  */
-function getPlanTypeForCategory(category) {
+async function getPlanTypeForCategory(category) {
     if (!category) return null;
+    try {
+        const service = await prisma.service.findFirst({
+            where: {
+                OR: [
+                    { slug: category.toLowerCase().replace(/_/g, '-') },
+                    { slug: category.toLowerCase() },
+                    { name: { equals: category, mode: 'insensitive' } },
+                ]
+            }
+        });
+        if (service) {
+            return service.serviceType === 'HOME_ESSENTIALS' ? 'HOMEMAKER' : 'CARE';
+        }
+    } catch (err) {
+        console.warn('Dynamic plan type resolution failed, falling back:', err);
+    }
+
     const upper = category.toUpperCase().replace(/-/g, '_');
     if (CARE_CATEGORIES.includes(upper)) return 'CARE';
     if (HOME_CATEGORIES.includes(upper)) return 'HOMEMAKER';
@@ -46,7 +63,7 @@ exports.calculateCheckout = async (req, res) => {
         let remainingCountAfterOrder = 0;
 
         // Determine which plan type is required to waive fees for this service
-        const requiredPlanType = getPlanTypeForCategory(serviceCategory);
+        const requiredPlanType = await getPlanTypeForCategory(serviceCategory);
 
         // Only check for a matching-category subscription
         if (requiredPlanType && isSubscriptionEligible) {
@@ -71,8 +88,10 @@ exports.calculateCheckout = async (req, res) => {
 
         // GST applies only to fee lines (bookingFee + platformFee), NOT to vendor/diagnostic fees
         // Base vendor fee = 0% GST per PRD
+        // taxPercentage comes from the ServiceCharge row (admin-configurable); falls back to 18%
+        const effectiveTaxRate = (taxPercentage > 0 ? taxPercentage : 18) / 100;
         const taxableAmount = bookingFee + platformFee;
-        const taxes = Math.round(taxableAmount * 0.18 * 100) / 100;
+        const taxes = Math.round(taxableAmount * effectiveTaxRate * 100) / 100;
 
         const totalAmount = Number(vendorFee) + Number(diagnosticFee) + bookingFee + platformFee + taxes;
 

@@ -130,12 +130,13 @@ export default function ServiceCheckoutScreen() {
     refreshProfileOnSuccess?: string;
     pickupAddress?: string;
     skipUpsell?: string;
+    checkoutGroup?: string;
   }>();
 
   const baseAmount = parseFloat(params.amount ?? "0");
   const label = params.label ?? "Service Booking";
   const category = mapLabelToCategory(label);
-  const isZeroPayment = category === "MEDICINES" || category === "TIFFIN" || label.toLowerCase().includes("physio") || label.toLowerCase().includes("scan") || label.toLowerCase().includes("ecg");
+  const isZeroPayment = category === "MEDICINES" || category === "TIFFIN" || label.toLowerCase().includes("physio") || label.toLowerCase().includes("scan") || label.toLowerCase().includes("ecg") || params.checkoutGroup === 'D';
 
   // ─── Determine which plan type covers this service (for upsell banner) ────────
   const CARE_CATEGORIES = [
@@ -165,8 +166,8 @@ export default function ServiceCheckoutScreen() {
   const hasActivePlanForCategory = profile?.subscriptions?.some(
     (s: any) =>
       s.status === "ACTIVE" &&
-      ((upsellPlanType === "CARE" && (s.planType === "CARE" || s.category === "CARE")) ||
-       (upsellPlanType === "HOMEMAKER" && (s.planType === "HOMEMAKER" || s.category === "HOMEMAKER")))
+      ((upsellPlanType === "CARE" && (s.plan?.planType === "CARE" || s.planType === "CARE" || s.category === "CARE")) ||
+       (upsellPlanType === "HOMEMAKER" && (s.plan?.planType === "HOMEMAKER" || s.planType === "HOMEMAKER" || s.category === "HOMEMAKER")))
   ) ?? false;
 
   const showUpsellBanner =
@@ -257,10 +258,7 @@ export default function ServiceCheckoutScreen() {
     }
   }, [params.bookingPayload, label]);
 
-  const hasActiveCarePlan = profile?.subscriptions?.some(
-    (s: any) => s.status === "ACTIVE"
-  ) ?? false;
-  const benefitApplied = hasActiveCarePlan || !!calculatedPrices?.benefitApplied;
+  const benefitApplied = hasActivePlanForCategory || !!calculatedPrices?.benefitApplied;
 
   const baseBookingFee = isZeroPayment
     ? 0
@@ -269,8 +267,8 @@ export default function ServiceCheckoutScreen() {
     ? 0
     : (calculatedPrices ? calculatedPrices.breakdown.platformFee : 50);
 
-  const bookingFee = hasActiveCarePlan ? 0 : baseBookingFee;
-  const platformFee = hasActiveCarePlan ? 0 : basePlatformFee;
+  const bookingFee = hasActivePlanForCategory ? 0 : baseBookingFee;
+  const platformFee = hasActivePlanForCategory ? 0 : basePlatformFee;
 
   // 18% GST strictly on platform/booking fees (Base service charge is 0% GST)
   const taxes = isZeroPayment
@@ -1293,10 +1291,16 @@ export default function ServiceCheckoutScreen() {
                 />
                 <Text style={styles.payBtnText}>
                   {isZeroPayment
-                    ? (category === "MEDICINES" ? "Place Order" : (category === "TIFFIN" ? "Request Tiffin" : "Book Appointment"))
+                    ? (params.checkoutGroup === 'D'
+                        ? t('common.submit_request', 'Submit Request')
+                        : (category === "MEDICINES"
+                          ? t('common.place_order', 'Place Order')
+                          : (category === "TIFFIN"
+                            ? t('common.request_tiffin', 'Request Tiffin')
+                            : t('common.book_appointment', 'Book Appointment'))))
                     : selectedMethod === "CASH"
-                    ? `Confirm Booking (₹${finalAmount.toLocaleString("en-IN")})`
-                    : `Pay ₹${finalAmount.toLocaleString("en-IN")}`}
+                    ? `${t('common.confirm_booking', 'Confirm Booking')} (₹${finalAmount.toLocaleString("en-IN")})`
+                    : `${t('common.pay', 'Pay')} ₹${finalAmount.toLocaleString("en-IN")}`}
                 </Text>
               </>
             )}

@@ -208,6 +208,9 @@ model Service {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   basePrice      Float?
+  headline       String?
+  subhead        String?
+  checkoutGroup  String      @default("D")
   bookings       Booking[]
 
   @@map("services")
