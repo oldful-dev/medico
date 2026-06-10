@@ -13,10 +13,10 @@ import { useTheme } from '@/context/ThemeContext';
 import { planService, ActiveSubscription, MembershipsResponse } from '@/services/api/planService';
 import { Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
-const CATEGORY_META: Record<string, { labelKey: string; icon: string; color: string }> = {
-    CARE:      { labelKey: 'membership.care_label',      icon: 'heart',            color: '#7C3AED' },
-    HOMEMAKER: { labelKey: 'membership.homemaker_label', icon: 'home',             color: '#6366F1' },
-    DEFAULT:   { labelKey: 'membership.title',           icon: 'shield-checkmark', color: '#0EA5E9' },
+const CATEGORY_META: Record<string, { labelKey: string; icon: string; color: string; maxSlots: number }> = {
+    CARE:      { labelKey: 'membership.care_label',      icon: 'heart',            color: '#7C3AED', maxSlots: 4 },
+    HOMEMAKER: { labelKey: 'membership.homemaker_label', icon: 'home',             color: '#6366F1', maxSlots: 2 },
+    DEFAULT:   { labelKey: 'membership.title',           icon: 'shield-checkmark', color: '#0EA5E9', maxSlots: 1 },
 };
 
 const TIER_KEYS: Record<number, string> = { 0: 'membership.basic_tier', 1: 'membership.premium_tier', 2: 'membership.vip_tier' };
@@ -209,9 +209,26 @@ export default function MembershipDashboardScreen() {
                     {ALL_CATEGORIES.map(cat => {
                         const subs = data?.memberships?.[cat] ?? [];
                         const activeSub = subs[0];
+                        const meta = CATEGORY_META[cat] ?? CATEGORY_META.DEFAULT;
+                        const usedSlots = subs.filter(s => s.status === 'ACTIVE' || s.status === 'EXPIRING').length;
+                        const maxSlots = meta.maxSlots;
+                        const slotFraction = Math.min(usedSlots / maxSlots, 1);
                         return (
                             <View key={cat} style={S.section}>
-                                <Text style={S.sectionTitle}>{t(CATEGORY_META[cat]?.labelKey ?? 'membership.title')}</Text>
+                                {/* Section header with slot counter */}
+                                <View style={S.sectionHeader}>
+                                    <Text style={S.sectionTitle}>{t(meta.labelKey)}</Text>
+                                    <View style={[S.slotBadge, { backgroundColor: `${meta.color}18`, borderColor: `${meta.color}40` }]}>
+                                        <Ionicons name={meta.icon as any} size={11} color={meta.color} />
+                                        <Text style={[S.slotBadgeText, { color: meta.color }]}>
+                                            {usedSlots}/{maxSlots} {t('membership.slots_used', 'slots')}
+                                        </Text>
+                                    </View>
+                                </View>
+                                {/* Slot usage bar */}
+                                <View style={S.slotBarTrack}>
+                                    <View style={[S.slotBarFill, { width: `${slotFraction * 100}%` as any, backgroundColor: usedSlots >= maxSlots ? '#EF4444' : meta.color }]} />
+                                </View>
                                 {activeSub ? (
                                     <MembershipCard
                                         sub={activeSub}
@@ -250,7 +267,12 @@ const makeStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
     loader:          { flex: 1, justifyContent: 'center', alignItems: 'center' },
     scroll:          { padding: 16, paddingTop: 20 },
     section:         { marginBottom: 24 },
-    sectionTitle:    { fontFamily: Fonts.semiBold, fontSize: FontSize.caption, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 },
+    sectionHeader:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+    sectionTitle:    { fontFamily: Fonts.semiBold, fontSize: FontSize.caption, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8 },
+    slotBadge:       { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
+    slotBadgeText:   { fontFamily: Fonts.semiBold, fontSize: 10 },
+    slotBarTrack:    { height: 4, backgroundColor: dark ? 'rgba(255,255,255,0.08)' : '#E5E7EB', borderRadius: 2, marginBottom: 12, overflow: 'hidden' },
+    slotBarFill:     { height: 4, borderRadius: 2 },
     historyLink:     { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: dark ? '#1E293B' : '#fff', borderRadius: Radius.lg, borderWidth: 1, borderColor: colors.borderLight },
     historyLinkText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: colors.primary, flex: 1, textAlignVertical: 'center', includeFontPadding: false },
 });

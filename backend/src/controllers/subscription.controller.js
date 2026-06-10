@@ -99,14 +99,42 @@ const initiateUserSubscription = async (req, res, next) => {
         const requestedPlan = await prisma.plan.findUnique({ where: { id: planId } });
         if (!requestedPlan) return res.status(404).json({ success: false, message: 'Plan not found.' });
 
-        const existingSub = await prisma.subscription.findFirst({
+        // ─── Slot Limit Enforcement ─────────────────────────────────────────
+        // CARE plans: max 4 active per user | HOMEMAKER plans: max 2 active per user
+        const MAX_SLOTS = requestedPlan.planType === 'CARE' ? 4 : 2;
+        const activeCount = await prisma.subscription.count({
+            where: {
+                userId,
+                status: 'ACTIVE',
+                expiryDate: { gte: new Date() },
+                plan: { planType: requestedPlan.planType },
+            },
+        });
+
+        // Allow upgrade path (they already hold a slot)
+        const existingSameType = await prisma.subscription.findFirst({
             where: {
                 userId,
                 status: 'ACTIVE',
                 plan: { planType: requestedPlan.planType },
             },
-            include: { plan: true }
+            include: { plan: true },
         });
+        const isUpgradeOrRenew = existingSameType && (
+            existingSameType.planId === planId ||
+            requestedPlan.tierLevel > existingSameType.plan.tierLevel
+        );
+
+        if (!isUpgradeOrRenew && activeCount >= MAX_SLOTS) {
+            return res.status(400).json({
+                success: false,
+                message: `You can have at most ${MAX_SLOTS} active ${requestedPlan.planType === 'CARE' ? 'Care' : 'Home Essential'} plan${MAX_SLOTS > 1 ? 's' : ''} at a time.`,
+            });
+        }
+        // ────────────────────────────────────────────────────────────────────
+
+        const existingSub = existingSameType;
+
 
         // If active subscription exists in the same category
         if (existingSub) {

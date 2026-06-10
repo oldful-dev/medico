@@ -123,16 +123,15 @@ export default function PlanDetailsScreen() {
         }
 
         if (actionType === 'CHANGE_PLAN') {
-            router.push({
-                pathname: '/plans/adjustment',
-                params: {
-                    newPlanId: plan.id,
-                    newBillingCycle: activeCycle,
-                    currentSubId: activeSubForCategory!.id
-                }
-            });
+            // Block downgrade — plans/[id].tsx only allows upgrade or renew
+            Alert.alert(
+                t('plans.downgrade_blocked_title'),
+                t('plans.downgrade_blocked_msg'),
+                [{ text: t('common.ok') }]
+            );
             return;
         }
+
 
         setInitiating(true);
         try {

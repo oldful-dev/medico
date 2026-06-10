@@ -300,6 +300,7 @@ model Plan {
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   planType       String             @default("CARE")
+  maxConcurrent  Int                @default(1)  // max active subs of this planType per user (CARE=4, HOME=2)
   planBenefits      PlanBenefit[]
   billingCycles     PlanBillingCycle[]
   subscriptions     Subscription[]
@@ -446,9 +447,10 @@ model Invoice {
   invoiceNumber  String    @unique
   invoiceDate    DateTime  @default(now())
   subtotal       Float
-  gstRate        Float     @default(18)
+  gstRate        Float     @default(18)  // legacy — overall rate (kept for compat)
   gstAmount      Float
   totalAmount    Float
+  lineItemGst    Json?     // { carePlan: 0, homePlan: 18, product: 18, fees: 18 } per-line breakdown
   pdfUrl         String?
   emailSentAt    DateTime?
   billingName    String?
