@@ -6,15 +6,13 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
-import { Fonts } from "@/constants/theme";
+import { Fonts, Colors } from "@/constants/theme";
 import { useTranslation } from "react-i18next";
-
 import { apiClient } from "@/services/api/apiClient";
 
 // Home essentials icons
@@ -37,14 +35,12 @@ const ICON_MAPPING: Record<string, any> = {
   "grocery-run": groceryIcon,
   "anything-else": anythingElseIcon,
   "paper-legal": bankWorkIcon,
-  "trip-travels": driverIcon,
+  "sanitisation": cleaningIcon,
   "tech-helper": acRepairIcon,
-  "smart-upgrade": cleaningIcon,
 };
 
 export default function AllHomeEssentialsScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
   const { isDarkMode } = useTheme();
   const { t } = useTranslation();
   const [services, setServices] = React.useState<any[]>([]);
@@ -63,15 +59,35 @@ export default function AllHomeEssentialsScreen() {
         const resolveSlugToRoute = (slug: string) => {
           if (slug === "tech-helper-essentials") return "/tech-helper";
           if (slug === "home-essentials") return "/all-home-essentials";
-          return `/${slug}`;
+          if (slug === "bank-paperwork") return "/paper-legal";
+
+          const STATIC_ESSENTIALS = [
+            "appliance-repair",
+            "plumbing-electrical",
+            "deep-cleaning",
+            "driving-cab",
+            "bill-payment",
+            "grocery-run",
+            "anything-else",
+            "paper-legal",
+            "sanitisation",
+            "tech-helper"
+          ];
+          if (STATIC_ESSENTIALS.includes(slug)) {
+            return `/${slug}`;
+          }
+          return `/home-essentials-dynamic/${slug}`;
         };
 
-        // Filter for Home Essentials, excluding the parent category item itself
+        // Filter for Home Essentials, excluding parent categories, smart-upgrade, trip-travels, bank-paperwork
         const filtered = res.data
           .filter(
             (s: any) =>
               s.serviceType === "HOME_ESSENTIALS" &&
-              s.slug !== "home-essentials",
+              s.slug !== "home-essentials" &&
+              s.slug !== "smart-upgrade" &&
+              s.slug !== "trip-travels" &&
+              s.slug !== "bank-paperwork",
           )
           .map((s: any) => ({
             ...s,
@@ -86,19 +102,6 @@ export default function AllHomeEssentialsScreen() {
       setLoading(false);
     }
   };
-
-  // Screen padding corresponds to marginHorizontal of the card mapping on Home Screen
-  const availableWidth = width - 40; // 20px padding on each side
-
-  // Grid sizing logic - 4 Columns
-  const exactItemWidth = Math.floor(availableWidth * 0.23);
-  const exactCardHeight = exactItemWidth * 1.35;
-
-  // Pad the grid array for clean left alignment in last row
-  const paddedGrid = [...services];
-  while (paddedGrid.length > 0 && paddedGrid.length % 4 !== 0) {
-    paddedGrid.push({ empty: true });
-  }
 
   const styles = makeStyles(isDarkMode);
 
@@ -127,41 +130,45 @@ export default function AllHomeEssentialsScreen() {
           <Text
             style={{
               textAlign: "center",
-              marginTop: 20,
-              color: isDarkMode ? "#94A3B8" : "#555",
+              marginTop: 40,
+              fontFamily: Fonts.medium,
+              fontSize: 14,
+              color: isDarkMode ? "#94A3B8" : "#6B7280",
             }}
           >
             {t("common.loading", "Loading...")}
           </Text>
         ) : (
-          <View style={styles.gridContainer}>
-            {paddedGrid.map((item, i) => {
-              if (item.empty) {
-                return (
-                  <View key={`empty-${i}`} style={{ width: exactItemWidth }} />
-                );
-              }
+          <View style={styles.listContainer}>
+            {services.map((item, i) => {
               const key = item.slug ? item.slug.replace(/-/g, "_") : "";
-              const translatedName = key ? t(`services.${key}`) : "";
-              const displayName = translatedName && translatedName !== `services.${key}` ? translatedName : (item.name || "");
-              const displayLabel = displayName.replace(" & ", "\n").replace(" ", "\n");
+              const displayHeadline = key ? t(`services.${key}`, item.headline || item.name || "") : (item.headline || item.name || "");
+              const displaySubhead = key ? t(`services.${key}_subhead`, item.subhead || item.tagline || "") : (item.subhead || item.tagline || "");
+
               return (
                 <TouchableOpacity
                   key={item.id || `service-${i}`}
-                  style={[
-                    styles.gridItem,
-                    { width: exactItemWidth, height: exactCardHeight },
-                  ]}
+                  style={styles.card}
+                  activeOpacity={0.7}
                   onPress={() => router.push(item.route as any)}
                 >
-                  <View style={styles.essentialIconCircle}>
+                  <View style={styles.iconContainer}>
                     <Image
                       source={item.iconAsset}
-                      style={styles.essentialIcon}
+                      style={styles.icon}
                       resizeMode="contain"
                     />
                   </View>
-                  <Text style={styles.essentialLabel}>{displayLabel}</Text>
+                  <View style={styles.textContainer}>
+                    <Text style={styles.headline}>{displayHeadline}</Text>
+                    <Text style={styles.subhead}>{displaySubhead}</Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={isDarkMode ? "#94A3B8" : "#9CA3AF"}
+                    style={styles.chevron}
+                  />
                 </TouchableOpacity>
               );
             })}
@@ -197,42 +204,56 @@ const makeStyles = (isDarkMode: boolean) =>
       paddingBottom: 40,
       paddingTop: 10,
     },
-    gridContainer: {
+    listContainer: {
+      flexDirection: "column",
+    },
+    card: {
       flexDirection: "row",
-      flexWrap: "wrap",
-      justifyContent: "space-between",
-    },
-    gridItem: {
-      marginBottom: 20,
       alignItems: "center",
-      justifyContent: "flex-start",
-    },
-    essentialIconCircle: {
-      width: "80%",
-      aspectRatio: 1,
-      borderRadius: 999,
-      overflow: "hidden",
-      alignItems: "center",
-      justifyContent: "center",
-      marginBottom: 6,
       backgroundColor: isDarkMode ? "#1E293B" : "#FFFFFF",
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 12,
       borderWidth: 1,
-      borderColor: "#34C759",
+      borderColor: isDarkMode ? "#334155" : "#F1F5F9",
       shadowColor: "#000000",
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
+      shadowOpacity: 0.04,
+      shadowRadius: 6,
+      elevation: 2,
     },
-    essentialIcon: {
-      width: "60%",
-      height: "60%",
+    iconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: isDarkMode ? "#0F172A" : "#F4FBF7",
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 14,
+      borderWidth: 1,
+      borderColor: isDarkMode ? "#1E293B" : "#E8F5EE",
     },
-    essentialLabel: {
-      fontFamily: Fonts.medium,
-      fontSize: 10,
-      color: isDarkMode ? "#CBD5E1" : "#333333",
-      textAlign: "center",
-      lineHeight: 12,
+    icon: {
+      width: 28,
+      height: 28,
+    },
+    textContainer: {
+      flex: 1,
+      justifyContent: "center",
+    },
+    headline: {
+      fontFamily: Fonts.bold,
+      fontSize: 14.5,
+      color: isDarkMode ? "#F1F5F9" : "#1F2937",
+      marginBottom: 4,
+    },
+    subhead: {
+      fontFamily: Fonts.regular,
+      fontSize: 11.5,
+      color: isDarkMode ? "#94A3B8" : "#6B7280",
+      lineHeight: 16,
+    },
+    chevron: {
+      marginLeft: 8,
     },
   });

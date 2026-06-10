@@ -24,6 +24,29 @@ import { meetupService } from '@/services/api/meetupService';
 
 const logoSmall = require('@/assets/images/onlylogo.png');
 
+const acRepairIcon = require("@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png");
+const plumbingIcon = require("@/assets/images/8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png");
+const cleaningIcon = require("@/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png");
+const driverIcon = require("@/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png");
+const billsIcon = require("@/assets/images/056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png");
+const bankWorkIcon = require("@/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png");
+const groceryIcon = require("@/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png");
+const anythingElseIcon = require("@/assets/images/6c8ed456023258e8b4095af93909c6cbc6c4b909.png");
+
+const ICON_MAPPING: Record<string, any> = {
+  "appliance-repair": acRepairIcon,
+  "plumbing-electrical": plumbingIcon,
+  "deep-cleaning": cleaningIcon,
+  "driving-cab": driverIcon,
+  "bill-payment": billsIcon,
+  "bank-paperwork": bankWorkIcon,
+  "grocery-run": groceryIcon,
+  "anything-else": anythingElseIcon,
+  "paper-legal": bankWorkIcon,
+  "sanitisation": cleaningIcon,
+  "tech-helper": acRepairIcon,
+};
+
 const resolveRoute = (route?: string, id?: string) => {
   if (!route) return '/';
   let clean = route.toLowerCase().trim();
@@ -36,6 +59,42 @@ const resolveRoute = (route?: string, id?: string) => {
   if (clean.includes('home-essentials') || clean.includes('home essentials')) return '/all-home-essentials';
   if (clean.includes('all-ayuxa') || clean.includes('all-ayuxacare') || clean.includes('all-oldful')) return '/all-ayuxa-services';
   if (clean.includes('account/medical-logs') || clean.includes('account/medical_logs')) return '/profile/medical-logs';
+  
+  // Dynamic check for Home Essentials services
+  const STATIC_ESSENTIALS = [
+    '/appliance-repair',
+    '/plumbing-electrical',
+    '/deep-cleaning',
+    '/driving-cab',
+    '/bill-payment',
+    '/bank-paperwork',
+    '/grocery-run',
+    '/anything-else',
+    '/paper-legal',
+    '/sanitisation',
+    '/tech-helper'
+  ];
+  
+  if (cleanId && !STATIC_ESSENTIALS.includes(clean)) {
+    const OTHER_STATIC = [
+      '/doctor-visit',
+      '/doctor-home-visit',
+      '/hospital-trip',
+      '/nurse-care',
+      '/insurance',
+      '/blood-test',
+      '/order-medicines',
+      '/physio-fitness',
+      '/medical-equipment',
+      '/meal-service',
+      '/tech-helper',
+      '/club-events'
+    ];
+    if (!OTHER_STATIC.includes(clean)) {
+      return `/home-essentials-dynamic/${cleanId}`;
+    }
+  }
+
   return route.replace(/oldful/gi, 'ayuxa').replace(/ayuxacare/gi, 'ayuxa');
 };
 
@@ -220,7 +279,30 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGr
   const { t } = useTranslation();
   const router = useRouter();
   const s = makeStyles(colors);
-  const items = section.max_items ? section.services.slice(0, section.max_items) : section.services;
+  const { services } = useUser();
+
+  // Filter and sort active Home Essentials services from database
+  const dbServices = services
+    .filter(
+      sv =>
+        sv.serviceType === "HOME_ESSENTIALS" &&
+        sv.slug !== "home-essentials" &&
+        sv.slug !== "smart-upgrade" &&
+        sv.slug !== "trip-travels" &&
+        sv.slug !== "bank-paperwork"
+    )
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  // Map to matching layout structure
+  const items = dbServices.slice(0, section.max_items || 8).map(dbS => {
+    return {
+      id: dbS.slug,
+      slug: dbS.slug,
+      label: dbS.headline || dbS.name,
+      route: dbS.route || `/${dbS.slug}`,
+      iconAsset: ICON_MAPPING[dbS.slug] || anythingElseIcon,
+    };
+  });
 
   const rows: (typeof items)[] = [];
   for (let i = 0; i < items.length; i += 4) {
@@ -240,8 +322,9 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGr
       {rows.map((row, rowIdx) => (
         <View key={rowIdx} style={s.essentialsRow}>
           {row.map(item => {
-            const translatedLabel = translateServiceLabel(item.id, item.label, t);
-            const [line1, line2] = translatedLabel.split('\n');
+            const key = item.slug ? item.slug.replace(/-/g, "_") : "";
+            const displayLabel = key ? t(`services.${key}`, item.label) : item.label;
+            const [line1, line2] = displayLabel.split('\n');
             return (
               <TouchableOpacity
                 key={item.id}
@@ -249,7 +332,7 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGr
                 onPress={() => router.push(resolveRoute(item.route, item.id) as any)}
               >
                 <View style={s.essentialIconCircle}>
-                  <Image source={{ uri: getAssetUrl(item.icon) }} style={s.essentialIcon} resizeMode="contain" />
+                  <Image source={item.iconAsset} style={s.essentialIcon} resizeMode="contain" />
                 </View>
                 <Text style={s.essentialLabel}>{line1}</Text>
                 {line2 ? <Text style={s.essentialLabel}>{line2}</Text> : null}

@@ -13,6 +13,8 @@ import { useTheme } from '@/context/ThemeContext';
 import { planService, ActiveSubscription, MembershipsResponse } from '@/services/api/planService';
 import { Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 
+// maxSlots here are fallback values ONLY — used when no subscriptions exist for the category.
+// The real cap is read from plan.maxConcurrent in the API response.
 const CATEGORY_META: Record<string, { labelKey: string; icon: string; color: string; maxSlots: number }> = {
     CARE:      { labelKey: 'membership.care_label',      icon: 'heart',            color: '#7C3AED', maxSlots: 4 },
     HOMEMAKER: { labelKey: 'membership.homemaker_label', icon: 'home',             color: '#6366F1', maxSlots: 2 },
@@ -211,7 +213,8 @@ export default function MembershipDashboardScreen() {
                         const activeSub = subs[0];
                         const meta = CATEGORY_META[cat] ?? CATEGORY_META.DEFAULT;
                         const usedSlots = subs.filter(s => s.status === 'ACTIVE' || s.status === 'EXPIRING').length;
-                        const maxSlots = meta.maxSlots;
+                        // Prefer the plan's maxConcurrent from API; fall back to CATEGORY_META only if absent
+                        const maxSlots = (subs[0] as any)?.maxConcurrent ?? meta.maxSlots;
                         const slotFraction = Math.min(usedSlots / maxSlots, 1);
                         return (
                             <View key={cat} style={S.section}>

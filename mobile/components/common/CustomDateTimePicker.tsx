@@ -91,13 +91,13 @@ export default function CustomDateTimePicker({
     }, [minimumDate, daysToShow, timeSlots]);
 
     const [selectedDateIdx, setSelectedDateIdx] = useState(0);
-    const [selectedTime, setSelectedTime]       = useState(timeSlots[0]);
+    const [selectedTime, setSelectedTime]       = useState<string | null>(null);
     const scrollRef = useRef<ScrollView>(null);
 
     // Keep selection in sync and shift if selected time becomes past
     React.useEffect(() => {
         const selectedDate = datePills[selectedDateIdx];
-        if (!selectedDate) return;
+        if (!selectedDate || !selectedTime) return;
         if (isSlotPast(selectedDate, selectedTime)) {
             const firstValid = timeSlots.find(slot => !isSlotPast(selectedDate, slot));
             if (firstValid) {
@@ -109,7 +109,9 @@ export default function CustomDateTimePicker({
 
     const handleDateSelect = (idx: number) => {
         setSelectedDateIdx(idx);
-        if (notify) notify(mergeDateTime(datePills[idx], selectedTime));
+        if (selectedTime && notify) {
+            notify(mergeDateTime(datePills[idx], selectedTime));
+        }
     };
 
     const handleTimeSelect = (slot: string) => {

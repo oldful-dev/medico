@@ -13,7 +13,7 @@ export default function PlansPage() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editing, setEditing] = useState(null);
-    const [form, setForm] = useState({ name: '', description: '', benefits: '', quarterlyPrice: 0, biannualPrice: 0, yearlyPrice: 0, isVisible: true, sortOrder: 0 });
+    const [form, setForm] = useState({ name: '', description: '', benefits: '', quarterlyPrice: 0, biannualPrice: 0, yearlyPrice: 0, isVisible: true, sortOrder: 0, planType: 'CARE', maxConcurrent: 4 });
     const [subFilter, setSubFilter] = useState('ALL');
 
     useEffect(() => { loadPlans(); }, []);
@@ -31,8 +31,8 @@ export default function PlansPage() {
 
     const filteredSubs = subFilter === 'ALL' ? subs : subs.filter(s => s.status === subFilter);
 
-    function openAdd() { setEditing(null); setForm({ name: '', description: '', benefits: '', quarterlyPrice: 0, biannualPrice: 0, yearlyPrice: 0, isVisible: true, sortOrder: plans.length }); setShowModal(true); }
-    function openEdit(p) { setEditing(p); setForm({ name: p.name, description: p.description || '', benefits: p.benefits || '', quarterlyPrice: p.quarterlyPrice, biannualPrice: p.biannualPrice, yearlyPrice: p.yearlyPrice, isVisible: p.isVisible, sortOrder: p.sortOrder }); setShowModal(true); }
+    function openAdd() { setEditing(null); setForm({ name: '', description: '', benefits: '', quarterlyPrice: 0, biannualPrice: 0, yearlyPrice: 0, isVisible: true, sortOrder: plans.length, planType: 'CARE', maxConcurrent: 4 }); setShowModal(true); }
+    function openEdit(p) { setEditing(p); setForm({ name: p.name, description: p.description || '', benefits: p.benefits || '', quarterlyPrice: p.quarterlyPrice, biannualPrice: p.biannualPrice, yearlyPrice: p.yearlyPrice, isVisible: p.isVisible, sortOrder: p.sortOrder, planType: p.planType || 'CARE', maxConcurrent: p.maxConcurrent ?? 4 }); setShowModal(true); }
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -71,6 +71,10 @@ export default function PlansPage() {
                                     <div className="card-header"><h3>{p.name}</h3><span className={`badge ${p.isVisible ? 'badge-success' : 'badge-default'}`}>{p.isVisible ? 'Visible' : 'Hidden'}</span></div>
                                     <div className="card-body">
                                         <p className="text-sm text-muted mb-4">{p.description || 'No description'}</p>
+                                        <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                                            <span className={`badge ${p.planType === 'HOMEMAKER' ? 'badge-default' : 'badge-success'}`}>{p.planType || 'CARE'}</span>
+                                            <span className="badge badge-default">Max slots: {p.maxConcurrent ?? '—'}</span>
+                                        </div>
                                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
                                             <div><div className="text-sm text-muted">Quarterly</div><div style={{ fontWeight: 700, color: "var(--accent-primary-light)" }}>{formatCurrency(p.quarterlyPrice)}</div></div>
                                             <div><div className="text-sm text-muted">Biannual</div><div style={{ fontWeight: 700, color: "var(--accent-primary-light)" }}>{formatCurrency(p.biannualPrice)}</div></div>
@@ -132,6 +136,19 @@ export default function PlansPage() {
                                 <div className="form-group"><label className="form-label">Plan Name *</label><input className="form-input" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
                                 <div className="form-group"><label className="form-label">Description</label><textarea className="form-input" rows={2} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
                                 <div className="form-group"><label className="form-label">Benefits</label><textarea className="form-input" rows={2} value={form.benefits} onChange={e => setForm({ ...form, benefits: e.target.value })} /></div>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label className="form-label">Plan Type *</label>
+                                        <select className="form-input" value={form.planType} onChange={e => setForm({ ...form, planType: e.target.value, maxConcurrent: e.target.value === 'CARE' ? 4 : 2 })}>
+                                            <option value="CARE">CARE (Health &amp; Medical)</option>
+                                            <option value="HOMEMAKER">HOMEMAKER (Home Essential)</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Max Concurrent Subs</label>
+                                        <input className="form-input" type="number" min={1} max={10} value={form.maxConcurrent} onChange={e => setForm({ ...form, maxConcurrent: parseInt(e.target.value) || 1 })} />
+                                    </div>
+                                </div>
                                 <div className="form-row">
                                     <div className="form-group"><label className="form-label">Quarterly (₹)</label><input className="form-input" type="number" value={form.quarterlyPrice} onChange={e => setForm({ ...form, quarterlyPrice: parseFloat(e.target.value) || 0 })} /></div>
                                     <div className="form-group"><label className="form-label">Biannual (₹)</label><input className="form-input" type="number" value={form.biannualPrice} onChange={e => setForm({ ...form, biannualPrice: parseFloat(e.target.value) || 0 })} /></div>

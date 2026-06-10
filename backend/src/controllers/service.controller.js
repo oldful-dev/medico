@@ -46,7 +46,7 @@ const getServiceById = async (req, res, next) => {
 // POST /api/services
 const createService = async (req, res, next) => {
     try {
-        const { name, slug, icon, tagline, description, pricingText, basePrice, route, sortOrder, isEnabled, serviceType, formFieldsJson } = req.body;
+        const { name, slug, icon, tagline, description, pricingText, basePrice, route, sortOrder, isEnabled, serviceType, formFieldsJson, headline, subhead, checkoutGroup } = req.body;
 
         let parsedBasePrice = basePrice;
         if (parsedBasePrice === undefined && pricingText) {
@@ -57,7 +57,23 @@ const createService = async (req, res, next) => {
         }
 
         const service = await prisma.service.create({
-            data: { name, slug, icon, tagline, description, pricingText, basePrice: parsedBasePrice, route, sortOrder, isEnabled, serviceType, formFieldsJson },
+            data: {
+                name,
+                slug,
+                icon,
+                tagline,
+                description,
+                pricingText,
+                basePrice: parsedBasePrice !== undefined && parsedBasePrice !== null ? parseFloat(parsedBasePrice) : undefined,
+                route,
+                sortOrder: sortOrder !== undefined && sortOrder !== null ? parseInt(sortOrder, 10) : undefined,
+                isEnabled: isEnabled !== undefined && isEnabled !== null ? (isEnabled === true || isEnabled === 'true') : undefined,
+                serviceType,
+                formFieldsJson,
+                headline,
+                subhead,
+                checkoutGroup
+            },
         });
 
         sendResponse(res, 201, service, 'Service created successfully');
@@ -77,6 +93,16 @@ const updateService = async (req, res, next) => {
             } else {
                 data.basePrice = null;
             }
+        }
+
+        if (data.basePrice !== undefined && data.basePrice !== null) {
+            data.basePrice = parseFloat(data.basePrice);
+        }
+        if (data.sortOrder !== undefined && data.sortOrder !== null) {
+            data.sortOrder = parseInt(data.sortOrder, 10);
+        }
+        if (data.isEnabled !== undefined && data.isEnabled !== null) {
+            data.isEnabled = data.isEnabled === true || data.isEnabled === 'true';
         }
 
         const service = await prisma.service.update({
@@ -135,8 +161,17 @@ const uploadHeroImage = async (req, res, next) => {
 // DELETE /api/services/:id
 const deleteService = async (req, res, next) => {
     try {
-        await prisma.service.delete({ where: { id: req.params.id } });
-        sendResponse(res, 200, null, 'Service deleted');
+        const id = req.params.id;
+        const bookingsCount = await prisma.booking.count({ where: { serviceId: id } });
+        if (bookingsCount > 0) {
+            const updated = await prisma.service.update({
+                where: { id },
+                data: { isEnabled: false },
+            });
+            return sendResponse(res, 200, updated, 'Service has active bookings; it has been disabled instead');
+        }
+        await prisma.service.delete({ where: { id } });
+        sendResponse(res, 200, null, 'Service deleted successfully');
     } catch (error) {
         next(error);
     }

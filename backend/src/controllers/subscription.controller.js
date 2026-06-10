@@ -100,8 +100,11 @@ const initiateUserSubscription = async (req, res, next) => {
         if (!requestedPlan) return res.status(404).json({ success: false, message: 'Plan not found.' });
 
         // ─── Slot Limit Enforcement ─────────────────────────────────────────
-        // CARE plans: max 4 active per user | HOMEMAKER plans: max 2 active per user
-        const MAX_SLOTS = requestedPlan.planType === 'CARE' ? 4 : 2;
+        // Read maxConcurrent from the Plan row (admin-configurable via PlansPage).
+        // Falls back to planType defaults if the DB value is still the schema default of 1.
+        const MAX_SLOTS = requestedPlan.maxConcurrent > 1
+            ? requestedPlan.maxConcurrent
+            : (requestedPlan.planType === 'CARE' ? 4 : 2);
         const activeCount = await prisma.subscription.count({
             where: {
                 userId,
@@ -799,6 +802,7 @@ const getMemberships = async (req, res, next) => {
                 planId: sub.planId,
                 planName: sub.plan.name,
                 planType: sub.plan.planType,
+                maxConcurrent: sub.plan.maxConcurrent,
                 tierLevel: sub.plan.tierLevel,
                 status: sub.status,
                 billingCycle: sub.billingCycle,
@@ -840,6 +844,7 @@ const getMemberships = async (req, res, next) => {
                         planId: lastSub.planId,
                         planName: lastSub.plan.name,
                         planType: lastSub.plan.planType,
+                        maxConcurrent: lastSub.plan.maxConcurrent,
                         tierLevel: lastSub.plan.tierLevel,
                         status: lastSub.status === 'CANCELLED' ? 'CANCELLED' : 'EXPIRED',
                         billingCycle: lastSub.billingCycle,

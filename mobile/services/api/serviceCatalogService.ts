@@ -22,6 +22,10 @@ export interface ServiceItem {
     isEnabled: boolean;
     serviceType: string;
     formFieldsJson?: Record<string, any>;  // dynamic form field config
+    headline?: string;
+    subhead?: string;
+    checkoutGroup?: string;
+    basePrice?: number;
 }
 
 // ─── Service ──────────────────────────────────

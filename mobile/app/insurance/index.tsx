@@ -92,8 +92,9 @@ export default function InsuranceScreen() {
                 relation: newMemberRelation,
             });
             if (res.success && res.data) {
-                setFamilyMembers(prev => [...prev, res.data]);
-                setSelectedFamilyMemberId(res.data.id);
+                const newMember = res.data;
+                setFamilyMembers(prev => [...prev, newMember]);
+                setSelectedFamilyMemberId(newMember.id);
                 setNewMemberName('');
                 setShowAddFamilyForm(false);
             } else {
