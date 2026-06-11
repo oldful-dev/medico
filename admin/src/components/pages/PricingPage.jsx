@@ -18,6 +18,7 @@ const CATEGORIES = [
     { value: "TECH_HELPER", label: "💻 Tech Helper" },
     { value: "HOME_ESSENTIALS", label: "🏠 Home Essentials" },
     { value: "CLUB_EVENTS", label: "🎭 Club & Events" },
+    { value: "DIAGNOSTICS_FITNESS", label: "📊 Diagnostics & Fitness" },
     { value: "OTHER", label: "❓ Other Services" }
 ];
 
@@ -160,9 +161,31 @@ export default function PricingPage() {
         }
     }
 
+    function getDropdownCategories() {
+        const list = [...CATEGORIES];
+        services.filter(s => s.isDynamic).forEach(s => {
+            if (s.category && !list.some(item => item.value === s.category)) {
+                list.push({
+                    value: s.category,
+                    label: `📂 Category: ${s.category.replace(/_/g, ' ')}`
+                });
+            }
+            if (s.slug && !list.some(item => item.value === s.slug.toUpperCase())) {
+                const iconVal = (s.icon && s.icon.trim().length <= 4) ? s.icon : '🩺';
+                list.push({
+                    value: s.slug.toUpperCase(),
+                    label: `${iconVal} Service: ${s.name}`
+                });
+            }
+        });
+        return list;
+    }
+
     function getCategoryLabel(val) {
         const cat = CATEGORIES.find(c => c.value === val);
-        return cat ? cat.label : val;
+        if (cat) return cat.label;
+        const dynamicCat = getDropdownCategories().find(c => c.value === val);
+        return dynamicCat ? dynamicCat.label : val;
     }
 
     if (loading) return <div className="page-header"><h2>Loading Pricing Engine...</h2></div>;
@@ -364,7 +387,7 @@ export default function PricingPage() {
                                         onChange={e => setForm({ ...form, serviceCategory: e.target.value })}
                                         style={{ background: "var(--bg-input)", color: "var(--text-primary)" }}
                                     >
-                                        {CATEGORIES.map(c => (
+                                        {getDropdownCategories().map(c => (
                                             <option key={c.value} value={c.value}>{c.label}</option>
                                         ))}
                                     </select>

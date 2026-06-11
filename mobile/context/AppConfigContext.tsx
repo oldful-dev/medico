@@ -669,7 +669,7 @@ const FALLBACK_CONFIG: AppConfig = {
               items: [
                 {
                   id: "GP",
-                  label: "General Physician (MBBS)",
+                  label: "General Physician",
                   icon: "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/9bbd0539ddfd504d8362c951cb07d107b0df9fdf.png",
                   tagline: "",
                   action: { type: "navigate", route: "select_doctor_type" },

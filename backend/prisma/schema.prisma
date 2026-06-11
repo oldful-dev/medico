@@ -211,6 +211,9 @@ model Service {
   headline       String?
   subhead        String?
   checkoutGroup  String      @default("D")
+  isDynamic      Boolean     @default(false)
+  category       String?
+  paymentMode    String      @default("INQUIRY")
   bookings       Booking[]
 
   @@map("services")

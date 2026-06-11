@@ -36,6 +36,7 @@ import { storageService, STORAGE_KEYS } from "@/services/device/storageService";
 import { useUser } from "@/context/UserContext";
 import { useTranslation } from "react-i18next";
 import SubscriptionUpsellBanner, { PlanTypeNeeded } from "@/components/checkout/SubscriptionUpsellBanner";
+import { AddressPickerSection, type AddressData } from "@/components/AddressPickerSection";
 type PaymentFlowState =
   | "idle"
   | "creating_booking"
@@ -131,12 +132,16 @@ export default function ServiceCheckoutScreen() {
     pickupAddress?: string;
     skipUpsell?: string;
     checkoutGroup?: string;
+    paymentMode?: string;
+    isDynamic?: string;
+    hideLocation?: string;
+    serviceSlug?: string;
   }>();
 
   const baseAmount = parseFloat(params.amount ?? "0");
   const label = params.label ?? "Service Booking";
   const category = mapLabelToCategory(label);
-  const isZeroPayment = category === "MEDICINES" || category === "TIFFIN" || label.toLowerCase().includes("physio") || label.toLowerCase().includes("scan") || label.toLowerCase().includes("ecg") || params.checkoutGroup === 'D';
+  const isZeroPayment = category === "MEDICINES" || category === "TIFFIN" || label.toLowerCase().includes("physio") || label.toLowerCase().includes("scan") || label.toLowerCase().includes("ecg") || (params.checkoutGroup === 'D' && params.paymentMode !== 'PAID');
 
   // ─── Determine which plan type covers this service (for upsell banner) ────────
   const CARE_CATEGORIES = [
@@ -215,6 +220,31 @@ export default function ServiceCheckoutScreen() {
       ? profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0]
       : null,
   );
+  const [landmark, setLandmark] = useState("");
+
+  // Sync selectedAddress with initial fetched address from bookingPayload if no profile address or if dynamic service
+  useEffect(() => {
+    if (params.bookingPayload) {
+      try {
+        const parsed = JSON.parse(params.bookingPayload);
+        if (parsed.addressLine && (!selectedAddress || selectedAddress.line1 !== parsed.addressLine)) {
+          setSelectedAddress({
+            line1: parsed.addressLine,
+            cityName: parsed.cityName || "",
+            pincode: parsed.pincode || "",
+            latitude: parsed.latitude || 28.7041,
+            longitude: parsed.longitude || 77.1025,
+            landmark: parsed.landmark || "",
+          });
+          if (parsed.landmark) {
+            setLandmark(parsed.landmark);
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to parse bookingPayload address:", e);
+      }
+    }
+  }, [params.bookingPayload]);
 
   // ─── Benefit calculation state ──────────────────────────────────────
   const [calcLoading, setCalcLoading] = useState(false);
@@ -238,7 +268,9 @@ export default function ServiceCheckoutScreen() {
       const fetchCalculation = async () => {
         setCalcLoading(true);
         try {
-          const category = mapLabelToCategory(label);
+          const category = params.isDynamic === "true" && params.serviceSlug
+            ? params.serviceSlug
+            : mapLabelToCategory(label);
           const res = await paymentService.calculateCheckout({
             serviceCategory: category,
             vendorFee: baseAmount,
@@ -256,7 +288,7 @@ export default function ServiceCheckoutScreen() {
       };
       fetchCalculation();
     }
-  }, [params.bookingPayload, label]);
+  }, [params.bookingPayload, label, params.isDynamic, params.serviceSlug]);
 
   const benefitApplied = hasActivePlanForCategory || !!calculatedPrices?.benefitApplied;
 
@@ -785,11 +817,12 @@ export default function ServiceCheckoutScreen() {
           </Text>
         </View>
 
-        <ScrollView
-          style={styles.body}
-          contentContainerStyle={styles.bodyContent}
-          showsVerticalScrollIndicator={false}
-        >
+        <View style={styles.mainContainer}>
+          <ScrollView
+            style={styles.body}
+            contentContainerStyle={styles.bodyContent}
+            showsVerticalScrollIndicator={false}
+          >
           {/* Meetup Service & Pickup Details */}
           {params.meetupId && meetupParamsObj && (
             <View style={[styles.card, styles.meetupCard]}>
@@ -1069,72 +1102,88 @@ export default function ServiceCheckoutScreen() {
 
           {/* Service Address — hide for meetup */}
           {!params.meetupId && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>
-                {t("service_checkout.service_address")}
-              </Text>
-              {profile?.addresses && profile.addresses.length > 0 ? (
-                <View style={{ gap: 10 }}>
-                  {profile.addresses.map((addr: any) => (
-                    <TouchableOpacity
-                      key={addr.id}
-                      style={[
-                        styles.addressCard,
-                        selectedAddress?.id === addr.id &&
-                          styles.addressCardActive,
-                      ]}
-                      onPress={() => setSelectedAddress(addr)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons
-                        name={
-                          selectedAddress?.id === addr.id
-                            ? "radio-button-on"
-                            : "radio-button-off"
-                        }
-                        size={20}
-                        color={
-                          selectedAddress?.id === addr.id
-                            ? colors.primary
-                            : colors.textMuted
-                        }
-                      />
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={styles.addressLabel}>
-                          {addr.line1}
-                          {addr.line2 ? ", " + addr.line2 : ""}, {addr.cityName}
-                        </Text>
-                        <Text style={styles.addressSub}>{addr.label}</Text>
-                        {addr.isDefault && (
-                          <Text style={styles.defaultBadge}>
-                            {t("service_checkout.default_address")}
+            params.isDynamic === "true" && params.hideLocation !== "true" ? (
+              <AddressPickerSection
+                selectedAddress={selectedAddress}
+                onAddressChange={(addr) => {
+                  setSelectedAddress(addr);
+                  if (addr.landmark) setLandmark(addr.landmark);
+                }}
+                title={t("order_medicines.address_label")}
+                showPhoneField={false}
+                showLandmarkField={true}
+                landmark={landmark}
+                onLandmarkChange={setLandmark}
+                allowManualEntry={true}
+              />
+            ) : (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>
+                  {t("service_checkout.service_address")}
+                </Text>
+                {profile?.addresses && profile.addresses.length > 0 ? (
+                  <View style={{ gap: 10 }}>
+                    {profile.addresses.map((addr: any) => (
+                      <TouchableOpacity
+                        key={addr.id}
+                        style={[
+                          styles.addressCard,
+                          selectedAddress?.id === addr.id &&
+                            styles.addressCardActive,
+                        ]}
+                        onPress={() => setSelectedAddress(addr)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons
+                          name={
+                            selectedAddress?.id === addr.id
+                              ? "radio-button-on"
+                              : "radio-button-off"
+                          }
+                          size={20}
+                          color={
+                            selectedAddress?.id === addr.id
+                              ? colors.primary
+                              : colors.textMuted
+                          }
+                        />
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                          <Text style={styles.addressLabel}>
+                            {addr.line1}
+                            {addr.line2 ? ", " + addr.line2 : ""}, {addr.cityName}
                           </Text>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              ) : (
-                <View>
-                  <Text style={styles.noAddressText}>
-                    No saved addresses. Please add one in your profile.
-                  </Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.payBtn,
-                      { marginTop: 12, backgroundColor: colors.primary },
-                    ]}
-                    onPress={() => router.push("/manage-addresses")}
-                    activeOpacity={0.85}
-                  >
-                    <Ionicons name="add-outline" size={18} color="#fff" />
-                    <Text style={styles.payBtnText}>
-                      {t("service_checkout.add_address")}
+                          <Text style={styles.addressSub}>{addr.label}</Text>
+                          {addr.isDefault && (
+                            <Text style={styles.defaultBadge}>
+                              {t("service_checkout.default_address")}
+                            </Text>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : (
+                  <View>
+                    <Text style={styles.noAddressText}>
+                      No saved addresses. Please add one in your profile.
                     </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
+                    <TouchableOpacity
+                      style={[
+                        styles.payBtn,
+                        { marginTop: 12, backgroundColor: colors.primary },
+                      ]}
+                      onPress={() => router.push("/manage-addresses")}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="add-outline" size={18} color="#fff" />
+                      <Text style={styles.payBtnText}>
+                        {t("service_checkout.add_address")}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )
           )}
 
           {/* Coupon */}
@@ -1264,47 +1313,50 @@ export default function ServiceCheckoutScreen() {
                 : "Secured by Razorpay. Your payment information is encrypted and safe."}
             </Text>
           </View>
-        </ScrollView>
+          </ScrollView>
 
-        {/* Pay Button */}
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.payBtn, payLoading && styles.payBtnLoading]}
-            onPress={handlePay}
-            disabled={payLoading}
-            activeOpacity={0.85}
-          >
-            {payLoading ? (
-              <ActivityIndicator color={colors.textWhite} />
-            ) : (
-              <>
-                <Ionicons
-                  name={
-                    isZeroPayment
-                      ? "send-outline"
-                      : selectedMethod === "CASH"
-                      ? "checkmark-circle-outline"
-                      : "lock-closed-outline"
-                  }
-                  size={18}
-                  color={colors.textWhite}
-                />
-                <Text style={styles.payBtnText}>
-                  {isZeroPayment
-                    ? (params.checkoutGroup === 'D'
-                        ? t('common.submit_request', 'Submit Request')
-                        : (category === "MEDICINES"
-                          ? t('common.place_order', 'Place Order')
-                          : (category === "TIFFIN"
-                            ? t('common.request_tiffin', 'Request Tiffin')
-                            : t('common.book_appointment', 'Book Appointment'))))
-                    : selectedMethod === "CASH"
-                    ? `${t('common.confirm_booking', 'Confirm Booking')} (₹${finalAmount.toLocaleString("en-IN")})`
-                    : `${t('common.pay', 'Pay')} ₹${finalAmount.toLocaleString("en-IN")}`}
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
+          {/* Pay Button wrapped in SafeAreaView for bottom safe area */}
+          <SafeAreaView edges={["bottom"]} style={styles.footerContainer}>
+            <View style={styles.footer}>
+              <TouchableOpacity
+                style={[styles.payBtn, payLoading && styles.payBtnLoading]}
+                onPress={handlePay}
+                disabled={payLoading}
+                activeOpacity={0.85}
+              >
+                {payLoading ? (
+                  <ActivityIndicator color={colors.textWhite} />
+                ) : (
+                  <>
+                    <Ionicons
+                      name={
+                        isZeroPayment
+                          ? "send-outline"
+                          : selectedMethod === "CASH"
+                          ? "checkmark-circle-outline"
+                          : "lock-closed-outline"
+                      }
+                      size={18}
+                      color={colors.textWhite}
+                    />
+                    <Text style={styles.payBtnText}>
+                      {isZeroPayment
+                        ? (params.checkoutGroup === 'D'
+                            ? t('common.submit_request', 'Submit Request')
+                            : (category === "MEDICINES"
+                              ? t('common.place_order', 'Place Order')
+                              : (category === "TIFFIN"
+                                ? t('common.request_tiffin', 'Request Tiffin')
+                                : t('common.book_appointment', 'Book Appointment'))))
+                        : selectedMethod === "CASH"
+                        ? `${t('common.confirm_booking', 'Confirm Booking')} (₹${finalAmount.toLocaleString("en-IN")})`
+                        : `${t('common.pay', 'Pay')} ₹${finalAmount.toLocaleString("en-IN")}`}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
         </View>
       </SafeAreaView>
     </KeyboardAvoidingView>
@@ -1329,13 +1381,18 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) =>
       marginLeft: 12,
     },
 
-    body: {
+    mainContainer: {
       flex: 1,
       backgroundColor: isDarkMode ? "#111827" : (colors.bgScreen ?? "#FAFAF0"),
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
+      overflow: "hidden",
     },
-    bodyContent: { padding: Spacing.xl, paddingBottom: 100, gap: Spacing.lg },
+    body: {
+      flex: 1,
+      backgroundColor: "transparent",
+    },
+    bodyContent: { padding: Spacing.xl, paddingBottom: Spacing.xl, gap: Spacing.lg },
 
     card: {
       backgroundColor: colors.bgCard,
@@ -1611,16 +1668,14 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) =>
       lineHeight: 18,
     },
 
-    footer: {
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      right: 0,
-      backgroundColor: colors.bgScreen,
-      padding: Spacing.xl,
-      paddingBottom: Platform.OS === "ios" ? Spacing.xl + 16 : Spacing.xl,
+    footerContainer: {
+      backgroundColor: isDarkMode ? "#111827" : (colors.bgScreen ?? "#FAFAF0"),
       borderTopWidth: 1,
       borderTopColor: colors.borderLight,
+    },
+    footer: {
+      backgroundColor: isDarkMode ? "#111827" : (colors.bgScreen ?? "#FAFAF0"),
+      padding: Spacing.xl,
     },
     payBtn: {
       flexDirection: "row",

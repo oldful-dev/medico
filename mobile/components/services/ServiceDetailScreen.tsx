@@ -34,6 +34,13 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { Colors, Fonts, FontSize, Radius, Shadow } from '@/constants/theme';
 import { useTranslation } from 'react-i18next';
+import { getAssetUrl } from '@/utils/getAssetUrl';
+
+const isEmoji = (str?: string): boolean => {
+    if (!str) return false;
+    const clean = str.trim();
+    return clean.length <= 4 && !clean.includes('.') && !clean.includes('/') && !clean.includes(':');
+};
 
 // ─── Shared static map thumbnail used across all service screens ───
 const imgMap = require('@/assets/images/0377518a275775aa53396ca4863e21dce08ad3b6.png');
@@ -48,7 +55,9 @@ export interface ServiceDetailScreenProps {
     /** Body description paragraph (centered, muted) */
     description: string;
     /** Hero image (require'd PNG from assets) */
-    heroImage: ImageSourcePropType;
+    heroImage?: ImageSourcePropType;
+    /** Emoji icon string (if dynamic service) */
+    heroIcon?: string;
     /** Pricing chip label (e.g. "₹499 Booking Fee + Vendor's Bill") */
     pricingLabel: string;
     /** Pricing disclaimer (e.g. "*The vendor's bill depends on actual work needed.") */
@@ -81,6 +90,7 @@ export default function ServiceDetailScreen({
     heroSubtitle,
     description,
     heroImage,
+    heroIcon,
     pricingLabel,
     pricingNote,
     bulletItems,
@@ -123,10 +133,18 @@ export default function ServiceDetailScreen({
                 enableOnAndroid
                 extraScrollHeight={20}
             >
-                {/* ─── Hero Row ─── */}
-                {/* Figma: 109×109 image left, title+subtitle right */}
                 <View style={dynamicStyles.heroRow}>
-                    <Image source={heroImage} style={dynamicStyles.heroImage} resizeMode="contain" />
+                    {heroIcon ? (
+                        isEmoji(heroIcon) ? (
+                            <View style={[dynamicStyles.heroImage, { alignItems: 'center', justifyContent: 'center', backgroundColor: isDarkMode ? '#1E293B' : '#F1F5F9', borderRadius: 12 }]}>
+                                <Text style={{ fontSize: 48 }}>{heroIcon}</Text>
+                            </View>
+                        ) : (
+                            <Image source={{ uri: getAssetUrl(heroIcon) }} style={[dynamicStyles.heroImage, { borderRadius: 12 }]} resizeMode="cover" />
+                        )
+                    ) : (
+                        heroImage && <Image source={heroImage} style={dynamicStyles.heroImage} resizeMode="contain" />
+                    )}
                     <View style={dynamicStyles.heroText}>
                         <Text style={dynamicStyles.heroTitle}>{heroTitle}</Text>
                         <Text style={dynamicStyles.heroSubtitle}>{heroSubtitle}</Text>

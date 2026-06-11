@@ -62,7 +62,13 @@
         "keep": "Keep",
         "generic_error": "Something went wrong. Please try again.",
         "invalid": "Invalid",
-        "dismiss": "Dismiss"
+        "dismiss": "Dismiss",
+        "submit_request": "Submit Request",
+        "confirm_booking": "Confirm Booking",
+        "place_order": "Place Order",
+        "book_appointment": "Book Appointment",
+        "pay": "Pay",
+        "request_tiffin": "Request Tiffin"
     },
     "auth": {
         "splash_tagline": "ISO 9001:2015 Certified",
@@ -3009,7 +3015,8 @@
         "comments_placeholder": "Describe your requirements or any instructions here...",
         "upload_bill_photos": "Upload Bill Copies",
         "upload_optional_photos": "Upload Photos (Optional)",
-        "image_upload_subtitle": "JPG, PNG up to 10MB"
+        "image_upload_subtitle": "JPG, PNG up to 10MB",
+        "pricing_disclaimer": "*Pricing is subject to actual work assessment."
     },
     "payment_success": {
         "payment_success_title": "Payment Successful!",

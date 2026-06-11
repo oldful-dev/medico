@@ -62,7 +62,13 @@
         "keep": "ಇರಿಸಿ",
         "generic_error": "ಏನೋ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೊಮ್ಮೆ ಪ್ರಯತ್ನಿಸಿ.",
         "invalid": "ಅಮಾನ್ಯ",
-        "dismiss": "ಖುಲಾಸೆಗೊಳಿಸು"
+        "dismiss": "ಖುಲಾಸೆಗೊಳಿಸು",
+        "submit_request": "ವಿನಂತಿಯನ್ನು ಸಲ್ಲಿಸಿ",
+        "confirm_booking": "ಬುಕಿಂಗ್ ಖಚಿತಪಡಿಸಿ",
+        "place_order": "ಆರ್ಡರ್ ಮಾಡಿ",
+        "book_appointment": "ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಬುಕ್ ಮಾಡಿ",
+        "pay": "ಪಾವತಿಸಿ",
+        "request_tiffin": "ಟಿಫಿನ್ ವಿನಂತಿಸಿ"
     },
     "auth": {
         "splash_tagline": "ISO 9001:2015 ಪ್ರಮಾಣಿತ",
@@ -3009,7 +3015,8 @@
         "comments_placeholder": "ನಿಮ್ಮ ಅಗತ್ಯತೆಗಳು ಅಥವಾ ಯಾವುದೇ ಸೂಚನೆಗಳನ್ನು ಇಲ್ಲಿ ವಿವರಿಸಿ...",
         "upload_bill_photos": "ಬಿಲ್ ಪ್ರತಿಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ",
         "upload_optional_photos": "ಫೋಟೋಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ (ಐಚ್ಛಿಕ)",
-        "image_upload_subtitle": "10MB ವರೆಗಿನ JPG, PNG"
+        "image_upload_subtitle": "10MB ವರೆಗಿನ JPG, PNG",
+        "pricing_disclaimer": "*ಬೆಲೆ ನಿಗದಿಪಡಿಸುವಿಕೆಯು ನಿಜವಾದ ಕೆಲಸದ ಮೌಲ್ಯಮಾಪನಕ್ಕೆ ಒಳಪಟ್ಟಿರುತ್ತದೆ."
     },
     "payment_success": {
         "payment_success_title": "Pಾವತಿ ಯಶಸ್ವಿ!",

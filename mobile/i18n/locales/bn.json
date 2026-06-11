@@ -62,7 +62,13 @@
         "keep": "রাখুন",
         "generic_error": "কিছু ভুল হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
         "invalid": "অকার্যকর",
-        "dismiss": "খারিজ করুন"
+        "dismiss": "খারিজ করুন",
+        "submit_request": "অনুরোধ জমা দিন",
+        "confirm_booking": "বুকিং নিশ্চিত করুন",
+        "place_order": "অর্ডার দিন",
+        "book_appointment": "অ্যাপয়েন্টমেন্ট বুক করুন",
+        "pay": "অর্থ প্রদান করুন",
+        "request_tiffin": "টিফিন অনুরোধ করুন"
     },
     "auth": {
         "splash_tagline": "ISO 9001:2015 সার্টিফাইড",
@@ -3009,7 +3015,8 @@
         "comments_placeholder": "আপনার প্রয়োজনীয়তা বা কোনো নির্দেশনা এখানে লিখুন...",
         "upload_bill_photos": "বিলের কপি আপলোড করুন",
         "upload_optional_photos": "ছবি আপলোড করুন (ঐচ্ছিক)",
-        "image_upload_subtitle": "10MB পর্যন্ত JPG, PNG"
+        "image_upload_subtitle": "10MB পর্যন্ত JPG, PNG",
+        "pricing_disclaimer": "*মূল্য নির্ধারণ প্রকৃত কাজের মূল্যায়নের সাপেক্ষে।"
     },
     "payment_success": {
         "payment_success_title": "Pেমেন্ট সফল!",

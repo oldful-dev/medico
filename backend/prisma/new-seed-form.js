@@ -1523,7 +1523,7 @@ const FORM_CONFIGS = {
           columns: 2,
           default_value: 'GP',
           options: [
-            { id: 'GP', label: 'General Physician (MBBS)', image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/9bbd0539ddfd504d8362c951cb07d107b0df9fdf.png', sort_order: 1 },
+            { id: 'GP', label: 'General Physician', image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/9bbd0539ddfd504d8362c951cb07d107b0df9fdf.png', sort_order: 1 },
             { id: 'Physio', label: 'Physiotherapist', image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/ad2bd697d39bc0738ca19a09e58ce4677761ca47.png', sort_order: 2 },
           ],
         }],

@@ -20,6 +20,7 @@ import { mediaService } from '@/services/api/mediaService';
 import { bookingService, Booking } from '@/services/api/bookingService';
 import { userService } from '@/services/api/userService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 
 // Problems that auto-trigger Physiotherapist selection
 const PHYSIO_PROBLEMS = new Set(['Poster-surgery Rehab', 'Frozen shoulder', 'Stroke Recovery']);
@@ -86,32 +87,26 @@ export default function DoctorVisitScreen() {
     const [selectedDoctorType, setSelectedDoctorType] = React.useState<'GP' | 'Physio'>('GP');
     const [scheduledDate, setScheduledDate] = React.useState<Date | undefined>(undefined);
     const [landmark, setLandmark] = React.useState('');
-    const [addressType, setAddressType] = React.useState('Home');
-    const [customAddressType, setCustomAddressType] = React.useState('');
-    const [isFetchingLocation, setIsFetchingLocation] = React.useState(false);
     const [visitType] = React.useState<'Home'>('Home');
+    const [selectedAddress, setSelectedAddress] = React.useState<AddressData | null>(null);
 
-    const handleAutoFetchLocation = async () => {
-        setIsFetchingLocation(true);
-        setAddress('Fetching location...');
-        try {
-            const hasPermission = await locationService.requestPermission();
-            if (!hasPermission) {
-                Alert.alert(t('common.permission_required'), 'Location permission is required.');
-                setAddress('');
-                setIsFetchingLocation(false);
-                return;
-            }
-            const coords = await locationService.getCurrentLocation();
-            const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
-            setAddress(fetchedAddress);
-        } catch (error) {
-            console.error('Location fetch error:', error);
-            Alert.alert(t('common.error'), 'Failed to fetch location. Please type manually.');
-            setAddress('');
-        } finally {
-            setIsFetchingLocation(false);
+    // Sync selectedAddress with initial fetched address on mount or when fetched
+    React.useEffect(() => {
+        if (address && address !== 'Fetching address...' && !selectedAddress) {
+            setSelectedAddress({
+                line1: address,
+                cityName: '',
+                pincode: '',
+                latitude: 28.7041,
+                longitude: 77.1025,
+            });
         }
+    }, [address]);
+
+    const handleAddressChange = (addr: AddressData) => {
+        setSelectedAddress(addr);
+        setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
+        if (addr.landmark) setLandmark(addr.landmark);
     };
 
     const handlePickReport = async () => {
@@ -370,7 +365,6 @@ export default function DoctorVisitScreen() {
 
             // Navigate to checkout — booking is created INSIDE checkout after payment succeeds
             const gps = await locationService.getCurrentLocation().catch(() => null);
-            const resolvedAddressType = addressType === 'Other' ? customAddressType : addressType;
 
             const bookingPayload = JSON.stringify({
                 serviceId,
@@ -386,7 +380,6 @@ export default function DoctorVisitScreen() {
                     visitType,
                     urgency: 'Later',
                     attachments: uploadedImageUrls,
-                    addressType: resolvedAddressType,
                     landmark: landmark.trim() || undefined,
                 },
             });
@@ -583,81 +576,18 @@ export default function DoctorVisitScreen() {
                     </View>
 
                     {/* ─── Confirm Address Card ─── */}
-                    <View style={styles.sectionCardSmall}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
-                            <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>{t('booking.confirm_address')}</Text>
-                            <TouchableOpacity
-                                style={[styles.autoFetchBtn, { borderColor: colors.primary }]}
-                                onPress={handleAutoFetchLocation}
-                                disabled={isFetchingLocation}
-                            >
-                                <Ionicons name="location" size={14} color={colors.primary} />
-                                <Text style={[styles.autoFetchText, { color: colors.primary }]}>
-                                    {isFetchingLocation ? t('common.fetching') : t('booking.auto_fetch', 'Auto-fetch')}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
+                    <AddressPickerSection
+                        selectedAddress={selectedAddress}
+                        onAddressChange={handleAddressChange}
+                        title={t('booking.confirm_address')}
+                        showPhoneField={false}
+                        showLandmarkField={true}
+                        landmark={landmark}
+                        onLandmarkChange={setLandmark}
+                        allowManualEntry={true}
+                    />
 
-                        <View style={styles.addressBox}>
-                            <Ionicons name="location-outline" size={16} color={colors.textDark} style={styles.addressIcon} />
-                            <TextInput
-                                value={address}
-                                onChangeText={setAddress}
-                                placeholder={t('nurse_care.address_placeholder')}
-                                placeholderTextColor={colors.textMuted}
-                                multiline
-                                numberOfLines={2}
-                                style={styles.addressText}
-                            />
-                        </View>
 
-                        {/* Landmark field */}
-                        <TextInput
-                            placeholder={t('nurse_care.landmark_placeholder')}
-                            placeholderTextColor={colors.textMuted}
-                            value={landmark}
-                            onChangeText={setLandmark}
-                            style={styles.landmarkInput}
-                        />
-
-                        {/* Address Type selection */}
-                        <Text style={[styles.addressTypeLabel, { color: colors.textDark }]}>{t('booking.address_type', 'Address Type')}</Text>
-                        <View style={styles.addressTypeRow}>
-                            {['Home', 'Office', 'Other'].map((type) => (
-                                <TouchableOpacity
-                                    key={type}
-                                    style={[
-                                        styles.addressTypeChip,
-                                        addressType === type && [styles.addressTypeChipActive, { borderColor: colors.primary, backgroundColor: isDarkMode ? 'rgba(52,199,89,0.1)' : 'rgba(2,116,63,0.06)' }],
-                                    ]}
-                                    onPress={() => setAddressType(type)}
-                                >
-                                    <Text style={[
-                                        styles.addressTypeChipText,
-                                        addressType === type && [styles.addressTypeChipTextActive, { color: colors.primary }]
-                                    ]}>
-                                        {type}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-
-                        {addressType === 'Other' && (
-                            <TextInput
-                                placeholder={t('booking.custom_address_type_placeholder', 'Specify address type (e.g. Clinic, Gym)...')}
-                                placeholderTextColor={colors.textMuted}
-                                value={customAddressType}
-                                onChangeText={setCustomAddressType}
-                                style={styles.customAddressTypeInput}
-                            />
-                        )}
-
-                        <Text style={styles.addressHelper}>
-                            {locationDenied
-                                ? t('doctor_visit.gps_denied_using_saved')
-                                : t('doctor_visit.gps_auto_fetched')}
-                        </Text>
-                    </View>
 
                     {/* Bottom Padding for Fixed App Bar */}
                     <View style={styles.bottomSpacer} />
@@ -1056,60 +986,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         backgroundColor: colors.bgCard,
         marginTop: 6,
     },
-    autoFetchBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderRadius: Radius.sm,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        gap: 4,
-    },
-    autoFetchText: {
-        fontFamily: Fonts.medium,
-        fontSize: FontSize.caption,
-    },
-    addressTypeLabel: {
-        fontFamily: Fonts.medium,
-        fontSize: FontSize.bodySmall,
-        marginTop: 12,
-        marginBottom: 6,
-    },
-    addressTypeRow: {
-        flexDirection: 'row',
-        gap: 8,
-        marginBottom: 8,
-    },
-    addressTypeChip: {
-        borderWidth: 1,
-        borderColor: '#AAAEAC',
-        borderRadius: Radius.sm,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-    },
-    addressTypeChipActive: {
-        borderWidth: 1.5,
-    },
-    addressTypeChipText: {
-        fontFamily: Fonts.medium,
-        fontSize: FontSize.caption,
-        color: '#888',
-    },
-    addressTypeChipTextActive: {
-        fontFamily: Fonts.semiBold,
-    },
-    customAddressTypeInput: {
-        borderWidth: 1,
-        borderColor: '#AAAEAC',
-        borderRadius: Radius.sm,
-        paddingHorizontal: Spacing.md,
-        paddingVertical: 8,
-        fontFamily: Fonts.regular,
-        fontSize: FontSize.bodySmall,
-        color: '#2F2F2F',
-        marginTop: 4,
-        marginBottom: 8,
-    },
+
     compactUploadContainer: {
         flexDirection: 'row',
         alignItems: 'center',

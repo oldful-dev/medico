@@ -79,6 +79,11 @@ const buildFilePath = (folder, originalName, userId = null) => {
     const ext = path.extname(originalName);
     const fileName = `${uuidv4()}${ext}`;
     
+    // Bypass user ID nesting for mobile assets folder
+    if (folder === 'mobile/assets/images') {
+        return `${folder}/${fileName}`;
+    }
+    
     if (!userId || userId === 'anonymous') {
         return `${folder}/${fileName}`;
     }
@@ -141,14 +146,23 @@ const toCDNUrl = (storagePath, folder = '') => {
     if (isPrivateFolder(folder || storagePath.split('/')[0])) return null;
 
     // Sanitize: remove leading slashes and collapse double slashes
-    const cleanPath = storagePath.replace(/^\/+/, '').replace(/\/\//g, '/');
+    let cleanPath = storagePath.replace(/^\/+/, '').replace(/\/\//g, '/');
     if (!cleanPath) return null;
+
+    const prefix = 'mobile/assets/images/';
+    const startsWithPrefix = cleanPath.startsWith(prefix);
+    if (startsWithPrefix) {
+        cleanPath = cleanPath.substring(prefix.length);
+    }
 
     const cdnBase = (process.env.ASSETS_CDN_URL || '').replace(/\/+$/, '');
     if (cdnBase) return `${cdnBase}/${cleanPath}`;
 
     // Fallback: GCS direct public URL (only if no CDN configured)
-    if (gcsBucketName) return `https://storage.googleapis.com/${gcsBucketName}/${cleanPath}`;
+    if (gcsBucketName) {
+        const fullGcsPath = startsWithPrefix ? `${prefix}${cleanPath}` : cleanPath;
+        return `https://storage.googleapis.com/${gcsBucketName}/${fullGcsPath}`;
+    }
 
     return null;
 };

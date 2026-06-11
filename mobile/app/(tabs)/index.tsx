@@ -47,9 +47,18 @@ const ICON_MAPPING: Record<string, any> = {
   "tech-helper": acRepairIcon,
 };
 
+const isEmoji = (str?: string) => {
+  if (!str) return false;
+  const clean = str.trim();
+  return clean.length <= 4 && !clean.includes('.') && !clean.includes('/') && !clean.includes(':');
+};
+
 const resolveRoute = (route?: string, id?: string) => {
   if (!route) return '/';
   let clean = route.toLowerCase().trim();
+  if (clean.includes('/dynamic-service/')) {
+    return route;
+  }
   const cleanId = id ? id.toLowerCase().trim() : '';
 
   if (cleanId === 'physio_quick' || cleanId === 'physio') return '/physio';
@@ -215,10 +224,30 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors }: Se
   const router = useRouter();
   const s = makeStyles(colors);
   const [expanded, setExpanded] = useState(false);
+  const { services } = useUser();
 
-  const primaryItems = section.services.slice(0, 6);
-  const remainingItems = section.services.slice(6);
-  const visibleItems = expanded ? section.services : primaryItems;
+  // Find all active dynamic Diagnostics & Fitness services from database
+  const dbDynamicServices = services
+    .filter(
+      sv =>
+        sv.isDynamic &&
+        sv.isEnabled &&
+        sv.category === "DIAGNOSTICS_FITNESS"
+    )
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map(sv => ({
+      id: sv.slug,
+      label: sv.name,
+      icon: sv.icon || '🩺',
+      route: sv.route || `/dynamic-service/${sv.slug}`,
+      enabled: true
+    }));
+
+  const allServices = [...section.services, ...dbDynamicServices];
+
+  const primaryItems = allServices.slice(0, 6);
+  const remainingItems = allServices.slice(6);
+  const visibleItems = expanded ? allServices : primaryItems;
 
   return (
     <View style={s.servicesCard}>
@@ -235,11 +264,17 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors }: Se
               style={[s.serviceGridItem, { width: itemWidth, height: cardHeight }]}
               onPress={() => router.push(resolveRoute(item.route, item.id) as any)}
             >
-              <Image
-                source={{ uri: getAssetUrl(item.icon) }}
-                style={[s.serviceGridImage, { width: itemWidth, height: imageHeight }]}
-                resizeMode="cover"
-              />
+              {isEmoji(item.icon) ? (
+                <View style={[s.serviceGridImage, { width: itemWidth, height: imageHeight, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgCardMuted || '#F8FAFC' }]}>
+                  <Text style={{ fontSize: 32 }}>{item.icon}</Text>
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: getAssetUrl(item.icon) }}
+                  style={[s.serviceGridImage, { width: itemWidth, height: imageHeight }]}
+                  resizeMode="cover"
+                />
+              )}
               <View style={s.serviceGridLabelContainer}>
                 <Text style={s.serviceGridLabel}>{line1}</Text>
                 {line2 ? <Text style={s.serviceGridLabel}>{line2}</Text> : null}
@@ -247,6 +282,9 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors }: Se
             </TouchableOpacity>
           );
         })}
+        {Array.from({ length: (3 - (visibleItems.length % 3)) % 3 }).map((_, idx) => (
+          <View key={`dummy-${idx}`} style={{ width: itemWidth, height: 0 }} />
+        ))}
       </View>
       {remainingItems.length > 0 && (
         <TouchableOpacity
@@ -304,9 +342,13 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGr
     };
   });
 
-  const rows: (typeof items)[] = [];
+  const rows: any[][] = [];
   for (let i = 0; i < items.length; i += 4) {
-    rows.push(items.slice(i, i + 4));
+    const row = items.slice(i, i + 4);
+    while (row.length < 4) {
+      row.push({ isDummy: true, id: `dummy-${row.length}` } as any);
+    }
+    rows.push(row);
   }
 
   return (
@@ -322,6 +364,9 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGr
       {rows.map((row, rowIdx) => (
         <View key={rowIdx} style={s.essentialsRow}>
           {row.map(item => {
+            if (item.isDummy) {
+              return <View key={item.id} style={{ width: itemWidth, height: 0 }} />;
+            }
             const key = item.slug ? item.slug.replace(/-/g, "_") : "";
             const displayLabel = key ? t(`services.${key}`, item.label) : item.label;
             const [line1, line2] = displayLabel.split('\n');

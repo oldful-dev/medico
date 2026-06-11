@@ -241,6 +241,9 @@ export function SectionRenderer({
                                 </TouchableOpacity>
                             );
                         })}
+                        {Array.from({ length: (3 - (displayItems.length % 3)) % 3 }).map((_, idx) => (
+                            <View key={`dummy-${idx}`} style={{ width: itemWidth, height: 0 }} />
+                        ))}
                     </View>
                 </View>
             );
@@ -322,9 +325,13 @@ function EssentialsGrid({
     const [expanded, setExpanded] = useState(false);
 
     // Split items into rows
-    const allRows: SectionItem[][] = [];
+    const allRows: any[][] = [];
     for (let i = 0; i < visibleItems.length; i += columns) {
-        allRows.push(visibleItems.slice(i, i + columns));
+        const row = visibleItems.slice(i, i + columns);
+        while (row.length < columns) {
+            row.push({ isDummy: true, id: `dummy-${row.length}` } as any);
+        }
+        allRows.push(row);
     }
 
     const shouldCollapse = maxVisibleRows > 0 && allRows.length > maxVisibleRows;
@@ -345,6 +352,9 @@ function EssentialsGrid({
             {displayRows.map((row, ri) => (
                 <View key={ri} style={styles.essentialsRow}>
                     {row.map(item => {
+                        if (item.isDummy) {
+                            return <View key={item.id} style={{ width: essentialItemWidth, height: 0 }} />;
+                        }
                         const translatedLabel = translateSDUIItem(item.label, item.route, t);
                         return (
                             <TouchableOpacity
