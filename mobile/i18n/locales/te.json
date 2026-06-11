@@ -62,7 +62,13 @@
         "keep": "ఉంచండి",
         "generic_error": "ఏదో తప్పు జరిగింది. దయచేసి మళ్లీ ప్రయత్నించండి.",
         "invalid": "అమాన్యమైనది",
-        "dismiss": "తీసివేయి"
+        "dismiss": "తీసివేయి",
+        "submit_request": "అభ్యర్థనను సమర్పించండి",
+        "confirm_booking": "బుకింగ్‌ను ధృవీకరించండి",
+        "place_order": "ఆర్డర్ చేయండి",
+        "book_appointment": "అపాయింట్‌మెంట్ బుక్ చేయండి",
+        "pay": "చెల్లించండి",
+        "request_tiffin": "టిఫిన్ అభ్యర్థించండి"
     },
     "auth": {
         "splash_tagline": "ISO 9001:2015 సర్టిఫికేట్",
@@ -3009,7 +3015,8 @@
         "comments_placeholder": "మీ అవసరాలు లేదా ఏవైనా సూచనలను ఇక్కడ వివరించండి...",
         "upload_bill_photos": "బిల్లు కాపీలను అప్‌లోడ్ చేయండి",
         "upload_optional_photos": "ఫోటోలను అప్‌లోడ్ చేయండి (ఐచ్ఛికం)",
-        "image_upload_subtitle": "10MB వరకు JPG, PNG"
+        "image_upload_subtitle": "10MB వరకు JPG, PNG",
+        "pricing_disclaimer": "*ధర అనేది వాస్తవ పని అంచనాకు లోబడి ఉంటుంది."
     },
     "payment_success": {
         "payment_success_title": "చెల్లింపు విజయవంతం!",

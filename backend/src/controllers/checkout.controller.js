@@ -49,9 +49,34 @@ exports.calculateCheckout = async (req, res) => {
         const userId = req.user.id;
 
         // Fetch service charge configuration
-        const config = await prisma.serviceCharge.findUnique({
+        let config = await prisma.serviceCharge.findUnique({
             where: { serviceCategory: serviceCategory?.toUpperCase?.() || serviceCategory }
         });
+
+        // Fallback: If no config exists for this specific slug/name, try to match by its parent category
+        if (!config && serviceCategory) {
+            const service = await prisma.service.findFirst({
+                where: {
+                    OR: [
+                        { slug: serviceCategory.toLowerCase().replace(/_/g, '-') },
+                        { slug: serviceCategory.toLowerCase() },
+                        { name: { equals: serviceCategory, mode: 'insensitive' } },
+                    ]
+                }
+            });
+            if (service) {
+                if (service.category) {
+                    config = await prisma.serviceCharge.findUnique({
+                        where: { serviceCategory: service.category.toUpperCase() }
+                    });
+                }
+                if (!config && service.serviceType) {
+                    config = await prisma.serviceCharge.findUnique({
+                        where: { serviceCategory: service.serviceType.toUpperCase() }
+                    });
+                }
+            }
+        }
 
         let bookingFee = config && config.isActive ? config.bookingFee : 0;
         let platformFee = config && config.isActive ? config.platformFee : 0;

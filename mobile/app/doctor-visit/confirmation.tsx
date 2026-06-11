@@ -27,7 +27,7 @@ export default function ConfirmationScreen() {
 
     const {
         visitType = 'Home Session',
-        doctorType = 'General Physician (MBBS)',
+        doctorType = 'General Physician',
         when = 'ASAP (Urgent)',
         problem = 'Fever / Flu',
         address = '123 Baker St, London',

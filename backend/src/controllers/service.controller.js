@@ -46,7 +46,7 @@ const getServiceById = async (req, res, next) => {
 // POST /api/services
 const createService = async (req, res, next) => {
     try {
-        const { name, slug, icon, tagline, description, pricingText, basePrice, route, sortOrder, isEnabled, serviceType, formFieldsJson, headline, subhead, checkoutGroup } = req.body;
+        const { name, slug, icon, tagline, description, pricingText, basePrice, route, sortOrder, isEnabled, serviceType, formFieldsJson, headline, subhead, checkoutGroup, isDynamic, category, paymentMode } = req.body;
 
         let parsedBasePrice = basePrice;
         if (parsedBasePrice === undefined && pricingText) {
@@ -72,7 +72,10 @@ const createService = async (req, res, next) => {
                 formFieldsJson,
                 headline,
                 subhead,
-                checkoutGroup
+                checkoutGroup,
+                isDynamic: isDynamic !== undefined && isDynamic !== null ? (isDynamic === true || isDynamic === 'true') : undefined,
+                category,
+                paymentMode: paymentMode || 'INQUIRY',
             },
         });
 
@@ -103,6 +106,9 @@ const updateService = async (req, res, next) => {
         }
         if (data.isEnabled !== undefined && data.isEnabled !== null) {
             data.isEnabled = data.isEnabled === true || data.isEnabled === 'true';
+        }
+        if (data.isDynamic !== undefined && data.isDynamic !== null) {
+            data.isDynamic = data.isDynamic === true || data.isDynamic === 'true';
         }
 
         const service = await prisma.service.update({

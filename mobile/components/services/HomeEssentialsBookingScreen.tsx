@@ -101,19 +101,31 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
 
   // Set base charge dynamically for pricing card
   const getPricingLabel = () => {
-    if (checkoutGroup === 'A') return t('service_detail.pricing_a', '₹299 Service Charge + Vendor Bill');
-    if (checkoutGroup === 'B') return t('service_detail.pricing_b', '₹299 Service Charge (Max 2 Bills)');
+    const baseFee = dbService?.basePrice !== undefined && dbService?.basePrice !== null ? dbService.basePrice : (checkoutGroup === 'C' ? 499 : 299);
+    if (checkoutGroup === 'A') {
+      return t('service_detail.pricing_a', '₹299 Service Charge + Vendor Bill')
+        .replace('299', String(baseFee));
+    }
+    if (checkoutGroup === 'B') {
+      return t('service_detail.pricing_b', '₹299 Service Charge (Max 2 Bills)')
+        .replace('299', String(baseFee));
+    }
     if (checkoutGroup === 'C') {
-      return deliveryMethod === 'online'
-        ? t('service_detail.pricing_c_online', '₹499 (Online Video Call)')
-        : t('service_detail.pricing_c_visit', '₹999 (Home Visit)');
+      if (deliveryMethod === 'online') {
+        return t('service_detail.pricing_c_online', '₹499 (Online Video Call)')
+          .replace('499', String(baseFee));
+      } else {
+        return t('service_detail.pricing_c_visit', '₹999 (Home Visit)')
+          .replace('999', String(baseFee + 500));
+      }
     }
     return t('service_detail.pricing_d', 'Zero Service Charge (Inquiry)');
   };
 
   const getAmount = () => {
-    if (checkoutGroup === 'A' || checkoutGroup === 'B') return 299;
-    if (checkoutGroup === 'C') return deliveryMethod === 'online' ? 499 : 999;
+    const baseFee = dbService?.basePrice !== undefined && dbService?.basePrice !== null ? dbService.basePrice : (checkoutGroup === 'C' ? 499 : 299);
+    if (checkoutGroup === 'A' || checkoutGroup === 'B') return baseFee;
+    if (checkoutGroup === 'C') return deliveryMethod === 'online' ? baseFee : (baseFee + 500);
     return 0;
   };
 
@@ -221,6 +233,8 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
     }
   };
 
+  const styles = makeStyles(isDarkMode, colors);
+
   const bulletItems = [
     t('service_detail.bullet_homemaker', 'Covered under Homemaker subscription plan benefits'),
     t('service_detail.bullet_professional', 'Certified, verified, and safe professionals'),
@@ -286,9 +300,9 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t('service_detail.comments', 'Comments / Requirements')} *</Text>
         <TextInput
-          style={[styles.textArea, { color: isDarkMode ? '#F3F4F6' : '#1F2937' }]}
+          style={styles.textArea}
           placeholder={t('service_detail.comments_placeholder', 'Describe your requirements or any instructions here...')}
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
           value={comments}
           onChangeText={setComments}
           multiline
@@ -309,29 +323,31 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (isDarkMode: boolean, colors: any) => StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
     borderRadius: 13,
     padding: 18,
     marginBottom: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
+    shadowOpacity: isDarkMode ? 0.3 : 0.06,
     shadowRadius: 4,
     elevation: 1,
   },
   cardTitle: {
     fontFamily: Fonts.semiBold,
     fontSize: 14,
-    color: '#2F2F2F',
+    color: isDarkMode ? '#F8FAFC' : '#2F2F2F',
     marginBottom: 10,
   },
   textArea: {
     fontFamily: Fonts.regular,
     fontSize: 13,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: isDarkMode ? '#334155' : '#E5E7EB',
+    backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF',
+    color: isDarkMode ? '#F3F4F6' : '#1F2937',
     borderRadius: 8,
     padding: 10,
     minHeight: 80,
@@ -345,22 +361,23 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    borderColor: isDarkMode ? '#334155' : '#E5E7EB',
     borderRadius: 8,
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: isDarkMode ? '#0F172A' : '#F9FAFB',
   },
   toggleBtnActive: {
-    borderColor: Colors.primary,
-    backgroundColor: 'rgba(2,116,63,0.06)',
+    borderColor: colors.primary,
+    backgroundColor: isDarkMode ? 'rgba(52, 199, 89, 0.15)' : 'rgba(2,116,63,0.06)',
   },
   toggleBtnText: {
     fontFamily: Fonts.medium,
     fontSize: 12,
-    color: '#4B5563',
+    color: isDarkMode ? '#94A3B8' : '#4B5563',
   },
   toggleBtnTextActive: {
-    color: Colors.primary,
+    color: colors.primary,
     fontFamily: Fonts.semiBold,
   },
 });
+

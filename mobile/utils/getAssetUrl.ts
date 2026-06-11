@@ -31,19 +31,34 @@ const GCS_BASE_URL = 'https://storage.googleapis.com/ayuxa-assets/';
 export function getAssetUrl(fileName: string): string {
     if (!fileName) return '';
 
+    const prefix = 'mobile/assets/images/';
+
     // If it's already a full URL
     if (fileName.startsWith('http://') || fileName.startsWith('https://')) {
         // Transform direct GCS links to CDN links for consistency and performance
         if (fileName.startsWith(GCS_BASE_URL)) {
-            const path = fileName.substring(GCS_BASE_URL.length);
+            let path = fileName.substring(GCS_BASE_URL.length);
+            if (path.startsWith(prefix)) {
+                path = path.substring(prefix.length);
+            }
             return `${CDN_BASE}${path}`;
         }
+        
+        // Handle CDN URLs that were saved with the prefix (double-prefix safety)
+        const doublePrefixCdn = `${CDN_BASE}${prefix}`;
+        if (fileName.startsWith(doublePrefixCdn)) {
+            return `${CDN_BASE}${fileName.substring(doublePrefixCdn.length)}`;
+        }
+        
         return fileName;
     }
 
     // Clean potential leading slash
-    const cleanPath = fileName.startsWith('/') ? fileName.substring(1) : fileName;
+    let cleanPath = fileName.startsWith('/') ? fileName.substring(1) : fileName;
 
     // Direct file hash or path — use CDN
+    if (cleanPath.startsWith(prefix)) {
+        cleanPath = cleanPath.substring(prefix.length);
+    }
     return `${CDN_BASE}${cleanPath}`;
 }

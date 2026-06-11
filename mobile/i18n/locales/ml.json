@@ -62,7 +62,13 @@
         "keep": "സൂക്ഷിക്കുക",
         "generic_error": "എന്തോ തകരാർ സംഭവിച്ചു. ദയവായി വീണ്ടും ശ്രമിക്കുക.",
         "invalid": "അസാധുവായത്",
-        "dismiss": "നിരസിക്കുക"
+        "dismiss": "നിരസിക്കുക",
+        "submit_request": "അഭ്യർത്ഥന സമർപ്പിക്കുക",
+        "confirm_booking": "ബുക്കിംഗ് സ്ഥിരീകരിക്കുക",
+        "place_order": "ഓർഡർ ചെയ്യുക",
+        "book_appointment": "അപ്പോയിന്റ്മെന്റ് ബുക്ക് ചെയ്യുക",
+        "pay": "പണം നൽകുക",
+        "request_tiffin": "ടിഫിൻ അഭ്യർത്ഥിക്കുക"
     },
     "auth": {
         "splash_tagline": "ISO 9001:2015",
@@ -3009,7 +3015,8 @@
         "comments_placeholder": "നിങ്ങളുടെ ആവശ്യങ്ങൾ അല്ലെങ്കിൽ നിർദ്ദേശങ്ങൾ ഇവിടെ വിവരിക്കുക...",
         "upload_bill_photos": "ബിൽ കോപ്പികൾ അപ്‌ലോഡ് ചെയ്യുക",
         "upload_optional_photos": "ഫോട്ടോകൾ അപ്‌ലോഡ് ചെയ്യുക (ഓപ്ഷണൽ)",
-        "image_upload_subtitle": "10MB വരെയുള്ള JPG, PNG"
+        "image_upload_subtitle": "10MB വരെയുള്ള JPG, PNG",
+        "pricing_disclaimer": "*വിലനിർണ്ണയം യഥാർത്ഥ ജോലി വിലയിരുത്തലിന് വിധേയമാണ്."
     },
     "payment_success": {
         "payment_success_title": "പേയ്മെന്റ് വിജയം!",

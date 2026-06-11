@@ -62,7 +62,13 @@
         "keep": "ठेवा",
         "generic_error": "काहीतरी चुकले. कृपया पुन्हा प्रयत्न करा.",
         "invalid": "अवैध",
-        "dismiss": "नकार द्या"
+        "dismiss": "नकार द्या",
+        "submit_request": "विनंती सबमिट करा",
+        "confirm_booking": "बुकिंगची पुष्टी करा",
+        "place_order": "ऑर्डर द्या",
+        "book_appointment": "अपॉइंटमेंट बुक करा",
+        "pay": "पैसे द्या",
+        "request_tiffin": "टिफिनची विनंती करा"
     },
     "auth": {
         "splash_tagline": "ISO 9001:2015 प्रमाणित",
@@ -3009,7 +3015,8 @@
         "comments_placeholder": "आपल्या आवश्यकता किंवा काही सूचना येथे लिहा...",
         "upload_bill_photos": "बिलांच्या प्रती अपलोड करा",
         "upload_optional_photos": "फोटो अपलोड करा (पर्यायी)",
-        "image_upload_subtitle": "10MB पर्यंतचे JPG, PNG"
+        "image_upload_subtitle": "10MB पर्यंतचे JPG, PNG",
+        "pricing_disclaimer": "*किंमत वास्तविक कामाच्या मूल्यांकनावर अवलंबून आहे."
     },
     "payment_success": {
         "payment_success_title": "पेमेंट यशस्वी!",

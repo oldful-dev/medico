@@ -62,7 +62,13 @@
         "keep": "வைக்கவும்",
         "generic_error": "ஏதோ தவறு நடந்துவிட்டது. மீண்டும் முயற்சிக்கவும்.",
         "invalid": "செல்லாதது",
-        "dismiss": "விலக்கு"
+        "dismiss": "விலக்கு",
+        "submit_request": "கோரிக்கையைச் சமர்ப்பிக்கவும்",
+        "confirm_booking": "புக்கிங்கை உறுதிப்படுத்தவும்",
+        "place_order": "ஆர்டர் செய்யுங்கள்",
+        "book_appointment": "அப்பாயிண்ட்மெண்ட் புக் செய்யவும்",
+        "pay": "பணம் செலுத்தவும்",
+        "request_tiffin": "டிஃபின் கோரிக்கை"
     },
     "auth": {
         "splash_tagline": "ISO 9001:2015",
@@ -3009,7 +3015,8 @@
         "comments_placeholder": "உங்கள் தேவைகள் அல்லது ஏதேனும் வழிமுறைகளை இங்கே விவரிக்கவும்...",
         "upload_bill_photos": "பில் நகல்களைப் பதிவேற்றவும்",
         "upload_optional_photos": "புகைப்படங்களை பதிவேற்றவும் (விருப்பத்தேர்வு)",
-        "image_upload_subtitle": "10MB வரையிலான JPG, PNG"
+        "image_upload_subtitle": "10MB வரையிலான JPG, PNG",
+        "pricing_disclaimer": "*விலை நிர்ணயம் உண்மையான வேலை மதிப்பீட்டிற்கு உட்பட்டது."
     },
     "payment_success": {
         "payment_success_title": "பணம் வெற்றி!",

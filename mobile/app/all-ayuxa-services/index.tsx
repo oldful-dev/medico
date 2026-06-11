@@ -8,6 +8,13 @@ import { Fonts } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTranslation } from 'react-i18next';
+import { useUser } from '@/context/UserContext';
+
+const isEmoji = (str?: string) => {
+    if (!str) return false;
+    const clean = str.trim();
+    return clean.length <= 4 && !clean.includes('.') && !clean.includes('/') && !clean.includes(':');
+};
 
 // Service grid images
 const doctorVisitImg = require('@/assets/images/32a4661f97e2fa2dd2c85c403a7c530b7214e7f7.png');
@@ -42,6 +49,7 @@ export default function AllAyuxaServicesScreen() {
     const colors = useThemeColors();
     const { t } = useTranslation();
     const styles = makeStyles(isDarkMode, colors, Fonts);
+    const { services } = useUser();
 
     // Screen padding corresponds to marginHorizontal of the card mapping on Home Screen
     const availableWidth = width - 40; // 20px padding on each side
@@ -51,10 +59,31 @@ export default function AllAyuxaServicesScreen() {
     const exactImageHeight = exactItemWidth * 0.85;
     const exactCardHeight = exactImageHeight + 56;
 
+    // Fetch dynamic Diagnostics & Fitness services from database
+    const dbDynamicServices = (services || [])
+        .filter(
+            sv =>
+                sv.isDynamic &&
+                sv.isEnabled &&
+                sv.category === "DIAGNOSTICS_FITNESS"
+        )
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map(sv => ({
+            id: sv.slug,
+            label1: sv.name,
+            label2: "",
+            translationKey: "", // fallback to label1
+            iconEmoji: sv.icon || "🩺",
+            route: sv.route || `/dynamic-service/${sv.slug}`,
+            isDynamic: true
+        }));
+
+    const allItems = [...SERVICE_GRID, ...dbDynamicServices];
+
     // Pad the grid array for clean left alignment in last row
-    const paddedGrid: (typeof SERVICE_GRID[0] | { empty: boolean })[] = [...SERVICE_GRID];
+    const paddedGrid = [...allItems];
     while (paddedGrid.length % 3 !== 0) {
-        paddedGrid.push({ empty: true });
+        paddedGrid.push({ empty: true } as any);
     }
 
     return (
@@ -74,6 +103,8 @@ export default function AllAyuxaServicesScreen() {
                         if ('empty' in item) {
                             return <View key={`empty-${i}`} style={{ width: exactItemWidth }} />;
                         }
+                        const isDynamic = 'isDynamic' in item && item.isDynamic;
+                        const iconEmoji = 'iconEmoji' in item ? item.iconEmoji : undefined;
                         const translationKey = item.translationKey;
                         const translatedLabel = translationKey ? t(translationKey) : '';
                         const fallbackLabel = `${item.label1}\n${item.label2 || ''}`;
@@ -84,11 +115,17 @@ export default function AllAyuxaServicesScreen() {
                                 style={[styles.gridItem, { width: exactItemWidth, height: exactCardHeight }]}
                                 onPress={() => router.push(item.route as any)}
                             >
-                                <Image
-                                    source={item.image}
-                                    style={[styles.gridImage, { width: exactItemWidth, height: exactImageHeight }]}
-                                    resizeMode="cover"
-                                />
+                                {iconEmoji && isEmoji(iconEmoji) ? (
+                                    <View style={[styles.gridImage, { width: exactItemWidth, height: exactImageHeight, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgCardMuted || '#F8FAFC' }]}>
+                                        <Text style={{ fontSize: 32 }}>{iconEmoji}</Text>
+                                    </View>
+                                ) : (
+                                    <Image
+                                        source={(item as any).image}
+                                        style={[styles.gridImage, { width: exactItemWidth, height: exactImageHeight }]}
+                                        resizeMode="cover"
+                                    />
+                                )}
                                 <View style={styles.gridLabelContainer}>
                                     <Text style={styles.gridLabel} numberOfLines={2}>
                                         {displayName}

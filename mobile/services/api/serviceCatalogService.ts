@@ -26,6 +26,9 @@ export interface ServiceItem {
     subhead?: string;
     checkoutGroup?: string;
     basePrice?: number;
+    isDynamic?: boolean;
+    category?: string;
+    paymentMode?: string;
 }
 
 // ─── Service ──────────────────────────────────
