@@ -1,5 +1,5 @@
 // Order Tracking Screen
-// Shows live Shiprocket tracking for a product order with a visual timeline
+// Shows live Delhivery tracking for a product order with a visual timeline
 import React, { useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
@@ -358,12 +358,12 @@ export default function OrderTrackingScreen() {
                         </View>
                     )}
 
-                    {/* Open Shiprocket tracking link */}
+                    {/* Open Delhivery tracking link */}
                     {order?.trackingUrl && (
                         <TouchableOpacity
                             style={styles.trackBtn}
                             onPress={() => Linking.openURL(order.trackingUrl!)}
-                            accessibilityLabel="Track on Shiprocket"
+                            accessibilityLabel="Track on Delhivery"
                         >
                             <Ionicons name="open-outline" size={18} color="#fff" />
                             <Text style={styles.trackBtnText}>{t('wellness.track_on_courier_website') || 'Track on Courier Website'}</Text>

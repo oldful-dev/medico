@@ -69,7 +69,7 @@ const toggleWellnessStatus = async (req, res, next) => {
     }
 };
 
-// --- Shiprocket Integration ---
+// --- Delhivery Integration ---
 
 // POST /api/wellness/shipping/rates
 const getShippingRates = async (req, res, next) => {
@@ -80,8 +80,8 @@ const getShippingRates = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Pincode and weight required' });
         }
 
-        // Mock Shiprocket API Call
-        // In reality, you would use axios.post('https://apiv2.shiprocket.in/v1/external/courier/generate/pickup', ...)
+        // Mock Delhivery API Call
+        // In reality, you would use axios.post('https://track.delhivery.com/api/cmu/create.json', ...)
         
         let shippingCharge = 79; // Default MVP base charge
         if (weight > 1) {
@@ -105,10 +105,10 @@ const createShipment = async (req, res, next) => {
         const { orderId, total, pincode, weight } = req.body;
         const userId = req.user.id;
 
-        // Mock Shiprocket Order Creation
+        // Mock Delhivery Order Creation
         // Generate a random AWB for MVP demonstration
         const awbCode = 'AWB' + Math.floor(Math.random() * 100000000);
-        const trackingUrl = `https://shiprocket.co/tracking/${awbCode}`;
+        const trackingUrl = `https://track.delhivery.com/tracking/${awbCode}`;
         
         // Save to DB
         await prisma.productOrder.update({

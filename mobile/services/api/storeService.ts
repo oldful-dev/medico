@@ -218,7 +218,7 @@ export const storeService = {
 
     /**
      * GET /api/orders/:id/tracking
-     * Get live Shiprocket tracking for a product order.
+     * Get live Delhivery tracking for a product order.
      */
     getOrderTracking: async (orderId: string): Promise<ApiResponse<{
         order: ProductOrder;

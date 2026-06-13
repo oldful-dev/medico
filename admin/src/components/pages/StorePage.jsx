@@ -278,7 +278,7 @@ export default function StorePage() {
 
                             {/* Logistics Details */}
                             <div style={{ borderTop: '1px solid #eee', paddingTop: 16 }}>
-                                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: '#aaa', marginBottom: 6 }}>Logistics (Shiprocket)</p>
+                                <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: '#aaa', marginBottom: 6 }}>Logistics (Delhivery)</p>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                                     {[
                                         { label: 'SKU', value: detail.sku || 'Not set', color: 'var(--text-primary)' },
@@ -367,7 +367,7 @@ export default function StorePage() {
                                     )}
                                 </div>
                                 <div style={{ borderTop: '1px solid #eee', margin: '16px 0', paddingTop: 16 }}>
-                                    <p style={{ fontSize: 12, fontWeight: 700, color: '#666', marginBottom: 12 }}>Shiprocket Logistics Parameters</p>
+                                    <p style={{ fontSize: 12, fontWeight: 700, color: '#666', marginBottom: 12 }}>Delhivery Logistics Parameters</p>
                                     <div className="form-row">
                                         <div className="form-group">
                                             <label className="form-label">SKU</label>
