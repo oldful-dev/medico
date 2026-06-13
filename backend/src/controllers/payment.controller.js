@@ -570,9 +570,9 @@ const verifyPayment = async (req, res, next) => {
             // Fire-and-forget: create Shiprocket order in background
             setImmediate(async () => {
                 try {
-                    const shiprocket = require('../services/shiprocket.service');
-                    if (!(await shiprocket.isAvailable())) {
-                        logger.warn('[Payment] Shiprocket not available — skipping auto-fulfillment');
+                    const delhivery = require('../services/delhivery.service');
+                    if (!(await delhivery.isAvailable())) {
+                        logger.warn('[Payment] Delhivery not available — skipping auto-fulfillment');
                         return;
                     }
                     const { fulfillOrder: srFulfill } = require('./order.controller');
@@ -638,10 +638,10 @@ const verifyPayment = async (req, res, next) => {
                         length: 10, breadth: 10, height: 10, weight: 0.5,
                     };
 
-                    const { shiprocketOrderId, shipmentId } = await shiprocket.createOrder(srPayload);
+                    const { shiprocketOrderId, shipmentId } = await delhivery.createOrder(srPayload);
                     let awbCode = '', courierName = '', trackingUrl = '';
                     if (shipmentId) {
-                        const awbResult = await shiprocket.generateAWB(shipmentId).catch(() => ({}));
+                        const awbResult = await delhivery.generateAWB(shipmentId).catch(() => ({}));
                         awbCode = awbResult.awbCode || '';
                         courierName = awbResult.courierName || '';
                         trackingUrl = awbResult.trackingUrl || '';
@@ -658,9 +658,9 @@ const verifyPayment = async (req, res, next) => {
                         },
                     });
 
-                    logger.info(`[Payment] SR order auto-created for ${orderRecord.orderCode} → SR:${shiprocketOrderId}, AWB:${awbCode}`);
+                    logger.info(`[Payment] Delhivery order auto-created for ${orderRecord.orderCode} → Delhivery:${shiprocketOrderId}, AWB:${awbCode}`);
                 } catch (srErr) {
-                    logger.error('[Payment] Shiprocket auto-fulfillment failed (non-fatal):', srErr.message);
+                    logger.error('[Payment] Delhivery auto-fulfillment failed (non-fatal):', srErr.message);
                 }
             });
         }

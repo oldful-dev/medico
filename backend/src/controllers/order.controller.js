@@ -7,7 +7,7 @@
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/helpers');
 const { logger } = require('../config/logger');
-const shiprocket = require('../services/shiprocket.service');
+const delhivery = require('../services/delhivery.service');
 
 // Warehouse origin pincode (change to your actual warehouse pincode)
 const WAREHOUSE_PINCODE = process.env.WAREHOUSE_PINCODE || '560001';
@@ -51,7 +51,7 @@ const getShippingRate = async (req, res, next) => {
         }
         totalWeight = Math.max(totalWeight, 0.1);
 
-        const rates = await shiprocket.getShippingRates({
+        const rates = await delhivery.getShippingRates({
             pickupPostcode: WAREHOUSE_PINCODE,
             deliveryPostcode: pincode,
             weight: totalWeight,
@@ -63,12 +63,28 @@ const getShippingRate = async (req, res, next) => {
 
         const cheapest = rates.sort((a, b) => a.rate - b.rate)[0] || null;
 
+        // Check if user has active HomeMaker plan for shipping waiver
+        const activeSub = await prisma.subscription.findFirst({
+            where: {
+                userId: req.user.id,
+                status: 'ACTIVE',
+                expiryDate: { gte: new Date() },
+                plan: { planType: 'HOMEMAKER' },
+            },
+        });
+
+        let rate = cheapest?.rate || 0;
+        if (activeSub) {
+            rate = 0;
+        }
+
         sendResponse(res, 200, {
             available: rates.length > 0,
-            rate: cheapest?.rate || 0,
+            rate,
             courierName: cheapest?.courierName || 'Standard Shipping',
             estimatedDays: cheapest?.estimatedDays || '5-7',
             allRates: rates,
+            shippingWaived: !!activeSub,
         });
     } catch (error) {
         logger.error('[OrderCtrl] getShippingRate error:', error.message);
@@ -179,7 +195,7 @@ const checkoutCart = async (req, res, next) => {
         let shippingCharge = 0;
         if (deliveryPincode) {
             const totalWeight = lineItems.reduce((sum, i) => sum + i.weight * i.quantity, 0);
-            const rates = await shiprocket.getShippingRates({
+            const rates = await delhivery.getShippingRates({
                 pickupPostcode: WAREHOUSE_PINCODE,
                 deliveryPostcode: deliveryPincode,
                 weight: Math.max(totalWeight, 0.1),
@@ -190,6 +206,20 @@ const checkoutCart = async (req, res, next) => {
 
             if (rates.length > 0) {
                 shippingCharge = Math.round(rates.sort((a, b) => a.rate - b.rate)[0].rate);
+            }
+
+            // Check if user has active HomeMaker plan for shipping waiver
+            const activeSub = await prisma.subscription.findFirst({
+                where: {
+                    userId: req.user.id,
+                    status: 'ACTIVE',
+                    expiryDate: { gte: new Date() },
+                    plan: { planType: 'HOMEMAKER' },
+                },
+            });
+
+            if (activeSub) {
+                shippingCharge = 0;
             }
         }
 
@@ -276,10 +306,10 @@ const getOrderTracking = async (req, res, next) => {
 
         if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
-        // If we have an AWB, fetch live data from Shiprocket
+        // If we have an AWB, fetch live data from Delhivery
         let tracking = order.trackingData || null;
         if (order.awbCode) {
-            const live = await shiprocket.trackShipment(order.awbCode);
+            const live = await delhivery.trackShipment(order.awbCode);
             tracking = live;
 
             // Persist the latest tracking snapshot
@@ -352,7 +382,7 @@ const fulfillOrder = async (req, res, next) => {
 
         if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
         if (order.shiprocketOrderId) {
-            return res.status(409).json({ success: false, message: 'Order already fulfilled on Shiprocket' });
+            return res.status(409).json({ success: false, message: 'Order already fulfilled on Delhivery' });
         }
 
         // Parse address
@@ -460,11 +490,11 @@ const fulfillOrder = async (req, res, next) => {
             weight: totalWeight,
         };
 
-        const { shiprocketOrderId, shipmentId } = await shiprocket.createOrder(srPayload);
+        const { shiprocketOrderId, shipmentId } = await delhivery.createOrder(srPayload);
 
         let awbCode = '', courierName = '', trackingUrl = '';
         if (shipmentId) {
-            const awbResult = await shiprocket.generateAWB(shipmentId).catch(e => {
+            const awbResult = await delhivery.generateAWB(shipmentId).catch(e => {
                 logger.warn('[OrderCtrl] AWB generation failed:', e.message);
                 return {};
             });
@@ -486,8 +516,8 @@ const fulfillOrder = async (req, res, next) => {
             },
         });
 
-        logger.info(`[OrderCtrl] Order ${order.orderCode} fulfilled → SR:${shiprocketOrderId}, AWB:${awbCode}`);
-        sendResponse(res, 200, updated, 'Order fulfilled and dispatched via Shiprocket');
+        logger.info(`[OrderCtrl] Order ${order.orderCode} fulfilled → Delhivery:${shiprocketOrderId}, AWB:${awbCode}`);
+        sendResponse(res, 200, updated, 'Order fulfilled and dispatched via Delhivery');
     } catch (error) {
         logger.error('[OrderCtrl] fulfillOrder error:', error.message);
         next(error);

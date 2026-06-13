@@ -18,7 +18,7 @@ router.post('/checkout', authenticate, ctrl.checkoutCart);
 router.get('/my-orders', authenticate, ctrl.getMyOrders);
 
 // GET /api/orders/:id/tracking
-// Get live Shiprocket tracking for a product order
+// Get live Delhivery tracking for a product order
 router.get('/:id/tracking', authenticate, ctrl.getOrderTracking);
 
 // POST /api/orders/shipping-rate
@@ -32,7 +32,7 @@ router.post('/shipping-rate', authenticate, ctrl.getShippingRate);
 router.get('/admin/all', authenticateAdmin, ctrl.getAdminOrders);
 
 // PUT /api/orders/admin/:id/fulfill
-// Manually mark as fulfilled (e.g. push Shiprocket order)
+// Manually mark as fulfilled (e.g. push Delhivery order)
 router.put('/admin/:id/fulfill', authenticateAdmin, ctrl.fulfillOrder);
 
 // PUT /api/orders/admin/:id/status

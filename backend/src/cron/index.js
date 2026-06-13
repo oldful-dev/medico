@@ -289,14 +289,14 @@ const initCronJobs = () => {
         }
     });
 
-    // ─── 7. Shiprocket Tracking Sync (Every 30 minutes) ─────
+    // ─── 7. Delhivery Tracking Sync (Every 30 minutes) ─────
     // Syncs live tracking status for all in-transit product orders
     cron.schedule('*/30 * * * *', async () => {
-        logger.info('⏰ CRON: Running Shiprocket tracking sync...');
+        logger.info('⏰ CRON: Running Delhivery tracking sync...');
         try {
-            const shiprocket = require('../services/shiprocket.service');
-            if (!(await shiprocket.isAvailable())) {
-                logger.info('[CRON] Shiprocket unavailable — skipping tracking sync');
+            const delhivery = require('../services/delhivery.service');
+            if (!(await delhivery.isAvailable())) {
+                logger.info('[CRON] Delhivery unavailable — skipping tracking sync');
                 return;
             }
 
@@ -306,21 +306,21 @@ const initCronJobs = () => {
                     status: { in: ['CONFIRMED', 'DISPATCHED'] },
                     awbCode: { not: null },
                 },
-                select: { id: true, awbCode: true, orderCode: true },
+                select: { id: true, awbCode: true, orderCode: true, status: true },
                 take: 50, // Rate-limit: max 50 per run
             });
 
             let updated = 0;
             for (const order of inTransitOrders) {
                 try {
-                    const tracking = await shiprocket.trackShipment(order.awbCode);
+                    const tracking = await delhivery.trackShipment(order.awbCode);
                     const newStatus = tracking.currentStatus || 'Unknown';
 
-                    // Map Shiprocket status to our status
+                    // Map Delhivery status to our status
                     let dbStatus = order.status;
                     const upper = newStatus.toUpperCase();
-                    if (upper.includes('DELIVERED')) dbStatus = 'DELIVERED';
-                    else if (upper.includes('OUT FOR DELIVERY')) dbStatus = 'DISPATCHED';
+                    if (upper.includes('DELIVERED') || upper.includes('DLV')) dbStatus = 'DELIVERED';
+                    else if (upper.includes('OUT FOR DELIVERY') || upper.includes('OFD')) dbStatus = 'DISPATCHED';
                     else if (upper.includes('CANCELLED') || upper.includes('RTO')) dbStatus = 'CANCELLED';
 
                     await prisma.productOrder.update({
@@ -340,7 +340,7 @@ const initCronJobs = () => {
 
             logger.info(`⏰ CRON: Synced tracking for ${updated}/${inTransitOrders.length} orders`);
         } catch (error) {
-            logger.error('CRON Shiprocket tracking sync error:', error);
+            logger.error('CRON Delhivery tracking sync error:', error);
         }
     });
 
