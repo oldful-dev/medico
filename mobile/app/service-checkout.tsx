@@ -139,48 +139,92 @@ export default function ServiceCheckoutScreen() {
     serviceSlug?: string;
   }>();
 
+  const [isPaidBookingOverride, setIsPaidBookingOverride] = useState(false);
+
   const baseAmount = parseFloat(params.amount ?? "0");
   const label = params.label ?? "Service Booking";
   const category = params.serviceSlug
     ? params.serviceSlug.toUpperCase().replace(/-/g, '_')
     : mapLabelToCategory(label);
-  const isZeroPayment = category === "MEDICINES" || category === "TIFFIN" || label.toLowerCase().includes("physio") || label.toLowerCase().includes("scan") || label.toLowerCase().includes("ecg") || (params.checkoutGroup === 'D' && params.paymentMode !== 'PAID');
+  const isZeroPayment = (category === "MEDICINES" || category === "TIFFIN" || label.toLowerCase().includes("physio") || (params.checkoutGroup === 'D' && params.paymentMode !== 'PAID')) && !isPaidBookingOverride;
+  const [calculatedPrices, setCalculatedPrices] = useState<{
+    totalAmount: number;
+    taxPercentage?: number;
+    requiredPlanType?: 'CARE' | 'HOMEMAKER' | null;
+    breakdown: {
+      vendorFee: number;
+      diagnosticFee: number;
+      bookingFee: number;
+      platformFee: number;
+      taxes: number;
+      ayuxaServiceFee: number;
+      benefitDiscount: number;
+      convenienceFee?: number;
+      emergencyFee?: number;
+      visitFee?: number;
+      nightCharge?: number;
+      surgeCharge?: number;
+    };
+    benefitApplied: boolean;
+  } | null>(null);
 
   // ─── Determine which plan type covers this service (for upsell banner) ────────
+  // CARE plan covers: Lifeline + Companion benefits
   const CARE_CATEGORIES = [
-    "DOCTOR_HOME_VISIT",
-    "HOME_NURSE",
+    // Doctor / Consult
+    "DOCTOR_HOME_VISIT", "DOCTOR_VISIT", "TELECONSULT",
+    // Nursing
+    "HOME_NURSE", "NURSE_VISIT", "CAREGIVER_VISIT", "CAREGIVER",
+    // Hospital / Transport
+    "HOSPITAL_TRIP", "HOSPITAL_ACCOMPANIMENT", "TRANSPORTATION", "PICKUP_DROP",
+    // Diagnostics
+    "BLOOD_TEST", "SCAN_ECG", "DIAGNOSTICS",
+    // Physio
     "PHYSIO_FITNESS",
-    "HOSPITAL_TRIP",
-    "TRANSPORTATION",
-    "BLOOD_TEST",
-    "SCAN_ECG",
+    // Companionship / Spiritual
+    "COMPANIONSHIP_CALL", "COMPANIONSHIP", "SPIRITUAL_ESCORT",
+    // Medicines
+    "MEDICINE_DELIVERY",
+    // Events
+    "LOCAL_MEETUP", "MEETUP",
+    // Support / SOS
+    "PHONE_SUPPORT", "SOS",
+    // Plan meta
+    "BASE_PLAN", "CARE_MANAGER", "FAMILY_PORTAL",
   ];
+  // HOME plan covers: Home Essentials benefits
   const HOME_CATEGORIES = [
-    "PLUMBING_ELECTRICAL",
-    "APPLIANCE_REPAIR",
-    "DEEP_CLEANING",
-    "BILL_PAYMENT",
-    "BANK_PAPERWORK",
-    "LEGAL_PAPERWORK",
-    "PAPERWORK_LEGAL",
-    "TECH_HELPER",
-    "HOME_ESSENTIALS",
-    "GROCERY_RUN",
+    // Electrical / Plumbing / Repairs
+    "PLUMBING_ELECTRICAL", "APPLIANCE_REPAIR", "HANDYMEN",
+    // Cleaning
+    "DEEP_CLEANING", "SANITATION",
+    // Bills / Paperwork
+    "BILL_PAYMENT", "BANK_PAPERWORK", "LEGAL_PAPERWORK", "PAPERWORK_LEGAL",
+    "PAPERWORK_ASSIST",
+    // Tech
+    "TECH_HELPER", "TECH_SUPPORT",
+    // Grocery / Essentials
+    "HOME_ESSENTIALS", "GROCERY_RUN", "GROCERY_ASSIST",
+    // Audit / Custom
+    "HOME_AUDIT", "CUSTOM_REQUEST", "ZERO_SERVICE_FEE",
   ];
-  const upsellPlanType: PlanTypeNeeded | null = CARE_CATEGORIES.includes(category)
-    ? "CARE"
-    : HOME_CATEGORIES.includes(category)
-      ? "HOMEMAKER"
-      : null;
+  const upsellPlanType: PlanTypeNeeded | null = (calculatedPrices?.requiredPlanType as any) || (
+    CARE_CATEGORIES.includes(category)
+      ? "CARE"
+      : HOME_CATEGORIES.includes(category)
+        ? "HOMEMAKER"
+        : null
+  );
 
   // User has an active sub covering this specific category?
-  const hasActivePlanForCategory = profile?.subscriptions?.some(
+  const hasActivePlanForCategoryRaw = profile?.subscriptions?.some(
     (s: any) =>
       s.status === "ACTIVE" &&
       ((upsellPlanType === "CARE" && (s.plan?.planType === "CARE" || s.planType === "CARE" || s.category === "CARE")) ||
        (upsellPlanType === "HOMEMAKER" && (s.plan?.planType === "HOMEMAKER" || s.planType === "HOMEMAKER" || s.category === "HOMEMAKER")))
   ) ?? false;
+
+  const hasActivePlanForCategory = hasActivePlanForCategoryRaw && !isPaidBookingOverride;
 
   const showUpsellBanner =
     !!upsellPlanType &&
@@ -221,10 +265,13 @@ export default function ServiceCheckoutScreen() {
   const [, setFlowState] = useState<PaymentFlowState>("idle");
   const [, setPendingRecovery] = useState(false);
 
-  const [homemakerPlans, setHomemakerPlans] = useState<Plan[]>([]);
-  const [loadingHomemakerPlans, setLoadingHomemakerPlans] = useState(false);
+  const [eligiblePlans, setEligiblePlans] = useState<Plan[]>([]);
+  const [loadingEligiblePlans, setLoadingEligiblePlans] = useState(false);
   const [isUpgraded, setIsUpgraded] = useState(false);
+  const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
   const [selectedDuration, setSelectedDuration] = useState<BillingCycle>("QUARTERLY");
+
+  const selectedUpgradePlan = eligiblePlans[selectedPlanIndex] || null;
   const [savingsInfo, setSavingsInfo] = useState<{
     bookingFeeWaived: number;
     platformFeeWaived: number;
@@ -271,25 +318,6 @@ export default function ServiceCheckoutScreen() {
 
   // ─── Benefit calculation state ──────────────────────────────────────
   const [calcLoading, setCalcLoading] = useState(false);
-  const [calculatedPrices, setCalculatedPrices] = useState<{
-    totalAmount: number;
-    taxPercentage?: number;
-    breakdown: {
-      vendorFee: number;
-      diagnosticFee: number;
-      bookingFee: number;
-      platformFee: number;
-      taxes: number;
-      ayuxaServiceFee: number;
-      benefitDiscount: number;
-      convenienceFee?: number;
-      emergencyFee?: number;
-      visitFee?: number;
-      nightCharge?: number;
-      surgeCharge?: number;
-    };
-    benefitApplied: boolean;
-  } | null>(null);
 
   // ─── Calculate checkout with benefits ──────────────────────────────
   useEffect(() => {
@@ -305,6 +333,7 @@ export default function ServiceCheckoutScreen() {
             vendorFee: baseAmount,
             baseAyuxaFee: 0,
             diagnosticFee: 0,
+            isPaidBooking: isPaidBookingOverride,
           });
           if (res.success && res.data) {
             setCalculatedPrices(res.data);
@@ -317,34 +346,42 @@ export default function ServiceCheckoutScreen() {
       };
       fetchCalculation();
     }
-  }, [params.bookingPayload, label, params.isDynamic, params.serviceSlug]);
+  }, [params.bookingPayload, label, params.isDynamic, params.serviceSlug, isPaidBookingOverride]);
 
   useEffect(() => {
-    const fetchHomemakerPlans = async () => {
-      if (!HOME_CATEGORIES.includes(category) || hasActivePlanForCategory) return;
+    const fetchEligiblePlans = async () => {
+      if (hasActivePlanForCategory) return;
+      
+      const neededType = CARE_CATEGORIES.includes(category)
+        ? "CARE"
+        : HOME_CATEGORIES.includes(category)
+          ? "HOMEMAKER"
+          : null;
+
+      if (!neededType) return;
+
       try {
-        setLoadingHomemakerPlans(true);
-        const res = await planService.getPlansByType("HOMEMAKER");
+        setLoadingEligiblePlans(true);
+        const res = await planService.getPlansByType(neededType);
         if (res.success && res.data) {
-          setHomemakerPlans(res.data);
+          setEligiblePlans(res.data);
+          setSelectedPlanIndex(0);
         }
       } catch (e) {
-        console.warn("Failed to fetch homemaker plans:", e);
+        console.warn("Failed to fetch eligible plans:", e);
       } finally {
-        setLoadingHomemakerPlans(false);
+        setLoadingEligiblePlans(false);
       }
     };
-    fetchHomemakerPlans();
+    fetchEligiblePlans();
   }, [category, hasActivePlanForCategory]);
 
   useEffect(() => {
     const recalculateSavings = async () => {
-      if (!isUpgraded) {
+      if (!isUpgraded || !selectedUpgradePlan) {
         setSavingsInfo(null);
         return;
       }
-      const activePlan = homemakerPlans[0];
-      if (!activePlan) return;
 
       try {
         setSavingsLoading(true);
@@ -352,7 +389,7 @@ export default function ServiceCheckoutScreen() {
           serviceCategory: category,
           vendorFee: baseAmount,
           diagnosticFee: 0,
-          planId: activePlan.id,
+          planId: selectedUpgradePlan.id,
           billingCycle: selectedDuration,
         });
         if (res.success && res.data) {
@@ -365,7 +402,7 @@ export default function ServiceCheckoutScreen() {
       }
     };
     recalculateSavings();
-  }, [isUpgraded, selectedDuration, baseAmount, homemakerPlans, category]);
+  }, [isUpgraded, selectedDuration, baseAmount, selectedUpgradePlan, category]);
 
   const benefitApplied = hasActivePlanForCategory || !!calculatedPrices?.benefitApplied || isUpgraded;
 
@@ -533,7 +570,7 @@ export default function ServiceCheckoutScreen() {
   };
 
   // ─── Open Razorpay native popup ─────────────────────────────────────
-  const handlePay = useCallback(async () => {
+  const handlePay = useCallback(async (isPaidBookingForce?: boolean) => {
     let payloadAddressLine = "";
     if (params.bookingPayload) {
       try {
@@ -591,11 +628,20 @@ export default function ServiceCheckoutScreen() {
 
         const bookingRes = await bookingService.createBooking({
           ...payload,
-          amount: isZeroPayment ? 0 : finalAmount,
+          amount: isZeroPayment ? 0 : (isUpgraded && savingsInfo ? savingsInfo.bookingTotalWithUpgrade : finalAmount),
           paymentMethod: isZeroPayment ? "REQUEST" : selectedMethod,
           addressLine: fullAddressLine,
           latitude: lat,
           longitude: lng,
+          isPaidBooking: isPaidBookingForce || isPaidBookingOverride,
+          formDataJson: {
+            ...(payload.formDataJson || {}),
+            ...(isUpgraded ? {
+              isMembershipUpgrade: true,
+              upgradePlanId: selectedUpgradePlan?.id,
+              upgradeBillingCycle: selectedDuration
+            } : {})
+          }
         });
         if (!bookingRes.success || !bookingRes.data) {
           setFlowState("failed");
@@ -661,6 +707,10 @@ export default function ServiceCheckoutScreen() {
         amount: finalAmount,
         paymentMethod: selectedMethod,
         couponCode: couponApplied ? couponCode : undefined,
+        ...(isUpgraded && selectedUpgradePlan && {
+          upgradePlanId: selectedUpgradePlan.id,
+          upgradeBillingCycle: selectedDuration,
+        }),
       });
 
       if (!initiateRes.success || !initiateRes.data) {
@@ -855,6 +905,33 @@ export default function ServiceCheckoutScreen() {
     } catch (error: any) {
       await clearPendingOrder();
 
+      if (error?.details?.code === 'LIMIT_EXCEEDED') {
+        Alert.alert(
+          "Free Quota Used Up",
+          "You've used all your free bookings for this service this month.\n\nYou can still book — standard rates apply, or upgrade your plan for more free visits.",
+          [
+            {
+              text: "Book at Standard Rate",
+              onPress: () => {
+                setIsPaidBookingOverride(true);
+                handlePay(true);
+              }
+            },
+            {
+              text: "Upgrade Plan",
+              onPress: () => {
+                router.push("/plans");
+              }
+            },
+            {
+              text: "Not Now",
+              style: "cancel"
+            }
+          ]
+        );
+        return;
+      }
+
       if (error?.code === 0) {
         setFlowState("cancelled");
         await cancelPaymentOnBackend();
@@ -897,6 +974,16 @@ export default function ServiceCheckoutScreen() {
     selectedAddress,
     colors.primary,
     colors.textWhite,
+    isUpgraded,
+    eligiblePlans,
+    selectedPlanIndex,
+    selectedUpgradePlan,
+    selectedDuration,
+    savingsInfo,
+    isZeroPayment,
+    category,
+    t,
+    isPaidBookingOverride,
   ]);
 
   return (
@@ -1440,7 +1527,7 @@ export default function ServiceCheckoutScreen() {
           )}
 
           {/* Checkout Membership Upgrade Card (Swiggy One style) */}
-          {HOME_CATEGORIES.includes(category) && !hasActivePlanForCategory && homemakerPlans.length > 0 && (
+          {(HOME_CATEGORIES.includes(category) || CARE_CATEGORIES.includes(category)) && !hasActivePlanForCategory && eligiblePlans.length > 0 && (
             <View style={[styles.card, styles.upgradeCard]}>
               <TouchableOpacity
                 style={styles.upgradeHeader}
@@ -1453,7 +1540,11 @@ export default function ServiceCheckoutScreen() {
                   color={colors.primary}
                 />
                 <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text style={styles.upgradeTitle}>🏠 Upgrade to Home Essentials</Text>
+                  <Text style={styles.upgradeTitle}>
+                    {CARE_CATEGORIES.includes(category)
+                      ? "🩺 Upgrade to Care Membership"
+                      : "🏠 Upgrade to Home Essentials"}
+                  </Text>
                   {savingsInfo && savingsInfo.totalSavings > 0 ? (
                     <Text style={[styles.upgradeSaveText, { color: colors.primary }]}>
                       Save ₹{savingsInfo.totalSavings} on this booking!
@@ -1472,12 +1563,40 @@ export default function ServiceCheckoutScreen() {
                     <Text style={styles.waiverItem}>✓ GST on Fees Waived</Text>
                   </View>
 
+                  {eligiblePlans.length > 1 && (
+                    <>
+                      <Text style={styles.planSelectorLabel}>Select Plan Option:</Text>
+                      <View style={styles.planSelector}>
+                        {eligiblePlans.map((plan, idx) => (
+                          <TouchableOpacity
+                            key={plan.id}
+                            style={[
+                              styles.planSelectorBtn,
+                              selectedPlanIndex === idx && styles.planSelectorBtnActive,
+                            ]}
+                            onPress={() => setSelectedPlanIndex(idx)}
+                            activeOpacity={0.8}
+                          >
+                            <Text
+                              style={[
+                                styles.planSelectorText,
+                                selectedPlanIndex === idx && styles.planSelectorTextActive,
+                              ]}
+                            >
+                              {plan.name}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </>
+                  )}
+
                   <Text style={styles.durationSelectorLabel}>Select Plan Duration:</Text>
                   <View style={styles.durationSelector}>
                     {[
-                      { key: 'QUARTERLY' as BillingCycle, label: '3 Months', price: homemakerPlans[0]?.quarterlyPrice },
-                      { key: 'BIANNUAL' as BillingCycle, label: '6 Months', price: homemakerPlans[0]?.biannualPrice },
-                      { key: 'YEARLY' as BillingCycle, label: '12 Months', price: homemakerPlans[0]?.yearlyPrice },
+                      { key: 'QUARTERLY' as BillingCycle, label: '3 Months', price: selectedUpgradePlan?.quarterlyPrice },
+                      { key: 'BIANNUAL' as BillingCycle, label: '6 Months', price: selectedUpgradePlan?.biannualPrice },
+                      { key: 'YEARLY' as BillingCycle, label: '12 Months', price: selectedUpgradePlan?.yearlyPrice },
                     ].map(dur => (
                       <TouchableOpacity
                         key={dur.key}
@@ -1536,7 +1655,7 @@ export default function ServiceCheckoutScreen() {
             <View style={styles.footer}>
               <TouchableOpacity
                 style={[styles.payBtn, payLoading && styles.payBtnLoading]}
-                onPress={handlePay}
+                onPress={() => handlePay()}
                 disabled={payLoading}
                 activeOpacity={0.85}
               >
@@ -2009,6 +2128,39 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) =>
     },
     durationPriceActive: {
       fontFamily: Fonts.semiBold,
+      color: colors.primary,
+    },
+    planSelectorLabel: {
+      fontFamily: Fonts.medium,
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 8,
+    },
+    planSelector: {
+      flexDirection: "row",
+      gap: 8,
+      marginTop: 4,
+    },
+    planSelectorBtn: {
+      flex: 1,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+      paddingVertical: Spacing.sm ?? 8,
+      alignItems: "center",
+      backgroundColor: colors.bgCard,
+    },
+    planSelectorBtnActive: {
+      borderColor: colors.primary,
+      backgroundColor: isDarkMode ? "rgba(4, 131, 87, 0.1)" : "#E6F4EE",
+    },
+    planSelectorText: {
+      fontFamily: Fonts.medium,
+      fontSize: 12,
+      color: colors.textDark,
+    },
+    planSelectorTextActive: {
+      fontFamily: Fonts.bold,
       color: colors.primary,
     },
   });

@@ -61,8 +61,20 @@ const createSubscription = async (req, res, next) => {
                 autoRenew: autoRenew || false,
                 status: status || 'ACTIVE',
             },
-            include: { plan: true, user: { select: { id: true, name: true, phone: true, smsEnabled: true } } },
+            include: { plan: { include: { planBenefits: true } }, user: { select: { id: true, name: true, phone: true, smsEnabled: true } } },
         });
+
+        if (subscription.status === 'ACTIVE' && subscription.plan?.planBenefits?.length > 0) {
+            await prisma.subscriptionUsage.createMany({
+                data: subscription.plan.planBenefits.map(b => ({
+                    subscriptionId: subscription.id,
+                    serviceCategory: b.serviceCategory,
+                    totalAllocated: b.freeCount,
+                    usedCount: 0,
+                    lockedCount: 0,
+                })),
+            });
+        }
 
         // WhatsApp PAYMENT_RECEIVED + DLT SMS PAYMENT_RECEIVED — non-fatal
         if (subscription.user?.phone && (status || 'ACTIVE') === 'ACTIVE') {
@@ -682,6 +694,11 @@ const executeTransition = async (req, res, next) => {
             const startDate = new Date();
             const expiryDate = calculateExpiryDate(startDate, newBillingCycle);
 
+            const newPlanWithBenefits = await tx.plan.findUnique({
+                where: { id: newPlanId },
+                include: { planBenefits: true }
+            });
+
             const newSubscription = await tx.subscription.create({
                 data: {
                     userId: req.user.id,
@@ -693,6 +710,18 @@ const executeTransition = async (req, res, next) => {
                     status: 'ACTIVE',
                 },
             });
+
+            if (newPlanWithBenefits?.planBenefits?.length > 0) {
+                await tx.subscriptionUsage.createMany({
+                    data: newPlanWithBenefits.planBenefits.map(b => ({
+                        subscriptionId: newSubscription.id,
+                        serviceCategory: b.serviceCategory,
+                        totalAllocated: b.freeCount,
+                        usedCount: 0,
+                        lockedCount: 0,
+                    })),
+                });
+            }
 
             return newSubscription;
         });
@@ -1264,6 +1293,18 @@ const getUpgradeHistory = async (req, res, next) => {
     }
 };
 
+// GET /api/subscriptions/my-benefits
+const getMyBenefits = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const { getRemainingUsage } = require('../services/subscriptionBenefit.service');
+        const benefits = await getRemainingUsage(userId);
+        sendResponse(res, 200, benefits);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getSubscriptions, createSubscription, initiateUserSubscription, verifyUserSubscription,
     pauseSubscription, resumeSubscription, extendSubscription,
@@ -1271,6 +1312,7 @@ module.exports = {
     checkUserActiveSubscription, calculateAdjustment, executeTransition, executeRenew,
     // New membership enhancement
     getMemberships, getAvailableUpgrades, calculateUpgrade, executeUpgrade,
-    scheduleDowngrade, getUpgradeHistory, cancelDowngrade,
+    scheduleDowngrade, getUpgradeHistory, cancelDowngrade, getMyBenefits
 };
+
 

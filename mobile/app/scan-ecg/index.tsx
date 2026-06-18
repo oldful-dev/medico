@@ -137,6 +137,7 @@ export default function ScanEcgScreen() {
                     bookingPayload,
                     amount: String(servicePrice),
                     label: 'Scan & ECG',
+                    serviceSlug: 'scan-ecg',
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId })
                 },
             });

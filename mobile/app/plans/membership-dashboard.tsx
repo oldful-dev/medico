@@ -34,6 +34,7 @@ function MembershipCard({ sub, onUpgrade, onRenew }: {
     onUpgrade: () => void;
     onRenew: () => void;
 }) {
+    const router = useRouter();
     const { t } = useTranslation();
     const colors = useThemeColors();
     const { isDarkMode } = useTheme();
@@ -98,6 +99,19 @@ function MembershipCard({ sub, onUpgrade, onRenew }: {
                             : t('membership.expires_on', { date: formatDate(sub.expiryDate) })}
                     </Text>
                 </View>
+
+                {/* Benefits link */}
+                {!isExpired && (
+                    <TouchableOpacity 
+                        style={S.benefitsLink} 
+                        onPress={() => router.push('/plans/benefits' as any)}
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons name="gift-outline" size={15} color={colors.primary} />
+                        <Text style={S.benefitsLinkText}>{t('membership.view_benefits', 'View Plan Benefits & Usage')}</Text>
+                        <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+                    </TouchableOpacity>
+                )}
 
                 {/* Action buttons */}
                 <View style={S.actions}>
@@ -300,6 +314,8 @@ const cardStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
     downgradeNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, backgroundColor: dark ? '#2D1F00' : '#FEF3C7', borderRadius: 8, padding: 10, marginBottom: 10 },
     downgradeText:   { fontFamily: Fonts.medium, fontSize: 12, color: dark ? '#FCD34D' : '#92400E', flex: 1, lineHeight: 17 },
     actions:         { flexDirection: 'column', gap: 10 },
+    benefitsLink:    { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 14, backgroundColor: dark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', borderRadius: 12, marginBottom: 14, borderWidth: 1, borderColor: colors.borderLight },
+    benefitsLinkText: { fontFamily: Fonts.semiBold, fontSize: 12, color: colors.primary, flex: 1, textAlignVertical: 'center', includeFontPadding: false },
     btn:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: Radius.lg },
     upgradeBtn:      { backgroundColor: `${colors.primary}12`, borderWidth: 1.5, borderColor: colors.primary },
     renewBtn:        { backgroundColor: colors.primary },

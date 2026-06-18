@@ -20,6 +20,7 @@ import { useCart } from '@/context/CartContext';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
+import { planService, Plan, BillingCycle } from '@/services/api/planService';
 
 // ─── Payment Flow States (for debugging & recovery) ──────
 type PaymentFlowState = 'idle' | 'creating_booking' | 'initiating_order' | 'checkout_opened' | 'verifying' | 'success' | 'failed' | 'cancelled';
@@ -132,6 +133,132 @@ export default function CheckoutScreen() {
     const baseAmount = isCategoryAll ? (bloodTestBaseAmount + wellnessBaseAmount) : parseFloat(params.amount ?? '0');
     const label  = params.label ?? 'Service Booking';
 
+    const [calculatedPrices, setCalculatedPrices] = useState<{
+        totalAmount: number;
+        taxPercentage?: number;
+        requiredPlanType?: 'CARE' | 'HOMEMAKER' | null;
+        breakdown: {
+            vendorFee: number;
+            diagnosticFee: number;
+            bookingFee: number;
+            platformFee: number;
+            taxes: number;
+            ayuxaServiceFee: number;
+            benefitDiscount: number;
+            convenienceFee?: number;
+            emergencyFee?: number;
+            visitFee?: number;
+            nightCharge?: number;
+            surgeCharge?: number;
+        };
+        benefitApplied: boolean;
+    } | null>(null);
+
+    const CARE_CATEGORIES = [
+        "DOCTOR_HOME_VISIT", "DOCTOR_VISIT", "TELECONSULT",
+        "HOME_NURSE", "NURSE_VISIT", "CAREGIVER_VISIT", "CAREGIVER",
+        "HOSPITAL_TRIP", "HOSPITAL_ACCOMPANIMENT", "TRANSPORTATION", "PICKUP_DROP",
+        "BLOOD_TEST", "SCAN_ECG", "DIAGNOSTICS",
+        "PHYSIO_FITNESS",
+        "COMPANIONSHIP_CALL", "COMPANIONSHIP", "SPIRITUAL_ESCORT",
+        "MEDICINE_DELIVERY",
+        "LOCAL_MEETUP", "MEETUP",
+        "PHONE_SUPPORT", "SOS",
+        "BASE_PLAN", "CARE_MANAGER", "FAMILY_PORTAL",
+    ];
+    const HOME_CATEGORIES = [
+        "HANDYMEN", "ZERO_SERVICE_FEE",
+        "BILL_PAYMENT", "TECH_SUPPORT", "TECH_HELPER",
+        "GROCERY_ASSIST", "GROCERY_RUN",
+        "PAPERWORK_ASSIST", "BANK_PAPERWORK", "PAPER_LEGAL", "PAPERWORK_LEGAL",
+        "DEEP_CLEANING", "SANITATION", "HOME_AUDIT", "CUSTOM_REQUEST", "ANYTHING_ELSE",
+    ];
+
+    const serviceCategory = params.bookingPayload ? mapLabelToCategory(label) : (isBloodTest ? 'BLOOD_TEST' : 'OTHER');
+    const category = serviceCategory.toUpperCase();
+    const upsellPlanType: 'CARE' | 'HOMEMAKER' | null = (calculatedPrices?.requiredPlanType as any) || (
+        CARE_CATEGORIES.includes(category)
+            ? "CARE"
+            : HOME_CATEGORIES.includes(category)
+                ? "HOMEMAKER"
+                : null
+    );
+
+    const [isPaidBookingOverride, setIsPaidBookingOverride] = useState(false);
+    const hasActivePlanForCategoryRaw = profile?.subscriptions?.some(
+        (s: any) =>
+            s.status === "ACTIVE" &&
+            ((upsellPlanType === "CARE" && (s.plan?.planType === "CARE" || s.planType === "CARE" || s.category === "CARE")) ||
+             (upsellPlanType === "HOMEMAKER" && (s.plan?.planType === "HOMEMAKER" || s.planType === "HOMEMAKER" || s.category === "HOMEMAKER")))
+    ) ?? false;
+    const hasActivePlanForCategory = hasActivePlanForCategoryRaw && !isPaidBookingOverride;
+
+    const [eligiblePlans, setEligiblePlans] = useState<Plan[]>([]);
+    const [loadingEligiblePlans, setLoadingEligiblePlans] = useState(false);
+    const [isUpgraded, setIsUpgraded] = useState(false);
+    const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
+    const [selectedDuration, setSelectedDuration] = useState<BillingCycle>("QUARTERLY");
+
+    const selectedUpgradePlan = eligiblePlans[selectedPlanIndex] || null;
+    const [savingsInfo, setSavingsInfo] = useState<{
+        bookingFeeWaived: number;
+        platformFeeWaived: number;
+        gstWaived: number;
+        totalSavings: number;
+        finalPayable: number;
+        bookingTotalWithoutUpgrade: number;
+        bookingTotalWithUpgrade: number;
+        planPrice: number;
+    } | null>(null);
+    const [savingsLoading, setSavingsLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchEligiblePlans = async () => {
+            if (hasActivePlanForCategory || !upsellPlanType) return;
+            try {
+                setLoadingEligiblePlans(true);
+                const res = await planService.getPlansByType(upsellPlanType);
+                if (res.success && res.data) {
+                    setEligiblePlans(res.data);
+                    setSelectedPlanIndex(0);
+                }
+            } catch (e) {
+                console.warn("Failed to fetch eligible plans:", e);
+            } finally {
+                setLoadingEligiblePlans(false);
+            }
+        };
+        fetchEligiblePlans();
+    }, [category, hasActivePlanForCategory, upsellPlanType]);
+
+    useEffect(() => {
+        const recalculateSavings = async () => {
+            if (!isUpgraded || !selectedUpgradePlan) {
+                setSavingsInfo(null);
+                return;
+            }
+            try {
+                setSavingsLoading(true);
+                const fee = isBloodTest ? bloodTestBaseAmount : baseAmount;
+                const res = await paymentService.calculateMembershipSavings({
+                    serviceCategory: category,
+                    vendorFee: fee,
+                    diagnosticFee: 0,
+                    planId: selectedUpgradePlan.id,
+                    billingCycle: selectedDuration,
+                });
+                if (res.success && res.data) {
+                    setSavingsInfo(res.data);
+                }
+            } catch (e) {
+                console.warn("Failed to calculate membership savings:", e);
+            } finally {
+                setSavingsLoading(false);
+            }
+        };
+        recalculateSavings();
+    }, [isUpgraded, selectedDuration, baseAmount, bloodTestBaseAmount, isBloodTest, selectedUpgradePlan, category]);
+
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(isSubscription ? 'UPI' : 'UPI');
     const [couponCode,     setCouponCode]     = useState('');
     const [couponApplied,  setCouponApplied]  = useState(false);
@@ -199,25 +326,6 @@ export default function CheckoutScreen() {
 
     // Benefit calculation state
     const [calcLoading, setCalcLoading] = useState(false);
-    const [calculatedPrices, setCalculatedPrices] = useState<{
-        totalAmount: number;
-        taxPercentage?: number;
-        breakdown: {
-            vendorFee: number;
-            diagnosticFee: number;
-            bookingFee: number;
-            platformFee: number;
-            taxes: number;
-            ayuxaServiceFee: number;
-            benefitDiscount: number;
-            convenienceFee?: number;
-            emergencyFee?: number;
-            visitFee?: number;
-            nightCharge?: number;
-            surgeCharge?: number;
-        };
-        benefitApplied: boolean;
-    } | null>(null);
 
     useEffect(() => {
         if (params.bookingPayload || (isBloodTest && !isSubscription)) {
@@ -259,7 +367,8 @@ export default function CheckoutScreen() {
     const extraFeesSum = bookingFee + platformFee + convenienceFee + emergencyFee + visitFee + nightCharge + surgeCharge;
     const displayServiceFee = calculatedPrices ? calculatedPrices.breakdown.vendorFee : baseAmount;
 
-    const serviceCategory = params.bookingPayload ? mapLabelToCategory(label) : (isBloodTest ? 'BLOOD_TEST' : 'OTHER');
+    // serviceCategory is already defined above
+
     const isHomeEssentialService = 
         serviceCategory === 'HOME_ESSENTIALS' || 
         serviceCategory === 'PLUMBING_ELECTRICAL' || 
@@ -289,7 +398,7 @@ export default function CheckoutScreen() {
     const taxes = isSubscription ? 0 : (calculatedPrices ? calculatedPrices.breakdown.taxes : fallbackTax);
     
     // Original charges before waiver (for displaying stroke-through / FREE)
-    const showWaiver = benefitApplied || (isSubscription && !!params.bookingPayload);
+    const showWaiver = benefitApplied || (isSubscription && !!params.bookingPayload) || isUpgraded;
     const originalBookingFee = showWaiver 
         ? (calculatedPrices?.benefitApplied 
             ? (Math.abs(calculatedPrices.breakdown.benefitDiscount) > 50 ? Math.abs(calculatedPrices.breakdown.benefitDiscount) - 50 : 299)
@@ -312,9 +421,15 @@ export default function CheckoutScreen() {
         ? baseAmount
         : (calculatedPrices ? calculatedPrices.totalAmount : (baseAmount + extraFeesSum + taxes));
 
-    const amountWithTaxAndFee = isLegacyService
-        ? legacyServiceTotal
-        : ((isBloodTest ? bloodTestTotal : 0) + (isWellness ? wellnessTotal : 0));
+    const amountWithTaxAndFee = isUpgraded && savingsInfo
+        ? savingsInfo.finalPayable
+        : (isLegacyService
+            ? legacyServiceTotal
+            : ((isBloodTest ? bloodTestTotal : 0) + (isWellness ? wellnessTotal : 0)));
+
+    const displayTaxes = isUpgraded && savingsInfo
+        ? Math.max(0, taxes - savingsInfo.gstWaived)
+        : taxes;
 
     const [finalAmount,    setFinalAmount]    = useState(Math.round(amountWithTaxAndFee));
 
@@ -698,6 +813,10 @@ export default function CheckoutScreen() {
                 amount: finalAmount,
                 paymentMethod: selectedMethod,
                 couponCode: couponApplied ? couponCode : undefined,
+                ...(isUpgraded && selectedUpgradePlan && {
+                    upgradePlanId: selectedUpgradePlan.id,
+                    upgradeBillingCycle: selectedDuration,
+                }),
             };
 
             if (isBloodTest) {
@@ -1048,7 +1167,7 @@ export default function CheckoutScreen() {
                                         )}
                                         <View style={styles.breakdownRow}>
                                             <Text style={styles.breakdownLabel}>{t('checkout.taxes_gst', 'Taxes & GST')} ({taxRateDisplay}%)</Text>
-                                            <Text style={styles.breakdownValue}>{rupee}{taxes.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</Text>
+                                            <Text style={styles.breakdownValue}>{rupee}{displayTaxes.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</Text>
                                         </View>
                                     </>
                                 )}
@@ -1180,7 +1299,7 @@ export default function CheckoutScreen() {
                                         )}
                                         <View style={styles.breakdownRow}>
                                             <Text style={styles.breakdownLabel}>{t('checkout.taxes_gst', 'Taxes & GST')} ({taxRateDisplay}%)</Text>
-                                            <Text style={styles.breakdownValue}>{rupee}{taxes.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</Text>
+                                            <Text style={styles.breakdownValue}>{rupee}{displayTaxes.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</Text>
                                         </View>
                                     </>
                                 )}
@@ -1247,6 +1366,111 @@ export default function CheckoutScreen() {
                         </View>
                     )}
                 </View>
+
+                {/* Checkout Membership Upgrade Card (Swiggy One style) */}
+                {upsellPlanType && !hasActivePlanForCategory && eligiblePlans.length > 0 && (
+                    <View style={[styles.card, styles.upgradeCard]}>
+                        <TouchableOpacity
+                            style={styles.upgradeHeader}
+                            onPress={() => setIsUpgraded(!isUpgraded)}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons
+                                name={isUpgraded ? "checkbox" : "square-outline"}
+                                size={24}
+                                color={colors.primary}
+                            />
+                            <View style={{ flex: 1, marginLeft: 10 }}>
+                                <Text style={styles.upgradeTitle}>
+                                    {CARE_CATEGORIES.includes(category)
+                                        ? "🩺 Upgrade to Care Membership"
+                                        : "🏠 Upgrade to Home Essentials"}
+                                </Text>
+                                {savingsInfo && savingsInfo.totalSavings > 0 ? (
+                                    <Text style={[styles.upgradeSaveText, { color: colors.primary }]}>
+                                        Save ₹{savingsInfo.totalSavings} on this booking!
+                                    </Text>
+                                ) : (
+                                    <Text style={styles.upgradeSubtitle}>Get ₹0 booking & platform fees instantly</Text>
+                                )}
+                            </View>
+                        </TouchableOpacity>
+
+                        {isUpgraded && (
+                            <View style={styles.upgradeDetails}>
+                                <View style={styles.waiverList}>
+                                    <Text style={styles.waiverItem}>✓ Booking Fee Waived</Text>
+                                    <Text style={styles.waiverItem}>✓ Platform Fee Waived</Text>
+                                    <Text style={styles.waiverItem}>✓ GST on Fees Waived</Text>
+                                </View>
+
+                                {eligiblePlans.length > 1 && (
+                                    <>
+                                        <Text style={styles.planSelectorLabel}>Select Plan Option:</Text>
+                                        <View style={styles.planSelector}>
+                                            {eligiblePlans.map((plan, idx) => (
+                                                <TouchableOpacity
+                                                    key={plan.id}
+                                                    style={[
+                                                        styles.planSelectorBtn,
+                                                        selectedPlanIndex === idx && styles.planSelectorBtnActive,
+                                                    ]}
+                                                    onPress={() => setSelectedPlanIndex(idx)}
+                                                    activeOpacity={0.8}
+                                                >
+                                                    <Text
+                                                        style={[
+                                                            styles.planSelectorText,
+                                                            selectedPlanIndex === idx && styles.planSelectorTextActive,
+                                                        ]}
+                                                    >
+                                                        {plan.name}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    </>
+                                )}
+
+                                <Text style={styles.durationSelectorLabel}>Select Plan Duration:</Text>
+                                <View style={styles.durationSelector}>
+                                    {[
+                                        { key: 'QUARTERLY' as BillingCycle, label: '3 Months', price: selectedUpgradePlan?.quarterlyPrice },
+                                        { key: 'BIANNUAL' as BillingCycle, label: '6 Months', price: selectedUpgradePlan?.biannualPrice },
+                                        { key: 'YEARLY' as BillingCycle, label: '12 Months', price: selectedUpgradePlan?.yearlyPrice },
+                                    ].map(dur => (
+                                        <TouchableOpacity
+                                            key={dur.key}
+                                            style={[
+                                                styles.durationBtn,
+                                                selectedDuration === dur.key && styles.durationBtnActive,
+                                            ]}
+                                            onPress={() => setSelectedDuration(dur.key)}
+                                            activeOpacity={0.8}
+                                        >
+                                            <Text
+                                                style={[
+                                                    styles.durationText,
+                                                    selectedDuration === dur.key && styles.durationTextActive,
+                                                ]}
+                                            >
+                                                {dur.label}
+                                            </Text>
+                                            <Text
+                                                style={[
+                                                    styles.durationPrice,
+                                                    selectedDuration === dur.key && styles.durationPriceActive,
+                                                ]}
+                                            >
+                                                ₹{dur.price}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+                    </View>
+                )}
 
                 {/* Blood Test: Collection Date & Time */}
                 {isBloodTest && (
@@ -1928,5 +2152,122 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         fontFamily: Fonts.semiBold,
         fontSize: 14,
         color: '#FFFFFF',
+    },
+    upgradeCard: {
+        borderColor: colors.primary,
+        borderWidth: 1.5,
+        backgroundColor: isDarkMode ? 'rgba(4, 131, 87, 0.05)' : '#F0FDF4',
+        marginHorizontal: 16,
+        padding: 16,
+        marginTop: 16,
+    },
+    upgradeHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    upgradeTitle: {
+        fontFamily: Fonts.bold,
+        fontSize: 16,
+        color: colors.textDark,
+    },
+    upgradeSubtitle: {
+        fontFamily: Fonts.regular,
+        fontSize: 12,
+        color: colors.textMuted,
+        marginTop: 2,
+    },
+    upgradeSaveText: {
+        fontFamily: Fonts.bold,
+        fontSize: 13,
+        marginTop: 2,
+    },
+    upgradeDetails: {
+        marginTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: colors.borderLight,
+        paddingTop: 16,
+        gap: 16,
+    },
+    waiverList: {
+        gap: 6,
+    },
+    waiverItem: {
+        fontFamily: Fonts.semiBold,
+        fontSize: 13,
+        color: isDarkMode ? colors.primary : '#15803d',
+    },
+    durationSelectorLabel: {
+        fontFamily: Fonts.medium,
+        fontSize: 12,
+        color: colors.textMuted,
+    },
+    durationSelector: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    durationBtn: {
+        flex: 1,
+        borderRadius: Radius.md,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        paddingVertical: 12,
+        alignItems: 'center',
+        backgroundColor: colors.bgCard,
+    },
+    durationBtnActive: {
+        borderColor: colors.primary,
+        backgroundColor: isDarkMode ? 'rgba(4, 131, 87, 0.1)' : '#E6F4EE',
+    },
+    durationText: {
+        fontFamily: Fonts.medium,
+        fontSize: 12,
+        color: colors.textDark,
+    },
+    durationTextActive: {
+        fontFamily: Fonts.bold,
+        color: colors.primary,
+    },
+    durationPrice: {
+        fontFamily: Fonts.regular,
+        fontSize: 11,
+        color: colors.textMuted,
+        marginTop: 2,
+    },
+    durationPriceActive: {
+        fontFamily: Fonts.semiBold,
+        color: colors.primary,
+    },
+    planSelectorLabel: {
+        fontFamily: Fonts.medium,
+        fontSize: 12,
+        color: colors.textMuted,
+        marginTop: 8,
+    },
+    planSelector: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 4,
+    },
+    planSelectorBtn: {
+        flex: 1,
+        borderRadius: Radius.md,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        paddingVertical: 8,
+        alignItems: 'center',
+        backgroundColor: colors.bgCard,
+    },
+    planSelectorBtnActive: {
+        borderColor: colors.primary,
+        backgroundColor: isDarkMode ? 'rgba(4, 131, 87, 0.1)' : '#E6F4EE',
+    },
+    planSelectorText: {
+        fontFamily: Fonts.medium,
+        fontSize: 12,
+        color: colors.textDark,
+    },
+    planSelectorTextActive: {
+        fontFamily: Fonts.bold,
+        color: colors.primary,
     },
 });

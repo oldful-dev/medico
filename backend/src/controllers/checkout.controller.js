@@ -132,7 +132,7 @@ exports.calculateCheckout = async (req, res) => {
         }
 
         // Only check for a matching-category subscription
-        if (requiredPlanType && isSubscriptionEligible) {
+        if (requiredPlanType && isSubscriptionEligible && !req.body.isPaidBooking) {
             const activeSubscription = await prisma.subscription.findFirst({
                 where: {
                     userId,

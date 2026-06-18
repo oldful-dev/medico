@@ -390,6 +390,7 @@ export default function DoctorVisitScreen() {
                     bookingPayload,
                     amount: String(servicePrice),
                     label: serviceName || 'Doctor Home Visit',
+                    serviceSlug: 'doctor-home-visit',
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });

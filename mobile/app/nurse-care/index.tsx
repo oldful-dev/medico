@@ -255,6 +255,7 @@ export default function BookNursingCareScreen() {
                     bookingPayload,
                     amount: String(servicePrice),
                     label: serviceName,
+                    serviceSlug: 'home-nurse',
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });

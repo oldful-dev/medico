@@ -45,10 +45,12 @@ function getPriceForCycle(plan: Plan, cycle: BillingCycle): number {
 
 // ─── benefitCode → icon map ───────────────────────────────────────────────────
 const BENEFIT_ICON_MAP: Record<string, string> = {
+    BASE_PLAN: '✨',
     SOS: '🚨',
     TELECONSULT: '🩺',
     COMPANIONSHIP_CALL: '🤝',
     MEDICINE: '💊',
+    MEDICINE_DELIVERY: '💊',
     BLOOD_TEST: '🧪',
     PHONE_SUPPORT: '📞',
     FAMILY_PORTAL: '👨‍👩‍👧',
@@ -103,13 +105,13 @@ function getBenefitCodeFromFeatureText(feature: string): string {
     const f = feature.toLowerCase();
     if (f.includes('sos') || f.includes('emergency')) return 'SOS';
     if (f.includes('doctor') || f.includes('teleconsult') || f.includes('physician')) return 'TELECONSULT';
-    if (f.includes('medicine') || f.includes('delivery')) return 'MEDICINE';
+    if (f.includes('medicine') || f.includes('delivery')) return 'MEDICINE_DELIVERY';
     if (f.includes('blood') || f.includes('test') || f.includes('lab') || f.includes('diagnostic')) return 'BLOOD_TEST';
-    if (f.includes('support') || f.includes('call') || f.includes('phone')) return 'SUPPORT';
-    if (f.includes('caregiver') || f.includes('companion') || f.includes('visit')) return 'CAREGIVER';
-    if (f.includes('nurse')) return 'NURSE';
+    if (f.includes('support') || f.includes('call') || f.includes('phone')) return 'PHONE_SUPPORT';
+    if (f.includes('caregiver') || f.includes('companion') || f.includes('visit')) return 'CAREGIVER_VISIT';
+    if (f.includes('nurse')) return 'NURSE_VISIT';
     if (f.includes('audit') || f.includes('home')) return 'HOME_AUDIT';
-    if (f.includes('grocery') || f.includes('errand')) return 'GROCERY';
+    if (f.includes('grocery') || f.includes('errand')) return 'GROCERY_ASSIST';
     return 'DEFAULT';
 }
 
@@ -207,9 +209,16 @@ function BillingToggle({
     colors: ThemeColors;
     dark: boolean;
 }) {
+    const { t } = useTranslation();
+    const billingCyclesTrans = [
+        { key: 'QUARTERLY' as BillingCycle, label: t('plans.quarterly'), suffix: t('plans.quarterly_suffix'), months: 3 },
+        { key: 'BIANNUAL' as BillingCycle,  label: t('plans.biannually'), suffix: t('plans.biannually_suffix'), months: 6 },
+        { key: 'YEARLY' as BillingCycle,    label: t('plans.yearly'), suffix: t('plans.yearly_suffix'), months: 12 },
+    ];
+
     return (
         <View style={[billingStyles.row, { backgroundColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(4,131,87,0.06)' }]}>
-            {BILLING_CYCLES.map(cycle => {
+            {billingCyclesTrans.map(cycle => {
                 const isActive = cycle.key === activeCycle;
                 return (
                     <TouchableOpacity
@@ -276,6 +285,7 @@ interface PlanCardProps {
 }
 
 function PlanCard({ plan, activeCycle, activeSub, isInitiating, onChoose, colors, dark, planIndex, planType }: PlanCardProps) {
+    const { t } = useTranslation();
     const price = getPriceForCycle(plan, activeCycle);
     const isActivePlan = activeSub?.planId === plan.id;
     const hasActiveSub = !!activeSub;
@@ -292,12 +302,12 @@ function PlanCard({ plan, activeCycle, activeSub, isInitiating, onChoose, colors
     const cycleInfo = BILLING_CYCLES.find(c => c.key === activeCycle)!;
 
     const btnLabel = isActivePlan
-        ? '✓ Current Plan'
+        ? t('plans.current_plan')
         : hasActiveSub && !isActivePlan
-            ? 'Already Subscribed'
+            ? t('plans.already_subscribed')
             : isInitiating
                 ? ''
-                : 'Subscribe Now';
+                : t('plans.subscribe_now');
 
     const btnDisabled = isActivePlan || (hasActiveSub && !isActivePlan) || isInitiating;
 
@@ -316,7 +326,7 @@ function PlanCard({ plan, activeCycle, activeSub, isInitiating, onChoose, colors
                 </View>
                 {isActivePlan && (
                     <View style={planCardStyles.activeBadge}>
-                        <Text style={planCardStyles.activeBadgeText}>ACTIVE</Text>
+                        <Text style={planCardStyles.activeBadgeText}>{t('plans.active_plan_banner')}</Text>
                     </View>
                 )}
             </View>
@@ -331,12 +341,12 @@ function PlanCard({ plan, activeCycle, activeSub, isInitiating, onChoose, colors
                         </Text>
                     </View>
                     <Text style={[planCardStyles.pricePer, { color: dark ? 'rgba(255,255,255,0.45)' : '#9CA3AF' }]}>
-                        per {cycleInfo.suffix}
+                        {t('plans.per_cycle', { suffix: activeCycle === 'QUARTERLY' ? '3 mo' : activeCycle === 'BIANNUAL' ? '6 mo' : '12 mo' })}
                     </Text>
                 </View>
                 <View style={[planCardStyles.durationPill, { backgroundColor: `${palette.accent}18`, borderColor: `${palette.accent}35` }]}>
                     <Text style={[planCardStyles.durationText, { color: palette.accent }]}>
-                        {cycleInfo.months === 3 ? '90 days' : cycleInfo.months === 6 ? '180 days' : '365 days'}
+                        {t('plans.days_suffix', { days: cycleInfo.months === 3 ? '90' : cycleInfo.months === 6 ? '180' : '365' })}
                     </Text>
                 </View>
             </View>
@@ -396,7 +406,7 @@ function PlanCard({ plan, activeCycle, activeSub, isInitiating, onChoose, colors
             {planType === 'HOMEMAKER' && (
                 <View style={[planCardStyles.disclaimerBox, { backgroundColor: dark ? 'rgba(255,255,255,0.05)' : '#F3F4F6' }]}>
                     <Text style={[planCardStyles.disclaimerText, { color: dark ? 'rgba(255,255,255,0.5)' : '#6B7280' }]}>
-                        Only Ayuxa service charges are waived. Vendor charges, spare parts, labour charges, and third-party costs remain payable by the client.
+                        {t('plans.home_disclaimer')}
                     </Text>
                 </View>
             )}
@@ -575,25 +585,26 @@ const planCardStyles = StyleSheet.create({
 
 // ─── Transit Care Card (for Home Essential section) ───────────────────────────
 function TransitCareCard({ colors, dark, onPress }: { colors: ThemeColors; dark: boolean; onPress: () => void }) {
+    const { t } = useTranslation();
     return (
         <View style={[transitCareStyles.card, { width: CARD_WIDTH, backgroundColor: dark ? '#1A1C28' : '#FAFAFA', borderColor: dark ? 'rgba(255,255,255,0.08)' : '#E5E7EB' }]}>
             <View style={transitCareStyles.header}>
-                <Text style={transitCareStyles.badge}>ON DEMAND</Text>
+                <Text style={transitCareStyles.badge}>{t('plans.on_demand')}</Text>
                 <Text style={[transitCareStyles.title, { color: dark ? '#fff' : '#111827' }]}>
-                    Ayuxa Transit Care
+                    {t('plans.transit_care_title')}
                 </Text>
                 <Text style={[transitCareStyles.subtitle, { color: dark ? 'rgba(255,255,255,0.55)' : '#6B7280' }]}>
-                    Get medical accompaniment, spiritual escort, or leisure travels with fully trained caregivers.
+                    {t('plans.transit_care_subtitle')}
                 </Text>
             </View>
 
             {/* Price Section Placeholder to align with subscription cards but showing on-demand status */}
             <View style={[transitCareStyles.priceRow, { borderColor: dark ? 'rgba(255,255,255,0.07)' : '#F3F4F6' }]}>
                 <Text style={[transitCareStyles.priceLabel, { color: dark ? 'rgba(255,255,255,0.45)' : '#9CA3AF' }]}>
-                    Type
+                    {t('cart.item')}
                 </Text>
                 <Text style={[transitCareStyles.price, { color: colors.primary }]}>
-                    Pay per trip
+                    {t('plans.pay_per_trip')}
                 </Text>
             </View>
 
@@ -604,19 +615,19 @@ function TransitCareCard({ colors, dark, onPress }: { colors: ThemeColors; dark:
                 nestedScrollEnabled={true}
             >
                 {[
-                    { category: 'Medical Transit', features: [
-                        { code: 'GROCERY', text: 'End-to-End Booking' },
-                        { code: 'CAREGIVER', text: 'Transit Companion' },
-                        { code: 'SUPPORT', text: 'Medical Dossier' },
-                        { code: 'HOME_AUDIT', text: 'Destination Coordination' },
-                        { code: 'MEDICINE', text: 'Medication Management' },
+                    { category: t('plans.medical_transit_title'), features: [
+                        { code: 'TICKET', text: t('plans.transit_feat_booking') },
+                        { code: 'WHEELCHAIR', text: t('plans.transit_feat_companion') },
+                        { code: 'FOLDER', text: t('plans.transit_feat_dossier') },
+                        { code: 'MAP_PIN', text: t('plans.transit_feat_coordination') },
+                        { code: 'CLOCK', text: t('plans.transit_feat_medication') },
                     ]},
-                    { category: 'Spiritual & Leisure', features: [
-                        { code: 'GROCERY', text: 'End-to-End Booking' },
-                        { code: 'SUPPORT', text: 'Crowd Assistance' },
-                        { code: 'GROCERY', text: 'Dietary Adherence' },
-                        { code: 'TELECONSULT', text: 'Paced Itinerary' },
-                        { code: 'HOME_AUDIT', text: 'Destination Coordination' },
+                    { category: t('plans.spiritual_leisure_title'), features: [
+                        { code: 'TICKET', text: t('plans.transit_feat_booking') },
+                        { code: 'USERS', text: t('plans.transit_feat_crowd') },
+                        { code: 'APPLE', text: t('plans.transit_feat_dietary') },
+                        { code: 'COFFEE', text: t('plans.transit_feat_itineraries') },
+                        { code: 'SHIELD', text: t('plans.transit_feat_dest_coordination') },
                     ]}
                 ].map((cat, catIdx) => (
                     <View key={catIdx} style={{ marginBottom: 12 }}>
@@ -643,7 +654,7 @@ function TransitCareCard({ colors, dark, onPress }: { colors: ThemeColors; dark:
                 activeOpacity={0.8}
             >
                 <Text style={[transitCareStyles.ctaText, { color: '#fff' }]}>
-                    Request Now
+                    {t('plans.request_now')}
                 </Text>
                 <Ionicons name="arrow-forward" size={16} color="#fff" />
             </TouchableOpacity>
@@ -949,6 +960,7 @@ export default function PlansScreen() {
     const colors = useThemeColors();
     const { benefits } = useAppConfig();
     const S = makeStyles(colors, isDarkMode);
+    const { t } = useTranslation();
 
     const [userActiveSubscriptions, setUserActiveSubscriptions] = useState<any[]>([]);
     const [initiating, setInitiating] = useState<string | null>(null);
@@ -995,7 +1007,7 @@ export default function PlansScreen() {
     // Handle plan selection — check auth, dynamic cycle price, then initiate
     const handleChoosePlan = useCallback(async (plan: Plan) => {
         if (!profile) {
-            Alert.alert('Login Required', 'Please login to subscribe to a plan.');
+            Alert.alert(t('plans.login_required'), t('plans.login_required_desc'));
             return;
         }
 
@@ -1004,8 +1016,8 @@ export default function PlansScreen() {
         if (activeSubForCategory) {
             if ((plan.tierLevel ?? 0) < (activeSubForCategory.tierLevel ?? 0)) {
                 Alert.alert(
-                    'Active Plan',
-                    'You currently have an active membership. Downgrades can only be processed through support after your current plan expires.',
+                    t('plans.downgrade_blocked_title'),
+                    t('plans.downgrade_blocked_msg'),
                     [{ text: 'OK' }]
                 );
                 return;
@@ -1013,8 +1025,8 @@ export default function PlansScreen() {
             if (activeSubForCategory.planId === plan.id) {
                 const expiry = new Date(activeSubForCategory.expiryDate).toLocaleDateString();
                 Alert.alert(
-                    'Already Subscribed',
-                    `You are already on ${activeSubForCategory.planName ?? plan.name} until ${expiry}. Visit your membership dashboard to renew or upgrade.`,
+                    t('plans.already_subscribed'),
+                    t('plans.active_plan_desc', { planName: activeSubForCategory.planName ?? plan.name, expiry }),
                     [
                         { text: 'Go to Dashboard', onPress: () => router.push('/plans/membership-dashboard' as any) },
                         { text: 'OK', style: 'cancel' },
@@ -1026,7 +1038,7 @@ export default function PlansScreen() {
 
         const price = getPriceForCycle(plan, activeCycle);
         if (!price || price <= 0) {
-            Alert.alert('Not Available', 'This plan is currently not available for subscription.');
+            Alert.alert(t('plans.unavailable'), t('plans.unavailable_desc'));
             return;
         }
 
@@ -1039,11 +1051,11 @@ export default function PlansScreen() {
             });
 
             if (!subRes.success || !subRes.data) {
-                Alert.alert('Error', subRes.message ?? 'Failed to initiate subscription. Please try again.');
+                Alert.alert(t('plans.error'), subRes.message ?? t('plans.subscribe_error'));
                 return;
             }
 
-            const cycleLabel = activeCycle === 'QUARTERLY' ? 'Quarterly' : activeCycle === 'BIANNUAL' ? 'Biannually' : 'Yearly';
+            const cycleLabel = activeCycle === 'QUARTERLY' ? t('plans.quarterly') : activeCycle === 'BIANNUAL' ? t('plans.biannually') : t('plans.yearly');
 
             router.push({
                 pathname: '/payment/checkout',
@@ -1058,18 +1070,18 @@ export default function PlansScreen() {
                 },
             });
         } catch (e: any) {
-            Alert.alert('Error', e?.message || 'An error occurred. Please try again.');
+            Alert.alert(t('plans.error'), e?.message || t('plans.initiate_error'));
         } finally {
             setInitiating(null);
         }
-    }, [profile, userActiveSubscriptions, activeCycle, router]);
+    }, [profile, userActiveSubscriptions, activeCycle, router, t]);
 
     const CARE_ROTATING_SUBTITLES = [
-        'Your health. Our absolute priority.',
-        'Next gen care, delivered with a human touch.',
-        'Smart elder care. Genuine peace of mind.',
+        t('plans.care_subtitle_1'),
+        t('plans.care_subtitle_2'),
+        t('plans.care_subtitle_3'),
     ];
-    const HOME_TITLES = ['Home Essential Plans'];
+    const HOME_TITLES = [t('plans.home_title')];
 
     return (
         <View style={S.screen}>
@@ -1082,8 +1094,8 @@ export default function PlansScreen() {
                     <Ionicons name="arrow-back" size={22} color="#fff" />
                 </TouchableOpacity>
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                    <Text style={S.headerTitle}>Ayuxa Plans</Text>
-                    <Text style={S.headerSub}>Value plans for peace of mind</Text>
+                    <Text style={S.headerTitle}>{t('plans.tab_title')}</Text>
+                    <Text style={S.headerSub}>{t('plans.value_plans_subtitle')}</Text>
                 </View>
                 <TouchableOpacity style={S.backBtn} onPress={() => router.push('/plans/membership-dashboard' as any)}>
                     <Ionicons name="card-outline" size={20} color="#fff" />
@@ -1105,7 +1117,7 @@ export default function PlansScreen() {
                 {/* ─── Section 1: Ayuxa Care Plans ─── */}
                 <PlanSection
                     planType="CARE"
-                    superTitle="Value Plans for Peace of Mind"
+                    superTitle={t('plans.care_super_title')}
                     titles={CARE_ROTATING_SUBTITLES}
                     accentColor="#048357"
                     activeSub={careActiveSub}
@@ -1126,7 +1138,7 @@ export default function PlansScreen() {
                     >
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                             <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
-                            <Text style={[S.policyTitle, { color: colors.textDark }]}>Plan Usage Policy</Text>
+                            <Text style={[S.policyTitle, { color: colors.textDark }]}>{t('plans.plan_usage_policy')}</Text>
                         </View>
                         <Ionicons
                             name={policyExpanded ? 'chevron-up' : 'chevron-down'}
@@ -1137,7 +1149,7 @@ export default function PlansScreen() {
                     {policyExpanded && (
                         <View style={[S.policyContentBox, { borderTopColor: isDarkMode ? 'rgba(255,255,255,0.08)' : '#E5E7EB' }]}>
                             <Text style={[S.policyContentText, { color: colors.textMuted }]}>
-                                Monthly and quarterly benefits operate on a use-it-or-lose-it basis. Unused visits and entitlements do not roll over to the next billing cycle.
+                                {t('plans.policy_content')}
                             </Text>
                         </View>
                     )}
@@ -1155,7 +1167,7 @@ export default function PlansScreen() {
                 {/* ─── Section 2: Home Essential Plans ─── */}
                 <PlanSection
                     planType="HOMEMAKER"
-                    superTitle="Empower Independent Living"
+                    superTitle={t('plans.home_super_title')}
                     titles={HOME_TITLES}
                     accentColor="#6366F1"
                     activeSub={homemakerActiveSub}
@@ -1170,7 +1182,7 @@ export default function PlansScreen() {
                 {/* ─── Why Subscribe ─── */}
                 {benefits && benefits.length > 0 && (
                     <>
-                        <Text style={[S.whyTitle, { color: colors.textDark }]}>Why Ayuxa?</Text>
+                        <Text style={[S.whyTitle, { color: colors.textDark }]}>{t('plans.why_ayuxa')}</Text>
                         <View style={[S.whyCard, { backgroundColor: isDarkMode ? '#1A2332' : '#fff', borderColor: isDarkMode ? 'rgba(255,255,255,0.06)' : '#F3F4F6' }]}>
                             {benefits.map((benefit: any) => (
                                 <View key={benefit.id} style={S.whyRow}>
@@ -1202,8 +1214,8 @@ export default function PlansScreen() {
                         <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
                     </View>
                     <View style={{ flex: 1 }}>
-                        <Text style={[S.dashLinkTitle, { color: colors.textDark }]}>My Memberships</Text>
-                        <Text style={[S.dashLinkSub, { color: colors.textMuted }]}>View, renew, and manage your plans</Text>
+                        <Text style={[S.dashLinkTitle, { color: colors.textDark }]}>{t('plans.my_memberships')}</Text>
+                        <Text style={[S.dashLinkSub, { color: colors.textMuted }]}>{t('plans.manage_plans')}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                 </TouchableOpacity>
@@ -1216,7 +1228,7 @@ export default function PlansScreen() {
                             onPress={() => setTermsExpanded(!termsExpanded)}
                             activeOpacity={0.7}
                         >
-                            <Text style={[S.termsTitle, { color: colors.textDark }]}>{terms.title || 'Terms & Conditions'}</Text>
+                            <Text style={[S.termsTitle, { color: colors.textDark }]}>{terms.title || t('plans.terms_conditions_title')}</Text>
                             <Ionicons
                                 name={termsExpanded ? 'chevron-up' : 'chevron-down'}
                                 size={18}

@@ -22,6 +22,14 @@ export default {
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CALL_PHONE"
+      ],
+      "queries": [
+        {
+          "scheme": "tel"
+        }
+      ],
       "config": {
         "googleMaps": {
           "apiKey": process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
