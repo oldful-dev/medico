@@ -107,7 +107,56 @@ const resolveRoute = (route?: string, id?: string) => {
   return route.replace(/oldful/gi, 'ayuxa').replace(/ayuxacare/gi, 'ayuxa');
 };
 
-const translateServiceLabel = (id: string, fallbackLabel: string, t: any) => {
+const translateServiceLabel = (id: string, fallbackLabel: string, t: any, lang: string = 'en') => {
+  if (fallbackLabel) {
+    const trimmed = fallbackLabel.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed[lang]) return parsed[lang];
+        if (parsed['en']) return parsed['en'];
+      } catch (e) {
+        // ignore and fallback
+      }
+    }
+  }
+
+  // If the admin changed it from the default, use the fallbackLabel directly
+  const defaultEnglishLabels: Record<string, string> = {
+    'doctor_quick': 'Doctor\nVisit',
+    'nurse_quick': 'Nurse &\nAide',
+    'hospital_quick': 'Hospital\nVisit',
+    'physio_quick': 'Physio',
+    'blood_test': 'Blood\nWork',
+    'scan_ecg': 'Scan &\nECG',
+    'medicines': 'Medicine',
+    'insurance': 'Insurance',
+    'fitness': 'Fitness',
+    'equipment': 'Equipment',
+    'caregiver': 'Caregiver\nSupport',
+    'emergency': 'Emergency\nAssist',
+    'meal': 'Meal\nService',
+    'ac_repair': 'AC\nRepair',
+    'plumbing': 'Plumbing',
+    'cleaning': 'Cleaning',
+    'driver': 'Driver',
+    'bills': 'Bills',
+    'bank': 'Bank\nWork',
+    'grocery': 'Gro-\ncery',
+    'anything': 'Anything\nElse',
+    'paper_legal': 'Paper &\nLegal',
+    'trip_travel': 'Trip &\nTravel',
+    'tech_helper': 'Tech\nHelper',
+    'smart_upgrade': 'Smart\nUpgrade',
+  };
+
+  const normalizedId = id.toLowerCase();
+  const defaultVal = defaultEnglishLabels[normalizedId];
+
+  if (fallbackLabel && defaultVal && fallbackLabel.replace(/\s+/g, '') !== defaultVal.replace(/\s+/g, '')) {
+    return fallbackLabel;
+  }
+
   const keyMap: Record<string, string> = {
     'doctor': 'services.doctor_visit',
     'nursing': 'services.nurse_care',
@@ -142,35 +191,83 @@ const translateServiceLabel = (id: string, fallbackLabel: string, t: any) => {
     'scan_ecg': 'services.scan_ecg',
   };
 
-  const key = keyMap[id.toLowerCase()];
+  const key = keyMap[normalizedId];
   if (key && t(key) !== key) {
     return t(key);
   }
   return fallbackLabel;
 };
 
-const translateSectionTitle = (id: string, fallbackTitle: string, t: any) => {
+const translateSectionTitle = (id: string, fallbackTitle: string, t: any, lang: string = 'en') => {
+  if (fallbackTitle) {
+    const trimmed = fallbackTitle.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed[lang]) return parsed[lang];
+        if (parsed['en']) return parsed['en'];
+      } catch (e) { }
+    }
+  }
+
+  const defaultTitles: Record<string, string> = {
+    'quick_services': 'Quick Services',
+    'ayuxa_services': 'Diagnostics & Fitness',
+    'essentials': 'Home Essentials Services',
+  };
+
+  const normalizedId = id.toLowerCase();
+  const defaultVal = defaultTitles[normalizedId];
+
+  if (fallbackTitle && defaultVal && fallbackTitle.replace(/\s+/g, '') !== defaultVal.replace(/\s+/g, '')) {
+    return fallbackTitle;
+  }
+
   const keyMap: Record<string, string> = {
     'quick_services': 'home.section_quick_services',
     'ayuxa_services': 'home.section_ayuxa_services',
     'essentials': 'home.section_essentials',
   };
 
-  const key = keyMap[id.toLowerCase()];
+  const key = keyMap[normalizedId];
   if (key && t(key) !== key) {
     return t(key);
   }
   return fallbackTitle;
 };
 
-const translateTrustBadgeLabel = (id: string, fallbackLabel: string, t: any) => {
+const translateTrustBadgeLabel = (id: string, fallbackLabel: string, t: any, lang: string = 'en') => {
+  if (fallbackLabel) {
+    const trimmed = fallbackLabel.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed[lang]) return parsed[lang];
+        if (parsed['en']) return parsed['en'];
+      } catch (e) { }
+    }
+  }
+
+  const defaultBadges: Record<string, string> = {
+    'support': '24/7 Support',
+    'caregivers': 'Verified Caregivers',
+    'family': 'Family-first Care',
+  };
+
+  const normalizedId = id.toLowerCase();
+  const defaultVal = defaultBadges[normalizedId];
+
+  if (fallbackLabel && defaultVal && fallbackLabel.replace(/\s+/g, '') !== defaultVal.replace(/\s+/g, '')) {
+    return fallbackLabel;
+  }
+
   const keyMap: Record<string, string> = {
     'support': 'home.trust_support',
     'caregivers': 'home.trust_caregivers',
     'family': 'home.trust_family',
   };
 
-  const key = keyMap[id.toLowerCase()];
+  const key = keyMap[normalizedId];
   if (key && t(key) !== key) {
     return t(key);
   }
@@ -190,15 +287,16 @@ function QuickServicesStrip({ section, colors }: QuickServicesProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const s = makeStyles(colors);
+  const { preferredLanguage } = useUser();
   return (
     <View style={s.quickServiceCard}>
       {section.services.map((item, index) => {
-        const translatedLabel = translateServiceLabel(item.id, item.label, t);
-        const [line1, line2] = translatedLabel.split('\n');
+        const translatedLabel = translateServiceLabel(item.id, item.label, t, preferredLanguage);
+        const [line1, line2] = translatedLabel.replace(/\\n/g, '\n').split('\n');
         return (
           <TouchableOpacity
             key={item.id}
-            style={[s.quickServiceBox, index === 0 && { backgroundColor: 'transparent' }]}
+            style={s.quickServiceBox}
             onPress={() => router.push(resolveRoute(item.route, item.id) as any)}
           >
             <Image source={{ uri: getAssetUrl(item.icon) }} style={s.quickServiceIcon} resizeMode="contain" />
@@ -224,7 +322,7 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors }: Se
   const router = useRouter();
   const s = makeStyles(colors);
   const [expanded, setExpanded] = useState(false);
-  const { services } = useUser();
+  const { services, preferredLanguage } = useUser();
 
   // Find all active dynamic Diagnostics & Fitness services from database
   const dbDynamicServices = services
@@ -252,12 +350,12 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors }: Se
   return (
     <View style={s.servicesCard}>
       <View style={s.sectionHeader}>
-        <Text style={s.sectionTitle}>{translateSectionTitle(section.id, section.title, t)}</Text>
+        <Text style={s.sectionTitle}>{translateSectionTitle(section.id, section.title, t, preferredLanguage)}</Text>
       </View> 
       <View style={s.serviceGrid}>
         {visibleItems.map(item => {
-          const translatedLabel = translateServiceLabel(item.id, item.label, t);
-          const [line1, line2] = translatedLabel.split('\n');
+          const translatedLabel = translateServiceLabel(item.id, item.label, t, preferredLanguage);
+          const [line1, line2] = translatedLabel.replace(/\\n/g, '\n').split('\n');
           return (
             <TouchableOpacity
               key={item.id}
@@ -317,17 +415,28 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGr
   const { t } = useTranslation();
   const router = useRouter();
   const s = makeStyles(colors);
-  const { services } = useUser();
+  const { services, preferredLanguage } = useUser();
+
+  const enabledRoutesOrSlugs = new Set(
+    (section.services || []).map(s => {
+      const r = (s.route || '').toLowerCase().trim();
+      const slug = r.startsWith('/') ? r.slice(1) : r;
+      return [r, slug];
+    }).flat()
+  );
 
   // Filter and sort active Home Essentials services from database
   const dbServices = services
     .filter(
       sv =>
         sv.serviceType === "HOME_ESSENTIALS" &&
+        sv.isEnabled &&
         sv.slug !== "home-essentials" &&
         sv.slug !== "smart-upgrade" &&
         sv.slug !== "trip-travels" &&
-        sv.slug !== "bank-paperwork"
+        sv.slug !== "bank-paperwork" &&
+        (enabledRoutesOrSlugs.has((sv.route || '').toLowerCase().trim()) || 
+         enabledRoutesOrSlugs.has(sv.slug.toLowerCase().trim()))
     )
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
@@ -354,7 +463,7 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGr
   return (
     <View style={s.essentialsCard}>
       <View style={s.sectionHeader}>
-        <Text style={s.essentialsTitle}>{translateSectionTitle(section.id, section.title, t)}</Text>
+        <Text style={s.essentialsTitle}>{translateSectionTitle(section.id, section.title, t, preferredLanguage)}</Text>
         {section.view_all_route && (
           <TouchableOpacity onPress={() => router.push(resolveRoute(section.view_all_route) as any)}>
             <Text style={s.viewAllSmall}>{t('common.view_all')}</Text>
@@ -367,9 +476,8 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGr
             if (item.isDummy) {
               return <View key={item.id} style={{ width: itemWidth, height: 0 }} />;
             }
-            const key = item.slug ? item.slug.replace(/-/g, "_") : "";
-            const displayLabel = key ? t(`services.${key}`, item.label) : item.label;
-            const [line1, line2] = displayLabel.split('\n');
+            const displayLabel = translateServiceLabel(item.id, item.label, t, preferredLanguage);
+            const [line1, line2] = displayLabel.replace(/\\n/g, '\n').split('\n');
             return (
               <TouchableOpacity
                 key={item.id}
@@ -398,6 +506,7 @@ interface TrustBadgesProps {
 function TrustBadges({ badges, colors }: TrustBadgesProps) {
   const { t } = useTranslation();
   const s = makeStyles(colors);
+  const { preferredLanguage } = useUser();
   return (
     <View style={s.trustCard}>
       {badges.map((badge, i) => (
@@ -406,7 +515,7 @@ function TrustBadges({ badges, colors }: TrustBadgesProps) {
             <View style={s.trustIconCircle}>
               <Image source={{ uri: getAssetUrl(badge.icon) }} style={s.trustIcon} resizeMode="contain" />
             </View>
-            <Text style={s.trustLabel}>{translateTrustBadgeLabel(badge.id, badge.label, t)}</Text>
+            <Text style={s.trustLabel}>{translateTrustBadgeLabel(badge.id, badge.label, t, preferredLanguage)}</Text>
           </View>
           {i < badges.length - 1 && <View style={s.trustDivider} />}
         </React.Fragment>
@@ -415,13 +524,14 @@ function TrustBadges({ badges, colors }: TrustBadgesProps) {
   );
 }
 
+
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const { profile, selectedCity, setSelectedCity } = useUser();
+  const { profile, selectedCity, setSelectedCity, services, refreshData } = useUser();
   const { cities } = useAppConfig();
   const colors = useThemeColors();
   const { isDarkMode } = useTheme();
@@ -455,6 +565,9 @@ export default function HomeScreen() {
     sduiService.init()
       .then(() => setHomeConfig(sduiService.getHomeConfig()))
       .catch(() => {});
+
+    // Refresh database services catalog as well
+    refreshData().catch(() => {});
 
     // ── 2. Banners — parallel, background ─────────────────────────────────────
     bannerService.getHomeBanners()
@@ -504,7 +617,7 @@ export default function HomeScreen() {
         setFeaturedMeetup(null);
       }
     })();
-  }, [cities, setSelectedCity]);
+  }, [cities, setSelectedCity, refreshData]);
 
   useEffect(() => {
     refetchAllHomeData();
@@ -717,7 +830,7 @@ export default function HomeScreen() {
         )}
 
         {/* Home Essentials Services (Grid) */}
-        {essentialsSection && (
+        {essentialsSection && (services.find(s => s.slug === "home-essentials")?.isEnabled ?? true) && (
           <EssentialsGrid
             section={essentialsSection}
             itemWidth={exactEssentialItemWidth}

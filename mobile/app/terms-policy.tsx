@@ -21,13 +21,13 @@ export default function TermsPolicyScreen() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchTermsAndConditions();
+        fetchMasterAgreement();
     }, []);
 
-    const fetchTermsAndConditions = async () => {
+    const fetchMasterAgreement = async () => {
         setLoading(true);
         try {
-            const res = await legalService.getTermsAndConditions();
+            const res = await legalService.getPublishedDocument('AYUXA_S_MASTER_AGREEMENT');
             if (res.success && res.data) {
                 setDocument(res.data);
             } else {
@@ -52,7 +52,7 @@ export default function TermsPolicyScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={Colors.textWhite} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('legal.terms_conditions')}</Text>
+                <Text style={styles.headerTitle}>Ayuxa&apos;s Master Agreement</Text>
             </View>
 
             {loading ? (
@@ -64,7 +64,7 @@ export default function TermsPolicyScreen() {
                 <View style={styles.center}>
                     <Ionicons name="alert-circle-outline" size={64} color={Colors.textMuted} />
                     <Text style={styles.errorText}>{t('legal.failed_load')}</Text>
-                    <TouchableOpacity style={styles.retryButton} onPress={fetchTermsAndConditions}>
+                    <TouchableOpacity style={styles.retryButton} onPress={fetchMasterAgreement}>
                         <Text style={styles.retryButtonText}>{t('legal.try_again')}</Text>
                     </TouchableOpacity>
                 </View>

@@ -6,10 +6,14 @@ const ctrl = require('../controllers/appConfig.controller');
 
 // Public — mobile app fetches on startup (no auth)
 router.get('/', ctrl.getAppConfig);
+router.get('/home', ctrl.getHomeConfig);
 
 // Admin only
 router.put('/',       authenticateAdmin, authorize('SUPER_ADMIN'), ctrl.updateAppConfig);
 router.post('/reset', authenticateAdmin, authorize('SUPER_ADMIN'), ctrl.resetAppConfig);
 router.get('/default',authenticateAdmin, authorize('SUPER_ADMIN'), ctrl.getDefaultConfig);
+
+router.put('/home',       authenticateAdmin, authorize('SUPER_ADMIN'), ctrl.updateHomeConfig);
+router.post('/home/reset', authenticateAdmin, authorize('SUPER_ADMIN'), ctrl.resetHomeConfig);
 
 module.exports = router;

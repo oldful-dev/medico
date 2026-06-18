@@ -15,13 +15,18 @@ export interface Plan {
     planType?: string;        // 'CARE', 'HOMEMAKER'
     tierLevel?: number;       // 0=Basic, 1=Premium, 2=VIP
     description?: string;
-    benefits?: string;
+    benefits?: string;        // Free-text fallback description (admin-typed)
     quarterlyPrice: number;
     biannualPrice: number;
     yearlyPrice: number;
     isVisible: boolean;
     sortOrder: number;
     billingCycles?: PlanBillingCycle[];
+    /** Structured benefit rows — the authoritative record of per-category counts.
+     *  Returned by GET /api/plans/by-category/:planType.
+     *  Use these to display feature lines when available; fall back to `benefits` text otherwise.
+     */
+    planBenefits?: PlanBenefit[];
 }
 
 export interface PlanBillingCycle {
@@ -30,6 +35,24 @@ export interface PlanBillingCycle {
     durationMonths: number;
     price: number;
     discountPercentage: number;
+}
+
+/** V2 structured benefit row — maps one DB PlanBenefit row.
+ *  `benefitCode` is the canonical identifier (e.g. SOS, TELECONSULT).
+ *  Icons are mapped client-side from benefitCode — never stored in DB.
+ */
+export interface PlanBenefit {
+    id: string;
+    planId: string;
+    benefitCode: string;   // SOS | TELECONSULT | MEDICINE | etc.
+    title: string;         // Admin-configured display label
+    description?: string;  // Optional subtitle
+    usageLimit: number;    // 0 = unlimited; N = N uses per usagePeriod
+    usagePeriod: string;   // MONTH | QUARTER | YEAR
+    displayOrder: number;
+    // legacy fields (kept for compat with old rows)
+    serviceCategory?: string;
+    freeCount?: number;
 }
 
 export type BillingCycle = 'QUARTERLY' | 'BIANNUAL' | 'YEARLY' | 'MONTHLY';
@@ -215,5 +238,17 @@ export const planService = {
      */
     cancelSubscription: async (subscriptionId: string): Promise<ApiResponse<any>> => {
         return apiClient.put(`/subscriptions/${subscriptionId}/cancel`);
+    },
+};
+
+// ─── Legal document service (for T&C) ────────────────────────────────────────
+export const legalService = {
+    /**
+     * GET /api/legal?type=SUBSCRIPTION_TERMS
+     * Fetches the published subscription terms & conditions from LegalDocument table.
+     * Returns null if not found.
+     */
+    getSubscriptionTerms: async (): Promise<ApiResponse<{ content: string; title: string } | null>> => {
+        return apiClient.get('/legal?type=SUBSCRIPTION_TERMS');
     },
 };

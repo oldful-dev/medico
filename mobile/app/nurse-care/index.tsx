@@ -461,14 +461,14 @@ export default function BookNursingCareScreen() {
                             <Text style={dynamicStyles.sectionTitle}>{t('nurse_care.duration')}</Text>
 
                             <View style={dynamicStyles.gridRow}>
-                                <TouchableOpacity style={dynamicStyles.durationCard} onPress={() => setSelectedDuration('Short Visit')}>
+                                <TouchableOpacity style={[dynamicStyles.durationCard, selectedDuration === 'Short Visit' && dynamicStyles.cardActive]} onPress={() => setSelectedDuration('Short Visit')}>
                                     <Ionicons name={selectedDuration === 'Short Visit' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === 'Short Visit' ? "#02743F" : "#AAAEAC"} />
                                     <View style={dynamicStyles.durationTextCol}>
                                         <Text style={dynamicStyles.durationTitle}>{t('nurse_care.short_visit')}</Text>
                                         <Text style={dynamicStyles.durationSubtitle}>{t('nurse_care.short_visit_detail')}</Text>
                                     </View>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={dynamicStyles.durationCard} onPress={() => setSelectedDuration('12 Hours (Night Shift)')}>
+                                <TouchableOpacity style={[dynamicStyles.durationCard, selectedDuration === '12 Hours (Night Shift)' && dynamicStyles.cardActive]} onPress={() => setSelectedDuration('12 Hours (Night Shift)')}>
                                     <Ionicons name={selectedDuration === '12 Hours (Night Shift)' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === '12 Hours (Night Shift)' ? "#02743F" : "#AAAEAC"} />
                                     <View style={dynamicStyles.durationTextCol}>
                                         <Text style={dynamicStyles.durationTitle}>{t('nurse_care.twelve_hr_night')}</Text>
@@ -476,13 +476,13 @@ export default function BookNursingCareScreen() {
                                 </TouchableOpacity>
                             </View>
                             <View style={dynamicStyles.gridRow}>
-                                <TouchableOpacity style={dynamicStyles.durationCard} onPress={() => setSelectedDuration('12 Hours (Day Shift)')}>
+                                <TouchableOpacity style={[dynamicStyles.durationCard, selectedDuration === '12 Hours (Day Shift)' && dynamicStyles.cardActive]} onPress={() => setSelectedDuration('12 Hours (Day Shift)')}>
                                     <Ionicons name={selectedDuration === '12 Hours (Day Shift)' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === '12 Hours (Day Shift)' ? "#02743F" : "#AAAEAC"} />
                                     <View style={dynamicStyles.durationTextCol}>
                                         <Text style={dynamicStyles.durationTitle}>{t('nurse_care.twelve_hr_day')}</Text>
                                     </View>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={dynamicStyles.durationCard} onPress={() => setSelectedDuration('24 Hours (Live-in)')}>
+                                <TouchableOpacity style={[dynamicStyles.durationCard, selectedDuration === '24 Hours (Live-in)' && dynamicStyles.cardActive]} onPress={() => setSelectedDuration('24 Hours (Live-in)')}>
                                     <Ionicons name={selectedDuration === '24 Hours (Live-in)' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === '24 Hours (Live-in)' ? "#02743F" : "#AAAEAC"} />
                                     <View style={dynamicStyles.durationTextCol}>
                                         <Text style={dynamicStyles.durationTitle}>{t('nurse_care.twenty_four_hr')}</Text>
@@ -496,17 +496,17 @@ export default function BookNursingCareScreen() {
                             <Text style={dynamicStyles.sectionTitle}>{t('nurse_care.condition')}</Text>
 
                             <View style={dynamicStyles.gridRow}>
-                                <TouchableOpacity style={dynamicStyles.radioCard} onPress={() => setSelectedCondition('Walking/ Mobile')}>
+                                <TouchableOpacity style={[dynamicStyles.radioCard, selectedCondition === 'Walking/ Mobile' && dynamicStyles.cardActive]} onPress={() => setSelectedCondition('Walking/ Mobile')}>
                                     <Ionicons name={selectedCondition === 'Walking/ Mobile' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedCondition === 'Walking/ Mobile' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('nurse_care.walking')}</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={dynamicStyles.radioCard} onPress={() => setSelectedCondition('Bedridden')}>
+                                <TouchableOpacity style={[dynamicStyles.radioCard, selectedCondition === 'Bedridden' && dynamicStyles.cardActive]} onPress={() => setSelectedCondition('Bedridden')}>
                                     <Ionicons name={selectedCondition === 'Bedridden' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedCondition === 'Bedridden' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('nurse_care.bedridden')}</Text>
                                 </TouchableOpacity>
                             </View>
                             <View style={dynamicStyles.gridRow}>
-                                <TouchableOpacity style={dynamicStyles.radioCard} onPress={() => setSelectedCondition('Post-Surgery')}>
+                                <TouchableOpacity style={[dynamicStyles.radioCard, selectedCondition === 'Post-Surgery' && dynamicStyles.cardActive]} onPress={() => setSelectedCondition('Post-Surgery')}>
                                     <Ionicons name={selectedCondition === 'Post-Surgery' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedCondition === 'Post-Surgery' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('nurse_care.post_surgery')}</Text>
                                 </TouchableOpacity>
@@ -519,15 +519,15 @@ export default function BookNursingCareScreen() {
                             <Text style={dynamicStyles.sectionTitle}>{t('nurse_care.gender_pref')}</Text>
 
                             <View style={dynamicStyles.gridRow}>
-                                <TouchableOpacity style={dynamicStyles.radioCardSmall} onPress={() => setSelectedGender('Male')}>
+                                <TouchableOpacity style={[dynamicStyles.radioCardSmall, selectedGender === 'Male' && dynamicStyles.cardActive]} onPress={() => setSelectedGender('Male')}>
                                     <Ionicons name={selectedGender === 'Male' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Male' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('common.male')}</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={dynamicStyles.radioCardSmall} onPress={() => setSelectedGender('Female')}>
+                                <TouchableOpacity style={[dynamicStyles.radioCardSmall, selectedGender === 'Female' && dynamicStyles.cardActive]} onPress={() => setSelectedGender('Female')}>
                                     <Ionicons name={selectedGender === 'Female' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Female' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('common.female')}</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={dynamicStyles.radioCardSmall} onPress={() => setSelectedGender('Any')}>
+                                <TouchableOpacity style={[dynamicStyles.radioCardSmall, selectedGender === 'Any' && dynamicStyles.cardActive]} onPress={() => setSelectedGender('Any')}>
                                     <Ionicons name={selectedGender === 'Any' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Any' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('common.any')}</Text>
                                 </TouchableOpacity>
@@ -856,6 +856,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     staffCardActive: {
         borderWidth: 1.5,
         borderColor: '#0E9757',
+        backgroundColor: isDarkMode ? '#0E9757' : '#E6F4EA',
     },
     staffAvatarContainer: {
         marginRight: 12,
@@ -878,7 +879,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         flexShrink: 1,
     },
     staffTitleActive: {
-        color: '#FFFFFF',
+        color: isDarkMode ? '#FFFFFF' : '#02743F',
     },
     staffSubtitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
@@ -889,7 +890,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         flexShrink: 1,
     },
     staffSubtitleActive: {
-        color: '#FFFFFF',
+        color: isDarkMode ? '#E2E8F0' : '#0B6623',
     },
 
     /* ─── Stacked Variants (New Row Setup) ─── */
@@ -922,6 +923,13 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         fontSize: 14,
         color: isDarkMode ? '#FFFFFF' : '#2F2F2F',
         marginLeft: 12,
+    },
+
+    /* ─── Active Card style for selections ─── */
+    cardActive: {
+        borderColor: '#0E9757',
+        borderWidth: 1.5,
+        backgroundColor: isDarkMode ? 'rgba(14,151,87,0.15)' : '#E6F4EA',
     },
 
     /* ─── Legacy Grid Rows ─── */
@@ -1050,30 +1058,31 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     subSectionTitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 13,
-        color: '#666',
+        color: isDarkMode ? '#CCCCCC' : '#666',
         marginBottom: 8,
     },
     familyChip: {
         borderWidth: 1,
-        borderColor: '#AAAEAC',
+        borderColor: isDarkMode ? '#3A3A3A' : '#AAAEAC',
         borderRadius: 15,
         paddingHorizontal: 12,
         paddingVertical: 6,
         marginRight: 8,
-        backgroundColor: '#FFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF',
     },
     familyChipActive: {
         borderColor: '#02743F',
         borderWidth: 1.5,
-        backgroundColor: 'rgba(2,116,63,0.06)',
+        backgroundColor: isDarkMode ? 'rgba(2,116,63,0.15)' : 'rgba(2,116,63,0.06)',
     },
     familyChipText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 12,
-        color: '#555',
+        color: isDarkMode ? '#CCCCCC' : '#555',
     },
     familyChipTextActive: {
         color: '#02743F',
+        fontWeight: 'bold',
     },
     addFamilyBtn: {
         flexDirection: 'row',
@@ -1089,27 +1098,28 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     addFamilyForm: {
         borderWidth: 1,
-        borderColor: '#DDD',
+        borderColor: isDarkMode ? '#3A3A3A' : '#DDD',
         borderRadius: 8,
         padding: 12,
         marginTop: 12,
-        backgroundColor: '#FFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF',
     },
     formLabel: {
         fontSize: 11,
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: '#777',
+        color: isDarkMode ? '#AAAAAA' : '#777',
         marginBottom: 4,
     },
     formInputInline: {
         borderWidth: 1,
-        borderColor: '#CCC',
+        borderColor: isDarkMode ? '#3A3A3A' : '#CCC',
         borderRadius: 6,
         paddingHorizontal: 8,
         paddingVertical: 6,
         fontSize: 13,
         marginBottom: 8,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#FFFFFF' : '#2F2F2F',
+        backgroundColor: isDarkMode ? '#222222' : '#FFF',
     },
     relationRow: {
         flexDirection: 'row',
@@ -1119,19 +1129,19 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     relationChip: {
         borderWidth: 1,
-        borderColor: '#CCC',
+        borderColor: isDarkMode ? '#3A3A3A' : '#CCC',
         borderRadius: 12,
         paddingHorizontal: 10,
         paddingVertical: 4,
-        backgroundColor: '#FFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF',
     },
     relationChipActive: {
         borderColor: '#02743F',
-        backgroundColor: 'rgba(2,116,63,0.06)',
+        backgroundColor: isDarkMode ? 'rgba(2,116,63,0.15)' : 'rgba(2,116,63,0.06)',
     },
     relationChipText: {
         fontSize: 11,
-        color: '#555',
+        color: isDarkMode ? '#CCCCCC' : '#555',
     },
     relationChipTextActive: {
         color: '#02743F',
@@ -1147,7 +1157,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         paddingVertical: 6,
     },
     cancelFormBtnText: {
-        color: '#777',
+        color: isDarkMode ? '#AAAAAA' : '#777',
         fontSize: 12,
     },
     saveFormBtn: {
@@ -1163,16 +1173,16 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     commentsInput: {
         borderWidth: 1,
-        borderColor: '#CCC',
+        borderColor: isDarkMode ? '#3A3A3A' : '#CCC',
         borderRadius: 9,
         paddingHorizontal: 12,
         paddingVertical: 10,
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 14,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#FFFFFF' : '#2F2F2F',
         minHeight: 72,
         textAlignVertical: 'top',
-        backgroundColor: '#FFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF',
     },
     autoFetchBtn: {
         flexDirection: 'row',
@@ -1193,11 +1203,11 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-start',
         borderWidth: 1,
-        borderColor: '#CCC',
+        borderColor: isDarkMode ? '#3A3A3A' : '#CCC',
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 10,
-        backgroundColor: '#FFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF',
         marginBottom: 8,
     },
     addressIcon: {
@@ -1207,24 +1217,24 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     addressText: {
         flex: 1,
         fontSize: 13,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#FFFFFF' : '#2F2F2F',
         padding: 0,
         textAlignVertical: 'top',
     },
     landmarkInput: {
         borderWidth: 1,
-        borderColor: '#CCC',
+        borderColor: isDarkMode ? '#3A3A3A' : '#CCC',
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 10,
-        backgroundColor: '#FFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF',
         fontSize: 13,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#FFFFFF' : '#2F2F2F',
         marginBottom: 8,
     },
     addressTypeLabel: {
         fontSize: 12,
-        color: '#555',
+        color: isDarkMode ? '#F1F5F9' : '#555555',
         fontWeight: 'bold',
         marginTop: 8,
         marginBottom: 6,
@@ -1236,20 +1246,20 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     addressTypeChip: {
         borderWidth: 1,
-        borderColor: '#CCC',
+        borderColor: isDarkMode ? '#3A3A3A' : '#CCC',
         borderRadius: 6,
         paddingHorizontal: 12,
         paddingVertical: 6,
-        backgroundColor: '#FFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF',
     },
     addressTypeChipActive: {
         borderColor: '#02743F',
         borderWidth: 1.5,
-        backgroundColor: 'rgba(2,116,63,0.06)',
+        backgroundColor: isDarkMode ? 'rgba(2,116,63,0.15)' : 'rgba(2,116,63,0.06)',
     },
     addressTypeChipText: {
         fontSize: 11,
-        color: '#666',
+        color: isDarkMode ? '#CCCCCC' : '#666',
     },
     addressTypeChipTextActive: {
         color: '#02743F',
@@ -1257,12 +1267,13 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     customAddressTypeInput: {
         borderWidth: 1,
-        borderColor: '#CCC',
+        borderColor: isDarkMode ? '#3A3A3A' : '#CCC',
         borderRadius: 6,
         paddingHorizontal: 8,
         paddingVertical: 8,
         fontSize: 13,
-        color: '#2F2F2F',
+        color: isDarkMode ? '#FFFFFF' : '#2F2F2F',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
         marginTop: 4,
         marginBottom: 8,
     },
@@ -1282,7 +1293,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 8,
         gap: 6,
-        backgroundColor: '#FFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF',
     },
     compactUploadText: {
         fontSize: 13,

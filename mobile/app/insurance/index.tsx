@@ -19,6 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { mediaService } from '@/services/api/mediaService';
 import { familyMemberService, FamilyMember } from '@/services/api/familyMemberService';
 import { useUser } from '@/context/UserContext';
+import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 
 // ─── Initial State Constants ───
 const INITIAL_CONDITIONS = [
@@ -58,6 +59,8 @@ export default function InsuranceScreen() {
     const [address, setAddress] = React.useState('');
     const [isBooking, setIsBooking] = React.useState(false);
     const [isLoadingInit, setIsLoadingInit] = React.useState(true);
+    const [selectedAddress, setSelectedAddress] = React.useState<AddressData | null>(null);
+    const [landmark, setLandmark] = React.useState('');
 
     // Fetch family members when profile is loaded
     const fetchFamilyMembers = React.useCallback(async () => {
@@ -129,6 +132,67 @@ export default function InsuranceScreen() {
         })();
     }, []);
 
+    // Sync selectedAddress with initial fetched address on mount or when fetched
+    React.useEffect(() => {
+        if (address && address !== 'Fetching address...' && !selectedAddress) {
+            setSelectedAddress({
+                line1: address,
+                cityName: '',
+                pincode: '',
+                latitude: 28.7041,
+                longitude: 77.1025,
+            });
+        }
+    }, [address]);
+
+    const handleAddressChange = (addr: AddressData) => {
+        setSelectedAddress(addr);
+        setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
+        if (addr.landmark) setLandmark(addr.landmark);
+    };
+
+    // Auto-fill profile address only on mount when GPS address is not available
+    const [addressInitialized, setAddressInitialized] = React.useState(false);
+    React.useEffect(() => {
+        if (addressInitialized) return;
+        const addressEmpty = !address || address === 'Fetching address...' || address === '';
+        if (addressEmpty && profile?.addresses?.length) {
+            const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
+            if (defaultAddr) {
+                const parts = [defaultAddr.line1, defaultAddr.line2, defaultAddr.cityName].filter(Boolean);
+                setAddress(parts.join(', '));
+                if (defaultAddr.landmark) setLandmark(defaultAddr.landmark);
+                setAddressInitialized(true);
+            }
+        }
+        if (!addressEmpty) {
+            setAddressInitialized(true);
+        }
+    }, [profile]);
+
+    const syncAddressToProfile = async (addressText: string, landmarkText: string) => {
+        if (!profile?.id || !addressText.trim()) return;
+        try {
+            const existing = profile.addresses?.find((a: any) => a.isDefault) || profile.addresses?.[0];
+            const payload = {
+                label: existing?.label || 'Home',
+                line1: addressText.trim(),
+                cityName: existing?.cityName || '',
+                state: existing?.state || '',
+                pincode: existing?.pincode || '',
+                landmark: landmarkText.trim() || undefined,
+                isDefault: true,
+            };
+            if (existing?.id) {
+                await userService.updateAddress(profile.id, existing.id, payload);
+            } else {
+                await userService.addAddress(profile.id, payload);
+            }
+        } catch {
+            // non-fatal
+        }
+    };
+
     const handleUploadDocument = async (docType: 'aadhaar' | 'pan') => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
@@ -177,6 +241,9 @@ export default function InsuranceScreen() {
         try {
             setIsBooking(true);
 
+            // Sync address to profile (non-blocking, non-fatal)
+            syncAddressToProfile(address, landmark);
+
             // Upload Aadhaar & PAN Card to GCS
             let aadhaarUrl = '';
             let panUrl = '';
@@ -201,6 +268,8 @@ export default function InsuranceScreen() {
                 cityId,
                 scheduledDate: new Date().toISOString(),
                 addressLine: address || 'Online Consultation',
+                latitude: selectedAddress?.latitude,
+                longitude: selectedAddress?.longitude,
                 formDataJson: {
                     recipient: whoFor === 'Self' ? 'Self' : (selectedFamilyMember?.name || 'Family'),
                     recipientRelation: whoFor === 'Self' ? 'Self' : (selectedFamilyMember?.relation || ''),
@@ -515,7 +584,19 @@ export default function InsuranceScreen() {
                                 </TouchableOpacity>
                             </View>
 
-                            {/* ─── Requirements Text Area ─── */}
+                             {/* ─── Confirm Address Card ─── */}
+                             <AddressPickerSection
+                                 selectedAddress={selectedAddress}
+                                 onAddressChange={handleAddressChange}
+                                 title={t('booking.confirm_address')}
+                                 showPhoneField={false}
+                                 showLandmarkField={true}
+                                 landmark={landmark}
+                                 onLandmarkChange={setLandmark}
+                                 allowManualEntry={true}
+                             />
+
+                             {/* ─── Requirements Text Area ─── */}
                             <Text style={dynamicStyles.requirementsLabel}>{t('insurance.requirements_label')}</Text>
                             <View style={dynamicStyles.textAreaCard}>
                                 <TextInput

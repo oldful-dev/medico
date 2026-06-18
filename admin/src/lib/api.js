@@ -148,6 +148,11 @@ export const planAPI = {
     create: (data) => api.post('/plans', data),
     update: (id, data) => api.put(`/plans/${id}`, data),
     delete: (id) => api.delete(`/plans/${id}`),
+    // Benefit management
+    getBenefits: (planId) => api.get(`/plans/${planId}/benefits`),
+    addBenefit: (planId, data) => api.post(`/plans/${planId}/benefits`, data),
+    updateBenefit: (planId, benefitId, data) => api.put(`/plans/${planId}/benefits/${benefitId}`, data),
+    deleteBenefit: (planId, benefitId) => api.delete(`/plans/${planId}/benefits/${benefitId}`),
 };
 
 // ── Subscriptions ────────────────────────────────────
@@ -246,6 +251,15 @@ export const uiConfigAPI = {
     delete: (id) => api.delete(`/ui-config/${id}`),
 };
 
+export const appConfigAPI = {
+    getConfig: () => api.get('/app-config'),
+    updateConfig: (config) => api.put('/app-config', { config }),
+    resetConfig: () => api.post('/app-config/reset'),
+    getHomeConfig: () => api.get('/app-config/home'),
+    updateHomeConfig: (config) => api.put('/app-config/home', { config }),
+    resetHomeConfig: () => api.post('/app-config/home/reset'),
+};
+
 // ── Reports ──────────────────────────────────────────
 export const reportAPI = {
     dashboard: () => api.get('/reports/dashboard'),
@@ -279,6 +293,7 @@ export const supportAPI = {
 export const mediaAPI = {
     getAll: (params) => api.get('/media', { params }),
     upload: (formData) => api.post('/media/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+    getSignedUrl: (data) => api.post('/media/signed-url', data),
     confirm: (data) => api.post('/media/confirm', data),
     delete: (id) => api.delete(`/media/${id}`),
 };

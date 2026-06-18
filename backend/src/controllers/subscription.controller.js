@@ -438,10 +438,17 @@ const verifyUserSubscription = async (req, res, next) => {
                         data: { status: 'UPGRADED', cancelledAt: new Date() }
                     });
 
+                    const now = new Date();
+                    const newExpiry = calculateExpiryDate(now, subscription.billingCycle);
+
                     // Mark new sub as ACTIVE
                     subscription = await prisma.subscription.update({
                         where: { id: subscription.id },
-                        data: { status: 'ACTIVE' },
+                        data: { 
+                            status: 'ACTIVE',
+                            startDate: now,
+                            expiryDate: newExpiry,
+                        },
                         include: { plan: { include: { planBenefits: true } } }
                     });
 
@@ -458,11 +465,11 @@ const verifyUserSubscription = async (req, res, next) => {
                     }
 
                     // Record Upgrade History
-                    const now = Date.now();
+                    const nowTime = now.getTime();
                     const start = oldSub.startDate.getTime();
                     const expiry = oldSub.expiryDate.getTime();
                     const daysTotal = Math.max(1, Math.round((expiry - start) / (1000 * 60 * 60 * 24)));
-                    const daysRemaining = Math.max(0, Math.round((expiry - now) / (1000 * 60 * 60 * 24)));
+                    const daysRemaining = Math.max(0, Math.round((expiry - nowTime) / (1000 * 60 * 60 * 24)));
                     const dailyRate = oldSub.amount / daysTotal;
                     const creditAmount = Math.round(daysRemaining * dailyRate * 100) / 100;
 
@@ -484,10 +491,17 @@ const verifyUserSubscription = async (req, res, next) => {
                 }
             }
         } else {
+            const now = new Date();
+            const newExpiry = calculateExpiryDate(now, subscription.billingCycle);
+
             // Normal first-time activation
             subscription = await prisma.subscription.update({
                 where: { id: subscriptionId },
-                data: { status: 'ACTIVE' },
+                data: { 
+                    status: 'ACTIVE',
+                    startDate: now,
+                    expiryDate: newExpiry,
+                },
                 include: { plan: { include: { planBenefits: true } } }
             });
 

@@ -777,7 +777,7 @@ export default function ServicesPage() {
                                                     required 
                                                     min={0}
                                                     value={form.basePrice} 
-                                                    onChange={e => setForm({ ...form, basePrice: parseFloat(e.target.value) || 0 })}
+                                                    onChange={e => setForm({ ...form, basePrice: e.target.value })}
                                                 />
                                             </div>
                                             <div className="form-group" style={{ marginBottom: 0 }}>
@@ -814,7 +814,7 @@ export default function ServicesPage() {
                                                     required 
                                                     min={0}
                                                     value={form.basePrice} 
-                                                    onChange={e => setForm({ ...form, basePrice: parseFloat(e.target.value) || 0 })}
+                                                    onChange={e => setForm({ ...form, basePrice: e.target.value })}
                                                 />
                                             </div>
                                             <div className="form-group" style={{ marginBottom: 0 }}>

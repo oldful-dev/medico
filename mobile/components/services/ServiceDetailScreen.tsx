@@ -35,6 +35,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { Colors, Fonts, FontSize, Radius, Shadow } from '@/constants/theme';
 import { useTranslation } from 'react-i18next';
 import { getAssetUrl } from '@/utils/getAssetUrl';
+import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 
 const isEmoji = (str?: string): boolean => {
     if (!str) return false;
@@ -80,6 +81,9 @@ export interface ServiceDetailScreenProps {
     hidePricing?: boolean;
     /** Hide location card (for fully online services) */
     hideLocation?: boolean;
+    /** Address picker support */
+    selectedAddress?: AddressData | null;
+    onAddressChange?: (address: AddressData) => void;
     /** Service-specific form fields rendered between location card and book button */
     children?: React.ReactNode;
 }
@@ -102,8 +106,13 @@ export default function ServiceDetailScreen({
     bookButtonLabel,
     hidePricing = false,
     hideLocation = false,
+    selectedAddress,
+    onAddressChange,
     children,
-}: ServiceDetailScreenProps) {
+}: ServiceDetailScreenProps & {
+    selectedAddress?: AddressData | null;
+    onAddressChange?: (address: AddressData) => void;
+}) {
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -187,27 +196,40 @@ export default function ServiceDetailScreen({
                 {/* ─── Location Card ─── */}
                 {/* Figma: white card, "Location" label, address input row (220w×38h), map thumbnail (69×69) right */}
                 {!hideLocation && (
-                    <View style={dynamicStyles.card}>
-                        <Text style={dynamicStyles.cardTitle}>{t('checkout.address', { defaultValue: 'Location' })}</Text>
-                        <View style={dynamicStyles.locationRow}>
-                            {/* Address input — Figma: 220px wide, 38px tall, 1px border, pin icon left */}
-                            <View style={dynamicStyles.locationInputBox}>
-                                <Ionicons name="location-outline" size={15} color={Colors.primary} style={{ marginRight: 5 }} />
-                                <Text style={dynamicStyles.locationText} numberOfLines={1}>
-                                    {address || t('common.fetching')}
-                                </Text>
-                            </View>
-                            {/* Map — Figma: 69×69, border-radius ~12, right of input */}
-                            <Image source={imgMap} style={dynamicStyles.mapThumb} />
-                        </View>
-                        <TextInput
-                            style={dynamicStyles.landmarkInput}
-                            placeholder={t('checkout.landmark_optional')}
-                            placeholderTextColor={isDarkMode ? '#606060' : '#898989'}
-                            value={landmark}
-                            onChangeText={onLandmarkChange || (() => {})}
+                    selectedAddress !== undefined && onAddressChange !== undefined ? (
+                        <AddressPickerSection
+                            selectedAddress={selectedAddress}
+                            onAddressChange={onAddressChange}
+                            title={t('checkout.address', { defaultValue: 'Location' })}
+                            showPhoneField={false}
+                            showLandmarkField={true}
+                            landmark={landmark}
+                            onLandmarkChange={onLandmarkChange}
+                            allowManualEntry={true}
                         />
-                    </View>
+                    ) : (
+                        <View style={dynamicStyles.card}>
+                            <Text style={dynamicStyles.cardTitle}>{t('checkout.address', { defaultValue: 'Location' })}</Text>
+                            <View style={dynamicStyles.locationRow}>
+                                {/* Address input — Figma: 220px wide, 38px tall, 1px border, pin icon left */}
+                                <View style={dynamicStyles.locationInputBox}>
+                                    <Ionicons name="location-outline" size={15} color={Colors.primary} style={{ marginRight: 5 }} />
+                                    <Text style={dynamicStyles.locationText} numberOfLines={1}>
+                                        {address || t('common.fetching')}
+                                    </Text>
+                                </View>
+                                {/* Map — Figma: 69×69, border-radius ~12, right of input */}
+                                <Image source={imgMap} style={dynamicStyles.mapThumb} />
+                            </View>
+                            <TextInput
+                                style={dynamicStyles.landmarkInput}
+                                placeholder={t('checkout.landmark_optional')}
+                                placeholderTextColor={isDarkMode ? '#606060' : '#898989'}
+                                value={landmark}
+                                onChangeText={onLandmarkChange || (() => {})}
+                            />
+                        </View>
+                    )
                 )}
 
                 {/* ─── Service-specific fields ─── */}

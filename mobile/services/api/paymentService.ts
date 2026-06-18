@@ -33,6 +33,8 @@ export interface InitiatePaymentPayload {
     amount: number;
     paymentMethod?: PaymentMethod;
     couponCode?: string;
+    upgradePlanId?: string;
+    upgradeBillingCycle?: string;
 }
 
 export interface InitiatePaymentResponse {
@@ -199,6 +201,29 @@ export const paymentService = {
         remainingCountAfterOrder: number;
     }>> => {
         return apiClient.post('/checkout/calculate', data);
+    },
+
+    /**
+     * POST /api/checkout/calculate-membership-savings
+     * Calculate membership savings on checkout.
+     */
+    calculateMembershipSavings: async (data: {
+        serviceCategory: string;
+        vendorFee: number;
+        diagnosticFee?: number;
+        planId: string;
+        billingCycle: string;
+    }): Promise<ApiResponse<{
+        bookingFeeWaived: number;
+        platformFeeWaived: number;
+        gstWaived: number;
+        totalSavings: number;
+        finalPayable: number;
+        bookingTotalWithoutUpgrade: number;
+        bookingTotalWithUpgrade: number;
+        planPrice: number;
+    }>> => {
+        return apiClient.post('/checkout/calculate-membership-savings', data);
     },
 };
 

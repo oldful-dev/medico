@@ -31,6 +31,7 @@ import { useThemeColors, ThemeColors } from "@/hooks/use-theme-colors";
 import { useTheme } from "@/context/ThemeContext";
 import { paymentService, PaymentMethod } from "@/services/api/paymentService";
 import { bookingService } from "@/services/api/bookingService";
+import { planService, Plan, BillingCycle } from "@/services/api/planService";
 import { meetupService } from "@/services/api/meetupService";
 import { storageService, STORAGE_KEYS } from "@/services/device/storageService";
 import { useUser } from "@/context/UserContext";
@@ -140,7 +141,9 @@ export default function ServiceCheckoutScreen() {
 
   const baseAmount = parseFloat(params.amount ?? "0");
   const label = params.label ?? "Service Booking";
-  const category = mapLabelToCategory(label);
+  const category = params.serviceSlug
+    ? params.serviceSlug.toUpperCase().replace(/-/g, '_')
+    : mapLabelToCategory(label);
   const isZeroPayment = category === "MEDICINES" || category === "TIFFIN" || label.toLowerCase().includes("physio") || label.toLowerCase().includes("scan") || label.toLowerCase().includes("ecg") || (params.checkoutGroup === 'D' && params.paymentMode !== 'PAID');
 
   // ─── Determine which plan type covers this service (for upsell banner) ────────
@@ -150,6 +153,8 @@ export default function ServiceCheckoutScreen() {
     "PHYSIO_FITNESS",
     "HOSPITAL_TRIP",
     "TRANSPORTATION",
+    "BLOOD_TEST",
+    "SCAN_ECG",
   ];
   const HOME_CATEGORIES = [
     "PLUMBING_ELECTRICAL",
@@ -158,8 +163,10 @@ export default function ServiceCheckoutScreen() {
     "BILL_PAYMENT",
     "BANK_PAPERWORK",
     "LEGAL_PAPERWORK",
+    "PAPERWORK_LEGAL",
     "TECH_HELPER",
     "HOME_ESSENTIALS",
+    "GROCERY_RUN",
   ];
   const upsellPlanType: PlanTypeNeeded | null = CARE_CATEGORIES.includes(category)
     ? "CARE"
@@ -214,6 +221,22 @@ export default function ServiceCheckoutScreen() {
   const [, setFlowState] = useState<PaymentFlowState>("idle");
   const [, setPendingRecovery] = useState(false);
 
+  const [homemakerPlans, setHomemakerPlans] = useState<Plan[]>([]);
+  const [loadingHomemakerPlans, setLoadingHomemakerPlans] = useState(false);
+  const [isUpgraded, setIsUpgraded] = useState(false);
+  const [selectedDuration, setSelectedDuration] = useState<BillingCycle>("QUARTERLY");
+  const [savingsInfo, setSavingsInfo] = useState<{
+    bookingFeeWaived: number;
+    platformFeeWaived: number;
+    gstWaived: number;
+    totalSavings: number;
+    finalPayable: number;
+    bookingTotalWithoutUpgrade: number;
+    bookingTotalWithUpgrade: number;
+    planPrice: number;
+  } | null>(null);
+  const [savingsLoading, setSavingsLoading] = useState(false);
+
   // ─── Address Selection ──────────────────────────────────────────────
   const [selectedAddress, setSelectedAddress] = useState<any>(
     profile?.addresses && profile.addresses.length > 0
@@ -250,6 +273,7 @@ export default function ServiceCheckoutScreen() {
   const [calcLoading, setCalcLoading] = useState(false);
   const [calculatedPrices, setCalculatedPrices] = useState<{
     totalAmount: number;
+    taxPercentage?: number;
     breakdown: {
       vendorFee: number;
       diagnosticFee: number;
@@ -258,6 +282,11 @@ export default function ServiceCheckoutScreen() {
       taxes: number;
       ayuxaServiceFee: number;
       benefitDiscount: number;
+      convenienceFee?: number;
+      emergencyFee?: number;
+      visitFee?: number;
+      nightCharge?: number;
+      surgeCharge?: number;
     };
     benefitApplied: boolean;
   } | null>(null);
@@ -268,8 +297,8 @@ export default function ServiceCheckoutScreen() {
       const fetchCalculation = async () => {
         setCalcLoading(true);
         try {
-          const category = params.isDynamic === "true" && params.serviceSlug
-            ? params.serviceSlug
+          const category = params.serviceSlug
+            ? params.serviceSlug.toUpperCase().replace(/-/g, '_')
             : mapLabelToCategory(label);
           const res = await paymentService.calculateCheckout({
             serviceCategory: category,
@@ -290,7 +319,55 @@ export default function ServiceCheckoutScreen() {
     }
   }, [params.bookingPayload, label, params.isDynamic, params.serviceSlug]);
 
-  const benefitApplied = hasActivePlanForCategory || !!calculatedPrices?.benefitApplied;
+  useEffect(() => {
+    const fetchHomemakerPlans = async () => {
+      if (!HOME_CATEGORIES.includes(category) || hasActivePlanForCategory) return;
+      try {
+        setLoadingHomemakerPlans(true);
+        const res = await planService.getPlansByType("HOMEMAKER");
+        if (res.success && res.data) {
+          setHomemakerPlans(res.data);
+        }
+      } catch (e) {
+        console.warn("Failed to fetch homemaker plans:", e);
+      } finally {
+        setLoadingHomemakerPlans(false);
+      }
+    };
+    fetchHomemakerPlans();
+  }, [category, hasActivePlanForCategory]);
+
+  useEffect(() => {
+    const recalculateSavings = async () => {
+      if (!isUpgraded) {
+        setSavingsInfo(null);
+        return;
+      }
+      const activePlan = homemakerPlans[0];
+      if (!activePlan) return;
+
+      try {
+        setSavingsLoading(true);
+        const res = await paymentService.calculateMembershipSavings({
+          serviceCategory: category,
+          vendorFee: baseAmount,
+          diagnosticFee: 0,
+          planId: activePlan.id,
+          billingCycle: selectedDuration,
+        });
+        if (res.success && res.data) {
+          setSavingsInfo(res.data);
+        }
+      } catch (e) {
+        console.warn("Failed to calculate membership savings:", e);
+      } finally {
+        setSavingsLoading(false);
+      }
+    };
+    recalculateSavings();
+  }, [isUpgraded, selectedDuration, baseAmount, homemakerPlans, category]);
+
+  const benefitApplied = hasActivePlanForCategory || !!calculatedPrices?.benefitApplied || isUpgraded;
 
   const baseBookingFee = isZeroPayment
     ? 0
@@ -299,25 +376,51 @@ export default function ServiceCheckoutScreen() {
     ? 0
     : (calculatedPrices ? calculatedPrices.breakdown.platformFee : 50);
 
-  const bookingFee = hasActivePlanForCategory ? 0 : baseBookingFee;
-  const platformFee = hasActivePlanForCategory ? 0 : basePlatformFee;
+  const bookingFee = (hasActivePlanForCategory || isUpgraded) ? 0 : baseBookingFee;
+  const platformFee = (hasActivePlanForCategory || isUpgraded) ? 0 : basePlatformFee;
 
-  // 18% GST strictly on platform/booking fees (Base service charge is 0% GST)
+  const convenienceFee = calculatedPrices ? (calculatedPrices.breakdown.convenienceFee || 0) : 0;
+  const emergencyFee = calculatedPrices ? (calculatedPrices.breakdown.emergencyFee || 0) : 0;
+  const visitFee = calculatedPrices ? (calculatedPrices.breakdown.visitFee || 0) : 0;
+  const nightCharge = calculatedPrices ? (calculatedPrices.breakdown.nightCharge || 0) : 0;
+  const surgeCharge = calculatedPrices ? (calculatedPrices.breakdown.surgeCharge || 0) : 0;
+
+  const extraFeesSum = bookingFee + platformFee + convenienceFee + emergencyFee + visitFee + nightCharge + surgeCharge;
+  const displayVendorFee = calculatedPrices ? calculatedPrices.breakdown.vendorFee : baseAmount;
+
+  const isHomeEssential = HOME_CATEGORIES.includes(category);
+  const fallbackTaxPercentage = isHomeEssential ? 18 : 6;
+  const taxRate = calculatedPrices ? (calculatedPrices.taxPercentage ?? fallbackTaxPercentage) : fallbackTaxPercentage;
+
   const taxes = isZeroPayment
     ? 0
-    : Math.round((bookingFee + platformFee) * 0.18);
+    : (isUpgraded && savingsInfo
+        ? Math.max(0, (calculatedPrices ? calculatedPrices.breakdown.taxes : Math.round((isHomeEssential ? baseAmount + extraFeesSum : extraFeesSum) * (taxRate / 100))) - savingsInfo.gstWaived)
+        : (calculatedPrices 
+            ? calculatedPrices.breakdown.taxes 
+            : Math.round((isHomeEssential ? baseAmount + extraFeesSum : extraFeesSum) * (taxRate / 100))));
 
   const originalBookingFee = isZeroPayment ? 0 : baseBookingFee;
   const originalPlatformFee = isZeroPayment ? 0 : basePlatformFee;
 
   const amountWithTaxAndFee = isZeroPayment
     ? 0
-    : baseAmount + bookingFee + platformFee + taxes;
+    : (isUpgraded && savingsInfo
+        ? savingsInfo.bookingTotalWithUpgrade
+        : (calculatedPrices
+            ? calculatedPrices.totalAmount
+            : baseAmount + extraFeesSum + taxes));
   const [finalAmount, setFinalAmount] = useState(Math.round(amountWithTaxAndFee));
 
   useEffect(() => {
-    setFinalAmount(Math.round(isZeroPayment ? 0 : amountWithTaxAndFee - discount));
-  }, [amountWithTaxAndFee, discount, isZeroPayment]);
+    if (isZeroPayment) {
+      setFinalAmount(0);
+    } else if (isUpgraded && savingsInfo) {
+      setFinalAmount(Math.round(savingsInfo.finalPayable - discount));
+    } else {
+      setFinalAmount(Math.round(amountWithTaxAndFee - discount));
+    }
+  }, [amountWithTaxAndFee, discount, isZeroPayment, isUpgraded, savingsInfo]);
 
   // ─── Pending order recovery ─────────────────────────────────────────
   const sessionBookingId = useRef<string | null>(null);
@@ -929,7 +1032,7 @@ export default function ServiceCheckoutScreen() {
             <View style={styles.row}>
               <Text style={styles.rowLabel}>{label}</Text>
               <Text style={styles.rowValue}>
-                ₹{baseAmount.toLocaleString("en-IN")}
+                ₹{displayVendorFee.toLocaleString("en-IN")}
               </Text>
             </View>
 
@@ -940,7 +1043,7 @@ export default function ServiceCheckoutScreen() {
                   {t("service_checkout.service_fee")}
                 </Text>
                 <Text style={styles.breakdownValue}>
-                  ₹{baseAmount.toLocaleString("en-IN")}
+                  ₹{displayVendorFee.toLocaleString("en-IN")}
                 </Text>
               </View>
               <View style={styles.breakdownRow}>
@@ -1023,9 +1126,49 @@ export default function ServiceCheckoutScreen() {
                   <Text style={styles.breakdownValue}>₹{platformFee}</Text>
                 )}
               </View>
+              {convenienceFee > 0 && (
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>
+                    {t("checkout.convenience_fee") || "Convenience Fee"}
+                  </Text>
+                  <Text style={styles.breakdownValue}>₹{convenienceFee}</Text>
+                </View>
+              )}
+              {emergencyFee > 0 && (
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>
+                    {t("checkout.emergency_fee") || "Emergency Premium"}
+                  </Text>
+                  <Text style={styles.breakdownValue}>₹{emergencyFee}</Text>
+                </View>
+              )}
+              {visitFee > 0 && (
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>
+                    {t("checkout.visit_fee") || "Visit Charge"}
+                  </Text>
+                  <Text style={styles.breakdownValue}>₹{visitFee}</Text>
+                </View>
+              )}
+              {nightCharge > 0 && (
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>
+                    {t("checkout.night_charge") || "Night Premium"}
+                  </Text>
+                  <Text style={styles.breakdownValue}>₹{nightCharge}</Text>
+                </View>
+              )}
+              {surgeCharge > 0 && (
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>
+                    {t("checkout.surge_charge") || "Surge Charge"}
+                  </Text>
+                  <Text style={styles.breakdownValue}>₹{surgeCharge}</Text>
+                </View>
+              )}
               <View style={styles.breakdownRow}>
                 <Text style={styles.breakdownLabel}>
-                  {t("service_checkout.taxes_gst")}
+                  {t("service_checkout.taxes_gst")} ({taxRate}%)
                 </Text>
                 <Text style={styles.breakdownValue}>
                   ₹
@@ -1293,6 +1436,79 @@ export default function ServiceCheckoutScreen() {
                   />
                 </TouchableOpacity>
               ))}
+            </View>
+          )}
+
+          {/* Checkout Membership Upgrade Card (Swiggy One style) */}
+          {HOME_CATEGORIES.includes(category) && !hasActivePlanForCategory && homemakerPlans.length > 0 && (
+            <View style={[styles.card, styles.upgradeCard]}>
+              <TouchableOpacity
+                style={styles.upgradeHeader}
+                onPress={() => setIsUpgraded(!isUpgraded)}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={isUpgraded ? "checkbox" : "square-outline"}
+                  size={24}
+                  color={colors.primary}
+                />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={styles.upgradeTitle}>🏠 Upgrade to Home Essentials</Text>
+                  {savingsInfo && savingsInfo.totalSavings > 0 ? (
+                    <Text style={[styles.upgradeSaveText, { color: colors.primary }]}>
+                      Save ₹{savingsInfo.totalSavings} on this booking!
+                    </Text>
+                  ) : (
+                    <Text style={styles.upgradeSubtitle}>Get ₹0 booking & platform fees instantly</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+
+              {isUpgraded && (
+                <View style={styles.upgradeDetails}>
+                  <View style={styles.waiverList}>
+                    <Text style={styles.waiverItem}>✓ Booking Fee Waived</Text>
+                    <Text style={styles.waiverItem}>✓ Platform Fee Waived</Text>
+                    <Text style={styles.waiverItem}>✓ GST on Fees Waived</Text>
+                  </View>
+
+                  <Text style={styles.durationSelectorLabel}>Select Plan Duration:</Text>
+                  <View style={styles.durationSelector}>
+                    {[
+                      { key: 'QUARTERLY' as BillingCycle, label: '3 Months', price: homemakerPlans[0]?.quarterlyPrice },
+                      { key: 'BIANNUAL' as BillingCycle, label: '6 Months', price: homemakerPlans[0]?.biannualPrice },
+                      { key: 'YEARLY' as BillingCycle, label: '12 Months', price: homemakerPlans[0]?.yearlyPrice },
+                    ].map(dur => (
+                      <TouchableOpacity
+                        key={dur.key}
+                        style={[
+                          styles.durationBtn,
+                          selectedDuration === dur.key && styles.durationBtnActive,
+                        ]}
+                        onPress={() => setSelectedDuration(dur.key)}
+                        activeOpacity={0.8}
+                      >
+                        <Text
+                          style={[
+                            styles.durationText,
+                            selectedDuration === dur.key && styles.durationTextActive,
+                          ]}
+                        >
+                          {dur.label}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.durationPrice,
+                            selectedDuration === dur.key && styles.durationPriceActive,
+                          ]}
+                        >
+                          ₹{dur.price}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
             </View>
           )}
 
@@ -1713,5 +1929,86 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) =>
       fontFamily: Fonts.semiBold,
       fontSize: FontSize.caption ?? 12,
       color: isDarkMode ? "#34C759" : "#2e7d32",
+    },
+    upgradeCard: {
+      borderColor: colors.primary,
+      borderWidth: 1.5,
+      backgroundColor: isDarkMode ? "rgba(4, 131, 87, 0.05)" : "#F0FDF4",
+    },
+    upgradeHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    upgradeTitle: {
+      fontFamily: Fonts.bold,
+      fontSize: 16,
+      color: colors.textDark,
+    },
+    upgradeSubtitle: {
+      fontFamily: Fonts.regular,
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    upgradeSaveText: {
+      fontFamily: Fonts.bold,
+      fontSize: 13,
+      marginTop: 2,
+    },
+    upgradeDetails: {
+      marginTop: Spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: colors.borderLight,
+      paddingTop: Spacing.md,
+      gap: Spacing.md,
+    },
+    waiverList: {
+      gap: 6,
+    },
+    waiverItem: {
+      fontFamily: Fonts.semiBold,
+      fontSize: 13,
+      color: isDarkMode ? colors.primary : "#15803d",
+    },
+    durationSelectorLabel: {
+      fontFamily: Fonts.medium,
+      fontSize: 12,
+      color: colors.textMuted,
+    },
+    durationSelector: {
+      flexDirection: "row",
+      gap: 8,
+    },
+    durationBtn: {
+      flex: 1,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+      paddingVertical: Spacing.md,
+      alignItems: "center",
+      backgroundColor: colors.bgCard,
+    },
+    durationBtnActive: {
+      borderColor: colors.primary,
+      backgroundColor: isDarkMode ? "rgba(4, 131, 87, 0.1)" : "#E6F4EE",
+    },
+    durationText: {
+      fontFamily: Fonts.medium,
+      fontSize: 12,
+      color: colors.textDark,
+    },
+    durationTextActive: {
+      fontFamily: Fonts.bold,
+      color: colors.primary,
+    },
+    durationPrice: {
+      fontFamily: Fonts.regular,
+      fontSize: 11,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    durationPriceActive: {
+      fontFamily: Fonts.semiBold,
+      color: colors.primary,
     },
   });

@@ -252,7 +252,7 @@ export default function HospitalTripScreen() {
 
                     {/* Other specialist text input */}
                     {selectedSpecialist === 'other' && (
-                        <View style={dynamicStyles.doctorNameInput}>
+                        <View style={dynamicStyles.otherSpecialistInput}>
                             <TextInput
                                 style={dynamicStyles.doctorTextInput}
                                 placeholder={t('hospital_trip.other_specialist_placeholder', 'Describe your requirement or specialist...')}
@@ -698,6 +698,17 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         marginLeft: 20,
         marginRight: 10,
         marginBottom: 15,
+        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
+    },
+    otherSpecialistInput: {
+        height: 53,
+        borderWidth: 1,
+        borderColor: isDarkMode ? '#475569' : '#777',
+        borderRadius: 10,
+        justifyContent: 'center',
+        paddingHorizontal: 15,
+        marginTop: 15,
+        marginBottom: 5,
         backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
     },
     doctorTextInput: {
