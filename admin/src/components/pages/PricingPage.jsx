@@ -34,6 +34,7 @@ export default function PricingPage() {
     const [editingCharge, setEditingCharge] = useState(null);
     const [form, setForm] = useState({
         serviceCategory: "DOCTOR_HOME_VISIT",
+        serviceFee: 0,
         bookingFee: 0,
         platformFee: 0,
         convenienceFee: 0,
@@ -81,6 +82,7 @@ export default function PricingPage() {
         setEditingCharge(null);
         setForm({
             serviceCategory: "DOCTOR_HOME_VISIT",
+            serviceFee: 0,
             bookingFee: 0,
             platformFee: 0,
             convenienceFee: 0,
@@ -99,6 +101,7 @@ export default function PricingPage() {
         setEditingCharge(charge);
         setForm({
             serviceCategory: charge.serviceCategory,
+            serviceFee: charge.serviceFee || 0,
             bookingFee: charge.bookingFee,
             platformFee: charge.platformFee,
             convenienceFee: charge.convenienceFee,
@@ -163,17 +166,17 @@ export default function PricingPage() {
 
     function getDropdownCategories() {
         const list = [...CATEGORIES];
-        services.filter(s => s.isDynamic).forEach(s => {
+        services.forEach(s => {
             if (s.category && !list.some(item => item.value === s.category)) {
                 list.push({
                     value: s.category,
                     label: `📂 Category: ${s.category.replace(/_/g, ' ')}`
                 });
             }
-            if (s.slug && !list.some(item => item.value === s.slug.toUpperCase())) {
+            if (s.slug && !list.some(item => item.value === s.slug.toUpperCase().replace(/-/g, '_'))) {
                 const iconVal = (s.icon && s.icon.trim().length <= 4) ? s.icon : '🩺';
                 list.push({
-                    value: s.slug.toUpperCase(),
+                    value: s.slug.toUpperCase().replace(/-/g, '_'),
                     label: `${iconVal} Service: ${s.name}`
                 });
             }
@@ -273,6 +276,7 @@ export default function PricingPage() {
                                 <thead>
                                     <tr>
                                         <th>Service Category</th>
+                                        <th>Service Fee</th>
                                         <th>Booking Fee</th>
                                         <th>Platform Fee</th>
                                         <th>Tax (GST)</th>
@@ -284,7 +288,7 @@ export default function PricingPage() {
                                 <tbody>
                                     {serviceCharges.length === 0 ? (
                                         <tr>
-                                            <td colSpan="7" style={{ textAlign: "center", color: "var(--text-muted)", padding: 24 }}>
+                                            <td colSpan="8" style={{ textAlign: "center", color: "var(--text-muted)", padding: 24 }}>
                                                 No service charges configured yet. Click &quot;Set Service Charge&quot; to create one.
                                             </td>
                                         </tr>
@@ -294,6 +298,7 @@ export default function PricingPage() {
                                                 <td style={{ fontWeight: 600, color: "var(--text-primary)" }}>
                                                     {getCategoryLabel(charge.serviceCategory)}
                                                 </td>
+                                                <td>{formatCurrency(charge.serviceFee || 0)}</td>
                                                 <td>{formatCurrency(charge.bookingFee)}</td>
                                                 <td>{formatCurrency(charge.platformFee)}</td>
                                                 <td><span className="badge badge-default">{charge.taxPercentage}%</span></td>
@@ -395,6 +400,18 @@ export default function PricingPage() {
 
                                 <div className="form-row">
                                     <div className="form-group">
+                                        <label className="form-label">Service Fee / Base Price (₹) *</label>
+                                        <input
+                                            type="number"
+                                            className="form-input"
+                                            required
+                                            min="0"
+                                            step="0.01"
+                                            value={form.serviceFee}
+                                            onChange={e => setForm({ ...form, serviceFee: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="form-group">
                                         <label className="form-label">Booking Fee (₹) *</label>
                                         <input
                                             type="number"
@@ -406,6 +423,9 @@ export default function PricingPage() {
                                             onChange={e => setForm({ ...form, bookingFee: e.target.value })}
                                         />
                                     </div>
+                                </div>
+
+                                <div className="form-row">
                                     <div className="form-group">
                                         <label className="form-label">Platform Fee (₹) *</label>
                                         <input
@@ -418,9 +438,6 @@ export default function PricingPage() {
                                             onChange={e => setForm({ ...form, platformFee: e.target.value })}
                                         />
                                     </div>
-                                </div>
-
-                                <div className="form-row">
                                     <div className="form-group">
                                         <label className="form-label">Tax (GST) Percentage (%) *</label>
                                         <input
@@ -434,6 +451,9 @@ export default function PricingPage() {
                                             onChange={e => setForm({ ...form, taxPercentage: e.target.value })}
                                         />
                                     </div>
+                                </div>
+
+                                <div className="form-row">
                                     <div className="form-group">
                                         <label className="form-label">Convenience Fee (₹)</label>
                                         <input
@@ -445,9 +465,6 @@ export default function PricingPage() {
                                             onChange={e => setForm({ ...form, convenienceFee: e.target.value })}
                                         />
                                     </div>
-                                </div>
-
-                                <div className="form-row">
                                     <div className="form-group">
                                         <label className="form-label">Emergency Premium Fee (₹)</label>
                                         <input
@@ -459,6 +476,9 @@ export default function PricingPage() {
                                             onChange={e => setForm({ ...form, emergencyFee: e.target.value })}
                                         />
                                     </div>
+                                </div>
+
+                                <div className="form-row">
                                     <div className="form-group">
                                         <label className="form-label">Visit Charge (₹)</label>
                                         <input
@@ -470,9 +490,6 @@ export default function PricingPage() {
                                             onChange={e => setForm({ ...form, visitFee: e.target.value })}
                                         />
                                     </div>
-                                </div>
-
-                                <div className="form-row">
                                     <div className="form-group">
                                         <label className="form-label">Night Premium Charge (₹)</label>
                                         <input
@@ -484,6 +501,9 @@ export default function PricingPage() {
                                             onChange={e => setForm({ ...form, nightCharge: e.target.value })}
                                         />
                                     </div>
+                                </div>
+
+                                <div className="form-row">
                                     <div className="form-group">
                                         <label className="form-label">Surge Charge (₹)</label>
                                         <input
@@ -495,6 +515,7 @@ export default function PricingPage() {
                                             onChange={e => setForm({ ...form, surgeCharge: e.target.value })}
                                         />
                                     </div>
+                                    <div className="form-group"></div>
                                 </div>
 
                                 <div className="form-row" style={{ marginTop: 12 }}>

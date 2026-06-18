@@ -2,7 +2,7 @@
 // Layout: ScrollView with form fields, profile photo, checkbox, save button
 // No business logic — pure presentation
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Platform, Alert, ActionSheetIOS, KeyboardAvoidingView } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Platform, Alert, ActionSheetIOS, KeyboardAvoidingView, Linking } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -526,7 +526,7 @@ export default function ProfileSetupScreen() {
                             style={[styles.policyTextUnderline, { color: isDarkMode ? '#E0E0E0' : '#000000' }]}
                             onPress={() => router.push('/terms-policy')}
                         >
-                            policies
+                            Ayuxa&apos;s Master Agreement
                         </Text>
                     </Text>
                 </View>

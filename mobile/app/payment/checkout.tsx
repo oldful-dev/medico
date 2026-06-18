@@ -66,6 +66,7 @@ export default function CheckoutScreen() {
         // ─── New: serialised CreateBookingPayload — checkout creates the booking itself
         bookingPayload?: string;
         subscriptionId?: string;
+        upgradeSubId?: string;
         amount?: string;
         label?: string;
         category?: string; // 'wellness' | 'blood-test' | service categories
@@ -119,8 +120,10 @@ export default function CheckoutScreen() {
         }
     }, [profile, params.bookingPayload, params.subscriptionId, params.skipUpsell]);
 
+    const isSubscription = !!params.subscriptionId || !!params.upgradeSubId;
+
     // ─── COD Restriction: Hide CASH if it's a subscription ──────────────────
-    const availableMethods = params.subscriptionId 
+    const availableMethods = isSubscription 
         ? PAYMENT_METHODS.filter(m => m.type !== 'CASH')
         : PAYMENT_METHODS;
 
@@ -128,9 +131,8 @@ export default function CheckoutScreen() {
     const wellnessBaseAmount = wellnessItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
     const baseAmount = isCategoryAll ? (bloodTestBaseAmount + wellnessBaseAmount) : parseFloat(params.amount ?? '0');
     const label  = params.label ?? 'Service Booking';
-    const isSubscription = !!params.subscriptionId;
 
-    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(params.subscriptionId ? 'UPI' : 'UPI');
+    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(isSubscription ? 'UPI' : 'UPI');
     const [couponCode,     setCouponCode]     = useState('');
     const [couponApplied,  setCouponApplied]  = useState(false);
     const [discount,       setDiscount]       = useState(0);
@@ -199,6 +201,7 @@ export default function CheckoutScreen() {
     const [calcLoading, setCalcLoading] = useState(false);
     const [calculatedPrices, setCalculatedPrices] = useState<{
         totalAmount: number;
+        taxPercentage?: number;
         breakdown: {
             vendorFee: number;
             diagnosticFee: number;
@@ -207,6 +210,11 @@ export default function CheckoutScreen() {
             taxes: number;
             ayuxaServiceFee: number;
             benefitDiscount: number;
+            convenienceFee?: number;
+            emergencyFee?: number;
+            visitFee?: number;
+            nightCharge?: number;
+            surgeCharge?: number;
         };
         benefitApplied: boolean;
     } | null>(null);
@@ -240,17 +248,60 @@ export default function CheckoutScreen() {
     }, [params.bookingPayload, isBloodTest, bloodTestBaseAmount, isSubscription, label]);
 
     const benefitApplied = !!calculatedPrices?.benefitApplied;
-    const bookingFee = calculatedPrices ? calculatedPrices.breakdown.bookingFee : (isSubscription ? 0 : 299);
-    const platformFee = calculatedPrices ? calculatedPrices.breakdown.platformFee : (isSubscription ? 0 : 50);
-    const taxes = calculatedPrices ? calculatedPrices.breakdown.taxes : (isSubscription ? 0 : Math.round(bloodTestBaseAmount * 0.06));
+    const bookingFee = isSubscription ? 0 : (calculatedPrices ? calculatedPrices.breakdown.bookingFee : 299);
+    const platformFee = isSubscription ? 0 : (calculatedPrices ? calculatedPrices.breakdown.platformFee : 50);
+
+    const convenienceFee = calculatedPrices ? (calculatedPrices.breakdown.convenienceFee || 0) : 0;
+    const emergencyFee = calculatedPrices ? (calculatedPrices.breakdown.emergencyFee || 0) : 0;
+    const visitFee = calculatedPrices ? (calculatedPrices.breakdown.visitFee || 0) : 0;
+    const nightCharge = calculatedPrices ? (calculatedPrices.breakdown.nightCharge || 0) : 0;
+    const surgeCharge = calculatedPrices ? (calculatedPrices.breakdown.surgeCharge || 0) : 0;
+    const extraFeesSum = bookingFee + platformFee + convenienceFee + emergencyFee + visitFee + nightCharge + surgeCharge;
+    const displayServiceFee = calculatedPrices ? calculatedPrices.breakdown.vendorFee : baseAmount;
+
+    const serviceCategory = params.bookingPayload ? mapLabelToCategory(label) : (isBloodTest ? 'BLOOD_TEST' : 'OTHER');
+    const isHomeEssentialService = 
+        serviceCategory === 'HOME_ESSENTIALS' || 
+        serviceCategory === 'PLUMBING_ELECTRICAL' || 
+        serviceCategory === 'APPLIANCE_REPAIR' || 
+        serviceCategory === 'TECH_HELPER' || 
+        serviceCategory === 'DEEP_CLEANING' ||
+        serviceCategory === 'GROCERY_RUN';
+
+    const isDiagnosticOrFitnessService = 
+        serviceCategory === 'BLOOD_TEST' || 
+        serviceCategory === 'SCAN_ECG' || 
+        serviceCategory === 'PHYSIO_FITNESS' ||
+        serviceCategory === 'DIAGNOSTICS_FITNESS';
+
+    const fallbackTaxPercentage = isHomeEssentialService ? 18 : (isDiagnosticOrFitnessService ? 18 : 6);
+    const taxRateDisplay = calculatedPrices ? (calculatedPrices.taxPercentage ?? fallbackTaxPercentage) : fallbackTaxPercentage;
+
+    let fallbackTaxableAmount = 0;
+    if (isHomeEssentialService) {
+        fallbackTaxableAmount = Number(baseAmount || 0) + extraFeesSum;
+    } else {
+        fallbackTaxableAmount = extraFeesSum;
+    }
+
+    const fallbackTax = Math.round(fallbackTaxableAmount * (fallbackTaxPercentage / 100));
+
+    const taxes = isSubscription ? 0 : (calculatedPrices ? calculatedPrices.breakdown.taxes : fallbackTax);
     
     // Original charges before waiver (for displaying stroke-through / FREE)
-    const originalBookingFee = calculatedPrices?.benefitApplied ? (Math.abs(calculatedPrices.breakdown.benefitDiscount) > 50 ? Math.abs(calculatedPrices.breakdown.benefitDiscount) - 50 : 299) : bookingFee;
-    const originalPlatformFee = calculatedPrices?.benefitApplied ? 50 : platformFee;
+    const showWaiver = benefitApplied || (isSubscription && !!params.bookingPayload);
+    const originalBookingFee = showWaiver 
+        ? (calculatedPrices?.benefitApplied 
+            ? (Math.abs(calculatedPrices.breakdown.benefitDiscount) > 50 ? Math.abs(calculatedPrices.breakdown.benefitDiscount) - 50 : 299)
+            : (calculatedPrices ? calculatedPrices.breakdown.bookingFee : 299))
+        : bookingFee;
+    const originalPlatformFee = showWaiver
+        ? (calculatedPrices?.benefitApplied ? 50 : (calculatedPrices ? calculatedPrices.breakdown.platformFee : 50))
+        : platformFee;
 
     const bloodTestTotal = isSubscription 
         ? bloodTestBaseAmount 
-        : (calculatedPrices ? calculatedPrices.totalAmount : (bloodTestBaseAmount + bookingFee + platformFee + taxes));
+        : (calculatedPrices ? calculatedPrices.totalAmount : (bloodTestBaseAmount + extraFeesSum + taxes));
 
     const wellnessTax = Math.round(wellnessBaseAmount * 0.18);
     const wellnessShipping = Math.round(shippingDetails?.rate || 0);
@@ -259,7 +310,7 @@ export default function CheckoutScreen() {
     const isLegacyService = !isBloodTest && !isWellness;
     const legacyServiceTotal = isSubscription
         ? baseAmount
-        : (calculatedPrices ? calculatedPrices.totalAmount : (baseAmount + bookingFee + platformFee + taxes));
+        : (calculatedPrices ? calculatedPrices.totalAmount : (baseAmount + extraFeesSum + taxes));
 
     const amountWithTaxAndFee = isLegacyService
         ? legacyServiceTotal
@@ -938,14 +989,14 @@ export default function CheckoutScreen() {
                             ))}
                             <View style={styles.breakdownSection}>
                                 <View style={styles.breakdownRow}>
-                                    <Text style={styles.breakdownLabel}>{t('checkout.tests_subtotal') || 'Tests Subtotal'}</Text>
+                                    <Text style={styles.breakdownLabel}>{t('checkout.tests_subtotal', 'Tests Subtotal')}</Text>
                                     <Text style={styles.breakdownValue}>{rupee}{bloodTestBaseAmount.toLocaleString('en-IN')}</Text>
                                 </View>
-                                {!isSubscription && (
+                                {(!isSubscription || !!params.bookingPayload) && (
                                     <>
                                         <View style={styles.breakdownRow}>
                                             <Text style={styles.breakdownLabel}>{t('checkout.booking_fee')}</Text>
-                                            {benefitApplied ? (
+                                            {showWaiver ? (
                                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                                     <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{rupee}{originalBookingFee}</Text>
                                                     <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
@@ -956,7 +1007,7 @@ export default function CheckoutScreen() {
                                         </View>
                                         <View style={styles.breakdownRow}>
                                             <Text style={styles.breakdownLabel}>{t('checkout.platform_fee')}</Text>
-                                            {benefitApplied ? (
+                                            {showWaiver ? (
                                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                                     <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{rupee}{originalPlatformFee}</Text>
                                                     <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
@@ -965,13 +1016,43 @@ export default function CheckoutScreen() {
                                                 <Text style={styles.breakdownValue}>{rupee}{platformFee}</Text>
                                             )}
                                         </View>
+                                        {convenienceFee > 0 && (
+                                            <View style={styles.breakdownRow}>
+                                                <Text style={styles.breakdownLabel}>{t('checkout.convenience_fee') || 'Convenience Fee'}</Text>
+                                                <Text style={styles.breakdownValue}>{rupee}{convenienceFee}</Text>
+                                            </View>
+                                        )}
+                                        {emergencyFee > 0 && (
+                                            <View style={styles.breakdownRow}>
+                                                <Text style={styles.breakdownLabel}>{t('checkout.emergency_fee') || 'Emergency Premium'}</Text>
+                                                <Text style={styles.breakdownValue}>{rupee}{emergencyFee}</Text>
+                                            </View>
+                                        )}
+                                        {visitFee > 0 && (
+                                            <View style={styles.breakdownRow}>
+                                                <Text style={styles.breakdownLabel}>{t('checkout.visit_fee') || 'Visit Charge'}</Text>
+                                                <Text style={styles.breakdownValue}>{rupee}{visitFee}</Text>
+                                            </View>
+                                        )}
+                                        {nightCharge > 0 && (
+                                            <View style={styles.breakdownRow}>
+                                                <Text style={styles.breakdownLabel}>{t('checkout.night_charge') || 'Night Premium'}</Text>
+                                                <Text style={styles.breakdownValue}>{rupee}{nightCharge}</Text>
+                                            </View>
+                                        )}
+                                        {surgeCharge > 0 && (
+                                            <View style={styles.breakdownRow}>
+                                                <Text style={styles.breakdownLabel}>{t('checkout.surge_charge') || 'Surge Charge'}</Text>
+                                                <Text style={styles.breakdownValue}>{rupee}{surgeCharge}</Text>
+                                            </View>
+                                        )}
                                         <View style={styles.breakdownRow}>
-                                            <Text style={styles.breakdownLabel}>{t('checkout.taxes_gst')}</Text>
+                                            <Text style={styles.breakdownLabel}>{t('checkout.taxes_gst', 'Taxes & GST')} ({taxRateDisplay}%)</Text>
                                             <Text style={styles.breakdownValue}>{rupee}{taxes.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</Text>
                                         </View>
                                     </>
                                 )}
-                                {benefitApplied && (
+                                {showWaiver && (
                                     <Text style={styles.benefitNote}>{t('checkout.subscription_benefits_applied')}</Text>
                                 )}
                             </View>
@@ -1036,18 +1117,18 @@ export default function CheckoutScreen() {
                         <View style={{ marginBottom: Spacing.md }}>
                             <View style={styles.row}>
                                 <Text style={styles.rowLabel}>{label}</Text>
-                                <Text style={styles.rowValue}>{rupee}{baseAmount.toLocaleString('en-IN')}</Text>
+                                <Text style={styles.rowValue}>{rupee}{displayServiceFee.toLocaleString('en-IN')}</Text>
                             </View>
                             <View style={styles.breakdownSection}>
                                 <View style={styles.breakdownRow}>
                                     <Text style={styles.breakdownLabel}>{t('checkout.consultation_service_fee')}</Text>
-                                    <Text style={styles.breakdownValue}>{rupee}{baseAmount.toLocaleString('en-IN')}</Text>
+                                    <Text style={styles.breakdownValue}>{rupee}{displayServiceFee.toLocaleString('en-IN')}</Text>
                                 </View>
-                                {!isSubscription && (
+                                {(!isSubscription || !!params.bookingPayload) && (
                                     <>
                                         <View style={styles.breakdownRow}>
                                             <Text style={styles.breakdownLabel}>{t('checkout.booking_fee')}</Text>
-                                            {benefitApplied ? (
+                                            {showWaiver ? (
                                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                                     <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{rupee}{originalBookingFee}</Text>
                                                     <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
@@ -1058,7 +1139,7 @@ export default function CheckoutScreen() {
                                         </View>
                                         <View style={styles.breakdownRow}>
                                             <Text style={styles.breakdownLabel}>{t('checkout.platform_fee')}</Text>
-                                            {benefitApplied ? (
+                                            {showWaiver ? (
                                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                                     <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{rupee}{originalPlatformFee}</Text>
                                                     <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
@@ -1067,13 +1148,43 @@ export default function CheckoutScreen() {
                                                 <Text style={styles.breakdownValue}>{rupee}{platformFee}</Text>
                                             )}
                                         </View>
+                                        {convenienceFee > 0 && (
+                                            <View style={styles.breakdownRow}>
+                                                <Text style={styles.breakdownLabel}>{t('checkout.convenience_fee') || 'Convenience Fee'}</Text>
+                                                <Text style={styles.breakdownValue}>{rupee}{convenienceFee}</Text>
+                                            </View>
+                                        )}
+                                        {emergencyFee > 0 && (
+                                            <View style={styles.breakdownRow}>
+                                                <Text style={styles.breakdownLabel}>{t('checkout.emergency_fee') || 'Emergency Premium'}</Text>
+                                                <Text style={styles.breakdownValue}>{rupee}{emergencyFee}</Text>
+                                            </View>
+                                        )}
+                                        {visitFee > 0 && (
+                                            <View style={styles.breakdownRow}>
+                                                <Text style={styles.breakdownLabel}>{t('checkout.visit_fee') || 'Visit Charge'}</Text>
+                                                <Text style={styles.breakdownValue}>{rupee}{visitFee}</Text>
+                                            </View>
+                                        )}
+                                        {nightCharge > 0 && (
+                                            <View style={styles.breakdownRow}>
+                                                <Text style={styles.breakdownLabel}>{t('checkout.night_charge') || 'Night Premium'}</Text>
+                                                <Text style={styles.breakdownValue}>{rupee}{nightCharge}</Text>
+                                            </View>
+                                        )}
+                                        {surgeCharge > 0 && (
+                                            <View style={styles.breakdownRow}>
+                                                <Text style={styles.breakdownLabel}>{t('checkout.surge_charge') || 'Surge Charge'}</Text>
+                                                <Text style={styles.breakdownValue}>{rupee}{surgeCharge}</Text>
+                                            </View>
+                                        )}
                                         <View style={styles.breakdownRow}>
-                                            <Text style={styles.breakdownLabel}>{t('checkout.taxes_gst')}</Text>
+                                            <Text style={styles.breakdownLabel}>{t('checkout.taxes_gst', 'Taxes & GST')} ({taxRateDisplay}%)</Text>
                                             <Text style={styles.breakdownValue}>{rupee}{taxes.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</Text>
                                         </View>
                                     </>
                                 )}
-                                {benefitApplied && (
+                                {showWaiver && (
                                     <Text style={styles.benefitNote}>{t('checkout.subscription_benefits_applied')}</Text>
                                 )}
                             </View>
@@ -1091,7 +1202,7 @@ export default function CheckoutScreen() {
                         <Text style={styles.totalValue}>{rupee}{(amountWithTaxAndFee - discount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</Text>
                     </View>
 
-                    {benefitApplied && (
+                    {showWaiver && (
                         <View style={styles.savingsBadge}>
                             <Text style={styles.savingsText}>
                                 {t('checkout.you_saved', { amount: (Math.round((originalBookingFee - bookingFee) + (originalPlatformFee - platformFee))).toLocaleString('en-IN') })}

@@ -35,6 +35,7 @@ const createServiceCharge = async (req, res, next) => {
     try {
         const {
             serviceCategory,
+            serviceFee,
             bookingFee,
             platformFee,
             convenienceFee,
@@ -57,6 +58,7 @@ const createServiceCharge = async (req, res, next) => {
         const charge = await prisma.serviceCharge.create({
             data: {
                 serviceCategory,
+                serviceFee: parseFloat(serviceFee || 0),
                 bookingFee: parseFloat(bookingFee || 0),
                 platformFee: parseFloat(platformFee || 0),
                 convenienceFee: parseFloat(convenienceFee || 0),
@@ -79,6 +81,7 @@ const createServiceCharge = async (req, res, next) => {
 const updateServiceCharge = async (req, res, next) => {
     try {
         const {
+            serviceFee,
             bookingFee,
             platformFee,
             convenienceFee,
@@ -92,14 +95,15 @@ const updateServiceCharge = async (req, res, next) => {
         } = req.body;
 
         const data = {};
-        if (bookingFee !== undefined) data.bookingFee = parseFloat(bookingFee);
-        if (platformFee !== undefined) data.platformFee = parseFloat(platformFee);
-        if (convenienceFee !== undefined) data.convenienceFee = parseFloat(convenienceFee);
-        if (emergencyFee !== undefined) data.emergencyFee = parseFloat(emergencyFee);
-        if (visitFee !== undefined) data.visitFee = parseFloat(visitFee);
-        if (nightCharge !== undefined) data.nightCharge = parseFloat(nightCharge);
-        if (surgeCharge !== undefined) data.surgeCharge = parseFloat(surgeCharge);
-        if (taxPercentage !== undefined) data.taxPercentage = parseFloat(taxPercentage);
+        if (serviceFee !== undefined) data.serviceFee = parseFloat(serviceFee) || 0;
+        if (bookingFee !== undefined) data.bookingFee = parseFloat(bookingFee) || 0;
+        if (platformFee !== undefined) data.platformFee = parseFloat(platformFee) || 0;
+        if (convenienceFee !== undefined) data.convenienceFee = parseFloat(convenienceFee) || 0;
+        if (emergencyFee !== undefined) data.emergencyFee = parseFloat(emergencyFee) || 0;
+        if (visitFee !== undefined) data.visitFee = parseFloat(visitFee) || 0;
+        if (nightCharge !== undefined) data.nightCharge = parseFloat(nightCharge) || 0;
+        if (surgeCharge !== undefined) data.surgeCharge = parseFloat(surgeCharge) || 0;
+        if (taxPercentage !== undefined) data.taxPercentage = parseFloat(taxPercentage) || 0;
         if (isSubscriptionEligible !== undefined) data.isSubscriptionEligible = isSubscriptionEligible;
         if (isActive !== undefined) data.isActive = isActive;
 

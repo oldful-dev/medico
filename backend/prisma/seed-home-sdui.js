@@ -8,8 +8,8 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Import the DEFAULT_CONFIG from the controller (source of truth)
-const { DEFAULT_CONFIG } = require('../src/controllers/appConfig.controller');
+// Import the DEFAULT_CONFIG and DEFAULT_HOME_CONFIG from the controller
+const { DEFAULT_CONFIG, DEFAULT_HOME_CONFIG } = require('../src/controllers/appConfig.controller');
 
 async function main() {
   console.log('🌱 Seeding Home Screen SDUI config...\n');
@@ -33,10 +33,29 @@ async function main() {
   });
 
   console.log('  ✅ sdui_app_config upserted');
+
+  await prisma.uIConfig.upsert({
+    where: { key: 'home_config' },
+    create: {
+      type: 'CUSTOM',
+      key: 'home_config',
+      label: 'SDUI Home Configuration',
+      configJson: DEFAULT_HOME_CONFIG,
+      sortOrder: 0,
+      isVisible: true,
+      version: 1,
+    },
+    update: {
+      configJson: DEFAULT_HOME_CONFIG,
+      version: { increment: 1 },
+      publishedAt: new Date(),
+    },
+  });
+
+  console.log('  ✅ home_config upserted');
   console.log(`     version: ${DEFAULT_CONFIG.version}`);
   console.log(`     home sections: ${DEFAULT_CONFIG.screens.home.sections.length}`);
   console.log(`     essentials max_visible_rows: ${DEFAULT_CONFIG.screens.home.sections.find(s => s.id === 'essentials')?.config?.max_visible_rows ?? 'none'}`);
-  console.log(`     welcome_banner: GCS URL (ayuxa-assets/mobile/assets/images/welcome_banner.png)`);
   console.log('\n🎉 Done!');
 }
 

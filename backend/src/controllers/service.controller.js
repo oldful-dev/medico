@@ -5,6 +5,7 @@
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/helpers');
 const { uploadFile } = require('../utils/storage.service');
+const { syncDbServicesToUIConfig } = require('../utils/sduiSync');
 
 // GET /api/services
 const getServices = async (req, res, next) => {
@@ -79,6 +80,8 @@ const createService = async (req, res, next) => {
             },
         });
 
+        await syncDbServicesToUIConfig();
+
         sendResponse(res, 201, service, 'Service created successfully');
     } catch (error) {
         next(error);
@@ -115,6 +118,7 @@ const updateService = async (req, res, next) => {
             where: { id: req.params.id },
             data,
         });
+        await syncDbServicesToUIConfig();
         sendResponse(res, 200, service, 'Service updated successfully');
     } catch (error) {
         next(error);
@@ -129,6 +133,7 @@ const toggleService = async (req, res, next) => {
             where: { id: req.params.id },
             data: { isEnabled: !service.isEnabled },
         });
+        await syncDbServicesToUIConfig();
         sendResponse(res, 200, updated, `Service ${updated.isEnabled ? 'enabled' : 'disabled'}`);
     } catch (error) {
         next(error);
@@ -174,9 +179,11 @@ const deleteService = async (req, res, next) => {
                 where: { id },
                 data: { isEnabled: false },
             });
+            await syncDbServicesToUIConfig();
             return sendResponse(res, 200, updated, 'Service has active bookings; it has been disabled instead');
         }
         await prisma.service.delete({ where: { id } });
+        await syncDbServicesToUIConfig();
         sendResponse(res, 200, null, 'Service deleted successfully');
     } catch (error) {
         next(error);

@@ -122,7 +122,7 @@ export default function DynamicServiceScreen() {
   const hasDateTimeField = dynamicFields.some((f: any) => f.type === 'datetime');
 
   const showDatePicker = hasConfiguredFields ? hasDateTimeField : (isDiagnosticsDynamic ? true : (checkoutGroup === 'A' || checkoutGroup === 'D'));
-  const hideLocationCard = hasConfiguredFields ? !hasAddressPickerField : (isDiagnosticsDynamic ? false : (checkoutGroup === 'B' || (checkoutGroup === 'D' && (slug === 'driving-cab' || slug === 'anything-else'))));
+  const hideLocationCard = false;
   const showPhotoUpload = hasConfiguredFields ? false : (isDiagnosticsDynamic ? false : (checkoutGroup === 'A' || checkoutGroup === 'B'));
 
   const getAmount = () => {

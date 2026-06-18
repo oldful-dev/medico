@@ -355,11 +355,13 @@ function ProfileSetupForm() {
            </div>
            <div className="flex-1 text-[11px] leading-snug text-gray-500 font-medium">
               I have read and agreed to the{' '}
-              <Link href="/terms" className="text-[var(--color-primary-deep)] font-black underline decoration-emerald-200/50 underline-offset-2">Terms</Link>
-              {', '}
-              <Link href="/privacy" className="text-[var(--color-primary-deep)] font-black underline decoration-emerald-200/50 underline-offset-2">Privacy Policy</Link>
-              {' and '}
-              <Link href="/service-policy" className="text-[var(--color-primary-deep)] font-black underline decoration-emerald-200/50 underline-offset-2">Service Policy</Link>
+              <Link 
+                href="/legal" 
+                onClick={(e) => e.stopPropagation()} 
+                className="text-[var(--color-primary-deep)] font-black underline decoration-emerald-200/50 underline-offset-2"
+              >
+                Ayuxa&apos;s Master Agreement
+              </Link>
               {' for the Ayuxa platform.'}
            </div>
         </label>

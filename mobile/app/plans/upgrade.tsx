@@ -88,21 +88,38 @@ export default function UpgradeScreen() {
         const { amountDue, creditAmount } = calculation.calculation;
 
         if (amountDue > 0) {
-            // Route to checkout with upgrade context
-            router.push({
-                pathname: '/payment/checkout',
-                params: {
-                    amount: String(amountDue),
-                    label: t('membership.upgrade_title') + ': ' + selectedPlan.name,
-                    upgradeSubId: subId,
-                    upgradeNewPlanId: selectedPlan.id,
-                    upgradeNewBillingCycle: selectedCycle,
-                    userName: profile?.name ?? '',
-                    phone: profile?.phone ?? '',
-                    email: profile?.email ?? '',
-                    refreshProfileOnSuccess: '1',
-                },
-            } as any);
+            setConfirming(true);
+            try {
+                const subRes = await planService.initiateSubscription({
+                    planId: selectedPlan.id,
+                    billingCycle: selectedCycle,
+                    amount: amountDue,
+                });
+                if (subRes.success && subRes.data) {
+                    const subscriptionId = subRes.data.id;
+                    router.push({
+                        pathname: '/payment/checkout',
+                        params: {
+                            subscriptionId,
+                            amount: String(amountDue),
+                            label: t('membership.upgrade_title') + ': ' + selectedPlan.name,
+                            upgradeSubId: subId,
+                            upgradeNewPlanId: selectedPlan.id,
+                            upgradeNewBillingCycle: selectedCycle,
+                            userName: profile?.name ?? '',
+                            phone: profile?.phone ?? '',
+                            email: profile?.email ?? '',
+                            refreshProfileOnSuccess: '1',
+                        },
+                    } as any);
+                } else {
+                    Alert.alert(t('membership.upgrade_failed'), subRes.message ?? t('membership.upgrade_error'));
+                }
+            } catch (e: any) {
+                Alert.alert(t('common.error'), e?.message ?? t('membership.upgrade_generic_error'));
+            } finally {
+                setConfirming(false);
+            }
             return;
         }
 

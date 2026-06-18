@@ -45,6 +45,7 @@ export default function AllHomeEssentialsScreen() {
   const { t } = useTranslation();
   const [services, setServices] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [isParentDisabled, setIsParentDisabled] = React.useState(false);
 
   React.useEffect(() => {
     fetchServices();
@@ -55,6 +56,15 @@ export default function AllHomeEssentialsScreen() {
       setLoading(true);
       const res = await apiClient.get<any[]>("/services?isEnabled=true");
       if (res.success && res.data) {
+        // Check if the parent home-essentials service itself is enabled
+        const isParentEnabled = res.data.some((s: any) => s.slug === "home-essentials");
+        if (!isParentEnabled) {
+          setIsParentDisabled(true);
+          setServices([]);
+          return;
+        }
+        setIsParentDisabled(false);
+
         // Utility to resolve mismatched slugs to valid mobile routes
         const resolveSlugToRoute = (slug: string) => {
           if (slug === "tech-helper-essentials") return "/tech-helper";
@@ -137,6 +147,18 @@ export default function AllHomeEssentialsScreen() {
             }}
           >
             {t("common.loading", "Loading...")}
+          </Text>
+        ) : isParentDisabled ? (
+          <Text
+            style={{
+              textAlign: "center",
+              marginTop: 40,
+              fontFamily: Fonts.medium,
+              fontSize: 14,
+              color: isDarkMode ? "#94A3B8" : "#6B7280",
+            }}
+          >
+            {t("services.currently_unavailable", "Services currently unavailable")}
           </Text>
         ) : (
           <View style={styles.listContainer}>

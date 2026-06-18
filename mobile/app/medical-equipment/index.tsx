@@ -10,6 +10,9 @@ import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { useTranslation } from 'react-i18next';
+import { useUser } from '@/context/UserContext';
+import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
+import { userService } from '@/services/api/userService';
 
 
 // ─── Figma Assets ───
@@ -27,14 +30,78 @@ export default function MedicalEquipmentScreen() {
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const { profile } = useUser();
     const [selectedEquipment, setSelectedEquipment] = useState('wheelchair');
     const [otherType, setOtherType] = useState('');
     const [selectedDuration, setSelectedDuration] = useState('Monthly');
     const [customDuration, setCustomDuration] = useState('');
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [isBooking, setIsBooking] = useState(false);
+    const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
+    const [landmark, setLandmark] = useState('');
 
-    const { cityId, serviceId, serviceName, servicePrice, address, isLoading: isLoadingInit } = useServiceInitialization('equipment-rental');
+    const { cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('equipment-rental');
+
+    // Sync selectedAddress with initial fetched address on mount or when fetched
+    React.useEffect(() => {
+        if (address && address !== 'Fetching address...' && !selectedAddress) {
+            setSelectedAddress({
+                line1: address,
+                cityName: '',
+                pincode: '',
+                latitude: 28.7041,
+                longitude: 77.1025,
+            });
+        }
+    }, [address]);
+
+    const handleAddressChange = (addr: AddressData) => {
+        setSelectedAddress(addr);
+        setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
+        if (addr.landmark) setLandmark(addr.landmark);
+    };
+
+    // Auto-fill profile address only on mount when GPS address is not available
+    const [addressInitialized, setAddressInitialized] = React.useState(false);
+    React.useEffect(() => {
+        if (addressInitialized) return;
+        const addressEmpty = !address || address === 'Fetching address...' || address === '';
+        if (addressEmpty && profile?.addresses?.length) {
+            const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
+            if (defaultAddr) {
+                const parts = [defaultAddr.line1, defaultAddr.line2, defaultAddr.cityName].filter(Boolean);
+                setAddress(parts.join(', '));
+                if (defaultAddr.landmark) setLandmark(defaultAddr.landmark);
+                setAddressInitialized(true);
+            }
+        }
+        if (!addressEmpty) {
+            setAddressInitialized(true);
+        }
+    }, [profile]);
+
+    const syncAddressToProfile = async (addressText: string, landmarkText: string) => {
+        if (!profile?.id || !addressText.trim()) return;
+        try {
+            const existing = profile.addresses?.find((a: any) => a.isDefault) || profile.addresses?.[0];
+            const payload = {
+                label: existing?.label || 'Home',
+                line1: addressText.trim(),
+                cityName: existing?.cityName || '',
+                state: existing?.state || '',
+                pincode: existing?.pincode || '',
+                landmark: landmarkText.trim() || undefined,
+                isDefault: true,
+            };
+            if (existing?.id) {
+                await userService.updateAddress(profile.id, existing.id, payload);
+            } else {
+                await userService.addAddress(profile.id, payload);
+            }
+        } catch {
+            // non-fatal
+        }
+    };
 
     const handleBookService = async () => {
         if (!selectedEquipment) {
@@ -58,7 +125,7 @@ export default function MedicalEquipmentScreen() {
             return;
         }
         if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert(t('service_detail.address_required'), t('service_detail.address_required_desc'));
+            Alert.alert(t('common.required', 'Required'), t('service_detail.address_required', 'Please provide a valid address.'));
             return;
         }
         if (!cityId || !serviceId) {
@@ -68,12 +135,18 @@ export default function MedicalEquipmentScreen() {
         try {
             setIsBooking(true);
 
+            // Sync address to profile (non-blocking, non-fatal)
+            syncAddressToProfile(address, landmark);
+
             // Navigate to checkout — booking created inside checkout after payment succeeds
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
                 scheduledDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
                 addressLine: address || undefined,
+                landmark: landmark.trim() || undefined,
+                latitude: selectedAddress?.latitude,
+                longitude: selectedAddress?.longitude,
                 formDataJson: {
                     equipment: selectedEquipment === 'other' ? `Other: ${otherType}` : selectedEquipment,
                     rentalDuration: selectedDuration === 'Custom' ? customDuration : selectedDuration,
@@ -231,6 +304,18 @@ export default function MedicalEquipmentScreen() {
                             onDateChange={setSelectedDate}
                         />
                     </View>
+
+                    {/* ─── Confirm Address Card ─── */}
+                    <AddressPickerSection
+                        selectedAddress={selectedAddress}
+                        onAddressChange={handleAddressChange}
+                        title={t('booking.confirm_address')}
+                        showPhoneField={false}
+                        showLandmarkField={true}
+                        landmark={landmark}
+                        onLandmarkChange={setLandmark}
+                        allowManualEntry={true}
+                    />
 
                     {/* ─── Confirm Rental Button ─── */}
                     <View style={dynamicStyles.buttonContainer}>

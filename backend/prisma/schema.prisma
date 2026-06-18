@@ -307,6 +307,7 @@ model Plan {
   updatedAt      DateTime           @updatedAt
   planType       String             @default("CARE")
   maxConcurrent  Int                @default(1)  // max active subs of this planType per user (CARE=4, HOME=2)
+  metadata       Json?
   planBenefits      PlanBenefit[]
   billingCycles     PlanBillingCycle[]
   subscriptions     Subscription[]
@@ -334,8 +335,16 @@ model PlanBillingCycle {
 model PlanBenefit {
   id              String   @id @default(uuid())
   planId          String
-  serviceCategory String
-  freeCount       Int
+  // ─── Structured fields (V2) ───────────────────────────────────────────────
+  benefitCode     String   @default("")   // SOS | TELECONSULT | MEDICINE | etc.
+  title           String   @default("")   // Human-readable display label
+  description     String?                 // Optional subtitle / detail
+  usageLimit      Int      @default(0)    // 0 = unlimited; N = N uses per usagePeriod
+  usagePeriod     String   @default("MONTH") // MONTH | QUARTER | YEAR
+  displayOrder    Int      @default(0)
+  // ─── Legacy fields kept for backward compat ───────────────────────────────
+  serviceCategory String   @default("")
+  freeCount       Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   plan            Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
@@ -845,6 +854,7 @@ model ActivityUpdate {
 model ServiceCharge {
   id                     String   @id @default(uuid())
   serviceCategory        String   @unique @map("service_category")
+  serviceFee             Float    @default(0) @map("service_fee")
   bookingFee             Float    @default(0) @map("booking_fee")
   platformFee            Float    @default(0) @map("platform_fee")
   convenienceFee         Float    @default(0) @map("convenience_fee")
@@ -926,6 +936,7 @@ enum ServiceType {
   TIFFIN
   TECH_HELPER
   PAPERWORK_LEGAL
+  OTHER
 }
 
 enum ShiftDuration {

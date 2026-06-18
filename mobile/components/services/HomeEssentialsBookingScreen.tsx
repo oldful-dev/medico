@@ -12,6 +12,8 @@ import { bookingService } from '@/services/api/bookingService';
 import ServiceDetailScreen from '@/components/services/ServiceDetailScreen';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
+import { type AddressData } from '@/components/AddressPickerSection';
+import { userService } from '@/services/api/userService';
 
 // Map icons manually to match assets
 const acRepairIcon = require('@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png');
@@ -74,10 +76,30 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
   const [comments, setComments] = useState('');
   const [deliveryMethod, setDeliveryMethod] = useState<'online' | 'home_visit'>('online');
   const [isBooking, setIsBooking] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
+
+  // Sync selectedAddress with initial fetched address on mount or when fetched
+  useEffect(() => {
+    if (address && address !== 'Fetching address...' && !selectedAddress) {
+      setSelectedAddress({
+        line1: address,
+        cityName: '',
+        pincode: '',
+        latitude: 28.7041,
+        longitude: 77.1025,
+      });
+    }
+  }, [address]);
+
+  const handleAddressChange = (addr: AddressData) => {
+    setSelectedAddress(addr);
+    setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
+    if (addr.landmark) setLandmark(addr.landmark);
+  };
 
   // Determine field visibility based on checkout group
   const showDatePicker = checkoutGroup === 'A' || checkoutGroup === 'D' || (checkoutGroup === 'C' && deliveryMethod === 'home_visit');
-  const hideLocationCard = checkoutGroup === 'B' || (checkoutGroup === 'C' && deliveryMethod === 'online') || (checkoutGroup === 'D' && (slug === 'driving-cab' || slug === 'anything-else'));
+  const hideLocationCard = false;
   const showPhotoUpload = checkoutGroup === 'A' || checkoutGroup === 'B' || (checkoutGroup === 'D' && slug !== 'driving-cab' && slug !== 'anything-else');
   const isZeroPayment = checkoutGroup === 'D';
 
@@ -98,6 +120,29 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
       setAddressInitialized(true);
     }
   }, [profile, address]);
+
+  const syncAddressToProfile = async (addressText: string, landmarkText: string) => {
+    if (!profile?.id || !addressText.trim()) return;
+    try {
+      const existing = profile.addresses?.find((a: any) => a.isDefault) || profile.addresses?.[0];
+      const payload = {
+        label: existing?.label || 'Home',
+        line1: addressText.trim(),
+        cityName: existing?.cityName || '',
+        state: existing?.state || '',
+        pincode: existing?.pincode || '',
+        landmark: landmarkText.trim() || undefined,
+        isDefault: true,
+      };
+      if (existing?.id) {
+        await userService.updateAddress(profile.id, existing.id, payload);
+      } else {
+        await userService.addAddress(profile.id, payload);
+      }
+    } catch {
+      // non-fatal
+    }
+  };
 
   // Set base charge dynamically for pricing card
   const getPricingLabel = () => {
@@ -167,6 +212,9 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
     try {
       setIsBooking(true);
 
+      // Sync address to profile (non-blocking, non-fatal)
+      syncAddressToProfile(address, landmark);
+
       // Upload photos first
       let uploadedImageUrls: string[] = [];
       if (showPhotoUpload && selectedImages.length > 0) {
@@ -179,6 +227,8 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
         scheduledDate: scheduledDate ? scheduledDate.toISOString() : new Date().toISOString(),
         addressLine: hideLocationCard ? undefined : address,
         landmark: landmark.trim() || undefined,
+        latitude: selectedAddress?.latitude,
+        longitude: selectedAddress?.longitude,
         formDataJson: {
           comments: comments.trim(),
           attachments: uploadedImageUrls,
@@ -258,6 +308,8 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
       isLoading={isLoadingInit || isBooking}
       hidePricing={isZeroPayment}
       hideLocation={hideLocationCard}
+      selectedAddress={selectedAddress}
+      onAddressChange={handleAddressChange}
       bookButtonLabel={isZeroPayment ? t('common.submit_request', 'Submit Request') : undefined}
     >
       {/* Group C: Tech Support Online vs Visit selection */}

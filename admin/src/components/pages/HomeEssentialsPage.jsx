@@ -445,7 +445,7 @@ export default function HomeEssentialsPage() {
                       required
                       placeholder="e.g. 299"
                       value={form.basePrice}
-                      onChange={e => setForm({ ...form, basePrice: parseFloat(e.target.value) || 0 })}
+                      onChange={e => setForm({ ...form, basePrice: e.target.value })}
                     />
                   </div>
                   <div className="form-group">
