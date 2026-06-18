@@ -186,8 +186,10 @@ export const paymentService = {
         vendorFee: number;
         baseAyuxaFee?: number;
         diagnosticFee?: number;
+        isPaidBooking?: boolean;
     }): Promise<ApiResponse<{
         totalAmount: number;
+        requiredPlanType?: 'CARE' | 'HOMEMAKER' | null;
         breakdown: {
             vendorFee: number;
             diagnosticFee: number;

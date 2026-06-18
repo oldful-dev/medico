@@ -344,6 +344,18 @@ const initCronJobs = () => {
         }
     });
 
+    // ─── 8. Subscription Benefit Reset (Daily at 12 AM) ───
+    cron.schedule('0 0 * * *', async () => {
+        logger.info('⏰ CRON: Running subscription benefit reset...');
+        try {
+            const { resetExpiredUsage } = require('../services/subscriptionBenefit.service');
+            const resetCount = await resetExpiredUsage();
+            logger.info(`⏰ CRON: Subscription benefit reset completed. ${resetCount} benefits reset.`);
+        } catch (error) {
+            logger.error('CRON subscription benefit reset error:', error);
+        }
+    });
+
     logger.info('✅ All cron jobs registered');
 };
 

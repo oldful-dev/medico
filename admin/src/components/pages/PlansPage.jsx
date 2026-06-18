@@ -7,10 +7,11 @@ import { showToast, formatDate, formatCurrency } from "@/lib/hooks";
 // ─── Fixed benefit codes — admin selects from this list only ──────────────────
 const BENEFIT_CODES = [
     // Care
+    { code: "BASE_PLAN",              label: "Base Plan (Ayuxa Lifeline)" },
     { code: "SOS",                    label: "24/7 SOS" },
     { code: "TELECONSULT",            label: "Tele Consultation" },
     { code: "COMPANIONSHIP_CALL",     label: "Companionship Call" },
-    { code: "MEDICINE",               label: "Medicine Delivery" },
+    { code: "MEDICINE_DELIVERY",      label: "Medicine Delivery" },
     { code: "BLOOD_TEST",             label: "Blood Test Profile" },
     { code: "PHONE_SUPPORT",          label: "Phone Support" },
     { code: "FAMILY_PORTAL",          label: "Family Portal" },

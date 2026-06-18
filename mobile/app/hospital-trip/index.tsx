@@ -176,7 +176,7 @@ export default function HospitalTripScreen() {
 
             router.push({
                 pathname: '/service-checkout',
-                params: { bookingPayload, amount: String(servicePrice), label: serviceName || 'Hospital Visit Assistance', ...(params.subscriptionId && { subscriptionId: params.subscriptionId }) },
+                params: { bookingPayload, amount: String(servicePrice), label: serviceName || 'Hospital Visit Assistance', serviceSlug: 'hospital-trip', ...(params.subscriptionId && { subscriptionId: params.subscriptionId }) },
             });
         } catch (error) {
             console.error('Hospital trip error:', error);

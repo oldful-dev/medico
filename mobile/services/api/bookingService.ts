@@ -76,6 +76,7 @@ export interface CreateBookingPayload {
 
     // Dynamic form data
     formDataJson?: Record<string, any>;
+    isPaidBooking?: boolean;
 }
 
 export interface Booking {

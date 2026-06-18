@@ -83,6 +83,14 @@ const triggerSOS = async (req, res) => {
         }
     }
 
+    // 2.5. Entitlement check (Swiggy One model — never block SOS)
+    // SOS is always processed. If the user has a free entitlement, consume it.
+    // If not (no subscription, or quota exhausted), the SOS proceeds as a paid service.
+    const { canConsumeBenefit, consumeBenefit } = require('../services/subscriptionBenefit.service');
+    const check = await canConsumeBenefit(user.id, 'SOS');
+    const isFreeEntitlement = check.allowed;
+    const isSosBlocked = false; // NEVER block SOS — emergencies must always go through
+
     // 3. Save SOS record to DB
     let sosAlert;
     try {
@@ -99,6 +107,11 @@ const triggerSOS = async (req, res) => {
             },
             include: { user: { select: { name: true, phone: true, uniqueUserId: true } } }
         });
+
+        // Only consume benefit quota if user had a free entitlement
+        if (isFreeEntitlement) {
+            await consumeBenefit(user.id, 'SOS', sosAlert.id);
+        }
 
         // 🟢 REAL-TIME: Notify Admins via Socket
         const { emitToAdmins } = require('../services/socket.service');
@@ -283,7 +296,14 @@ const triggerSOS = async (req, res) => {
     return res.status(200).json({
         success: true,
         message: 'SOS alert recorded and notifications dispatched',
-        data: { sosId: sosAlert.id, adminNotified, familyNotified },
+        data: {
+            sosId: sosAlert.id,
+            adminNotified,
+            familyNotified,
+            // Swiggy One: tells the app whether a free quota was consumed or this is a paid SOS
+            isFreeEntitlement,
+            bookingMode: isFreeEntitlement ? 'FREE' : 'PAID',
+        },
     });
 };
 

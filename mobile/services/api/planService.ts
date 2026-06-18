@@ -233,6 +233,14 @@ export const planService = {
     },
 
     /**
+     * GET /api/subscriptions/my-benefits
+     * Fetches benefit usage statistics for active subscriptions.
+     */
+    getMyBenefits: async (): Promise<ApiResponse<any[]>> => {
+        return apiClient.get<any[]>('/subscriptions/my-benefits');
+    },
+
+    /**
      * PUT /api/subscriptions/:id/cancel
      * Cancel an active subscription — backend fires PLAN_CANCELLED_WITH_CONTACT SMS.
      */

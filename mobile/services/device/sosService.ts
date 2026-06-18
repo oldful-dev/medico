@@ -102,15 +102,18 @@ export const sosService = {
     },
 
     /**
-     * Call emergency hotline directly
+     * Call emergency hotline directly.
+     * NOTE: We do NOT use Linking.canOpenURL for tel: because on Android 11+
+     * canOpenURL returns false for tel: unless the scheme is declared in android.queries.
+     * openURL always works on physical devices for phone calls.
      */
     callEmergencyHotline: async (hotlineNumber: string = '112'): Promise<void> => {
         const url = `tel:${hotlineNumber}`;
-        const supported = await Linking.canOpenURL(url);
-        if (supported) {
+        try {
             await Linking.openURL(url);
-        } else {
-            Alert.alert('Error', 'Unable to make phone call');
+        } catch (err) {
+            console.warn('SOS: Unable to open phone dialer:', err);
+            Alert.alert('Call Failed', `Please call ${hotlineNumber} manually for emergency assistance.`);
         }
     },
 

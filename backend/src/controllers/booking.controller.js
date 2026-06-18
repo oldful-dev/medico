@@ -169,17 +169,63 @@ const createBooking = async (req, res, next) => {
                     }
                 }
 
-                // ─── Subscription Check ───────────────────────────────────
-                // If user has active subscription, skip all charges (except GST on subscription itself)
-                const hasSubActive = await hasActiveSubscription(finalUserId);
-                const chargeAmount = hasSubActive ? 0 : safeAmount;
+                // ─── Subscription Benefit Check (Swiggy One Model) ──────────────────
+                // Scenario A: No subscription → Paid Booking (no block)
+                // Scenario B: Subscription + quota available → Free Booking (benefit consumed)
+                // Scenario C: Subscription + quota exhausted → LIMIT_EXCEEDED prompt → user may override as Paid Booking
+                // Scenario D: ZERO_SERVICE_FEE benefit → fee waiver (no quota tracking)
+                let chargeAmount = safeAmount;
+                let isSubscriptionCovering = false;
+                let usedEntitlement = false;
+                let benefitCode = null;
+                let updatedFormDataJson = formDataJson || {};
+
+                const { getBenefitCodeForService } = require('../config/benefitMapping');
+                const { canConsumeBenefit, consumeBenefit } = require('../services/subscriptionBenefit.service');
+
+                benefitCode = getBenefitCodeForService(service.slug);
+                if (benefitCode) {
+                    if (benefitCode === 'ZERO_SERVICE_FEE') {
+                        // Scenario D: Waiver benefit — check if the subscription includes fee waiver
+                        const check = await canConsumeBenefit(finalUserId, 'ZERO_SERVICE_FEE');
+                        if (check.allowed) {
+                            if (typeof updatedFormDataJson !== 'object') updatedFormDataJson = {};
+                            updatedFormDataJson.bookingFeeWaived = true;
+                            updatedFormDataJson.platformFeeWaived = true;
+                            updatedFormDataJson.gstOnFeeWaived = true;
+                        }
+                        // If no subscription (NO_ACTIVE_SUBSCRIPTION or BENEFIT_NOT_IN_PLAN),
+                        // fees apply normally — no blocking.
+                    } else {
+                        const check = await canConsumeBenefit(finalUserId, benefitCode);
+                        if (check.allowed) {
+                            // Scenario B: Free entitlement available — cover the booking
+                            chargeAmount = 0;
+                            isSubscriptionCovering = true;
+                            usedEntitlement = true;
+                        } else if (check.reason === 'LIMIT_EXCEEDED') {
+                            // Scenario C: Quota exhausted
+                            if (!req.body.isPaidBooking) {
+                                // Let frontend know to show the "Continue as Paid" prompt
+                                return res.status(400).json({
+                                    success: false,
+                                    code: 'LIMIT_EXCEEDED',
+                                    message: 'Your free monthly quota for this service has been exhausted.',
+                                    hint: 'Pass isPaidBooking=true to proceed as a standard paid booking.',
+                                });
+                            }
+                            // isPaidBooking=true: fall through, proceed as standard paid booking
+                        }
+                        // Scenario A: NO_ACTIVE_SUBSCRIPTION / BENEFIT_NOT_IN_PLAN
+                        // → No action needed — proceed with safeAmount as paid booking.
+                    }
+                }
 
                 // ─── Status logic ─────────────────────────────────────────
                 // COD / free services → CONFIRMED + paymentStatus=PENDING
                 // Prepaid (UPI/CARD)  → PAYMENT_PENDING (awaiting verify)
                 // Subscription active  → CONFIRMED + paymentStatus=SUCCESS (free booking)
                 const isCOD = paymentMethod === 'CASH' || paymentMethod === 'cash' || !chargeAmount || chargeAmount === 0;
-                const isSubscriptionCovering = hasSubActive && safeAmount > 0;
 
                 booking = await prisma.booking.create({
                     data: {
@@ -204,8 +250,8 @@ const createBooking = async (req, res, next) => {
                         pickupAddress,
                         dropAddress,
                         vehicleType,
-                        amount: safeAmount,
-                        formDataJson: formDataJson || null,
+                        amount: chargeAmount,
+                        formDataJson: updatedFormDataJson,
                         status: isSubscriptionCovering ? 'CONFIRMED' : (isCOD ? 'CONFIRMED' : 'PAYMENT_PENDING'),
                         paymentStatus: isSubscriptionCovering ? 'SUCCESS' : (isCOD ? 'PENDING' : 'INITIATED'),
                         slaDeadline: (isCOD || isSubscriptionCovering) ? new Date(Date.now() + 4 * 60 * 60 * 1000) : null,
@@ -215,6 +261,10 @@ const createBooking = async (req, res, next) => {
                         service: { select: { name: true, slug: true, icon: true } },
                     },
                 });
+
+                if (usedEntitlement) {
+                    await consumeBenefit(finalUserId, benefitCode, booking.id);
+                }
                 // Create payment record
                 if (chargeAmount > 0 && isCOD) {
                     // CASH: track for admin

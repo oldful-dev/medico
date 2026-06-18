@@ -6,6 +6,7 @@ const ctrl = require('../controllers/subscription.controller');
 
 // ─── User routes ──────────────────────────────────────────────────────────────
 router.get('/me/active',            authenticate, ctrl.checkUserActiveSubscription);
+router.get('/my-benefits',          authenticate, ctrl.getMyBenefits);
 router.get('/me/memberships',       authenticate, ctrl.getMemberships);
 router.get('/me/upgrade-history',   authenticate, ctrl.getUpgradeHistory);
 router.post('/initiate',            authenticate, ctrl.initiateUserSubscription);
