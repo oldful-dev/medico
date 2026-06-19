@@ -113,7 +113,12 @@ export default function ServicesPage() {
     };
 
     const openEditPrice = (service) => {
-        setEditingService({ id: service.id, name: service.name, pricingText: service.pricingText || '' });
+        setEditingService({ 
+            id: service.id, 
+            name: service.name, 
+            pricingText: service.pricingText || '',
+            basePrice: service.basePrice !== null && service.basePrice !== undefined ? service.basePrice : 0
+        });
         setShowModal(true);
     };
 
@@ -292,7 +297,10 @@ export default function ServicesPage() {
     const handleSavePrice = async (e) => {
         e.preventDefault();
         try {
-            await serviceAPI.update(editingService.id, { pricingText: editingService.pricingText });
+            await serviceAPI.update(editingService.id, { 
+                pricingText: editingService.pricingText,
+                basePrice: parseFloat(editingService.basePrice) || 0
+            });
             showToast('Price updated successfully', 'success');
             setShowModal(false);
             loadServices();
@@ -568,6 +576,22 @@ export default function ServicesPage() {
                                         />
                                     </div>
                                     <p className="form-hint">This text will appear directly next to the service on the app.</p>
+                                </div>
+                                <div className="form-group" style={{ marginTop: 16 }}>
+                                    <label className="form-label">Base Price (₹)</label>
+                                    <div className="input-with-icon">
+                                        <DollarSign size={18} className="text-muted" />
+                                        <input 
+                                            type="number"
+                                            className="form-input" 
+                                            required 
+                                            min="0"
+                                            placeholder="e.g. 299"
+                                            value={editingService.basePrice} 
+                                            onChange={e => setEditingService({ ...editingService, basePrice: e.target.value })} 
+                                        />
+                                    </div>
+                                    <p className="form-hint">The numerical service charge fee used for checkout totals.</p>
                                 </div>
                             </div>
                             <div className="modal-footer footer-minimal">

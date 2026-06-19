@@ -1500,7 +1500,20 @@
     "pickup_disabled": "स्वयं व्यवस्था",
     "pickup_time_label": "पिकअप समय",
     "organizer_label": "आयोजक",
-    "plan_benefit_applied": "प्लान लाभ लागू हुआ!"
+    "plan_benefit_applied": "प्लान लाभ लागू हुआ!",
+    "upgrade_care": "🩺 केयर सदस्यता में अपग्रेड करें",
+    "upgrade_home": "🏠 होम एसेंशियल में अपग्रेड करें",
+    "upgrade_save_amount": "इस बुकिंग पर ₹{{amount}} बचाएं!",
+    "upgrade_subtitle": "तुरंत ₹0 बुकिंग और प्लेटफॉर्म शुल्क प्राप्त करें",
+    "booking_fee_waived": "✓ बुकिंग शुल्क माफ",
+    "platform_fee_waived": "✓ प्लेटफॉर्म शुल्क माफ",
+    "gst_waived": "✓ शुल्कों पर जीएसटी माफ",
+    "select_plan_option": "योजना विकल्प चुनें:",
+    "select_plan_duration": "योजना की अवधि चुनें:",
+    "months_3": "3 महीने",
+    "months_6": "6 महीने",
+    "months_12": "12 महीने",
+    "you_saved_fees": "💰 आपने शुल्क पर ₹{{amount}} बचाए!"
   },
   "service_confirmation": {
     "booking_confirmed": "पुष्टि हो गई",

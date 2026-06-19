@@ -1500,7 +1500,20 @@
     "pickup_disabled": "స్వంత ఏర్పాటు",
     "pickup_time_label": "పికప్ సమయం",
     "organizer_label": "నిర్వాహకుడు",
-    "plan_benefit_applied": "ప్లాన్ ప్రయోజనం వర్తించబడింది!"
+    "plan_benefit_applied": "ప్లాన్ ప్రయోజనం వర్తించబడింది!",
+    "upgrade_care": "🩺 కేర్ మెంబర్‌షిప్‌కు అప్‌గ్రేడ్ చేయండి",
+    "upgrade_home": "🏠 హోమ్ ఎసెన్షియల్స్‌కు అప్‌గ్రేడ్ చేయండి",
+    "upgrade_save_amount": "ఈ బుకింగ్‌పై ₹{{amount}} ఆదా చేయండి!",
+    "upgrade_subtitle": "తక్షణమే ₹0 బుకింగ్ & ప్లాట్‌ఫార్మ్ ఫీజు పొందండి",
+    "booking_fee_waived": "✓ బుకింగ్ ఫీజు మినహాయింపు",
+    "platform_fee_waived": "✓ ప్లాట్‌ఫార్మ్ ఫీజు మినహాయింపు",
+    "gst_waived": "✓ ఫీజులపై జీఎస్టీ మినహాయింపు",
+    "select_plan_option": "ప్లాన్ ఆప్షన్ ఎంచుకోండి:",
+    "select_plan_duration": "ప్లాన్ వ్యవధి ఎంచుకోండి:",
+    "months_3": "3 నెలలు",
+    "months_6": "6 నెలలు",
+    "months_12": "12 నెలలు",
+    "you_saved_fees": "💰 మీరు ఫీజులపై ₹{{amount}} ఆదా చేశారు!"
   },
   "service_confirmation": {
     "booking_confirmed": "బుకింగ్ నిర్ధారించబడింది",

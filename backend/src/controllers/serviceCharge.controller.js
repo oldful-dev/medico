@@ -71,6 +71,28 @@ const createServiceCharge = async (req, res, next) => {
                 isActive: isActive !== undefined ? isActive : true,
             },
         });
+
+        // Sync with corresponding Service basePrice
+        try {
+            const serviceCategoryLower = serviceCategory.toLowerCase().replace(/_/g, '-');
+            const service = await prisma.service.findFirst({
+                where: {
+                    OR: [
+                        { slug: serviceCategoryLower },
+                        { name: { equals: serviceCategory, mode: 'insensitive' } }
+                    ]
+                }
+            });
+            if (service) {
+                await prisma.service.update({
+                    where: { id: service.id },
+                    data: { basePrice: parseFloat(serviceFee || 0) }
+                });
+            }
+        } catch (syncErr) {
+            console.error('Failed to sync Service basePrice during creation:', syncErr);
+        }
+
         sendResponse(res, 201, charge, 'Service charge configuration created successfully');
     } catch (error) {
         next(error);
@@ -94,6 +116,13 @@ const updateServiceCharge = async (req, res, next) => {
             isActive
         } = req.body;
 
+        const existing = await prisma.serviceCharge.findUnique({
+            where: { id: req.params.id }
+        });
+        if (!existing) {
+            return res.status(404).json({ success: false, message: 'Service charge configuration not found' });
+        }
+
         const data = {};
         if (serviceFee !== undefined) data.serviceFee = parseFloat(serviceFee) || 0;
         if (bookingFee !== undefined) data.bookingFee = parseFloat(bookingFee) || 0;
@@ -111,6 +140,30 @@ const updateServiceCharge = async (req, res, next) => {
             where: { id: req.params.id },
             data,
         });
+
+        // Sync with corresponding Service basePrice if serviceFee was updated
+        if (serviceFee !== undefined) {
+            try {
+                const serviceCategoryLower = existing.serviceCategory.toLowerCase().replace(/_/g, '-');
+                const service = await prisma.service.findFirst({
+                    where: {
+                        OR: [
+                            { slug: serviceCategoryLower },
+                            { name: { equals: existing.serviceCategory, mode: 'insensitive' } }
+                        ]
+                    }
+                });
+                if (service) {
+                    await prisma.service.update({
+                        where: { id: service.id },
+                        data: { basePrice: parseFloat(serviceFee || 0) }
+                    });
+                }
+            } catch (syncErr) {
+                console.error('Failed to sync Service basePrice during update:', syncErr);
+            }
+        }
+
         sendResponse(res, 200, charge, 'Service charge configuration updated successfully');
     } catch (error) {
         next(error);

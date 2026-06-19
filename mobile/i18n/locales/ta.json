@@ -1500,7 +1500,20 @@
     "pickup_disabled": "சொந்த ஏற்பாடு",
     "pickup_time_label": "பிக்கப் நேரம்",
     "organizer_label": "ஏற்பாட்டாளர்",
-    "plan_benefit_applied": "திட்ட சலுகை பயன்படுத்தப்பட்டது!"
+    "plan_benefit_applied": "திட்ட சலுகை பயன்படுத்தப்பட்டது!",
+    "upgrade_care": "🩺 கேர் மெம்பர்ஷிப்பிற்கு மேம்படுத்தவும்",
+    "upgrade_home": "🏠 ஹோம் எசென்ஷியல்ஸிற்கு மேம்படுத்தவும்",
+    "upgrade_save_amount": "இந்த புக்கிங்கில் ₹{{amount}} சேமிக்கவும்!",
+    "upgrade_subtitle": "உடனடியாக ₹0 புக்கிங் & பிளாட்பார்ம் கட்டணத்தைப் பெறுங்கள்",
+    "booking_fee_waived": "✓ புக்கிங் கட்டணம் தள்ளுபடி",
+    "platform_fee_waived": "✓ பிளாட்பார்ம் கட்டணம் தள்ளுபடி",
+    "gst_waived": "✓ கட்டணங்களுக்கான ஜிஎస్టி தள்ளுபடி",
+    "select_plan_option": "திட்ட விருப்பத்தைத் தேர்ந்தெடுக்கவும்:",
+    "select_plan_duration": "திட்ட காலத்தைத் தேர்ந்தெடுக்கவும்:",
+    "months_3": "3 மாதங்கள்",
+    "months_6": "6 மாதங்கள்",
+    "months_12": "12 மாதங்கள்",
+    "you_saved_fees": "💰 கட்டணத்தில் ₹{{amount}} சேமித்துள்ளீர்கள்!"
   },
   "service_confirmation": {
     "booking_confirmed": "உறுதி செய்யப்பட்டது",

@@ -83,6 +83,7 @@ const getUserById = async (req, res, next) => {
                 city: true,
                 addresses: true,
                 emergencyContacts: true,
+                familyMembers: true,
                 medicalCards: true,
                 healthReports: { orderBy: { reportDate: 'desc' } },
                 subscriptions: {

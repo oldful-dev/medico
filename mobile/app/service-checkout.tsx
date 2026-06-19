@@ -195,7 +195,7 @@ export default function ServiceCheckoutScreen() {
   // HOME plan covers: Home Essentials benefits
   const HOME_CATEGORIES = [
     // Electrical / Plumbing / Repairs
-    "PLUMBING_ELECTRICAL", "APPLIANCE_REPAIR", "HANDYMEN",
+    "PLUMBING_ELECTRICAL", "APPLIANCE_REPAIR", "AC_APPLIANCE_REPAIR", "HANDYMEN",
     // Cleaning
     "DEEP_CLEANING", "SANITATION",
     // Bills / Paperwork
@@ -204,7 +204,7 @@ export default function ServiceCheckoutScreen() {
     // Tech
     "TECH_HELPER", "TECH_SUPPORT",
     // Grocery / Essentials
-    "HOME_ESSENTIALS", "GROCERY_RUN", "GROCERY_ASSIST",
+    "HOME_ESSENTIALS", "GROCERY_RUN", "GROCERY_DELIVERY", "GROCERY_ASSIST",
     // Audit / Custom
     "HOME_AUDIT", "CUSTOM_REQUEST", "ZERO_SERVICE_FEE",
   ];
@@ -408,10 +408,18 @@ export default function ServiceCheckoutScreen() {
 
   const baseBookingFee = isZeroPayment
     ? 0
-    : (calculatedPrices ? calculatedPrices.breakdown.bookingFee : 299);
+    : (calculatedPrices 
+        ? ((calculatedPrices.breakdown as any).originalBookingFee !== undefined 
+            ? (calculatedPrices.breakdown as any).originalBookingFee 
+            : calculatedPrices.breakdown.bookingFee)
+        : 299);
   const basePlatformFee = isZeroPayment
     ? 0
-    : (calculatedPrices ? calculatedPrices.breakdown.platformFee : 50);
+    : (calculatedPrices 
+        ? ((calculatedPrices.breakdown as any).originalPlatformFee !== undefined 
+            ? (calculatedPrices.breakdown as any).originalPlatformFee 
+            : calculatedPrices.breakdown.platformFee)
+        : 50);
 
   const bookingFee = (hasActivePlanForCategory || isUpgraded) ? 0 : baseBookingFee;
   const platformFee = (hasActivePlanForCategory || isUpgraded) ? 0 : basePlatformFee;
@@ -426,6 +434,8 @@ export default function ServiceCheckoutScreen() {
   const displayVendorFee = calculatedPrices ? calculatedPrices.breakdown.vendorFee : baseAmount;
 
   const isHomeEssential = HOME_CATEGORIES.includes(category);
+  const isGroupA = ["PLUMBING_ELECTRICAL", "APPLIANCE_REPAIR", "AC_APPLIANCE_REPAIR", "GROCERY_DELIVERY", "GROCERY_RUN"].includes(category);
+  const isServiceFeeWaived = false;
   const fallbackTaxPercentage = isHomeEssential ? 18 : 6;
   const taxRate = calculatedPrices ? (calculatedPrices.taxPercentage ?? fallbackTaxPercentage) : fallbackTaxPercentage;
 
@@ -439,6 +449,18 @@ export default function ServiceCheckoutScreen() {
 
   const originalBookingFee = isZeroPayment ? 0 : baseBookingFee;
   const originalPlatformFee = isZeroPayment ? 0 : basePlatformFee;
+
+  const originalExtraFeesSum = originalBookingFee + originalPlatformFee + convenienceFee + emergencyFee + visitFee + nightCharge + surgeCharge;
+  const originalTaxes = isZeroPayment
+    ? 0
+    : (calculatedPrices && !benefitApplied
+        ? calculatedPrices.breakdown.taxes
+        : Math.round((isHomeEssential ? baseAmount + originalExtraFeesSum : originalExtraFeesSum) * (taxRate / 100)));
+  const taxSavings = Math.max(0, originalTaxes - taxes);
+
+  const totalFeeSavings = isUpgraded && savingsInfo
+    ? savingsInfo.totalSavings
+    : (originalBookingFee - bookingFee) + (originalPlatformFee - platformFee) + taxSavings;
 
   const amountWithTaxAndFee = isZeroPayment
     ? 0
@@ -1119,7 +1141,7 @@ export default function ServiceCheckoutScreen() {
             <View style={styles.row}>
               <Text style={styles.rowLabel}>{label}</Text>
               <Text style={styles.rowValue}>
-                ₹{displayVendorFee.toLocaleString("en-IN")}
+                ₹{(isServiceFeeWaived ? 0 : displayVendorFee).toLocaleString("en-IN")}
               </Text>
             </View>
 
@@ -1129,33 +1151,40 @@ export default function ServiceCheckoutScreen() {
                 <Text style={styles.breakdownLabel}>
                   {t("service_checkout.service_fee")}
                 </Text>
-                <Text style={styles.breakdownValue}>
-                  ₹{displayVendorFee.toLocaleString("en-IN")}
-                </Text>
-              </View>
-              <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>
-                  {t("service_checkout.booking_fee")}
-                </Text>
-                {benefitApplied ? (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.breakdownValue,
-                        {
-                          textDecorationLine: "line-through",
-                          color: colors.textMuted,
-                        },
-                      ]}
+                {isServiceFeeWaived ? (
+                  displayVendorFee > 0 ? (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
                     >
-                      ₹{originalBookingFee}
-                    </Text>
+                      <Text
+                        style={[
+                          styles.breakdownValue,
+                          {
+                            textDecorationLine: "line-through",
+                            color: colors.textMuted,
+                          },
+                        ]}
+                      >
+                        ₹{displayVendorFee}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.breakdownValue,
+                          {
+                            color: isDarkMode ? colors.primary : "#2e7d32",
+                            fontFamily: Fonts.semiBold,
+                          },
+                        ]}
+                      >
+                        {" "}
+                        {t("service_checkout.free")}
+                      </Text>
+                    </View>
+                  ) : (
                     <Text
                       style={[
                         styles.breakdownValue,
@@ -1165,10 +1194,65 @@ export default function ServiceCheckoutScreen() {
                         },
                       ]}
                     >
-                      {" "}
                       {t("service_checkout.free")}
                     </Text>
-                  </View>
+                  )
+                ) : (
+                  <Text style={styles.breakdownValue}>
+                    ₹{displayVendorFee.toLocaleString("en-IN")}
+                  </Text>
+                )}
+              </View>
+              <View style={styles.breakdownRow}>
+                <Text style={styles.breakdownLabel}>
+                  {t("service_checkout.booking_fee")}
+                </Text>
+                {benefitApplied ? (
+                  originalBookingFee > 0 ? (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.breakdownValue,
+                          {
+                            textDecorationLine: "line-through",
+                            color: colors.textMuted,
+                          },
+                        ]}
+                      >
+                        ₹{originalBookingFee}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.breakdownValue,
+                          {
+                            color: isDarkMode ? colors.primary : "#2e7d32",
+                            fontFamily: Fonts.semiBold,
+                          },
+                        ]}
+                      >
+                        {" "}
+                        {t("service_checkout.free")}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text
+                      style={[
+                        styles.breakdownValue,
+                        {
+                          color: isDarkMode ? colors.primary : "#2e7d32",
+                          fontFamily: Fonts.semiBold,
+                        },
+                      ]}
+                    >
+                      {t("service_checkout.free")}
+                    </Text>
+                  )
                 ) : (
                   <Text style={styles.breakdownValue}>₹{bookingFee}</Text>
                 )}
@@ -1178,24 +1262,39 @@ export default function ServiceCheckoutScreen() {
                   {t("service_checkout.platform_fee")}
                 </Text>
                 {benefitApplied ? (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.breakdownValue,
-                        {
-                          textDecorationLine: "line-through",
-                          color: colors.textMuted,
-                        },
-                      ]}
+                  originalPlatformFee > 0 ? (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
                     >
-                      ₹{originalPlatformFee}
-                    </Text>
+                      <Text
+                        style={[
+                          styles.breakdownValue,
+                          {
+                            textDecorationLine: "line-through",
+                            color: colors.textMuted,
+                          },
+                        ]}
+                      >
+                        ₹{originalPlatformFee}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.breakdownValue,
+                          {
+                            color: isDarkMode ? colors.primary : "#2e7d32",
+                            fontFamily: Fonts.semiBold,
+                          },
+                        ]}
+                      >
+                        {" "}
+                        {t("service_checkout.free")}
+                      </Text>
+                    </View>
+                  ) : (
                     <Text
                       style={[
                         styles.breakdownValue,
@@ -1205,10 +1304,9 @@ export default function ServiceCheckoutScreen() {
                         },
                       ]}
                     >
-                      {" "}
                       {t("service_checkout.free")}
                     </Text>
-                  </View>
+                  )
                 ) : (
                   <Text style={styles.breakdownValue}>₹{platformFee}</Text>
                 )}
@@ -1257,13 +1355,47 @@ export default function ServiceCheckoutScreen() {
                 <Text style={styles.breakdownLabel}>
                   {t("service_checkout.taxes_gst")} ({taxRate}%)
                 </Text>
-                <Text style={styles.breakdownValue}>
-                  ₹
-                  {taxes.toLocaleString("en-IN", {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 2,
-                  })}
-                </Text>
+                {benefitApplied && originalTaxes > taxes && originalTaxes > 0 ? (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.breakdownValue,
+                        {
+                          textDecorationLine: "line-through",
+                          color: colors.textMuted,
+                        },
+                      ]}
+                    >
+                      ₹{originalTaxes}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.breakdownValue,
+                        {
+                          color: taxes === 0 ? (isDarkMode ? colors.primary : "#2e7d32") : colors.textDark,
+                          fontFamily: taxes === 0 ? Fonts.semiBold : Fonts.regular,
+                        },
+                      ]}
+                    >
+                      {" "}
+                      {taxes === 0 ? t("service_checkout.free") : `₹${taxes.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.breakdownValue}>
+                    ₹
+                    {taxes.toLocaleString("en-IN", {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Text>
+                )}
               </View>
               {benefitApplied && (
                 <Text style={styles.benefitNote}>
@@ -1305,16 +1437,10 @@ export default function ServiceCheckoutScreen() {
               </Text>
             </View>
 
-            {benefitApplied && (
+            {benefitApplied && totalFeeSavings > 0 && (
               <View style={styles.savingsBadge}>
                 <Text style={styles.savingsText}>
-                  💰 You saved ₹
-                  {Math.round(
-                    originalBookingFee -
-                      bookingFee +
-                      (originalPlatformFee - platformFee),
-                  ).toLocaleString("en-IN")}{" "}
-                  on fees!
+                  {t("service_checkout.you_saved_fees", { amount: Math.round(totalFeeSavings).toLocaleString("en-IN") })}
                 </Text>
               </View>
             )}
@@ -1542,15 +1668,15 @@ export default function ServiceCheckoutScreen() {
                 <View style={{ flex: 1, marginLeft: 10 }}>
                   <Text style={styles.upgradeTitle}>
                     {CARE_CATEGORIES.includes(category)
-                      ? "🩺 Upgrade to Care Membership"
-                      : "🏠 Upgrade to Home Essentials"}
+                      ? t("service_checkout.upgrade_care")
+                      : t("service_checkout.upgrade_home")}
                   </Text>
                   {savingsInfo && savingsInfo.totalSavings > 0 ? (
                     <Text style={[styles.upgradeSaveText, { color: colors.primary }]}>
-                      Save ₹{savingsInfo.totalSavings} on this booking!
+                      {t("service_checkout.upgrade_save_amount", { amount: savingsInfo.totalSavings })}
                     </Text>
                   ) : (
-                    <Text style={styles.upgradeSubtitle}>Get ₹0 booking & platform fees instantly</Text>
+                    <Text style={styles.upgradeSubtitle}>{t("service_checkout.upgrade_subtitle")}</Text>
                   )}
                 </View>
               </TouchableOpacity>
@@ -1558,14 +1684,14 @@ export default function ServiceCheckoutScreen() {
               {isUpgraded && (
                 <View style={styles.upgradeDetails}>
                   <View style={styles.waiverList}>
-                    <Text style={styles.waiverItem}>✓ Booking Fee Waived</Text>
-                    <Text style={styles.waiverItem}>✓ Platform Fee Waived</Text>
-                    <Text style={styles.waiverItem}>✓ GST on Fees Waived</Text>
+                    <Text style={styles.waiverItem}>{t("service_checkout.booking_fee_waived")}</Text>
+                    <Text style={styles.waiverItem}>{t("service_checkout.platform_fee_waived")}</Text>
+                    <Text style={styles.waiverItem}>{t("service_checkout.gst_waived")}</Text>
                   </View>
 
                   {eligiblePlans.length > 1 && (
                     <>
-                      <Text style={styles.planSelectorLabel}>Select Plan Option:</Text>
+                  <Text style={styles.planSelectorLabel}>{t("service_checkout.select_plan_option")}</Text>
                       <View style={styles.planSelector}>
                         {eligiblePlans.map((plan, idx) => (
                           <TouchableOpacity
@@ -1591,12 +1717,12 @@ export default function ServiceCheckoutScreen() {
                     </>
                   )}
 
-                  <Text style={styles.durationSelectorLabel}>Select Plan Duration:</Text>
+                  <Text style={styles.durationSelectorLabel}>{t("service_checkout.select_plan_duration")}</Text>
                   <View style={styles.durationSelector}>
                     {[
-                      { key: 'QUARTERLY' as BillingCycle, label: '3 Months', price: selectedUpgradePlan?.quarterlyPrice },
-                      { key: 'BIANNUAL' as BillingCycle, label: '6 Months', price: selectedUpgradePlan?.biannualPrice },
-                      { key: 'YEARLY' as BillingCycle, label: '12 Months', price: selectedUpgradePlan?.yearlyPrice },
+                      { key: 'QUARTERLY' as BillingCycle, label: t("service_checkout.months_3"), price: selectedUpgradePlan?.quarterlyPrice },
+                      { key: 'BIANNUAL' as BillingCycle, label: t("service_checkout.months_6"), price: selectedUpgradePlan?.biannualPrice },
+                      { key: 'YEARLY' as BillingCycle, label: t("service_checkout.months_12"), price: selectedUpgradePlan?.yearlyPrice },
                     ].map(dur => (
                       <TouchableOpacity
                         key={dur.key}

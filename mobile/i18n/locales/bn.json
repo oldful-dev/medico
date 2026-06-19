@@ -1407,7 +1407,20 @@
     "pickup_disabled": "নিজস্ব ব্যবস্থা",
     "pickup_time_label": "পিকআপ সময়",
     "organizer_label": "আয়োজক",
-    "plan_benefit_applied": "প্ল্যান সুবিধা প্রযোজ্য!"
+    "plan_benefit_applied": "প্ল্যান সুবিধা প্রযোজ্য!",
+    "upgrade_care": "🩺 কেয়ার মেম্বারশিপে আপগ্রেড করুন",
+    "upgrade_home": "🏠 হোম এসেনশিয়ালসে আপগ্রেড করুন",
+    "upgrade_save_amount": "এই বুকিংয়ে ₹{{amount}} সাশ্রয় করুন!",
+    "upgrade_subtitle": "অবিলম্বে ₹০ বুকিং এবং প্ল্যাটফর্ম ফি পান",
+    "booking_fee_waived": "✓ বুকিং ফি মওকুফ",
+    "platform_fee_waived": "✓ প্ল্যাটফর্ম ফি মওকুফ",
+    "gst_waived": "✓ ফি-র উপর জিএসটি মওকুফ",
+    "select_plan_option": "পরিকল্পনা বিকল্প নির্বাচন করুন:",
+    "select_plan_duration": "পরিকল্পনা সময়কাল নির্বাচন করুন:",
+    "months_3": "3 মাস",
+    "months_6": "6 মাস",
+    "months_12": "12 মাস",
+    "you_saved_fees": "💰 আপনি ফিতে ₹{{amount}} সাশ্রয় করেছেন!"
   },
   "service_confirmation": {
     "booking_confirmed": "বুকিং নিশ্চিত",

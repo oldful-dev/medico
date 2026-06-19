@@ -1407,7 +1407,20 @@
     "pickup_disabled": "ಸ್ವಯಂ ವ್ಯವಸ್ಥೆ",
     "pickup_time_label": "ಪಿಕ್‌ಅಪ್ ಸಮಯ",
     "organizer_label": "ಆಯೋಜಕ",
-    "plan_benefit_applied": "ಪ್ಲಾನ್ ಪ್ರಯೋಜನ ಅನ್ವಯಿಸಲಾಗಿದೆ!"
+    "plan_benefit_applied": "ಪ್ಲಾನ್ ಪ್ರಯೋಜನ ಅನ್ವಯಿಸಲಾಗಿದೆ!",
+    "upgrade_care": "🩺 ಕೇರ್ ಸದಸ್ಯತ್ವಕ್ಕೆ ಅಪ್‌ಗ್ರೇಡ್ ಮಾಡಿ",
+    "upgrade_home": "🏠 ಹೋಮ್ ಎಸೆನ್ಷಿಯಲ್ಸ್‌ಗೆ ಅಪ್‌ಗ್ರೇಡ್ ಮಾಡಿ",
+    "upgrade_save_amount": "ಈ ಬುಕಿಂಗ್‌ನಲ್ಲಿ ₹{{amount}} ಉಳಿಸಿ!",
+    "upgrade_subtitle": "ತಕ್ಷಣವೇ ₹0 ಬುಕಿಂಗ್ ಮತ್ತು ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ಶುಲ್ಕ ಪಡೆಯಿರಿ",
+    "booking_fee_waived": "✓ ಬುಕಿಂಗ್ ಶುಲ್ಕ ಮನ್ನಾ",
+    "platform_fee_waived": "✓ ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ಶುಲ್ಕ ಮನ್ನಾ",
+    "gst_waived": "✓ ಶುಲ್ಕಗಳ ಮೇಲಿನ ಜಿಎಸ್‌ಟಿ ಮನ್ನಾ",
+    "select_plan_option": "ಯೋಜನೆಯ ಆಯ್ಕೆಯನ್ನು ಆರಿಸಿ:",
+    "select_plan_duration": "ಯೋಜನೆಯ ಅವಧಿಯನ್ನು ಆರಿಸಿ:",
+    "months_3": "3 ತಿಂಗಳು",
+    "months_6": "6 ತಿಂಗಳು",
+    "months_12": "12 ತಿಂಗಳು",
+    "you_saved_fees": "💰 ನೀವು ಶುಲ್ಕದಲ್ಲಿ ₹{{amount}} ಉಳಿಸಿದ್ದೀರಿ!"
   },
   "service_confirmation": {
     "booking_confirmed": "ಬುಕಿಂಗ್ ಖಚಿತವಾಗಿದೆ",

@@ -4,11 +4,13 @@ const { authenticateAdmin } = require('../middleware/auth');
 const { authorize } = require('../middleware/rbac');
 const { auditMiddleware } = require('../middleware/audit');
 const ctrl = require('../controllers/admin.controller');
+const dumpCtrl = require('../controllers/admin-customer-dump.controller');
 
 router.use(authenticateAdmin);
 router.use(authorize('SUPER_ADMIN'));
 router.use(auditMiddleware('Admin'));
 
+router.get('/customer-media-dump', dumpCtrl.getCustomerMediaDump);
 router.get('/', ctrl.getAdmins);
 router.get('/profiles', ctrl.getProfiles);
 router.get('/profiles/metadata', ctrl.getMetadata);
