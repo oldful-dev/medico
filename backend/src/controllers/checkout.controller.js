@@ -6,10 +6,10 @@ const CARE_CATEGORIES = [
     'PHYSIO_FITNESS', 'BLOOD_TEST', 'SCAN_ECG',
 ];
 const HOME_CATEGORIES = [
-    'PLUMBING_ELECTRICAL', 'APPLIANCE_REPAIR', 'HOME_ESSENTIALS',
+    'PLUMBING_ELECTRICAL', 'APPLIANCE_REPAIR', 'AC_APPLIANCE_REPAIR', 'HOME_ESSENTIALS',
     'BILL_PAYMENT', 'BANK_PAPERWORK', 'PAPERWORK_LEGAL',
     'LEGAL_PAPERWORK', 'TECH_HELPER', 'DEEP_CLEANING', 'GROCERY_RUN',
-    'APPLIANCE_REPAIR', 'TRANSPORTATION',
+    'GROCERY_DELIVERY', 'TRANSPORTATION',
 ];
 const DIAGNOSTIC_FITNESS_CATEGORIES = [
     'BLOOD_TEST', 'SCAN_ECG', 'PHYSIO_FITNESS', 'DIAGNOSTICS_FITNESS',
@@ -66,16 +66,10 @@ exports.calculateCheckout = async (req, res) => {
         }
 
         // Fetch service charge configuration
-        const lookupCategory = serviceCategory?.toUpperCase?.() || serviceCategory;
+        const lookupCategory = (serviceCategory?.toUpperCase?.() || serviceCategory)?.replace(/-/g, '_');
         let config = await prisma.serviceCharge.findUnique({
             where: { serviceCategory: lookupCategory }
         });
-
-        if (!config && lookupCategory && lookupCategory.includes('-')) {
-            config = await prisma.serviceCharge.findUnique({
-                where: { serviceCategory: lookupCategory.replace(/-/g, '_') }
-            });
-        }
 
         // Fallback: If no config exists for this specific slug/name, try to match by its parent category
         if (!config && serviceRecord) {
@@ -140,15 +134,28 @@ exports.calculateCheckout = async (req, res) => {
                     expiryDate: { gte: new Date() },
                     plan: { planType: requiredPlanType },
                 },
-                include: { plan: { select: { planType: true } } },
+                include: { plan: { select: { planType: true, metadata: true } } },
             });
 
+            let waiveGstActive = false;
             if (activeSubscription) {
                 // Benefit applies! Waive booking and platform fees
                 benefitDiscount = bookingFee + platformFee;
                 bookingFee = 0;
                 platformFee = 0;
                 benefitApplied = true;
+
+                // Check if plan metadata waives GST
+                const planMeta = activeSubscription.plan?.metadata;
+                let planWaivesGst = true; // default true if active subscription exists
+                if (planMeta && typeof planMeta === 'object') {
+                    if (planMeta.gstOnFeeWaived !== undefined) {
+                        planWaivesGst = !!planMeta.gstOnFeeWaived;
+                    }
+                }
+                if (planWaivesGst) {
+                    waiveGstActive = true;
+                }
             }
         }
 
@@ -171,7 +178,10 @@ exports.calculateCheckout = async (req, res) => {
             taxableAmount = extraFeesSum;
         }
 
-        const taxes = Math.round(taxableAmount * effectiveTaxRate * 100) / 100;
+        let taxes = 0;
+        if (!waiveGstActive) {
+            taxes = Math.round(taxableAmount * effectiveTaxRate * 100) / 100;
+        }
         const totalAmount = serviceFeeVal + Number(diagnosticFee) + extraFeesSum + taxes;
 
         res.status(200).json({
@@ -193,6 +203,8 @@ exports.calculateCheckout = async (req, res) => {
                     taxes,
                     ayuxaServiceFee: extraFeesSum,
                     benefitDiscount: -benefitDiscount,
+                    originalBookingFee: config && config.isActive ? config.bookingFee : 299,
+                    originalPlatformFee: config && config.isActive ? config.platformFee : 50,
                 },
                 benefitApplied,
                 remainingCountAfterOrder,
@@ -244,16 +256,10 @@ exports.calculateMembershipSavings = async (req, res) => {
         }
 
         // Fetch service charge configuration
-        const lookupCategory = serviceCategory?.toUpperCase?.() || serviceCategory;
+        const lookupCategory = (serviceCategory?.toUpperCase?.() || serviceCategory)?.replace(/-/g, '_');
         let config = await prisma.serviceCharge.findUnique({
             where: { serviceCategory: lookupCategory }
         });
-
-        if (!config && lookupCategory && lookupCategory.includes('-')) {
-            config = await prisma.serviceCharge.findUnique({
-                where: { serviceCategory: lookupCategory.replace(/-/g, '_') }
-            });
-        }
 
         if (!config && serviceRecord) {
             if (serviceRecord.category) {
@@ -328,22 +334,23 @@ exports.calculateMembershipSavings = async (req, res) => {
         const effectiveBookingFee = bookingFee - waivedBookingFee;
         const effectivePlatformFee = platformFee - waivedPlatformFee;
 
+        const effectiveServiceFee = serviceFeeVal;
+
         const extraFeesSumWith = effectiveBookingFee + effectivePlatformFee + convenienceFee + emergencyFee + visitFee + nightCharge + surgeCharge;
-        let taxableWith = isHomeEssential ? (serviceFeeVal + Number(diagnosticFee) + extraFeesSumWith) : extraFeesSumWith;
+        let taxableWith = isHomeEssential ? (effectiveServiceFee + Number(diagnosticFee) + extraFeesSumWith) : extraFeesSumWith;
 
         let taxesWith = 0;
-        if (waiveGst) {
+        if (!waiveGst) {
             taxesWith = Math.round(taxableWith * effectiveTaxRate * 100) / 100;
-        } else {
-            taxesWith = taxesWithout;
         }
 
-        const totalWith = serviceFeeVal + Number(diagnosticFee) + extraFeesSumWith + taxesWith;
+        const totalWith = effectiveServiceFee + Number(diagnosticFee) + extraFeesSumWith + taxesWith;
 
         const bookingFeeWaivedVal = waivedBookingFee;
         const platformFeeWaivedVal = waivedPlatformFee;
+        const serviceFeeWaivedVal = 0;
         const gstWaivedVal = Math.max(0, Math.round((taxesWithout - taxesWith) * 100) / 100);
-        const totalSavings = bookingFeeWaivedVal + platformFeeWaivedVal + gstWaivedVal;
+        const totalSavings = bookingFeeWaivedVal + platformFeeWaivedVal + serviceFeeWaivedVal + gstWaivedVal;
 
         const finalPayable = totalWith + planPrice;
 

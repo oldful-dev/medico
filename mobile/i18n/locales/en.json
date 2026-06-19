@@ -1407,7 +1407,20 @@
     "pickup_disabled": "Self Arrangement",
     "pickup_time_label": "Pickup Time",
     "organizer_label": "Organizer",
-    "plan_benefit_applied": "Plan benefit applied!"
+    "plan_benefit_applied": "Plan benefit applied!",
+    "upgrade_care": "🩺 Upgrade to Care Membership",
+    "upgrade_home": "🏠 Upgrade to Home Essentials",
+    "upgrade_save_amount": "Save ₹{{amount}} on this booking!",
+    "upgrade_subtitle": "Get ₹0 booking & platform fees instantly",
+    "booking_fee_waived": "✓ Booking Fee Waived",
+    "platform_fee_waived": "✓ Platform Fee Waived",
+    "gst_waived": "✓ GST on Fees Waived",
+    "select_plan_option": "Select Plan Option:",
+    "select_plan_duration": "Select Plan Duration:",
+    "months_3": "3 Months",
+    "months_6": "6 Months",
+    "months_12": "12 Months",
+    "you_saved_fees": "💰 You saved ₹{{amount}} on fees!"
   },
   "service_confirmation": {
     "booking_confirmed": "Booking Confirmed",

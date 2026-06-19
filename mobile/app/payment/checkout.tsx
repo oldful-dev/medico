@@ -1116,10 +1116,14 @@ export default function CheckoutScreen() {
                                         <View style={styles.breakdownRow}>
                                             <Text style={styles.breakdownLabel}>{t('checkout.booking_fee')}</Text>
                                             {showWaiver ? (
-                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                                    <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{rupee}{originalBookingFee}</Text>
-                                                    <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
-                                                </View>
+                                                originalBookingFee > 0 ? (
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                        <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{rupee}{originalBookingFee}</Text>
+                                                        <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
+                                                    </View>
+                                                ) : (
+                                                    <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}>{t('checkout.free')}</Text>
+                                                )
                                             ) : (
                                                 <Text style={styles.breakdownValue}>{rupee}{bookingFee}</Text>
                                             )}
@@ -1127,10 +1131,14 @@ export default function CheckoutScreen() {
                                         <View style={styles.breakdownRow}>
                                             <Text style={styles.breakdownLabel}>{t('checkout.platform_fee')}</Text>
                                             {showWaiver ? (
-                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                                    <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{rupee}{originalPlatformFee}</Text>
-                                                    <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
-                                                </View>
+                                                originalPlatformFee > 0 ? (
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                        <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{rupee}{originalPlatformFee}</Text>
+                                                        <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
+                                                    </View>
+                                                ) : (
+                                                    <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}>{t('checkout.free')}</Text>
+                                                )
                                             ) : (
                                                 <Text style={styles.breakdownValue}>{rupee}{platformFee}</Text>
                                             )}
@@ -1248,10 +1256,14 @@ export default function CheckoutScreen() {
                                         <View style={styles.breakdownRow}>
                                             <Text style={styles.breakdownLabel}>{t('checkout.booking_fee')}</Text>
                                             {showWaiver ? (
-                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                                    <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{rupee}{originalBookingFee}</Text>
-                                                    <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
-                                                </View>
+                                                originalBookingFee > 0 ? (
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                        <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{rupee}{originalBookingFee}</Text>
+                                                        <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
+                                                    </View>
+                                                ) : (
+                                                    <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}>{t('checkout.free')}</Text>
+                                                )
                                             ) : (
                                                 <Text style={styles.breakdownValue}>{rupee}{bookingFee}</Text>
                                             )}
@@ -1259,10 +1271,14 @@ export default function CheckoutScreen() {
                                         <View style={styles.breakdownRow}>
                                             <Text style={styles.breakdownLabel}>{t('checkout.platform_fee')}</Text>
                                             {showWaiver ? (
-                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                                    <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{rupee}{originalPlatformFee}</Text>
-                                                    <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
-                                                </View>
+                                                originalPlatformFee > 0 ? (
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                        <Text style={[styles.breakdownValue, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{rupee}{originalPlatformFee}</Text>
+                                                        <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}> {t('checkout.free')}</Text>
+                                                    </View>
+                                                ) : (
+                                                    <Text style={[styles.breakdownValue, { color: isDarkMode ? colors.primary : '#2e7d32', fontFamily: Fonts.semiBold }]}>{t('checkout.free')}</Text>
+                                                )
                                             ) : (
                                                 <Text style={styles.breakdownValue}>{rupee}{platformFee}</Text>
                                             )}

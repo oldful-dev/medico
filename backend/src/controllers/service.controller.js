@@ -80,6 +80,27 @@ const createService = async (req, res, next) => {
             },
         });
 
+        // Sync with corresponding ServiceCharge serviceFee if basePrice was set
+        if (service.basePrice !== undefined && service.basePrice !== null) {
+            try {
+                const serviceCategory = service.slug.toUpperCase().replace(/-/g, '_');
+                await prisma.serviceCharge.upsert({
+                    where: { serviceCategory },
+                    update: { serviceFee: service.basePrice },
+                    create: {
+                        serviceCategory,
+                        serviceFee: service.basePrice,
+                        bookingFee: 299, // default fallback fees
+                        platformFee: 50,
+                        taxPercentage: 18,
+                        isActive: true
+                    }
+                });
+            } catch (syncErr) {
+                console.error('Failed to sync ServiceCharge serviceFee during service creation:', syncErr);
+            }
+        }
+
         await syncDbServicesToUIConfig();
 
         sendResponse(res, 201, service, 'Service created successfully');
@@ -118,6 +139,28 @@ const updateService = async (req, res, next) => {
             where: { id: req.params.id },
             data,
         });
+
+        // Sync with corresponding ServiceCharge serviceFee if basePrice was updated
+        if (service.basePrice !== undefined && service.basePrice !== null) {
+            try {
+                const serviceCategory = service.slug.toUpperCase().replace(/-/g, '_');
+                await prisma.serviceCharge.upsert({
+                    where: { serviceCategory },
+                    update: { serviceFee: service.basePrice },
+                    create: {
+                        serviceCategory,
+                        serviceFee: service.basePrice,
+                        bookingFee: 299, // default fallback fees
+                        platformFee: 50,
+                        taxPercentage: 18,
+                        isActive: true
+                    }
+                });
+            } catch (syncErr) {
+                console.error('Failed to sync ServiceCharge serviceFee during service update:', syncErr);
+            }
+        }
+
         await syncDbServicesToUIConfig();
         sendResponse(res, 200, service, 'Service updated successfully');
     } catch (error) {

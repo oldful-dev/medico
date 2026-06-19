@@ -1500,7 +1500,20 @@
     "pickup_disabled": "സ്വന്തം ക്രമീകരണം",
     "pickup_time_label": "പിക്കപ്പ് സമയം",
     "organizer_label": "സംഘാടകൻ",
-    "plan_benefit_applied": "പ്ലാൻ ആനുകൂല്യം പ്രയോഗിച്ചു!"
+    "plan_benefit_applied": "പ്ലാൻ ആനുകൂല്യം പ്രയോഗിച്ചു!",
+    "upgrade_care": "🩺 കെയർ അംഗത്വത്തിലേക്ക് അപ്‌ഗ്രേഡ് ചെയ്യുക",
+    "upgrade_home": "🏠 ഹോം എസൻഷ്യൽസിലേക്ക് അപ്‌ഗ്രേഡ് ചെയ്യുക",
+    "upgrade_save_amount": "ഈ ബുക്കിംഗിൽ ₹{{amount}} ലാഭിക്കൂ!",
+    "upgrade_subtitle": "ഉടൻ തന്നെ ₹0 ബുക്കിംഗും പ്ലാറ്റ്‌ഫോം ഫീസും നേടൂ",
+    "booking_fee_waived": "✓ ബുക്കിംഗ് ഫീസ് ഒഴിവാക്കി",
+    "platform_fee_waived": "✓ പ്ലാറ്റ്‌ഫോം ഫീസ് ഒഴിവാക്കി",
+    "gst_waived": "✓ ഫീസുകളുടെ മേലുള്ള ജിഎസ്ടി ഒഴിവാക്കി",
+    "select_plan_option": "പ്ലാൻ ഓപ്ഷൻ തിരഞ്ഞെടുക്കുക:",
+    "select_plan_duration": "പ്ലാൻ കാലാവധി തിരഞ്ഞെടുക്കുക:",
+    "months_3": "3 മാസം",
+    "months_6": "6 മാസം",
+    "months_12": "12 മാസം",
+    "you_saved_fees": "💰 നിങ്ങൾ ഫീസിൽ ₹{{amount}} ലാഭിച്ചു!"
   },
   "service_confirmation": {
     "booking_confirmed": "ഉറപ്പാക്കി",
