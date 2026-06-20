@@ -95,14 +95,14 @@ export default function BookingDetailsPage() {
    const labPkg = labOrder?.packages?.[0];
    const labPayment = labOrder?.payments?.[0];
 
-   const { data: labRes, isLoading: isLabLoading } = useQuery({
+   const { data: labStatusRes, isLoading: isLabLoading } = useQuery({
       queryKey: ['lab-status', rcId],
       queryFn: () => labService.getBookingStatus(rcId as string),
       enabled: !!rcId && booking?.service?.slug === 'blood-test',
       refetchInterval: 30000, // Refresh status every 30s
    });
 
-   const labStatusData = labRes?.data?.data?.[0]; // Redcliffe returns array of matches
+   const labStatusData = labStatusRes?.data?.data?.[0]; // Redcliffe returns array of matches
    const serviceConfig = booking?.service?.slug ? getServiceConfig(booking.service.slug) : null;
 
    const handleDownload = async () => {
