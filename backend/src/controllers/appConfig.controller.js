@@ -376,13 +376,14 @@ const DEFAULT_CONFIG = {
 
         // ── Help & Support Screen ──────────────────────────────────────────
         help_support: {
-            phone: '080-4728-0789',
+            phone: '080 4728 0789',
             whatsapp_url: 'https://wa.me/919480198108',
             page_description: '{"en":"Our support team is available to help with bookings, services, and payments.","hi":"हमारी सहायता टीम बुकिंग, सेवाओं और भुगतान में मदद के लिए उपलब्ध है।","bn":"আমাদের সাপোর্ট টিম বুকিং, সেবা এবং পেমেন্টে সাহায্যের জন্য উপলব্ধ।","kn":"ನಮ್ಮ ಬೆಂಬಲ ತಂಡ ಬುಕಿಂಗ್, ಸೇವೆಗಳು ಮತ್ತು ಪಾವತಿಗಳಿಗಾಗಿ ಸಹಾಯ ಮಾಡಲು ಲಭ್ಯವಿದೆ.","ml":"ബുക്കിംഗ്, സേവനങ്ങൾ, പേയ്‌മെന്റ് എന്നിവ സഹായിക്കാൻ ഞങ്ങളുടെ ടീം ലഭ്യമാണ്.","mr":"आमची सहाय्य टीम बुकिंग, सेवा आणि पेमेंटसाठी मदत करण्यास उपलब्ध आहे.","ta":"எங்கள் ஆதரவு குழு முன்பதிவு, சேவைகள் மற்றும் கட்டணங்களுக்கு உதவ கிடைக்கிறது.","te":"మా సపోర్ట్ టీమ్ బుకింగ్, సేవలు మరియు చెల్లింపులకు సహాయం అందుబాటులో ఉంది."}',
             contacts: [
-                { id: 'customer_support', label: 'Customer Support', phone: '080-4728-0789', email: 'support@ayuxacare.com',      name: null },
-                { id: 'backend_operations', label: 'Backend Operations', phone: '+91 94801-98108', email: 'support@ayuxacare.com', name: null },
-                { id: 'grievance',        label: 'Grievance Officer', phone: null,              email: 'compliance@ayuxacare.com', name: 'SK Murgan' },
+                { id: 'client_support', label: 'Client Support', phone: '080 4728 0789', email: 'support@ayuxacare.com', name: null },
+                { id: 'investor_relations', label: 'Investor Relations', phone: '+91 94801 98108', email: 'office@ayuxa.co.in', name: null },
+                { id: 'careers', label: 'Careers', phone: null, email: 'careers@ayuxa.co.in', name: null },
+                { id: 'general_enquiries', label: 'General Enquiries', phone: '+91 94801 98108', email: 'ho@ayuxa.co.in', name: null },
             ],
             ticket_categories: [
                 { id: 'billing',    label: 'Billing',    sort_order: 1 },

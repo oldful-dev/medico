@@ -11,6 +11,7 @@ import GCSUpload from "@/components/GCSUpload";
 
 const TABS = [
     { id: 'management', label: 'Management', icon: Shield, description: 'Administrative staff (coordinators, supervisors)' },
+    { id: 'shareholder', label: 'Shareholders', icon: Users, description: 'Company shareholders and investors' },
     { id: 'doctor', label: 'Doctors', icon: HeartPulse, description: 'Medical doctors and physicians' },
     { id: 'nurse', label: 'Nurses', icon: HeartPulse, description: 'Registered and auxiliary nurses' },
     { id: 'caregiver', label: 'Caregivers', icon: User, description: 'Healthcare caregivers and attendants' },
@@ -178,7 +179,11 @@ export default function ProfilesPage() {
         e.preventDefault();
         setIsSaving(true);
         try {
-            const res = await profilesAPI.create(activeTab, formData);
+            const dataToSend = { ...formData };
+            if (activeTab === 'shareholder') {
+                dataToSend.specialization = 'Shareholder';
+            }
+            const res = await profilesAPI.create(activeTab, dataToSend);
             if (res.data.success) {
                 showToast("Staff profile created", "success");
                 setShowAddModal(false);
@@ -196,7 +201,11 @@ export default function ProfilesPage() {
         e.preventDefault();
         setIsSaving(true);
         try {
-            const res = await profilesAPI.update(editingProfile.id, activeTab, formData);
+            const dataToSend = { ...formData };
+            if (activeTab === 'shareholder') {
+                dataToSend.specialization = 'Shareholder';
+            }
+            const res = await profilesAPI.update(editingProfile.id, activeTab, dataToSend);
             if (res.data.success) {
                 showToast("Profile updated", "success");
                 setEditingProfile(null);
@@ -239,14 +248,27 @@ export default function ProfilesPage() {
 
     const openEditModal = (p) => {
         setEditingProfile(p);
+        
+        let docs = {};
+        if (p.documentsJson) {
+            try {
+                docs = typeof p.documentsJson === 'string'
+                    ? JSON.parse(p.documentsJson)
+                    : p.documentsJson;
+            } catch (e) {
+                docs = {};
+            }
+        }
+
         setFormData({
             name: p.name,
             email: p.email,
             phone: p.phone,
             cityId: cities.find(c => c.name === p.city)?.id || '',
             role: p.role,
-            specialization: p.role,
-            profileImageUrl: p.profileImageUrl
+            specialization: p.specialization || p.role,
+            profileImageUrl: p.profileImageUrl,
+            documentsJson: docs
         });
     };
 
@@ -460,15 +482,92 @@ export default function ProfilesPage() {
                                         {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
                                 </div>
+                                {activeTab !== 'shareholder' && (
+                                    <div className="form-group flex-1">
+                                        <label>{activeTab === 'management' ? 'Admin Role' : 'Specialization'}</label>
+                                        <select required value={activeTab === 'management' ? formData.role : formData.specialization} onChange={e => setFormData({...formData, [activeTab === 'management' ? 'role' : 'specialization']: e.target.value})}>
+                                            <option value="">Select Option</option>
+                                            {(activeTab === 'management' ? metadata.adminRoles : metadata.specializations)?.map(r => (
+                                                <option key={r} value={r}>{r}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Verification Documents & Extra Details */}
+                            <div className="section-title" style={{ fontSize: 11, fontWeight: 700, borderTop: '1px solid var(--border-color)', paddingTop: 16, marginTop: 8, marginBottom: 8, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Verification Documents & Bio
+                            </div>
+
+                            <div className="form-row">
                                 <div className="form-group flex-1">
-                                    <label>{activeTab === 'management' ? 'Admin Role' : 'Specialization'}</label>
-                                    <select required value={activeTab === 'management' ? formData.role : formData.specialization} onChange={e => setFormData({...formData, [activeTab === 'management' ? 'role' : 'specialization']: e.target.value})}>
-                                        <option value="">Select Option</option>
-                                        {(activeTab === 'management' ? metadata.adminRoles : metadata.specializations)?.map(r => (
-                                            <option key={r} value={r}>{r}</option>
-                                        ))}
-                                    </select>
+                                    <GCSUpload 
+                                        existingUrl={formData.documentsJson?.policeVerificationUrl}
+                                        onUploadSuccess={(url) => setFormData({
+                                            ...formData,
+                                            documentsJson: { ...formData.documentsJson, policeVerificationUrl: url }
+                                        })}
+                                        label="Police Verification Certificate"
+                                    />
                                 </div>
+                                <div className="form-group flex-1">
+                                    <GCSUpload 
+                                        existingUrl={formData.documentsJson?.idProofUrl}
+                                        onUploadSuccess={(url) => setFormData({
+                                            ...formData,
+                                            documentsJson: { ...formData.documentsJson, idProofUrl: url }
+                                        })}
+                                        label="ID Proof Certificate"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>LinkedIn Profile URL</label>
+                                <input 
+                                    placeholder="https://linkedin.com/in/username" 
+                                    value={formData.documentsJson?.linkedin || ''} 
+                                    onChange={e => setFormData({
+                                        ...formData,
+                                        documentsJson: { ...formData.documentsJson, linkedin: e.target.value }
+                                    })} 
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Short Bio</label>
+                                <input 
+                                    placeholder="Brief 1-sentence bio description..." 
+                                    value={formData.documentsJson?.shortBio || ''} 
+                                    onChange={e => setFormData({
+                                        ...formData,
+                                        documentsJson: { ...formData.documentsJson, shortBio: e.target.value }
+                                    })} 
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Full Bio Paragraphs (One paragraph per line)</label>
+                                <textarea 
+                                    placeholder="Write the full bio description. Use Enter to separate paragraphs..." 
+                                    value={Array.isArray(formData.documentsJson?.fullBio) ? formData.documentsJson.fullBio.join('\n') : (formData.documentsJson?.fullBio || '')} 
+                                    onChange={e => setFormData({
+                                        ...formData,
+                                        documentsJson: { ...formData.documentsJson, fullBio: e.target.value.split('\n') }
+                                    })}
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px',
+                                        background: 'var(--bg-secondary)',
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: 'var(--radius-md)',
+                                        color: 'var(--text-primary)',
+                                        outline: 'none',
+                                        minHeight: '100px',
+                                        fontFamily: 'var(--font-primary)'
+                                    }}
+                                />
                             </div>
                             {showAddModal && activeTab === 'management' && (
                                 <div className="form-group">

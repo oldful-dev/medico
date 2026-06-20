@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Mail, ArrowRight, ExternalLink, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Mail, ArrowRight, ExternalLink, X, Phone, MapPin } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 const LinkedInIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -11,65 +12,76 @@ const LinkedInIcon = ({ className }: { className?: string }) => (
 );
 
 interface TeamMember {
+  id: string;
   name: string;
   role: string;
   email: string;
+  phone: string;
   linkedin: string;
   image: string;
   shortBio: string;
   fullBio: string[];
+  city?: string;
 }
 
-const team: TeamMember[] = [
-  {
-    name: 'Dhemaan G. Aditya',
-    role: 'Founder & CEO',
-    email: 'dhemaan@Ayuxa.com',
-    linkedin: 'linkedin.com/in/dhemaan',
-    image: 'https://www.Ayuxa.com/wp-content/uploads/2026/03/IMG_0207-e1774297139859.jpg',
-    shortBio: 'Business leader with 15+ years experience in Marketing Leadership, AI-driven systems, and Emotionally Intelligent strategy.',
-    fullBio: [
-      'Professional Summary: Dhemaan G. Aditya is a business leader with over 15 years of combined experience in marketing leadership, artificial intelligence, and emotionally intelligent business strategy. He is known for building trust-driven brands and scalable service systems, particularly in people-centric industries.',
-      'Education: Master of Business Administration (MBA) Specialization: Marketing & Information Technology — Presidency College, Bangalore.',
-      'Core Leadership Experience: Marketing & Growth Leadership, 10 years of experience as Marketing Head and senior marketing leader.',
-      'Expertise in: Brand strategy and positioning, Revenue-driven marketing systems, Digital and offline campaign leadership, Emotional and trust-based marketing frameworks, Consumer psychology and behavior analysis.',
-      'Technology & Artificial Intelligence Expertise: AI, Machine Learning & Deep Learning. 5 years of hands-on experience in: Artificial Intelligence systems, Machine Learning models, Deep Learning applications, AI-powered customer interaction and automation. Applied Use Cases: AI-based customer support and call intelligence, Sales automation and CRM intelligence, Data-driven operational decision systems, Emotion-aware engagement models.',
-      'Emotional Intelligence & Human-Centered Design: Strong practitioner of Emotional Intelligence (EI) in business operations. Application of EI in: Leadership and team management, Customer experience and relationship handling, Caregiver and workforce engagement, Conflict resolution and service recovery.',
-      'Founder & Entrepreneurial Role: Ayuxa – Elder Care Brand Founder & CEO. Focus areas: Professional elder care services, Structured caregiver training and quality systems, Technology-enabled yet human-first service delivery, Building trust, dignity, and long-term family relationships.'
-    ]
-  },
-  {
-    name: 'Dr. Satish Babu H. V.',
-    role: 'Head of the Medical Division',
-    email: 'satish@Ayuxa.com',
-    linkedin: 'https://www.linkedin.com/in/dr-h-v-satish-babu-65553437/',
-    image: 'https://www.Ayuxa.com/wp-content/uploads/2026/01/Satish-Babu-1.avif',
-    shortBio: 'Senior Neurosurgeon with 40+ years experience. Medical Director & Professor dedicated to Senior Citizen well-being.',
-    fullBio: [
-      'Dr. Satish Babu H. V. is a highly distinguished Senior Neurosurgeon with over 40 years of experience in Health care. He is currently serving as Medical Director and Head of the Neuroscience Department at Columbia Multi-Specialty Hospital, and has a distinguished academic leadership as a Professor of Neurosurgery at Bangalore.',
-      'He is the Head of the Medical Division at Ayuxa, a Specialized Healthcare Organization dedicated to the well-being of Senior Citizens. Throughout his illustrious career, he has excelled as a clinician, teacher, and administrator, earning a reputation for blending surgical precision with deep empathy.',
-      'His professional journey includes significant roles such as Medical Director and Head of the Neuroscience Department at Columbia Multi-Specialty Hospital, Professor of Neurosurgery at various medical colleges. He was Trained at the prestigious Christian Medical College (CMC), Vellore and his clinical expertise spans complex cranial surgeries, minimally invasive spine procedures, and Neuro-trauma care.',
-      'As an administrator, Dr. Satish Babu has been instrumental in establishing neurosurgical centers and postgraduate residency programs, demonstrating a commitment to nurturing the next generation of medical professionals. At Ayuxa, he leverages this multifaceted experience to lead the medical division, ensuring that senior patients receive advanced, compassionate, and holistic care tailored to their unique neurological needs.'
-    ]
-  },
-  {
-    name: "Adv. Manjunatha V. Rayappa",
-    role: "Legal Adviser",
-    email: "rayappa@Ayuxa.com",
-    linkedin: "https://www.linkedin.com/feed/",
-    image: "https://www.Ayuxa.com/wp-content/uploads/2026/01/Advocate-Manjunatha-V.-Rayappa.avif",
-    shortBio: "Legal Adviser specializing in Corporate Law, Regulatory Compliance, and Strategic Governance for Ayuxa.",
-    fullBio: [
-      "Advocate Manjunatha V. Rayappa serves as the Legal Adviser to Ayuxa, providing strategic legal guidance and compliance oversight across the organization’s operations. With strong expertise in corporate law, regulatory compliance, and advisory services, he plays a critical role in ensuring that Ayuxa operates within a robust and ethical legal framework.",
-      "He advises the management on matters relating to company law, LLP and corporate structuring, contracts, vendor agreements, employment and labor laws, consumer protection, and statutory compliances relevant to elder care services. His counsel supports risk mitigation, operational clarity, and long-term legal sustainability for the organization.",
-      "Adv. Rayappa is known for his practical, business-aligned legal approach balancing regulatory requirements with operational realities. His ability to translate complex legal provisions into clear, actionable guidance enables leadership teams to make informed decisions without unnecessary legal friction.",
-      "As Legal Adviser to Ayuxa, he contributes not only as a legal professional but also as a trusted advisor, ensuring that governance, transparency, and accountability remain central to the company’s growth and reputation."
-    ]
-  },
-];
+interface GroupedTeam {
+  management: TeamMember[];
+  shareholders: TeamMember[];
+  doctors: TeamMember[];
+  nurses: TeamMember[];
+  caregivers: TeamMember[];
+}
 
 export default function TeamPage() {
-  const [selectedMember, setSelectedMember] = React.useState<TeamMember | null>(null);
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [teamData, setTeamData] = useState<GroupedTeam>({
+    management: [],
+    shareholders: [],
+    doctors: [],
+    nurses: [],
+    caregivers: []
+  });
+  const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const fetchTeam = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.ayuxacare.com/api';
+        const res = await fetch(`${apiUrl}/public/team`);
+        const json = await res.json();
+        if (json.success) {
+          setTeamData(json.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch team data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTeam();
+  }, []);
+
+  // Handle hash scrolling on load or hash change
+  useEffect(() => {
+    if (!loading && typeof window !== 'undefined') {
+      const handleHashScroll = () => {
+        if (window.location.hash) {
+          const id = window.location.hash.substring(1);
+          const element = document.getElementById(id);
+          if (element) {
+            setTimeout(() => {
+              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 150);
+          }
+        }
+      };
+
+      handleHashScroll();
+      window.addEventListener('hashchange', handleHashScroll);
+      return () => window.removeEventListener('hashchange', handleHashScroll);
+    }
+  }, [loading, pathname]);
 
   const handleEmail = (e: React.MouseEvent, email: string) => {
     e.preventDefault(); e.stopPropagation();
@@ -81,43 +93,71 @@ export default function TeamPage() {
     window.open(url.startsWith('http') ? url : `https://${url}`, '_blank');
   };
 
-  return (
-    <div className="min-h-screen bg-[var(--color-bg-screen)]">
-      {/* Hero Section */}
-      <section className="relative pt-10 md:pt-16 pb-16 overflow-hidden">
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-emerald-50/50 rounded-bl-[200px] -z-10" />
-        <div className="container mx-auto px-6 text-center md:text-left">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl">
-            <span className="inline-block px-4 py-1.5 bg-emerald-100 text-[var(--color-primary-text)] rounded-full text-sm font-bold mb-6">
-              OUR LEADERSHIP
-            </span>
-            <h1 className="text-4xl md:text-6xl font-extrabold text-[var(--color-text-dark)] leading-tight mb-8">
-              The Missionaries of <span className="text-[var(--color-primary)] italic">Care</span>
-            </h1>
-            <p className="text-lg md:text-xl text-[var(--color-text-body)] leading-relaxed opacity-80">
-              Meet the visionary minds committed to redesigning domestic healthcare and support systems for seniors.
-            </p>
-          </motion.div>
-        </div>
-      </section>
+  const renderSection = (title: string, id: string, members: TeamMember[]) => {
+    if (!members || members.length === 0) return null;
 
-      {/* Grid */}
-      <section className="pb-20">
+    return (
+      <section id={id} key={id} className="scroll-mt-24 mb-20">
         <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-            {team.map((member, index) => (
+          <div className="flex items-center gap-4 mb-10">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-[var(--color-text-dark)] uppercase tracking-wide">
+              {title}
+            </h2>
+            <div className="flex-1 h-[1.5px] bg-gradient-to-r from-emerald-100 to-transparent" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {members.map((member, index) => (
               <TeamMemberCard 
-                key={member.name} 
+                key={member.id} 
                 member={member} 
                 index={index} 
                 onSelect={setSelectedMember}
                 onEmail={handleEmail}
                 onLinkedIn={handleLinkedIn}
+                categoryTitle={title}
               />
             ))}
           </div>
         </div>
       </section>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-[var(--color-bg-screen)] pt-20">
+      {/* Hero Section */}
+      <section className="relative pt-10 md:pt-16 pb-12 overflow-hidden">
+        <div className="absolute top-0 right-0 w-1/3 h-full bg-emerald-50/50 rounded-bl-[200px] -z-10" />
+        <div className="container mx-auto px-6 text-center md:text-left">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl">
+            <span className="inline-block px-4 py-1.5 bg-emerald-100 text-[var(--color-primary-text)] rounded-full text-sm font-bold mb-6">
+              OUR FAMILY
+            </span>
+            <h1 className="text-4xl md:text-6xl font-extrabold text-[var(--color-text-dark)] leading-tight mb-8">
+              The Missionaries of <span className="text-[var(--color-primary)] italic">Care</span>
+            </h1>
+            <p className="text-lg md:text-xl text-[var(--color-text-body)] leading-relaxed opacity-80">
+              Meet our dedicated leaders, medical division, nursing experts, shareholders, and caregivers committed to senior citizens well-being.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Grid Sections */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-40">
+          <div className="w-12 h-12 rounded-full border-4 border-emerald-200 border-t-emerald-600 animate-spin mb-4" />
+          <p className="text-sm font-semibold text-gray-500">Loading Team Members...</p>
+        </div>
+      ) : (
+        <div className="pb-12">
+          {renderSection('Management', 'management', teamData.management)}
+          {renderSection('Shareholders', 'shareholders', teamData.shareholders)}
+          {renderSection('Doctors', 'doctors', teamData.doctors)}
+          {renderSection('Nurses', 'nurses', teamData.nurses)}
+          {renderSection('Caregivers', 'caregivers', teamData.caregivers)}
+        </div>
+      )}
 
       {/* Detail Modal */}
       <AnimatePresence>
@@ -144,21 +184,20 @@ export default function TeamPage() {
 
 // ─── Sub-Components ────────────────────────────────────────────────────────────
 
-import { AnimatePresence } from 'framer-motion';
-
-function TeamMemberCard({ member, index, onSelect, onEmail, onLinkedIn }: {
+function TeamMemberCard({ member, index, onSelect, onEmail, onLinkedIn, categoryTitle }: {
   member: TeamMember;
   index: number;
   onSelect: (m: TeamMember) => void;
   onEmail: (e: React.MouseEvent, email: string) => void;
   onLinkedIn: (e: React.MouseEvent, linkedin: string) => void;
+  categoryTitle: string;
 }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ delay: index * 0.1 }}
+      transition={{ delay: index * 0.05 }}
       className="group relative bg-white rounded-[40px] p-8 shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100/50 flex flex-col h-full"
     >
       <div className="relative mb-8 pt-4">
@@ -178,28 +217,42 @@ function TeamMemberCard({ member, index, onSelect, onEmail, onLinkedIn }: {
           </div>
         </div>
 
-        <p className="text-gray-600 mt-2 leading-relaxed line-clamp-3 text-sm italic opacity-80">&quot;{member.shortBio}&quot;</p>
+        {member.shortBio && (
+          <p className="text-gray-600 mt-2 leading-relaxed line-clamp-3 text-sm italic opacity-80">&quot;{member.shortBio}&quot;</p>
+        )}
         
         {/* Directly visible contact links */}
-        <div className="mt-6 flex flex-col gap-2 relative z-20">
-           <button 
-             onClick={(e) => onEmail(e, member.email)}
-             className="flex items-center gap-3 text-xs font-bold text-gray-500 hover:text-[var(--color-primary)] transition-all group/mail"
-           >
-             <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center group-hover/mail:bg-[var(--color-primary)] group-hover/mail:text-white transition-all">
-                <Mail className="w-4 h-4" />
+        <div className="mt-6 flex flex-col gap-2.5 relative z-20">
+           {member.email && (
+             <button 
+               onClick={(e) => onEmail(e, member.email)}
+               className="flex items-center gap-3 text-xs font-bold text-gray-500 hover:text-[var(--color-primary)] transition-all group/mail"
+             >
+               <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center group-hover/mail:bg-[var(--color-primary)] group-hover/mail:text-white transition-all">
+                  <Mail className="w-4 h-4" />
+               </div>
+               {member.email}
+             </button>
+           )}
+           {member.linkedin && (
+             <button 
+               onClick={(e) => onLinkedIn(e, member.linkedin)}
+               className="flex items-center gap-3 text-xs font-bold text-gray-500 hover:text-emerald-700 transition-all group/link"
+             >
+               <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center group-hover/link:bg-emerald-700 group-hover/link:text-white transition-all">
+                  <LinkedInIcon className="w-4 h-4" />
+               </div>
+               LinkedIn Profile
+             </button>
+           )}
+           {member.city && (
+             <div className="flex items-center gap-3 text-xs font-bold text-gray-400">
+               <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
+                  <MapPin className="w-4 h-4 text-emerald-600" />
+               </div>
+               {member.city}
              </div>
-             {member.email}
-           </button>
-           <button 
-             onClick={(e) => onLinkedIn(e, member.linkedin)}
-             className="flex items-center gap-3 text-xs font-bold text-gray-500 hover:text-emerald-700 transition-all group/link"
-           >
-             <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center group-hover/link:bg-emerald-700 group-hover/link:text-white transition-all">
-                <LinkedInIcon className="w-4 h-4" />
-             </div>
-             LinkedIn Profile
-           </button>
+           )}
         </div>
 
         <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between">
@@ -207,7 +260,7 @@ function TeamMemberCard({ member, index, onSelect, onEmail, onLinkedIn }: {
              Full Profile <ArrowRight className="w-3.5 h-3.5" />
           </button>
           <div className="text-[10px] font-bold text-gray-300 group-hover:text-emerald-200 transition-colors uppercase tracking-widest">
-             Leadership
+             {categoryTitle}
           </div>
         </div>
       </div>
@@ -249,21 +302,29 @@ function FullProfileModal({ member, onClose }: { member: TeamMember; onClose: ()
         <div className="flex-1 overflow-y-auto p-8 md:p-16">
 
           <div className="max-w-xl">
-             <div className="flex gap-4 mb-10">
-                <a href={`mailto:${member.email}`} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 text-[var(--color-primary)] rounded-full text-sm font-bold hover:bg-[var(--color-primary)] hover:text-white transition-all">
-                   <Mail className="w-4 h-4" /> Email Me
-                </a>
-                <a href={member.linkedin.startsWith('http') ? member.linkedin : `https://${member.linkedin}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 text-[var(--color-primary)] rounded-full text-sm font-bold hover:bg-[var(--color-primary)] hover:text-white transition-all">
-                   <LinkedInIcon className="w-4 h-4" /> LinkedIn
-                </a>
+             <div className="flex flex-wrap gap-4 mb-10">
+                {member.email && (
+                  <a href={`mailto:${member.email}`} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 text-[var(--color-primary)] rounded-full text-sm font-bold hover:bg-[var(--color-primary)] hover:text-white transition-all">
+                     <Mail className="w-4 h-4" /> Email Me
+                  </a>
+                )}
+                {member.linkedin && (
+                  <a href={member.linkedin.startsWith('http') ? member.linkedin : `https://${member.linkedin}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 text-[var(--color-primary)] rounded-full text-sm font-bold hover:bg-[var(--color-primary)] hover:text-white transition-all">
+                     <LinkedInIcon className="w-4 h-4" /> LinkedIn
+                  </a>
+                )}
              </div>
 
              <div className="space-y-6">
-                {member.fullBio.map((para, i) => (
-                  <p key={i} className="text-lg text-gray-700 leading-relaxed font-medium opacity-90">
-                    {para}
-                  </p>
-                ))}
+                {member.fullBio && member.fullBio.length > 0 ? (
+                  member.fullBio.map((para, i) => (
+                    <p key={i} className="text-lg text-gray-700 leading-relaxed font-medium opacity-90">
+                      {para}
+                    </p>
+                  ))
+                ) : (
+                  <p className="text-lg text-gray-400 italic">No detailed profile description available.</p>
+                )}
              </div>
 
              <div className="mt-16 pt-8 border-t border-gray-100">

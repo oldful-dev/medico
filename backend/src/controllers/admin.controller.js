@@ -156,19 +156,22 @@ const updateMetadata = async (req, res, next) => {
  */
 const requestUploadUrl = async (req, res, next) => {
     try {
-        const { fileName, contentType } = req.body;
+        const { fileName, contentType, folder = 'profiles' } = req.body;
         
         // Strict validation for staff photos
         if (!fileName || !contentType) {
             return res.status(400).json({ success: false, message: 'fileName and contentType required' });
         }
         
-        if (!contentType.startsWith('image/')) {
-            return res.status(400).json({ success: false, message: 'Only image uploads are allowed for staff profiles' });
+        // Allow both images and PDFs for staff profiles / verification documents
+        const isImage = contentType.startsWith('image/');
+        const isPdf = contentType === 'application/pdf';
+        if (!isImage && !isPdf) {
+            return res.status(400).json({ success: false, message: 'Only image and PDF uploads are allowed for staff profiles' });
         }
 
         const { getSignedUploadUrl } = require('../utils/storage.service');
-        const data = await getSignedUploadUrl('profiles', fileName, contentType);
+        const data = await getSignedUploadUrl(folder, fileName, contentType);
         
         res.json({ success: true, data });
     } catch (error) {

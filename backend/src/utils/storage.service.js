@@ -155,10 +155,13 @@ const toCDNUrl = (storagePath, folder = '') => {
         cleanPath = cleanPath.substring(prefix.length);
     }
 
-    const cdnBase = (process.env.ASSETS_CDN_URL || '').replace(/\/+$/, '');
-    if (cdnBase) return `${cdnBase}/${cleanPath}`;
+    // Use direct GCS path (ayuxa-assets) for profiles and documents to ensure correct GCS path representation
+    if (folder !== 'profiles' && folder !== 'documents') {
+        const cdnBase = (process.env.ASSETS_CDN_URL || '').replace(/\/+$/, '');
+        if (cdnBase) return `${cdnBase}/${cleanPath}`;
+    }
 
-    // Fallback: GCS direct public URL (only if no CDN configured)
+    // Fallback: GCS direct public URL (only if no CDN configured or bypassed)
     if (gcsBucketName) {
         const fullGcsPath = startsWithPrefix ? `${prefix}${cleanPath}` : cleanPath;
         return `https://storage.googleapis.com/${gcsBucketName}/${fullGcsPath}`;
