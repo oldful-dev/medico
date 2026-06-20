@@ -1,0 +1,497 @@
+"use client";
+import React, { useState, useEffect } from "react";
+import { 
+    Building2, Phone, Mail, Sliders, Briefcase, Heart, Plus, Trash2, Save, Info, CheckCircle2
+} from "lucide-react";
+import { uiConfigAPI } from "@/lib/api";
+import { showToast } from "@/lib/hooks";
+
+export default function CompanySettingsPage() {
+    const [activeSubTab, setActiveSubTab] = useState("contact");
+    const [configId, setConfigId] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Initial default state
+    const [formData, setFormData] = useState({
+        company_name: "Ayuxa Health Tech Platforms Pvt. Ltd.",
+        address: "",
+        official_contact: "",
+        customer_care: "",
+        emails: {
+            support: "support@ayuxacare.com",
+            investor: "office@ayuxa.co.in",
+            careers: "careers@ayuxa.co.in",
+            enquiries: "ho@ayuxa.co.in"
+        },
+        careers_list: [],
+        community_content: {
+            title: "Ayuxa Care Community",
+            description: "Engaging, educating, and supporting senior health and wellness throughout the community.",
+            charity_initiatives: []
+        }
+    });
+
+    useEffect(() => {
+        const fetchConfig = async () => {
+            try {
+                setLoading(true);
+                const res = await uiConfigAPI.getAll();
+                if (res.data.success) {
+                    const found = res.data.data.find(c => c.key === "company_global_config");
+                    if (found) {
+                        setConfigId(found.id);
+                        let parsedJson = found.configJson;
+                        if (typeof parsedJson === "string") {
+                            try { parsedJson = JSON.parse(parsedJson); } catch (_) {}
+                        }
+                        setFormData(prev => ({
+                            ...prev,
+                            ...parsedJson,
+                            emails: { ...prev.emails, ...(parsedJson?.emails || {}) },
+                            careers_list: parsedJson?.careers_list || [],
+                            community_content: { ...prev.community_content, ...(parsedJson?.community_content || {}) }
+                        }));
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load company global config:", err);
+                showToast("Failed to load settings", "error");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchConfig();
+    }, []);
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            const payload = {
+                type: "CUSTOM",
+                key: "company_global_config",
+                label: "Company Global Settings",
+                configJson: formData,
+                isVisible: true
+            };
+
+            if (configId) {
+                // Update existing
+                await uiConfigAPI.update(configId, payload);
+                await uiConfigAPI.publish(configId);
+            } else {
+                // Create new
+                const createRes = await uiConfigAPI.create(payload);
+                if (createRes.data.success) {
+                    setConfigId(createRes.data.data.id);
+                    await uiConfigAPI.publish(createRes.data.data.id);
+                }
+            }
+            showToast("Company settings saved and published successfully ✓", "success");
+        } catch (err) {
+            console.error("Save company config failed:", err);
+            showToast("Failed to save settings", "error");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Career operations
+    const addCareerItem = () => {
+        const newItem = {
+            id: Date.now().toString(),
+            title: "New Job Opening",
+            department: "Operations",
+            location: "Bengaluru",
+            type: "Full Time",
+            description: "Provide short summary of duties here..."
+        };
+        setFormData(prev => ({
+            ...prev,
+            careers_list: [...prev.careers_list, newItem]
+        }));
+    };
+
+    const updateCareerItem = (id, field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            careers_list: prev.careers_list.map(item => 
+                item.id === id ? { ...item, [field]: value } : item
+            )
+        }));
+    };
+
+    const removeCareerItem = (id) => {
+        setFormData(prev => ({
+            ...prev,
+            careers_list: prev.careers_list.filter(item => item.id !== id)
+        }));
+    };
+
+    // Charity initiatives operations
+    const addCharityInitiative = () => {
+        const initiatives = formData.community_content.charity_initiatives || [];
+        setFormData(prev => ({
+            ...prev,
+            community_content: {
+                ...prev.community_content,
+                charity_initiatives: [...initiatives, "New initiative description..."]
+            }
+        }));
+    };
+
+    const updateCharityInitiative = (index, value) => {
+        const initiatives = [...(formData.community_content.charity_initiatives || [])];
+        initiatives[index] = value;
+        setFormData(prev => ({
+            ...prev,
+            community_content: {
+                ...prev.community_content,
+                charity_initiatives: initiatives
+            }
+        }));
+    };
+
+    const removeCharityInitiative = (index) => {
+        const initiatives = [...(formData.community_content.charity_initiatives || [])];
+        initiatives.splice(index, 1);
+        setFormData(prev => ({
+            ...prev,
+            community_content: {
+                ...prev.community_content,
+                charity_initiatives: initiatives
+            }
+        }));
+    };
+
+    if (loading) {
+        return (
+            <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
+                Loading settings panel...
+            </div>
+        );
+    }
+
+    return (
+        <div className="company-settings-page" style={{ color: "var(--text-primary)", fontFamily: "var(--font-primary)" }}>
+            <header className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItem: "flex-end", marginBottom: 32 }}>
+                <div className="title-group">
+                    <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>Company Settings</h1>
+                    <p style={{ color: "var(--text-muted)", margin: "4px 0 0", fontSize: 14 }}>
+                        Manage official contact details, careers page opportunities, and community content dynamically.
+                    </p>
+                </div>
+                <div>
+                    <button className="btn-primary" onClick={handleSave} disabled={isSaving} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: "var(--radius-md)", fontWeight: 600, border: "none", cursor: "pointer", background: "var(--gradient-primary)", color: "white", boxShadow: "var(--shadow-md)" }}>
+                        <Save size={18} /> {isSaving ? "Saving..." : "Save Settings"}
+                    </button>
+                </div>
+            </header>
+
+            {/* TAB SELECTOR */}
+            <div className="subtabs-bar" style={{ display: "flex", gap: 12, borderBottom: "1px solid var(--border-color)", paddingBottom: 12, marginBottom: 24 }}>
+                <button 
+                    onClick={() => setActiveSubTab("contact")} 
+                    style={{
+                        padding: "8px 16px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer",
+                        fontWeight: 700, fontSize: 14,
+                        background: activeSubTab === "contact" ? "var(--bg-glass)" : "transparent",
+                        color: activeSubTab === "contact" ? "var(--accent-primary)" : "var(--text-muted)",
+                        borderBottom: activeSubTab === "contact" ? "2.5px solid var(--accent-primary)" : "none"
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <Building2 size={16} /> Contact Details
+                    </div>
+                </button>
+                <button 
+                    onClick={() => setActiveSubTab("careers")} 
+                    style={{
+                        padding: "8px 16px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer",
+                        fontWeight: 700, fontSize: 14,
+                        background: activeSubTab === "careers" ? "var(--bg-glass)" : "transparent",
+                        color: activeSubTab === "careers" ? "var(--accent-primary)" : "var(--text-muted)",
+                        borderBottom: activeSubTab === "careers" ? "2.5px solid var(--accent-primary)" : "none"
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <Briefcase size={16} /> Careers Listings
+                    </div>
+                </button>
+                <button 
+                    onClick={() => setActiveSubTab("community")} 
+                    style={{
+                        padding: "8px 16px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer",
+                        fontWeight: 700, fontSize: 14,
+                        background: activeSubTab === "community" ? "var(--bg-glass)" : "transparent",
+                        color: activeSubTab === "community" ? "var(--accent-primary)" : "var(--text-muted)",
+                        borderBottom: activeSubTab === "community" ? "2.5px solid var(--accent-primary)" : "none"
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <Heart size={16} /> Community &amp; Charity
+                    </div>
+                </button>
+            </div>
+
+            {/* TAB CONTENT */}
+            <div className="main-card" style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-lg)", padding: 24, boxShadow: "var(--shadow-sm)" }}>
+                
+                {/* 1. CONTACT TAB */}
+                {activeSubTab === "contact" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Company Name</label>
+                            <input 
+                                value={formData.company_name} 
+                                onChange={e => setFormData({ ...formData, company_name: e.target.value })}
+                                style={{ width: "100%", padding: 12, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
+                            />
+                        </div>
+
+                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Company Address</label>
+                            <textarea 
+                                rows={3}
+                                value={formData.address} 
+                                onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                placeholder="Enter official corporate address..."
+                                style={{ width: "100%", padding: 12, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontFamily: "inherit" }}
+                            />
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Official Contact Number</label>
+                                <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
+                                    <Phone size={16} style={{ position: "absolute", left: 12, color: "var(--text-muted)" }} />
+                                    <input 
+                                        value={formData.official_contact} 
+                                        onChange={e => setFormData({ ...formData, official_contact: e.target.value })}
+                                        placeholder="+91 94801 98108"
+                                        style={{ width: "100%", padding: "12px 12px 12px 38px", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
+                                    />
+                                </div>
+                            </div>
+                            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Customer Care Number</label>
+                                <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
+                                    <Phone size={16} style={{ position: "absolute", left: 12, color: "var(--text-muted)" }} />
+                                    <input 
+                                        value={formData.customer_care} 
+                                        onChange={e => setFormData({ ...formData, customer_care: e.target.value })}
+                                        placeholder="080 4728 0789"
+                                        style={{ width: "100%", padding: "12px 12px 12px 38px", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ borderTop: "1px solid var(--border-color)", marginTop: 10, paddingTop: 20 }}>
+                            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Corporate Email Directory</h3>
+                            
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                                <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                    <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Client Support Email</label>
+                                    <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
+                                        <Mail size={16} style={{ position: "absolute", left: 12, color: "var(--text-muted)" }} />
+                                        <input 
+                                            type="email"
+                                            value={formData.emails.support} 
+                                            onChange={e => setFormData({ ...formData, emails: { ...formData.emails, support: e.target.value } })}
+                                            placeholder="support@ayuxacare.com"
+                                            style={{ width: "100%", padding: "12px 12px 12px 38px", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                    <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Investor Relations Email</label>
+                                    <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
+                                        <Mail size={16} style={{ position: "absolute", left: 12, color: "var(--text-muted)" }} />
+                                        <input 
+                                            type="email"
+                                            value={formData.emails.investor} 
+                                            onChange={e => setFormData({ ...formData, emails: { ...formData.emails, investor: e.target.value } })}
+                                            placeholder="office@ayuxa.co.in"
+                                            style={{ width: "100%", padding: "12px 12px 12px 38px", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginTop: 16 }}>
+                                <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                    <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Careers / Recruitment Email</label>
+                                    <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
+                                        <Mail size={16} style={{ position: "absolute", left: 12, color: "var(--text-muted)" }} />
+                                        <input 
+                                            type="email"
+                                            value={formData.emails.careers} 
+                                            onChange={e => setFormData({ ...formData, emails: { ...formData.emails, careers: e.target.value } })}
+                                            placeholder="careers@ayuxa.co.in"
+                                            style={{ width: "100%", padding: "12px 12px 12px 38px", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                    <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>General Enquiries Email</label>
+                                    <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
+                                        <Mail size={16} style={{ position: "absolute", left: 12, color: "var(--text-muted)" }} />
+                                        <input 
+                                            type="email"
+                                            value={formData.emails.enquiries} 
+                                            onChange={e => setFormData({ ...formData, emails: { ...formData.emails, enquiries: e.target.value } })}
+                                            placeholder="ho@ayuxa.co.in"
+                                            style={{ width: "100%", padding: "12px 12px 12px 38px", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 2. CAREERS LISTINGS TAB */}
+                {activeSubTab === "careers" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                                Define open positions to be displayed on the careers page.
+                            </div>
+                            <button className="btn-secondary" onClick={addCareerItem} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <Plus size={16} /> Add Position
+                            </button>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                            {formData.careers_list.length === 0 ? (
+                                <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)", border: "1px dashed var(--border-color)", borderRadius: "var(--radius-md)" }}>
+                                    No open positions defined. Click &quot;Add Position&quot; to list a new opportunity.
+                                </div>
+                            ) : formData.careers_list.map((job) => (
+                                <div key={job.id} style={{ border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: 20, background: "var(--bg-secondary)", position: "relative" }}>
+                                    <button 
+                                        onClick={() => removeCareerItem(job.id)} 
+                                        style={{ position: "absolute", top: 16, right: 16, border: "none", background: "transparent", color: "var(--accent-danger)", cursor: "pointer" }}
+                                        title="Delete position"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                    
+                                    <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 16, marginBottom: 12 }}>
+                                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                            <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Job Title</label>
+                                            <input 
+                                                value={job.title} 
+                                                onChange={e => updateCareerItem(job.id, "title", e.target.value)}
+                                                style={{ width: "100%", padding: 10, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontSize: 13 }}
+                                            />
+                                        </div>
+                                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                            <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Department</label>
+                                            <input 
+                                                value={job.department} 
+                                                onChange={e => updateCareerItem(job.id, "department", e.target.value)}
+                                                style={{ width: "100%", padding: 10, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontSize: 13 }}
+                                            />
+                                        </div>
+                                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                            <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Location</label>
+                                            <input 
+                                                value={job.location} 
+                                                onChange={e => updateCareerItem(job.id, "location", e.target.value)}
+                                                style={{ width: "100%", padding: 10, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontSize: 13 }}
+                                            />
+                                        </div>
+                                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                            <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Job Type</label>
+                                            <input 
+                                                value={job.type} 
+                                                onChange={e => updateCareerItem(job.id, "type", e.target.value)}
+                                                placeholder="e.g. Full Time"
+                                                style={{ width: "100%", padding: 10, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontSize: 13 }}
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                        <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Description / Requirements Summary</label>
+                                        <textarea 
+                                            rows={2}
+                                            value={job.description} 
+                                            onChange={e => updateCareerItem(job.id, "description", e.target.value)}
+                                            style={{ width: "100%", padding: 10, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontSize: 13, fontFamily: "inherit" }}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 3. COMMUNITY TAB */}
+                {activeSubTab === "community" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Charity/Community Page Title</label>
+                            <input 
+                                value={formData.community_content.title} 
+                                onChange={e => setFormData({
+                                    ...formData,
+                                    community_content: { ...formData.community_content, title: e.target.value }
+                                })}
+                                style={{ width: "100%", padding: 12, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
+                            />
+                        </div>
+
+                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Charity/Community Page Description</label>
+                            <textarea 
+                                rows={3}
+                                value={formData.community_content.description} 
+                                onChange={e => setFormData({
+                                    ...formData,
+                                    community_content: { ...formData.community_content, description: e.target.value }
+                                })}
+                                style={{ width: "100%", padding: 12, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontFamily: "inherit" }}
+                            />
+                        </div>
+
+                        <div style={{ borderTop: "1px solid var(--border-color)", marginTop: 10, paddingTop: 20 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                                <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Charity Initiatives &amp; Activities</h3>
+                                <button className="btn-secondary" onClick={addCharityInitiative} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <Plus size={16} /> Add Initiative
+                                </button>
+                            </div>
+
+                            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                {(formData.community_content.charity_initiatives || []).length === 0 ? (
+                                    <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)", border: "1px dashed var(--border-color)", borderRadius: "var(--radius-md)" }}>
+                                        No initiatives listed yet. Click &quot;Add Initiative&quot; to list a community action.
+                                    </div>
+                                ) : (formData.community_content.charity_initiatives || []).map((item, index) => (
+                                    <div key={index} style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                                        <input 
+                                            value={item} 
+                                            onChange={e => updateCharityInitiative(index, e.target.value)}
+                                            style={{ flex: 1, padding: 12, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
+                                        />
+                                        <button 
+                                            onClick={() => removeCharityInitiative(index)} 
+                                            style={{ border: "none", background: "transparent", color: "var(--accent-danger)", cursor: "pointer", padding: 8 }}
+                                            title="Remove initiative"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+            </div>
+        </div>
+    );
+}

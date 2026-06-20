@@ -213,6 +213,7 @@ app.use('/api/users', familyMemberRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/caregivers', caregiverRoutes);
+app.use('/api/public/team', require('./routes/publicTeam.routes'));
 
 // Subscriptions & Payments (with payment rate limiter)
 app.use('/api/plans', planRoutes);

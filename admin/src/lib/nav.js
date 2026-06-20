@@ -28,6 +28,7 @@ export const NAV_SECTIONS = [
             { id: "home-essentials", href: "/home-essentials", label: "Home Essentials", icon: HeartPulse, roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },
             { id: "bookings", href: "/bookings", label: "Booking Management", icon: CalendarCheck, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER'] },
             { id: "server-ui", href: "/server-ui", label: "Server UI Config", icon: Sliders, roles: ['SUPER_ADMIN'] },
+            { id: "company-settings", href: "/settings/company", label: "Company Settings", icon: Settings, roles: ['SUPER_ADMIN'] },
         ],
     },
     {

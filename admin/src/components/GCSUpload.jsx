@@ -18,9 +18,11 @@ export default function GCSUpload({
     const fileInputRef = useRef(null);
 
     const validateFile = (file) => {
-        // Validation: Must be an image
-        if (!file.type.startsWith('image/')) {
-            showToast("Only image files are allowed", "error");
+        // Validation: Must be image or pdf
+        const isImage = file.type.startsWith('image/');
+        const isPdf = file.type === 'application/pdf';
+        if (!isImage && !isPdf) {
+            showToast("Only image and PDF files are allowed", "error");
             return false;
         }
         // Validation: Max 5MB
@@ -107,14 +109,31 @@ export default function GCSUpload({
             <label className="upload-label">{label}</label>
             <div className="upload-box" onClick={() => !uploading && fileInputRef.current.click()}>
                 {preview ? (
-                    <div className="preview-container">
-                        <img src={preview} alt="Preview" className="img-preview" />
-                        {!uploading && <div className="change-overlay">Change Photo</div>}
+                    <div className="preview-container" style={{ width: '100%', height: '100%' }}>
+                        {preview.toLowerCase().endsWith('.pdf') || preview.includes('application/pdf') || preview.includes('/documents/') ? (
+                            <div className="pdf-preview" style={{
+                                width: '100%', height: '100%',
+                                display: 'flex', flexDirection: 'column',
+                                alignItems: 'center', justifyContent: 'center',
+                                background: '#1e293b', color: '#94a3b8',
+                                fontSize: '10px', padding: '10px',
+                                textAlign: 'center', borderRadius: '14px'
+                            }}>
+                                <CheckCircle size={24} style={{ color: '#10B981', marginBottom: 4 }} />
+                                <span style={{ fontWeight: 700 }}>PDF Document</span>
+                                <span style={{ fontSize: '8px', opacity: 0.7, marginTop: 2, display: 'block', wordBreak: 'break-all' }}>
+                                    {preview.split('/').pop().slice(0, 15)}...
+                                </span>
+                            </div>
+                        ) : (
+                            <img src={preview} alt="Preview" className="img-preview" />
+                        )}
+                        {!uploading && <div className="change-overlay">Change File</div>}
                     </div>
                 ) : (
                     <div className="placeholder">
                         <Upload size={24} className="icon" />
-                        <span>Click to upload photo</span>
+                        <span>Click to upload file</span>
                     </div>
                 )}
 
@@ -132,7 +151,7 @@ export default function GCSUpload({
                 type="file" 
                 ref={fileInputRef} 
                 onChange={handleFileChange} 
-                accept="image/*"
+                accept="image/*,application/pdf"
                 style={{ display: 'none' }}
             />
 

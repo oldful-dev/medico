@@ -59,10 +59,13 @@ const getProfiles = async ({ role, search, specialization, sortBy = 'createdAt',
             roleFilters.push({ specialization: { contains: 'Doctor', mode: 'insensitive' } });
         } else if (role === 'nurse') {
             roleFilters.push({ specialization: { contains: 'Nurse', mode: 'insensitive' } });
+        } else if (role === 'shareholder') {
+            roleFilters.push({ specialization: { contains: 'Shareholder', mode: 'insensitive' } });
         } else if (role === 'caregiver') {
-            // Exclude Doctors and Nurses
+            // Exclude Doctors, Nurses, and Shareholders
             roleFilters.push({ specialization: { not: { contains: 'Doctor' }, mode: 'insensitive' } });
             roleFilters.push({ specialization: { not: { contains: 'Nurse' }, mode: 'insensitive' } });
+            roleFilters.push({ specialization: { not: { contains: 'Shareholder' }, mode: 'insensitive' } });
         }
 
         // 3. User-selected Specialization Filter (Dropdown)
@@ -100,17 +103,31 @@ const getProfiles = async ({ role, search, specialization, sortBy = 'createdAt',
     }
 
     // Standardize Output
-    const normalized = items.map(item => ({
-        id: item.id,
-        name: item.name,
-        role: isManagement ? item.role : (item.specialization || 'Caregiver'),
-        email: item.email || item.phone, // Contact fallback
-        phone: item.phone,
-        city: item.city?.name || 'Global',
-        status: normalizeStatus(item, role),
-        profileImageUrl: item.profileImageUrl,
-        createdAt: item.createdAt,
-    }));
+    const normalized = items.map(item => {
+        let displayRole = isManagement ? item.role : (item.specialization || 'Caregiver');
+        if (isManagement && item.documentsJson) {
+            try {
+                const docs = typeof item.documentsJson === 'string'
+                    ? JSON.parse(item.documentsJson)
+                    : item.documentsJson;
+                if (docs && docs.title) {
+                    displayRole = docs.title;
+                }
+            } catch (e) {}
+        }
+        return {
+            id: item.id,
+            name: item.name,
+            role: displayRole,
+            email: item.email || item.phone, // Contact fallback
+            phone: item.phone,
+            city: item.city?.name || 'Global',
+            status: normalizeStatus(item, role),
+            profileImageUrl: item.profileImageUrl,
+            documentsJson: item.documentsJson,
+            createdAt: item.createdAt,
+        };
+    });
 
     return { data: normalized, total };
 };
@@ -146,7 +163,7 @@ const getMetadata = async () => {
         const data = {
             specializations: specializations.map(s => s.specialization).filter(Boolean),
             adminRoles: admins.map(a => a.role),
-            staffRoles: ['doctor', 'nurse', 'caregiver', 'management']
+            staffRoles: ['doctor', 'nurse', 'caregiver', 'management', 'shareholder']
         };
 
         metadataCache = { data, expiry: Date.now() + (1000 * 60 * 10) };
@@ -269,14 +286,50 @@ const updateProfile = async (adminId, { id, type, data }) => {
     // Sanitize data based on model
     const updateData = {};
     const allowedFields = type === 'management' 
-        ? ['name', 'email', 'phone', 'role', 'cityId', 'isActive']
-        : ['name', 'email', 'phone', 'specialization', 'qualification', 'profileImageUrl', 'cityId', 'isAvailable'];
+        ? ['name', 'email', 'phone', 'role', 'cityId', 'isActive', 'profileImageUrl', 'documentsJson']
+        : ['name', 'email', 'phone', 'specialization', 'qualification', 'profileImageUrl', 'cityId', 'isAvailable', 'documentsJson'];
 
     allowedFields.forEach(field => {
         if (data[field] !== undefined) {
             updateData[field] = data[field];
         }
     });
+
+    if (type === 'management') {
+        const VALID_ADMIN_ROLES = ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER', 'SUPPORT_AGENT', 'BILLING_EXECUTIVE'];
+        
+        let docsObj = {};
+        if (updateData.documentsJson) {
+            try {
+                docsObj = typeof updateData.documentsJson === 'string'
+                    ? JSON.parse(updateData.documentsJson)
+                    : updateData.documentsJson;
+                if (!docsObj || typeof docsObj !== 'object') docsObj = {};
+            } catch (e) {
+                docsObj = {};
+            }
+        } else if (oldRecord.documentsJson) {
+            try {
+                docsObj = typeof oldRecord.documentsJson === 'string'
+                    ? JSON.parse(oldRecord.documentsJson)
+                    : oldRecord.documentsJson;
+                if (!docsObj || typeof docsObj !== 'object') docsObj = {};
+            } catch (e) {
+                docsObj = {};
+            }
+        }
+
+        if (updateData.role) {
+            if (!VALID_ADMIN_ROLES.includes(updateData.role)) {
+                docsObj.title = updateData.role;
+                updateData.documentsJson = docsObj;
+                delete updateData.role;
+            } else {
+                delete docsObj.title;
+                updateData.documentsJson = docsObj;
+            }
+        }
+    }
 
     const result = await model.update({ 
         where: { id }, 
@@ -310,6 +363,33 @@ const createProfile = async (adminId, { type, data }) => {
         const { hashPassword } = require('../utils/helpers');
         const passwordHash = await hashPassword(password || 'Medico@123');
         
+        const VALID_ADMIN_ROLES = ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER', 'SUPPORT_AGENT', 'BILLING_EXECUTIVE'];
+        let adminRole = 'CARE_MANAGER';
+        let docsObj = rest.documentsJson || null;
+        
+        if (docsObj) {
+            try {
+                docsObj = typeof docsObj === 'string' ? JSON.parse(docsObj) : docsObj;
+                if (!docsObj || typeof docsObj !== 'object') docsObj = {};
+            } catch (e) {
+                docsObj = {};
+            }
+        } else {
+            docsObj = {};
+        }
+
+        if (rest.role) {
+            if (VALID_ADMIN_ROLES.includes(rest.role)) {
+                adminRole = rest.role;
+                delete docsObj.title;
+            } else {
+                docsObj.title = rest.role;
+                adminRole = 'CARE_MANAGER';
+            }
+        }
+
+        const documentsJson = Object.keys(docsObj).length > 0 ? docsObj : (rest.documentsJson || null);
+
         result = await prisma.admin.create({
             data: {
                 name,
@@ -317,8 +397,10 @@ const createProfile = async (adminId, { type, data }) => {
                 phone,
                 cityId,
                 passwordHash,
-                role: rest.role || 'CARE_MANAGER',
-                isActive: true
+                role: adminRole,
+                isActive: true,
+                profileImageUrl: rest.profileImageUrl || null,
+                documentsJson: documentsJson
             }
         });
     } else {
@@ -330,6 +412,8 @@ const createProfile = async (adminId, { type, data }) => {
                 cityId,
                 specialization: rest.specialization || 'Caregiver',
                 qualification: rest.qualification,
+                profileImageUrl: rest.profileImageUrl || null,
+                documentsJson: rest.documentsJson || null,
                 isAvailable: true
             }
         });

@@ -21,6 +21,8 @@ model Admin {
   refreshToken String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+  profileImageUrl String?
+  documentsJson   Json?
   city         City?      @relation(fields: [cityId], references: [id])
   auditLogs    AuditLog[]
 
