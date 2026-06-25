@@ -1,59 +1,47 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Routes that require authentication
-const PROTECTED_PATHS = ['/app', '/account', '/cart', '/plans'];
-
-// Marketing/public routes that logged-in users should NOT see (landing page)
-const MARKETING_PATHS = ['/'];
+// Restricted paths to redirect to homepage for purely informational website
+const RESTRICTED_PATHS = [
+  '/auth',
+  '/app',
+  '/doctor-visit',
+  '/plans',
+  '/cart',
+  '/checkout',
+  '/success',
+  '/account'
+];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Legacy redirect for moved plans page
-  if (pathname === '/plans') {
-    return NextResponse.redirect(new URL('/app/plans', request.url));
-  }
+  const isRestricted = RESTRICTED_PATHS.some(path => 
+    pathname === path || pathname.startsWith(path + '/')
+  );
 
-  // Use refresh-token as session indicator (30-day lifetime).
-  // Even if the access token has expired, presence of refresh-token
-  // means the user has a valid session that can be silently restored
-  // (authStore.initialize() handles it client-side on mount).
-  const hasSession = !!request.cookies.get('refresh-token')?.value;
-
-  const PUBLIC_APP_ROUTES = ['/app/plans'];
-  const isPublicAppRoute = PUBLIC_APP_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'));
-  const isProtected   = !isPublicAppRoute && PROTECTED_PATHS.some(p => pathname.startsWith(p));
-  const isAuthRoute   = pathname === '/auth';
-  const isMarketing   = MARKETING_PATHS.includes(pathname);
-
-  // ── Rule 1: Logged-in users → always land on dashboard ──────────────────
-  // Block access to the marketing landing page and auth page
-  if (hasSession && (isMarketing || isAuthRoute)) {
-    return NextResponse.redirect(new URL('/app/dashboard', request.url));
-  }
-
-  // ── Rule 2: Guests → redirect to login for protected routes ─────────────
-  if (!hasSession && isProtected) {
-    const loginUrl = new URL('/auth', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+  if (isRestricted) {
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  // Include '/' and marketing routes so we can redirect logged-in users away
   matcher: [
-    '/',
+    '/auth/:path*',
     '/auth',
+    '/plans/:path*',
     '/plans',
-    '/about',
-    '/wellness',
+    '/doctor-visit/:path*',
     '/doctor-visit',
     '/app/:path*',
+    '/app',
     '/account/:path*',
     '/cart/:path*',
+    '/checkout/:path*',
+    '/checkout',
+    '/success/:path*',
+    '/success',
   ],
 };
