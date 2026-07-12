@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, Eye, Ban, UserCheck, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Filter, Eye, Ban, UserCheck, RotateCcw, ChevronLeft, ChevronRight, Edit2 } from "lucide-react";
 import Cookies from "js-cookie";
 import { userAPI, cityAPI } from "@/lib/api";
 import { formatDate, formatDateTime, showToast } from "@/lib/hooks";
@@ -16,6 +16,23 @@ export default function UsersPage() {
     const [selectedUser, setSelectedUser] = useState(null);
     const [imageViewer, setImageViewer] = useState(null);
     const limit = 20;
+    const [editingUser, setEditingUser] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [editForm, setEditForm] = useState({
+        name: '',
+        phone: '',
+        email: '',
+        cityId: '',
+        gender: '',
+        dateOfBirth: '',
+        healthTag: 'NORMAL',
+        status: 'ACTIVE',
+        preferredLanguage: 'en',
+        pushEnabled: true,
+        smsEnabled: true,
+        whatsappEnabled: true,
+        emailMarketingEnabled: false
+    });
 
     useEffect(() => {
         cityAPI.getAll().then(r => setCities(r.data?.data || [])).catch(() => { });
@@ -46,6 +63,46 @@ export default function UsersPage() {
             const res = await userAPI.getById(id);
             setSelectedUser(res.data?.data);
         } catch (e) { showToast('Failed to load user', 'error'); }
+    }
+
+    function startEditUser(u) {
+        setEditingUser(u);
+        setEditForm({
+            name: u.name || '',
+            phone: u.phone || '',
+            email: u.email || '',
+            cityId: u.cityId || '',
+            gender: u.gender || '',
+            dateOfBirth: u.dateOfBirth ? new Date(u.dateOfBirth).toISOString().split('T')[0] : '',
+            healthTag: u.healthTag || 'NORMAL',
+            status: u.status || 'ACTIVE',
+            preferredLanguage: u.preferredLanguage || 'en',
+            pushEnabled: u.pushEnabled !== false,
+            smsEnabled: u.smsEnabled !== false,
+            whatsappEnabled: u.whatsappEnabled !== false,
+            emailMarketingEnabled: u.emailMarketingEnabled === true,
+        });
+    }
+
+    async function handleEditSubmit(e) {
+        e.preventDefault();
+        try {
+            setSaving(true);
+            const payload = { ...editForm };
+            payload.dateOfBirth = payload.dateOfBirth ? new Date(payload.dateOfBirth).toISOString() : null;
+            const res = await userAPI.update(editingUser.id, payload);
+            if (res.data?.success || res.status === 200) {
+                showToast('User updated successfully');
+                setEditingUser(null);
+                loadUsers();
+            } else {
+                showToast(res.data?.message || 'Failed to update user', 'error');
+            }
+        } catch (err) {
+            showToast(err.response?.data?.message || 'Failed to update user', 'error');
+        } finally {
+            setSaving(false);
+        }
     }
 
     function calculateAge(dateOfBirth) {
@@ -135,6 +192,7 @@ export default function UsersPage() {
                                             <td>
                                                 <div className="flex gap-2">
                                                     <button className="btn btn-sm btn-secondary" onClick={() => viewUser(u.id)}><Eye size={14} /></button>
+                                                    <button className="btn btn-sm btn-secondary" onClick={() => startEditUser(u)}><Edit2 size={14} /></button>
                                                     {u.status === 'ACTIVE' && <button className="btn btn-sm btn-danger" onClick={() => blockUser(u.id)}><Ban size={14} /></button>}
                                                     {u.status === 'BLOCKED' && <button className="btn btn-sm btn-success" onClick={() => activateUser(u.id)}><UserCheck size={14} /></button>}
                                                 </div>
@@ -427,6 +485,122 @@ export default function UsersPage() {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {editingUser && (
+                <div className="modal-overlay" onClick={() => setEditingUser(null)}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 620, maxHeight: '90vh', overflowY: 'auto' }}>
+                        <div className="modal-header">
+                            <h3 style={{ margin: 0 }}>Edit User — {editingUser.name}</h3>
+                            <button type="button" onClick={() => setEditingUser(null)} className="btn btn-sm btn-secondary">✕</button>
+                        </div>
+                        <form onSubmit={handleEditSubmit}>
+                            <div className="modal-body">
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label className="form-label">Name *</label>
+                                        <input type="text" required className="form-input" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Phone *</label>
+                                        <input type="text" required className="form-input" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
+                                    </div>
+                                </div>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label className="form-label">Email</label>
+                                        <input type="email" className="form-input" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">City *</label>
+                                        <select required className="form-select" value={editForm.cityId} onChange={e => setEditForm({ ...editForm, cityId: e.target.value })}>
+                                            <option value="">Select City</option>
+                                            {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label className="form-label">Gender</label>
+                                        <select className="form-select" value={editForm.gender} onChange={e => setEditForm({ ...editForm, gender: e.target.value })}>
+                                            <option value="">Select Gender</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Date of Birth</label>
+                                        <input type="date" className="form-input" value={editForm.dateOfBirth} onChange={e => setEditForm({ ...editForm, dateOfBirth: e.target.value })} />
+                                    </div>
+                                </div>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label className="form-label">Health Tag</label>
+                                        <select className="form-select" value={editForm.healthTag} onChange={e => setEditForm({ ...editForm, healthTag: e.target.value })}>
+                                            <option value="NORMAL">Normal</option>
+                                            <option value="DIABETIC">Diabetic</option>
+                                            <option value="HYPERTENSION">Hypertension</option>
+                                            <option value="CARDIAC">Cardiac</option>
+                                            <option value="OTHER">Other</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Status</label>
+                                        <select className="form-select" value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })}>
+                                            <option value="ACTIVE">Active</option>
+                                            <option value="SUSPENDED">Suspended</option>
+                                            <option value="BLOCKED">Blocked</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label className="form-label">Preferred Language</label>
+                                        <select className="form-select" value={editForm.preferredLanguage} onChange={e => setEditForm({ ...editForm, preferredLanguage: e.target.value })}>
+                                            <option value="en">English</option>
+                                            <option value="hi">Hindi</option>
+                                            <option value="kn">Kannada</option>
+                                            <option value="ta">Tamil</option>
+                                            <option value="te">Telugu</option>
+                                            <option value="ml">Malayalam</option>
+                                            <option value="mr">Marathi</option>
+                                            <option value="bn">Bengali</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                        <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 16 }}>
+                                            <input type="checkbox" checked={editForm.emailMarketingEnabled} onChange={e => setEditForm({ ...editForm, emailMarketingEnabled: e.target.checked })} />
+                                            Email Marketing Enabled
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="form-group" style={{ marginTop: 12 }}>
+                                    <label className="form-label">Notification Channels</label>
+                                    <div style={{ display: 'flex', gap: 16 }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={editForm.pushEnabled} onChange={e => setEditForm({ ...editForm, pushEnabled: e.target.checked })} />
+                                            Push Notifications
+                                        </label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={editForm.smsEnabled} onChange={e => setEditForm({ ...editForm, smsEnabled: e.target.checked })} />
+                                            SMS
+                                        </label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={editForm.whatsappEnabled} onChange={e => setEditForm({ ...editForm, whatsappEnabled: e.target.checked })} />
+                                            WhatsApp
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setEditingUser(null)}>Cancel</button>
+                                <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

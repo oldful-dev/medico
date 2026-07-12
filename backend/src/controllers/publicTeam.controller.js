@@ -9,7 +9,7 @@ const getPublicTeam = async (req, res, next) => {
     try {
         // 1. Fetch active management/admins
         const admins = await prisma.admin.findMany({
-            where: { isActive: true },
+            where: { isActive: true, isStaffProfile: true },
             select: {
                 id: true,
                 name: true,

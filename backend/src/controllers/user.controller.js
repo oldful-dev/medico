@@ -217,10 +217,26 @@ const createUser = async (req, res, next) => {
 // PUT /api/users/:id
 const updateUser = async (req, res, next) => {
     try {
-        const { name, email, gender, dateOfBirth, preferredLanguage, healthTag, status, pushEnabled, smsEnabled, whatsappEnabled, emailMarketingEnabled } = req.body;
+        const { name, email, phone, cityId, gender, dateOfBirth, preferredLanguage, healthTag, status, pushEnabled, smsEnabled, whatsappEnabled, emailMarketingEnabled } = req.body;
         const data = {};
         if (name !== undefined) data.name = name;
         if (email !== undefined) data.email = email;
+        
+        if (phone !== undefined) {
+            // Check if phone number is already taken by another user
+            const existingUser = await prisma.user.findFirst({
+                where: {
+                    phone,
+                    NOT: { id: req.params.id }
+                }
+            });
+            if (existingUser) {
+                return res.status(400).json({ success: false, message: 'Phone number already registered' });
+            }
+            data.phone = phone;
+        }
+
+        if (cityId !== undefined) data.cityId = cityId;
         if (gender !== undefined) data.gender = gender;
         if (dateOfBirth !== undefined) data.dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null;
         if (preferredLanguage !== undefined) data.preferredLanguage = preferredLanguage;
