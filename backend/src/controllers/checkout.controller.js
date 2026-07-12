@@ -125,6 +125,7 @@ exports.calculateCheckout = async (req, res) => {
             else if (HOME_CATEGORIES.includes(upper)) requiredPlanType = 'HOMEMAKER';
         }
 
+        let waiveGstActive = false;
         // Only check for a matching-category subscription
         if (requiredPlanType && isSubscriptionEligible && !req.body.isPaidBooking) {
             const activeSubscription = await prisma.subscription.findFirst({
@@ -137,7 +138,6 @@ exports.calculateCheckout = async (req, res) => {
                 include: { plan: { select: { planType: true, metadata: true } } },
             });
 
-            let waiveGstActive = false;
             if (activeSubscription) {
                 // Benefit applies! Waive booking and platform fees
                 benefitDiscount = bookingFee + platformFee;
