@@ -17,6 +17,7 @@ model Admin {
   role         AdminRole  @default(CITY_ADMIN)
   cityId       String?
   isActive     Boolean    @default(true)
+  isStaffProfile Boolean  @default(false)
   lastLoginAt  DateTime?
   refreshToken String?
   createdAt    DateTime   @default(now())

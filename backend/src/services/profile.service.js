@@ -51,8 +51,7 @@ const getProfiles = async ({ role, search, specialization, sortBy = 'createdAt',
 
     // 2. Specialized Tab/Role Filters
     if (isManagement) {
-        // No specific role filter for management tab yet, 
-        // as we query the Admin model directly below.
+        where.AND.push({ isStaffProfile: true });
     } else {
         const roleFilters = [];
         if (role === 'doctor') {
@@ -399,6 +398,7 @@ const createProfile = async (adminId, { type, data }) => {
                 passwordHash,
                 role: adminRole,
                 isActive: true,
+                isStaffProfile: true,
                 profileImageUrl: rest.profileImageUrl || null,
                 documentsJson: documentsJson
             }
