@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Briefcase, Send, CheckCircle, ArrowRight, Star, Heart, Clock, Shield } from 'lucide-react';
+import { Briefcase, Send, CheckCircle, ArrowRight, Star, Heart, Clock, Shield, MapPin, Building } from 'lucide-react';
 import { apiClient } from '@/services/api/apiClient';
 import { PhoneInput } from '@/components/common/PhoneInput';
+import { uiConfigService } from '@/services/api/uiConfigService';
 
 const ROLES = [
   "General Caregiver",
@@ -26,6 +27,8 @@ const PERKS = [
 export default function CareersPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [careersList, setCareersList] = useState<any[]>([]);
+  const [roles, setRoles] = useState<string[]>(ROLES);
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -35,6 +38,31 @@ export default function CareersPage() {
     resumeLink: '',
     coverLetter: ''
   });
+
+  useEffect(() => {
+    async function loadConfig() {
+      try {
+        const config = await uiConfigService.getCompanyGlobalConfig();
+        if (config && Array.isArray(config.careers_list) && config.careers_list.length > 0) {
+          setCareersList(config.careers_list);
+          const dynamicRoles = config.careers_list.map((c: any) => c.title);
+          setRoles(dynamicRoles);
+          setForm(prev => ({ ...prev, role: dynamicRoles[0] }));
+        }
+      } catch (err) {
+        console.error("Error loading careers config:", err);
+      }
+    }
+    loadConfig();
+  }, []);
+
+  const handleApplyClick = (roleTitle: string) => {
+    setForm(prev => ({ ...prev, role: roleTitle }));
+    const element = document.getElementById('apply');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,6 +140,55 @@ export default function CareersPage() {
         </div>
       </section>
 
+      {/* Dynamic Openings Section */}
+      {careersList.length > 0 && (
+        <section className="py-16 md:py-20 px-6 max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-extrabold text-gray-900 mb-4">Current Openings</h2>
+            <p className="text-gray-500 max-w-xl mx-auto">Explore our open positions and find your next opportunity to make a meaningful difference.</p>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-6">
+            {careersList.map((job, idx) => (
+              <motion.div
+                key={`${job.id || 'job'}-${idx}`}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.05 }}
+                className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-6"
+              >
+                <div className="space-y-3 flex-1">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg uppercase tracking-wider flex items-center gap-1">
+                      <Building className="w-3 h-3" /> {job.department || 'General'}
+                    </span>
+                    <span className="px-3 py-1 bg-gray-50 text-gray-600 text-xs font-bold rounded-lg uppercase tracking-wider flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> {job.location || 'Remote'}
+                    </span>
+                    <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg uppercase tracking-wider">
+                      {job.type || 'Full Time'}
+                    </span>
+                  </div>
+                  
+                  <h3 className="text-xl font-bold text-gray-900">{job.title}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed max-w-3xl">{job.description}</p>
+                </div>
+                
+                <div className="flex items-center shrink-0">
+                  <button
+                    onClick={() => handleApplyClick(job.title)}
+                    className="flex items-center gap-2 bg-[var(--color-primary)] text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-emerald-600 transition-all shadow-sm"
+                  >
+                    Apply Now <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Application Form */}
       <section className="py-16 md:py-20 px-6 relative" id="apply">
         <div className="max-w-3xl mx-auto">
@@ -178,7 +255,7 @@ export default function CareersPage() {
                     value={form.role}
                     onChange={e => setForm({...form, role: e.target.value})}
                   >
-                    {ROLES.map(role => <option key={role} value={role}>{role}</option>)}
+                    {roles.map((role, idx) => <option key={`${role}-${idx}`} value={role}>{role}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">

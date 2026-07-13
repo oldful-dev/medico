@@ -247,9 +247,24 @@ const updateOrderStatus = async (req, res, next) => {
     }
 };
 
+const bulkToggleProducts = async (req, res, next) => {
+    try {
+        const { isEnabled } = req.body;
+        if (isEnabled === undefined) {
+            return res.status(400).json({ success: false, message: 'isEnabled is required' });
+        }
+        await prisma.product.updateMany({
+            data: { isEnabled: !!isEnabled }
+        });
+        sendResponse(res, 200, null, `All products ${isEnabled ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getProducts, getProductById, createProduct, updateProduct, deleteProduct,
     createProductOrder, joinWaitlist,
     getCategories, createCategory, updateCategory, deleteCategory,
-    getAdminOrders, updateOrderStatus,
+    getAdminOrders, updateOrderStatus, bulkToggleProducts,
 };

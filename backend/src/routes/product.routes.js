@@ -13,6 +13,7 @@ router.post('/:id/waitlist', authenticate, ctrl.joinWaitlist);
 
 // Admin
 router.post('/', authenticateAdmin, ctrl.createProduct);
+router.put('/admin/bulk-toggle', authenticateAdmin, ctrl.bulkToggleProducts);
 router.put('/:id', authenticateAdmin, ctrl.updateProduct);
 router.delete('/:id', authenticateAdmin, ctrl.deleteProduct);
 router.get('/admin/orders', authenticateAdmin, ctrl.getAdminOrders);

@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { 
-    Building2, Phone, Mail, Sliders, Briefcase, Heart, Plus, Trash2, Save, Info, CheckCircle2
+    Building2, Phone, Mail, Sliders, Briefcase, Heart, Plus, Trash2, Save, Info, CheckCircle2,
+    BookOpen, FileText
 } from "lucide-react";
 import { uiConfigAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
@@ -11,7 +12,6 @@ export default function CompanySettingsPage() {
     const [configId, setConfigId] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-
     // Initial default state
     const [formData, setFormData] = useState({
         company_name: "Ayuxa Health Tech Platforms Pvt. Ltd.",
@@ -29,7 +29,9 @@ export default function CompanySettingsPage() {
             title: "Ayuxa Care Community",
             description: "Engaging, educating, and supporting senior health and wellness throughout the community.",
             charity_initiatives: []
-        }
+        },
+        about_html: "",
+        blogs_html: ""
     });
 
     useEffect(() => {
@@ -50,7 +52,9 @@ export default function CompanySettingsPage() {
                             ...parsedJson,
                             emails: { ...prev.emails, ...(parsedJson?.emails || {}) },
                             careers_list: parsedJson?.careers_list || [],
-                            community_content: { ...prev.community_content, ...(parsedJson?.community_content || {}) }
+                            community_content: { ...prev.community_content, ...(parsedJson?.community_content || {}) },
+                            about_html: parsedJson?.about_html || "",
+                            blogs_html: parsedJson?.blogs_html || ""
                         }));
                     }
                 }
@@ -164,6 +168,49 @@ export default function CompanySettingsPage() {
         }));
     };
 
+    // Blog operations
+    const addBlogPost = () => {
+        const posts = formData.blogs_content?.posts || [];
+        const newPost = {
+            id: Date.now().toString(),
+            title: "New Article Title",
+            excerpt: "Article excerpt summary...",
+            author: "Author Name",
+            date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+            image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=800&auto=format&fit=crop",
+            category: "Wellness"
+        };
+        setFormData(prev => ({
+            ...prev,
+            blogs_content: {
+                ...prev.blogs_content,
+                posts: [...posts, newPost]
+            }
+        }));
+    };
+
+    const updateBlogPost = (id, field, value) => {
+        const posts = formData.blogs_content?.posts || [];
+        setFormData(prev => ({
+            ...prev,
+            blogs_content: {
+                ...prev.blogs_content,
+                posts: posts.map(post => post.id === id ? { ...post, [field]: value } : post)
+            }
+        }));
+    };
+
+    const removeBlogPost = (id) => {
+        const posts = formData.blogs_content?.posts || [];
+        setFormData(prev => ({
+            ...prev,
+            blogs_content: {
+                ...prev.blogs_content,
+                posts: posts.filter(post => post.id !== id)
+            }
+        }));
+    };
+
     if (loading) {
         return (
             <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
@@ -174,7 +221,7 @@ export default function CompanySettingsPage() {
 
     return (
         <div className="company-settings-page" style={{ color: "var(--text-primary)", fontFamily: "var(--font-primary)" }}>
-            <header className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItem: "flex-end", marginBottom: 32 }}>
+            <header className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
                 <div className="title-group">
                     <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>Company Settings</h1>
                     <p style={{ color: "var(--text-muted)", margin: "4px 0 0", fontSize: 14 }}>
@@ -202,6 +249,34 @@ export default function CompanySettingsPage() {
                 >
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <Building2 size={16} /> Contact Details
+                    </div>
+                </button>
+                <button 
+                    onClick={() => setActiveSubTab("about")} 
+                    style={{
+                        padding: "8px 16px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer",
+                        fontWeight: 700, fontSize: 14,
+                        background: activeSubTab === "about" ? "var(--bg-glass)" : "transparent",
+                        color: activeSubTab === "about" ? "var(--accent-primary)" : "var(--text-muted)",
+                        borderBottom: activeSubTab === "about" ? "2.5px solid var(--accent-primary)" : "none"
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <FileText size={16} /> About Us Page
+                    </div>
+                </button>
+                <button 
+                    onClick={() => setActiveSubTab("blogs")} 
+                    style={{
+                        padding: "8px 16px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer",
+                        fontWeight: 700, fontSize: 14,
+                        background: activeSubTab === "blogs" ? "var(--bg-glass)" : "transparent",
+                        color: activeSubTab === "blogs" ? "var(--accent-primary)" : "var(--text-muted)",
+                        borderBottom: activeSubTab === "blogs" ? "2.5px solid var(--accent-primary)" : "none"
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <BookOpen size={16} /> Blogs Page
                     </div>
                 </button>
                 <button 
@@ -490,6 +565,82 @@ export default function CompanySettingsPage() {
                         </div>
                     </div>
                 )}
+
+                {/* ABOUT US TAB */}
+                {activeSubTab === "about" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, minHeight: 500 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>About Page HTML</h3>
+                                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>HTML supported</span>
+                            </div>
+                            <textarea 
+                                rows={25}
+                                value={formData.about_html || ""} 
+                                onChange={e => setFormData({
+                                    ...formData,
+                                    about_html: e.target.value
+                                })}
+                                style={{ width: "100%", padding: 16, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontFamily: "monospace", fontSize: 13, resize: "vertical", lineHeight: 1.6 }}
+                                placeholder="<h2>About Section</h2>..."
+                            />
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Live Preview</h3>
+                            <div style={{ border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: 24, background: "#FFFCF6", overflowY: "auto", maxHeight: 535 }}>
+                                <div 
+                                    className="legal-preview"
+                                    dangerouslySetInnerHTML={{ __html: formData.about_html || "<p style='color: var(--text-muted); font-style: italic;'>No content yet.</p>" }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* BLOGS TAB */}
+                {activeSubTab === "blogs" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, minHeight: 500 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Blogs Page HTML</h3>
+                                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>HTML supported</span>
+                            </div>
+                            <textarea 
+                                rows={25}
+                                value={formData.blogs_html || ""} 
+                                onChange={e => setFormData({
+                                    ...formData,
+                                    blogs_html: e.target.value
+                                })}
+                                style={{ width: "100%", padding: 16, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontFamily: "monospace", fontSize: 13, resize: "vertical", lineHeight: 1.6 }}
+                                placeholder="<section>...</section>"
+                            />
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Live Preview</h3>
+                            <div style={{ border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: 24, background: "#FFFCF6", overflowY: "auto", maxHeight: 535 }}>
+                                <div 
+                                    className="legal-preview"
+                                    dangerouslySetInnerHTML={{ __html: formData.blogs_html || "<p style='color: var(--text-muted); font-style: italic;'>No content yet.</p>" }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <style>{`
+                    .legal-preview h1,.legal-preview h2,.legal-preview h3 { font-weight:700; margin:1.5rem 0 0.75rem; color:#111827; }
+                    .legal-preview h1 { font-size:1.8rem; }
+                    .legal-preview h2 { font-size:1.4rem; border-bottom:1px solid #f3f4f6; padding-bottom:0.5rem; }
+                    .legal-preview h3 { font-size:1.1rem; }
+                    .legal-preview p { margin-bottom:1rem; color:#4b5563; line-height: 1.6; }
+                    .legal-preview ul,.legal-preview ol { padding-left:1.5rem; margin-bottom:1rem; }
+                    .legal-preview ul { list-style:disc; }
+                    .legal-preview ol { list-style:decimal; }
+                    .legal-preview li { margin-bottom:0.4rem; color:#4b5563; }
+                    .legal-preview strong { color:#111827; }
+                    .legal-preview a { color:#10b981; text-decoration: underline; }
+                `}</style>
 
             </div>
         </div>
