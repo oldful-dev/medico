@@ -129,13 +129,21 @@ const syncDbServicesToUIConfig = async () => {
                             item.enabled = dbSvc.isEnabled;
                             changed = true;
                         }
-                        // Keep label, route, etc. in sync
+                        // Keep label, route, icon, and sort_order in sync
                         if (item.label !== (dbSvc.headline || dbSvc.name)) {
                             item.label = dbSvc.headline || dbSvc.name;
                             changed = true;
                         }
                         if (item.route !== (dbSvc.route || `/${dbSvc.slug}`)) {
                             item.route = dbSvc.route || `/${dbSvc.slug}`;
+                            changed = true;
+                        }
+                        if (item.icon !== dbSvc.icon) {
+                            item.icon = dbSvc.icon;
+                            changed = true;
+                        }
+                        if (item.sort_order !== dbSvc.sortOrder) {
+                            item.sort_order = dbSvc.sortOrder;
                             changed = true;
                         }
                         updatedServices.push(item);

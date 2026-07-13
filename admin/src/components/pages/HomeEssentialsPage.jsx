@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { 
   Plus, 
   Edit2, 
@@ -8,9 +8,11 @@ import {
   ToggleRight, 
   Search, 
   Sliders,
-  DollarSign
+  DollarSign,
+  Upload,
+  Loader2
 } from "lucide-react";
-import { serviceAPI } from "@/lib/api";
+import { serviceAPI, mediaAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
 
 export default function HomeEssentialsPage() {
@@ -20,6 +22,79 @@ export default function HomeEssentialsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
+  
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const iconFileInputRef = useRef(null);
+
+  const isEmoji = (str) => {
+    if (!str) return false;
+    const clean = str.trim();
+    return clean.length <= 4 && !clean.includes('.') && !clean.includes('/') && !clean.includes(':');
+  };
+
+  const getImageUrl = (imageName) => {
+    if (!imageName) return "";
+    if (imageName.startsWith("http://") || imageName.startsWith("https://")) {
+      return imageName;
+    }
+    return `https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/${imageName}`;
+  };
+
+  const handleIconUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      showToast("Only image files are allowed", "error");
+      return;
+    }
+    
+    setUploadingIcon(true);
+    try {
+      const res = await mediaAPI.getSignedUrl({
+        fileName: file.name,
+        contentType: file.type,
+        folder: "mobile/assets/images"
+      });
+
+      if (!res.data.success) throw new Error("Failed to get signed URL");
+      const { gcsUri, signedUrl, storagePath, fileUrl } = res.data.data;
+
+      const uploadRes = await fetch(signedUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type,
+          'Content-Length': file.size.toString(),
+        },
+        body: file,
+        credentials: 'omit',
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("GCS Upload failed");
+      }
+
+      const confirmRes = await mediaAPI.confirm({
+        storagePath,
+        fileUrl,
+        gcsUri,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        folder: "mobile/assets/images"
+      });
+
+      if (confirmRes.data.success) {
+        const fileNameGCS = storagePath.split("/").pop();
+        setForm(prev => ({ ...prev, icon: fileNameGCS }));
+        showToast("Icon uploaded successfully", "success");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to upload image to GCS", "error");
+    } finally {
+      setUploadingIcon(false);
+    }
+  };
 
   // Form states
   const [form, setForm] = useState({
@@ -267,7 +342,19 @@ export default function HomeEssentialsPage() {
                     <td style={{ fontWeight: 600, color: "var(--text-secondary)" }}>#{s.sortOrder}</td>
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 20 }}>{s.icon || "🛠️"}</span>
+                        {isEmoji(s.icon) ? (
+                          <span style={{ fontSize: 20 }}>{s.icon || "🛠️"}</span>
+                        ) : (
+                          <img 
+                            src={getImageUrl(s.icon)} 
+                            alt={s.name} 
+                            style={{ width: 24, height: 24, objectFit: "contain" }}
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = "https://placehold.co/40x40?text=Service";
+                            }}
+                          />
+                        )}
                         <div>
                           <div style={{ fontWeight: 600 }}>{s.name}</div>
                           <div className="text-sm text-muted">/{s.slug}</div>
@@ -352,14 +439,32 @@ export default function HomeEssentialsPage() {
                   </div>
                   <div className="form-group" style={{ flex: 1 }}>
                     <label className="form-label">Icon / Emoji</label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <input
+                        type="text"
+                        className="form-input"
+                        style={{ textAlign: "center", margin: 0 }}
+                        maxLength={100}
+                        placeholder="🛠️ or image.png"
+                        value={form.icon}
+                        onChange={e => setForm({ ...form, icon: e.target.value })}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => iconFileInputRef.current?.click()}
+                        disabled={uploadingIcon}
+                        style={{ padding: "8px 12px", height: 40 }}
+                      >
+                        {uploadingIcon ? "..." : "Upload"}
+                      </button>
+                    </div>
                     <input
-                      type="text"
-                      className="form-input"
-                      style={{ textAlign: "center" }}
-                      maxLength={4}
-                      placeholder="🛠️"
-                      value={form.icon}
-                      onChange={e => setForm({ ...form, icon: e.target.value })}
+                      type="file"
+                      ref={iconFileInputRef}
+                      onChange={handleIconUpload}
+                      style={{ display: "none" }}
+                      accept="image/*"
                     />
                   </div>
                 </div>

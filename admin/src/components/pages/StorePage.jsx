@@ -76,9 +76,24 @@ export default function StorePage() {
         } catch (e) { showToast(e.response?.data?.message || 'Failed', 'error'); } finally { setSaving(false); }
     }
 
+    const [togglingAll, setTogglingAll] = useState(false);
+
     async function toggleProduct(p) {
         try { await productAPI.update(p.id, { isEnabled: !p.isEnabled }); loadData(); }
         catch { showToast('Failed', 'error'); }
+    }
+    async function handleBulkToggle(enable) {
+        if (!confirm(`Are you sure you want to ${enable ? 'enable' : 'disable'} all products?`)) return;
+        try {
+            setTogglingAll(true);
+            await productAPI.bulkToggle({ isEnabled: enable });
+            showToast(`All products have been ${enable ? 'enabled' : 'disabled'} successfully ✓`);
+            loadData();
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Failed to bulk update products', 'error');
+        } finally {
+            setTogglingAll(false);
+        }
     }
     async function deleteProduct(id) {
         if (!confirm('Delete this product?')) return;
@@ -129,8 +144,27 @@ export default function StorePage() {
             {/* ── PRODUCTS TAB ── */}
             {tab === 'products' && (
                 <>
-                    <div className="filter-bar">
+                    <div className="filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                         <button className="btn btn-primary" onClick={openAdd}><Plus size={16} /> Add Product</button>
+                        {products.length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                                    {products.every(p => p.isEnabled) ? 'Store: Enabled' : 'Store: Disabled'}
+                                </span>
+                                <button 
+                                    className="btn btn-secondary" 
+                                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px' }} 
+                                    onClick={() => handleBulkToggle(!products.every(p => p.isEnabled))}
+                                    disabled={togglingAll || loading}
+                                >
+                                    {products.every(p => p.isEnabled) ? (
+                                        <ToggleRight size={24} color="#10b981" />
+                                    ) : (
+                                        <ToggleLeft size={24} color="#9ca3af" />
+                                    )}
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="card"><div className="card-body" style={{ padding: 0, overflowX: 'auto' }}>

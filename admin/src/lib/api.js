@@ -209,6 +209,7 @@ export const productAPI = {
     getById: (id) => api.get(`/products/${id}`),
     create: (data) => api.post('/products', data),
     update: (id, data) => api.put(`/products/${id}`, data),
+    bulkToggle: (data) => api.put('/products/admin/bulk-toggle', data),
     delete: (id) => api.delete(`/products/${id}`),
     // Order management — updateOrderStatus to DISPATCHED fires MEDICINE_OUT_FOR_DELIVERY SMS (215398)
     getOrders: (params) => api.get('/products/admin/orders', { params }),

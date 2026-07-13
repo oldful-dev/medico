@@ -1,46 +1,156 @@
 'use client';
 
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Calendar, User, ArrowRight, BookOpen, Loader2 } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { BookOpen, Loader2 } from 'lucide-react';
 import { supportService } from '@/services/api/supportService';
+import { uiConfigService } from '@/services/api/uiConfigService';
 import { toast } from 'sonner';
 
-const BLOG_POSTS = [
-  {
-    id: 1,
-    title: "Understanding Elder Care: A Comprehensive Guide",
-    excerpt: "Learn about the different aspects of elder care and how to choose the right services for your loved ones.",
-    author: "Dr. Satish Babu",
-    date: "April 10, 2026",
-    image: "https://plus.unsplash.com/premium_photo-1663036976879-4baf18adfd5b?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8ZWxkZXIlMjBjYXJlfGVufDB8fDB8fHww",
-    category: "Caregiving"
-  },
-  {
-    id: 2,
-    title: "The Importance of Social Interaction for Seniors",
-    excerpt: "Discover why staying socially active is crucial for the mental and physical health of senior citizens.",
-    author: "Emily Chen",
-    date: "April 5, 2026",
-    image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=800&auto=format&fit=crop",
-    category: "Wellness"
-  },
-  {
-    id: 3,
-    title: "Tech Solutions for Aging in Place",
-    excerpt: "Exploring how modern technology is making it safer and easier for elders to live independently at home.",
-    author: "Dhemaan G. Aditya",
-    date: "March 28, 2026",
-    image: "https://images.unsplash.com/photo-1733685373369-95bda03f2b40?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTV8fHRlY2glMjBzb2x1dGlvbiUyMGZvciUyMGFnaW5nfGVufDB8fDB8fHww",
-    category: "Technology"
-  }
-];
+const FALLBACK_HTML = `<!-- Featured Post -->
+<div class="relative h-[400px] md:h-[500px] rounded-[2.5rem] overflow-hidden group shadow-2xl">
+  <img 
+    src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?q=80&w=1200&auto=format&fit=crop"
+    alt="Featured Post"
+    class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+  />
+  <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+  <div class="absolute bottom-0 left-0 p-8 md:p-12 w-full max-w-3xl">
+    <span class="inline-block px-3 py-1 bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg mb-4">
+      Featured Article
+    </span>
+    <h2 class="text-2xl md:text-4xl font-bold text-white mb-4 line-clamp-2">
+      The Future of Memory Care: How AI is Helping Families Navigate Alzheimer's
+    </h2>
+    <p class="text-gray-200 text-sm md:text-base mb-6 line-clamp-2 opacity-90">
+      Integrating artificial intelligence with compassionate human care is providing new avenues for early detection and personalized care plans for those living with memory loss.
+    </p>
+    <button 
+      onclick="alert('Full article coming soon!')"
+      class="flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-xl font-bold text-sm hover:bg-emerald-50 transition-all active:scale-95 shadow-sm"
+    >
+      Read Full Story
+    </button>
+  </div>
+</div>
+
+<!-- Blog Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+  <div class="bg-white rounded-[2rem] border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col">
+    <div class="relative h-56 overflow-hidden">
+      <img 
+        src="https://plus.unsplash.com/premium_photo-1663036976879-4baf18adfd5b?w=600&auto=format&fit=crop&q=60"
+        alt="Understanding Elder Care: A Comprehensive Guide"
+        class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+      />
+      <span class="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur-md text-emerald-700 text-[10px] font-bold uppercase tracking-widest rounded-lg">
+        Caregiving
+      </span>
+    </div>
+    <div class="p-6 flex flex-col flex-1">
+      <div class="flex items-center gap-4 text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-4">
+        <div>April 10, 2026</div>
+        <div>Dr. Satish Babu</div>
+      </div>
+      <h3 class="text-xl font-bold text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors">
+        Understanding Elder Care: A Comprehensive Guide
+      </h3>
+      <p class="text-sm text-gray-500 mb-6 line-clamp-3 leading-relaxed">
+        Learn about the different aspects of elder care and how to choose the right services for your loved ones.
+      </p>
+      <div class="mt-auto">
+        <button onclick="alert('Full article coming soon!')" class="text-emerald-600 font-bold text-sm hover:underline">
+          Keep Reading
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-[2rem] border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col">
+    <div class="relative h-56 overflow-hidden">
+      <img 
+        src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=800&auto=format&fit=crop"
+        alt="The Importance of Social Interaction for Seniors"
+        class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+      />
+      <span class="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur-md text-emerald-700 text-[10px] font-bold uppercase tracking-widest rounded-lg">
+        Wellness
+      </span>
+    </div>
+    <div class="p-6 flex flex-col flex-1">
+      <div class="flex items-center gap-4 text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-4">
+        <div>April 5, 2026</div>
+        <div>Emily Chen</div>
+      </div>
+      <h3 class="text-xl font-bold text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors">
+        The Importance of Social Interaction for Seniors
+      </h3>
+      <p class="text-sm text-gray-500 mb-6 line-clamp-3 leading-relaxed">
+        Discover why staying socially active is crucial for the mental and physical health of senior citizens.
+      </p>
+      <div class="mt-auto">
+        <button onclick="alert('Full article coming soon!')" class="text-emerald-600 font-bold text-sm hover:underline">
+          Keep Reading
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-[2rem] border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col">
+    <div class="relative h-56 overflow-hidden">
+      <img 
+        src="https://images.unsplash.com/photo-1733685373369-95bda03f2b40?w=600&auto=format&fit=crop&q=60"
+        alt="Tech Solutions for Aging in Place"
+        class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+      />
+      <span class="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur-md text-emerald-700 text-[10px] font-bold uppercase tracking-widest rounded-lg">
+        Technology
+      </span>
+    </div>
+    <div class="p-6 flex flex-col flex-1">
+      <div class="flex items-center gap-4 text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-4">
+        <div>March 28, 2026</div>
+        <div>Dhemaan G. Aditya</div>
+      </div>
+      <h3 class="text-xl font-bold text-gray-900 mb-3 group-hover:text-emerald-600 transition-colors">
+        Tech Solutions for Aging in Place
+      </h3>
+      <p class="text-sm text-gray-500 mb-6 line-clamp-3 leading-relaxed">
+        Exploring how modern technology is making it safer and easier for elders to live independently at home.
+      </p>
+      <div class="mt-auto">
+        <button onclick="alert('Full article coming soon!')" class="text-emerald-600 font-bold text-sm hover:underline">
+          Keep Reading
+        </button>
+      </div>
+    </div>
+  </div>
+</section>`;
 
 export default function BlogsPage() {
-  const [email, setEmail] = React.useState('');
-  const [loading, setLoading] = React.useState(false);
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [htmlContent, setHtmlContent] = useState<string>('');
+  const [pageLoading, setPageLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const config = await uiConfigService.getCompanyGlobalConfig();
+        if (config && config.blogs_html) {
+          setHtmlContent(config.blogs_html);
+        } else {
+          setHtmlContent(FALLBACK_HTML);
+        }
+      } catch (err) {
+        console.error("Error loading blogs content:", err);
+        setHtmlContent(FALLBACK_HTML);
+      } finally {
+        setPageLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   const handleSubscribe = async () => {
     if (!email || !email.includes('@')) {
@@ -65,6 +175,14 @@ export default function BlogsPage() {
       setLoading(false);
     }
   };
+
+  if (pageLoading) {
+    return (
+      <div className="bg-[#FFFCF6] min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#FFFCF6] min-h-screen pb-12 px-6 md:px-12 lg:px-24 font-[var(--font-poppins)] pt-8">
@@ -97,90 +215,11 @@ export default function BlogsPage() {
           </motion.p>
         </header>
 
-        {/* Featured Post */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3 }}
-          className="relative h-[400px] md:h-[500px] rounded-[2.5rem] overflow-hidden group shadow-2xl"
-        >
-          <Image 
-            src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?q=80&w=1200&auto=format&fit=crop"
-            alt="Featured Post"
-            fill
-            unoptimized={true}
-            className="object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-          <div className="absolute bottom-0 left-0 p-8 md:p-12 w-full max-w-3xl">
-            <span className="inline-block px-3 py-1 bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg mb-4">
-              Featured Article
-            </span>
-            <h2 className="text-2xl md:text-4xl font-bold text-white mb-4 line-clamp-2">
-              The Future of Memory Care: How AI is Helping Families Navigate Alzheimer&apos;s
-            </h2>
-            <p className="text-gray-200 text-sm md:text-base mb-6 line-clamp-2 opacity-90">
-              Integrating artificial intelligence with compassionate human care is providing new avenues for early detection and personalized care plans for those living with memory loss.
-            </p>
-            <button 
-              onClick={() => toast.info('Full article coming soon!', { description: 'We are working on bringing you the complete story.' })}
-              className="flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-xl font-bold text-sm hover:bg-emerald-50 transition-all active:scale-95 shadow-sm"
-            >
-              Read Full Story <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Blog Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          {BLOG_POSTS.map((post, i) => (
-            <motion.div 
-              key={post.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col"
-            >
-              <div className="relative h-56 overflow-hidden">
-                <Image 
-                  src={post.image}
-                  alt={post.title}
-                  fill
-                  unoptimized={true}
-                  className="object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <span className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur-md text-[var(--color-primary)] text-[10px] font-bold uppercase tracking-widest rounded-lg">
-                  {post.category}
-                </span>
-              </div>
-              <div className="p-6 flex flex-col flex-1">
-                <div className="flex items-center gap-4 text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-4">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="w-3 h-3" /> {post.date}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <User className="w-3 h-3" /> {post.author}
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-[var(--color-primary)] transition-colors">
-                  {post.title}
-                </h3>
-                <p className="text-sm text-gray-500 mb-6 line-clamp-3 leading-relaxed">
-                  {post.excerpt}
-                </p>
-                <div className="mt-auto">
-                  <button 
-                    onClick={() => toast.info('Full article coming soon!', { description: 'We are working on bringing you the complete story.' })}
-                    className="flex items-center gap-2 text-[var(--color-primary)] font-bold text-sm group/btn hover:underline"
-                  >
-                    Keep Reading <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </section>
+        {/* Dynamic HTML Content */}
+        <div 
+          className="flex flex-col gap-12"
+          dangerouslySetInnerHTML={{ __html: htmlContent }}
+        />
 
         {/* Newsletter Signup */}
         <section className="bg-emerald-900 text-white rounded-[2.5rem] p-10 md:p-16 relative overflow-hidden text-center">
