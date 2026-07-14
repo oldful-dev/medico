@@ -119,6 +119,7 @@ function translateSDUIItem(label: string, route: string | undefined, t: any): st
   else if (cleanRoute.includes('tech-helper')) key = 'tech_helper';
   else if (cleanRoute.includes('doctor-visit')) key = 'doctor_visit';
   else if (cleanRoute.includes('nurse-care')) key = 'nurse_care';
+  else if (cleanRoute.includes('caregiver-support')) key = 'caregiver_support';
   else if (cleanRoute.includes('hospital-trip')) key = 'hospital_trip';
   else if (cleanRoute.includes('blood-test')) key = 'blood_test';
   else if (cleanRoute.includes('order-medicines')) key = 'order_medicines';

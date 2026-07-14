@@ -98,15 +98,18 @@ async function processEvent(event, payload) {
                 // Send WhatsApp receipt if app flow didn't already send it
                 if (payment.user?.phone) {
                     // Template: PAYMENT_RECEIVED — Var1=name, Var2=amount
-                    await sendPaymentWA({
+                    const waSuccess = await sendPaymentWA({
                         phone: payment.user.phone,
                         name: payment.user.name || 'Customer',
                         amount: parseFloat(payment.amount).toFixed(2),
                         userId: payment.userId,
-                    }).catch(() => {});
+                    }).catch(err => {
+                        logger.warn(`[Webhook] WA Payment Received failed: ${err.message}`);
+                        return false;
+                    });
 
-                    // Send SMS (if enabled and SMS template configured)
-                    if (payment.user.smsEnabled !== false && process.env.FAST2SMS_PAYMENT_TEMPLATE_ID) {
+                    // Send SMS (if enabled, SMS template configured, and WhatsApp failed)
+                    if (!waSuccess && payment.user.smsEnabled !== false && process.env.FAST2SMS_PAYMENT_TEMPLATE_ID) {
                         await sendDLTSMS(
                             payment.user.phone,
                             process.env.FAST2SMS_PAYMENT_TEMPLATE_ID,

@@ -38,7 +38,7 @@ const SOCIAL_LINKS = [
     { key: 'linkedin',  icon: 'logo-linkedin',  color: '#0A66C2', label: 'LinkedIn',         handle: 'AYUXA Care',             url: 'https://www.linkedin.com/company/ayuxacare' },
     { key: 'youtube',   icon: 'logo-youtube',   color: '#FF0000', label: 'YouTube',          handle: '@ayuxacare',             url: 'https://youtube.com/@ayuxacare' },
     { key: 'twitter',   icon: 'logo-x',         color: '#000000', label: 'X (Twitter)',      handle: '@ayuxacare',             url: 'https://x.com/ayuxacare' },
-    { key: 'whatsapp',  icon: 'logo-whatsapp',  color: '#25D366', label: 'WhatsApp Channel', handle: 'Join our channel',       url: 'https://whatsapp.com/channel/ayuxacare' },
+    { key: 'whatsapp',  icon: 'logo-whatsapp',  color: '#25D366', label: 'WhatsApp Channel', handle: 'Join our channel',       url: 'https://whatsapp.com/channel/0029VbCl0Lg0lwgh76DNaH1d' },
 ];
 
 const getDocStyle = (type: string, isDarkMode: boolean) => {

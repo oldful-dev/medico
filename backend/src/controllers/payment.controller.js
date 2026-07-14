@@ -626,17 +626,21 @@ const verifyPayment = async (req, res, next) => {
                 data: { type: 'subscription_activated', subscriptionId: subscription.id },
             });
 
-            // WhatsApp PAYMENT_RECEIVED + DLT SMS PAYMENT_RECEIVED — non-fatal
+            // WhatsApp PAYMENT_RECEIVED + DLT SMS PAYMENT_RECEIVED fallback
             if (payment.user?.phone) {
                 const { sendPaymentReceived } = require('../services/whatsapp');
-                const { sendSMS } = require('../services/sms');
-                await sendPaymentReceived({
+                const waSuccess = await sendPaymentReceived({
                     phone: payment.user.phone,
                     name: payment.user.name,
                     amount: parseFloat(payment.amount).toFixed(2),
                     userId: payment.userId,
-                }).catch(err => logger.warn('subscription WA PAYMENT_RECEIVED failed (non-fatal):', err.message));
-                if (payment.user.smsEnabled !== false) {
+                }).catch(err => {
+                    logger.warn('subscription WA PAYMENT_RECEIVED failed (non-fatal):', err.message);
+                    return false;
+                });
+
+                if (!waSuccess && payment.user.smsEnabled !== false) {
+                    const { sendSMS } = require('../services/sms');
                     await sendSMS({
                         template: 'PAYMENT_RECEIVED',
                         mobile: payment.user.phone,
@@ -825,15 +829,18 @@ const verifyPayment = async (req, res, next) => {
                 // Only send if this is NOT a booking/labOrder/subscription that already sent its own messages
                 if (!payment.booking && !payment.labOrder && !payment.subscriptionId) {
                     const { sendPaymentReceived: sendPaymentWA } = require('../services/whatsapp');
-                    await sendPaymentWA({
+                    const waSuccess = await sendPaymentWA({
                         phone: payment.user.phone,
                         name: payment.user.name,
                         amount: parseFloat(payment.amount).toFixed(2),
                         userId: payment.userId,
+                    }).catch(err => {
+                        logger.warn('general WA PAYMENT_RECEIVED failed (non-fatal):', err.message);
+                        return false;
                     });
 
-                    // DLT SMS — PAYMENT_RECEIVED (215352) — Var1=name, Var2=amount
-                    if (payment.user.phone && payment.user.smsEnabled !== false) {
+                    // DLT SMS — PAYMENT_RECEIVED (215352) — Var1=name, Var2=amount fallback
+                    if (!waSuccess && payment.user.phone && payment.user.smsEnabled !== false) {
                         const { sendSMS } = require('../services/sms');
                         await sendSMS({
                             template: 'PAYMENT_RECEIVED',

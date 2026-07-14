@@ -87,7 +87,7 @@ const FALLBACK_CONFIG: AppConfig = {
               icon_key: "quick_caregiver",
               image_url:
                 "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png",
-              route: "/nurse-care",
+              route: "/caregiver-support",
               visible: true,
               sort_order: 3,
             },

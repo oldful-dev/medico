@@ -36,8 +36,13 @@ import { meetupService } from "@/services/api/meetupService";
 import { storageService, STORAGE_KEYS } from "@/services/device/storageService";
 import { useUser } from "@/context/UserContext";
 import { useTranslation } from "react-i18next";
-import SubscriptionUpsellBanner, { PlanTypeNeeded } from "@/components/checkout/SubscriptionUpsellBanner";
-import { AddressPickerSection, type AddressData } from "@/components/AddressPickerSection";
+import SubscriptionUpsellBanner, {
+  PlanTypeNeeded,
+} from "@/components/checkout/SubscriptionUpsellBanner";
+import {
+  AddressPickerSection,
+  type AddressData,
+} from "@/components/AddressPickerSection";
 type PaymentFlowState =
   | "idle"
   | "creating_booking"
@@ -113,7 +118,7 @@ const mapLabelToCategory = (label: string): string => {
 };
 
 export default function ServiceCheckoutScreen() {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
   const router = useRouter();
   const { profile, refreshData } = useUser();
   const { isDarkMode } = useTheme();
@@ -144,13 +149,18 @@ export default function ServiceCheckoutScreen() {
   const baseAmount = parseFloat(params.amount ?? "0");
   const label = params.label ?? "Service Booking";
   const category = params.serviceSlug
-    ? params.serviceSlug.toUpperCase().replace(/-/g, '_')
+    ? params.serviceSlug.toUpperCase().replace(/-/g, "_")
     : mapLabelToCategory(label);
-  const isZeroPayment = (category === "MEDICINES" || category === "TIFFIN" || label.toLowerCase().includes("physio") || (params.checkoutGroup === 'D' && params.paymentMode !== 'PAID')) && !isPaidBookingOverride;
+  const isZeroPayment =
+    (category === "MEDICINES" ||
+      category === "TIFFIN" ||
+      label.toLowerCase().includes("physio") ||
+      (params.checkoutGroup === "D" && params.paymentMode !== "PAID")) &&
+    !isPaidBookingOverride;
   const [calculatedPrices, setCalculatedPrices] = useState<{
     totalAmount: number;
     taxPercentage?: number;
-    requiredPlanType?: 'CARE' | 'HOMEMAKER' | null;
+    requiredPlanType?: "CARE" | "HOMEMAKER" | null;
     breakdown: {
       vendorFee: number;
       diagnosticFee: number;
@@ -172,59 +182,96 @@ export default function ServiceCheckoutScreen() {
   // CARE plan covers: Lifeline + Companion benefits
   const CARE_CATEGORIES = [
     // Doctor / Consult
-    "DOCTOR_HOME_VISIT", "DOCTOR_VISIT", "TELECONSULT",
+    "DOCTOR_HOME_VISIT",
+    "DOCTOR_VISIT",
+    "TELECONSULT",
     // Nursing
-    "HOME_NURSE", "NURSE_VISIT", "CAREGIVER_VISIT", "CAREGIVER",
+    "HOME_NURSE",
+    "NURSE_VISIT",
+    "CAREGIVER_VISIT",
+    "CAREGIVER",
     // Hospital / Transport
-    "HOSPITAL_TRIP", "HOSPITAL_ACCOMPANIMENT", "TRANSPORTATION", "PICKUP_DROP",
+    "HOSPITAL_TRIP",
+    "HOSPITAL_ACCOMPANIMENT",
+    "TRANSPORTATION",
+    "PICKUP_DROP",
     // Diagnostics
-    "BLOOD_TEST", "SCAN_ECG", "DIAGNOSTICS",
+    "BLOOD_TEST",
+    "SCAN_ECG",
+    "DIAGNOSTICS",
     // Physio
     "PHYSIO_FITNESS",
     // Companionship / Spiritual
-    "COMPANIONSHIP_CALL", "COMPANIONSHIP", "SPIRITUAL_ESCORT",
+    "COMPANIONSHIP_CALL",
+    "COMPANIONSHIP",
+    "SPIRITUAL_ESCORT",
     // Medicines
     "MEDICINE_DELIVERY",
     // Events
-    "LOCAL_MEETUP", "MEETUP",
+    "LOCAL_MEETUP",
+    "MEETUP",
     // Support / SOS
-    "PHONE_SUPPORT", "SOS",
+    "PHONE_SUPPORT",
+    "SOS",
     // Plan meta
-    "BASE_PLAN", "CARE_MANAGER", "FAMILY_PORTAL",
+    "BASE_PLAN",
+    "CARE_MANAGER",
+    "FAMILY_PORTAL",
   ];
   // HOME plan covers: Home Essentials benefits
   const HOME_CATEGORIES = [
     // Electrical / Plumbing / Repairs
-    "PLUMBING_ELECTRICAL", "APPLIANCE_REPAIR", "AC_APPLIANCE_REPAIR", "HANDYMEN",
+    "PLUMBING_ELECTRICAL",
+    "APPLIANCE_REPAIR",
+    "AC_APPLIANCE_REPAIR",
+    "HANDYMEN",
     // Cleaning
-    "DEEP_CLEANING", "SANITATION",
+    "DEEP_CLEANING",
+    "SANITATION",
     // Bills / Paperwork
-    "BILL_PAYMENT", "BANK_PAPERWORK", "LEGAL_PAPERWORK", "PAPERWORK_LEGAL",
+    "BILL_PAYMENT",
+    "BANK_PAPERWORK",
+    "LEGAL_PAPERWORK",
+    "PAPERWORK_LEGAL",
     "PAPERWORK_ASSIST",
     // Tech
-    "TECH_HELPER", "TECH_SUPPORT",
+    "TECH_HELPER",
+    "TECH_SUPPORT",
     // Grocery / Essentials
-    "HOME_ESSENTIALS", "GROCERY_RUN", "GROCERY_DELIVERY", "GROCERY_ASSIST",
+    "HOME_ESSENTIALS",
+    "GROCERY_RUN",
+    "GROCERY_DELIVERY",
+    "GROCERY_ASSIST",
     // Audit / Custom
-    "HOME_AUDIT", "CUSTOM_REQUEST", "ZERO_SERVICE_FEE",
+    "HOME_AUDIT",
+    "CUSTOM_REQUEST",
+    "ZERO_SERVICE_FEE",
   ];
-  const upsellPlanType: PlanTypeNeeded | null = (calculatedPrices?.requiredPlanType as any) || (
-    CARE_CATEGORIES.includes(category)
+  const upsellPlanType: PlanTypeNeeded | null =
+    (calculatedPrices?.requiredPlanType as any) ||
+    (CARE_CATEGORIES.includes(category)
       ? "CARE"
       : HOME_CATEGORIES.includes(category)
         ? "HOMEMAKER"
-        : null
-  );
+        : null);
 
   // User has an active sub covering this specific category?
-  const hasActivePlanForCategoryRaw = profile?.subscriptions?.some(
-    (s: any) =>
-      s.status === "ACTIVE" &&
-      ((upsellPlanType === "CARE" && (s.plan?.planType === "CARE" || s.planType === "CARE" || s.category === "CARE")) ||
-       (upsellPlanType === "HOMEMAKER" && (s.plan?.planType === "HOMEMAKER" || s.planType === "HOMEMAKER" || s.category === "HOMEMAKER")))
-  ) ?? false;
+  const hasActivePlanForCategoryRaw =
+    profile?.subscriptions?.some(
+      (s: any) =>
+        s.status === "ACTIVE" &&
+        ((upsellPlanType === "CARE" &&
+          (s.plan?.planType === "CARE" ||
+            s.planType === "CARE" ||
+            s.category === "CARE")) ||
+          (upsellPlanType === "HOMEMAKER" &&
+            (s.plan?.planType === "HOMEMAKER" ||
+              s.planType === "HOMEMAKER" ||
+              s.category === "HOMEMAKER"))),
+    ) ?? false;
 
-  const hasActivePlanForCategory = hasActivePlanForCategoryRaw && !isPaidBookingOverride;
+  const hasActivePlanForCategory =
+    hasActivePlanForCategoryRaw && !isPaidBookingOverride;
 
   const showUpsellBanner =
     !!upsellPlanType &&
@@ -269,7 +316,8 @@ export default function ServiceCheckoutScreen() {
   const [loadingEligiblePlans, setLoadingEligiblePlans] = useState(false);
   const [isUpgraded, setIsUpgraded] = useState(false);
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
-  const [selectedDuration, setSelectedDuration] = useState<BillingCycle>("QUARTERLY");
+  const [selectedDuration, setSelectedDuration] =
+    useState<BillingCycle>("QUARTERLY");
 
   const selectedUpgradePlan = eligiblePlans[selectedPlanIndex] || null;
   const [savingsInfo, setSavingsInfo] = useState<{
@@ -297,7 +345,10 @@ export default function ServiceCheckoutScreen() {
     if (params.bookingPayload) {
       try {
         const parsed = JSON.parse(params.bookingPayload);
-        if (parsed.addressLine && (!selectedAddress || selectedAddress.line1 !== parsed.addressLine)) {
+        if (
+          parsed.addressLine &&
+          (!selectedAddress || selectedAddress.line1 !== parsed.addressLine)
+        ) {
           setSelectedAddress({
             line1: parsed.addressLine,
             cityName: parsed.cityName || "",
@@ -326,7 +377,7 @@ export default function ServiceCheckoutScreen() {
         setCalcLoading(true);
         try {
           const category = params.serviceSlug
-            ? params.serviceSlug.toUpperCase().replace(/-/g, '_')
+            ? params.serviceSlug.toUpperCase().replace(/-/g, "_")
             : mapLabelToCategory(label);
           const res = await paymentService.calculateCheckout({
             serviceCategory: category,
@@ -346,12 +397,18 @@ export default function ServiceCheckoutScreen() {
       };
       fetchCalculation();
     }
-  }, [params.bookingPayload, label, params.isDynamic, params.serviceSlug, isPaidBookingOverride]);
+  }, [
+    params.bookingPayload,
+    label,
+    params.isDynamic,
+    params.serviceSlug,
+    isPaidBookingOverride,
+  ]);
 
   useEffect(() => {
     const fetchEligiblePlans = async () => {
       if (hasActivePlanForCategory) return;
-      
+
       const neededType = CARE_CATEGORIES.includes(category)
         ? "CARE"
         : HOME_CATEGORIES.includes(category)
@@ -404,72 +461,133 @@ export default function ServiceCheckoutScreen() {
     recalculateSavings();
   }, [isUpgraded, selectedDuration, baseAmount, selectedUpgradePlan, category]);
 
-  const benefitApplied = hasActivePlanForCategory || !!calculatedPrices?.benefitApplied || isUpgraded;
+  const benefitApplied =
+    hasActivePlanForCategory ||
+    !!calculatedPrices?.benefitApplied ||
+    isUpgraded;
 
   const baseBookingFee = isZeroPayment
     ? 0
-    : (calculatedPrices 
-        ? ((calculatedPrices.breakdown as any).originalBookingFee !== undefined 
-            ? (calculatedPrices.breakdown as any).originalBookingFee 
-            : calculatedPrices.breakdown.bookingFee)
-        : 299);
+    : calculatedPrices
+      ? (calculatedPrices.breakdown as any).originalBookingFee !== undefined
+        ? (calculatedPrices.breakdown as any).originalBookingFee
+        : calculatedPrices.breakdown.bookingFee
+      : 299;
   const basePlatformFee = isZeroPayment
     ? 0
-    : (calculatedPrices 
-        ? ((calculatedPrices.breakdown as any).originalPlatformFee !== undefined 
-            ? (calculatedPrices.breakdown as any).originalPlatformFee 
-            : calculatedPrices.breakdown.platformFee)
-        : 50);
+    : calculatedPrices
+      ? (calculatedPrices.breakdown as any).originalPlatformFee !== undefined
+        ? (calculatedPrices.breakdown as any).originalPlatformFee
+        : calculatedPrices.breakdown.platformFee
+      : 50;
 
-  const bookingFee = (hasActivePlanForCategory || isUpgraded) ? 0 : baseBookingFee;
-  const platformFee = (hasActivePlanForCategory || isUpgraded) ? 0 : basePlatformFee;
+  const bookingFee =
+    hasActivePlanForCategory || isUpgraded ? 0 : baseBookingFee;
+  const platformFee =
+    hasActivePlanForCategory || isUpgraded ? 0 : basePlatformFee;
 
-  const convenienceFee = calculatedPrices ? (calculatedPrices.breakdown.convenienceFee || 0) : 0;
-  const emergencyFee = calculatedPrices ? (calculatedPrices.breakdown.emergencyFee || 0) : 0;
-  const visitFee = calculatedPrices ? (calculatedPrices.breakdown.visitFee || 0) : 0;
-  const nightCharge = calculatedPrices ? (calculatedPrices.breakdown.nightCharge || 0) : 0;
-  const surgeCharge = calculatedPrices ? (calculatedPrices.breakdown.surgeCharge || 0) : 0;
+  const convenienceFee = calculatedPrices
+    ? calculatedPrices.breakdown.convenienceFee || 0
+    : 0;
+  const emergencyFee = calculatedPrices
+    ? calculatedPrices.breakdown.emergencyFee || 0
+    : 0;
+  const visitFee = calculatedPrices
+    ? calculatedPrices.breakdown.visitFee || 0
+    : 0;
+  const nightCharge = calculatedPrices
+    ? calculatedPrices.breakdown.nightCharge || 0
+    : 0;
+  const surgeCharge = calculatedPrices
+    ? calculatedPrices.breakdown.surgeCharge || 0
+    : 0;
 
-  const extraFeesSum = bookingFee + platformFee + convenienceFee + emergencyFee + visitFee + nightCharge + surgeCharge;
-  const displayVendorFee = calculatedPrices ? calculatedPrices.breakdown.vendorFee : baseAmount;
+  const extraFeesSum =
+    bookingFee +
+    platformFee +
+    convenienceFee +
+    emergencyFee +
+    visitFee +
+    nightCharge +
+    surgeCharge;
+  const displayVendorFee = calculatedPrices
+    ? calculatedPrices.breakdown.vendorFee
+    : baseAmount;
 
   const isHomeEssential = HOME_CATEGORIES.includes(category);
-  const isGroupA = ["PLUMBING_ELECTRICAL", "APPLIANCE_REPAIR", "AC_APPLIANCE_REPAIR", "GROCERY_DELIVERY", "GROCERY_RUN"].includes(category);
+  const isGroupA = [
+    "PLUMBING_ELECTRICAL",
+    "APPLIANCE_REPAIR",
+    "AC_APPLIANCE_REPAIR",
+    "GROCERY_DELIVERY",
+    "GROCERY_RUN",
+  ].includes(category);
   const isServiceFeeWaived = false;
   const fallbackTaxPercentage = isHomeEssential ? 18 : 6;
-  const taxRate = calculatedPrices ? (calculatedPrices.taxPercentage ?? fallbackTaxPercentage) : fallbackTaxPercentage;
+  const taxRate = calculatedPrices
+    ? (calculatedPrices.taxPercentage ?? fallbackTaxPercentage)
+    : fallbackTaxPercentage;
 
   const taxes = isZeroPayment
     ? 0
-    : (isUpgraded && savingsInfo
-        ? Math.max(0, (calculatedPrices ? calculatedPrices.breakdown.taxes : Math.round((isHomeEssential ? baseAmount + extraFeesSum : extraFeesSum) * (taxRate / 100))) - savingsInfo.gstWaived)
-        : (calculatedPrices 
-            ? calculatedPrices.breakdown.taxes 
-            : Math.round((isHomeEssential ? baseAmount + extraFeesSum : extraFeesSum) * (taxRate / 100))));
+    : isUpgraded && savingsInfo
+      ? Math.max(
+          0,
+          (calculatedPrices
+            ? calculatedPrices.breakdown.taxes
+            : Math.round(
+                (isHomeEssential ? baseAmount + extraFeesSum : extraFeesSum) *
+                  (taxRate / 100),
+              )) - savingsInfo.gstWaived,
+        )
+      : calculatedPrices
+        ? calculatedPrices.breakdown.taxes
+        : Math.round(
+            (isHomeEssential ? baseAmount + extraFeesSum : extraFeesSum) *
+              (taxRate / 100),
+          );
 
   const originalBookingFee = isZeroPayment ? 0 : baseBookingFee;
   const originalPlatformFee = isZeroPayment ? 0 : basePlatformFee;
 
-  const originalExtraFeesSum = originalBookingFee + originalPlatformFee + convenienceFee + emergencyFee + visitFee + nightCharge + surgeCharge;
+  const originalExtraFeesSum =
+    originalBookingFee +
+    originalPlatformFee +
+    convenienceFee +
+    emergencyFee +
+    visitFee +
+    nightCharge +
+    surgeCharge;
   const originalTaxes = isZeroPayment
     ? 0
-    : (calculatedPrices && !benefitApplied
-        ? calculatedPrices.breakdown.taxes
-        : Math.round((isHomeEssential ? baseAmount + originalExtraFeesSum : originalExtraFeesSum) * (taxRate / 100)));
+    : calculatedPrices && !benefitApplied
+      ? calculatedPrices.breakdown.taxes
+      : Math.round(
+          (isHomeEssential
+            ? baseAmount + originalExtraFeesSum
+            : originalExtraFeesSum) *
+            (taxRate / 100),
+        );
   const taxSavings = Math.max(0, originalTaxes - taxes);
 
-  const totalFeeSavings = isUpgraded && savingsInfo
-    ? savingsInfo.totalSavings
-    : (originalBookingFee - bookingFee) + (originalPlatformFee - platformFee) + taxSavings;
+  const totalFeeSavings =
+    isUpgraded && savingsInfo
+      ? savingsInfo.totalSavings
+      : originalBookingFee -
+        bookingFee +
+        (originalPlatformFee - platformFee) +
+        taxSavings;
 
   const amountWithTaxAndFee = isZeroPayment
     ? 0
-    : (isUpgraded && savingsInfo
-        ? savingsInfo.bookingTotalWithUpgrade
-        : (calculatedPrices
-            ? calculatedPrices.totalAmount
-            : baseAmount + extraFeesSum + taxes));
-  const [finalAmount, setFinalAmount] = useState(Math.round(amountWithTaxAndFee));
+    : isUpgraded && savingsInfo
+      ? savingsInfo.bookingTotalWithUpgrade
+      : calculatedPrices
+        ? calculatedPrices.totalAmount
+        : baseAmount + extraFeesSum + taxes;
+  const [finalAmount, setFinalAmount] = useState(
+    Math.round(amountWithTaxAndFee),
+  );
 
   useEffect(() => {
     if (isZeroPayment) {
@@ -592,421 +710,435 @@ export default function ServiceCheckoutScreen() {
   };
 
   // ─── Open Razorpay native popup ─────────────────────────────────────
-  const handlePay = useCallback(async (isPaidBookingForce?: boolean) => {
-    let payloadAddressLine = "";
-    if (params.bookingPayload) {
+  const handlePay = useCallback(
+    async (isPaidBookingForce?: boolean) => {
+      let payloadAddressLine = "";
+      if (params.bookingPayload) {
+        try {
+          const parsed = JSON.parse(params.bookingPayload);
+          payloadAddressLine = parsed.addressLine || "";
+        } catch {}
+      }
+
+      if (!params.meetupId && !selectedAddress && !payloadAddressLine) {
+        Alert.alert(
+          t("service_checkout.address_required_title"),
+          t("service_checkout.address_required_msg"),
+        );
+        return;
+      }
+
+      setPayLoading(true);
       try {
-        const parsed = JSON.parse(params.bookingPayload);
-        payloadAddressLine = parsed.addressLine || "";
-      } catch {}
-    }
+        setFlowState("creating_booking");
+        if (
+          !params.meetupId &&
+          !sessionBookingId.current &&
+          params.bookingPayload
+        ) {
+          const payload = JSON.parse(params.bookingPayload as string);
 
-    if (!params.meetupId && !selectedAddress && !payloadAddressLine) {
-      Alert.alert(
-        t("service_checkout.address_required_title"),
-        t("service_checkout.address_required_msg"),
-      );
-      return;
-    }
-
-    setPayLoading(true);
-    try {
-      setFlowState("creating_booking");
-      if (
-        !params.meetupId &&
-        !sessionBookingId.current &&
-        params.bookingPayload
-      ) {
-        const payload = JSON.parse(params.bookingPayload as string);
-
-        // Construct full address line for administrative visibility
-        const addressParts = [];
-        if (selectedAddress) {
-          if (selectedAddress.line1) addressParts.push(selectedAddress.line1);
-          if (selectedAddress.line2) addressParts.push(selectedAddress.line2);
-          if (selectedAddress.cityName)
-            addressParts.push(selectedAddress.cityName);
-          if (selectedAddress.state) addressParts.push(selectedAddress.state);
-          if (selectedAddress.pincode)
-            addressParts.push(selectedAddress.pincode);
-          if (selectedAddress.landmark)
-            addressParts.push(`Landmark: ${selectedAddress.landmark}`);
-        }
-        const fullAddressLine =
-          addressParts.length > 0
-            ? addressParts.join(", ")
-            : payload.addressLine;
-
-        const lat =
-          selectedAddress?.latitude !== undefined &&
-          selectedAddress?.latitude !== null
-            ? Number(selectedAddress.latitude)
-            : payload.latitude;
-        const lng =
-          selectedAddress?.longitude !== undefined &&
-          selectedAddress?.longitude !== null
-            ? Number(selectedAddress.longitude)
-            : payload.longitude;
-
-        const bookingRes = await bookingService.createBooking({
-          ...payload,
-          amount: isZeroPayment ? 0 : (isUpgraded && savingsInfo ? savingsInfo.bookingTotalWithUpgrade : finalAmount),
-          paymentMethod: isZeroPayment ? "REQUEST" : selectedMethod,
-          addressLine: fullAddressLine,
-          latitude: lat,
-          longitude: lng,
-          isPaidBooking: isPaidBookingForce || isPaidBookingOverride,
-          formDataJson: {
-            ...(payload.formDataJson || {}),
-            ...(isUpgraded ? {
-              isMembershipUpgrade: true,
-              upgradePlanId: selectedUpgradePlan?.id,
-              upgradeBillingCycle: selectedDuration
-            } : {})
+          // Construct full address line for administrative visibility
+          const addressParts = [];
+          if (selectedAddress) {
+            if (selectedAddress.line1) addressParts.push(selectedAddress.line1);
+            if (selectedAddress.line2) addressParts.push(selectedAddress.line2);
+            if (selectedAddress.cityName)
+              addressParts.push(selectedAddress.cityName);
+            if (selectedAddress.state) addressParts.push(selectedAddress.state);
+            if (selectedAddress.pincode)
+              addressParts.push(selectedAddress.pincode);
+            if (selectedAddress.landmark)
+              addressParts.push(`Landmark: ${selectedAddress.landmark}`);
           }
-        });
-        if (!bookingRes.success || !bookingRes.data) {
-          setFlowState("failed");
+          const fullAddressLine =
+            addressParts.length > 0
+              ? addressParts.join(", ")
+              : payload.addressLine;
+
+          const lat =
+            selectedAddress?.latitude !== undefined &&
+            selectedAddress?.latitude !== null
+              ? Number(selectedAddress.latitude)
+              : payload.latitude;
+          const lng =
+            selectedAddress?.longitude !== undefined &&
+            selectedAddress?.longitude !== null
+              ? Number(selectedAddress.longitude)
+              : payload.longitude;
+
+          const bookingRes = await bookingService.createBooking({
+            ...payload,
+            amount: isZeroPayment
+              ? 0
+              : isUpgraded && savingsInfo
+                ? savingsInfo.bookingTotalWithUpgrade
+                : finalAmount,
+            paymentMethod: isZeroPayment ? "REQUEST" : selectedMethod,
+            addressLine: fullAddressLine,
+            latitude: lat,
+            longitude: lng,
+            isPaidBooking: isPaidBookingForce || isPaidBookingOverride,
+            formDataJson: {
+              ...(payload.formDataJson || {}),
+              ...(isUpgraded
+                ? {
+                    isMembershipUpgrade: true,
+                    upgradePlanId: selectedUpgradePlan?.id,
+                    upgradeBillingCycle: selectedDuration,
+                  }
+                : {}),
+            },
+          });
+          if (!bookingRes.success || !bookingRes.data) {
+            setFlowState("failed");
+            Alert.alert(
+              "Booking Error",
+              bookingRes.message ??
+                "Could not create booking. Please try again.",
+            );
+            return;
+          }
+          sessionBookingId.current = bookingRes.data.id;
+        }
+
+        if (isZeroPayment) {
+          setFlowState("success");
           Alert.alert(
-            "Booking Error",
-            bookingRes.message ?? "Could not create booking. Please try again.",
+            "Request Submitted",
+            category === "MEDICINES"
+              ? "Your medicine order has been successfully placed."
+              : category === "TIFFIN"
+                ? "Your meal service request has been successfully submitted."
+                : "Your physio booking request has been successfully submitted.",
+            [
+              {
+                text: "OK",
+                onPress: () =>
+                  router.replace({
+                    pathname: "/service-confirmation",
+                    params: { bookingId: sessionBookingId.current! },
+                  }),
+              },
+            ],
           );
           return;
         }
-        sessionBookingId.current = bookingRes.data.id;
-      }
 
-      if (isZeroPayment) {
-        setFlowState("success");
-        Alert.alert(
-          "Request Submitted",
-          category === "MEDICINES"
-            ? "Your medicine order has been successfully placed."
-            : category === "TIFFIN"
-            ? "Your meal service request has been successfully submitted."
-            : "Your physio booking request has been successfully submitted.",
-          [
-            {
-              text: "OK",
-              onPress: () =>
-                router.replace({
-                  pathname: "/service-confirmation",
-                  params: { bookingId: sessionBookingId.current! },
-                }),
-            },
-          ],
-        );
-        return;
-      }
-
-      if (selectedMethod === "CASH") {
-        setFlowState("success");
-        Alert.alert(
-          "Booking Received",
-          "Your service has been scheduled. Please pay ₹" +
-            finalAmount +
-            " in cash to our provider when they arrive.",
-          [
-            {
-              text: "OK",
-              onPress: () =>
-                router.replace({
-                  pathname: "/service-confirmation",
-                  params: { bookingId: sessionBookingId.current! },
-                }),
-            },
-          ],
-        );
-        return;
-      }
-
-      setFlowState("initiating_order");
-      const initiateRes = await paymentService.initiatePayment({
-        ...(params.meetupId && { meetupId: params.meetupId }),
-        ...(sessionBookingId.current &&
-          !params.meetupId && { bookingId: sessionBookingId.current }),
-        subscriptionId: params.subscriptionId,
-        amount: finalAmount,
-        paymentMethod: selectedMethod,
-        couponCode: couponApplied ? couponCode : undefined,
-        ...(isUpgraded && selectedUpgradePlan && {
-          upgradePlanId: selectedUpgradePlan.id,
-          upgradeBillingCycle: selectedDuration,
-        }),
-      });
-
-      if (!initiateRes.success || !initiateRes.data) {
-        setFlowState("failed");
-        Alert.alert(
-          "Payment Error",
-          initiateRes.message ?? "Could not initiate payment.",
-        );
-        return;
-      }
-
-      const {
-        orderId,
-        amount: orderAmount,
-        key: backendKey,
-        paymentNotRequired,
-      } = initiateRes.data as any;
-      pendingOrderId.current = orderId;
-
-      if (paymentNotRequired) {
-        setFlowState("success");
-        router.replace({
-          pathname: "/payment/payment-success",
-          params: {
-            bookingId: sessionBookingId.current ?? "",
-            amount: "0",
-            invoiceNumber: "FREE-BOOKING",
-            isSubscription: params.subscriptionId ? "1" : "0",
-            bookingPayload: params.bookingPayload || "",
-          },
-        });
-        return;
-      }
-
-      if (!NativeModules.RNRazorpayCheckout) {
-        Alert.alert(
-          "Build Required",
-          "Razorpay involves native code and cannot run in standard Expo Go.\nRun `npx expo run:android` to build a Custom Dev Client.",
-        );
-        return;
-      }
-
-      await storageService.setItem(STORAGE_KEYS.PENDING_ORDER_ID, orderId);
-      if (sessionBookingId.current) {
-        await storageService.setItem(
-          STORAGE_KEYS.PENDING_BOOKING_ID,
-          sessionBookingId.current,
-        );
-      }
-
-      setFlowState("checkout_opened");
-      const options: any = {
-        description: label,
-        image:
-          "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/onlylogo.png",
-        currency: "INR",
-        key: backendKey || process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || "",
-        amount: String(Math.round(orderAmount * 100)),
-        name: "Ayuxa Healthcare",
-        order_id: orderId,
-        prefill: {
-          name: params.userName || "",
-          contact: params.phone || "",
-          email: params.email || "",
-          method: selectedMethod.toLowerCase(),
-        },
-        theme: { color: colors.primary },
-        config: {
-          display: {
-            blocks: {
-              banks: {
-                name: selectedMethod === "UPI" ? "UPI" : "Card",
-                instruments: [
-                  {
-                    method: selectedMethod.toLowerCase() as any,
-                  },
-                ],
+        if (selectedMethod === "CASH") {
+          setFlowState("success");
+          Alert.alert(
+            "Booking Received",
+            "Your service has been scheduled. Please pay ₹" +
+              finalAmount +
+              " in cash to our provider when they arrive.",
+            [
+              {
+                text: "OK",
+                onPress: () =>
+                  router.replace({
+                    pathname: "/service-confirmation",
+                    params: { bookingId: sessionBookingId.current! },
+                  }),
               },
-            },
-            sequence: ["block.banks"],
-            preferences: {
-              show_default_blocks: false,
-            },
-          },
-        },
-      };
-
-      const data = await RazorpayCheckout.open(options);
-
-      setFlowState("verifying");
-      const verifyRes = await paymentService.verifyPayment({
-        razorpayPaymentId: data.razorpay_payment_id,
-        razorpayOrderId: data.razorpay_order_id,
-        razorpaySignature: data.razorpay_signature,
-      });
-
-      await clearPendingOrder();
-
-      if (verifyRes.success) {
-        setFlowState("success");
-
-        if (params.refreshProfileOnSuccess === "1") {
-          try {
-            await refreshData();
-          } catch {
-            /* non-blocking */
-          }
+            ],
+          );
+          return;
         }
 
-        if (params.meetupId && params.bookingPayload) {
-          try {
-            const payload = JSON.parse(params.bookingPayload as string);
-            console.log(
-              "Registering for meetup:",
-              params.meetupId,
-              "with payload:",
-              payload,
-            );
-            const regRes = await meetupService.registerForMeetup(
-              params.meetupId,
-              {
-                fullName: payload.fullName,
-                mobile: payload.mobile,
-                age: payload.age,
-                gender: payload.gender,
-                assistanceJson: payload.assistanceJson,
-                specialNotes: payload.specialNotes,
-                pickupEnabled: payload.pickupEnabled,
-                pickupAddress: payload.pickupAddress,
-                pickupLandmark: payload.pickupLandmark,
-                pickupContact: payload.pickupContact,
-                preferredPickupTime: payload.preferredPickupTime,
-              },
-            );
+        setFlowState("initiating_order");
+        const initiateRes = await paymentService.initiatePayment({
+          ...(params.meetupId && { meetupId: params.meetupId }),
+          ...(sessionBookingId.current &&
+            !params.meetupId && { bookingId: sessionBookingId.current }),
+          subscriptionId: params.subscriptionId,
+          amount: finalAmount,
+          paymentMethod: selectedMethod,
+          couponCode: couponApplied ? couponCode : undefined,
+          ...(isUpgraded &&
+            selectedUpgradePlan && {
+              upgradePlanId: selectedUpgradePlan.id,
+              upgradeBillingCycle: selectedDuration,
+            }),
+        });
 
-            console.log("Meetup registration response:", regRes);
-            if (regRes.success && regRes.data) {
-              const meetupParams = params.meetupParams
-                ? JSON.parse(params.meetupParams as string)
-                : {};
-              const bookingPayloadObj = params.bookingPayload
-                ? JSON.parse(params.bookingPayload as string)
-                : {};
-              router.replace({
-                pathname: "/service-confirmation",
-                params: {
-                  bookingCode: regRes.data.bookingCode,
-                  meetupEventDate: meetupParams.meetupEventDate || "",
-                  meetupStartTime: meetupParams.meetupStartTime || "",
-                  meetupEndTime: meetupParams.meetupEndTime || "",
-                  meetupVenue: meetupParams.meetupVenue || "",
-                  meetupPinCode: meetupParams.meetupPinCode || "",
-                  pickupEnabled: bookingPayloadObj.pickupEnabled
-                    ? "true"
-                    : "false",
-                  pickupAddress: bookingPayloadObj.pickupAddress || "",
-                  preferredTime: bookingPayloadObj.preferredPickupTime || "",
+        if (!initiateRes.success || !initiateRes.data) {
+          setFlowState("failed");
+          Alert.alert(
+            "Payment Error",
+            initiateRes.message ?? "Could not initiate payment.",
+          );
+          return;
+        }
+
+        const {
+          orderId,
+          amount: orderAmount,
+          key: backendKey,
+          paymentNotRequired,
+        } = initiateRes.data as any;
+        pendingOrderId.current = orderId;
+
+        if (paymentNotRequired) {
+          setFlowState("success");
+          router.replace({
+            pathname: "/payment/payment-success",
+            params: {
+              bookingId: sessionBookingId.current ?? "",
+              amount: "0",
+              invoiceNumber: "FREE-BOOKING",
+              isSubscription: params.subscriptionId ? "1" : "0",
+              bookingPayload: params.bookingPayload || "",
+            },
+          });
+          return;
+        }
+
+        if (!NativeModules.RNRazorpayCheckout) {
+          Alert.alert(
+            "Build Required",
+            "Razorpay involves native code and cannot run in standard Expo Go.\nRun `npx expo run:android` to build a Custom Dev Client.",
+          );
+          return;
+        }
+
+        await storageService.setItem(STORAGE_KEYS.PENDING_ORDER_ID, orderId);
+        if (sessionBookingId.current) {
+          await storageService.setItem(
+            STORAGE_KEYS.PENDING_BOOKING_ID,
+            sessionBookingId.current,
+          );
+        }
+
+        setFlowState("checkout_opened");
+        const options: any = {
+          description: label,
+          image:
+            "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/onlylogo.png",
+          currency: "INR",
+          key: backendKey || process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || "",
+          amount: String(Math.round(orderAmount * 100)),
+          name: "Ayuxa Healthcare",
+          order_id: orderId,
+          prefill: {
+            name: params.userName || "",
+            contact: params.phone || "",
+            email: params.email || "",
+            method: selectedMethod.toLowerCase(),
+          },
+          theme: { color: colors.primary },
+          config: {
+            display: {
+              blocks: {
+                banks: {
+                  name: selectedMethod === "UPI" ? "UPI" : "Card",
+                  instruments: [
+                    {
+                      method: selectedMethod.toLowerCase() as any,
+                    },
+                  ],
                 },
-              });
-              return;
-            } else {
+              },
+              sequence: ["block.banks"],
+              preferences: {
+                show_default_blocks: false,
+              },
+            },
+          },
+        };
+
+        const data = await RazorpayCheckout.open(options);
+
+        setFlowState("verifying");
+        const verifyRes = await paymentService.verifyPayment({
+          razorpayPaymentId: data.razorpay_payment_id,
+          razorpayOrderId: data.razorpay_order_id,
+          razorpaySignature: data.razorpay_signature,
+        });
+
+        await clearPendingOrder();
+
+        if (verifyRes.success) {
+          setFlowState("success");
+
+          if (params.refreshProfileOnSuccess === "1") {
+            try {
+              await refreshData();
+            } catch {
+              /* non-blocking */
+            }
+          }
+
+          if (params.meetupId && params.bookingPayload) {
+            try {
+              const payload = JSON.parse(params.bookingPayload as string);
+              console.log(
+                "Registering for meetup:",
+                params.meetupId,
+                "with payload:",
+                payload,
+              );
+              const regRes = await meetupService.registerForMeetup(
+                params.meetupId,
+                {
+                  fullName: payload.fullName,
+                  mobile: payload.mobile,
+                  age: payload.age,
+                  gender: payload.gender,
+                  assistanceJson: payload.assistanceJson,
+                  specialNotes: payload.specialNotes,
+                  pickupEnabled: payload.pickupEnabled,
+                  pickupAddress: payload.pickupAddress,
+                  pickupLandmark: payload.pickupLandmark,
+                  pickupContact: payload.pickupContact,
+                  preferredPickupTime: payload.preferredPickupTime,
+                },
+              );
+
+              console.log("Meetup registration response:", regRes);
+              if (regRes.success && regRes.data) {
+                const meetupParams = params.meetupParams
+                  ? JSON.parse(params.meetupParams as string)
+                  : {};
+                const bookingPayloadObj = params.bookingPayload
+                  ? JSON.parse(params.bookingPayload as string)
+                  : {};
+                router.replace({
+                  pathname: "/service-confirmation",
+                  params: {
+                    bookingCode: regRes.data.bookingCode,
+                    meetupEventDate: meetupParams.meetupEventDate || "",
+                    meetupStartTime: meetupParams.meetupStartTime || "",
+                    meetupEndTime: meetupParams.meetupEndTime || "",
+                    meetupVenue: meetupParams.meetupVenue || "",
+                    meetupPinCode: meetupParams.meetupPinCode || "",
+                    pickupEnabled: bookingPayloadObj.pickupEnabled
+                      ? "true"
+                      : "false",
+                    pickupAddress: bookingPayloadObj.pickupAddress || "",
+                    preferredTime: bookingPayloadObj.preferredPickupTime || "",
+                  },
+                });
+                return;
+              } else {
+                Alert.alert(
+                  "Registration Failed",
+                  regRes.message ||
+                    "Could not register for meetup. Please try again.",
+                );
+              }
+            } catch (e: any) {
+              console.error("Meetup registration error:", e);
               Alert.alert(
-                "Registration Failed",
-                regRes.message ||
-                  "Could not register for meetup. Please try again.",
+                "Error",
+                e?.message || "Failed to register for meetup",
               );
             }
-          } catch (e: any) {
-            console.error("Meetup registration error:", e);
-            Alert.alert("Error", e?.message || "Failed to register for meetup");
           }
+
+          router.replace({
+            pathname: "/payment/payment-success",
+            params: {
+              bookingId: sessionBookingId.current ?? "",
+              amount: String(finalAmount),
+              invoiceNumber: verifyRes.data?.invoice?.invoiceNumber ?? "",
+              invoicePdfUrl: verifyRes.data?.invoice?.pdfUrl ?? "",
+              isSubscription: params.subscriptionId ? "1" : "0",
+              bookingPayload: params.bookingPayload || "",
+            },
+          });
+        } else {
+          setFlowState("failed");
+          Alert.alert(
+            "Verification Failed",
+            "Payment was received but could not be verified. Our team will resolve this within 24 hours. Please do NOT retry the payment.",
+          );
+        }
+      } catch (error: any) {
+        await clearPendingOrder();
+
+        if (error?.details?.code === "LIMIT_EXCEEDED") {
+          Alert.alert(
+            "Free Quota Used Up",
+            "You've used all your free bookings for this service this month.\n\nYou can still book — standard rates apply, or upgrade your plan for more free visits.",
+            [
+              {
+                text: "Book at Standard Rate",
+                onPress: () => {
+                  setIsPaidBookingOverride(true);
+                  handlePay(true);
+                },
+              },
+              {
+                text: "Upgrade Plan",
+                onPress: () => {
+                  router.push("/plans");
+                },
+              },
+              {
+                text: "Not Now",
+                style: "cancel",
+              },
+            ],
+          );
+          return;
         }
 
-        router.replace({
-          pathname: "/payment/payment-success",
-          params: {
-            bookingId: sessionBookingId.current ?? "",
-            amount: String(finalAmount),
-            invoiceNumber: verifyRes.data?.invoice?.invoiceNumber ?? "",
-            invoicePdfUrl: verifyRes.data?.invoice?.pdfUrl ?? "",
-            isSubscription: params.subscriptionId ? "1" : "0",
-            bookingPayload: params.bookingPayload || "",
-          },
-        });
-      } else {
+        if (error?.code === 0) {
+          setFlowState("cancelled");
+          await cancelPaymentOnBackend();
+          await clearPendingOrder();
+          Alert.alert(
+            "Payment Cancelled",
+            "You can try again whenever you are ready. Your booking details have been saved.",
+            [{ text: "OK" }],
+          );
+          return;
+        }
+
         setFlowState("failed");
-        Alert.alert(
-          "Verification Failed",
-          "Payment was received but could not be verified. Our team will resolve this within 24 hours. Please do NOT retry the payment.",
-        );
-      }
-    } catch (error: any) {
-      await clearPendingOrder();
-
-      if (error?.details?.code === 'LIMIT_EXCEEDED') {
-        Alert.alert(
-          "Free Quota Used Up",
-          "You've used all your free bookings for this service this month.\n\nYou can still book — standard rates apply, or upgrade your plan for more free visits.",
-          [
-            {
-              text: "Book at Standard Rate",
-              onPress: () => {
-                setIsPaidBookingOverride(true);
-                handlePay(true);
-              }
-            },
-            {
-              text: "Upgrade Plan",
-              onPress: () => {
-                router.push("/plans");
-              }
-            },
-            {
-              text: "Not Now",
-              style: "cancel"
-            }
-          ]
-        );
-        return;
-      }
-
-      if (error?.code === 0) {
-        setFlowState("cancelled");
         await cancelPaymentOnBackend();
         await clearPendingOrder();
-        Alert.alert(
-          "Payment Cancelled",
-          "You can try again whenever you are ready. Your booking details have been saved.",
-          [{ text: "OK" }],
-        );
-        return;
-      }
-
-      setFlowState("failed");
-      await cancelPaymentOnBackend();
-      await clearPendingOrder();
-      const msg =
-        error?.description ?? error?.message ?? "Something went wrong.";
-      Alert.alert("Payment Failed", msg, [
-        { text: "Go Back", style: "cancel", onPress: () => router.back() },
-        {
-          text: "Retry Payment",
-          onPress: () => {
-            setFlowState("idle");
+        const msg =
+          error?.description ?? error?.message ?? "Something went wrong.";
+        Alert.alert("Payment Failed", msg, [
+          { text: "Go Back", style: "cancel", onPress: () => router.back() },
+          {
+            text: "Retry Payment",
+            onPress: () => {
+              setFlowState("idle");
+            },
           },
-        },
-      ]);
-    } finally {
-      setPayLoading(false);
-    }
-  }, [
-    payLoading,
-    finalAmount,
-    selectedMethod,
-    couponApplied,
-    couponCode,
-    params,
-    label,
-    router,
-    refreshData,
-    selectedAddress,
-    colors.primary,
-    colors.textWhite,
-    isUpgraded,
-    eligiblePlans,
-    selectedPlanIndex,
-    selectedUpgradePlan,
-    selectedDuration,
-    savingsInfo,
-    isZeroPayment,
-    category,
-    t,
-    isPaidBookingOverride,
-  ]);
+        ]);
+      } finally {
+        setPayLoading(false);
+      }
+    },
+    [
+      payLoading,
+      finalAmount,
+      selectedMethod,
+      couponApplied,
+      couponCode,
+      params,
+      label,
+      router,
+      refreshData,
+      selectedAddress,
+      colors.primary,
+      colors.textWhite,
+      isUpgraded,
+      eligiblePlans,
+      selectedPlanIndex,
+      selectedUpgradePlan,
+      selectedDuration,
+      savingsInfo,
+      isZeroPayment,
+      category,
+      t,
+      isPaidBookingOverride,
+    ],
+  );
 
   return (
     <KeyboardAvoidingView
@@ -1035,142 +1167,159 @@ export default function ServiceCheckoutScreen() {
             contentContainerStyle={styles.bodyContent}
             showsVerticalScrollIndicator={false}
           >
-          {/* Meetup Service & Pickup Details */}
-          {params.meetupId && meetupParamsObj && (
-            <View style={[styles.card, styles.meetupCard]}>
-              {/* Included in Service Charge */}
-              {meetupParamsObj.includedItems &&
-                meetupParamsObj.includedItems.length > 0 && (
+            {/* Meetup Service & Pickup Details */}
+            {params.meetupId && meetupParamsObj && (
+              <View style={[styles.card, styles.meetupCard]}>
+                {/* Included in Service Charge */}
+                {meetupParamsObj.includedItems &&
+                  meetupParamsObj.includedItems.length > 0 && (
+                    <>
+                      <Text style={styles.subHeading}>
+                        {t("service_checkout.included_in_charge")}
+                      </Text>
+                      {meetupParamsObj.includedItems.map(
+                        (item: string, i: number) => (
+                          <View key={i} style={styles.includeRow}>
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={15}
+                              color={colors.primary}
+                            />
+                            <Text style={styles.includeText}>{item}</Text>
+                          </View>
+                        ),
+                      )}
+                      <View style={styles.divider} />
+                    </>
+                  )}
+
+                {/* Additional Charges (Extra) */}
+                {meetupParamsObj.extraCharges &&
+                  meetupParamsObj.extraCharges.length > 0 && (
+                    <>
+                      <Text style={styles.extraHeading}>
+                        Additional Charges (Extra)
+                      </Text>
+                      {meetupParamsObj.extraCharges.map(
+                        (item: string, i: number) => (
+                          <View key={i} style={styles.extraRow}>
+                            <Ionicons
+                              name="close-circle"
+                              size={15}
+                              color="#EF4444"
+                            />
+                            <Text style={styles.extraText}>{item}</Text>
+                          </View>
+                        ),
+                      )}
+                      <View style={styles.divider} />
+                    </>
+                  )}
+
+                {/* Pickup Details */}
+                {params.pickupAddress && (
                   <>
                     <Text style={styles.subHeading}>
-                      {t("service_checkout.included_in_charge")}
+                      {t("service_checkout.pickup_details")}
                     </Text>
-                    {meetupParamsObj.includedItems.map(
-                      (item: string, i: number) => (
-                        <View key={i} style={styles.includeRow}>
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={15}
-                            color={colors.primary}
-                          />
-                          <Text style={styles.includeText}>{item}</Text>
-                        </View>
-                      ),
+                    <View style={styles.pickupDetailRow}>
+                      <Text style={styles.pickupLabel}>
+                        {t("service_checkout.service_address")}:
+                      </Text>
+                      <Text style={styles.pickupValue}>
+                        {params.pickupAddress}
+                      </Text>
+                    </View>
+                    {meetupParamsObj.pickupLandmark && (
+                      <View style={styles.pickupDetailRow}>
+                        <Text style={styles.pickupLabel}>
+                          {t("meetup.landmark_label")}:
+                        </Text>
+                        <Text style={styles.pickupValue}>
+                          {meetupParamsObj.pickupLandmark}
+                        </Text>
+                      </View>
                     )}
-                    <View style={styles.divider} />
+                    {meetupParamsObj.preferredTime && (
+                      <View style={styles.pickupDetailRow}>
+                        <Text style={styles.pickupLabel}>
+                          {t("service_checkout.pickup_time_label")}:
+                        </Text>
+                        <Text style={styles.pickupValue}>
+                          {meetupParamsObj.preferredTime}
+                        </Text>
+                      </View>
+                    )}
+                    {meetupParamsObj.alternateContact && (
+                      <View style={styles.pickupDetailRow}>
+                        <Text style={styles.pickupLabel}>
+                          {t("service_checkout.organizer_label")}:
+                        </Text>
+                        <Text style={styles.pickupValue}>
+                          {meetupParamsObj.alternateContact}
+                        </Text>
+                      </View>
+                    )}
                   </>
                 )}
+              </View>
+            )}
 
-              {/* Additional Charges (Extra) */}
-              {meetupParamsObj.extraCharges &&
-                meetupParamsObj.extraCharges.length > 0 && (
-                  <>
-                    <Text style={styles.extraHeading}>
-                      Additional Charges (Extra)
-                    </Text>
-                    {meetupParamsObj.extraCharges.map(
-                      (item: string, i: number) => (
-                        <View key={i} style={styles.extraRow}>
-                          <Ionicons
-                            name="close-circle"
-                            size={15}
-                            color="#EF4444"
-                          />
-                          <Text style={styles.extraText}>{item}</Text>
-                        </View>
-                      ),
-                    )}
-                    <View style={styles.divider} />
-                  </>
-                )}
-
-              {/* Pickup Details */}
-              {params.pickupAddress && (
-                <>
-                  <Text style={styles.subHeading}>
-                    {t("service_checkout.pickup_details")}
-                  </Text>
-                  <View style={styles.pickupDetailRow}>
-                    <Text style={styles.pickupLabel}>
-                      {t("service_checkout.service_address")}:
-                    </Text>
-                    <Text style={styles.pickupValue}>
-                      {params.pickupAddress}
-                    </Text>
-                  </View>
-                  {meetupParamsObj.pickupLandmark && (
-                    <View style={styles.pickupDetailRow}>
-                      <Text style={styles.pickupLabel}>
-                        {t("meetup.landmark_label")}:
-                      </Text>
-                      <Text style={styles.pickupValue}>
-                        {meetupParamsObj.pickupLandmark}
-                      </Text>
-                    </View>
-                  )}
-                  {meetupParamsObj.preferredTime && (
-                    <View style={styles.pickupDetailRow}>
-                      <Text style={styles.pickupLabel}>
-                        {t("service_checkout.pickup_time_label")}:
-                      </Text>
-                      <Text style={styles.pickupValue}>
-                        {meetupParamsObj.preferredTime}
-                      </Text>
-                    </View>
-                  )}
-                  {meetupParamsObj.alternateContact && (
-                    <View style={styles.pickupDetailRow}>
-                      <Text style={styles.pickupLabel}>
-                        {t("service_checkout.organizer_label")}:
-                      </Text>
-                      <Text style={styles.pickupValue}>
-                        {meetupParamsObj.alternateContact}
-                      </Text>
-                    </View>
-                  )}
-                </>
-              )}
-            </View>
-          )}
-
-          {/* Order Summary */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>
-              {t("service_checkout.service_summary")}
-            </Text>
-            <View style={styles.row}>
-              <Text style={styles.rowLabel}>{label}</Text>
-              <Text style={styles.rowValue}>
-                ₹{(isServiceFeeWaived ? 0 : displayVendorFee).toLocaleString("en-IN")}
+            {/* Order Summary */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>
+                {t("service_checkout.service_summary")}
               </Text>
-            </View>
+              <View style={styles.row}>
+                <Text style={styles.rowLabel}>{label}</Text>
+                <Text style={styles.rowValue}>
+                  ₹
+                  {(isServiceFeeWaived ? 0 : displayVendorFee).toLocaleString(
+                    "en-IN",
+                  )}
+                </Text>
+              </View>
 
-            {/* Breakdown Section */}
-            <View style={styles.breakdownSection}>
-              <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>
-                  {t("service_checkout.service_fee")}
-                </Text>
-                {isServiceFeeWaived ? (
-                  displayVendorFee > 0 ? (
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 4,
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.breakdownValue,
-                          {
-                            textDecorationLine: "line-through",
-                            color: colors.textMuted,
-                          },
-                        ]}
+              {/* Breakdown Section */}
+              <View style={styles.breakdownSection}>
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>
+                    {t("service_checkout.service_fee")}
+                  </Text>
+                  {isServiceFeeWaived ? (
+                    displayVendorFee > 0 ? (
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
                       >
-                        ₹{displayVendorFee}
-                      </Text>
+                        <Text
+                          style={[
+                            styles.breakdownValue,
+                            {
+                              textDecorationLine: "line-through",
+                              color: colors.textMuted,
+                            },
+                          ]}
+                        >
+                          ₹{displayVendorFee}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.breakdownValue,
+                            {
+                              color: isDarkMode ? colors.primary : "#2e7d32",
+                              fontFamily: Fonts.semiBold,
+                            },
+                          ]}
+                        >
+                          {" "}
+                          {t("service_checkout.free")}
+                        </Text>
+                      </View>
+                    ) : (
                       <Text
                         style={[
                           styles.breakdownValue,
@@ -1180,53 +1329,53 @@ export default function ServiceCheckoutScreen() {
                           },
                         ]}
                       >
-                        {" "}
                         {t("service_checkout.free")}
                       </Text>
-                    </View>
+                    )
                   ) : (
-                    <Text
-                      style={[
-                        styles.breakdownValue,
-                        {
-                          color: isDarkMode ? colors.primary : "#2e7d32",
-                          fontFamily: Fonts.semiBold,
-                        },
-                      ]}
-                    >
-                      {t("service_checkout.free")}
+                    <Text style={styles.breakdownValue}>
+                      ₹{displayVendorFee.toLocaleString("en-IN")}
                     </Text>
-                  )
-                ) : (
-                  <Text style={styles.breakdownValue}>
-                    ₹{displayVendorFee.toLocaleString("en-IN")}
+                  )}
+                </View>
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>
+                    {t("service_checkout.booking_fee")}
                   </Text>
-                )}
-              </View>
-              <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>
-                  {t("service_checkout.booking_fee")}
-                </Text>
-                {benefitApplied ? (
-                  originalBookingFee > 0 ? (
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 4,
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.breakdownValue,
-                          {
-                            textDecorationLine: "line-through",
-                            color: colors.textMuted,
-                          },
-                        ]}
+                  {benefitApplied ? (
+                    originalBookingFee > 0 ? (
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
                       >
-                        ₹{originalBookingFee}
-                      </Text>
+                        <Text
+                          style={[
+                            styles.breakdownValue,
+                            {
+                              textDecorationLine: "line-through",
+                              color: colors.textMuted,
+                            },
+                          ]}
+                        >
+                          ₹{originalBookingFee}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.breakdownValue,
+                            {
+                              color: isDarkMode ? colors.primary : "#2e7d32",
+                              fontFamily: Fonts.semiBold,
+                            },
+                          ]}
+                        >
+                          {" "}
+                          {t("service_checkout.free")}
+                        </Text>
+                      </View>
+                    ) : (
                       <Text
                         style={[
                           styles.breakdownValue,
@@ -1236,51 +1385,51 @@ export default function ServiceCheckoutScreen() {
                           },
                         ]}
                       >
-                        {" "}
                         {t("service_checkout.free")}
                       </Text>
-                    </View>
+                    )
                   ) : (
-                    <Text
-                      style={[
-                        styles.breakdownValue,
-                        {
-                          color: isDarkMode ? colors.primary : "#2e7d32",
-                          fontFamily: Fonts.semiBold,
-                        },
-                      ]}
-                    >
-                      {t("service_checkout.free")}
-                    </Text>
-                  )
-                ) : (
-                  <Text style={styles.breakdownValue}>₹{bookingFee}</Text>
-                )}
-              </View>
-              <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>
-                  {t("service_checkout.platform_fee")}
-                </Text>
-                {benefitApplied ? (
-                  originalPlatformFee > 0 ? (
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 4,
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.breakdownValue,
-                          {
-                            textDecorationLine: "line-through",
-                            color: colors.textMuted,
-                          },
-                        ]}
+                    <Text style={styles.breakdownValue}>₹{bookingFee}</Text>
+                  )}
+                </View>
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>
+                    {t("service_checkout.platform_fee")}
+                  </Text>
+                  {benefitApplied ? (
+                    originalPlatformFee > 0 ? (
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
                       >
-                        ₹{originalPlatformFee}
-                      </Text>
+                        <Text
+                          style={[
+                            styles.breakdownValue,
+                            {
+                              textDecorationLine: "line-through",
+                              color: colors.textMuted,
+                            },
+                          ]}
+                        >
+                          ₹{originalPlatformFee}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.breakdownValue,
+                            {
+                              color: isDarkMode ? colors.primary : "#2e7d32",
+                              fontFamily: Fonts.semiBold,
+                            },
+                          ]}
+                        >
+                          {" "}
+                          {t("service_checkout.free")}
+                        </Text>
+                      </View>
+                    ) : (
                       <Text
                         style={[
                           styles.breakdownValue,
@@ -1290,490 +1439,531 @@ export default function ServiceCheckoutScreen() {
                           },
                         ]}
                       >
-                        {" "}
                         {t("service_checkout.free")}
                       </Text>
-                    </View>
+                    )
                   ) : (
-                    <Text
-                      style={[
-                        styles.breakdownValue,
-                        {
-                          color: isDarkMode ? colors.primary : "#2e7d32",
-                          fontFamily: Fonts.semiBold,
-                        },
-                      ]}
-                    >
-                      {t("service_checkout.free")}
+                    <Text style={styles.breakdownValue}>₹{platformFee}</Text>
+                  )}
+                </View>
+                {convenienceFee > 0 && (
+                  <View style={styles.breakdownRow}>
+                    <Text style={styles.breakdownLabel}>
+                      {t("checkout.convenience_fee") || "Convenience Fee"}
                     </Text>
-                  )
-                ) : (
-                  <Text style={styles.breakdownValue}>₹{platformFee}</Text>
-                )}
-              </View>
-              {convenienceFee > 0 && (
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>
-                    {t("checkout.convenience_fee") || "Convenience Fee"}
-                  </Text>
-                  <Text style={styles.breakdownValue}>₹{convenienceFee}</Text>
-                </View>
-              )}
-              {emergencyFee > 0 && (
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>
-                    {t("checkout.emergency_fee") || "Emergency Premium"}
-                  </Text>
-                  <Text style={styles.breakdownValue}>₹{emergencyFee}</Text>
-                </View>
-              )}
-              {visitFee > 0 && (
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>
-                    {t("checkout.visit_fee") || "Visit Charge"}
-                  </Text>
-                  <Text style={styles.breakdownValue}>₹{visitFee}</Text>
-                </View>
-              )}
-              {nightCharge > 0 && (
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>
-                    {t("checkout.night_charge") || "Night Premium"}
-                  </Text>
-                  <Text style={styles.breakdownValue}>₹{nightCharge}</Text>
-                </View>
-              )}
-              {surgeCharge > 0 && (
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>
-                    {t("checkout.surge_charge") || "Surge Charge"}
-                  </Text>
-                  <Text style={styles.breakdownValue}>₹{surgeCharge}</Text>
-                </View>
-              )}
-              <View style={styles.breakdownRow}>
-                <Text style={styles.breakdownLabel}>
-                  {t("service_checkout.taxes_gst")} ({taxRate}%)
-                </Text>
-                {benefitApplied && originalTaxes > taxes && originalTaxes > 0 ? (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.breakdownValue,
-                        {
-                          textDecorationLine: "line-through",
-                          color: colors.textMuted,
-                        },
-                      ]}
-                    >
-                      ₹{originalTaxes}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.breakdownValue,
-                        {
-                          color: taxes === 0 ? (isDarkMode ? colors.primary : "#2e7d32") : colors.textDark,
-                          fontFamily: taxes === 0 ? Fonts.semiBold : Fonts.regular,
-                        },
-                      ]}
-                    >
-                      {" "}
-                      {taxes === 0 ? t("service_checkout.free") : `₹${taxes.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`}
-                    </Text>
+                    <Text style={styles.breakdownValue}>₹{convenienceFee}</Text>
                   </View>
-                ) : (
-                  <Text style={styles.breakdownValue}>
-                    ₹
-                    {taxes.toLocaleString("en-IN", {
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 2,
+                )}
+                {emergencyFee > 0 && (
+                  <View style={styles.breakdownRow}>
+                    <Text style={styles.breakdownLabel}>
+                      {t("checkout.emergency_fee") || "Emergency Premium"}
+                    </Text>
+                    <Text style={styles.breakdownValue}>₹{emergencyFee}</Text>
+                  </View>
+                )}
+                {visitFee > 0 && (
+                  <View style={styles.breakdownRow}>
+                    <Text style={styles.breakdownLabel}>
+                      {t("checkout.visit_fee") || "Visit Charge"}
+                    </Text>
+                    <Text style={styles.breakdownValue}>₹{visitFee}</Text>
+                  </View>
+                )}
+                {nightCharge > 0 && (
+                  <View style={styles.breakdownRow}>
+                    <Text style={styles.breakdownLabel}>
+                      {t("checkout.night_charge") || "Night Premium"}
+                    </Text>
+                    <Text style={styles.breakdownValue}>₹{nightCharge}</Text>
+                  </View>
+                )}
+                {surgeCharge > 0 && (
+                  <View style={styles.breakdownRow}>
+                    <Text style={styles.breakdownLabel}>
+                      {t("checkout.surge_charge") || "Surge Charge"}
+                    </Text>
+                    <Text style={styles.breakdownValue}>₹{surgeCharge}</Text>
+                  </View>
+                )}
+                <View style={styles.breakdownRow}>
+                  <Text style={styles.breakdownLabel}>
+                    {t("service_checkout.taxes_gst")} ({taxRate}%)
+                  </Text>
+                  {benefitApplied &&
+                  originalTaxes > taxes &&
+                  originalTaxes > 0 ? (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.breakdownValue,
+                          {
+                            textDecorationLine: "line-through",
+                            color: colors.textMuted,
+                          },
+                        ]}
+                      >
+                        ₹{originalTaxes}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.breakdownValue,
+                          {
+                            color:
+                              taxes === 0
+                                ? isDarkMode
+                                  ? colors.primary
+                                  : "#2e7d32"
+                                : colors.textDark,
+                            fontFamily:
+                              taxes === 0 ? Fonts.semiBold : Fonts.regular,
+                          },
+                        ]}
+                      >
+                        {" "}
+                        {taxes === 0
+                          ? t("service_checkout.free")
+                          : `₹${taxes.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.breakdownValue}>
+                      ₹
+                      {taxes.toLocaleString("en-IN", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      })}
+                    </Text>
+                  )}
+                </View>
+                {benefitApplied && (
+                  <Text style={styles.benefitNote}>
+                    {t("service_checkout.plan_benefit_applied")}
+                  </Text>
+                )}
+              </View>
+
+              {couponApplied && (
+                <View style={styles.row}>
+                  <Text
+                    style={[
+                      styles.rowLabel,
+                      { color: isDarkMode ? colors.primary : "#2e7d32" },
+                    ]}
+                  >
+                    {t("service_checkout.coupon_discount")}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.rowValue,
+                      { color: isDarkMode ? colors.primary : "#2e7d32" },
+                    ]}
+                  >
+                    - ₹{discount.toLocaleString("en-IN")}
+                  </Text>
+                </View>
+              )}
+              <View style={[styles.row, styles.totalRow]}>
+                <Text style={styles.totalLabel}>
+                  {t("service_checkout.total")}
+                </Text>
+                <Text style={styles.totalValue}>
+                  ₹
+                  {(amountWithTaxAndFee - discount).toLocaleString("en-IN", {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
+                  })}
+                </Text>
+              </View>
+
+              {benefitApplied && totalFeeSavings > 0 && (
+                <View style={styles.savingsBadge}>
+                  <Text style={styles.savingsText}>
+                    {t("service_checkout.you_saved_fees", {
+                      amount:
+                        Math.round(totalFeeSavings).toLocaleString("en-IN"),
                     })}
                   </Text>
-                )}
-              </View>
-              {benefitApplied && (
-                <Text style={styles.benefitNote}>
-                  {t("service_checkout.plan_benefit_applied")}
-                </Text>
+                </View>
               )}
             </View>
 
-            {couponApplied && (
-              <View style={styles.row}>
-                <Text
-                  style={[
-                    styles.rowLabel,
-                    { color: isDarkMode ? colors.primary : "#2e7d32" },
-                  ]}
-                >
-                  {t("service_checkout.coupon_discount")}
-                </Text>
-                <Text
-                  style={[
-                    styles.rowValue,
-                    { color: isDarkMode ? colors.primary : "#2e7d32" },
-                  ]}
-                >
-                  - ₹{discount.toLocaleString("en-IN")}
-                </Text>
-              </View>
-            )}
-            <View style={[styles.row, styles.totalRow]}>
-              <Text style={styles.totalLabel}>
-                {t("service_checkout.total")}
-              </Text>
-              <Text style={styles.totalValue}>
-                ₹
-                {(amountWithTaxAndFee - discount).toLocaleString("en-IN", {
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 0,
-                })}
-              </Text>
-            </View>
-
-            {benefitApplied && totalFeeSavings > 0 && (
-              <View style={styles.savingsBadge}>
-                <Text style={styles.savingsText}>
-                  {t("service_checkout.you_saved_fees", { amount: Math.round(totalFeeSavings).toLocaleString("en-IN") })}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* ─── Subscription Upsell Banner ─────────────────────────────── */}
-          {showUpsellBanner && upsellPlanType && !isZeroPayment && (
-            <SubscriptionUpsellBanner
-              planTypeNeeded={upsellPlanType}
-              serviceLabel={label}
-              bookingFee={baseBookingFee}
-              platformFee={basePlatformFee}
-            />
-          )}
-
-          {/* Service Address — hide for meetup */}
-          {!params.meetupId && (
-            params.isDynamic === "true" && params.hideLocation !== "true" ? (
-              <AddressPickerSection
-                selectedAddress={selectedAddress}
-                onAddressChange={(addr) => {
-                  setSelectedAddress(addr);
-                  if (addr.landmark) setLandmark(addr.landmark);
-                }}
-                title={t("order_medicines.address_label")}
-                showPhoneField={false}
-                showLandmarkField={true}
-                landmark={landmark}
-                onLandmarkChange={setLandmark}
-                allowManualEntry={true}
+            {/* ─── Subscription Upsell Banner ─────────────────────────────── */}
+            {showUpsellBanner && upsellPlanType && !isZeroPayment && (
+              <SubscriptionUpsellBanner
+                planTypeNeeded={upsellPlanType}
+                serviceLabel={label}
+                bookingFee={baseBookingFee}
+                platformFee={basePlatformFee}
               />
-            ) : (
+            )}
+
+            {/* Service Address — hide for meetup */}
+            {!params.meetupId &&
+              (params.isDynamic === "true" && params.hideLocation !== "true" ? (
+                <AddressPickerSection
+                  selectedAddress={selectedAddress}
+                  onAddressChange={(addr) => {
+                    setSelectedAddress(addr);
+                    if (addr.landmark) setLandmark(addr.landmark);
+                  }}
+                  title={t("order_medicines.address_label")}
+                  showPhoneField={false}
+                  showLandmarkField={true}
+                  landmark={landmark}
+                  onLandmarkChange={setLandmark}
+                  allowManualEntry={true}
+                />
+              ) : (
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>
+                    {t("service_checkout.service_address")}
+                  </Text>
+                  {profile?.addresses && profile.addresses.length > 0 ? (
+                    <View style={{ gap: 10 }}>
+                      {profile.addresses.map((addr: any) => (
+                        <TouchableOpacity
+                          key={addr.id}
+                          style={[
+                            styles.addressCard,
+                            selectedAddress?.id === addr.id &&
+                              styles.addressCardActive,
+                          ]}
+                          onPress={() => setSelectedAddress(addr)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons
+                            name={
+                              selectedAddress?.id === addr.id
+                                ? "radio-button-on"
+                                : "radio-button-off"
+                            }
+                            size={20}
+                            color={
+                              selectedAddress?.id === addr.id
+                                ? colors.primary
+                                : colors.textMuted
+                            }
+                          />
+                          <View style={{ flex: 1, marginLeft: 12 }}>
+                            <Text style={styles.addressLabel}>
+                              {addr.line1}
+                              {addr.line2 ? ", " + addr.line2 : ""},{" "}
+                              {addr.cityName}
+                            </Text>
+                            <Text style={styles.addressSub}>{addr.label}</Text>
+                            {addr.isDefault && (
+                              <Text style={styles.defaultBadge}>
+                                {t("service_checkout.default_address")}
+                              </Text>
+                            )}
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  ) : (
+                    <View>
+                      <Text style={styles.noAddressText}>
+                        No saved addresses. Please add one in your profile.
+                      </Text>
+                      <TouchableOpacity
+                        style={[
+                          styles.payBtn,
+                          { marginTop: 12, backgroundColor: colors.primary },
+                        ]}
+                        onPress={() => router.push("/manage-addresses")}
+                        activeOpacity={0.85}
+                      >
+                        <Ionicons name="add-outline" size={18} color="#fff" />
+                        <Text style={styles.payBtnText}>
+                          {t("service_checkout.add_address")}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              ))}
+
+            {/* Coupon */}
+            {!isZeroPayment && (
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>
-                  {t("service_checkout.service_address")}
+                  {t("service_checkout.promo_code")}
                 </Text>
-                {profile?.addresses && profile.addresses.length > 0 ? (
-                  <View style={{ gap: 10 }}>
-                    {profile.addresses.map((addr: any) => (
-                      <TouchableOpacity
-                        key={addr.id}
-                        style={[
-                          styles.addressCard,
-                          selectedAddress?.id === addr.id &&
-                            styles.addressCardActive,
-                        ]}
-                        onPress={() => setSelectedAddress(addr)}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons
-                          name={
-                            selectedAddress?.id === addr.id
-                              ? "radio-button-on"
-                              : "radio-button-off"
-                          }
-                          size={20}
-                          color={
-                            selectedAddress?.id === addr.id
-                              ? colors.primary
-                              : colors.textMuted
-                          }
-                        />
-                        <View style={{ flex: 1, marginLeft: 12 }}>
-                          <Text style={styles.addressLabel}>
-                            {addr.line1}
-                            {addr.line2 ? ", " + addr.line2 : ""}, {addr.cityName}
-                          </Text>
-                          <Text style={styles.addressSub}>{addr.label}</Text>
-                          {addr.isDefault && (
-                            <Text style={styles.defaultBadge}>
-                              {t("service_checkout.default_address")}
-                            </Text>
-                          )}
-                        </View>
-                      </TouchableOpacity>
-                    ))}
+                {couponApplied ? (
+                  <View style={styles.couponApplied}>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={18}
+                      color={isDarkMode ? colors.primary : "#2e7d32"}
+                    />
+                    <Text style={styles.couponAppliedText}>
+                      &quot;{couponCode}&quot; applied — saved ₹{discount}
+                    </Text>
+                    <TouchableOpacity onPress={handleRemoveCoupon}>
+                      <Ionicons
+                        name="close-circle-outline"
+                        size={18}
+                        color="#999"
+                      />
+                    </TouchableOpacity>
                   </View>
                 ) : (
-                  <View>
-                    <Text style={styles.noAddressText}>
-                      No saved addresses. Please add one in your profile.
-                    </Text>
+                  <View style={styles.couponRow}>
+                    <TextInput
+                      style={styles.couponInput}
+                      placeholder="Enter coupon code"
+                      placeholderTextColor={colors.textMuted}
+                      value={couponCode}
+                      onChangeText={setCouponCode}
+                      autoCapitalize="characters"
+                      returnKeyType="done"
+                      onSubmitEditing={handleApplyCoupon}
+                    />
                     <TouchableOpacity
                       style={[
-                        styles.payBtn,
-                        { marginTop: 12, backgroundColor: colors.primary },
+                        styles.couponBtn,
+                        (!couponCode.trim() || couponLoading) &&
+                          styles.couponBtnDisabled,
                       ]}
-                      onPress={() => router.push("/manage-addresses")}
-                      activeOpacity={0.85}
+                      onPress={handleApplyCoupon}
+                      disabled={!couponCode.trim() || couponLoading}
                     >
-                      <Ionicons name="add-outline" size={18} color="#fff" />
-                      <Text style={styles.payBtnText}>
-                        {t("service_checkout.add_address")}
-                      </Text>
+                      {couponLoading ? (
+                        <ActivityIndicator
+                          size="small"
+                          color={colors.textWhite}
+                        />
+                      ) : (
+                        <Text style={styles.couponBtnText}>
+                          {t("service_checkout.apply")}
+                        </Text>
+                      )}
                     </TouchableOpacity>
                   </View>
                 )}
               </View>
-            )
-          )}
+            )}
 
-          {/* Coupon */}
-          {!isZeroPayment && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>
-                {t("service_checkout.promo_code")}
-              </Text>
-              {couponApplied ? (
-                <View style={styles.couponApplied}>
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={18}
-                    color={isDarkMode ? colors.primary : "#2e7d32"}
-                  />
-                  <Text style={styles.couponAppliedText}>
-                    &quot;{couponCode}&quot; applied — saved ₹{discount}
-                  </Text>
-                  <TouchableOpacity onPress={handleRemoveCoupon}>
+            {/* Payment Method */}
+            {!isZeroPayment && (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>
+                  {t("service_checkout.payment_method")}
+                </Text>
+                {PAYMENT_METHODS.map((m) => (
+                  <TouchableOpacity
+                    key={m.type}
+                    style={[
+                      styles.methodRow,
+                      selectedMethod === m.type && styles.methodRowActive,
+                    ]}
+                    onPress={() => setSelectedMethod(m.type)}
+                    activeOpacity={0.8}
+                  >
                     <Ionicons
-                      name="close-circle-outline"
-                      size={18}
-                      color="#999"
+                      name={m.icon}
+                      size={20}
+                      color={
+                        selectedMethod === m.type
+                          ? colors.primary
+                          : colors.textMuted
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.methodLabel,
+                        selectedMethod === m.type && styles.methodLabelActive,
+                      ]}
+                    >
+                      {m.label}
+                    </Text>
+                    <Ionicons
+                      name={
+                        selectedMethod === m.type
+                          ? "radio-button-on"
+                          : "radio-button-off"
+                      }
+                      size={20}
+                      color={
+                        selectedMethod === m.type
+                          ? colors.primary
+                          : colors.textMuted
+                      }
+                      style={{ marginLeft: "auto" }}
                     />
                   </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={styles.couponRow}>
-                  <TextInput
-                    style={styles.couponInput}
-                    placeholder="Enter coupon code"
-                    placeholderTextColor={colors.textMuted}
-                    value={couponCode}
-                    onChangeText={setCouponCode}
-                    autoCapitalize="characters"
-                    returnKeyType="done"
-                    onSubmitEditing={handleApplyCoupon}
-                  />
+                ))}
+              </View>
+            )}
+
+            {/* Checkout Membership Upgrade Card (Swiggy One style) */}
+            {(HOME_CATEGORIES.includes(category) ||
+              CARE_CATEGORIES.includes(category)) &&
+              !hasActivePlanForCategory &&
+              eligiblePlans.length > 0 && (
+                <View style={[styles.card, styles.upgradeCard]}>
                   <TouchableOpacity
-                    style={[
-                      styles.couponBtn,
-                      (!couponCode.trim() || couponLoading) &&
-                        styles.couponBtnDisabled,
-                    ]}
-                    onPress={handleApplyCoupon}
-                    disabled={!couponCode.trim() || couponLoading}
+                    style={styles.upgradeHeader}
+                    onPress={() => setIsUpgraded(!isUpgraded)}
+                    activeOpacity={0.8}
                   >
-                    {couponLoading ? (
-                      <ActivityIndicator size="small" color={colors.textWhite} />
-                    ) : (
-                      <Text style={styles.couponBtnText}>
-                        {t("service_checkout.apply")}
+                    <Ionicons
+                      name={isUpgraded ? "checkbox" : "square-outline"}
+                      size={24}
+                      color={colors.primary}
+                    />
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={styles.upgradeTitle}>
+                        {CARE_CATEGORIES.includes(category)
+                          ? t("service_checkout.upgrade_care")
+                          : t("service_checkout.upgrade_home")}
                       </Text>
-                    )}
+                      {savingsInfo && savingsInfo.totalSavings > 0 ? (
+                        <Text
+                          style={[
+                            styles.upgradeSaveText,
+                            { color: colors.primary },
+                          ]}
+                        >
+                          {t("service_checkout.upgrade_save_amount", {
+                            amount: savingsInfo.totalSavings,
+                          })}
+                        </Text>
+                      ) : (
+                        <Text style={styles.upgradeSubtitle}>
+                          {t("service_checkout.upgrade_subtitle")}
+                        </Text>
+                      )}
+                    </View>
                   </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          )}
 
-          {/* Payment Method */}
-          {!isZeroPayment && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>
-                {t("service_checkout.payment_method")}
-              </Text>
-              {PAYMENT_METHODS.map((m) => (
-                <TouchableOpacity
-                  key={m.type}
-                  style={[
-                    styles.methodRow,
-                    selectedMethod === m.type && styles.methodRowActive,
-                  ]}
-                  onPress={() => setSelectedMethod(m.type)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons
-                    name={m.icon}
-                    size={20}
-                    color={
-                      selectedMethod === m.type
-                        ? colors.primary
-                        : colors.textMuted
-                    }
-                  />
-                  <Text
-                    style={[
-                      styles.methodLabel,
-                      selectedMethod === m.type && styles.methodLabelActive,
-                    ]}
-                  >
-                    {m.label}
-                  </Text>
-                  <Ionicons
-                    name={
-                      selectedMethod === m.type
-                        ? "radio-button-on"
-                        : "radio-button-off"
-                    }
-                    size={20}
-                    color={
-                      selectedMethod === m.type
-                        ? colors.primary
-                        : colors.textMuted
-                    }
-                    style={{ marginLeft: "auto" }}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+                  {isUpgraded && (
+                    <View style={styles.upgradeDetails}>
+                      <View style={styles.waiverList}>
+                        <Text style={styles.waiverItem}>
+                          {t("service_checkout.booking_fee_waived")}
+                        </Text>
+                        <Text style={styles.waiverItem}>
+                          {t("service_checkout.platform_fee_waived")}
+                        </Text>
+                        <Text style={styles.waiverItem}>
+                          {t("service_checkout.gst_waived")}
+                        </Text>
+                      </View>
 
-          {/* Checkout Membership Upgrade Card (Swiggy One style) */}
-          {(HOME_CATEGORIES.includes(category) || CARE_CATEGORIES.includes(category)) && !hasActivePlanForCategory && eligiblePlans.length > 0 && (
-            <View style={[styles.card, styles.upgradeCard]}>
-              <TouchableOpacity
-                style={styles.upgradeHeader}
-                onPress={() => setIsUpgraded(!isUpgraded)}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={isUpgraded ? "checkbox" : "square-outline"}
-                  size={24}
-                  color={colors.primary}
-                />
-                <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text style={styles.upgradeTitle}>
-                    {CARE_CATEGORIES.includes(category)
-                      ? t("service_checkout.upgrade_care")
-                      : t("service_checkout.upgrade_home")}
-                  </Text>
-                  {savingsInfo && savingsInfo.totalSavings > 0 ? (
-                    <Text style={[styles.upgradeSaveText, { color: colors.primary }]}>
-                      {t("service_checkout.upgrade_save_amount", { amount: savingsInfo.totalSavings })}
-                    </Text>
-                  ) : (
-                    <Text style={styles.upgradeSubtitle}>{t("service_checkout.upgrade_subtitle")}</Text>
-                  )}
-                </View>
-              </TouchableOpacity>
+                      {eligiblePlans.length > 1 && (
+                        <>
+                          <Text style={styles.planSelectorLabel}>
+                            {t("service_checkout.select_plan_option")}
+                          </Text>
+                          <View style={styles.planSelector}>
+                            {eligiblePlans.map((plan, idx) => (
+                              <TouchableOpacity
+                                key={plan.id}
+                                style={[
+                                  styles.planSelectorBtn,
+                                  selectedPlanIndex === idx &&
+                                    styles.planSelectorBtnActive,
+                                ]}
+                                onPress={() => setSelectedPlanIndex(idx)}
+                                activeOpacity={0.8}
+                              >
+                                <Text
+                                  style={[
+                                    styles.planSelectorText,
+                                    selectedPlanIndex === idx &&
+                                      styles.planSelectorTextActive,
+                                  ]}
+                                >
+                                  {plan.name}
+                                </Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        </>
+                      )}
 
-              {isUpgraded && (
-                <View style={styles.upgradeDetails}>
-                  <View style={styles.waiverList}>
-                    <Text style={styles.waiverItem}>{t("service_checkout.booking_fee_waived")}</Text>
-                    <Text style={styles.waiverItem}>{t("service_checkout.platform_fee_waived")}</Text>
-                    <Text style={styles.waiverItem}>{t("service_checkout.gst_waived")}</Text>
-                  </View>
-
-                  {eligiblePlans.length > 1 && (
-                    <>
-                  <Text style={styles.planSelectorLabel}>{t("service_checkout.select_plan_option")}</Text>
-                      <View style={styles.planSelector}>
-                        {eligiblePlans.map((plan, idx) => (
+                      <Text style={styles.durationSelectorLabel}>
+                        {t("service_checkout.select_plan_duration")}
+                      </Text>
+                      <View style={styles.durationSelector}>
+                        {[
+                          {
+                            key: "QUARTERLY" as BillingCycle,
+                            label: t("service_checkout.months_3"),
+                            price: selectedUpgradePlan?.quarterlyPrice,
+                          },
+                          {
+                            key: "BIANNUAL" as BillingCycle,
+                            label: t("service_checkout.months_6"),
+                            price: selectedUpgradePlan?.biannualPrice,
+                          },
+                          {
+                            key: "YEARLY" as BillingCycle,
+                            label: t("service_checkout.months_12"),
+                            price: selectedUpgradePlan?.yearlyPrice,
+                          },
+                        ].map((dur) => (
                           <TouchableOpacity
-                            key={plan.id}
+                            key={dur.key}
                             style={[
-                              styles.planSelectorBtn,
-                              selectedPlanIndex === idx && styles.planSelectorBtnActive,
+                              styles.durationBtn,
+                              selectedDuration === dur.key &&
+                                styles.durationBtnActive,
                             ]}
-                            onPress={() => setSelectedPlanIndex(idx)}
+                            onPress={() => setSelectedDuration(dur.key)}
                             activeOpacity={0.8}
                           >
                             <Text
                               style={[
-                                styles.planSelectorText,
-                                selectedPlanIndex === idx && styles.planSelectorTextActive,
+                                styles.durationText,
+                                selectedDuration === dur.key &&
+                                  styles.durationTextActive,
                               ]}
                             >
-                              {plan.name}
+                              {dur.label}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.durationPrice,
+                                selectedDuration === dur.key &&
+                                  styles.durationPriceActive,
+                              ]}
+                            >
+                              ₹{dur.price}
                             </Text>
                           </TouchableOpacity>
                         ))}
                       </View>
-                    </>
+                    </View>
                   )}
-
-                  <Text style={styles.durationSelectorLabel}>{t("service_checkout.select_plan_duration")}</Text>
-                  <View style={styles.durationSelector}>
-                    {[
-                      { key: 'QUARTERLY' as BillingCycle, label: t("service_checkout.months_3"), price: selectedUpgradePlan?.quarterlyPrice },
-                      { key: 'BIANNUAL' as BillingCycle, label: t("service_checkout.months_6"), price: selectedUpgradePlan?.biannualPrice },
-                      { key: 'YEARLY' as BillingCycle, label: t("service_checkout.months_12"), price: selectedUpgradePlan?.yearlyPrice },
-                    ].map(dur => (
-                      <TouchableOpacity
-                        key={dur.key}
-                        style={[
-                          styles.durationBtn,
-                          selectedDuration === dur.key && styles.durationBtnActive,
-                        ]}
-                        onPress={() => setSelectedDuration(dur.key)}
-                        activeOpacity={0.8}
-                      >
-                        <Text
-                          style={[
-                            styles.durationText,
-                            selectedDuration === dur.key && styles.durationTextActive,
-                          ]}
-                        >
-                          {dur.label}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.durationPrice,
-                            selectedDuration === dur.key && styles.durationPriceActive,
-                          ]}
-                        >
-                          ₹{dur.price}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
                 </View>
               )}
-            </View>
-          )}
 
-          {/* Security note */}
-          <View style={styles.securityNote}>
-            <Ionicons
-              name={
-                selectedMethod === "CASH"
-                  ? "information-circle-outline"
-                  : "shield-checkmark-outline"
-              }
-              size={16}
-              color={colors.textMuted}
-            />
-            <Text style={styles.securityText}>
-              {selectedMethod === "CASH"
-                ? "Please prepare exact change if possible. Our provider will collect the amount upon arrival."
-                : "Secured by Razorpay. Your payment information is encrypted and safe."}
-            </Text>
-          </View>
+            {/* Security note */}
+            <View style={styles.securityNote}>
+              <Ionicons
+                name={
+                  selectedMethod === "CASH"
+                    ? "information-circle-outline"
+                    : "shield-checkmark-outline"
+                }
+                size={16}
+                color={colors.textMuted}
+              />
+              <Text style={styles.securityText}>
+                {selectedMethod === "CASH"
+                  ? "Please prepare exact change if possible. Our provider will collect the amount upon arrival."
+                  : "Secured by Razorpay. Your payment information is encrypted and safe."}
+              </Text>
+            </View>
           </ScrollView>
 
           {/* Pay Button wrapped in SafeAreaView for bottom safe area */}
@@ -1794,24 +1984,24 @@ export default function ServiceCheckoutScreen() {
                         isZeroPayment
                           ? "send-outline"
                           : selectedMethod === "CASH"
-                          ? "checkmark-circle-outline"
-                          : "lock-closed-outline"
+                            ? "checkmark-circle-outline"
+                            : "lock-closed-outline"
                       }
                       size={18}
                       color={colors.textWhite}
                     />
                     <Text style={styles.payBtnText}>
                       {isZeroPayment
-                        ? (params.checkoutGroup === 'D'
-                            ? t('common.submit_request', 'Submit Request')
-                            : (category === "MEDICINES"
-                              ? t('common.place_order', 'Place Order')
-                              : (category === "TIFFIN"
-                                ? t('common.request_tiffin', 'Request Tiffin')
-                                : t('common.book_appointment', 'Book Appointment'))))
+                        ? params.checkoutGroup === "D"
+                          ? t("common.submit_request", "Submit Request")
+                          : category === "MEDICINES"
+                            ? t("common.place_order", "Place Order")
+                            : category === "TIFFIN"
+                              ? t("common.request_tiffin", "Request Tiffin")
+                              : t("common.book_appointment", "Book Appointment")
                         : selectedMethod === "CASH"
-                        ? `${t('common.confirm_booking', 'Confirm Booking')} (₹${finalAmount.toLocaleString("en-IN")})`
-                        : `${t('common.pay', 'Pay')} ₹${finalAmount.toLocaleString("en-IN")}`}
+                          ? `${t("common.confirm_booking", "Confirm Booking")} (₹${finalAmount.toLocaleString("en-IN")})`
+                          : `${t("common.pay", "Pay")} ₹${finalAmount.toLocaleString("en-IN")}`}
                     </Text>
                   </>
                 )}
@@ -1853,7 +2043,11 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) =>
       flex: 1,
       backgroundColor: "transparent",
     },
-    bodyContent: { padding: Spacing.xl, paddingBottom: Spacing.xl, gap: Spacing.lg },
+    bodyContent: {
+      padding: Spacing.xl,
+      paddingBottom: Spacing.xl,
+      gap: Spacing.lg,
+    },
 
     card: {
       backgroundColor: colors.bgCard,

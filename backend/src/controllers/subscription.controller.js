@@ -76,24 +76,25 @@ const createSubscription = async (req, res, next) => {
             });
         }
 
-        // WhatsApp PAYMENT_RECEIVED + DLT SMS PAYMENT_RECEIVED — non-fatal
+        // WhatsApp PAYMENT_RECEIVED + DLT SMS PAYMENT_RECEIVED fallback
         if (subscription.user?.phone && (status || 'ACTIVE') === 'ACTIVE') {
             const { sendPaymentReceived } = require('../services/whatsapp');
-            const { sendSMS } = require('../services/sms');
             sendPaymentReceived({
                 phone: subscription.user.phone,
                 name: subscription.user.name,
                 amount: parseFloat(subscription.amount).toFixed(2),
                 userId: subscription.userId,
+            }).then(waSuccess => {
+                if (!waSuccess && subscription.user.smsEnabled !== false) {
+                    const { sendSMS } = require('../services/sms');
+                    sendSMS({
+                        template: 'PAYMENT_RECEIVED',
+                        mobile: subscription.user.phone,
+                        variables: [subscription.user.name, parseFloat(subscription.amount).toFixed(2)],
+                        userId: subscription.userId,
+                    }).catch(() => {});
+                }
             }).catch(() => {});
-            if (subscription.user.smsEnabled !== false) {
-                sendSMS({
-                    template: 'PAYMENT_RECEIVED',
-                    mobile: subscription.user.phone,
-                    variables: [subscription.user.name, parseFloat(subscription.amount).toFixed(2)],
-                    userId: subscription.userId,
-                }).catch(() => {});
-            }
         }
 
         sendResponse(res, 201, subscription, 'Subscription activated');
@@ -533,28 +534,29 @@ const verifyUserSubscription = async (req, res, next) => {
             }
         }
 
-        // WhatsApp PAYMENT_RECEIVED + DLT SMS PAYMENT_RECEIVED — non-fatal
+        // WhatsApp PAYMENT_RECEIVED + DLT SMS PAYMENT_RECEIVED fallback
         const activatedUser = await prisma.user.findUnique({
             where: { id: req.user?.id || subscription.userId },
             select: { id: true, name: true, phone: true, smsEnabled: true },
         }).catch(() => null);
         if (activatedUser?.phone) {
             const { sendPaymentReceived } = require('../services/whatsapp');
-            const { sendSMS } = require('../services/sms');
             sendPaymentReceived({
                 phone: activatedUser.phone,
                 name: activatedUser.name,
                 amount: parseFloat(subscription.amount).toFixed(2),
                 userId: activatedUser.id,
+            }).then(waSuccess => {
+                if (!waSuccess && activatedUser.smsEnabled !== false) {
+                    const { sendSMS } = require('../services/sms');
+                    sendSMS({
+                        template: 'PAYMENT_RECEIVED',
+                        mobile: activatedUser.phone,
+                        variables: [activatedUser.name, parseFloat(subscription.amount).toFixed(2)],
+                        userId: activatedUser.id,
+                    }).catch(() => {});
+                }
             }).catch(() => {});
-            if (activatedUser.smsEnabled !== false) {
-                sendSMS({
-                    template: 'PAYMENT_RECEIVED',
-                    mobile: activatedUser.phone,
-                    variables: [activatedUser.name, parseFloat(subscription.amount).toFixed(2)],
-                    userId: activatedUser.id,
-                }).catch(() => {});
-            }
         }
 
         sendResponse(res, 200, subscription, 'Subscription activated successfully');
