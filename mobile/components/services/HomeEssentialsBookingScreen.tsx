@@ -298,6 +298,7 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
       heroSubtitle={t('service_detail.home_essentials', 'Home Essentials')}
       description={subhead}
       heroImage={ICON_MAPPING[slug] || anythingElseIcon}
+      heroIcon={dbService?.icon}
       pricingLabel={getPricingLabel()}
       pricingNote={checkoutGroup === 'D' ? undefined : t('service_detail.pricing_disclaimer', '*Pricing is subject to actual work assessment.')}
       bulletItems={bulletItems}

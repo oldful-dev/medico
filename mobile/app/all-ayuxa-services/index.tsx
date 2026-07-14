@@ -31,6 +31,7 @@ const medicalReportIcon = require('@/assets/images/e453f94c7e87531b0da0b6712f8dc
 const SERVICE_GRID = [
     { image: doctorVisitImg, translationKey: 'services.doctor_visit_quick', label1: 'Doctor', label2: 'Visit', route: '/doctor-visit' },
     { image: homingNursingImg, translationKey: 'services.nurse_care_quick', label1: 'Nurse &', label2: 'Aide', route: '/nurse-care' },
+    { image: homingNursingImg, translationKey: 'services.caregiver_support', label1: 'Caregiver', label2: 'Support', route: '/caregiver-support' },
     { image: homeBloodTestImg, translationKey: 'services.blood_work', label1: 'Blood', label2: 'Work', route: '/blood-test' },
     { image: medicalReportIcon, translationKey: 'services.scan_ecg', label1: 'Scan &', label2: 'ECG', route: '/scan-ecg' },
     { image: orderMedicineImg, translationKey: 'services.medicine', label1: 'Medicine', label2: '', route: '/order-medicines' },
