@@ -184,10 +184,10 @@
     "caregiver_support": "Caregiver\nSupport",
     "emergency_assist": "Emergency\nAssist",
     "tech_helper_essentials": "Tech Helper",
-    "doctor_visit_quick": "Doctor Visit",
-    "nurse_care_quick": "Nurse & Aide",
-    "hospital_trip_quick": "Hospital Visit",
-    "physio_quick": "Physio",
+    "doctor_visit_quick": "Home Doctor",
+    "nurse_care_quick": "Home Nurse",
+    "hospital_trip_quick": "Hospital\nVisit",
+    "physio_quick": "Home Aide",
     "blood_work": "Blood Work",
     "scan_ecg": "Scan & ECG",
     "medicine": "Medicine",
@@ -204,7 +204,8 @@
     "grocery_run_subhead": "Share your Grocery list our Ayuxa buddy will shop from Your nearest store and deliver to you.",
     "bill_payment_subhead": "Share your Utility bill, our Ayuxa buddy take care Of Everything.",
     "paper_legal_subhead": "Get Professional help with bank visit, passbook updates, KYC and other paperwork. Pension, life certificate etc.",
-    "anything_else_subhead": "Need help with something not on our list? Tell us, what you need. Ayuxa buddy will handle it."
+    "anything_else_subhead": "Need help with something not on our list? Tell us, what you need. Ayuxa buddy will handle it.",
+    "caregiver_quick": "Caregiver"
   },
   "booking": {
     "book_service": "Book Service",

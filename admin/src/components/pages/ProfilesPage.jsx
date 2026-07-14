@@ -425,7 +425,6 @@ export default function ProfilesPage() {
                                 <td><span className={`status-pill ${getStatusColor(p.status)}`}>{p.status}</span></td>
                                 <td align="right">
                                     <div className="actions">
-                                        <button className="icon-btn assign" title="Assign to booking" onClick={() => openAssignModal(p)}><UserCheck size={16} /></button>
                                         <button className="icon-btn edit" onClick={() => openEditModal(p)}><Edit2 size={16} /></button>
                                         <button className="icon-btn delete" onClick={() => handleDelete(p.id)}><Trash2 size={16} /></button>
                                     </div>

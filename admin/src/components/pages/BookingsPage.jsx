@@ -359,7 +359,6 @@ export default function BookingsPage() {
                                             <td>
                                                 <div className="flex gap-2">
                                                     <button className="btn btn-sm btn-secondary" onClick={() => viewBooking(b.id)}><Eye size={14} /></button>
-                                                    {(b.status === 'PENDING' || b.status === 'CONFIRMED') && <button className="btn btn-sm btn-primary" onClick={() => { setAssignModal(b); setSelectedCaregiver(''); }}><UserPlus size={14} /></button>}
                                                     {!b.isEscalated && <button className="btn btn-sm btn-warning" onClick={() => escalateBooking(b.id)}><AlertTriangle size={14} /></button>}
                                                 </div>
                                             </td>
@@ -449,12 +448,6 @@ export default function BookingsPage() {
                                 <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                                         <label className="form-label">Staff Assignment</label>
-                                        {(selected.status === 'PENDING' || selected.status === 'CONFIRMED') && (
-                                            <button className="btn btn-sm btn-primary" onClick={() => { setAssignModal(selected); setSelectedCaregiver(''); }}>
-                                                <UserPlus size={13} style={{ marginRight: 4 }} />
-                                                Assign
-                                            </button>
-                                        )}
                                     </div>
                                     <div className="text-sm">{selected.caregiver?.name ? `${selected.caregiver.name} — ${selected.caregiver.phone}` : '—'}</div>
                                 </div>
@@ -543,12 +536,6 @@ export default function BookingsPage() {
                                                     <span style={{ fontWeight: 600, fontSize: 13 }}>{order.clientRefId}</span>
                                                     <span className={`badge badge-${order.status === 'CONFIRMED' ? 'info' : order.status === 'REPORT_GENERATED' ? 'success' : order.status === 'CANCELLED' ? 'default' : 'warning'}`} style={{ marginLeft: 8, fontSize: 10 }}>{order.status}</span>
                                                 </div>
-                                                {order.status === 'CONFIRMED' && (
-                                                    <button className="btn btn-sm btn-primary" onClick={() => openAssignStaff(order)}>
-                                                        <UserPlus size={13} style={{ marginRight: 4 }} />
-                                                        Assign Staff
-                                                    </button>
-                                                )}
                                             </div>
 
                                             {/* Lab order body */}

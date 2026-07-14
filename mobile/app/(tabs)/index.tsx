@@ -123,10 +123,12 @@ const translateServiceLabel = (id: string, fallbackLabel: string, t: any, lang: 
 
   // If the admin changed it from the default, use the fallbackLabel directly
   const defaultEnglishLabels: Record<string, string> = {
-    'doctor_quick': 'Doctor\nVisit',
-    'nurse_quick': 'Nurse &\nAide',
-    'hospital_quick': 'Hospital\nVisit',
+    'doctor_quick': 'Home Doctor',
+    'nurse_quick': 'Home Nurse',
+    'hospital_quick': 'Hospital Visit',
     'physio_quick': 'Physio',
+    'physio': 'Home Aide',
+    'caregiver_quick': 'Caregiver',
     'blood_test': 'Blood\nWork',
     'scan_ecg': 'Scan &\nECG',
     'medicines': 'Medicine',
@@ -169,7 +171,7 @@ const translateServiceLabel = (id: string, fallbackLabel: string, t: any, lang: 
     'equipment': 'services.equipment_quick',
     'medicines': 'services.medicine',
     'meal': 'services.meal_service',
-    'physio': 'services.physio_fitness',
+    'physio': 'services.physio_quick',
     'hospital_trip': 'services.hospital_trip',
     'insurance': 'services.insurance_quick',
     'ac_repair': 'services.appliance_repair',
@@ -188,6 +190,7 @@ const translateServiceLabel = (id: string, fallbackLabel: string, t: any, lang: 
     'nurse_quick': 'services.nurse_care_quick',
     'hospital_quick': 'services.hospital_trip_quick',
     'physio_quick': 'services.physio_quick',
+    'caregiver_quick': 'services.caregiver_quick',
     'scan_ecg': 'services.scan_ecg',
   };
 

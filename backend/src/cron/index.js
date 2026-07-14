@@ -146,22 +146,23 @@ const initCronJobs = () => {
                     data: { status: 'EXPIRED' },
                 });
 
-                // Notify user — WhatsApp PAYMENT_RECEIVED + DLT SMS PAYMENT_RECEIVED
+                // Notify user — WhatsApp PAYMENT_RECEIVED + DLT SMS PAYMENT_RECEIVED fallback
                 if (sub.user?.phone) {
                     sendPaymentReceived({
                         phone: sub.user.phone,
                         name: sub.user.name,
                         amount: parseFloat(amount).toFixed(2),
                         userId: sub.userId,
+                    }).then(waSuccess => {
+                        if (!waSuccess && sub.user.smsEnabled !== false) {
+                            sendSMS({
+                                template: 'PAYMENT_RECEIVED',
+                                mobile: sub.user.phone,
+                                variables: [sub.user.name, parseFloat(amount).toFixed(2)],
+                                userId: sub.userId,
+                            }).catch(() => {});
+                        }
                     }).catch(() => {});
-                    if (sub.user.smsEnabled !== false) {
-                        sendSMS({
-                            template: 'PAYMENT_RECEIVED',
-                            mobile: sub.user.phone,
-                            variables: [sub.user.name, parseFloat(amount).toFixed(2)],
-                            userId: sub.userId,
-                        }).catch(() => {});
-                    }
                 }
             }
 
@@ -189,17 +190,20 @@ const initCronJobs = () => {
 
             if (breached.count > 0) {
                 logger.warn(`⏰ CRON: ${breached.count} bookings marked as SLA BREACH`);
-                // Alert ops team via WhatsApp SOS_ALERT_OPS + DLT SMS SOS_ADMIN
+                // Alert ops team via WhatsApp SOS_ALERT_OPS + DLT SMS SOS_ADMIN fallback
                 const adminPhone = process.env.ADMIN_OPS_PHONE || '9480198108';
                 sendSOSAlertOps({
                     phone: adminPhone,
                     userName: `${breached.count} booking(s)`,
                     ayuxaId: 'SLA-BREACH',
-                }).catch(() => {});
-                sendSMS({
-                    template: 'SOS_ADMIN',
-                    mobile: adminPhone,
-                    variables: ['Ops', `${breached.count} SLA breach(es) detected`],
+                }).then(waSuccess => {
+                    if (!waSuccess) {
+                        sendSMS({
+                            template: 'SOS_ADMIN',
+                            mobile: adminPhone,
+                            variables: ['Ops', `${breached.count} SLA breach(es) detected`],
+                        }).catch(() => {});
+                    }
                 }).catch(() => {});
             }
         } catch (error) {

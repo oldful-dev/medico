@@ -493,10 +493,14 @@ const updateBookingStatus = async (req, res, next) => {
                 });
                 if (user?.phone) {
                     const { sendOrderCancelled } = require('../services/whatsapp');
-                    const { sendSMS } = require('../services/sms');
                     if (status === 'CANCELLED') {
-                        await sendOrderCancelled({ phone: user.phone, name: user.name, orderId: booking.bookingCode || booking.id, userId: booking.userId });
-                        if (user.smsEnabled !== false) {
+                        const waSuccess = await sendOrderCancelled({ phone: user.phone, name: user.name, orderId: booking.bookingCode || booking.id, userId: booking.userId })
+                            .catch(err => {
+                                logger.warn('Order Cancelled WA failed (non-fatal):', err.message);
+                                return false;
+                            });
+                        if (!waSuccess && user.smsEnabled !== false) {
+                            const { sendSMS } = require('../services/sms');
                             await sendSMS({ template: 'ORDER_CANCELLED_USER', mobile: user.phone, variables: [user.name, booking.bookingCode || booking.id], userId: booking.userId });
                         }
                     }
@@ -509,23 +513,29 @@ const updateBookingStatus = async (req, res, next) => {
             // Notify assigned caregiver of shift cancellation — non-fatal
             if (status === 'CANCELLED' && booking.caregiver?.phone) {
                 try {
-                    const { sendSMS } = require('../services/sms');
                     const { sendShiftCancelledWA } = require('../services/whatsapp');
                     const scheduledDate = booking.scheduledDate
                         ? new Date(booking.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
                         : 'TBD';
-                    await sendSMS({
-                        template: 'SHIFT_CANCELLED_PARTNER',
-                        mobile: booking.caregiver.phone,
-                        variables: [booking.caregiver.name, booking.user?.name || 'Client', booking.bookingCode || booking.id, scheduledDate],
-                    });
-                    await sendShiftCancelledWA({
+                    const waSuccess = await sendShiftCancelledWA({
                         phone: booking.caregiver.phone,
                         empName: booking.caregiver.name,
                         clientName: booking.user?.name || 'Client',
                         clientId: booking.bookingCode || booking.id,
                         date: scheduledDate,
+                    }).catch(err => {
+                        logger.warn('Caregiver shift cancelled WA failed (non-fatal):', err.message);
+                        return false;
                     });
+
+                    if (!waSuccess) {
+                        const { sendSMS } = require('../services/sms');
+                        await sendSMS({
+                            template: 'SHIFT_CANCELLED_PARTNER',
+                            mobile: booking.caregiver.phone,
+                            variables: [booking.caregiver.name, booking.user?.name || 'Client', booking.bookingCode || booking.id, scheduledDate],
+                        });
+                    }
                 } catch (caregiverNotifErr) {
                     logger.warn(`updateBookingStatus: caregiver shift notification failed (non-fatal):`, caregiverNotifErr.message);
                 }
@@ -670,8 +680,12 @@ const cancelBooking = async (req, res, next) => {
                 select: { name: true, phone: true, smsEnabled: true, whatsappEnabled: true },
             });
             if (user) {
-                await sendOrderCancelled({ phone: user.phone, name: user.name, orderId: booking.bookingCode || req.params.id, userId: req.user.id });
-                if (user.smsEnabled !== false) {
+                const waSuccess = await sendOrderCancelled({ phone: user.phone, name: user.name, orderId: booking.bookingCode || req.params.id, userId: req.user.id })
+                    .catch(err => {
+                        logger.warn('Cancel Booking WA failed (non-fatal):', err.message);
+                        return false;
+                    });
+                if (!waSuccess && user.smsEnabled !== false) {
                     await sendSMS({ template: 'ORDER_CANCELLED_USER', mobile: user.phone, variables: [user.name, booking.bookingCode || req.params.id], userId: req.user.id });
                 }
             }
@@ -695,19 +709,26 @@ const cancelBooking = async (req, res, next) => {
                     const scheduledDate = booking.scheduledDate
                         ? new Date(booking.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
                         : 'TBD';
-                    await sendSMS({
-                        template: 'SHIFT_CANCELLED_PARTNER',
-                        mobile: caregiver.phone,
-                        variables: [caregiver.name, bookingUser?.name || 'Client', booking.bookingCode || req.params.id, scheduledDate],
-                    });
                     const { sendShiftCancelledWA } = require('../services/whatsapp');
-                    await sendShiftCancelledWA({
+                    const waSuccess = await sendShiftCancelledWA({
                         phone: caregiver.phone,
                         empName: caregiver.name,
                         clientName: bookingUser?.name || 'Client',
                         clientId: booking.bookingCode || req.params.id,
                         date: scheduledDate,
+                    }).catch(err => {
+                        logger.warn('Caregiver cancel shift WA failed (non-fatal):', err.message);
+                        return false;
                     });
+
+                    if (!waSuccess) {
+                        const { sendSMS } = require('../services/sms');
+                        await sendSMS({
+                            template: 'SHIFT_CANCELLED_PARTNER',
+                            mobile: caregiver.phone,
+                            variables: [caregiver.name, bookingUser?.name || 'Client', booking.bookingCode || req.params.id, scheduledDate],
+                        });
+                    }
                 }
             } catch (caregiverNotifErr) {
                 logger.warn('cancelBooking: caregiver shift notification failed (non-fatal):', caregiverNotifErr.message);

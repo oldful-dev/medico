@@ -58,6 +58,7 @@ export default function RootLayout() {
                   {/* Feature Flows */}
                   <Stack.Screen name="doctor-visit" options={{ headerShown: false }} />
                   <Stack.Screen name="nurse-care" options={{ headerShown: false }} />
+                  <Stack.Screen name="caregiver-support" options={{ headerShown: false }} />
                   <Stack.Screen name="transportation" options={{ headerShown: false }} />
                   <Stack.Screen name="insurance" options={{ headerShown: false }} />
                   <Stack.Screen name="payment" options={{ headerShown: false }} />

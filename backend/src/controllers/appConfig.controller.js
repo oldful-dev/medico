@@ -44,7 +44,7 @@ const DEFAULT_CONFIG = {
                     items: [
                         { id: 'doctor',    label: '{"en":"ayuxacare\\nDoctor","hi":"ayuxacare\\nडॉक्टर","bn":"ayuxacare\\nডাক্তার","kn":"ayuxacare\\nವೈದ್ಯ","ml":"ayuxacare\\nഡോക്ടർ","mr":"ayuxacare\\nडॉक्टर","ta":"ayuxacare\\nமருத்துவர்","te":"ayuxacare\\nడాక్టర్"}',    icon_key: 'quick_doctor',    image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/98e939543c86f26f5f26210bb160eb927b5ff057.png', route: '/doctor-visit',  visible: true, sort_order: 1 },
                         { id: 'nursing',   label: '{"en":"Nursing\\nCare","hi":"नर्सिंग\\nकेयर","bn":"নার্সিং\\nকেয়ার","kn":"ನರ್ಸಿಂಗ್\\nಕೇರ್","ml":"നഴ്‌സിംഗ്\\nകെയർ","mr":"नर्सिंग\\nकेअर","ta":"நர்சிங்\\nகவனிப்பு","te":"నర్సింగ్\\nకేర్"}',   icon_key: 'quick_nursing',   image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/21e5a8a8650cf8eda36be3744c70099580173129.png', route: '/nurse-care',    visible: true, sort_order: 2 },
-                        { id: 'caregiver', label: '{"en":"Caregiver\\nSupport","hi":"देखभालकर्ता\\nसहायता","bn":"কেয়ারগিভার\\nসাপোর্ট","kn":"ಕೇರ್‌ಗಿವರ್\\nಸಪೋರ್ಟ್","ml":"കെയർഗിവർ\\nപിന്തുണ","mr":"काळजीवाहू\\nसहाय्य","ta":"கவனிப்பாளர்\\nஆதரவு","te":"కేర్‌గివర్\\nసపోర్ట్"}', icon_key: 'quick_caregiver', image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png', route: '/nurse-care',    visible: true, sort_order: 3 },
+                        { id: 'caregiver', label: '{"en":"Caregiver\\nSupport","hi":"देखभालकर्ता\\nसहायता","bn":"কেয়ারগিভার\\nসাপোর্ট","kn":"ಕೇರ್‌ಗಿವರ್\\nಸಪೋರ್ಟ್","ml":"കെയർगിവർ\\nപിന്തുണ","mr":"काळजीवाहू\\nसहाय्य","ta":"கவனிப்பாளர்\\nஆதரவு","te":"కేర్‌గివర్\\nసపోర్ట్"}', icon_key: 'quick_caregiver', image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png', route: '/caregiver-support', visible: true, sort_order: 3 },
                         { id: 'emergency', label: '{"en":"Emergency\\nAssist","hi":"आपातकालीन\\nसहायता","bn":"জরুরি\\nসহায়তা","kn":"ತುರ್ತು\\nಸಹಾಯ","ml":"അടിയന്തര\\nസഹായം","mr":"आपत्कालीन\\nमदत","ta":"அவசர\\nஉதவி","te":"అత్యవసర\\nసహాయం"}',  icon_key: 'quick_emergency', image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/sos-emergency', visible: true, sort_order: 4 },
                     ],
                 },
@@ -58,13 +58,13 @@ const DEFAULT_CONFIG = {
                     config: { max_items: 6, columns: 3 },
                     items: [
                         { id: 'doctor_visit',   label: '{"en":"Doctor\\nVisit","hi":"डॉक्टर\\nविजिट","bn":"ডাক্তার\\nভিজিট","kn":"ವೈದ್ಯ\\nಭೇಟಿ","ml":"ഡോക്ടർ\\nസന്ദർശനം","mr":"डॉक्टर\\nभेट","ta":"மருத்துவர்\\nவிஜிட்","te":"డాక్టర్\\nవిజిట్"}',   icon_key: 'svc_doctor_visit',   image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/32a4661f97e2fa2dd2c85c403a7c530b7214e7f7.png', route: '/doctor-visit',     visible: true, sort_order: 1 },
-                        { id: 'homing_nursing', label: '{"en":"Homing\\nNursing","hi":"होम\\nनर्सिंग","bn":"হোম\\nনার্সিং","kn":"ಹೋಮ್\\nನರ್ಸಿಂಗ್","ml":"ഹോം\\nനഴ്‌സിംഗ്","mr":"होम\\nनर्सिंग","ta":"ஹோம்\\nநர்சிங்","te":"హోం\\nనర్సింగ్"}', icon_key: 'svc_homing_nursing', image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/afd8e2afab202de7ddce09bf8add378c861b9347.png', route: '/nurse-care',        visible: true, sort_order: 2 },
-                        { id: 'blood_test',     label: '{"en":"Home\\nBlood Test","hi":"घर पर\\nब्लड टेस्ट","bn":"বাড়িতে\\nব্লাড টেস্ট","kn":"ಮನೆ\\nರಕ್ತ ಪರೀಕ್ಷೆ","ml":"ഹോം\\nരക്തപരിശോധന","mr":"घरी\\nरक्त तपासणी","ta":"வீட்டு\\nரத்த பரிசோதனை","te":"హోం\\nబ్లడ్ టెస్ట్"}',     icon_key: 'svc_blood_test',     image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/f74321d18a86a9e77628058ed35a50d284752eb2.png', route: '/blood-test',        visible: true, sort_order: 3 },
+                        { id: 'homing_nursing', label: '{"en":"Homing\\nNursing","hi":"होम\\nनर्सिंग","bn":"হোম\\nনার্সিং","kn":"ಹೋಮ್\\nನರ್ಸಿಂಗ್","ml":"ഹോം\\nനഴ്‌സിംഗ്","mr":"होम\\nनर्सिंग","ta":"ஹோம்\\nநர்சிங்","te":"హோం\\nనర్ಸಿಂಗ್"}', icon_key: 'svc_homing_nursing', image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/afd8e2afab202de7ddce09bf8add378c861b9347.png', route: '/nurse-care',        visible: true, sort_order: 2 },
+                        { id: 'blood_test',     label: '{"en":"Home\\nBlood Test","hi":"घर पर\\nब्लड टेस्ट","bn":"বাড়িতে\\nব্লাড টেস্ট","kn":"ಮನೆ\\nರಕ್ತ ಪರೀಕ್ಷೆ","ml":"ഹോം\\nരക്തപരിശോധന","mr":"घरी\\nरक्त तपासणी","ta":"வீட்டு\\nரத்த பரிசோதனை","te":"హோం\\nబ్లడ్ టెస్ట్"}',     icon_key: 'svc_blood_test',     image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/f74321d18a86a9e77628058ed35a50d284752eb2.png', route: '/blood-test',        visible: true, sort_order: 3 },
                         { id: 'fitness',        label: '{"en":"Fitness &\\nTherapy","hi":"फिटनेस &\\nथेरेपी","bn":"ফিটনেস &\\nথেরাপি","kn":"ಫಿಟ್‌ನೆಸ್ &\\nಥೆರಪಿ","ml":"ഫിറ്റ്‌നസ് &\\nതെറാപ്പി","mr":"फिटनेस &\\nथेरपी","ta":"ஃபிட்னஸ் &\\nதெரபி","te":"ఫిట్‌నెస్ &\\nథెరపీ"}',        icon_key: 'svc_fitness',        image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/54f5c849cf75e776592dec8236f221da3694ca53.png', route: '/physio-fitness',    visible: true, sort_order: 4 },
                         { id: 'equipment',      label: '{"en":"Rent Medical\\nEquipment","hi":"मेडिकल\\nउपकरण किराए पर","bn":"মেডিকেল\\nসরঞ্জাম ভাড়া","kn":"ವೈದ್ಯಕೀಯ\\nಉಪಕರಣ ಬಾಡಿಗೆ","ml":"മെഡിക്കൽ\\nഉപകരണ വാടക","mr":"वैद्यकीय\\nसाधने भाड्याने","ta":"மருத்துவ\\nஆட்டோவை வாடகை","te":"మెడికల్\\nపరికరాల అద్దె"}',      icon_key: 'svc_equipment',      image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/d3906f517597b2ef10369d92c422b16bf20e879e.png', route: '/medical-equipment', visible: true, sort_order: 5 },
                         { id: 'medicines',      label: '{"en":"Order\\nMedicines","hi":"दवाइयां\\nमंगाएं","bn":"ওষুধ\\nঅর্ডার করুন","kn":"ಔಷಧಗಳ\\nಆರ್ಡರ್","ml":"മരുന്നുകൾ\\nഓർഡർ ചെയ്യൂ","mr":"औषधे\\nमागवा","ta":"மருந்துகள்\\nஆர்டர்","te":"మందులు\\nఆర్డర్ చేయండి"}',      icon_key: 'svc_medicines',      image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/79c15725f6f1a73658b615886f1289634cef9408.png', route: '/order-medicines',   visible: true, sort_order: 6 },
                         { id: 'meal',           label: '{"en":"Meal\\nService","hi":"भोजन\\nसेवा","bn":"খাবার\\nসেবা","kn":"ಊಟ\\nಸೇವೆ","ml":"ഭക്ഷണ\\nസേവനം","mr":"जेवण\\nसेवा","ta":"உணவு\\nசேவை","te":"భోజన\\nసేవ"}',           icon_key: 'svc_meal',           image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/8f136eff1200bb21c080348f6cdb7ad1c2831bdf.png', route: '/meal-service',      visible: true, sort_order: 7 },
-                        { id: 'physio',         label: '{"en":"Physio\\nFitness","hi":"फिजियो\\nफिटनेस","bn":"ফিজিও\\nফিটনেস","kn":"ಫಿಜಿಯೋ\\nಫಿಟ್‌ನೆಸ್","ml":"ഫിസിയോ\\nഫിറ്റ്‌നസ്","mr":"फिजिओ\\nफिटनेस","ta":"ஃபிசியோ\\nஃபிட்னஸ்","te":"ఫిజియో\\nఫిట్‌నెస్"}',         icon_key: 'svc_physio',         image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/4ea419052803769fad63ff4292316ce7f8f77dbc.png', route: '/physio-fitness',    visible: true, sort_order: 8 },
+                        { id: 'physio',         label: '{"en":"Physio\\nFitness","hi":"फिजियो\\nफिटनेस","bn":"ফিজিও\\nফিটনেস","kn":"ಫಿಜಿಯೋ\\nಫಿಟ್‌ನೆಸ್","ml":"ഫിസിയോ\\nഫിറ്റ്‌നസ്","mr":"फिजिओ\\nफिटनेस","ta":"ஃபிசியோ\\nஃபிட்னஸ்","te":"ఫిజియో\\nఫిట్‌నెస్"}',         icon_key: 'svc_physio',         image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/4ea419052803769fad63ff4292316ce7f8f77dbc.png', route: '/physio',    visible: true, sort_order: 8 },
                         { id: 'hospital_trip',  label: '{"en":"Hospital\\nTrip","hi":"अस्पताल\\nयात्रा","bn":"হাসপাতাল\\nট্রিপ","kn":"ಆಸ್ಪತ್ರೆ\\nಪ್ರಯಾಣ","ml":"ആശുപത്രി\\nട്രിപ്പ്","mr":"रुग्णालय\\nप्रवास","ta":"மருத்துவமனை\\nட்ரிப்","te":"ఆసుపత్రి\\nట్రిప్"}',  icon_key: 'svc_hospital_trip',  image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/hospital-trip',     visible: true, sort_order: 9 },
                         { id: 'insurance',      label: '{"en":"Insurance\\n& Claims","hi":"बीमा\\n& दावे","bn":"বীমা\\n& দাবি","kn":"ವಿಮೆ\\n& ಕ್ಲೇಮ್","ml":"ഇൻഷുറൻസ്\\n& ക്ലെയിം","mr":"विमा\\n& दावे","ta":"காப்பீடு\\n& கோரிக்கை","te":"ఇన్సూరెన్స్\\n& క్లెయిమ్స్"}',      icon_key: 'svc_insurance',      image_url: 'https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/e453f94c7e87531b0da0b6712f8dc4b3bc7084a9.png', route: '/insurance',         visible: true, sort_order: 10 },
                     ],
@@ -550,10 +550,10 @@ const DEFAULT_HOME_CONFIG = {
           sort_order: 3
         },
         {
-          id: "physio_quick",
-          label: "Physio",
-          icon: "4ea419052803769fad63ff4292316ce7f8f77dbc.png",
-          route: "/physio-fitness",
+          id: "caregiver_quick",
+          label: "Caregiver",
+          icon: "2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png",
+          route: "/caregiver-support",
           enabled: true,
           sort_order: 4
         }
@@ -620,7 +620,7 @@ const DEFAULT_HOME_CONFIG = {
           id: "caregiver",
           label: "Caregiver\nSupport",
           icon: "2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png",
-          route: "/nurse-care",
+          route: "/caregiver-support",
           enabled: true,
           sort_order: 7
         },

@@ -25,6 +25,17 @@ const sendEmail = emailService.sendEmail;
 const wa = require('../services/whatsapp');
 const fast2smsUtils = require('./fast2sms');
 
+const WABA_TO_SMS_MAP = {
+    BOOKING_CONFIRMED: 'ORDER_CONFIRMED',
+    PAYMENT_RECEIVED: 'PAYMENT_RECEIVED',
+    ORDER_CANCELLED: 'ORDER_CANCELLED_USER',
+    WELCOME_USER: 'WELCOME_USER',
+    PLAN_EXPIRY_REMINDER: 'PLAN_EXPIRED_USER',
+    SHIFT_CANCELLED: 'SHIFT_CANCELLED_PARTNER',
+    SOS_ALERT_OPS: 'SOS_ADMIN'
+};
+
+
 /**
  * Send a WhatsApp template message via Fast2SMS WABA.
  */
@@ -74,7 +85,9 @@ const sendWhatsApp = async ({ phoneNumber, templateName, parameters = [], userId
             // Fallback to Fast2SMS SMS if WABA fails (or is disabled) and SMS is enabled
             if (!userPrefs || userPrefs.smsEnabled) {
                 logger.warn(`[Notifications] WhatsApp failed or disabled for ${templateName} — attempting SMS`);
-                const fallbackTemplateId = process.env[`FAST2SMS_${templateName.toUpperCase()}_TEMPLATE_ID`];
+                const smsTemplateKey = WABA_TO_SMS_MAP[templateName] || templateName;
+                const { SMS_TEMPLATES } = require('../services/sms');
+                const fallbackTemplateId = SMS_TEMPLATES[smsTemplateKey]?.templateId || process.env[`FAST2SMS_${smsTemplateKey.toUpperCase()}_TEMPLATE_ID`];
                 if (fallbackTemplateId) {
                     const smsSent = await fast2smsUtils.sendDLTSMS(phoneNumber, fallbackTemplateId, variables);
                     if (smsSent) {
@@ -122,21 +135,28 @@ const sendWelcomeNotifications = async (user) => {
         userId: user.id,
     });
 
-    // Welcome SMS — DLT template WELCOME_USER (215420, sender AYUXA) — Var1=name
-    const { sendSMS } = require('../services/sms');
-    await sendSMS({ template: 'WELCOME_USER', mobile: user.phone, variables: [user.name], userId: user.id })
-        .catch(err => logger.warn('Welcome SMS failed (non-fatal):', err.message));
-
     // Welcome WhatsApp — WELCOME_USER (AYUXA_RELEASE, msgId 20828) — no body vars, doc required
     // Only send if we have a welcome document URL configured
     const welcomeDocUrl = process.env.WELCOME_DOC_URL;
+    let waSuccess = false;
     if (welcomeDocUrl) {
-        await wa.sendWelcome({
+        waSuccess = await wa.sendWelcome({
             phone: user.phone,
             userId: user.id,
             mediaUrl: welcomeDocUrl,
             docFilename: 'Ayuxa_Welcome.pdf',
-        }).catch(err => logger.warn('Welcome WhatsApp failed (non-fatal):', err.message));
+        }).catch(err => {
+            logger.warn('Welcome WhatsApp failed (non-fatal):', err.message);
+            return false;
+        });
+    }
+
+    // Welcome SMS — DLT template WELCOME_USER (215420, sender AYUXA) — Var1=name
+    // Only send SMS if WhatsApp welcome didn't go through (or wasn't configured)
+    if (!waSuccess) {
+        const { sendSMS } = require('../services/sms');
+        await sendSMS({ template: 'WELCOME_USER', mobile: user.phone, variables: [user.name], userId: user.id })
+            .catch(err => logger.warn('Welcome SMS failed (non-fatal):', err.message));
     }
 };
 
@@ -191,7 +211,7 @@ const sendBookingConfirmation = async ({ user, bookingCode, booking = null }) =>
     }
 
     // Primary: WhatsApp — Template: BOOKING_CONFIRMED — Var1=name, Var2=order_id
-    await sendWhatsApp({
+    const waSuccess = await sendWhatsApp({
         phoneNumber: fullUser.phone,
         templateName: 'BOOKING_CONFIRMED',
         parameters: [
@@ -202,7 +222,7 @@ const sendBookingConfirmation = async ({ user, bookingCode, booking = null }) =>
     });
 
     // DLT SMS — ORDER_CONFIRMED (215239) — Var1=name, Var2=orderId, Var3=support
-    if (fullUser.smsEnabled !== false) {
+    if (!waSuccess && fullUser.smsEnabled !== false) {
         const { sendSMS } = require('../services/sms');
         await sendSMS({
             template: 'ORDER_CONFIRMED',
@@ -239,7 +259,7 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
     });
 
     // WhatsApp — Template: PLAN_EXPIRY_REMINDER — Var1=name only
-    await sendWhatsApp({
+    const waSuccess = await sendWhatsApp({
         phoneNumber: fullUser.phone,
         templateName: 'PLAN_EXPIRY_REMINDER',
         parameters: [fullUser.name],
@@ -247,13 +267,15 @@ const sendExpiryReminder = async ({ user, plan, daysLeft, expiryDate }) => {
     });
 
     // DLT SMS — PLAN_EXPIRED_USER (215595) — Var1=name, Var2=support
-    const { sendSMS } = require('../services/sms');
-    await sendSMS({
-        template: 'PLAN_EXPIRED_USER',
-        mobile: fullUser.phone,
-        variables: [fullUser.name, process.env.SUPPORT_PHONE || '9480198108'],
-        userId: fullUser.id,
-    }).catch(err => logger.warn('PLAN_EXPIRED_USER SMS failed (non-fatal):', err.message));
+    if (!waSuccess) {
+        const { sendSMS } = require('../services/sms');
+        await sendSMS({
+            template: 'PLAN_EXPIRED_USER',
+            mobile: fullUser.phone,
+            variables: [fullUser.name, process.env.SUPPORT_PHONE || '9480198108'],
+            userId: fullUser.id,
+        }).catch(err => logger.warn('PLAN_EXPIRED_USER SMS failed (non-fatal):', err.message));
+    }
 };
 
 // ─── OTP (Fast2SMS SMS — unchanged) ───────────────────────

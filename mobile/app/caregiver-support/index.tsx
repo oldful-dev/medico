@@ -23,7 +23,7 @@ const familyIcon = require('@/assets/images/cb86876504871abc5e6db19e5612175dae2b
 const nurseIcon = require('@/assets/images/ad2bd697d39bc0738ca19a09e58ce4677761ca47.png');
 const helpIcon = require('@/assets/images/idea_bulb_3d.png');
 
-export default function BookNursingCareScreen() {
+export default function BookCaregiverSupportScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -41,7 +41,7 @@ export default function BookNursingCareScreen() {
     const [newMemberName, setNewMemberName] = useState('');
     const [newMemberRelation, setNewMemberRelation] = useState('Parent');
 
-    const [selectedStaff, setSelectedStaff] = useState('Qualified Nurse');
+    const [selectedStaff, setSelectedStaff] = useState('Bedside Attendant');
     const [selectedDuration, setSelectedDuration] = useState('12 Hours (Night Shift)');
     const [selectedCondition, setSelectedCondition] = useState('');
     const [selectedGender, setSelectedGender] = useState('');
@@ -254,13 +254,13 @@ export default function BookNursingCareScreen() {
                 params: {
                     bookingPayload,
                     amount: String(servicePrice),
-                    label: serviceName,
+                    label: 'Caregiver Support',
                     serviceSlug: 'home-nurse',
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
         } catch (error) {
-            console.error('Nurse care error:', error);
+            console.error('Caregiver support error:', error);
             Alert.alert(t('common.error'), t('nurse_care.alert_upload_failed'));
         } finally {
             setIsBooking(false);
@@ -288,7 +288,7 @@ export default function BookNursingCareScreen() {
                     >
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <Text style={dynamicStyles.headerTitle}>{t('nurse_care.header')}</Text>
+                    <Text style={dynamicStyles.headerTitle}>Caregiver Support</Text>
                 </View>
 
                 {/* ─── Main Content Card (Cream Background with Top Radius) ─── */}
@@ -303,8 +303,8 @@ export default function BookNursingCareScreen() {
                         extraScrollHeight={20}
                     >
                         {/* Hero / Titles */}
-                        <Text style={dynamicStyles.mainTitle}>{t('nurse_care.header')}</Text>
-                        <Text style={dynamicStyles.subTitle}>{t('nurse_care.description')}</Text>
+                        <Text style={dynamicStyles.mainTitle}>Caregiver Support</Text>
+                        <Text style={dynamicStyles.subTitle}>Professional bedside attendant and daily care assistance at home.</Text>
                         <View style={dynamicStyles.divider} />
 
                         {/* ─── Who is it for? ─── */}
