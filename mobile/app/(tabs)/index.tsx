@@ -90,6 +90,8 @@ const resolveRoute = (route?: string, id?: string) => {
       '/doctor-home-visit',
       '/hospital-trip',
       '/nurse-care',
+      '/caregiver-support',
+      '/physio',
       '/insurance',
       '/blood-test',
       '/order-medicines',
@@ -450,7 +452,7 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGr
       slug: dbS.slug,
       label: dbS.headline || dbS.name,
       route: dbS.route || `/${dbS.slug}`,
-      iconAsset: ICON_MAPPING[dbS.slug] || anythingElseIcon,
+      iconAsset: (dbS.icon && !isEmoji(dbS.icon)) ? { uri: getAssetUrl(dbS.icon) } : (ICON_MAPPING[dbS.slug] || anythingElseIcon),
     };
   });
 

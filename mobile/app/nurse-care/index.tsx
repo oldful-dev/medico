@@ -17,6 +17,8 @@ import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { familyMemberService, FamilyMember } from '@/services/api/familyMemberService';
 import { useUser } from '@/context/UserContext';
 import { Spacing } from '@/constants/theme';
+import { userService } from '@/services/api/userService';
+import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 
 // ─── Figma Assets ───
 const familyIcon = require('@/assets/images/cb86876504871abc5e6db19e5612175dae2b0479.png');
@@ -49,9 +51,6 @@ export default function BookNursingCareScreen() {
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
     const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
     const [comments, setComments] = useState('');
-    const [addressType, setAddressType] = useState('Home');
-    const [customAddressType, setCustomAddressType] = useState('');
-    const [isFetchingLocation, setIsFetchingLocation] = useState(false);
 
     const fetchFamilyMembers = async () => {
         if (!profile?.id) return;
@@ -96,29 +95,6 @@ export default function BookNursingCareScreen() {
         } catch (error) {
             console.error('Add family member error:', error);
             Alert.alert('Error', 'Failed to add family member.');
-        }
-    };
-
-    const handleAutoFetchLocation = async () => {
-        setIsFetchingLocation(true);
-        setAddress('Fetching location...');
-        try {
-            const hasPermission = await locationService.requestPermission();
-            if (!hasPermission) {
-                Alert.alert('Permission Required', 'Location permission is required.');
-                setAddress('');
-                setIsFetchingLocation(false);
-                return;
-            }
-            const coords = await locationService.getCurrentLocation();
-            const fetchedAddress = await locationService.getAddressFromCoordinates(coords);
-            setAddress(fetchedAddress);
-        } catch (error) {
-            console.error('Location fetch error:', error);
-            Alert.alert('Error', 'Failed to fetch location. Please type manually.');
-            setAddress('');
-        } finally {
-            setIsFetchingLocation(false);
         }
     };
 
@@ -176,6 +152,64 @@ export default function BookNursingCareScreen() {
         isReady
     } = useServiceInitialization('home-nurse');
 
+    const [selectedAddress, setSelectedAddress] = React.useState<AddressData | null>(null);
+    const [addressInitialized, setAddressInitialized] = React.useState(false);
+
+    // Sync selectedAddress with initial fetched address on mount or when fetched
+    React.useEffect(() => {
+        if (address && address !== 'Fetching address...' && !selectedAddress) {
+            setSelectedAddress({
+                line1: address,
+                pincode: '',
+                addressType: 'Home'
+            });
+        }
+    }, [address]);
+
+    // Auto-fill profile address only on mount when GPS address is not available
+    React.useEffect(() => {
+        if (addressInitialized) return; // Only run once
+        const addressEmpty = !address || address === 'Fetching address...' || address === '';
+        if (addressEmpty && profile?.addresses?.length) {
+            const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
+            const parts = [defaultAddr.line1, defaultAddr.line2, defaultAddr.city, defaultAddr.state].filter(Boolean);
+            if (parts.length) {
+                setAddress(parts.join(', '));
+                setAddressInitialized(true);
+            }
+        }
+        if (!addressEmpty) {
+            setAddressInitialized(true);
+        }
+    }, [address]);
+
+    const handleAddressChange = (addr: AddressData) => {
+        setSelectedAddress(addr);
+        setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
+    };
+
+    // Silently upsert the address back to profile when user books
+    const syncAddressToProfile = async (addressText: string, landmarkText: string) => {
+        if (!profile?.id || !addressText.trim()) return;
+        try {
+            const existing = profile.addresses?.find((a: any) => a.isDefault) || profile.addresses?.[0];
+            const payload = {
+                line1: addressText.trim(),
+                landmark: landmarkText.trim() || undefined,
+                addressType: selectedAddress?.addressType || 'Home',
+                isDefault: true,
+                pincode: selectedAddress?.pincode || '',
+            };
+            if (existing) {
+                await userService.updateAddress(profile.id, existing.id, payload);
+            } else {
+                await userService.addAddress(profile.id, payload);
+            }
+        } catch (e) {
+            console.warn('Sync address to profile failed:', e);
+        }
+    };
+
     const [isBooking, setIsBooking] = useState(false);
 
     const handleBookService = async () => {
@@ -216,10 +250,13 @@ export default function BookNursingCareScreen() {
         else if (selectedDuration.includes('24')) shiftDuration = 'TWENTY_FOUR_HOUR';
 
         const selectedFamilyMember = familyMembers.find(m => m.id === selectedFamilyMemberId);
-        const resolvedAddressType = addressType === 'Other' ? customAddressType : addressType;
+        const resolvedAddressType = selectedAddress?.addressType || 'Home';
 
         try {
             setIsBooking(true);
+
+            // Sync address back to profile (non-blocking, non-fatal)
+            syncAddressToProfile(address, landmark);
 
             // Upload images first (safe before payment — no booking created yet)
             let uploadedImageUrls: string[] = [];
@@ -559,79 +596,17 @@ export default function BookNursingCareScreen() {
                             />
                         </View>
 
-                        {/* ─── Confirm Address ─── */}
-                        <View style={dynamicStyles.sectionContainer}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                                <Text style={[dynamicStyles.sectionTitle, { marginBottom: 0 }]}>{t('booking.confirm_address')}</Text>
-                                <TouchableOpacity
-                                    style={dynamicStyles.autoFetchBtn}
-                                    onPress={handleAutoFetchLocation}
-                                    disabled={isFetchingLocation}
-                                >
-                                    <Ionicons name="location" size={14} color="#02743F" />
-                                    <Text style={dynamicStyles.autoFetchText}>
-                                        {isFetchingLocation ? t('common.fetching') : t('booking.auto_fetch', 'Auto-fetch')}
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            <View style={dynamicStyles.addressBox}>
-                                <Ionicons name="location-outline" size={16} color={isDarkMode ? '#FFF' : '#2F2F2F'} style={dynamicStyles.addressIcon} />
-                                <TextInput
-                                    value={address}
-                                    onChangeText={setAddress}
-                                    placeholder={t('nurse_care.address_placeholder')}
-                                    placeholderTextColor={isDarkMode ? '#64748B' : '#888888'}
-                                    multiline
-                                    numberOfLines={2}
-                                    style={dynamicStyles.addressText}
-                                />
-                            </View>
-
-                            <TextInput
-                                placeholder={t('nurse_care.landmark_placeholder')}
-                                placeholderTextColor={isDarkMode ? '#64748B' : '#888888'}
-                                value={landmark}
-                                onChangeText={setLandmark}
-                                style={dynamicStyles.landmarkInput}
-                            />
-
-                            {/* Address Type selection */}
-                            <Text style={dynamicStyles.addressTypeLabel}>{t('booking.address_type', 'Address Type')}</Text>
-                            <View style={dynamicStyles.addressTypeRow}>
-                                {['Home', 'Office', 'Other'].map((type) => (
-                                    <TouchableOpacity
-                                        key={type}
-                                        style={[
-                                            dynamicStyles.addressTypeChip,
-                                            addressType === type && dynamicStyles.addressTypeChipActive,
-                                        ]}
-                                        onPress={() => setAddressType(type)}
-                                    >
-                                        <Text style={[
-                                            dynamicStyles.addressTypeChipText,
-                                            addressType === type && dynamicStyles.addressTypeChipTextActive
-                                        ]}>
-                                            {type}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            {addressType === 'Other' && (
-                                <TextInput
-                                    placeholder={t('booking.custom_address_type_placeholder', 'Specify address type (e.g. Clinic, Gym)...')}
-                                    placeholderTextColor={isDarkMode ? '#64748B' : '#888888'}
-                                    value={customAddressType}
-                                    onChangeText={customAddressType => setCustomAddressType(customAddressType)}
-                                    style={dynamicStyles.customAddressTypeInput}
-                                />
-                            )}
-
-                            <Text style={{ fontSize: 10, color: '#888', marginTop: 4, marginLeft: 2 }}>
-                                {locationDenied ? t('hospital_trip.gps_denied') : t('hospital_trip.auto_filled')}
-                            </Text>
-                        </View>
+                        {/* ─── Confirm Address Card ─── */}
+                        <AddressPickerSection
+                            selectedAddress={selectedAddress}
+                            onAddressChange={handleAddressChange}
+                            title={t('booking.confirm_address')}
+                            showPhoneField={false}
+                            showLandmarkField={true}
+                            landmark={landmark}
+                            onLandmarkChange={setLandmark}
+                            allowManualEntry={true}
+                        />
                     </KeyboardAwareScrollView>
         </KeyboardAvoidingView>
 

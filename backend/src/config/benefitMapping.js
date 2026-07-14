@@ -22,6 +22,7 @@ const serviceSlugMap = {
   "companion-call": "COMPANIONSHIP_CALL",
   "nurse-care": "NURSE_VISIT",
   "home-nurse": "NURSE_VISIT",
+  "caregiver-support": "NURSE_VISIT",
   "hospital-trip": "HOSPITAL_ACCOMPANIMENT",
   "bill-payment": "BILL_PAYMENT",
   "tech-helper": "TECH_SUPPORT",

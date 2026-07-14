@@ -14,6 +14,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { Fonts, Colors } from "@/constants/theme";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/services/api/apiClient";
+import { getAssetUrl } from "@/utils/getAssetUrl";
 
 // Home essentials icons
 const acRepairIcon = require("@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png");
@@ -37,6 +38,12 @@ const ICON_MAPPING: Record<string, any> = {
   "paper-legal": bankWorkIcon,
   "sanitisation": cleaningIcon,
   "tech-helper": acRepairIcon,
+};
+
+const isEmoji = (str?: string) => {
+  if (!str) return false;
+  const clean = str.trim();
+  return clean.length <= 4 && !clean.includes('.') && !clean.includes('/') && !clean.includes(':');
 };
 
 export default function AllHomeEssentialsScreen() {
@@ -102,7 +109,7 @@ export default function AllHomeEssentialsScreen() {
           .map((s: any) => ({
             ...s,
             route: resolveSlugToRoute(s.slug),
-            iconAsset: ICON_MAPPING[s.slug] || anythingElseIcon,
+            iconAsset: (s.icon && !isEmoji(s.icon)) ? { uri: getAssetUrl(s.icon) } : (ICON_MAPPING[s.slug] || anythingElseIcon),
           }));
         setServices(filtered);
       }

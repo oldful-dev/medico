@@ -60,6 +60,8 @@ const syncUIConfigToDbServices = async (config) => {
         for (const dbSvc of dbServices) {
             let foundInConfig = false;
             let configIsEnabled = false;
+            let configIcon = null;
+            let configLabel = null;
 
             for (const section of (config.sections || [])) {
                 for (const item of (section.services || [])) {
@@ -68,16 +70,38 @@ const syncUIConfigToDbServices = async (config) => {
                         if (item.enabled) {
                             configIsEnabled = true;
                         }
+                        if (item.icon) {
+                            configIcon = item.icon;
+                        }
+                        if (item.label) {
+                            configLabel = item.label;
+                        }
                     }
                 }
             }
 
             if (foundInConfig) {
+                const dataToUpdate = {};
+                let needsUpdate = false;
+
                 if (dbSvc.isEnabled !== configIsEnabled) {
+                    dataToUpdate.isEnabled = configIsEnabled;
+                    needsUpdate = true;
+                }
+                if (configIcon && dbSvc.icon !== configIcon) {
+                    dataToUpdate.icon = configIcon;
+                    needsUpdate = true;
+                }
+                if (configLabel && dbSvc.headline !== configLabel) {
+                    dataToUpdate.headline = configLabel;
+                    needsUpdate = true;
+                }
+
+                if (needsUpdate) {
                     updates.push(
                         prisma.service.update({
                             where: { id: dbSvc.id },
-                            data: { isEnabled: configIsEnabled }
+                            data: dataToUpdate
                         })
                     );
                 }
@@ -86,7 +110,7 @@ const syncUIConfigToDbServices = async (config) => {
 
         if (updates.length > 0) {
             await prisma.$transaction(updates);
-            console.log(`[sduiSync] Synced ${updates.length} services from UIConfig to DB`);
+            console.log(`[sduiSync] Synced ${updates.length} services (enabled/icon/label) from UIConfig to DB`);
         }
     } catch (err) {
         console.error('[sduiSync] Error syncing UIConfig to DB:', err);
