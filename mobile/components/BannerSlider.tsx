@@ -96,7 +96,7 @@ export function BannerSlider({ banners, colors }: BannerSliderProps) {
 
               {/* Dark Overlay Gradient */}
               <LinearGradient
-                colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.5)']}
+                colors={['rgba(0,0,0,0.25)', 'rgba(0,0,0,0.5)']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
                 style={s.gradientOverlay}
@@ -104,19 +104,21 @@ export function BannerSlider({ banners, colors }: BannerSliderProps) {
 
               {/* Text Content */}
               <View style={s.bannerContent}>
-                <Text style={s.bannerHeading} numberOfLines={2}>
-                  {item.heading}
-                </Text>
-                <Text style={s.bannerSubheading} numberOfLines={2}>
-                  {item.subheading}
-                </Text>
+                <View style={s.textGroup}>
+                  <Text style={s.bannerHeading} numberOfLines={2}>
+                    {item.heading}
+                  </Text>
+                  {item.subheading ? (
+                    <Text style={s.bannerSubheading} numberOfLines={2}>
+                      {item.subheading}
+                    </Text>
+                  ) : null}
+                </View>
 
-                {item.ctaRoute && (
-                  <View style={s.ctaContainer}>
-                    <Text style={s.ctaText}>{item.ctaText || 'Explore'}</Text>
-                    <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
-                  </View>
-                )}
+                <View style={s.ctaContainer}>
+                  <Text style={s.ctaText}>{item.ctaText || 'Explore'}</Text>
+                  <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
+                </View>
               </View>
             </TouchableOpacity>
           )}
@@ -175,7 +177,7 @@ export function BannerSlider({ banners, colors }: BannerSliderProps) {
                     {
                       transform: [{ scale }],
                       opacity,
-                      backgroundColor: colors.primary,
+                      backgroundColor: '#FFFFFF',
                     },
                   ]}
                 />
@@ -201,9 +203,13 @@ function makeStyles(c: ThemeColors, width: number, bannerHeight: number) {
     bannerCard: {
       width: width - Spacing.cardMargin * 2,
       height: bannerHeight,
-      borderRadius: Radius.xl,
+      borderRadius: 20,
       overflow: 'hidden',
-      ...Shadow.card,
+      shadowColor: 'transparent',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0,
+      shadowRadius: 0,
+      elevation: 0,
     },
     bannerImage: {
       width: '100%',
@@ -215,54 +221,54 @@ function makeStyles(c: ThemeColors, width: number, bannerHeight: number) {
     },
     bannerContent: {
       flex: 1,
-      padding: Spacing.lg,
+      padding: 20,
       justifyContent: 'flex-end',
+      gap: 12,
       ...StyleSheet.absoluteFillObject,
+    },
+    textGroup: {
+      gap: 4,
     },
     bannerHeading: {
       fontFamily: Fonts.bold,
-      fontSize: FontSize.heading2,
+      fontSize: 17,
+      lineHeight: 22,
       color: '#FFFFFF',
-      marginBottom: Spacing.sm,
-      lineHeight: 28,
     },
     bannerSubheading: {
-      fontFamily: Fonts.regular,
-      fontSize: FontSize.body,
+      fontFamily: Fonts.medium,
+      fontSize: 12,
+      lineHeight: 16,
       color: 'rgba(255,255,255,0.9)',
-      marginBottom: Spacing.md,
-      lineHeight: 20,
     },
     ctaContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: Spacing.sm,
-      backgroundColor: c.primary,
-      paddingHorizontal: Spacing.md,
-      paddingVertical: 10,
-      borderRadius: Radius.lg,
+      gap: 6,
+      backgroundColor: '#02743F', // Matching green CTA background
+      paddingHorizontal: 16,
+      paddingVertical: 7,
+      borderRadius: 30,
       alignSelf: 'flex-start',
     },
     ctaText: {
-      fontFamily: Fonts.semiBold,
-      fontSize: FontSize.bodySmall,
+      fontFamily: Fonts.bold,
+      fontSize: 11.5,
       color: '#FFFFFF',
     },
     paginationContainer: {
       position: 'absolute',
       bottom: 12,
-      left: 0,
-      right: 0,
+      right: 16,
       flexDirection: 'row',
-      justifyContent: 'center',
       alignItems: 'center',
-      gap: 6,
+      gap: 4,
     },
     dot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      marginHorizontal: 3,
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      marginHorizontal: 2,
     },
   });
 }

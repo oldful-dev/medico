@@ -33,6 +33,89 @@ export function cleanNotificationText(text: string | null | undefined): string {
     if (!text) return '';
     let clean = text.trim();
 
+    // ─── SDUI / WhatsApp Backend Template Parser ───
+    const templateMatch = clean.match(/(?:Template:\s*|\[)([A-Z0-9_]+)(?:\]|\b)/i);
+    if (templateMatch) {
+        const templateKey = templateMatch[1].toUpperCase();
+        const knownTemplates = [
+            'OTP_USER', 'BOOKING_CONFIRMED', 'PAYMENT_RECEIVED', 'ORDER_CANCELLED', 
+            'PRESCRIPTION_RECEIVED', 'LAB_REPORT_READY', 'PLAN_EXPIRY_REMINDER', 'SOS_ALERT_CLIENT',
+            'FAMILY_OTP', 'SOS_ALERT_FAMILY', 'PLAN_EXPIRED_FAMILY', 'PLAN_EXPIRY_FAMILY', 
+            'HEALTH_CHECK_FAMILY', 'PRESCRIPTION_UPLOADED_FAMILY', 'WELCOME_USER', 'WELLNESS_REMINDER', 
+            'BIRTHDAY_WISHES', 'EMP_OTP', 'SHIFT_ASSIGNED', 'SOS_DISPATCH', 'SHIFT_CANCELLED', 'SOS_ALERT_OPS'
+        ];
+        if (knownTemplates.includes(templateKey)) {
+            let params: string[] = [];
+            const bracketMatches = clean.match(/\[(.*?)\]/g);
+            if (bracketMatches) {
+                for (const m of bracketMatches) {
+                    const inner = m.slice(1, -1).trim();
+                    if (inner === templateKey) continue;
+                    const quotedMatches = inner.match(/(?:"([^"]*)"|'([^']*)')/g);
+                    if (quotedMatches) {
+                        params = quotedMatches.map(q => q.slice(1, -1));
+                    } else if (inner.includes(',')) {
+                        params = inner.split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
+                    } else if (inner.length > 0) {
+                        params = [inner.replace(/^["']|["']$/g, '')];
+                    }
+                    break;
+                }
+            }
+
+            if (params.length === 0) {
+                const quoteMatches = clean.match(/"([^"]*)"|'([^']*)'/g);
+                if (quoteMatches) {
+                    params = quoteMatches.map(q => q.slice(1, -1)).filter(p => p !== templateKey);
+                }
+            }
+
+            const getVar = (idx: number) => params[idx] || '';
+
+            switch (templateKey) {
+                case 'OTP_USER':
+                case 'FAMILY_OTP':
+                case 'EMP_OTP':
+                    return `Your verification code is ${getVar(0)}.`;
+                case 'BOOKING_CONFIRMED':
+                    return `Hi ${getVar(0) || 'there'}, your booking ${getVar(1) ? '(' + getVar(1) + ') ' : ''}has been confirmed successfully.`;
+                case 'PAYMENT_RECEIVED':
+                    return `Hi ${getVar(0) || 'there'}, payment of ₹${getVar(1) || '0'} has been received successfully.`;
+                case 'ORDER_CANCELLED':
+                    return `Hi ${getVar(0) || 'there'}, your booking ${getVar(1) ? '(' + getVar(1) + ') ' : ''}has been cancelled successfully.`;
+                case 'PRESCRIPTION_RECEIVED':
+                    return `Hi ${getVar(0) || 'there'}, your prescription has been received and is being processed.`;
+                case 'LAB_REPORT_READY':
+                    return `Hi ${getVar(0) || 'there'}, your lab report is ready and available in the app.`;
+                case 'PLAN_EXPIRY_REMINDER':
+                case 'PLAN_EXPIRY_FAMILY':
+                    return `Hi ${getVar(0) || 'there'}, your Ayuxa care plan is expiring soon. Please renew to continue uninterrupted services.`;
+                case 'SOS_ALERT_CLIENT':
+                case 'SOS_ALERT_FAMILY':
+                case 'SOS_DISPATCH':
+                    return `Emergency SOS Alert: Support is on the way.`;
+                case 'WELCOME_USER':
+                    return `Welcome to Ayuxa! We are glad to help you and your family.`;
+                case 'WELLNESS_REMINDER':
+                    return `Hi ${getVar(0) || 'there'}, this is your friendly wellness reminder. Hope you are having a healthy day!`;
+                case 'BIRTHDAY_WISHES':
+                    return `Happy Birthday from Ayuxa! Use coupon code ${getVar(0) || ''} for a special discount on your next service.`;
+                case 'SHIFT_ASSIGNED':
+                    return `Hi ${getVar(0) || 'there'}, shift assigned for client ${getVar(1)} on ${getVar(3)} at ${getVar(4)}.`;
+                case 'SHIFT_CANCELLED':
+                    return `Hi ${getVar(0) || 'there'}, shift for client ${getVar(1)} on ${getVar(3)} has been cancelled.`;
+                case 'PLAN_EXPIRED_FAMILY':
+                    return `Hi ${getVar(0) || 'there'}, care plan for ${getVar(1)} has expired.`;
+                case 'HEALTH_CHECK_FAMILY':
+                    return `Weekly health update for ${getVar(0) || 'your family member'} is ready.`;
+                case 'PRESCRIPTION_UPLOADED_FAMILY':
+                    return `Hi ${getVar(0) || 'there'}, a prescription has been uploaded for your family member.`;
+                default:
+                    break;
+            }
+        }
+    }
+
     // 1. Check if it is a JSON string and try to extract the main message
     if (clean.startsWith('{') || clean.startsWith('[')) {
         try {

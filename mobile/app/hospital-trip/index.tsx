@@ -49,7 +49,7 @@ export default function HospitalTripScreen() {
   const { isDarkMode } = useTheme();
   const colors = useThemeColors();
 
-  const { profile } = useUser();
+  const { profile, refreshData } = useUser();
   const [selectedSpecialist, setSelectedSpecialist] = useState<string | null>(
     null,
   );
@@ -140,6 +140,7 @@ export default function HospitalTripScreen() {
       } else {
         await userService.addAddress(profile.id, payload);
       }
+      await refreshData(true);
     } catch {
       // non-fatal — booking still proceeds
     }

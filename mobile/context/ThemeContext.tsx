@@ -4,22 +4,31 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 interface ThemeContextType {
     isDarkMode: boolean;
     toggleDarkMode: (value: boolean) => Promise<void>;
+    isLargeFont: boolean;
+    fontScale: number; // 1.0 or 1.25
+    toggleFontScale: () => Promise<void>;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const DARK_MODE_KEY = '@ayuxacare_dark_mode';
+const FONT_SCALE_KEY = '@ayuxacare_font_scale';
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
     const [isDarkMode, setIsDarkMode] = useState(false);
+    const [isLargeFont, setIsLargeFont] = useState(false);
 
     useEffect(() => {
         (async () => {
             try {
-                const saved = await AsyncStorage.getItem(DARK_MODE_KEY);
-                setIsDarkMode(saved === 'true');
+                const [savedTheme, savedFont] = await Promise.all([
+                    AsyncStorage.getItem(DARK_MODE_KEY),
+                    AsyncStorage.getItem(FONT_SCALE_KEY),
+                ]);
+                setIsDarkMode(savedTheme === 'true');
+                setIsLargeFont(savedFont === 'true');
             } catch {
-                // Default to light mode on error
+                // Default settings on error
             }
         })();
     }, []);
@@ -33,8 +42,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const toggleFontScale = async () => {
+        const next = !isLargeFont;
+        setIsLargeFont(next);
+        try {
+            await AsyncStorage.setItem(FONT_SCALE_KEY, next ? 'true' : 'false');
+        } catch {
+            // Silently fail
+        }
+    };
+
+    const fontScale = isLargeFont ? 1.25 : 1.0;
+
     return (
-        <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode }}>
+        <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode, isLargeFont, fontScale, toggleFontScale }}>
             {children}
         </ThemeContext.Provider>
     );

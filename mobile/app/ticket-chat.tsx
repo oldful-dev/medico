@@ -224,11 +224,11 @@ export default function TicketChatScreen() {
 
                 {/* Input bar */}
                 {isResolved ? (
-                    <View style={[styles.inputBar, { justifyContent: 'center', paddingBottom: (keyboardHeight === 0 ? (insets.bottom || Spacing.md) : Spacing.sm) }]}>
+                    <View style={[styles.inputBar, { justifyContent: 'center', paddingBottom: (keyboardHeight === 0 ? Math.max(insets.bottom, 24) : Spacing.sm) }]}>
                         <Text style={styles.closedText}>{t('ticket_chat.closed_ticket', { status: ticket?.status })}</Text>
                     </View>
                 ) : (
-                    <View style={[styles.inputBar, { paddingBottom: (keyboardHeight === 0 ? (insets.bottom || Spacing.md) : Spacing.sm) }]}>
+                    <View style={[styles.inputBar, { paddingBottom: (keyboardHeight === 0 ? Math.max(insets.bottom, 24) : Spacing.sm) }]}>
                         <TextInput
                             style={styles.textInput}
                             placeholder={t('ticket_chat.type_placeholder')}
@@ -285,7 +285,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     descText: { fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textDark, lineHeight: 22 },
     descMeta: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: colors.textMuted, marginTop: Spacing.sm, textTransform: 'capitalize' },
 
-    messagesList: { paddingHorizontal: Spacing.md, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
+    messagesList: { paddingHorizontal: Spacing.md, paddingTop: Spacing.md, paddingBottom: Spacing.xl * 2 },
 
     messageBubble: {
         borderRadius: Radius.md, padding: Spacing.md,

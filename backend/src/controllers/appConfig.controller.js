@@ -507,6 +507,10 @@ const getDefaultConfig = (req, res) => {
 
 const DEFAULT_HOME_CONFIG = {
   version: "1.0.0",
+  greeting_banner: {
+    enabled: true,
+    subtitle: "We see you. We hear you. We care.",
+  },
   banners: [
     {
       id: "banner_greeting",

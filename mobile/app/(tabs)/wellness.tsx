@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
     },
     listContent: {
         paddingHorizontal: Spacing.md,
-        paddingBottom: 100,
+        paddingBottom: 150,
         paddingTop: Spacing.sm,
     },
     row: {

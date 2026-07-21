@@ -79,7 +79,7 @@ export default function DoctorVisitScreen() {
 
     // ─── Global State ───
     const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, isLoading: isLoadingInit } = useServiceInitialization('doctor-home-visit');
-    const { profile } = useUser();
+    const { profile, refreshData } = useUser();
 
     // ─── State ───
     const [selectedProblems, setSelectedProblems] = React.useState<string[]>([]);
@@ -317,6 +317,7 @@ export default function DoctorVisitScreen() {
             } else {
                 await userService.addAddress(profile.id, payload);
             }
+            await refreshData(true);
         } catch {
             // non-fatal — booking still proceeds
         }

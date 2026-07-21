@@ -154,9 +154,13 @@ export default function ManageAddressesScreen() {
         setDetectedCoords({ lat: location.latitude, lng: location.longitude });
         setShowLocationPicker(false);
 
-        // Auto-fill form with picked location and extract components
+        // Set form states and open form
+        setEditingId(null);
+        setNewLabel('Home');
         setNewLine1(location.description);
         setNewLine2('');
+        setNewLandmark('');
+        setShowAddForm(true);
 
         const components = await parseAddressComponents(fullAddress, {
             lat: location.latitude,

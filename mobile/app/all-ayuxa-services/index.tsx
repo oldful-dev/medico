@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -49,7 +49,8 @@ export default function AllAyuxaServicesScreen() {
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     const { t } = useTranslation();
-    const styles = makeStyles(isDarkMode, colors, Fonts);
+    const insets = useSafeAreaInsets();
+    const styles = makeStyles(isDarkMode, colors, Fonts, insets);
     const { services } = useUser();
 
     // Screen padding corresponds to marginHorizontal of the card mapping on Home Screen
@@ -141,7 +142,7 @@ export default function AllAyuxaServicesScreen() {
     );
 }
 
-const makeStyles = (isDarkMode: boolean, colors: ThemeColors, fonts: typeof Fonts) => StyleSheet.create({
+const makeStyles = (isDarkMode: boolean, colors: ThemeColors, fonts: typeof Fonts, insets: any) => StyleSheet.create({
     safeArea: {
         flex: 1,
         backgroundColor: isDarkMode ? colors.bgScreen : '#FFFFE3',
@@ -165,7 +166,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors, fonts: typeof Font
     },
     scrollContent: {
         paddingHorizontal: 20,
-        paddingBottom: 40,
+        paddingBottom: 40 + insets.bottom,
         paddingTop: 10,
     },
     gridContainer: {

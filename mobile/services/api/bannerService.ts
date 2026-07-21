@@ -29,20 +29,30 @@ export interface BannerResponse {
 }
 
 class BannerService {
+  private lastFetchTime = 0;
+  private cachedBanners: Banner[] = [];
+  private THROTTLE_MS = 15000;
+
   /**
    * Get all active banners for home screen
    * @returns Array of banners ordered by sort position
    */
-  async getHomeBanners(): Promise<Banner[]> {
+  async getHomeBanners(force = false): Promise<Banner[]> {
+    const now = Date.now();
+    if (!force && this.cachedBanners.length > 0 && (now - this.lastFetchTime < this.THROTTLE_MS)) {
+      return this.cachedBanners;
+    }
     try {
       const response = await apiClient.get<Banner[]>('/banners/home');
       if (response.success && Array.isArray(response.data)) {
-        return response.data.sort((a, b) => a.order - b.order);
+        this.cachedBanners = response.data.sort((a, b) => a.order - b.order);
+        this.lastFetchTime = Date.now();
+        return this.cachedBanners;
       }
-      return [];
+      return this.cachedBanners;
     } catch (error) {
       console.error('Failed to fetch home banners:', error);
-      return [];
+      return this.cachedBanners;
     }
   }
 

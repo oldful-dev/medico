@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, StyleSheet, Platform, Alert, NativeModules, KeyboardAvoidingView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import RazorpayCheckout from 'react-native-razorpay';
@@ -61,6 +61,7 @@ export default function CheckoutScreen() {
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     const styles = makeStyles(colors, isDarkMode);
+    const insets = useSafeAreaInsets();
     const params = useLocalSearchParams<{
         // ─── Existing booking ID (legacy: service screens pre-created the booking)
         bookingId?: string;
@@ -775,11 +776,11 @@ export default function CheckoutScreen() {
                 if (isBloodTest && isWellness) {
                     alertMsg = t('checkout.combined_confirmed_msg') || `Your blood test and wellness product orders have been confirmed successfully via Cash on Delivery.`;
                 } else if (isBloodTest) {
-                    alertMsg = t('checkout.blood_test_confirmed_msg', { amount: finalAmount.toLocaleString('en-IN') });
+                    alertMsg = t('checkout.blood_test_confirmed_msg', { amount: Math.round(finalAmount).toLocaleString('en-IN') });
                 } else if (isWellness) {
-                    alertMsg = t('checkout.booking_received_msg', { amount: finalAmount.toLocaleString('en-IN') }) || `Your order of ₹${finalAmount} has been placed successfully via Cash on Delivery.`;
+                    alertMsg = t('checkout.booking_received_msg', { amount: Math.round(finalAmount).toLocaleString('en-IN') }) || `Your order of ₹${Math.round(finalAmount)} has been placed successfully via Cash on Delivery.`;
                 } else {
-                    alertMsg = t('checkout.booking_received_msg', { amount: finalAmount });
+                    alertMsg = t('checkout.booking_received_msg', { amount: Math.round(finalAmount) });
                 }
 
                 Alert.alert(
@@ -1399,12 +1400,12 @@ export default function CheckoutScreen() {
                             <View style={{ flex: 1, marginLeft: 10 }}>
                                 <Text style={styles.upgradeTitle}>
                                     {CARE_CATEGORIES.includes(category)
-                                        ? "🩺 Upgrade to Care Membership"
-                                        : "🏠 Upgrade to Home Essentials"}
+                                        ? "Upgrade to Care Membership"
+                                        : "Upgrade to Home Essentials"}
                                 </Text>
                                 {savingsInfo && savingsInfo.totalSavings > 0 ? (
                                     <Text style={[styles.upgradeSaveText, { color: colors.primary }]}>
-                                        Save ₹{savingsInfo.totalSavings} on this booking!
+                                        Save ₹{Math.round(savingsInfo.totalSavings)} on this booking!
                                     </Text>
                                 ) : (
                                     <Text style={styles.upgradeSubtitle}>Get ₹0 booking & platform fees instantly</Text>
@@ -1665,7 +1666,7 @@ export default function CheckoutScreen() {
             )}
 
             {/* Pay Button */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
                 <TouchableOpacity
                     style={[
                         styles.payBtn,
@@ -1745,7 +1746,7 @@ export default function CheckoutScreen() {
                                     <Ionicons name="cash-outline" size={15} color={colors.primary} style={{ marginRight: 8 }} />
                                     <Text style={[styles.modalRowLabel, { fontFamily: Fonts.semiBold, color: colors.textDark }]}>{t('checkout.total_payable')}</Text>
                                     <Text style={[styles.modalRowValue, { fontFamily: Fonts.semiBold, fontSize: 16, color: colors.primary }]}>
-                                        ₹{finalAmount.toLocaleString('en-IN')}
+                                        ₹{Math.round(finalAmount).toLocaleString('en-IN')}
                                     </Text>
                                 </View>
                             </View>

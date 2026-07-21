@@ -413,7 +413,7 @@ export default function BookingDetailsScreen() {
                 </View>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.content} contentContainerStyle={{ paddingBottom: 100 }}>
                 {/* Package Card */}
                 <View style={styles.card}>
                     <View style={styles.packageHeader}>
@@ -608,7 +608,7 @@ export default function BookingDetailsScreen() {
             </ScrollView>
 
             {/* Action Buttons */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 24) }]}>
                 {isUpcoming ? (
                     <>
                         <TouchableOpacity

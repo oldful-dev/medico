@@ -33,7 +33,7 @@ export default function BookNursingCareScreen() {
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
 
-    const { profile } = useUser();
+    const { profile, refreshData } = useUser();
 
     // Local UI state for radio buttons/selections
     const [selectedWho, setSelectedWho] = useState('Self');
@@ -205,6 +205,7 @@ export default function BookNursingCareScreen() {
             } else {
                 await userService.addAddress(profile.id, payload);
             }
+            await refreshData(true);
         } catch (e) {
             console.warn('Sync address to profile failed:', e);
         }

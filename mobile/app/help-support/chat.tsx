@@ -17,7 +17,7 @@ export default function LiveChatScreen() {
     const { helpSupportConfig } = useAppConfig();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
-    const styles = makeStyles(colors, isDarkMode);
+    const styles = makeStyles(colors, isDarkMode, insets);
     const { t } = useTranslation();
 
     const handleWhatsApp = () => Linking.openURL(helpSupportConfig.whatsapp_url);
@@ -51,9 +51,9 @@ export default function LiveChatScreen() {
                         <Text style={styles.infoText}>
                             {t('account.live_chat_info')}
                         </Text>
-                        <View style={styles.statusRow}>
-                            <View style={styles.greenDot} />
-                            <Text style={styles.statusText}>{t('account.live_chat_status')}</Text>
+                        <View style={statusStyles.statusRow}>
+                            <View style={statusStyles.greenDot} />
+                            <Text style={statusStyles.statusText}>{t('account.live_chat_status')}</Text>
                         </View>
                     </View>
 
@@ -80,7 +80,14 @@ export default function LiveChatScreen() {
     );
 }
 
-const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.create({
+// Separate status styles to avoid referencing state/colors in outer scope variables
+const statusStyles = {
+    statusRow: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const },
+    greenDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#22C55E', marginRight: 6 },
+    statusText: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: '#22C55E' }
+};
+
+const makeStyles = (colors: ThemeColors, isDarkMode: boolean, insets: any) => StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.primary },
     header: {
         flexDirection: 'row', alignItems: 'center',
@@ -98,64 +105,26 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     },
     scrollContent: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.xl, paddingBottom: Spacing.xl },
     illustrationContainer: {
-        alignItems: 'center',
-        marginVertical: Spacing.xl,
+        alignItems: 'center', marginVertical: Spacing.xl,
     },
     chatIconBackground: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        backgroundColor: isDarkMode ? 'rgba(37, 211, 102, 0.1)' : 'rgba(37, 211, 102, 0.05)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: Spacing.lg,
+        width: 120, height: 120, borderRadius: 60,
+        backgroundColor: isDarkMode ? 'rgba(37, 211, 102, 0.1)' : '#E8F8EF',
+        alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.lg,
     },
-    title: {
-        fontFamily: Fonts.semiBold,
-        fontSize: FontSize.heading2,
-        color: colors.textDark,
-        marginBottom: Spacing.xs,
-    },
+    title: { fontFamily: Fonts.bold, fontSize: FontSize.heading2, color: colors.textDark, marginBottom: Spacing.xs },
     subtitle: {
-        fontFamily: Fonts.regular,
-        fontSize: FontSize.body,
-        color: colors.textMuted,
-        textAlign: 'center',
-        paddingHorizontal: Spacing.md,
+        fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textBody,
+        textAlign: 'center', paddingHorizontal: Spacing.md, lineHeight: 22,
     },
     infoBox: {
-        backgroundColor: colors.bgCard,
-        borderRadius: Radius.md,
-        padding: Spacing.lg,
-        marginBottom: Spacing.xl,
-        shadowColor: colors.shadowColor,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
+        backgroundColor: colors.bgCard, borderRadius: Radius.md,
+        padding: Spacing.lg, marginBottom: Spacing.xl,
+        shadowColor: colors.shadowColor, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1,
     },
     infoText: {
-        fontFamily: Fonts.regular,
-        fontSize: FontSize.bodySmall,
-        color: colors.textBody,
-        lineHeight: 20,
-        marginBottom: Spacing.md,
-    },
-    statusRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    greenDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: '#25D366',
-        marginRight: Spacing.xs,
-    },
-    statusText: {
-        fontFamily: Fonts.medium,
-        fontSize: FontSize.caption,
-        color: colors.textMuted,
+        fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textBody,
+        textAlign: 'center', lineHeight: 20, marginBottom: Spacing.md,
     },
     whatsappBtn: {
         backgroundColor: '#25D366',
@@ -194,5 +163,5 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     },
     listItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: Spacing.sm, gap: Spacing.sm },
     listText: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textBody, lineHeight: 20 },
-    bottomSpacer: { height: 60 },
+    bottomSpacer: { height: 40 + insets.bottom },
 });

@@ -35,7 +35,7 @@ export default function InsuranceScreen() {
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
-    const { profile } = useUser();
+    const { profile, refreshData } = useUser();
 
     // UI State
     const [whoFor, setWhoFor] = React.useState('Self'); // 'Self' or 'Family'
@@ -188,6 +188,7 @@ export default function InsuranceScreen() {
             } else {
                 await userService.addAddress(profile.id, payload);
             }
+            await refreshData(true);
         } catch {
             // non-fatal
         }
