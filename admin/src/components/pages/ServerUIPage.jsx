@@ -20,7 +20,7 @@ import {
   Upload,
   Loader2
 } from "lucide-react";
-import { appConfigAPI, mediaAPI } from "@/lib/api";
+import { appConfigAPI, mediaAPI, bannerAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
 
 export default function ServerUIPage() {
@@ -30,7 +30,8 @@ export default function ServerUIPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [originalConfig, setOriginalConfig] = useState(null);
-  const [activeTab, setActiveTab] = useState("form-general");
+  const [carouselBanners, setCarouselBanners] = useState([]);
+  const [activeTab, setActiveTab] = useState("form-sections");
   const [editorMode, setEditorMode] = useState("form"); // "form" | "json"
 
   const [uploadingIcon, setUploadingIcon] = useState(false);
@@ -110,6 +111,9 @@ export default function ServerUIPage() {
         } else if (uploadingTarget.type === "banner") {
           updateBanner(uploadingTarget.bIdx, "image", fileNameGCS);
           showToast("Banner image uploaded and set successfully", "success");
+        } else if (uploadingTarget.type === "section_image") {
+          updateSection(uploadingTarget.sIdx, "image_url", fileNameGCS);
+          showToast("Section background image uploaded and set successfully", "success");
         } else if (uploadingTarget.type === "sos_icon") {
           updateSosBanner("icon", fileNameGCS);
           showToast("SOS icon uploaded and set successfully", "success");
@@ -131,8 +135,12 @@ export default function ServerUIPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await appConfigAPI.getHomeConfig();
+      const [res, bRes] = await Promise.all([
+        appConfigAPI.getHomeConfig(),
+        bannerAPI.getHome().catch(() => ({ data: { data: [] } }))
+      ]);
       const configData = res.data?.data || {};
+      setCarouselBanners(bRes.data?.data || []);
       setOriginalConfig(configData);
       const formatted = JSON.stringify(configData, null, 2);
       setRawJson(formatted);
@@ -235,6 +243,14 @@ export default function ServerUIPage() {
     });
   };
 
+  const updateGreetingBanner = (field, val) => {
+    setParsedConfig(prev => {
+      const next = { ...prev, greeting_banner: { ...prev.greeting_banner, [field]: val } };
+      setRawJson(JSON.stringify(next, null, 2));
+      return next;
+    });
+  };
+
   const updateBanner = (index, field, val) => {
     setParsedConfig(prev => {
       const banners = [...(prev.banners || [])];
@@ -266,6 +282,49 @@ export default function ServerUIPage() {
     setParsedConfig(prev => {
       const banners = (prev.banners || []).filter((_, i) => i !== index);
       const next = { ...prev, banners };
+      setRawJson(JSON.stringify(next, null, 2));
+      return next;
+    });
+  };
+
+  const addSection = (type = "custom_card") => {
+    setParsedConfig(prev => {
+      const sections = [...(prev.sections || [])];
+      const newId = `section_${Date.now()}`;
+      if (type === "custom_card" || type === "banner_card") {
+        sections.push({
+          id: newId,
+          title: "Plan Your Next Travel",
+          subtitle: "Tell us where you want to go.",
+          type: type,
+          enabled: true,
+          sort_order: sections.length + 1,
+          image_url: "banner.png",
+          cta_text: "Share Now",
+          view_all_route: "/trip-travels",
+          services: []
+        });
+      } else {
+        sections.push({
+          id: newId,
+          title: "New Service Section",
+          type: type,
+          enabled: true,
+          sort_order: sections.length + 1,
+          max_items: 6,
+          services: []
+        });
+      }
+      const next = { ...prev, sections };
+      setRawJson(JSON.stringify(next, null, 2));
+      return next;
+    });
+  };
+
+  const removeSection = (index) => {
+    setParsedConfig(prev => {
+      const sections = (prev.sections || []).filter((_, i) => i !== index);
+      const next = { ...prev, sections };
       setRawJson(JSON.stringify(next, null, 2));
       return next;
     });
@@ -313,9 +372,14 @@ export default function ServerUIPage() {
         style={{ display: "none" }}
       />
       {/* Page Header */}
-      <div className="page-header" style={{ marginBottom: 20 }}>
-        <h2>Server-Driven Home Layout Config</h2>
-        <p>Configure layouts, sections, banners, trust badges and quick services displayed on the mobile app home screen.</p>
+      <div className="page-header" style={{ marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h2>Server-Driven Home Layout Config</h2>
+          <p>Configure layout sections, custom card banners, trust badges and quick services displayed on the mobile app home screen.</p>
+        </div>
+        <a href="/banners" className="btn btn-outline-primary" style={{ display: "flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
+          <Sparkles size={16} /> Manage Top Carousel Banners
+        </a>
       </div>
 
       {loading ? (
@@ -425,36 +489,6 @@ export default function ServerUIPage() {
                   paddingBottom: 2 
                 }}>
                   <button 
-                    onClick={() => setActiveTab("form-general")} 
-                    style={{
-                      padding: "8px 16px",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      backgroundColor: "transparent",
-                      border: "none",
-                      borderBottom: activeTab === "form-general" ? "2px solid var(--primary-color)" : "none",
-                      color: activeTab === "form-general" ? "var(--primary-color)" : "var(--text-muted)",
-                      cursor: "pointer"
-                    }}
-                  >
-                    General & SOS
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab("form-banners")} 
-                    style={{
-                      padding: "8px 16px",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      backgroundColor: "transparent",
-                      border: "none",
-                      borderBottom: activeTab === "form-banners" ? "2px solid var(--primary-color)" : "none",
-                      color: activeTab === "form-banners" ? "var(--primary-color)" : "var(--text-muted)",
-                      cursor: "pointer"
-                    }}
-                  >
-                    Banners
-                  </button>
-                  <button 
                     onClick={() => setActiveTab("form-sections")} 
                     style={{
                       padding: "8px 16px",
@@ -468,6 +502,21 @@ export default function ServerUIPage() {
                     }}
                   >
                     Sections & Services
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab("form-general")} 
+                    style={{
+                      padding: "8px 16px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      backgroundColor: "transparent",
+                      border: "none",
+                      borderBottom: activeTab === "form-general" ? "2px solid var(--primary-color)" : "none",
+                      color: activeTab === "form-general" ? "var(--primary-color)" : "var(--text-muted)",
+                      cursor: "pointer"
+                    }}
+                  >
+                    General & SOS
                   </button>
                   <button 
                     onClick={() => setActiveTab("form-badges")} 
@@ -501,6 +550,35 @@ export default function ServerUIPage() {
                         />
                         <small style={{ color: "var(--text-muted)", display: "block", marginTop: 4 }}>
                           Increments whenever you hit &quot;Publish Config&quot; below.
+                        </small>
+                      </div>
+
+                      <hr style={{ borderColor: "var(--border-color)" }} />
+
+                      {/* Green Greeting Banner Subtitle */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <h4 style={{ margin: 0 }}>Green Greeting Banner Subtitle</h4>
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                          <input 
+                            type="checkbox" 
+                            checked={parsedConfig.greeting_banner?.enabled !== false} 
+                            onChange={(e) => updateGreetingBanner("enabled", e.target.checked)}
+                          />
+                          <span style={{ fontSize: 13, fontWeight: 600 }}>Enabled on App Home Screen</span>
+                        </label>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontWeight: 600 }}>Greeting Subtitle Message</label>
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          value={parsedConfig.greeting_banner?.subtitle || "We see you. We hear you. We care."} 
+                          onChange={(e) => updateGreetingBanner("subtitle", e.target.value)}
+                          placeholder="We see you. We hear you. We care."
+                        />
+                        <small style={{ color: "var(--text-muted)", display: "block", marginTop: 4 }}>
+                          Dynamic subtitle message displayed on the green greeting card below the user name.
                         </small>
                       </div>
 
@@ -677,7 +755,7 @@ export default function ServerUIPage() {
                 {activeTab === "form-sections" && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                     {(parsedConfig.sections || []).map((section, sIdx) => (
-                      <div key={section.id} className="card" style={{ border: "1px solid var(--border-color)" }}>
+                      <div key={section.id || sIdx} className="card" style={{ border: "1px solid var(--border-color)" }}>
                         
                         {/* Section Header */}
                         <div className="card-header" style={{ 
@@ -690,6 +768,9 @@ export default function ServerUIPage() {
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <Layers size={16} className="text-muted" />
                             <span style={{ fontWeight: 700, fontSize: 14 }}>{section.title || section.id}</span>
+                            <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, backgroundColor: "#E5E7EB", color: "#374151", fontWeight: 600 }}>
+                              {section.type}
+                            </span>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                             <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12 }}>
@@ -700,14 +781,23 @@ export default function ServerUIPage() {
                               />
                               Enabled Section
                             </label>
+                            <button 
+                              type="button" 
+                              className="btn btn-sm btn-outline-danger" 
+                              onClick={() => removeSection(sIdx)}
+                              title="Delete Section"
+                              style={{ padding: "2px 6px" }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
                           </div>
                         </div>
 
                         {/* Section Settings */}
                         <div className="card-body" style={{ padding: 14 }}>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 120px 100px", gap: 12, marginBottom: 16 }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr 80px 80px", gap: 12, marginBottom: 16 }}>
                             <div className="form-group">
-                              <label className="form-label">Section Display Title</label>
+                              <label className="form-label">Display Title</label>
                               <input 
                                 type="text" 
                                 className="form-input" 
@@ -716,7 +806,20 @@ export default function ServerUIPage() {
                               />
                             </div>
                             <div className="form-group">
-                              <label className="form-label">Max Visible Items</label>
+                              <label className="form-label">Section Type</label>
+                              <select 
+                                className="form-input" 
+                                value={section.type || "custom_card"} 
+                                onChange={(e) => updateSection(sIdx, "type", e.target.value)}
+                              >
+                                <option value="quick_services">Quick Services Strip (quick_services)</option>
+                                <option value="service_grid">Services Grid (service_grid)</option>
+                                <option value="essentials_grid">Essentials Grid (essentials_grid)</option>
+                                <option value="custom_card">Custom Banner Card (custom_card)</option>
+                              </select>
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">Max Items</label>
                               <input 
                                 type="number" 
                                 className="form-input" 
@@ -734,6 +837,75 @@ export default function ServerUIPage() {
                               />
                             </div>
                           </div>
+
+                          {/* Custom Card / Banner Card Fields */}
+                          {(section.type === "custom_card" || section.type === "banner_card") && (
+                            <div style={{ 
+                              backgroundColor: "var(--bg-muted)", 
+                              padding: 12, 
+                              borderRadius: 8, 
+                              marginBottom: 16, 
+                              display: "grid", 
+                              gridTemplateColumns: "1fr 1fr", 
+                              gap: 12 
+                            }}>
+                              <div className="form-group">
+                                <label className="form-label">Subtitle Text</label>
+                                <input 
+                                  type="text" 
+                                  className="form-input" 
+                                  value={section.subtitle || ""} 
+                                  onChange={(e) => updateSection(sIdx, "subtitle", e.target.value)}
+                                  placeholder="Tell us where you want to go."
+                                />
+                              </div>
+                              <div className="form-group">
+                                <label className="form-label">CTA Button Text</label>
+                                <input 
+                                  type="text" 
+                                  className="form-input" 
+                                  value={section.cta_text || ""} 
+                                  onChange={(e) => updateSection(sIdx, "cta_text", e.target.value)}
+                                  placeholder="Share Now"
+                                />
+                              </div>
+                              <div className="form-group">
+                                <label className="form-label">Target Expo Route Path</label>
+                                <input 
+                                  type="text" 
+                                  className="form-input" 
+                                  value={section.view_all_route || ""} 
+                                  onChange={(e) => updateSection(sIdx, "view_all_route", e.target.value)}
+                                  placeholder="/trip-travels"
+                                />
+                              </div>
+                              <div className="form-group">
+                                <label className="form-label">Background Image (Asset / GCS)</label>
+                                <div style={{ display: "flex", gap: 6 }}>
+                                  <input 
+                                    type="text" 
+                                    className="form-input" 
+                                    value={section.image_url || ""} 
+                                    onChange={(e) => updateSection(sIdx, "image_url", e.target.value)}
+                                    placeholder="banner.png or URL"
+                                    style={{ flex: 1 }}
+                                  />
+                                  <button 
+                                    type="button" 
+                                    className="btn btn-secondary" 
+                                    onClick={() => triggerUpload({ type: "section_image", sIdx })}
+                                    disabled={uploadingIcon && uploadingTarget?.type === "section_image" && uploadingTarget?.sIdx === sIdx}
+                                  >
+                                    {uploadingIcon && uploadingTarget?.type === "section_image" && uploadingTarget?.sIdx === sIdx ? (
+                                      <Loader2 className="animate-spin" size={14} />
+                                    ) : (
+                                      <Upload size={14} />
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
                           {/* Services List inside this section */}
                           <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: 12 }}>
@@ -836,6 +1008,26 @@ export default function ServerUIPage() {
 
                       </div>
                     ))}
+
+                    {/* Add New Section Controls */}
+                    <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
+                      <button 
+                        type="button" 
+                        className="btn btn-outline-primary" 
+                        onClick={() => addSection("custom_card")}
+                        style={{ display: "flex", alignItems: "center", gap: 6 }}
+                      >
+                        <Plus size={16} /> Add Custom Banner Card Section
+                      </button>
+                      <button 
+                        type="button" 
+                        className="btn btn-outline-secondary" 
+                        onClick={() => addSection("service_grid")}
+                        style={{ display: "flex", alignItems: "center", gap: 6 }}
+                      >
+                        <Plus size={16} /> Add Grid Service Section
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -958,64 +1150,45 @@ export default function ServerUIPage() {
                     </div>
 
                     {/* Greeting Box */}
-                    <div style={{ padding: 14, backgroundColor: "#02743F", borderRadius: 16, color: "#FFF" }}>
-                      <div style={{ fontSize: 15, fontWeight: 700 }}>Good morning, John!</div>
-                      <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>Keep track of your family&apos;s health checkups</div>
-                    </div>
+                    {parsedConfig.greeting_banner?.enabled !== false && (
+                      <div style={{ padding: 14, backgroundColor: "#02743F", borderRadius: 16, color: "#FFF", flexShrink: 0 }}>
+                        <div style={{ fontSize: 15, fontWeight: 700 }}>Good morning, John!</div>
+                        <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>
+                          {parsedConfig.greeting_banner?.subtitle || "We see you. We hear you. We care."}
+                        </div>
+                      </div>
+                    )}
 
-                    {/* Dynamic Banners Carousel Section */}
-                    {parsedConfig.banners?.filter(b => b.enabled).map(banner => (
-                      <div key={banner.id} style={{ 
+                    {/* Real Carousel Banners Preview */}
+                    {carouselBanners.length > 0 && (
+                      <div style={{ 
                         backgroundColor: "#EAEFFF", 
                         borderRadius: 16, 
                         border: "1px solid #D1DEFE",
-                        padding: banner.image ? 0 : 14,
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 0,
                         position: "relative",
-                        overflow: "hidden"
+                        overflow: "hidden",
+                        height: 110,
+                        flexShrink: 0
                       }}>
-                        {banner.image ? (
-                          <div style={{ position: "relative", width: "100%", height: 110 }}>
-                            <img 
-                              src={getImageUrl(banner.image)} 
-                              alt={banner.title} 
-                              style={{ width: "100%", height: "100%", objectFit: "cover" }} 
-                            />
-                            <div style={{ 
-                              position: "absolute", 
-                              bottom: 0, 
-                              left: 0, 
-                              right: 0, 
-                              background: "linear-gradient(to top, rgba(0,0,0,0.8), transparent)", 
-                              padding: "16px 12px 10px",
-                              color: "#FFF" 
-                            }}>
-                              <div style={{ fontSize: 12, fontWeight: 700 }}>{banner.title}</div>
-                              {banner.subtitle && <div style={{ fontSize: 10, opacity: 0.9 }}>{banner.subtitle}</div>}
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ padding: 14 }}>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: "#4B73D0" }}>{banner.title}</div>
-                            {banner.subtitle && <div style={{ fontSize: 11, color: "#6B7280" }}>{banner.subtitle}</div>}
-                            <div style={{ 
-                              backgroundColor: "#4B78D8", 
-                              color: "#FFF", 
-                              fontSize: 10, 
-                              fontWeight: 700, 
-                              padding: "4px 10px", 
-                              borderRadius: 8, 
-                              alignSelf: "flex-start",
-                              marginTop: 4
-                            }}>
-                              Book Now
-                            </div>
-                          </div>
-                        )}
+                        <img 
+                          src={getImageUrl(carouselBanners[0].imageUrl)} 
+                          alt={carouselBanners[0].heading} 
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                        />
+                        <div style={{ 
+                          position: "absolute", 
+                          bottom: 0, 
+                          left: 0, 
+                          right: 0, 
+                          background: "linear-gradient(to top, rgba(0,0,0,0.8), transparent)", 
+                          padding: "16px 12px 10px",
+                          color: "#FFF" 
+                        }}>
+                          <div style={{ fontSize: 12, fontWeight: 700 }}>{carouselBanners[0].heading}</div>
+                          {carouselBanners[0].subheading && <div style={{ fontSize: 10, opacity: 0.9 }}>{carouselBanners[0].subheading}</div>}
+                        </div>
                       </div>
-                    ))}
+                    )}
 
                     {/* SDUI Layout Sections Map */}
                     {parsedConfig.sections?.filter(s => s.enabled).sort((a,b) => (a.sort_order || 99) - (b.sort_order || 99)).map(section => {
@@ -1023,7 +1196,7 @@ export default function ServerUIPage() {
                       // Section 1: Quick Services Strip
                       if (section.type === "quick_services") {
                         return (
-                          <div key={section.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+                          <div key={section.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", flexShrink: 0 }}>
                             {section.services?.filter(sv => sv.enabled).slice(0, 4).map(svc => (
                               <div key={svc.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, width: "22%" }}>
                                 <div style={{ 
@@ -1062,7 +1235,7 @@ export default function ServerUIPage() {
                       // Section 2: Diagnostics & Fitness Grid
                       if (section.type === "service_grid") {
                         return (
-                          <div key={section.id} style={{ backgroundColor: "#FFF", borderRadius: 16, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                          <div key={section.id} style={{ backgroundColor: "#FFF", borderRadius: 16, padding: 14, display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <span style={{ fontSize: 13, fontWeight: 700, color: "#1F2937" }}>{section.title}</span>
                               <span style={{ fontSize: 10, color: "#02743F", fontWeight: 600 }}>View All</span>
@@ -1116,7 +1289,7 @@ export default function ServerUIPage() {
                       // Section 3: Essentials Grid
                       if (section.type === "essentials_grid") {
                         return (
-                          <div key={section.id} style={{ backgroundColor: "#FFF", borderRadius: 16, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                          <div key={section.id} style={{ backgroundColor: "#FFF", borderRadius: 16, padding: 14, display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <span style={{ fontSize: 13, fontWeight: 700, color: "#1F2937" }}>{section.title}</span>
                               <span style={{ fontSize: 10, color: "#02743F", fontWeight: 600 }}>View All</span>
@@ -1164,13 +1337,67 @@ export default function ServerUIPage() {
                           </div>
                         );
                       }
+                      
+                      // Section 4: Custom Banner Card
+                      else if (section.type === "custom_card" || section.type === "banner_card") {
+                        return (
+                          <div 
+                            key={section.id} 
+                            style={{ 
+                              position: "relative",
+                              borderRadius: 16, 
+                              height: 150, 
+                              flexShrink: 0,
+                              overflow: "hidden",
+                              backgroundColor: "#1F2937",
+                              display: "flex",
+                              flexDirection: "column",
+                              justifyContent: "flex-end",
+                              padding: 14,
+                              gap: 8
+                            }}
+                          >
+                            <img 
+                              src={getImageUrl(section.image_url) || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e"} 
+                              alt={section.title || "Banner"} 
+                              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} 
+                            />
+                            <div style={{ backgroundColor: "rgba(0,0,0,0.35)", position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }} />
+                            <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", gap: 3 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "#FFF", lineHeight: "17px" }}>{section.title || "Untitled Card"}</div>
+                              {section.subtitle ? (
+                                <div style={{ fontSize: 9.5, color: "rgba(255,255,255,0.9)", lineHeight: "13px" }}>{section.subtitle}</div>
+                              ) : null}
+                            </div>
+                            {section.cta_text ? (
+                              <div style={{ 
+                                position: "relative", 
+                                zIndex: 2, 
+                                alignSelf: "flex-start",
+                                backgroundColor: "#02743F",
+                                color: "#FFF",
+                                borderRadius: 20,
+                                padding: "5px 12px",
+                                fontSize: 9.5,
+                                fontWeight: 700,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4
+                              }}>
+                                <span>{section.cta_text}</span>
+                                <span>→</span>
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      }
 
                       return null;
                     })}
 
                     {/* Trust Badges Section */}
                     {parsedConfig.trust_badges?.some(b => b.enabled) && (
-                      <div style={{ display: "flex", justifyContent: "space-around", backgroundColor: "#FFF", borderRadius: 16, padding: 10, border: "1px dashed #E5E7EB" }}>
+                      <div style={{ display: "flex", justifyContent: "space-around", backgroundColor: "#FFF", borderRadius: 16, padding: 10, border: "1px dashed #E5E7EB", flexShrink: 0 }}>
                         {parsedConfig.trust_badges.filter(b => b.enabled).map(badge => (
                           <div key={badge.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                             <span style={{ fontSize: 12 }}>🛡️</span>
@@ -1189,7 +1416,8 @@ export default function ServerUIPage() {
                         color: "#FFF",
                         display: "flex",
                         justifyContent: "space-between",
-                        alignItems: "center"
+                        alignItems: "center",
+                        flexShrink: 0
                       }}>
                         <div>
                           <div style={{ fontSize: 11, fontWeight: 700 }}>{parsedConfig.sos_banner.title_line1}</div>
@@ -1209,6 +1437,34 @@ export default function ServerUIPage() {
                     </span>
                   </div>
                 )}
+              </div>
+              
+              {/* Bottom Mobile Navigation Bar */}
+              <div style={{
+                height: 48,
+                backgroundColor: "#FFFFFF",
+                borderTop: "1px solid #E5E7EB",
+                display: "flex",
+                justifyContent: "space-around",
+                alignItems: "center",
+                padding: "0 12px"
+              }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", color: "#02743F" }}>
+                  <span style={{ fontSize: 12 }}>🏠</span>
+                  <span style={{ fontSize: 8, fontWeight: 700 }}>Home</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", color: "#9CA3AF" }}>
+                  <span style={{ fontSize: 12 }}>📅</span>
+                  <span style={{ fontSize: 8, fontWeight: 600 }}>Bookings</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", color: "#9CA3AF" }}>
+                  <span style={{ fontSize: 12 }}>📋</span>
+                  <span style={{ fontSize: 8, fontWeight: 600 }}>Records</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", color: "#9CA3AF" }}>
+                  <span style={{ fontSize: 12 }}>👤</span>
+                  <span style={{ fontSize: 8, fontWeight: 600 }}>Profile</span>
+                </div>
               </div>
             </div>
           </div>

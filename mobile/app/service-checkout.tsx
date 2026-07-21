@@ -22,7 +22,7 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import RazorpayCheckout from "react-native-razorpay";
@@ -124,6 +124,7 @@ export default function ServiceCheckoutScreen() {
   const { isDarkMode } = useTheme();
   const colors = useThemeColors();
   const styles = makeStyles(colors, isDarkMode);
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     bookingPayload?: string;
     subscriptionId?: string;
@@ -1967,7 +1968,7 @@ export default function ServiceCheckoutScreen() {
           </ScrollView>
 
           {/* Pay Button wrapped in SafeAreaView for bottom safe area */}
-          <SafeAreaView edges={["bottom"]} style={styles.footerContainer}>
+          <View style={[styles.footerContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
             <View style={styles.footer}>
               <TouchableOpacity
                 style={[styles.payBtn, payLoading && styles.payBtnLoading]}
@@ -1982,10 +1983,10 @@ export default function ServiceCheckoutScreen() {
                     <Ionicons
                       name={
                         isZeroPayment
-                          ? "send-outline"
-                          : selectedMethod === "CASH"
-                            ? "checkmark-circle-outline"
-                            : "lock-closed-outline"
+                           ? "send-outline"
+                           : selectedMethod === "CASH"
+                             ? "checkmark-circle-outline"
+                             : "lock-closed-outline"
                       }
                       size={18}
                       color={colors.textWhite}
@@ -2007,7 +2008,7 @@ export default function ServiceCheckoutScreen() {
                 )}
               </TouchableOpacity>
             </View>
-          </SafeAreaView>
+          </View>
         </View>
       </SafeAreaView>
     </KeyboardAvoidingView>

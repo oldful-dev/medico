@@ -50,7 +50,7 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
   const colors = useThemeColors();
   const { isDarkMode } = useTheme();
   
-  const { getServiceBySlug, profile } = useUser();
+  const { getServiceBySlug, profile, refreshData } = useUser();
   const dbService = getServiceBySlug(slug);
 
   // Fallback metadata
@@ -139,6 +139,7 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
       } else {
         await userService.addAddress(profile.id, payload);
       }
+      await refreshData(true);
     } catch {
       // non-fatal
     }

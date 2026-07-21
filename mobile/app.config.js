@@ -21,6 +21,9 @@ export default {
         "backgroundColor": "#F5F0E8"
       },
       "edgeToEdgeEnabled": true,
+      "navigationBar": {
+        "backgroundColor": "#00000000"
+      },
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.CALL_PHONE"

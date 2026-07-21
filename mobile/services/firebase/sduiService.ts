@@ -48,13 +48,16 @@ export interface HomeService {
 export interface HomeSection {
     id: string;
     title: string;
-    type: 'quick_services' | 'service_grid' | 'essentials_grid';
+    type: 'quick_services' | 'service_grid' | 'essentials_grid' | 'custom_card' | 'banner_card';
     enabled: boolean;
     sort_order?: number;
     /** Maximum items to show (rest hidden unless user taps "View All") */
     max_items?: number;
     view_all_route?: string;
     services: HomeService[];
+    subtitle?: string;
+    image_url?: string;
+    cta_text?: string;
 }
 
 /** Trust badge (icon + label strip). */
@@ -84,6 +87,11 @@ export interface SOSBannerConfig {
 export interface HomeConfig {
     version: string;
     banners?: HomeBanner[];
+    greeting_banner?: {
+        enabled?: boolean;
+        title?: string;
+        subtitle?: string;
+    };
     sections: HomeSection[];
     trust_badges: TrustBadge[];
     sos_banner: SOSBannerConfig;
@@ -95,6 +103,10 @@ export interface HomeConfig {
 
 export const HOME_CONFIG_FALLBACK: HomeConfig = {
     version: '1.0.0',
+    greeting_banner: {
+        enabled: true,
+        subtitle: 'We see you. We hear you. We care.',
+    },
     banners: [
         {
             id: 'banner_greeting',
@@ -113,10 +125,10 @@ export const HOME_CONFIG_FALLBACK: HomeConfig = {
             enabled: true,
             sort_order: 1,
             services: [
-                { id: 'doctor_quick',    label: 'Doctor\nVisit',     icon: 'onlylogo.png', route: '/doctor-visit',  enabled: true,  sort_order: 1 },
-                { id: 'nurse_quick',     label: 'Nurse &\nAide',      icon: '21e5a8a8650cf8eda36be3744c70099580173129.png', route: '/nurse-care',    enabled: true,  sort_order: 2 },
-                { id: 'hospital_quick',  label: 'Hospital\nVisit',  icon: 'e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/hospital-trip', enabled: true,  sort_order: 3 },
-                { id: 'physio_quick',    label: 'Physio',          icon: '4ea419052803769fad63ff4292316ce7f8f77dbc.png', route: '/physio-fitness', enabled: true,  sort_order: 4 },
+                { id: 'doctor_quick',    label: 'Home Doctor',      icon: '21eb228b-a66a-4398-aa32-a24b6bbb72db.png', route: '/doctor-visit',  enabled: true,  sort_order: 1 },
+                { id: 'nurse_quick',     label: 'Home Nurse',       icon: 'cc34e9a3-a4ab-4cf4-9488-b6e0e5b1b468.png', route: '/nurse-care',    enabled: true,  sort_order: 2 },
+                { id: 'hospital_quick',  label: 'Hospital Trip',    icon: '7f9f2e6d-8489-4c13-a14a-c910ee3f8a20.png', route: '/hospital-trip', enabled: true,  sort_order: 3 },
+                { id: 'caregiver_quick', label: 'Home Aide',        icon: 'b4fb36d8-012b-4a46-ad26-98f576817638.png', route: '/caregiver-support', enabled: true,  sort_order: 4 },
             ],
         },
         {
@@ -134,7 +146,7 @@ export const HOME_CONFIG_FALLBACK: HomeConfig = {
                 { id: 'insurance',      label: 'Insurance',               icon: 'e453f94c7e87531b0da0b6712f8dc4b3bc7084a9.png', route: '/insurance',         enabled: true, sort_order: 4 },
                 { id: 'fitness',        label: 'Fitness',                 icon: '54f5c849cf75e776592dec8236f221da3694ca53.png', route: '/physio-fitness',    enabled: true, sort_order: 5 },
                 { id: 'equipment',      label: 'Equipment',               icon: 'd3906f517597b2ef10369d92c422b16bf20e879e.png', route: '/medical-equipment', enabled: true, sort_order: 6 },
-                { id: 'caregiver',      label: 'Caregiver\nSupport',      icon: '2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png', route: '/nurse-care',        enabled: true, sort_order: 7 },
+                { id: 'caregiver',      label: 'Caregiver\nSupport',      icon: '2fb222a5f206ff64415b72a8d4ac9290b4e6f720.png', route: '/caregiver-support', enabled: true, sort_order: 7 },
                 { id: 'emergency',      label: 'Emergency\nAssist',       icon: 'e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png', route: '/sos-emergency',     enabled: false, sort_order: 8 },
                 { id: 'meal',           label: 'Meal\nService',           icon: '8f136eff1200bb21c080348f6cdb7ad1c2831bdf.png', route: '/meal-service',      enabled: true, sort_order: 9 },
             ],
@@ -186,6 +198,8 @@ const sortByOrder = <T extends { sort_order?: number }>(arr: T[]): T[] =>
 
 // In-memory cache for home configuration layout
 let cachedConfig: HomeConfig | null = null;
+let lastFetchTime = 0;
+const THROTTLE_MS = 15000;
 
 // ─── SDUI Service ─────────────────────────────────────────────────────────────
 
@@ -193,14 +207,17 @@ export const sduiService = {
     /**
      * Fetch the home screen layout config from MERN backend.
      */
-    async init(): Promise<void> {
-        try {
-            const res = await apiClient.get<HomeConfig>('/app-config/home');
-            if (res.success && res.data) {
-                cachedConfig = res.data;
-            }
-        } catch (err) {
-            console.warn('[SDUI] Failed to load layout config from API, using fallback:', err);
+    async init(force = false): Promise<void> {
+        const now = Date.now();
+        if (!force && cachedConfig && (now - lastFetchTime < THROTTLE_MS)) {
+            return;
+        }
+        const res = await apiClient.get<HomeConfig>('/app-config/home');
+        if (res.success && res.data) {
+            cachedConfig = res.data;
+            lastFetchTime = Date.now();
+        } else {
+            throw new Error(res.message || 'Failed to fetch home config');
         }
     },
 

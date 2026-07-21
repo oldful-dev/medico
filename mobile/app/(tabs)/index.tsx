@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, useWindowDimensions, Alert, Linking } from 'react-native';
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, useWindowDimensions, Alert, Linking, ActivityIndicator, Animated } from 'react-native';
 import * as Location from 'expo-location';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +18,7 @@ import { useAppConfig } from '@/context/AppConfigContext';
 import { sduiService, HomeConfig, HomeSection } from '@/services/firebase/sduiService';
 import { getAssetUrl } from '@/utils/getAssetUrl';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path } from 'react-native-svg';
 import { BannerSlider } from '@/components/BannerSlider';
 import { bannerService, Banner } from '@/services/api/bannerService';
 import { meetupService } from '@/services/api/meetupService';
@@ -539,7 +540,6 @@ export default function HomeScreen() {
   const { profile, selectedCity, setSelectedCity, services, refreshData } = useUser();
   const { cities } = useAppConfig();
   const colors = useThemeColors();
-  const { isDarkMode } = useTheme();
 
   // Initialize immediately with fallback — screen renders on first paint.
   // Firebase RC will update this in the background.
@@ -549,6 +549,29 @@ export default function HomeScreen() {
   const [isCitySupported, setIsCitySupported] = useState(true);
   const [featuredMeetup, setFeaturedMeetup] = useState<any>(null);
   const [userPinCode, setUserPinCode] = useState<string | null>(null);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasConnectionError, setHasConnectionError] = useState(false);
+  const [pulseAnim] = useState(new Animated.Value(1));
+
+  useEffect(() => {
+    if (isLoading) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.12,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1.0,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, [isLoading]);
 
   const CITY_SYNONYMS: Record<string, string[]> = {
     'Bangalore': ['bengaluru', 'bangalore urban', 'bangalore rural'],
@@ -566,15 +589,26 @@ export default function HomeScreen() {
   };
 
   const refetchAllHomeData = useCallback(() => {
-    // ── 1. Firebase RC — update SDUI config in background ─────────────────────
-    sduiService.init()
-      .then(() => setHomeConfig(sduiService.getHomeConfig()))
-      .catch(() => {});
+    setIsLoading(true);
+    setHasConnectionError(false);
+
+    // ── 1. Firebase RC — update SDUI config from MERN backend ─────────────────────
+    sduiService.init(true)
+      .then(() => {
+        setHomeConfig(sduiService.getHomeConfig());
+        setHasConnectionError(false);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.warn('[Home] Failed to load layout config from MERN backend:', err);
+        setHasConnectionError(true);
+        setIsLoading(false);
+      });
 
     // Refresh database services catalog as well
     refreshData().catch(() => {});
 
-    // ── 2. Banners — parallel, background ─────────────────────────────────────
+    // ── 2. Banners ─────────────────────────────────────────────────────────────
     bannerService.getHomeBanners()
       .then(setBanners)
       .catch(() => {});
@@ -717,13 +751,93 @@ export default function HomeScreen() {
   const currentHour = new Date().getHours();
   const greeting = currentHour >= 16 ? 'Good Evening' : currentHour >= 12 ? 'Good Afternoon' : 'Good Morning';
 
-  const s = makeStyles(colors);
+  const { isDarkMode, toggleDarkMode, isLargeFont, fontScale, toggleFontScale } = useTheme();
+
+  const s = makeStyles(colors, fontScale, isLargeFont);
 
   const { sections, trust_badges, sos_banner } = homeConfig;
 
   const quickServicesSection = sections.find(sec => sec.id === 'quick_services' || sec.type === 'quick_services');
   const serviceGridSection = sections.find(sec => sec.id === 'ayuxa_services' || sec.type === 'service_grid');
   const essentialsSection = sections.find(sec => sec.id === 'essentials' || sec.type === 'essentials_grid');
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgScreen, justifyContent: 'center', alignItems: 'center' }}>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+        <View style={{ alignItems: 'center', gap: 24 }}>
+          <Animated.View style={{ transform: [{ scale: pulseAnim }], marginBottom: 8 }}>
+            <Image 
+              source={logoSmall} 
+              style={{ width: 85, height: 66, tintColor: '#02743F' }} 
+              resizeMode="contain" 
+            />
+          </Animated.View>
+          <ActivityIndicator size="large" color="#02743F" />
+          <Text style={{ fontFamily: Fonts.bold, fontSize: 15, color: colors.textDark }}>
+            Connecting to Ayuxa Server...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (hasConnectionError) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgScreen, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+        <View style={{ 
+          backgroundColor: colors.bgCard, 
+          borderRadius: 24, 
+          padding: 28, 
+          width: '100%', 
+          alignItems: 'center', 
+          borderWidth: 1.5,
+          borderColor: colors.borderLight,
+          gap: 16
+        }}>
+          <View style={{ 
+            width: 72, 
+            height: 72, 
+            borderRadius: 36, 
+            backgroundColor: '#FEF2F2', 
+            justifyContent: 'center', 
+            alignItems: 'center' 
+          }}>
+            <Ionicons name="cloud-offline-outline" size={36} color="#DC2626" />
+          </View>
+          
+          <Text style={{ fontFamily: Fonts.bold, fontSize: 20, color: colors.textDark, textAlign: 'center' }}>
+            Connection Offline
+          </Text>
+          
+          <Text style={{ fontFamily: Fonts.regular, fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 19 }}>
+            Ayuxa server is currently unreachable. Please check your internet connection and try again.
+          </Text>
+
+          <TouchableOpacity 
+            style={{ 
+              backgroundColor: '#02743F', 
+              paddingVertical: 12, 
+              paddingHorizontal: 24, 
+              borderRadius: 30, 
+              flexDirection: 'row', 
+              alignItems: 'center', 
+              gap: 8,
+              marginTop: 8
+            }}
+            onPress={refetchAllHomeData}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="refresh" size={16} color="#FFFFFF" />
+            <Text style={{ fontFamily: Fonts.bold, fontSize: 14, color: '#FFFFFF' }}>
+              Tap to Retry
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <View style={s.screen}>
@@ -733,7 +847,7 @@ export default function HomeScreen() {
         <View style={s.header}>
           <Image source={logoSmall} style={s.logoSmall} resizeMode="contain" />
           <TouchableOpacity style={s.locationPill} onPress={() => router.push('/(auth)/city-selection')}>
-            <Ionicons name="location-sharp" size={16} color={colors.primary} />
+            <Ionicons name="location-sharp" size={15} color={colors.primary} />
             <Text style={s.locationText} numberOfLines={1}>
               {currentLocationStr === 'Loading...' ? t('home.location_loading') :
                currentLocationStr === 'Location Unavailable' ? t('home.location_unavailable') :
@@ -743,13 +857,27 @@ export default function HomeScreen() {
             </Text>
           </TouchableOpacity>
           <View style={s.headerRight}>
+            {/* Theme Toggle */}
+            <TouchableOpacity style={s.themeToggleBtn} onPress={() => toggleDarkMode(!isDarkMode)}>
+              <Ionicons name={isDarkMode ? 'moon' : 'sunny'} size={14} color={isDarkMode ? '#F59E0B' : colors.primary} />
+              <Text style={s.themeToggleText}>{isDarkMode ? 'NIGHT' : 'DAY'}</Text>
+            </TouchableOpacity>
+
+            {/* Font Size Toggle */}
+            <TouchableOpacity style={s.fontToggleBtn} onPress={toggleFontScale}>
+              <Text style={s.fontToggleText}>Aa</Text>
+            </TouchableOpacity>
+
+            {/* SOS Circle */}
             <TouchableOpacity onPress={() => router.push('/sos-emergency')}>
               <LinearGradient colors={['#FF4B2B', '#FF416C']} style={s.sosCircle} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                 <Text style={s.sosCircleText}>SOS</Text>
               </LinearGradient>
             </TouchableOpacity>
+
+            {/* Notification Bell */}
             <TouchableOpacity onPress={() => router.push('/notifications')}>
-              <Ionicons name="notifications" size={24} color={colors.primary} />
+              <Ionicons name="notifications" size={22} color={colors.primary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -776,16 +904,60 @@ export default function HomeScreen() {
           </View>
         )}
 
-        <View style={s.newGreetingBanner}>
+        {/* Enhanced Green Greeting Card */}
+        <LinearGradient
+          colors={isDarkMode ? ['#013D21', '#025C32', '#004D25'] : ['#013D21', '#025C32', '#004D25']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={s.newGreetingBanner}
+        >
+          {/* Top-Right Dot Matrix Grid Texture */}
+          <View style={s.dotMatrixContainer}>
+            {Array.from({ length: 24 }).map((_, i) => (
+              <View key={i} style={s.dotMatrixDot} />
+            ))}
+          </View>
+
+          {/* Bottom Elegant Vector ECG Heartbeat Line Texture */}
+          <View style={s.ekgLineOverlay} pointerEvents="none">
+            <Svg width="360" height="70" viewBox="0 0 360 70" fill="none">
+              <Path
+                d="M 0 35 L 60 35 L 72 26 L 84 44 L 96 12 L 110 58 L 122 22 L 134 38 L 144 35 L 220 35 L 230 26 L 242 44 L 254 12 L 268 58 L 280 22 L 292 38 L 302 35 L 360 35"
+                stroke="rgba(255, 255, 255, 0.16)"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          </View>
+
+          {/* Soft Background Glow Circles */}
+          <View style={{
+            position: 'absolute',
+            bottom: -50,
+            right: -20,
+            width: 160,
+            height: 160,
+            borderRadius: 80,
+            backgroundColor: 'rgba(255, 255, 255, 0.04)',
+          }} />
+
           <View style={s.greetingContent}>
             <View style={s.greetingTextContainer}>
-              <Text style={s.newGreetingTitle}>
-                {t(currentHour >= 16 ? 'home.greeting_evening' : currentHour >= 12 ? 'home.greeting_afternoon' : 'home.greeting_morning')}, {userName}!
+              <Text style={s.newGreetingTimeText}>
+                {t(currentHour >= 16 ? 'home.greeting_evening' : currentHour >= 12 ? 'home.greeting_afternoon' : 'home.greeting_morning')},
               </Text>
-              <Text style={s.newGreetingSubtitle}>{t('home.greeting_subtitle')}</Text>
+              <Text style={s.newGreetingNameText}>
+                {userName} <Text style={{ color: '#FBBF24' }}>✦</Text>
+              </Text>
+              <Text style={s.newGreetingSubtitle}>
+                {homeConfig.greeting_banner?.subtitle || t('home.greeting_subtitle')}
+              </Text>
+              <View style={s.goldenAccentLine} />
               <TouchableOpacity onPress={() => router.push('/my-bookings')} style={s.bookingStatusBtn}>
-                <Ionicons name="calendar" size={14} color="#02743F" />
+                <Ionicons name="calendar-outline" size={15} color="#02743F" />
                 <Text style={s.bookingStatusBtnText}>{t('home.booking_status')}</Text>
+                <Ionicons name="arrow-forward-outline" size={14} color="#02743F" />
               </TouchableOpacity>
             </View>
             <View style={s.greetingAvatarContainer}>
@@ -793,35 +965,83 @@ export default function HomeScreen() {
                 <Image source={{ uri: profile.profileImageUrl }} style={s.greetingAvatar} />
               ) : (
                 <View style={s.greetingAvatarPlaceholder}>
-                  <Ionicons name="person-circle-outline" size={90} color="#02743F" />
+                  <Ionicons name="person" size={48} color="#02743F" />
                 </View>
               )}
             </View>
           </View>
-        </View>
+        </LinearGradient>
 
-        {/* Quick Services (Strip) */}
-        {quickServicesSection && (
-          <QuickServicesStrip
-            section={quickServicesSection}
-            itemWidth={exactEssentialItemWidth}
-            cardHeight={exactEssentialCardHeight}
-            colors={colors}
-          />
-        )}
+        {/* Dynamic Sections Loop */}
+        {[...sections]
+          .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+          .map((section) => {
+            if (!section.enabled) return null;
 
-        {/* Ayuxa Services (Grid) */}
-        {serviceGridSection && (
-          <ServiceGrid
-            section={serviceGridSection}
-            itemWidth={exactAyuxaItemWidth}
-            imageHeight={exactAyuxaImageHeight}
-            cardHeight={exactAyuxaCardHeight}
-            colors={colors}
-          />
-        )}
+            switch (section.type) {
+              case 'quick_services':
+                return (
+                  <QuickServicesStrip
+                    key={section.id}
+                    section={section}
+                    itemWidth={exactEssentialItemWidth}
+                    cardHeight={exactEssentialCardHeight}
+                    colors={colors}
+                  />
+                );
+              case 'service_grid':
+                return (
+                  <ServiceGrid
+                    key={section.id}
+                    section={section}
+                    itemWidth={exactAyuxaItemWidth}
+                    imageHeight={exactAyuxaImageHeight}
+                    cardHeight={exactAyuxaCardHeight}
+                    colors={colors}
+                  />
+                );
+              case 'essentials_grid':
+                return (services.find(s => s.slug === "home-essentials")?.isEnabled ?? true) && (
+                  <EssentialsGrid
+                    key={section.id}
+                    section={section}
+                    itemWidth={exactEssentialItemWidth}
+                    cardHeight={exactEssentialCardHeight}
+                    colors={colors}
+                  />
+                );
+              case 'custom_card':
+              case 'banner_card':
+                return (
+                  <TouchableOpacity
+                    key={section.id}
+                    style={s.customCardContainer}
+                    onPress={() => section.view_all_route && router.push(section.view_all_route as any)}
+                    activeOpacity={0.9}
+                  >
+                    <Image
+                      source={{ uri: section.image_url?.startsWith('http') ? section.image_url : getImageUrl(section.image_url || 'banner.png') }}
+                      style={s.customCardImage}
+                      resizeMode="cover"
+                    />
+                    <View style={s.customCardOverlay}>
+                      <View style={s.customCardTextGroup}>
+                        <Text style={s.customCardTitle}>{section.title || "Plan Your Next Travel"}</Text>
+                        <Text style={s.customCardSubtitle}>{section.subtitle || "Tell us where you want to go."}</Text>
+                      </View>
+                      <View style={s.customCardCta}>
+                        <Text style={s.customCardCtaText}>{section.cta_text || "Share Now"}</Text>
+                        <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              default:
+                return null;
+            }
+          })}
 
-        {/* Banner Slider — Option 1: After Greeting (Admin-Managed) */}
+        {/* Banner Slider */}
         {banners.length > 0 && (
           <BannerSlider banners={banners} colors={colors} />
         )}
@@ -830,16 +1050,6 @@ export default function HomeScreen() {
         {trust_badges.length > 0 && (
           <TrustBadges
             badges={trust_badges}
-            colors={colors}
-          />
-        )}
-
-        {/* Home Essentials Services (Grid) */}
-        {essentialsSection && (services.find(s => s.slug === "home-essentials")?.isEnabled ?? true) && (
-          <EssentialsGrid
-            section={essentialsSection}
-            itemWidth={exactEssentialItemWidth}
-            cardHeight={exactEssentialCardHeight}
             colors={colors}
           />
         )}
@@ -899,7 +1109,7 @@ export default function HomeScreen() {
 
 // ─── Styles factory ───────────────────────────────────────────────────────────
 
-function makeStyles(c: ThemeColors) {
+function makeStyles(c: ThemeColors, fontScale: number = 1.0, isLargeFont: boolean = false) {
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.bgScreen },
 
@@ -914,11 +1124,12 @@ function makeStyles(c: ThemeColors) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: Spacing.lg,
-      paddingBottom: Spacing.md,
-      paddingTop: Spacing.md,
+      paddingHorizontal: 10,
+      paddingBottom: 10,
+      paddingTop: 10,
+      gap: 6,
     },
-    logoSmall: { width: 42, height: 32 },
+    logoSmall: { width: 36, height: 28 },
     locationPill: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -926,49 +1137,108 @@ function makeStyles(c: ThemeColors) {
       borderWidth: 1,
       borderColor: c.borderLight,
       backgroundColor: c.bgCardMuted,
-      borderRadius: Radius.xl,
-      paddingHorizontal: Spacing.md,
+      borderRadius: Radius.full,
+      paddingHorizontal: 10,
       paddingVertical: 6,
-      marginHorizontal: Spacing.sm,
+      marginHorizontal: 4,
       flex: 1,
       gap: 4,
     },
-    locationText: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: c.textBody, flex: 1 },
-    headerRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-    sosCircle: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center', ...Shadow.card },
+    locationText: { fontFamily: Fonts.medium, fontSize: Math.round(11.5 * fontScale), color: c.textBody, flex: 1 },
+    headerRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    themeToggleBtn: {
+      backgroundColor: c.bgCardMuted,
+      borderRadius: Radius.full,
+      paddingVertical: 5,
+      paddingHorizontal: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      borderWidth: 1,
+      borderColor: c.borderLight,
+    },
+    themeToggleText: { fontFamily: Fonts.semiBold, fontSize: Math.round(10 * fontScale), color: c.primary },
+    fontToggleBtn: {
+      backgroundColor: isLargeFont ? c.primary : c.bgCardMuted,
+      borderRadius: Radius.full,
+      paddingVertical: 5,
+      paddingHorizontal: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: isLargeFont ? c.primary : c.borderLight,
+    },
+    fontToggleText: { fontFamily: Fonts.bold, fontSize: Math.round(11 * fontScale), color: isLargeFont ? '#FFFFFF' : c.primary },
+    sosCircle: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center', ...Shadow.card },
     sosCircleText: { fontFamily: Fonts.bold, fontSize: 10, color: c.textWhite },
 
     scrollView: { flex: 1 },
-    scrollContent: { paddingTop: 20, paddingBottom: 120 },
+    scrollContent: { paddingTop: 10, paddingBottom: 120 },
 
     newGreetingBanner: {
       marginHorizontal: Spacing.cardMargin,
-      marginTop: Spacing.md,
-      marginBottom: Spacing.md,
-      backgroundColor: '#02743F',
-      borderRadius: Radius.xl,
-      paddingVertical: 18,
-      paddingHorizontal: Spacing.lg,
-      ...Shadow.card,
+      marginTop: Spacing.sectionGap,
+      borderRadius: 20,
+      paddingVertical: 20,
+      paddingHorizontal: 20,
+      position: 'relative',
+      overflow: 'hidden',
+      elevation: 0,
+      shadowColor: 'transparent',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0,
+      shadowRadius: 0,
     },
-    greetingContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    greetingTextContainer: { flex: 1, marginRight: Spacing.lg },
-    newGreetingTitle: { fontFamily: Fonts.bold, fontSize: 16, color: '#FFFFFF', marginBottom: 4 },
-    newGreetingSubtitle: { fontFamily: Fonts.regular, fontSize: 12, color: 'rgba(255,255,255,0.8)', marginBottom: 10, lineHeight: 16 },
+    dotMatrixContainer: {
+      position: 'absolute',
+      top: 14,
+      right: 14,
+      width: 72,
+      height: 48,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      opacity: 0.22,
+      zIndex: 1,
+    },
+    dotMatrixDot: {
+      width: 3,
+      height: 3,
+      borderRadius: 1.5,
+      backgroundColor: '#FFFFFF',
+    },
+    ekgLineOverlay: {
+      position: 'absolute',
+      bottom: 6,
+      left: 0,
+      right: 0,
+      zIndex: 1,
+    },
+    greetingContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', zIndex: 2 },
+    greetingTextContainer: { flex: 1, marginRight: 12 },
+    newGreetingTimeText: { fontFamily: Fonts.bold, fontSize: Math.round(20 * fontScale), color: '#FFFFFF', lineHeight: Math.round(26 * fontScale) },
+    newGreetingNameText: { fontFamily: Fonts.bold, fontSize: Math.round(20 * fontScale), color: '#FFFFFF', lineHeight: Math.round(26 * fontScale), marginBottom: 6 },
+    newGreetingSubtitle: { fontFamily: Fonts.semiBold, fontSize: Math.round(12.5 * fontScale), color: '#FEF08A', opacity: 0.95, lineHeight: Math.round(18 * fontScale) },
+    goldenAccentLine: { width: 36, height: 2, backgroundColor: '#FACC15', borderRadius: 1, marginTop: 6, marginBottom: 14 },
     bookingStatusBtn: {
       backgroundColor: '#FFFFFF',
-      paddingVertical: 7,
-      paddingHorizontal: 14,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
       borderRadius: Radius.full,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
+      gap: 8,
       alignSelf: 'flex-start',
+      shadowColor: 'transparent',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0,
+      shadowRadius: 0,
+      elevation: 0,
     },
-    bookingStatusBtnText: { fontFamily: Fonts.semiBold, fontSize: 11, color: '#02743F' },
-    greetingAvatarContainer: { width: 90, height: 90, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-    greetingAvatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#FFFFFF' },
-    greetingAvatarPlaceholder: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center' },
+    bookingStatusBtnText: { fontFamily: Fonts.bold, fontSize: Math.round(12 * fontScale), color: '#02743F' },
+    greetingAvatarContainer: { width: 96, height: 96, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+    greetingAvatar: { width: 96, height: 96, borderRadius: 48, borderWidth: 3.5, borderColor: 'rgba(255, 255, 255, 0.85)' },
+    greetingAvatarPlaceholder: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', borderWidth: 3.5, borderColor: 'rgba(255, 255, 255, 0.85)' },
 
     featuredMeetupCard: {
       marginHorizontal: Spacing.cardMargin,
@@ -977,11 +1247,11 @@ function makeStyles(c: ThemeColors) {
       borderRadius: Radius.lg,
       overflow: 'hidden',
       height: 220,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-      elevation: 5,
+      shadowColor: 'transparent',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0,
+      shadowRadius: 0,
+      elevation: 0,
     },
     featuredMeetupImage: {
       position: 'absolute',
@@ -1096,14 +1366,13 @@ function makeStyles(c: ThemeColors) {
       backgroundColor: c.bgCard,
       borderRadius: 16,
       padding: 16,
-      marginBottom: 20,
       borderWidth: 1.5,
       borderColor: c.primary,
-      shadowColor: c.shadowColor,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 10,
-      elevation: 4,
+      shadowColor: 'transparent',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0,
+      shadowRadius: 0,
+      elevation: 0,
     },
     comingSoonContent: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
     comingSoonTextRow: { marginLeft: 12, flex: 1 },
@@ -1111,6 +1380,57 @@ function makeStyles(c: ThemeColors) {
     comingSoonDesc: { fontFamily: Fonts.regular, fontSize: 12, color: c.textMuted },
     notifyMeButton: { backgroundColor: c.primary, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
     notifyMeText: { fontFamily: Fonts.medium, fontSize: 14, color: '#FFFFFF' },
+
+    customCardContainer: {
+      marginHorizontal: Spacing.cardMargin,
+      marginTop: Spacing.sectionGap,
+      borderRadius: 20,
+      overflow: 'hidden',
+      height: 240,
+      backgroundColor: c.bgCard,
+    },
+    customCardImage: {
+      position: 'absolute',
+      width: '100%',
+      height: '100%',
+    },
+    customCardOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.35)',
+      padding: 20,
+      justifyContent: 'flex-end',
+      gap: 12,
+    },
+    customCardTextGroup: {
+      gap: 4,
+    },
+    customCardTitle: {
+      fontFamily: Fonts.bold,
+      fontSize: Math.round(17 * fontScale),
+      lineHeight: Math.round(22 * fontScale),
+      color: '#FFFFFF',
+    },
+    customCardSubtitle: {
+      fontFamily: Fonts.medium,
+      fontSize: Math.round(12 * fontScale),
+      lineHeight: Math.round(16 * fontScale),
+      color: 'rgba(255, 255, 255, 0.9)',
+    },
+    customCardCta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#02743F', // Green CTA background matching mockup reference
+      paddingVertical: 7,
+      paddingHorizontal: 16,
+      borderRadius: 30,
+      gap: 6,
+      alignSelf: 'flex-start',
+    },
+    customCardCtaText: {
+      fontFamily: Fonts.bold,
+      fontSize: Math.round(11.5 * fontScale),
+      color: '#FFFFFF',
+    },
 
     // unused legacy styles kept to avoid TS errors in case referenced elsewhere
     sosBanner: {} as any,

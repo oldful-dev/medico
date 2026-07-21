@@ -15,6 +15,8 @@ import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import { useCart } from "@/context/CartContext";
 
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 export default function TabLayout() {
   const { t } = useTranslation();
   const { setProfile } = useUser();
@@ -23,39 +25,9 @@ export default function TabLayout() {
   const hasHandledError = useRef(false);
   const colors = useThemeColors();
   const { itemCount } = useCart();
+  const insets = useSafeAreaInsets();
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await userService.getProfile();
-        if (response.success && response.data) {
-          setProfile(response.data);
-        }
-      } catch (error: any) {
-        console.error("Failed to fetch user profile in global layout:", error);
 
-        // Check if it's a timeout error
-        if (
-          error?.message?.includes("timed out") ||
-          error?.message?.includes("timeout")
-        ) {
-          if (!hasHandledError.current) {
-            hasHandledError.current = true;
-            try {
-              await logout();
-              setTimeout(() => {
-                router.replace("/(auth)/login" as any);
-              }, 100);
-            } catch (logoutErr) {
-              console.error("Error during logout/redirect:", logoutErr);
-              router.replace("/(auth)/login" as any);
-            }
-          }
-        }
-      }
-    };
-    fetchProfile();
-  }, [setProfile, logout, router]);
 
   return (
     <Tabs
@@ -67,9 +39,9 @@ export default function TabLayout() {
           backgroundColor: colors.bgHeader,
           borderTopLeftRadius: Radius.xl,
           borderTopRightRadius: Radius.xl,
-          height: 83,
+          height: 73 + insets.bottom,
           paddingTop: 10,
-          paddingBottom: Platform.OS === "ios" ? 24 : 10,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
           ...Shadow.header,
           borderTopWidth: 0,
           position: "absolute",

@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
@@ -50,6 +50,7 @@ export default function AllHomeEssentialsScreen() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const [services, setServices] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [isParentDisabled, setIsParentDisabled] = React.useState(false);
@@ -120,7 +121,7 @@ export default function AllHomeEssentialsScreen() {
     }
   };
 
-  const styles = makeStyles(isDarkMode);
+  const styles = makeStyles(isDarkMode, insets);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -208,7 +209,7 @@ export default function AllHomeEssentialsScreen() {
   );
 }
 
-const makeStyles = (isDarkMode: boolean) =>
+const makeStyles = (isDarkMode: boolean, insets: any) =>
   StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -230,7 +231,7 @@ const makeStyles = (isDarkMode: boolean) =>
     },
     scrollContent: {
       paddingHorizontal: 20,
-      paddingBottom: 40,
+      paddingBottom: 40 + insets.bottom,
       paddingTop: 10,
     },
     listContainer: {

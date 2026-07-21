@@ -30,7 +30,7 @@ export default function MedicalEquipmentScreen() {
     const params = useLocalSearchParams<{ subscriptionId?: string }>();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
-    const { profile } = useUser();
+    const { profile, refreshData } = useUser();
     const [selectedEquipment, setSelectedEquipment] = useState('wheelchair');
     const [otherType, setOtherType] = useState('');
     const [selectedDuration, setSelectedDuration] = useState('Monthly');
@@ -98,6 +98,7 @@ export default function MedicalEquipmentScreen() {
             } else {
                 await userService.addAddress(profile.id, payload);
             }
+            await refreshData(true);
         } catch {
             // non-fatal
         }

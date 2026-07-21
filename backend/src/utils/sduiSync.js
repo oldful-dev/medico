@@ -149,8 +149,10 @@ const syncDbServicesToUIConfig = async () => {
                 for (const item of (section.services || [])) {
                     const dbSvc = homeEssentialDbSvcs.find(s => matchConfigToDb(item.id, item.route, s.slug, s.route));
                     if (dbSvc) {
-                        if (item.enabled !== dbSvc.isEnabled) {
-                            item.enabled = dbSvc.isEnabled;
+                        // If DB service is disabled, UI item must be disabled.
+                        // If DB service is enabled, we allow the UI item to be either enabled or disabled (do not force enable).
+                        if (!dbSvc.isEnabled && item.enabled) {
+                            item.enabled = false;
                             changed = true;
                         }
                         // Keep label, route, icon, and sort_order in sync
@@ -198,8 +200,10 @@ const syncDbServicesToUIConfig = async () => {
                 for (const item of (section.services || [])) {
                     const dbSvc = dbServices.find(s => matchConfigToDb(item.id, item.route, s.slug, s.route));
                     if (dbSvc) {
-                        if (item.enabled !== dbSvc.isEnabled) {
-                            item.enabled = dbSvc.isEnabled;
+                        // If DB service is disabled, UI item must be disabled.
+                        // If DB service is enabled, we allow the UI item to be either enabled or disabled (do not force enable).
+                        if (!dbSvc.isEnabled && item.enabled) {
+                            item.enabled = false;
                             changed = true;
                         }
                     }

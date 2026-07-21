@@ -275,6 +275,7 @@ const billingStyles = StyleSheet.create({
 interface PlanCardProps {
     plan: Plan;
     activeCycle: BillingCycle;
+    onCycleChange: (cycle: BillingCycle) => void;
     activeSub: any | null;
     isInitiating: boolean;
     onChoose: (plan: Plan) => void;
@@ -284,11 +285,12 @@ interface PlanCardProps {
     planType: 'CARE' | 'HOMEMAKER';
 }
 
-function PlanCard({ plan, activeCycle, activeSub, isInitiating, onChoose, colors, dark, planIndex, planType }: PlanCardProps) {
+function PlanCard({ plan, activeCycle, onCycleChange, activeSub, isInitiating, onChoose, colors, dark, planIndex, planType }: PlanCardProps) {
     const { t } = useTranslation();
     const price = getPriceForCycle(plan, activeCycle);
     const isActivePlan = activeSub?.planId === plan.id;
     const hasActiveSub = !!activeSub;
+    const [expanded, setExpanded] = useState(false);
 
     // Gradient palette per index
     const gradients = [
@@ -314,93 +316,132 @@ function PlanCard({ plan, activeCycle, activeSub, isInitiating, onChoose, colors
     return (
         <View style={[planCardStyles.card, { width: CARD_WIDTH, backgroundColor: palette.bg, borderColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}>
             {/* Card Header */}
-            <View style={[planCardStyles.header, { backgroundColor: palette.headerBg }]}>
-                <View style={{ flex: 1, paddingRight: 8 }}>
-                    <Text style={planCardStyles.planType}>
-                        {planType === 'CARE' ? 'CARE PLAN' : 'HOME PLAN'}
-                    </Text>
-                    <Text style={planCardStyles.planName}>{plan.name}</Text>
-                    {plan.description ? (
-                        <Text style={planCardStyles.planDesc} numberOfLines={2}>{plan.description}</Text>
-                    ) : null}
+            <View style={[planCardStyles.header, { backgroundColor: palette.headerBg, flexDirection: 'column' }]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+                    <View style={{ flex: 1, paddingRight: 8 }}>
+                        <Text style={planCardStyles.planType}>
+                            {planType === 'CARE' ? 'CARE PLAN' : 'HOME PLAN'}
+                        </Text>
+                        <Text style={planCardStyles.planName}>{plan.name}</Text>
+                        {plan.description ? (
+                            <Text style={planCardStyles.planDesc} numberOfLines={2}>{plan.description}</Text>
+                        ) : null}
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
+                            <Text style={{ fontFamily: Fonts.bold, fontSize: 24, color: '#FFFFFF' }}>₹</Text>
+                            <Text style={{ fontFamily: Fonts.bold, fontSize: 28, color: '#FFFFFF' }}>
+                                {price > 0 ? price.toLocaleString('en-IN') : '—'}
+                            </Text>
+                        </View>
+                        <Text style={{ fontFamily: Fonts.regular, fontSize: 10, color: 'rgba(255,255,255,0.8)' }}>
+                            {cycleInfo.months === 3 ? '90 days' : cycleInfo.months === 6 ? '180 days' : '365 days'}
+                        </Text>
+                    </View>
                 </View>
+
+                {/* Duration Toggle on the card itself */}
+                <View style={{ flexDirection: 'row', marginTop: 12, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: 3, gap: 4, width: '100%' }}>
+                    {BILLING_CYCLES.map((cycle) => {
+                        const isCycleActive = activeCycle === cycle.key;
+                        return (
+                            <TouchableOpacity
+                                key={cycle.key}
+                                style={{
+                                    flex: 1,
+                                    paddingVertical: 6,
+                                    borderRadius: 6,
+                                    backgroundColor: isCycleActive ? '#FFFFFF' : 'transparent',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                                onPress={() => onCycleChange(cycle.key)}
+                            >
+                                <Text style={{
+                                    fontFamily: Fonts.semiBold,
+                                    fontSize: 10,
+                                    color: isCycleActive ? palette.accent : '#FFFFFF',
+                                }}>
+                                    {cycle.label}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+
                 {isActivePlan && (
-                    <View style={planCardStyles.activeBadge}>
+                    <View style={[planCardStyles.activeBadge, { marginTop: 8, alignSelf: 'flex-start' }]}>
                         <Text style={planCardStyles.activeBadgeText}>{t('plans.active_plan_banner')}</Text>
                     </View>
                 )}
             </View>
 
-            {/* Price Section */}
-            <View style={[planCardStyles.priceRow, { borderBottomColor: dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)' }]}>
-                <View>
-                    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-                        <Text style={[planCardStyles.priceRupee, { color: palette.accent }]}>₹</Text>
-                        <Text style={[planCardStyles.priceAmount, { color: palette.accent }]}>
-                            {price > 0 ? price.toLocaleString('en-IN') : '—'}
-                        </Text>
-                    </View>
-                    <Text style={[planCardStyles.pricePer, { color: dark ? 'rgba(255,255,255,0.45)' : '#9CA3AF' }]}>
-                        {t('plans.per_cycle', { suffix: activeCycle === 'QUARTERLY' ? '3 mo' : activeCycle === 'BIANNUAL' ? '6 mo' : '12 mo' })}
-                    </Text>
-                </View>
-                <View style={[planCardStyles.durationPill, { backgroundColor: `${palette.accent}18`, borderColor: `${palette.accent}35` }]}>
-                    <Text style={[planCardStyles.durationText, { color: palette.accent }]}>
-                        {t('plans.days_suffix', { days: cycleInfo.months === 3 ? '90' : cycleInfo.months === 6 ? '180' : '365' })}
-                    </Text>
-                </View>
-            </View>
-
             {/* Features List */}
-            <ScrollView
-                style={planCardStyles.featuresScroll}
-                showsVerticalScrollIndicator={false}
-                nestedScrollEnabled={true}
-            >
-                {plan.planBenefits && plan.planBenefits.length > 0 ? (
-                    plan.planBenefits
-                        .slice()
-                        .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
-                        .map((benefit) => {
-                            const badgeText = formatUsageLimit(benefit.usageLimit, benefit.usagePeriod);
-                            return (
-                                <View key={benefit.id} style={planCardStyles.featureRow}>
-                                    <View style={[planCardStyles.featureIconBox, { backgroundColor: `${palette.accent}12` }]}>
-                                        {renderBenefitSvg(benefit.benefitCode, 16, palette.accent)}
+            <View style={{ paddingHorizontal: 18, paddingTop: 14, paddingBottom: 4 }}>
+                {(() => {
+                    const benefitsList = plan.planBenefits && plan.planBenefits.length > 0 
+                        ? plan.planBenefits.slice().sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+                        : fallbackFeatures.map((f, i) => ({ id: `fallback-${i}`, title: f, benefitCode: getBenefitCodeFromFeatureText(f), usageLimit: null, usagePeriod: null }));
+                    
+                    const maxCollapsed = 4;
+                    const hasExcess = benefitsList.length > maxCollapsed;
+                    const visibleBenefits = expanded ? benefitsList : benefitsList.slice(0, maxCollapsed);
+
+                    return (
+                        <>
+                            {visibleBenefits.map((benefit: any) => {
+                                const badgeText = benefit.id.startsWith('fallback') ? null : formatUsageLimit(benefit.usageLimit, benefit.usagePeriod);
+                                return (
+                                    <View key={benefit.id} style={planCardStyles.featureRow}>
+                                        <View style={[planCardStyles.featureIconBox, { backgroundColor: `${palette.accent}12` }]}>
+                                            {renderBenefitSvg(benefit.benefitCode, 16, palette.accent)}
+                                        </View>
+                                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                                            <Text style={[planCardStyles.featureText, { color: dark ? 'rgba(255,255,255,0.8)' : '#374151' }]}>
+                                                {benefit.title}
+                                            </Text>
+                                            {badgeText ? (
+                                                <View style={[planCardStyles.usageBadge, { backgroundColor: dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
+                                                    <Text style={[planCardStyles.usageBadgeText, { color: dark ? 'rgba(255,255,255,0.6)' : '#6B7280' }]}>
+                                                        {badgeText}
+                                                    </Text>
+                                                </View>
+                                            ) : null}
+                                        </View>
                                     </View>
-                                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-                                        <Text style={[planCardStyles.featureText, { color: dark ? 'rgba(255,255,255,0.8)' : '#374151' }]}>
-                                            {benefit.title}
-                                        </Text>
-                                        {badgeText ? (
-                                            <View style={[planCardStyles.usageBadge, { backgroundColor: dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
-                                                <Text style={[planCardStyles.usageBadgeText, { color: dark ? 'rgba(255,255,255,0.6)' : '#6B7280' }]}>
-                                                    {badgeText}
-                                                </Text>
-                                            </View>
-                                        ) : null}
-                                    </View>
-                                </View>
-                            );
-                        })
-                ) : (
-                    fallbackFeatures.map((feature, idx) => (
-                        <View key={idx} style={planCardStyles.featureRow}>
-                            <View style={[planCardStyles.featureIconBox, { backgroundColor: `${palette.accent}12` }]}>
-                                {renderBenefitSvg(getBenefitCodeFromFeatureText(feature), 16, palette.accent)}
-                            </View>
-                            <Text style={[planCardStyles.featureText, { color: dark ? 'rgba(255,255,255,0.8)' : '#374151' }]}>
-                                {feature}
-                            </Text>
-                        </View>
-                    ))
-                )}
-                {(!plan.planBenefits || plan.planBenefits.length === 0) && fallbackFeatures.length === 0 && (
-                    <Text style={{ fontFamily: Fonts.regular, fontSize: 12, color: dark ? 'rgba(255,255,255,0.35)' : '#9CA3AF', textAlign: 'center', paddingVertical: 16 }}>
-                        Features listed in plan details
-                    </Text>
-                )}
-            </ScrollView>
+                                );
+                            })}
+                            {benefitsList.length === 0 && (
+                                <Text style={{ fontFamily: Fonts.regular, fontSize: 12, color: dark ? 'rgba(255,255,255,0.35)' : '#9CA3AF', textAlign: 'center', paddingVertical: 16 }}>
+                                    Features listed in plan details
+                                </Text>
+                            )}
+                            {hasExcess && (
+                                <TouchableOpacity
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        paddingVertical: 8,
+                                        marginTop: 4,
+                                        gap: 4,
+                                    }}
+                                    onPress={() => setExpanded(!expanded)}
+                                >
+                                    <Text style={{ fontFamily: Fonts.semiBold, fontSize: 12, color: palette.accent }}>
+                                        {expanded ? 'Show Less' : `View More (+${benefitsList.length - maxCollapsed} features)`}
+                                    </Text>
+                                    <Ionicons
+                                        name={expanded ? "chevron-up" : "chevron-down"}
+                                        size={14}
+                                        color={palette.accent}
+                                    />
+                                </TouchableOpacity>
+                            )}
+                        </>
+                    );
+                })()}
+            </View>
 
             {/* Disclaimer for Homemaker plans */}
             {planType === 'HOMEMAKER' && (
@@ -444,7 +485,6 @@ const planCardStyles = StyleSheet.create({
         borderWidth: 1,
         marginRight: CARD_MARGIN,
         overflow: 'hidden',
-        ...Shadow.card,
     },
     header: {
         padding: 18,
@@ -835,6 +875,7 @@ interface PlanSectionProps {
     accentColor: string;
     activeSub: any | null;
     activeCycle: BillingCycle;
+    onCycleChange: (cycle: BillingCycle) => void;
     colors: ThemeColors;
     dark: boolean;
     onChoose: (plan: Plan) => void;
@@ -843,7 +884,7 @@ interface PlanSectionProps {
 }
 
 function PlanSection({
-    planType, superTitle, titles, accentColor, activeSub, activeCycle,
+    planType, superTitle, titles, accentColor, activeSub, activeCycle, onCycleChange,
     colors, dark, onChoose, initiating, router
 }: PlanSectionProps) {
     const [plans, setPlans] = useState<Plan[]>([]);
@@ -931,6 +972,7 @@ function PlanSection({
                                 <PlanCard
                                     plan={item}
                                     activeCycle={activeCycle}
+                                    onCycleChange={onCycleChange}
                                     activeSub={activeSub}
                                     isInitiating={initiating === item.id}
                                     onChoose={onChoose}
@@ -1106,13 +1148,7 @@ export default function PlansScreen() {
                 contentContainerStyle={S.scroll}
                 showsVerticalScrollIndicator={false}
             >
-                {/* ─── Global Billing Cycle Toggle ─── */}
-                <BillingToggle
-                    activeCycle={activeCycle}
-                    onCycleChange={setActiveCycle}
-                    colors={colors}
-                    dark={isDarkMode}
-                />
+
 
                 {/* ─── Section 1: Ayuxa Care Plans ─── */}
                 <PlanSection
@@ -1122,6 +1158,7 @@ export default function PlansScreen() {
                     accentColor="#048357"
                     activeSub={careActiveSub}
                     activeCycle={activeCycle}
+                    onCycleChange={setActiveCycle}
                     colors={colors}
                     dark={isDarkMode}
                     onChoose={handleChoosePlan}
@@ -1172,6 +1209,7 @@ export default function PlansScreen() {
                     accentColor="#6366F1"
                     activeSub={homemakerActiveSub}
                     activeCycle={activeCycle}
+                    onCycleChange={setActiveCycle}
                     colors={colors}
                     dark={isDarkMode}
                     onChoose={handleChoosePlan}
@@ -1284,7 +1322,7 @@ const makeStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
     },
     scroll: {
         paddingTop: 24,
-        paddingBottom: 40,
+        paddingBottom: 140,
     },
     sectionDivider: {
         flexDirection: 'row',

@@ -1,5 +1,5 @@
 // User Context - User profile and service catalog state
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile, userService, serviceCatalogService } from '@/services/api';
 import { ServiceItem } from '@/services/api/serviceCatalogService';
@@ -52,8 +52,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
         AsyncStorage.setItem(LANG_KEY, lang);
     };
 
-    const loadData = useCallback(async () => {
+    const lastLoadTimeRef = useRef<number>(0);
+    const THROTTLE_MS = 15000;
+
+    const loadData = useCallback(async (force = false) => {
         if (!isAuthenticated) return;
+        const now = Date.now();
+        if (!force && lastLoadTimeRef.current > 0 && (now - lastLoadTimeRef.current < THROTTLE_MS)) {
+            return;
+        }
         setIsLoading(true);
         try {
             const [profileRes, servicesRes] = await Promise.all([
@@ -72,6 +79,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             if (servicesRes.success && servicesRes.data) {
                 setServices(servicesRes.data);
             }
+            lastLoadTimeRef.current = Date.now();
         } catch (error) {
             console.error('Failed to load user/service data:', error);
         } finally {

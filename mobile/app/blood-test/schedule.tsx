@@ -403,12 +403,11 @@ export default function BloodTestScheduleScreen() {
           isDefault: true,
         };
         if (existing?.id) {
-          userService
-            .updateAddress(profile.id, existing.id, addrPayload)
-            .catch(() => {});
+          await userService.updateAddress(profile.id, existing.id, addrPayload).catch(() => {});
         } else {
-          userService.addAddress(profile.id, addrPayload).catch(() => {});
+          await userService.addAddress(profile.id, addrPayload).catch(() => {});
         }
+        await refreshData(true).catch(() => {});
       }
 
       const amount = pkg.discounted_cost || pkg.cost;
