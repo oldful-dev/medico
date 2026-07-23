@@ -1,8 +1,10 @@
 "use client";
-import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, Package, Tag, Layers, Eye } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, Package, Tag, Layers, Eye, ShoppingCart, RefreshCw } from "lucide-react";
 import { productAPI, categoryAPI } from "@/lib/api";
 import { showToast, formatCurrency } from "@/lib/hooks";
+import { onSocketEvent } from "@/lib/socket";
+
 
 const EMPTY_FORM = { name: '', description: '', price: 0, mrp: 0, stock: 0, isEnabled: true, categoryId: '', imageUrl: '', sku: '', weight: 0.1, length: 10, width: 10, height: 10 };
 
@@ -28,7 +30,64 @@ export default function StorePage() {
     const [editingCat, setEditingCat] = useState(null);
     const [catForm, setCatForm] = useState({ name: '', slug: '', imageUrl: '' });
 
+    // Orders tab
+    const [orders, setOrders] = useState([]);
+    const [ordersLoading, setOrdersLoading] = useState(false);
+    const [newOrderCount, setNewOrderCount] = useState(0);
+    const [updatingOrderId, setUpdatingOrderId] = useState(null);
+
     useEffect(() => { loadData(); }, []);
+
+    // ── Real-time new_product_order socket listener ────────────────
+    useEffect(() => {
+        onSocketEvent('new_product_order', (data) => {
+            setNewOrderCount(prev => prev + 1);
+            // Auto-refresh orders if on orders tab
+            setOrders(prev => {
+                // Only prepend if we don't already have it
+                if (prev.some(o => o.id === data.orderId)) return prev;
+                return [{
+                    id: data.orderId,
+                    orderCode: data.orderCode,
+                    amount: data.amount,
+                    status: data.status || 'PAID',
+                    createdAt: new Date().toISOString(),
+                    user: { name: data.userName },
+                    items: [],
+                    _isLive: true,
+                }, ...prev];
+            });
+        });
+    }, []);
+
+    async function loadOrders() {
+        try {
+            setOrdersLoading(true);
+            const res = await productAPI.getOrders({ limit: 100 });
+            setOrders(res.data?.data || []);
+        } catch (e) { console.error(e); } finally { setOrdersLoading(false); }
+    }
+
+    function handleTabChange(t) {
+        setTab(t);
+        if (t === 'orders') {
+            setNewOrderCount(0);
+            loadOrders();
+        }
+    }
+
+    async function updateOrderStatus(orderId, status) {
+        try {
+            setUpdatingOrderId(orderId);
+            await productAPI.updateOrderStatus(orderId, { status });
+            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+            showToast(`Order status updated to ${status}`);
+        } catch (e) {
+            showToast(e.response?.data?.message || 'Failed to update status', 'error');
+        } finally { setUpdatingOrderId(null); }
+    }
+
+
 
     async function loadData() {
         try {
@@ -134,9 +193,27 @@ export default function StorePage() {
 
             {/* Tabs */}
             <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-                {['products', 'categories'].map(t => (
-                    <button key={t} className={`btn ${tab === t ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab(t)} style={{ textTransform: 'capitalize' }}>
-                        {t === 'products' ? <><Package size={14} /> Products ({products.length})</> : <><Layers size={14} /> Categories ({categories.length})</>}
+                {[
+                    { key: 'products', label: `Products (${products.length})`, icon: <Package size={14} /> },
+                    { key: 'categories', label: `Categories (${categories.length})`, icon: <Layers size={14} /> },
+                    { key: 'orders', label: 'Orders', icon: <ShoppingCart size={14} />, badge: newOrderCount },
+                ].map(t => (
+                    <button
+                        key={t.key}
+                        className={`btn ${tab === t.key ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => handleTabChange(t.key)}
+                        style={{ textTransform: 'capitalize', position: 'relative' }}
+                    >
+                        {t.icon} {t.label}
+                        {t.badge > 0 && (
+                            <span style={{
+                                position: 'absolute', top: -6, right: -6,
+                                background: '#ef4444', color: '#fff', borderRadius: '50%',
+                                fontSize: 10, fontWeight: 800, minWidth: 18, height: 18,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                padding: '0 4px', lineHeight: 1,
+                            }}>{t.badge}</span>
+                        )}
                     </button>
                 ))}
             </div>
@@ -208,6 +285,105 @@ export default function StorePage() {
                 </>
             )}
 
+            {/* ── ORDERS TAB ── */}
+            {tab === 'orders' && (
+                <>
+                    <div className="filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                            {orders.length} order{orders.length !== 1 ? 's' : ''} found
+                        </span>
+                        <button className="btn btn-secondary" onClick={loadOrders} disabled={ordersLoading}
+                            style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <RefreshCw size={14} />
+                            Refresh
+                        </button>
+                    </div>
+
+                    <div className="card"><div className="card-body" style={{ padding: 0, overflowX: 'auto' }}>
+                        <table className="data-table">
+                            <thead><tr>
+                                <th>Order</th>
+                                <th>Customer</th>
+                                <th>Items</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Update Status</th>
+                            </tr></thead>
+                            <tbody>
+                                {ordersLoading
+                                    ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: 24 }}>Loading orders...</td></tr>
+                                    : orders.length === 0
+                                        ? <tr><td colSpan={7} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>
+                                            No orders yet. Click Refresh to load.
+                                          </td></tr>
+                                        : orders.map(order => {
+                                            const statusMeta = {
+                                                PENDING:    { bg: '#FFF8E1', color: '#F59E0B', label: 'Placed' },
+                                                PAID:       { bg: '#EFF6FF', color: '#3B82F6', label: 'Paid' },
+                                                CONFIRMED:  { bg: '#F5F3FF', color: '#8B5CF6', label: 'Confirmed' },
+                                                DISPATCHED: { bg: '#FFF7ED', color: '#F97316', label: 'Dispatched' },
+                                                DELIVERED:  { bg: '#ECFDF5', color: '#10B981', label: 'Delivered' },
+                                                CANCELLED:  { bg: '#FEF2F2', color: '#EF4444', label: 'Cancelled' },
+                                            }[order.status] || { bg: '#f3f4f6', color: '#6b7280', label: order.status };
+
+                                            const items = Array.isArray(order.items) ? order.items : [];
+                                            const itemCount = items.reduce((s, i) => s + (i.quantity || 1), 0);
+                                            const topItem = items[0]?.name || '—';
+
+                                            return (
+                                                <tr key={order.id} style={order._isLive ? { background: '#f0fdf4' } : {}}>
+                                                    <td>
+                                                        <span style={{ fontWeight: 700, fontFamily: 'monospace', fontSize: 12 }}>{order.orderCode || order.id?.slice(-8)}</span>
+                                                        {order._isLive && <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 800, color: '#10b981', background: '#ecfdf5', padding: '1px 5px', borderRadius: 8 }}>NEW</span>}
+                                                    </td>
+                                                    <td className="text-sm">{order.user?.name || '—'}</td>
+                                                    <td className="text-sm">
+                                                        <span title={items.map(i => `${i.name} x${i.quantity}`).join(', ')}>
+                                                            {topItem}{itemCount > 1 ? ` +${itemCount - 1} more` : ''}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ fontWeight: 700 }}>{formatCurrency(order.amount)}</td>
+                                                    <td>
+                                                        <span style={{
+                                                            display: 'inline-block',
+                                                            background: statusMeta.bg,
+                                                            color: statusMeta.color,
+                                                            fontWeight: 700,
+                                                            fontSize: 11,
+                                                            padding: '3px 10px',
+                                                            borderRadius: 20,
+                                                        }}>{statusMeta.label}</span>
+                                                    </td>
+                                                    <td className="text-sm" style={{ color: '#888' }}>
+                                                        {new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    </td>
+                                                    <td>
+                                                        {!['DELIVERED', 'CANCELLED'].includes(order.status) && (
+                                                            <select
+                                                                className="form-select"
+                                                                style={{ fontSize: 12, padding: '4px 8px', minWidth: 120 }}
+                                                                value={order.status}
+                                                                disabled={updatingOrderId === order.id}
+                                                                onChange={e => updateOrderStatus(order.id, e.target.value)}
+                                                            >
+                                                                {['PENDING','PAID','CONFIRMED','DISPATCHED','DELIVERED','CANCELLED'].map(s => (
+                                                                    <option key={s} value={s}>{s}</option>
+                                                                ))}
+                                                            </select>
+                                                        )}
+                                                        {['DELIVERED', 'CANCELLED'].includes(order.status) && (
+                                                            <span className="text-sm" style={{ color: '#aaa' }}>Final</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                            </tbody>
+                        </table>
+                    </div></div>
+                </>
+            )}
             {/* ── CATEGORIES TAB ── */}
             {tab === 'categories' && (
                 <>

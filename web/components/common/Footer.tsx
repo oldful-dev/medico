@@ -1,7 +1,57 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export function Footer() {
+  const [settings, setSettings] = useState({
+    company_name: "Ayuxa Health Tech Platforms Pvt. Ltd.",
+    address: "No. 42, 3rd Main Road, Sector 7, HSR Layout, Bengaluru, Karnataka 560102",
+    official_contact: "+91 94801 98108",
+    customer_care: "080 4728 0789",
+    emails: {
+      support: "support@ayuxacare.com",
+      investor: "office@ayuxa.co.in",
+      careers: "careers@ayuxa.co.in",
+      enquiries: "ho@ayuxa.co.in"
+    }
+  });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${apiUrl}/ui-config/published?t=${Date.now()}`, { cache: 'no-store' });
+        const json = await res.json();
+        if (json.success && json.data) {
+          const found = json.data.find((c: any) => c.key === "company_global_config");
+          if (found && found.configJson) {
+            let parsed = found.configJson;
+            if (typeof parsed === "string") {
+              try { parsed = JSON.parse(parsed); } catch (_) {}
+            }
+            setSettings({
+              company_name: parsed.company_name || "Ayuxa Health Tech Platforms Pvt. Ltd.",
+              address: parsed.address || "No. 42, 3rd Main Road, Sector 7, HSR Layout, Bengaluru, Karnataka 560102",
+              official_contact: parsed.official_contact || "+91 94801 98108",
+              customer_care: parsed.customer_care || "080 4728 0789",
+              emails: {
+                support: parsed.emails?.support || "support@ayuxacare.com",
+                investor: parsed.emails?.investor || "office@ayuxa.co.in",
+                careers: parsed.emails?.careers || "careers@ayuxa.co.in",
+                enquiries: parsed.emails?.enquiries || "ho@ayuxa.co.in"
+              }
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load footer settings:", err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
   return (
     <footer className="mt-8 bg-[#1B1B1B] text-gray-300 w-full pt-16 pb-8 px-6 font-[var(--font-poppins)] selection:bg-[var(--color-primary)] selection:text-white relative z-40">
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10">
@@ -20,12 +70,12 @@ export function Footer() {
             <span className="text-white font-bold text-xl tracking-tight">Ayuxa</span>
           </div>
           <p className="text-sm text-gray-400 leading-relaxed pr-4">
-            Ayuxa Health Tech Platforms Pvt. Ltd.
+            {settings.company_name}
           </p>
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest mt-1">
             Address:
             <p className="text-xs text-gray-400 normal-case tracking-normal mt-1 leading-relaxed">
-              No. 42, 3rd Main Road, Sector 7, HSR Layout, Bengaluru, Karnataka 560102
+              {settings.address}
             </p>
           </div>
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-widest mt-1">
@@ -62,50 +112,50 @@ export function Footer() {
           
           <div className="flex flex-col gap-1">
             <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Client Support</span>
-            <a href="mailto:support@ayuxacare.com" className="text-sm text-[var(--color-primary)] hover:text-white transition-colors">
-              support@ayuxacare.com
+            <a href={`mailto:${settings.emails.support}`} className="text-sm text-[var(--color-primary)] hover:text-white transition-colors">
+              {settings.emails.support}
             </a>
           </div>
 
           <div className="flex flex-col gap-1">
             <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Investor Relations</span>
-            <a href="mailto:office@ayuxa.co.in" className="text-sm text-[var(--color-primary)] hover:text-white transition-colors">
-              office@ayuxa.co.in
+            <a href={`mailto:${settings.emails.investor}`} className="text-sm text-[var(--color-primary)] hover:text-white transition-colors">
+              {settings.emails.investor}
             </a>
           </div>
 
           <div className="flex flex-col gap-1">
             <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Careers</span>
-            <a href="mailto:careers@ayuxa.co.in" className="text-sm text-[var(--color-primary)] hover:text-white transition-colors">
-              careers@ayuxa.co.in
+            <a href={`mailto:${settings.emails.careers}`} className="text-sm text-[var(--color-primary)] hover:text-white transition-colors">
+              {settings.emails.careers}
             </a>
           </div>
 
           <div className="flex flex-col gap-1">
             <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">General Enquiries</span>
-            <a href="mailto:ho@ayuxa.co.in" className="text-sm text-[var(--color-primary)] hover:text-white transition-colors">
-              ho@ayuxa.co.in
+            <a href={`mailto:${settings.emails.enquiries}`} className="text-sm text-[var(--color-primary)] hover:text-white transition-colors">
+              {settings.emails.enquiries}
             </a>
           </div>
 
           <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-gray-800">
             <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Official Contact Number</span>
-            <a href="tel:+919480198108" className="text-sm text-gray-300 hover:text-white transition-colors font-medium">
-              +91 94801 98108
+            <a href={`tel:${settings.official_contact}`} className="text-sm text-gray-300 hover:text-white transition-colors font-medium">
+              {settings.official_contact}
             </a>
           </div>
 
           <div className="flex flex-col gap-1">
             <span className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider">Customer Care</span>
-            <a href="tel:08047280789" className="text-sm text-gray-300 hover:text-white transition-colors font-medium">
-              080 4728 0789
+            <a href={`tel:${settings.customer_care}`} className="text-sm text-gray-300 hover:text-white transition-colors font-medium">
+              {settings.customer_care}
             </a>
           </div>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto mt-16 pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4">
-        <p className="text-xs text-gray-500">© {new Date().getFullYear()} Ayuxa Health Tech Platforms Pvt. Ltd. All rights reserved. Copyright Information.</p>
+        <p className="text-xs text-gray-500">© {new Date().getFullYear()} {settings.company_name}. All rights reserved. Copyright Information.</p>
         <p className="text-xs text-gray-500 text-center md:text-right">Designed with empathy in Bangalore, India.</p>
       </div>
     </footer>

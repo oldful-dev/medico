@@ -15,7 +15,7 @@ const isEmoji = (str) => {
 };
 
 export default function ServicesPage() {
-    const [activeTab, setActiveTab] = useState("hardcoded");
+    const [activeTab, setActiveTab] = useState("dynamic");
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -112,15 +112,7 @@ export default function ServicesPage() {
         }
     };
 
-    const openEditPrice = (service) => {
-        setEditingService({ 
-            id: service.id, 
-            name: service.name, 
-            pricingText: service.pricingText || '',
-            basePrice: service.basePrice !== null && service.basePrice !== undefined ? service.basePrice : 0
-        });
-        setShowModal(true);
-    };
+
 
     const openAddDynamic = () => {
         setEditingService(null);
@@ -294,20 +286,7 @@ export default function ServicesPage() {
         setFormFields(updated);
     };
 
-    const handleSavePrice = async (e) => {
-        e.preventDefault();
-        try {
-            await serviceAPI.update(editingService.id, { 
-                pricingText: editingService.pricingText,
-                basePrice: parseFloat(editingService.basePrice) || 0
-            });
-            showToast('Price updated successfully', 'success');
-            setShowModal(false);
-            loadServices();
-        } catch (e) {
-            showToast(e.response?.data?.message || 'Save failed', 'error');
-        }
-    };
+
 
     const handleSaveDynamic = async (e) => {
         e.preventDefault();
@@ -393,71 +372,7 @@ export default function ServicesPage() {
                 </div>
             </div>
 
-            {/* Tab Navigation */}
-            <div className="tabs-navigation">
-                <button 
-                    className={`tab-btn ${activeTab === "hardcoded" ? "active" : ""}`}
-                    onClick={() => { setActiveTab("hardcoded"); setShowModal(false); }}
-                >
-                    <DollarSign size={16} />
-                    <span>Hardcoded Services Pricing</span>
-                </button>
-                <button 
-                    className={`tab-btn ${activeTab === "dynamic" ? "active" : ""}`}
-                    onClick={() => { setActiveTab("dynamic"); setShowModal(false); }}
-                >
-                    <Layers size={16} />
-                    <span>Dynamic Service Builder</span>
-                </button>
-            </div>
-
-            {/* TAB 1: HARDCODED SERVICES */}
-            {activeTab === "hardcoded" && (
-                <div className="card pricing-card">
-                    <div className="card-header">
-                        <h3>Static Services ({hardcodedServices.length})</h3>
-                        <span className="badge badge-info">Pricing waived for active plan subscribers</span>
-                    </div>
-                    <div className="card-body p-0">
-                        <table className="minimal-table">
-                            <thead>
-                                <tr>
-                                    <th>Service Name</th>
-                                    <th>Slug / Route</th>
-                                    <th>Display Price</th>
-                                    <th className="text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {hardcodedServices.map((s) => (
-                                    <tr key={s.id}>
-                                        <td className="font-bold">
-                                            <span style={{ marginRight: 8 }}>
-                                                {s.icon ? (
-                                                    isEmoji(s.icon) ? s.icon : <img src={s.icon} alt={s.name} style={{ width: 20, height: 20, borderRadius: 4, objectFit: "cover", display: "inline-block", verticalAlign: "middle" }} />
-                                                ) : "🩺"}
-                                            </span>
-                                            {s.name}
-                                        </td>
-                                        <td className="text-muted text-sm">{s.slug} ({s.route || "—"})</td>
-                                        <td>
-                                            <span className="price-tag">{s.pricingText || "No price set"}</span>
-                                        </td>
-                                        <td className="text-right">
-                                            <button className="btn btn-sm btn-ghost" onClick={() => openEditPrice(s)}>
-                                                <Edit2 size={14} />
-                                                <span>Update Price</span>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-
-            {/* TAB 2: DYNAMIC SERVICES */}
+            {/* TAB: DYNAMIC SERVICES */}
             {activeTab === "dynamic" && (
                 <div className="dynamic-services-section">
                     <div className="action-bar" style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
@@ -549,59 +464,7 @@ export default function ServicesPage() {
                 </div>
             )}
 
-            {/* MODAL 1: PRICE UPDATER (HARDCODED) */}
-            {showModal && activeTab === "hardcoded" && editingService && (
-                <div className="modal-overlay active" onClick={() => setShowModal(false)}>
-                    <div className="modal pricing-modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <div>
-                                <h3>Update Pricing</h3>
-                                <p className="text-sm font-medium text-primary">{editingService.name}</p>
-                            </div>
-                            <button onClick={() => setShowModal(false)} className="close-x">✕</button>
-                        </div>
-                        <form onSubmit={handleSavePrice}>
-                            <div className="modal-body">
-                                <div className="form-group">
-                                    <label className="form-label">New Pricing Text</label>
-                                    <div className="input-with-icon">
-                                        <DollarSign size={18} className="text-muted" />
-                                        <input 
-                                            className="form-input" 
-                                            autoFocus
-                                            required 
-                                            placeholder="e.g. ₹799 / visit"
-                                            value={editingService.pricingText} 
-                                            onChange={e => setEditingService({ ...editingService, pricingText: e.target.value })} 
-                                        />
-                                    </div>
-                                    <p className="form-hint">This text will appear directly next to the service on the app.</p>
-                                </div>
-                                <div className="form-group" style={{ marginTop: 16 }}>
-                                    <label className="form-label">Base Price (₹)</label>
-                                    <div className="input-with-icon">
-                                        <DollarSign size={18} className="text-muted" />
-                                        <input 
-                                            type="number"
-                                            className="form-input" 
-                                            required 
-                                            min="0"
-                                            placeholder="e.g. 299"
-                                            value={editingService.basePrice} 
-                                            onChange={e => setEditingService({ ...editingService, basePrice: e.target.value })} 
-                                        />
-                                    </div>
-                                    <p className="form-hint">The numerical service charge fee used for checkout totals.</p>
-                                </div>
-                            </div>
-                            <div className="modal-footer footer-minimal">
-                                <button type="button" className="btn btn-secondary flex-1" onClick={() => setShowModal(false)}>Cancel</button>
-                                <button type="submit" className="btn btn-primary flex-1">Save New Price</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+
 
             {/* MODAL 2: DYNAMIC SERVICE CREATOR & FORM BUILDER */}
             {showModal && activeTab === "dynamic" && (

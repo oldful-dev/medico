@@ -32,6 +32,7 @@ import {
   HelpSupportConfig,
 } from "@/services/api/appConfigService";
 import { getAssetUrl } from "@/utils/getAssetUrl";
+import { cityService } from "@/services/api/cityService";
 const CACHE_KEY = "@ayuxacare_app_config";
 const CACHE_VERSION_KEY = "@ayuxacare_app_config_version";
 
@@ -1011,6 +1012,7 @@ const transformConfigURLs = (
 export function AppConfigProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<AppConfig>(FALLBACK_CONFIG);
   const [isLoading, setIsLoading] = useState(true);
+  const [dynamicCities, setDynamicCities] = useState<CityConfig[]>([]);
 
   const applyConfig = (newConfig: AppConfig) => {
     setConfig(newConfig);
@@ -1031,6 +1033,20 @@ export function AppConfigProvider({ children }: { children: ReactNode }) {
       if (res.success && res.data) {
         applyConfig(res.data);
         lastFetchRef.current = Date.now();
+      }
+
+      // Dynamic cities fetch from database
+      const cityRes = await cityService.getCities();
+      if (cityRes.success && cityRes.data) {
+        const visibleCities = cityRes.data.filter(c => c.isEnabled || c.isComingSoon);
+        const mapped = visibleCities.map((c, idx) => ({
+          id: c.id,
+          name: c.name,
+          state: c.stateCode,
+          available: c.isEnabled && !c.isComingSoon,
+          sort_order: idx + 1
+        }));
+        setDynamicCities(mapped);
       }
     } catch {
       // Silently keep existing config on network failure
@@ -1076,7 +1092,7 @@ export function AppConfigProvider({ children }: { children: ReactNode }) {
     .map((s) => transformSectionURLs(s));
   const plans = sortByOrder(plansScreen.plans.filter((p) => p.visible));
   const benefits = sortByOrder(plansScreen.benefits);
-  const cities = sortByOrder(config.screens.city_selection.cities);
+  const cities = dynamicCities.length > 0 ? dynamicCities : sortByOrder(config.screens.city_selection.cities);
   const languages = sortByOrder(config.screens.language_selection.languages);
   const plansBanner = plansScreen.banner;
   const doctorVisitConfig = config.screens.doctor_visit;

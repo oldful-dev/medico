@@ -69,6 +69,7 @@ model User {
   refreshToken          String?
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
+  deletedAt             DateTime?
   fcmDeviceToken        String?
   emailMarketingEnabled Boolean                @default(false)
   pushEnabled           Boolean                @default(true)
@@ -903,6 +904,7 @@ enum UserStatus {
   ACTIVE
   SUSPENDED
   BLOCKED
+  DELETED
 }
 
 enum HealthTag {

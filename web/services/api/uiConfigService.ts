@@ -11,11 +11,11 @@ export interface UIConfig {
 
 export const uiConfigService = {
   getPublishedConfigs: async (): Promise<ApiResponse<UIConfig[]>> => {
-    return apiClient.get<UIConfig[]>('/ui-config/published');
+    return apiClient.get<UIConfig[]>(`/ui-config/published?t=${Date.now()}`);
   },
   
   getCompanyGlobalConfig: async (): Promise<any> => {
-    const res = await apiClient.get<UIConfig[]>('/ui-config/published');
+    const res = await apiClient.get<UIConfig[]>(`/ui-config/published?t=${Date.now()}`);
     if (res.success && Array.isArray(res.data)) {
       const found = res.data.find(c => c.key === 'company_global_config');
       if (found) {

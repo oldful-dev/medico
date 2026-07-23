@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, ScrollView,
-    ActivityIndicator, Alert, FlatList, Dimensions, Animated,
+    ActivityIndicator, Alert, FlatList, Dimensions, Animated, Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { planService, Plan, PlanBenefit, BillingCycle, legalService } from '@/services/api/planService';
+import { uiConfigService } from '@/services/api/uiConfigService';
 import { useUser } from '@/context/UserContext';
 import { useTranslation } from 'react-i18next';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
@@ -287,6 +288,7 @@ interface PlanCardProps {
 
 function PlanCard({ plan, activeCycle, onCycleChange, activeSub, isInitiating, onChoose, colors, dark, planIndex, planType }: PlanCardProps) {
     const { t } = useTranslation();
+    const isOnDemand = plan.quarterlyPrice === 0;
     const price = getPriceForCycle(plan, activeCycle);
     const isActivePlan = activeSub?.planId === plan.id;
     const hasActiveSub = !!activeSub;
@@ -303,15 +305,17 @@ function PlanCard({ plan, activeCycle, onCycleChange, activeSub, isInitiating, o
     const fallbackFeatures = (plan.benefits || '').split(',').map(f => f.trim()).filter(Boolean);
     const cycleInfo = BILLING_CYCLES.find(c => c.key === activeCycle)!;
 
-    const btnLabel = isActivePlan
-        ? t('plans.current_plan')
-        : hasActiveSub && !isActivePlan
-            ? t('plans.already_subscribed')
-            : isInitiating
-                ? ''
-                : t('plans.subscribe_now');
+    const btnLabel = isOnDemand
+        ? t('plans.request_now')
+        : isActivePlan
+            ? t('plans.current_plan')
+            : hasActiveSub && !isActivePlan
+                ? t('plans.already_subscribed')
+                : isInitiating
+                    ? ''
+                    : t('plans.subscribe_now');
 
-    const btnDisabled = isActivePlan || (hasActiveSub && !isActivePlan) || isInitiating;
+    const btnDisabled = !isOnDemand && (isActivePlan || (hasActiveSub && !isActivePlan) || isInitiating);
 
     return (
         <View style={[planCardStyles.card, { width: CARD_WIDTH, backgroundColor: palette.bg, borderColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}>
@@ -320,7 +324,7 @@ function PlanCard({ plan, activeCycle, onCycleChange, activeSub, isInitiating, o
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
                     <View style={{ flex: 1, paddingRight: 8 }}>
                         <Text style={planCardStyles.planType}>
-                            {planType === 'CARE' ? 'CARE PLAN' : 'HOME PLAN'}
+                            {isOnDemand ? 'ON DEMAND' : (planType === 'CARE' ? 'CARE PLAN' : 'HOME PLAN')}
                         </Text>
                         <Text style={planCardStyles.planName}>{plan.name}</Text>
                         {plan.description ? (
@@ -328,48 +332,58 @@ function PlanCard({ plan, activeCycle, onCycleChange, activeSub, isInitiating, o
                         ) : null}
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
-                            <Text style={{ fontFamily: Fonts.bold, fontSize: 24, color: '#FFFFFF' }}>₹</Text>
-                            <Text style={{ fontFamily: Fonts.bold, fontSize: 28, color: '#FFFFFF' }}>
-                                {price > 0 ? price.toLocaleString('en-IN') : '—'}
+                        {isOnDemand ? (
+                            <Text style={{ fontFamily: Fonts.bold, fontSize: 20, color: '#FFFFFF', marginTop: 4 }}>
+                                {t('plans.pay_per_trip')}
                             </Text>
-                        </View>
-                        <Text style={{ fontFamily: Fonts.regular, fontSize: 10, color: 'rgba(255,255,255,0.8)' }}>
-                            {cycleInfo.months === 3 ? '90 days' : cycleInfo.months === 6 ? '180 days' : '365 days'}
-                        </Text>
+                        ) : (
+                            <>
+                                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
+                                    <Text style={{ fontFamily: Fonts.bold, fontSize: 24, color: '#FFFFFF' }}>₹</Text>
+                                    <Text style={{ fontFamily: Fonts.bold, fontSize: 28, color: '#FFFFFF' }}>
+                                        {price > 0 ? price.toLocaleString('en-IN') : '—'}
+                                    </Text>
+                                </View>
+                                <Text style={{ fontFamily: Fonts.regular, fontSize: 10, color: 'rgba(255,255,255,0.8)' }}>
+                                    {cycleInfo.months === 3 ? '90 days' : cycleInfo.months === 6 ? '180 days' : '365 days'}
+                                </Text>
+                            </>
+                        )}
                     </View>
                 </View>
 
                 {/* Duration Toggle on the card itself */}
-                <View style={{ flexDirection: 'row', marginTop: 12, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: 3, gap: 4, width: '100%' }}>
-                    {BILLING_CYCLES.map((cycle) => {
-                        const isCycleActive = activeCycle === cycle.key;
-                        return (
-                            <TouchableOpacity
-                                key={cycle.key}
-                                style={{
-                                    flex: 1,
-                                    paddingVertical: 6,
-                                    borderRadius: 6,
-                                    backgroundColor: isCycleActive ? '#FFFFFF' : 'transparent',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
-                                onPress={() => onCycleChange(cycle.key)}
-                            >
-                                <Text style={{
-                                    fontFamily: Fonts.semiBold,
-                                    fontSize: 10,
-                                    color: isCycleActive ? palette.accent : '#FFFFFF',
-                                }}>
-                                    {cycle.label}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
+                {!isOnDemand && (
+                    <View style={{ flexDirection: 'row', marginTop: 12, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: 3, gap: 4, width: '100%' }}>
+                        {BILLING_CYCLES.map((cycle) => {
+                            const isCycleActive = activeCycle === cycle.key;
+                            return (
+                                <TouchableOpacity
+                                    key={cycle.key}
+                                    style={{
+                                        flex: 1,
+                                        paddingVertical: 6,
+                                        borderRadius: 6,
+                                        backgroundColor: isCycleActive ? '#FFFFFF' : 'transparent',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
+                                    onPress={() => onCycleChange(cycle.key)}
+                                >
+                                    <Text style={{
+                                        fontFamily: Fonts.semiBold,
+                                        fontSize: 10,
+                                        color: isCycleActive ? palette.accent : '#FFFFFF',
+                                    }}>
+                                        {cycle.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                )}
 
-                {isActivePlan && (
+                {!isOnDemand && isActivePlan && (
                     <View style={[planCardStyles.activeBadge, { marginTop: 8, alignSelf: 'flex-start' }]}>
                         <Text style={planCardStyles.activeBadgeText}>{t('plans.active_plan_banner')}</Text>
                     </View>
@@ -623,183 +637,7 @@ const planCardStyles = StyleSheet.create({
     },
 });
 
-// ─── Transit Care Card (for Home Essential section) ───────────────────────────
-function TransitCareCard({ colors, dark, onPress }: { colors: ThemeColors; dark: boolean; onPress: () => void }) {
-    const { t } = useTranslation();
-    return (
-        <View style={[transitCareStyles.card, { width: CARD_WIDTH, backgroundColor: dark ? '#1A1C28' : '#FAFAFA', borderColor: dark ? 'rgba(255,255,255,0.08)' : '#E5E7EB' }]}>
-            <View style={transitCareStyles.header}>
-                <Text style={transitCareStyles.badge}>{t('plans.on_demand')}</Text>
-                <Text style={[transitCareStyles.title, { color: dark ? '#fff' : '#111827' }]}>
-                    {t('plans.transit_care_title')}
-                </Text>
-                <Text style={[transitCareStyles.subtitle, { color: dark ? 'rgba(255,255,255,0.55)' : '#6B7280' }]}>
-                    {t('plans.transit_care_subtitle')}
-                </Text>
-            </View>
 
-            {/* Price Section Placeholder to align with subscription cards but showing on-demand status */}
-            <View style={[transitCareStyles.priceRow, { borderColor: dark ? 'rgba(255,255,255,0.07)' : '#F3F4F6' }]}>
-                <Text style={[transitCareStyles.priceLabel, { color: dark ? 'rgba(255,255,255,0.45)' : '#9CA3AF' }]}>
-                    {t('cart.item')}
-                </Text>
-                <Text style={[transitCareStyles.price, { color: colors.primary }]}>
-                    {t('plans.pay_per_trip')}
-                </Text>
-            </View>
-
-            {/* Features (Scrollable) */}
-            <ScrollView
-                style={transitCareStyles.featuresScroll}
-                showsVerticalScrollIndicator={false}
-                nestedScrollEnabled={true}
-            >
-                {[
-                    { category: t('plans.medical_transit_title'), features: [
-                        { code: 'TICKET', text: t('plans.transit_feat_booking') },
-                        { code: 'WHEELCHAIR', text: t('plans.transit_feat_companion') },
-                        { code: 'FOLDER', text: t('plans.transit_feat_dossier') },
-                        { code: 'MAP_PIN', text: t('plans.transit_feat_coordination') },
-                        { code: 'CLOCK', text: t('plans.transit_feat_medication') },
-                    ]},
-                    { category: t('plans.spiritual_leisure_title'), features: [
-                        { code: 'TICKET', text: t('plans.transit_feat_booking') },
-                        { code: 'USERS', text: t('plans.transit_feat_crowd') },
-                        { code: 'APPLE', text: t('plans.transit_feat_dietary') },
-                        { code: 'COFFEE', text: t('plans.transit_feat_itineraries') },
-                        { code: 'SHIELD', text: t('plans.transit_feat_dest_coordination') },
-                    ]}
-                ].map((cat, catIdx) => (
-                    <View key={catIdx} style={{ marginBottom: 12 }}>
-                        <Text style={[transitCareStyles.categoryHeader, { color: colors.primary }]}>
-                            {cat.category}
-                        </Text>
-                        {cat.features.map((item, idx) => (
-                            <View key={idx} style={transitCareStyles.featureRow}>
-                                <View style={[transitCareStyles.iconBox, { backgroundColor: `${colors.primary}12` }]}>
-                                    {renderBenefitSvg(item.code, 14, colors.primary)}
-                                </View>
-                                <Text style={[transitCareStyles.featureText, { color: dark ? 'rgba(255,255,255,0.75)' : '#374151' }]}>
-                                    {item.text}
-                                </Text>
-                            </View>
-                        ))}
-                    </View>
-                ))}
-            </ScrollView>
-
-            <TouchableOpacity
-                style={[transitCareStyles.cta, { backgroundColor: colors.primary }]}
-                onPress={onPress}
-                activeOpacity={0.8}
-            >
-                <Text style={[transitCareStyles.ctaText, { color: '#fff' }]}>
-                    {t('plans.request_now')}
-                </Text>
-                <Ionicons name="arrow-forward" size={16} color="#fff" />
-            </TouchableOpacity>
-        </View>
-    );
-}
-
-const transitCareStyles = StyleSheet.create({
-    card: {
-        borderRadius: 20,
-        borderWidth: 1,
-        marginRight: CARD_MARGIN,
-        overflow: 'hidden',
-        ...Shadow.card,
-        justifyContent: 'space-between',
-        height: 520, // Match the height of the plan card if possible
-    },
-    header: {
-        padding: 18,
-        paddingBottom: 14,
-    },
-    badge: {
-        fontFamily: Fonts.bold,
-        fontSize: 10,
-        color: '#EA580C',
-        letterSpacing: 1.2,
-        marginBottom: 8,
-    },
-    title: {
-        fontFamily: Fonts.bold,
-        fontSize: 22,
-        lineHeight: 28,
-        marginBottom: 8,
-    },
-    subtitle: {
-        fontFamily: Fonts.regular,
-        fontSize: 13,
-        lineHeight: 19,
-    },
-    priceRow: {
-        paddingHorizontal: 18,
-        paddingVertical: 12,
-        borderTopWidth: 1,
-        borderBottomWidth: 1,
-        marginBottom: 14,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    priceLabel: {
-        fontFamily: Fonts.regular,
-        fontSize: 11,
-    },
-    price: {
-        fontFamily: Fonts.bold,
-        fontSize: 18,
-    },
-    featuresScroll: {
-        flex: 1,
-        paddingTop: 8,
-        marginBottom: 10,
-    },
-    categoryHeader: {
-        fontFamily: Fonts.bold,
-        fontSize: 12,
-        paddingHorizontal: 18,
-        marginBottom: 8,
-        marginTop: 4,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    featureRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 18,
-        marginBottom: 12,
-        gap: 10,
-    },
-    iconBox: {
-        width: 30,
-        height: 30,
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    featureText: {
-        fontFamily: Fonts.medium,
-        fontSize: 13,
-        flex: 1,
-    },
-    cta: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        margin: 18,
-        marginTop: 14,
-        borderRadius: 14,
-        height: 50,
-        gap: 8,
-    },
-    ctaText: {
-        fontFamily: Fonts.semiBold,
-        fontSize: 15,
-    },
-});
 
 // ─── Carousel dot indicator ───────────────────────────────────────────────────
 function DotIndicator({ count, active, color }: { count: number; active: number; color: string }) {
@@ -906,15 +744,7 @@ function PlanSection({
         })();
     }, [planType]);
 
-    const data = useMemo(() => {
-        // For HOMEMAKER, append Transit Care card at end
-        if (planType === 'HOMEMAKER') {
-            return [...plans, { id: '__transitcare__' } as any];
-        }
-        return plans;
-    }, [plans, planType]);
-
-    const totalDots = data.length;
+    const totalDots = plans.length;
 
     const onScrollEnd = useCallback((e: any) => {
         const offset = e.nativeEvent.contentOffset.x;
@@ -950,7 +780,7 @@ function PlanSection({
                 <>
                     <FlatList
                         ref={flatListRef}
-                        data={data}
+                        data={plans}
                         keyExtractor={item => item.id}
                         horizontal
                         showsHorizontalScrollIndicator={false}
@@ -959,15 +789,6 @@ function PlanSection({
                         contentContainerStyle={{ paddingLeft: 24, paddingRight: 12 }}
                         onMomentumScrollEnd={onScrollEnd}
                         renderItem={({ item, index }) => {
-                            if (item.id === '__transitcare__') {
-                                return (
-                                    <TransitCareCard
-                                        colors={colors}
-                                        dark={dark}
-                                        onPress={() => router.push('/trip-travels')}
-                                    />
-                                );
-                            }
                             return (
                                 <PlanCard
                                     plan={item}
@@ -1048,6 +869,10 @@ export default function PlansScreen() {
 
     // Handle plan selection — check auth, dynamic cycle price, then initiate
     const handleChoosePlan = useCallback(async (plan: Plan) => {
+        if (plan.quarterlyPrice === 0) {
+            router.push('/trip-travels');
+            return;
+        }
         if (!profile) {
             Alert.alert(t('plans.login_required'), t('plans.login_required_desc'));
             return;

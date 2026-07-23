@@ -90,6 +90,20 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                     showToast(`📅 New Booking: ${data.serviceType || 'Service'}`, 'success');
                 });
 
+                // Wellness Product Order alerts
+                socket.on("new_product_order", (data) => {
+                    handleNewAlert({
+                        id: Date.now() + Math.random(),
+                        type: 'store',
+                        title: `New Product Order`,
+                        description: `By: ${data.userName} · Amount: ₹${data.amount}`,
+                        href: '/store',
+                        time: new Date()
+                    });
+                    playTing();
+                    showToast(`🛍️ New Order: ₹${data.amount} by ${data.userName}`, 'success');
+                });
+
                 // Support & Ticket alerts
                 socket.on("new_ticket", (data) => {
                     handleNewAlert({

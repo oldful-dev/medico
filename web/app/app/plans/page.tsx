@@ -8,6 +8,16 @@ import { BillingCycle } from '@/services/api/subscriptionService';
 import { useUserHooks } from '@/hooks/useUserHooks';
 import { useCartStore } from '@/store/cartStore';
 import { toast } from 'sonner';
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/authStore';
+import { planService, Plan } from '@/services/api/planService';
+import { BillingCycle } from '@/services/api/subscriptionService';
+import { useUserHooks } from '@/hooks/useUserHooks';
+import { useCartStore } from '@/store/cartStore';
+import { toast } from 'sonner';
 import { Loader2, Check, Clock, Shield, ArrowRight } from 'lucide-react';
 
 export default function PlansPage() {
@@ -37,6 +47,11 @@ export default function PlansPage() {
   }, []);
 
   const handleChoosePlan = (plan: Plan) => {
+    if (plan.quarterlyPrice === 0) {
+      router.push('/app/services/trip-travels');
+      return;
+    }
+
     if (!isAuthenticated) {
       toast.error('Please login to continue');
       router.push('/auth?redirect=/app/plans');
@@ -145,6 +160,7 @@ export default function PlansPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
            {plans.map((plan, idx) => {
+             const isOnDemand = plan.quarterlyPrice === 0;
              const isPro = plan.name === 'HomeMaker Plan';
              const isActive = profile?.subscriptions?.some(s => s.status === 'ACTIVE' && s.plan.name === plan.name);
              
@@ -157,53 +173,65 @@ export default function PlansPage() {
                     : 'bg-white border-gray-100 hover:shadow-xl'
                  }`}
                >
-                 {isPro && (
-                   <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-[var(--color-accent-bright)] text-[#034C2A] text-[10px] font-bold py-1 px-3 rounded-b-lg tracking-wider uppercase">
-                     Most Popular
-                   </div>
-                 )}
+                 {isOnDemand ? (
+                    <div className="absolute top-0 right-6 bg-orange-50 text-orange-600 text-[10px] font-bold py-1 px-3 rounded-b-lg tracking-wider uppercase">
+                      On Demand
+                    </div>
+                 ) : isPro ? (
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-[var(--color-accent-bright)] text-[#034C2A] text-[10px] font-bold py-1 px-3 rounded-b-lg tracking-wider uppercase">
+                      Most Popular
+                    </div>
+                 ) : null}
                  
                  <h3 className={`text-xl font-bold mb-2 ${isPro ? 'text-white' : 'text-gray-800'}`}>{plan.name}</h3>
                  <p className={`text-sm h-10 ${isPro ? 'text-emerald-100' : 'text-gray-500'}`}>{plan.description}</p>
                  
                  <div className="my-6">
-                    <span className={`text-4xl font-extrabold ${isPro ? 'text-white' : 'text-gray-900'}`}>₹{(getPrice(plan) ?? 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
-                    <span className={`font-semibold text-sm ml-1 ${isPro ? 'text-emerald-200' : 'text-gray-400'}`}> {getPriceLabel()}</span>
-                    
-                    <div className={`mt-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider ${isPro ? 'text-emerald-300' : 'text-emerald-600'}`}>
-                       <Clock className="w-3 h-3" />
-                       Valid for {billingCycle === 'QUARTERLY' ? '90 days' : billingCycle === 'BIANNUAL' ? '180 days' : '365 days'}
-                    </div>
-                 </div>
+                    {isOnDemand ? (
+                      <span className={`text-4xl font-extrabold ${isPro ? 'text-white' : 'text-gray-900'}`}>Pay per trip</span>
+                    ) : (
+                      <>
+                        <span className={`text-4xl font-extrabold ${isPro ? 'text-white' : 'text-gray-900'}`}>₹{(getPrice(plan) ?? 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
+                        <span className={`font-semibold text-sm ml-1 ${isPro ? 'text-emerald-200' : 'text-gray-400'}`}> {getPriceLabel()}</span>
+                        
+                        <div className={`mt-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider ${isPro ? 'text-emerald-300' : 'text-emerald-600'}`}>
+                           <Clock className="w-3 h-3" />
+                           Valid for {billingCycle === 'QUARTERLY' ? '90 days' : billingCycle === 'BIANNUAL' ? '180 days' : '365 days'}
+                        </div>
+                      </>
+                    )}
+                  </div>
 
-                 <button 
-                   onClick={() => handleChoosePlan(plan)}
-                   disabled={isActive}
-                   className={`w-full font-bold py-3.5 rounded-xl transition-all mb-8 flex items-center justify-center gap-2 ${
-                     isActive
-                      ? 'bg-gray-100 text-gray-400 cursor-default'
-                      : isPro 
-                        ? 'bg-[#0EDD94] hover:bg-[#34C759] text-[#034C2A] shadow-lg active:scale-95' 
-                        : 'bg-gray-50 hover:bg-gray-100 text-gray-800 border border-gray-200'
-                   }`}
-                 >
-                   {isActive ? (
-                     <>Active Plan</>
-                   ) : (
-                     <span className="flex items-center gap-2">Choose This Plan <ArrowRight className="w-4 h-4" /></span>
-                   )}
-                 </button>
+                  <button 
+                    onClick={() => handleChoosePlan(plan)}
+                    disabled={!isOnDemand && isActive}
+                    className={`w-full font-bold py-3.5 rounded-xl transition-all mb-8 flex items-center justify-center gap-2 ${
+                      !isOnDemand && isActive
+                       ? 'bg-gray-100 text-gray-400 cursor-default'
+                       : isPro 
+                         ? 'bg-[#0EDD94] hover:bg-[#34C759] text-[#034C2A] shadow-lg active:scale-95' 
+                         : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg active:scale-95'
+                    }`}
+                  >
+                    {isOnDemand ? (
+                      <span className="flex items-center gap-2">Request Now <ArrowRight className="w-4 h-4" /></span>
+                    ) : isActive ? (
+                      <>Active Plan</>
+                    ) : (
+                      <span className="flex items-center gap-2">Choose This Plan <ArrowRight className="w-4 h-4" /></span>
+                    )}
+                  </button>
 
-                 <div className="space-y-4 flex-grow">
-                   {plan.benefits?.split(',').map((benefit, bIdx) => (
-                     <div key={bIdx} className="flex items-start gap-3">
-                       <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isPro ? 'bg-emerald-400/20' : 'bg-emerald-50'}`}>
-                         <Check className={`w-3.5 h-3.5 ${isPro ? 'text-emerald-300' : 'text-emerald-600'}`} />
-                       </div>
-                       <span className={`text-sm ${isPro ? 'text-emerald-50' : 'text-gray-600'}`}>{benefit.trim()}</span>
-                     </div>
-                   ))}
-                 </div>
+                  <div className="space-y-4 flex-grow">
+                    {plan.benefits?.split(',').map((benefit, bIdx) => (
+                      <div key={bIdx} className="flex items-start gap-3">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isPro ? 'bg-emerald-400/20' : 'bg-emerald-50'}`}>
+                          <Check className={`w-3.5 h-3.5 ${isPro ? 'text-emerald-300' : 'text-emerald-600'}`} />
+                        </div>
+                        <span className={`text-sm ${isPro ? 'text-emerald-50' : 'text-gray-600'}`}>{benefit.trim()}</span>
+                      </div>
+                    ))}
+                  </div>
                </div>
              );
            })}
