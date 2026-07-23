@@ -235,6 +235,23 @@ const bulkDelete = async (adminId, { ids, type }) => {
     // Capture old values for audit
     const oldValues = await model.findMany({ where: { id: { in: ids } } });
 
+    // Nullify references in related tables to avoid foreign key errors
+    if (type === 'management') {
+        await prisma.auditLog.updateMany({
+            where: { adminId: { in: ids } },
+            data: { adminId: null }
+        });
+    } else {
+        await prisma.booking.updateMany({
+            where: { caregiverId: { in: ids } },
+            data: { caregiverId: null }
+        });
+        await prisma.sOSAlert.updateMany({
+            where: { responderId: { in: ids } },
+            data: { responderId: null }
+        });
+    }
+
     const result = await model.deleteMany({ where: { id: { in: ids } } });
 
     // Audit Log
@@ -259,6 +276,23 @@ const deleteProfile = async (adminId, { id, type }) => {
     const oldRecord = await model.findUnique({ where: { id } });
     
     if (!oldRecord) return null;
+
+    // Nullify references in related tables to avoid foreign key errors
+    if (type === 'management') {
+        await prisma.auditLog.updateMany({
+            where: { adminId: id },
+            data: { adminId: null }
+        });
+    } else {
+        await prisma.booking.updateMany({
+            where: { caregiverId: id },
+            data: { caregiverId: null }
+        });
+        await prisma.sOSAlert.updateMany({
+            where: { responderId: id },
+            data: { responderId: null }
+        });
+    }
 
     const result = await model.delete({ where: { id } });
 

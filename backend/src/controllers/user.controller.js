@@ -23,6 +23,26 @@ const transformProfileImageToCDN = (url) => {
     return url;
 };
 
+// Helper to format deleted user PII cleanly for admin console
+const formatDeletedPII = (user) => {
+    if (!user) return user;
+    if (user.status === 'DELETED') {
+        if (user.phone && user.phone.startsWith('deleted_')) {
+            const parts = user.phone.split('_');
+            if (parts.length >= 3) {
+                user.phone = parts.slice(2).join('_');
+            }
+        }
+        if (user.email && user.email.startsWith('deleted_')) {
+            const parts = user.email.split('_');
+            if (parts.length >= 3) {
+                user.email = parts.slice(2).join('_');
+            }
+        }
+    }
+    return user;
+};
+
 // GET /api/users
 const getUsers = async (req, res, next) => {
     try {
@@ -43,6 +63,8 @@ const getUsers = async (req, res, next) => {
                 { uniqueUserId: { contains: search, mode: 'insensitive' } },
                 { phone: { contains: search } },
                 { email: { contains: search, mode: 'insensitive' } },
+                { phone: { contains: `_${search}` } },
+                { email: { contains: `_${search}`, mode: 'insensitive' } },
             ];
         }
 
@@ -66,8 +88,8 @@ const getUsers = async (req, res, next) => {
             prisma.user.count({ where }),
         ]);
 
-        // Strip sensitive data
-        const safeUsers = users.map(({ otpCode, otpExpiresAt, refreshToken, ...rest }) => rest);
+        // Strip sensitive data and format deleted users for admin display
+        const safeUsers = users.map(({ otpCode, otpExpiresAt, refreshToken, ...rest }) => formatDeletedPII(rest));
         sendPaginatedResponse(res, safeUsers, total, page, limit);
     } catch (error) {
         next(error);
@@ -102,7 +124,7 @@ const getUserById = async (req, res, next) => {
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
         const { otpCode, otpExpiresAt, refreshToken, ...safeUser } = user;
-        sendResponse(res, 200, safeUser);
+        sendResponse(res, 200, formatDeletedPII(safeUser));
     } catch (error) {
         next(error);
     }
@@ -678,48 +700,49 @@ const uploadProfileAvatar = async (req, res, next) => {
     }
 };
 
-// DELETE /api/users/profile  (App user — permanently delete account and all data)
+// DELETE /api/users/profile  (App user — soft delete account and anonymize data)
 const deleteProfile = async (req, res, next) => {
     const userId = req.user.id;
     try {
-        logger.info(`[DELETE_ACCOUNT] Deleting user ${userId} and all related data`);
+        logger.info(`[DELETE_ACCOUNT] Soft-deleting user ${userId} and redacting PII`);
 
-        // Step 1: delete invoice before payment (FK constraint)
-        await prisma.invoice.deleteMany({
-            where: { payment: { userId } },
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        if (user.status === 'DELETED') {
+            return res.status(400).json({ success: false, message: 'Account is already deleted' });
+        }
+
+        // Anonymize user details but keep records in the DB
+        const redactedPhone = `deleted_${userId}_${user.phone}`;
+        const redactedEmail = user.email ? `deleted_${userId}_${user.email}` : null;
+
+        // Perform soft delete, clean up tokens, and set status to DELETED
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                name: 'Deleted User',
+                phone: redactedPhone,
+                email: redactedEmail,
+                profileImageUrl: null,
+                fcmDeviceToken: null,
+                refreshToken: null,
+                otpCode: null,
+                otpExpiresAt: null,
+                status: 'DELETED',
+                deletedAt: new Date()
+            }
         });
 
-        // Step 2: delete activityUpdates via labOrder
-        await prisma.activityUpdate.deleteMany({
-            where: { labOrder: { userId } },
-        });
+        // Delete saved cards (security requirement)
+        await prisma.savedCard.deleteMany({ where: { userId } });
 
-        // Step 3: delete everything with direct userId, in parallel
-        await Promise.all([
-            prisma.address.deleteMany({ where: { userId } }),
-            prisma.emergencyContact.deleteMany({ where: { userId } }),
-            prisma.familyMember.deleteMany({ where: { userId } }),
-            prisma.medicalCard.deleteMany({ where: { userId } }),
-            prisma.healthReport.deleteMany({ where: { userId } }),
-            prisma.booking.deleteMany({ where: { userId } }),
-            prisma.subscription.deleteMany({ where: { userId } }),
-            prisma.notificationLog.deleteMany({ where: { recipientId: userId } }),
-            prisma.sOSAlert.deleteMany({ where: { userId } }),
-            prisma.supportTicket.deleteMany({ where: { userId } }),
-            prisma.labOrder.deleteMany({ where: { userId } }),
-            prisma.meetupRegistration.deleteMany({ where: { userId } }),
-            prisma.productOrder.deleteMany({ where: { userId } }),
-            prisma.payment.deleteMany({ where: { userId } }),
-            prisma.savedCard.deleteMany({ where: { userId } }),
-        ]);
-
-        // Step 4: delete the user account
-        await prisma.user.delete({ where: { id: userId } });
-        logger.info(`[DELETE_ACCOUNT] User ${userId} deleted successfully`);
-
+        logger.info(`[DELETE_ACCOUNT] User ${userId} soft-deleted successfully`);
         sendResponse(res, 200, null, 'Account deleted successfully');
     } catch (error) {
-        logger.error(`[DELETE_ACCOUNT] Error deleting user ${userId}:`, error.message);
+        logger.error(`[DELETE_ACCOUNT] Error soft-deleting user ${userId}:`, error.message);
         next(error);
     }
 };

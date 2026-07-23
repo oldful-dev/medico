@@ -74,54 +74,12 @@ async function processEvent(event, payload) {
         // this webhook still marks the payment as SUCCESS.
         case 'payment.captured': {
             const p = payload.payment.entity;
-            const payment = await prisma.payment.findFirst({
-                where: { razorpayOrderId: p.order_id },
-                include: { user: true },
-            });
-
-            if (!payment) {
-                logger.warn(`[Webhook] payment.captured — no DB record for order ${p.order_id}`);
-                return;
-            }
-
-            // Only update if not already SUCCESS (avoid overwriting verify result)
-            if (payment.status !== 'SUCCESS') {
-                await prisma.payment.update({
-                    where: { id: payment.id },
-                    data: {
-                        razorpayPaymentId: p.id,
-                        status: 'SUCCESS',
-                    },
-                });
-                logger.info(`[Webhook] payment.captured → DB updated: ${p.id}`);
-
-                // Send WhatsApp receipt if app flow didn't already send it
-                if (payment.user?.phone) {
-                    // Template: PAYMENT_RECEIVED — Var1=name, Var2=amount
-                    const waSuccess = await sendPaymentWA({
-                        phone: payment.user.phone,
-                        name: payment.user.name || 'Customer',
-                        amount: parseFloat(payment.amount).toFixed(2),
-                        userId: payment.userId,
-                    }).catch(err => {
-                        logger.warn(`[Webhook] WA Payment Received failed: ${err.message}`);
-                        return false;
-                    });
-
-                    // Send SMS (if enabled, SMS template configured, and WhatsApp failed)
-                    if (!waSuccess && payment.user.smsEnabled !== false && process.env.FAST2SMS_PAYMENT_TEMPLATE_ID) {
-                        await sendDLTSMS(
-                            payment.user.phone,
-                            process.env.FAST2SMS_PAYMENT_TEMPLATE_ID,
-                            [
-                                payment.user.name || 'Customer',
-                                parseFloat(payment.amount).toFixed(2),
-                            ]
-                        ).catch(err => {
-                            logger.warn(`[Webhook] Payment SMS failed: ${err.message}`);
-                        });
-                    }
-                }
+            const method = p.method ? p.method.toUpperCase() : 'CARD';
+            try {
+                const { processPaymentSuccess } = require('../services/payment.service');
+                await processPaymentSuccess(p.order_id, p.id, null, method);
+            } catch (err) {
+                logger.error(`[Webhook] Failed processing payment.captured for order ${p.order_id}:`, err.message);
             }
             break;
         }

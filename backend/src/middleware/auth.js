@@ -112,8 +112,8 @@ const authenticateUser = async (req, res, next) => {
         }
 
         const user = await prisma.user.findUnique({ where: { id: decoded.id } });
-        if (!user || user.status === 'BLOCKED') {
-            return res.status(403).json({ success: false, message: 'Account blocked' });
+        if (!user || user.status === 'BLOCKED' || user.status === 'DELETED') {
+            return res.status(403).json({ success: false, message: 'Account blocked or deleted' });
         }
 
         req.appUser = user;

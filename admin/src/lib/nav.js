@@ -42,7 +42,6 @@ export const NAV_SECTIONS = [
     {
         title: "Operations",
         items: [
-            { id: "activity-center", href: "/activity-center", label: "Activity Center", icon: Activity, badge: "Live", roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER'] },
             { id: "sos", href: "/sos", label: "SOS Emergency", icon: AlertTriangle, badge: "Live", roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER', 'SUPPORT_AGENT'] },
             { id: "notifications", href: "/notifications", label: "Notifications", icon: Bell, roles: ['SUPER_ADMIN', 'CITY_ADMIN'] },
             { id: "banners", href: "/banners", label: "Home Banners", icon: Sparkles, badge: "New", roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER', 'SUPPORT_AGENT', 'BILLING_EXECUTIVE'] },
@@ -59,7 +58,6 @@ export const NAV_SECTIONS = [
             { id: "audit", href: "/audit", label: "Audit Logs", icon: ClipboardList, roles: ['SUPER_ADMIN'] },
             { id: "support", href: "/support", label: "Support & Tickets", icon: LifeBuoy, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'SUPPORT_AGENT'] },
             { id: "smart", href: "/smart", label: "Smart Features", icon: Brain, roles: ['SUPER_ADMIN'] },
-            { id: "waitlist", href: "/waitlist", label: "Wellness Waitlist", icon: Clock, roles: ['SUPER_ADMIN'] },
         ],
     },
 ];

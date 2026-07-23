@@ -211,12 +211,7 @@ export default function CitySelectionScreen() {
                         </>
                     )}
 
-                    {/* Notify Banner */}
-                    <TouchableOpacity style={styles.notifyBanner} activeOpacity={0.8} onPress={() => setShowNotifyModal(true)}>
-                        <Ionicons name="notifications-outline" size={20} color="#02743F" />
-                        <Text style={styles.notifyText}>{t('city_selection.notify_banner')}</Text>
-                        <Ionicons name="chevron-forward" size={16} color="#02743F" />
-                    </TouchableOpacity>
+
                 </ScrollView>
 
                 {/* ─── Continue Button ─── */}
