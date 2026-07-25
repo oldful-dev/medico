@@ -8,16 +8,6 @@ import { BillingCycle } from '@/services/api/subscriptionService';
 import { useUserHooks } from '@/hooks/useUserHooks';
 import { useCartStore } from '@/store/cartStore';
 import { toast } from 'sonner';
-'use client';
-
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
-import { planService, Plan } from '@/services/api/planService';
-import { BillingCycle } from '@/services/api/subscriptionService';
-import { useUserHooks } from '@/hooks/useUserHooks';
-import { useCartStore } from '@/store/cartStore';
-import { toast } from 'sonner';
 import { Loader2, Check, Clock, Shield, ArrowRight } from 'lucide-react';
 
 export default function PlansPage() {
