@@ -18,8 +18,21 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [notifOpen, setNotifOpen] = useState(false);
     const [alerts, setAlerts] = useState([]);
+    const [criticalSos, setCriticalSos] = useState(null);
     const dropdownRef = useRef(null);
     const notifRef = useRef(null);
+
+    // Continuous siren loop when critical SOS is active
+    useEffect(() => {
+        if (!criticalSos) return;
+
+        playTing('sos');
+        const interval = setInterval(() => {
+            playTing('sos');
+        }, 800);
+
+        return () => clearInterval(interval);
+    }, [criticalSos]);
 
     const fetchAlerts = useCallback(async () => {
         try {
@@ -47,10 +60,12 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
         })();
 
         // Establish Real-time Connection
+        let activeSocket = null;
         (async () => {
             try {
                 const socket = await getSocket();
                 if (!socket) return;
+                activeSocket = socket;
 
                 const handleNewAlert = (data) => {
                     const lastCleared = parseInt(localStorage.getItem('lastClearedAlerts') || '0');
@@ -64,6 +79,7 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                 };
 
                 // SOS & Booking alerts
+                socket.off("new_sos");
                 socket.on("new_sos", (data) => {
                     handleNewAlert({
                         id: Date.now() + Math.random(),
@@ -75,8 +91,10 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                     });
                     playTing('sos');
                     showToast(`🚨 ${data.title}`, 'danger');
+                    setCriticalSos(data);
                 });
 
+                socket.off("new_booking");
                 socket.on("new_booking", (data) => {
                     handleNewAlert({
                         id: Date.now() + Math.random(),
@@ -91,6 +109,7 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                 });
 
                 // Wellness Product Order alerts
+                socket.off("new_product_order");
                 socket.on("new_product_order", (data) => {
                     handleNewAlert({
                         id: Date.now() + Math.random(),
@@ -105,6 +124,7 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                 });
 
                 // Support & Ticket alerts
+                socket.off("new_ticket");
                 socket.on("new_ticket", (data) => {
                     handleNewAlert({
                         id: Date.now() + Math.random(),
@@ -118,6 +138,7 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                     showToast(`🎫 New Support Ticket: ${data.subject}`, 'success');
                 });
 
+                socket.off("ticket_message_added");
                 socket.on("ticket_message_added", (data) => {
                     handleNewAlert({
                         id: Date.now() + Math.random(),
@@ -131,6 +152,7 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                     showToast(`💬 New Support Message from ${data.senderName}`, 'info');
                 });
 
+                socket.off("booking_status_changed");
                 socket.on("booking_status_changed", (data) => {
                     handleNewAlert({
                         id: Date.now() + Math.random(),
@@ -142,6 +164,7 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                     });
                 });
 
+                socket.off("booking_payment_updated");
                 socket.on("booking_payment_updated", (data) => {
                     handleNewAlert({
                         id: Date.now() + Math.random(),
@@ -162,6 +185,7 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                     }
                 });
 
+                socket.off("low_responder_availability");
                 socket.on("low_responder_availability", (data) => {
                     handleNewAlert({
                         id: Date.now() + Math.random(),
@@ -174,6 +198,7 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                     showToast(`⚠️ Low availability: Only ${data.availableCount} responders available`, 'warning');
                 });
 
+                socket.off("response_time_breach");
                 socket.on("response_time_breach", (data) => {
                     handleNewAlert({
                         id: Date.now() + Math.random(),
@@ -186,11 +211,27 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                     showToast(`🚨 Alert waiting ${data.minutesWaiting}+ minutes`, 'danger');
                 });
 
+                socket.off("booking_updated");
                 socket.on("booking_updated", fetchAlerts);
             } catch (err) {
                 console.error('[Header] Socket error:', err);
             }
         })();
+
+        return () => {
+            if (activeSocket) {
+                activeSocket.off("new_sos");
+                activeSocket.off("new_booking");
+                activeSocket.off("new_product_order");
+                activeSocket.off("new_ticket");
+                activeSocket.off("ticket_message_added");
+                activeSocket.off("booking_status_changed");
+                activeSocket.off("booking_payment_updated");
+                activeSocket.off("low_responder_availability");
+                activeSocket.off("response_time_breach");
+                activeSocket.off("booking_updated");
+            }
+        };
     }, []);
 
     const dismissAlert = (id, e) => {
@@ -410,6 +451,59 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                     )}
                 </div>
             </div>
+
+            {/* ─── CRITICAL SOS MODAL OVERLAY ─── */}
+            {criticalSos && (
+                <div className="critical-sos-overlay" onClick={() => setCriticalSos(null)}>
+                    <div className="critical-sos-modal" onClick={e => e.stopPropagation()}>
+                        <div className="critical-sos-header">
+                            <div className="siren-icon-container">
+                                <AlertTriangle size={32} className="siren-icon animate-pulse" />
+                            </div>
+                            <h2>CRITICAL EMERGENCY ALERT</h2>
+                        </div>
+                        <div className="critical-sos-body">
+                            <div className="emergency-detail-card">
+                                <div className="detail-row">
+                                    <span className="detail-label">User / Patient</span>
+                                    <strong className="detail-value">{criticalSos.userName}</strong>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Phone Number</span>
+                                    <strong className="detail-value">{criticalSos.userPhone}</strong>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Location Address</span>
+                                    <p className="detail-address">{criticalSos.addressSnapshot}</p>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Triggered At</span>
+                                    <span className="detail-time">{new Date(criticalSos.time).toLocaleTimeString()}</span>
+                                </div>
+                            </div>
+                            
+                            {criticalSos.latitude && criticalSos.longitude && (
+                                <a 
+                                    href={`https://www.google.com/maps?q=${criticalSos.latitude},${criticalSos.longitude}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn-map-link"
+                                >
+                                    🗺️ View Live GPS on Google Maps
+                                </a>
+                            )}
+                        </div>
+                        <div className="critical-sos-actions">
+                            <button className="btn-dismiss" onClick={() => setCriticalSos(null)}>
+                                Dismiss Siren
+                            </button>
+                            <Link href="/sos" onClick={() => setCriticalSos(null)} className="btn-dashboard">
+                                Go to SOS Dashboard
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style jsx>{`
                 .header-notif-container, .header-profile-container { position: relative; }
@@ -681,6 +775,162 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                     0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
                     70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
                     100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+                }
+
+                /* Critical SOS Alarm Modal styles */
+                .critical-sos-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(127, 29, 29, 0.4);
+                    backdrop-filter: blur(12px);
+                    z-index: 9999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    animation: sirenBgFlash 1.5s infinite;
+                }
+                @keyframes sirenBgFlash {
+                    0% { background: rgba(127, 29, 29, 0.45); }
+                    50% { background: rgba(220, 38, 38, 0.65); }
+                    100% { background: rgba(127, 29, 29, 0.45); }
+                }
+                .critical-sos-modal {
+                    background: #1e293b;
+                    color: white;
+                    width: 90%;
+                    max-width: 500px;
+                    border-radius: 24px;
+                    border: 3px solid #ef4444;
+                    box-shadow: 0 25px 50px -12px rgba(239, 68, 68, 0.4);
+                    overflow: hidden;
+                    animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                }
+                @keyframes modalPop {
+                    from { transform: scale(0.9) translateY(20px); opacity: 0; }
+                    to { transform: scale(1) translateY(0); opacity: 1; }
+                }
+                .critical-sos-header {
+                    background: #ef4444;
+                    padding: 24px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 12px;
+                    text-align: center;
+                }
+                .siren-icon-container {
+                    background: white;
+                    color: #ef4444;
+                    width: 64px;
+                    height: 64px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+                }
+                .critical-sos-header h2 {
+                    font-size: 20px;
+                    font-weight: 800;
+                    letter-spacing: 1px;
+                    margin: 0;
+                }
+                .critical-sos-body {
+                    padding: 24px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 20px;
+                }
+                .emergency-detail-card {
+                    background: #0f172a;
+                    border-radius: 16px;
+                    padding: 20px;
+                    border: 1px solid #334155;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 14px;
+                }
+                .detail-row {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                }
+                .detail-label {
+                    font-size: 11px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    color: #94a3b8;
+                    letter-spacing: 0.5px;
+                }
+                .detail-value {
+                    font-size: 18px;
+                    font-weight: 800;
+                    color: #f1f5f9;
+                }
+                .detail-address {
+                    font-size: 14px;
+                    color: #cbd5e1;
+                    margin: 0;
+                    line-height: 1.5;
+                }
+                .detail-time {
+                    font-size: 14px;
+                    color: #e2e8f0;
+                    font-weight: 600;
+                }
+                .btn-map-link {
+                    display: block;
+                    width: 100%;
+                    text-align: center;
+                    background: #3b82f6;
+                    color: white;
+                    padding: 14px;
+                    border-radius: 12px;
+                    font-weight: 700;
+                    text-decoration: none;
+                    transition: all 0.2s;
+                }
+                .btn-map-link:hover {
+                    background: #2563eb;
+                    transform: translateY(-1px);
+                }
+                .critical-sos-actions {
+                    padding: 0 24px 24px;
+                    display: flex;
+                    gap: 12px;
+                }
+                .btn-dismiss {
+                    flex: 1;
+                    background: #475569;
+                    color: white;
+                    border: none;
+                    padding: 14px;
+                    border-radius: 12px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .btn-dismiss:hover {
+                    background: #334155;
+                }
+                .btn-dashboard {
+                    flex: 1;
+                    background: #10b981;
+                    color: white;
+                    padding: 14px;
+                    border-radius: 12px;
+                    font-weight: 700;
+                    text-align: center;
+                    text-decoration: none;
+                    transition: all 0.2s;
+                    display: inline-block;
+                }
+                .btn-dashboard:hover {
+                    background: #059669;
+                    transform: translateY(-1px);
                 }
             `}</style>
         </header>

@@ -12,7 +12,9 @@ const getAdmins = async (req, res, next) => {
         const { page, limit, skip } = paginate(req.query);
         const { role, cityId, search } = req.query;
 
-        const where = {};
+        const where = {
+            isStaffProfile: { not: true }
+        };
         if (role) where.role = role;
         if (cityId) where.cityId = cityId;
         if (search) {

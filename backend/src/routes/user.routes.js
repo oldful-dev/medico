@@ -22,6 +22,7 @@ router.put('/:id', authenticateAdmin, auditMiddleware('User'), ctrl.updateUser);
 router.put('/:id/block', authenticateAdmin, authorize('SUPER_ADMIN', 'CITY_ADMIN'), ctrl.blockUser);
 router.put('/:id/suspend', authenticateAdmin, authorize('SUPER_ADMIN', 'CITY_ADMIN'), ctrl.suspendUser);
 router.put('/:id/activate', authenticateAdmin, ctrl.activateUser);
+router.delete('/:id', authenticateAdmin, authorize('SUPER_ADMIN'), auditMiddleware('User'), ctrl.deleteProfileByAdmin);
 
 // Emergency contacts
 router.post('/:id/emergency-contacts', authenticate, ctrl.addEmergencyContact);

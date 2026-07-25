@@ -8,6 +8,7 @@ const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate } = require('../utils/helpers');
 const { logger } = require('../config/logger');
 const delhivery = require('../services/delhivery.service');
+const { generateInvoicePDF } = require('../utils/pdfGenerator');
 
 // Warehouse origin pincode (change to your actual warehouse pincode)
 const WAREHOUSE_PINCODE = process.env.WAREHOUSE_PINCODE || '560001';
@@ -567,6 +568,61 @@ const updateOrderStatus = async (req, res, next) => {
     }
 };
 
+// ──────────────────────────────────────────────
+//  DOWNLOAD ORDER INVOICE
+// ──────────────────────────────────────────────
+
+/**
+ * GET /api/orders/:id/invoice
+ * Generates and streams a GST invoice PDF for a product order.
+ */
+const downloadOrderInvoice = async (req, res, next) => {
+    try {
+        const order = await prisma.productOrder.findFirst({
+            where: { id: req.params.id, userId: req.user.id },
+            include: {
+                user: { select: { name: true, phone: true } },
+                product: { select: { name: true } },
+            },
+        });
+
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+
+        // Build line items description from the items JSON array
+        const itemLines = Array.isArray(order.items) && order.items.length > 0
+            ? order.items.map(i => `${i.name || i.productName || 'Product'} x${i.quantity || 1}`).join(', ')
+            : (order.product?.name || 'Wellness Product');
+
+        const gstRate = parseFloat(order.tax && order.subtotal ? ((order.tax / order.subtotal) * 100).toFixed(0) : process.env.GST_RATE) || 18;
+        const subtotal = order.subtotal || Math.round((order.amount || 0) * 100 / (100 + gstRate));
+        const gstAmount = order.tax || Math.round(subtotal * gstRate / 100);
+
+        const invoiceData = {
+            invoiceNumber: order.orderCode || order.id,
+            invoiceDate: order.createdAt || new Date(),
+            billingName: order.user?.name || 'Customer',
+            billingAddress: typeof order.address === 'object'
+                ? [order.address.line1, order.address.city, order.address.pincode].filter(Boolean).join(', ')
+                : (order.address || 'N/A'),
+            description: itemLines,
+            subtotal,
+            gstRate,
+            gstAmount,
+            totalAmount: order.amount || (subtotal + gstAmount + (order.shippingCharge || 0)),
+        };
+
+        const pdfBuffer = await generateInvoicePDF(invoiceData);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=Invoice_${invoiceData.invoiceNumber}.pdf`);
+        res.send(pdfBuffer);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getShippingRate,
     checkoutCart,
@@ -575,4 +631,5 @@ module.exports = {
     getAdminOrders,
     fulfillOrder,
     updateOrderStatus,
+    downloadOrderInvoice,
 };

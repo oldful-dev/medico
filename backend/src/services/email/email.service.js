@@ -68,7 +68,7 @@ const sendEmail = async ({ to, subject, html, userId = null, isMarketing = false
             success = true;
             logger.info(`📧 Email sent to ${to}: ${subject}`);
         } catch (err) {
-            errorMessage = err?.message || String(err);
+            errorMessage = typeof err === 'object' ? JSON.stringify(err) : (err?.message || String(err));
             logger.error(`📧 ZeptoMail error for ${to}: ${errorMessage}`);
         }
     }

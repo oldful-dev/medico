@@ -41,7 +41,10 @@ export const initSocket = () => {
         console.log(`[Socket] 🔌 Initializing with URL: ${SOCKET_URL}, auth: ${token ? 'yes' : 'no'}`);
 
         socket = io(SOCKET_URL, {
-            auth: token ? { token } : {},
+            auth: (cb) => {
+                const freshToken = getAuthToken();
+                cb(freshToken ? { token: freshToken } : {});
+            },
             withCredentials: true,
             autoConnect: false,
             transports: ["websocket", "polling"],
@@ -98,7 +101,24 @@ export const onSocketEvent = async (event, callback) => {
         return;
     }
 
+    // Deregister previous callback if one was registered via onSocketEvent
+    if (listeners[event]) {
+        s.off(event, listeners[event]);
+    }
+
     listeners[event] = callback;
     s.on(event, callback);
     console.log(`[Socket] 📡 Registered listener for: ${event}`);
+};
+
+export const offSocketEvent = async (event, callback) => {
+    const s = await getSocket();
+    if (!s) return;
+    if (callback) {
+        s.off(event, callback);
+    } else {
+        s.off(event);
+    }
+    delete listeners[event];
+    console.log(`[Socket] 📴 Deregistered listener for: ${event}`);
 };

@@ -239,6 +239,11 @@ const createUser = async (req, res, next) => {
 // PUT /api/users/:id
 const updateUser = async (req, res, next) => {
     try {
+        const targetUser = await prisma.user.findUnique({ where: { id: req.params.id } });
+        if (targetUser && targetUser.status === 'DELETED') {
+            return res.status(403).json({ success: false, message: 'This account has been deleted. Deleted user records are locked for compliance and cannot be modified.' });
+        }
+
         const { name, email, phone, cityId, gender, dateOfBirth, preferredLanguage, healthTag, status, pushEnabled, smsEnabled, whatsappEnabled, emailMarketingEnabled } = req.body;
         const data = {};
         if (name !== undefined) data.name = name;
@@ -747,11 +752,58 @@ const deleteProfile = async (req, res, next) => {
     }
 };
 
+// DELETE /api/users/:id (Admin — soft delete account and anonymize data)
+const deleteProfileByAdmin = async (req, res, next) => {
+    const userId = req.params.id;
+    try {
+        logger.info(`[ADMIN_DELETE_ACCOUNT] Soft-deleting user ${userId} and redacting PII`);
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        if (user.status === 'DELETED') {
+            return res.status(400).json({ success: false, message: 'Account is already deleted' });
+        }
+
+        // Anonymize user details but keep records in the DB
+        const redactedPhone = `deleted_${userId}_${user.phone}`;
+        const redactedEmail = user.email ? `deleted_${userId}_${user.email}` : null;
+
+        // Perform soft delete, clean up tokens, and set status to DELETED
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                name: 'Deleted User',
+                phone: redactedPhone,
+                email: redactedEmail,
+                profileImageUrl: null,
+                fcmDeviceToken: null,
+                refreshToken: null,
+                otpCode: null,
+                otpExpiresAt: null,
+                status: 'DELETED',
+                deletedAt: new Date()
+            }
+        });
+
+        // Delete saved cards (security requirement)
+        await prisma.savedCard.deleteMany({ where: { userId } });
+
+        logger.info(`[ADMIN_DELETE_ACCOUNT] User ${userId} soft-deleted successfully`);
+        sendResponse(res, 200, null, 'Account deleted successfully');
+    } catch (error) {
+        logger.error(`[ADMIN_DELETE_ACCOUNT] Error soft-deleting user ${userId}:`, error.message);
+        next(error);
+    }
+};
+
 module.exports = {
     getUsers, getUserById, createUser, updateUser,
     blockUser, suspendUser, activateUser,
     addEmergencyContact, removeEmergencyContact,
     addAddress, updateAddress, deleteAddress,
     upsertMedicalCard, uploadHealthReport, deleteHealthReport,
-    getMyProfile, updateMyProfile, registerDeviceToken, uploadProfileAvatar, getMyHealthReports, deleteProfile,
+    getMyProfile, updateMyProfile, registerDeviceToken, uploadProfileAvatar, getMyHealthReports, deleteProfile, deleteProfileByAdmin,
 };

@@ -498,7 +498,9 @@ const planCardStyles = StyleSheet.create({
         borderRadius: 20,
         borderWidth: 1,
         marginRight: CARD_MARGIN,
+        marginBottom: 16,
         overflow: 'hidden',
+        ...Shadow.card,
     },
     header: {
         padding: 18,

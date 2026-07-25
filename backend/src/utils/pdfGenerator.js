@@ -18,7 +18,7 @@ const generateInvoicePDF = async (invoiceData) => {
             doc.on('end', () => resolve(Buffer.concat(buffers)));
 
             // Header
-            doc.fontSize(22).font('Helvetica-Bold').text('MEDICO HEALTHCARE', { align: 'center' });
+            doc.fontSize(22).font('Helvetica-Bold').text('AYUXA HEALTH TECH PLATFORMS PVT. LTD.', { align: 'center' });
             doc.fontSize(10).font('Helvetica').text(process.env.COMPANY_ADDRESS || 'Bangalore, India', { align: 'center' });
             doc.text(`GSTIN: ${process.env.COMPANY_GSTIN || 'N/A'}`, { align: 'center' });
             doc.moveDown(1);
@@ -101,7 +101,7 @@ const generateWelcomeSLAPDF = async (userData) => {
             doc.on('end', () => resolve(Buffer.concat(buffers)));
 
             // Header
-            doc.fontSize(22).font('Helvetica-Bold').text('MEDICO HEALTHCARE', { align: 'center' });
+            doc.fontSize(22).font('Helvetica-Bold').text('AYUXA HEALTH TECH PLATFORMS PVT. LTD.', { align: 'center' });
             doc.fontSize(10).font('Helvetica').text('Service Level Agreement & Welcome Kit', { align: 'center' });
             doc.moveDown(2);
 
@@ -146,7 +146,7 @@ const generateWelcomeSLAPDF = async (userData) => {
             doc.text(`Your Emergency Contact: ${userData.emergencyContactName || 'Not set'} - ${userData.emergencyContactPhone || 'Not set'}`);
 
             doc.moveDown(2);
-            doc.fontSize(8).text('This document is a binding service level agreement between Ayuxa Healthcare and the member.', { align: 'center' });
+            doc.fontSize(8).text('This document is a binding service level agreement between Ayuxa Health Tech Platforms Pvt. Ltd. and the member.', { align: 'center' });
 
             doc.end();
         } catch (error) {

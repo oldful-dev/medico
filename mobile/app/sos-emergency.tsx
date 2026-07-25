@@ -57,16 +57,34 @@ export default function SOSEmergencyScreen() {
                     t('sos.partial_alert_msg')
                 );
             }
-        } catch {
-            try {
-                await sosService.callEmergencyHotline('112');
-            } catch {
-                Alert.alert(t('sos.emergency_title'), t('sos.emergency_fallback_msg'));
+        } catch (err: any) {
+            if (err?.status === 403 || err?.statusCode === 403 || err?.message?.includes('limit exceeded')) {
+                const message = err.message || 'Universal limit exceeded. Unsubscribed accounts are strictly limited to 1 emergency SOS dispatch per month.';
+                Alert.alert(
+                    'SOS Limit Exceeded',
+                    message,
+                    [
+                        {
+                            text: 'View Subscription Plans',
+                            onPress: () => router.push('/plans')
+                        },
+                        {
+                            text: 'Cancel',
+                            style: 'cancel'
+                        }
+                    ]
+                );
+            } else {
+                try {
+                    await sosService.callEmergencyHotline('112');
+                } catch {
+                    Alert.alert(t('sos.emergency_title'), t('sos.emergency_fallback_msg'));
+                }
             }
         } finally {
             setIsTriggering(false);
         }
-    }, [prefetchedLocation]);
+    }, [prefetchedLocation, router, t]);
 
     const handleCountdownCancel = useCallback(() => {
         setShowCountdown(false);

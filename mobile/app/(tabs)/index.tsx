@@ -1020,7 +1020,7 @@ export default function HomeScreen() {
                     activeOpacity={0.9}
                   >
                     <Image
-                      source={{ uri: section.image_url?.startsWith('http') ? section.image_url : getImageUrl(section.image_url || 'banner.png') }}
+                      source={{ uri: section.image_url?.startsWith('http') ? section.image_url : getAssetUrl(section.image_url || 'banner.png') }}
                       style={s.customCardImage}
                       resizeMode="cover"
                     />
@@ -1229,11 +1229,11 @@ function makeStyles(c: ThemeColors, fontScale: number = 1.0, isLargeFont: boolea
       alignItems: 'center',
       gap: 8,
       alignSelf: 'flex-start',
-      shadowColor: 'transparent',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0,
-      shadowRadius: 0,
-      elevation: 0,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.12,
+      shadowRadius: 4,
+      elevation: 2,
     },
     bookingStatusBtnText: { fontFamily: Fonts.bold, fontSize: Math.round(12 * fontScale), color: '#02743F' },
     greetingAvatarContainer: { width: 96, height: 96, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
@@ -1247,11 +1247,7 @@ function makeStyles(c: ThemeColors, fontScale: number = 1.0, isLargeFont: boolea
       borderRadius: Radius.lg,
       overflow: 'hidden',
       height: 220,
-      shadowColor: 'transparent',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0,
-      shadowRadius: 0,
-      elevation: 0,
+      ...Shadow.card,
     },
     featuredMeetupImage: {
       position: 'absolute',
@@ -1368,11 +1364,7 @@ function makeStyles(c: ThemeColors, fontScale: number = 1.0, isLargeFont: boolea
       padding: 16,
       borderWidth: 1.5,
       borderColor: c.primary,
-      shadowColor: 'transparent',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0,
-      shadowRadius: 0,
-      elevation: 0,
+      ...Shadow.card,
     },
     comingSoonContent: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
     comingSoonTextRow: { marginLeft: 12, flex: 1 },
@@ -1388,6 +1380,7 @@ function makeStyles(c: ThemeColors, fontScale: number = 1.0, isLargeFont: boolea
       overflow: 'hidden',
       height: 240,
       backgroundColor: c.bgCard,
+      ...Shadow.card,
     },
     customCardImage: {
       position: 'absolute',

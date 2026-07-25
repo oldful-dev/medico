@@ -71,6 +71,28 @@ const init = (httpServer) => {
     io.on("connection", (socket) => {
         logger.info(`New Client Connected: ${socket.id} (userId: ${socket.userId || 'anonymous'})`);
 
+        socket.on("authenticate", (data) => {
+            try {
+                const token = data?.token;
+                if (!token) return;
+                const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+                socket.userId = decoded.id || decoded.userId;
+                socket.userRole = decoded.role;
+                logger.info(`[Socket] Dynamically authenticated user: ${socket.userId} (${socket.userRole})`);
+
+                // Dynamically join user room
+                socket.join(`user_${socket.userId}`);
+
+                // Dynamically join admin feed if admin
+                if (socket.userRole === 'ADMIN' || socket.userRole === 'SUPER_ADMIN') {
+                    socket.join("admin_feed");
+                    logger.info(`Socket ${socket.id} dynamically joined admin_feed`);
+                }
+            } catch (err) {
+                logger.warn(`[Socket] Dynamic auth failed: ${err.message}`);
+            }
+        });
+
         socket.on("join_admin_room", () => {
             if (socket.userRole === 'ADMIN' || socket.userRole === 'SUPER_ADMIN') {
                 socket.join("admin_feed");

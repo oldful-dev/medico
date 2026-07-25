@@ -1,5 +1,6 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { getSocket } from './socket';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.ayuxacare.com/api';
 
@@ -34,6 +35,15 @@ api.interceptors.response.use(
                     const res = await axios.post(`${API_URL}/auth/admin/refresh`, { refreshToken });
                     if (res.data.success) {
                         Cookies.set('adminToken', res.data.data.accessToken, { expires: 1 });
+                        
+                        try {
+                            getSocket().then(socket => {
+                                if (socket) {
+                                    socket.emit("authenticate", { token: res.data.data.accessToken });
+                                }
+                            }).catch(() => {});
+                        } catch (_) {}
+
                         error.config.headers.Authorization = `Bearer ${res.data.data.accessToken}`;
                         return api(error.config);
                     }
@@ -104,6 +114,7 @@ export const userAPI = {
     addEmergencyContact: (id, data) => api.post(`/users/${id}/emergency-contacts`, data),
     removeEmergencyContact: (userId, contactId) => api.delete(`/users/${userId}/emergency-contacts/${contactId}`),
     upsertMedicalCard: (id, data) => api.post(`/users/${id}/medical-card`, data),
+    delete: (id) => api.delete(`/users/${id}`),
 };
 
 // ── Services ─────────────────────────────────────────
@@ -114,7 +125,7 @@ export const serviceAPI = {
     update: (id, data) => api.put(`/services/${id}`, data),
     toggle: (id) => api.put(`/services/${id}/toggle`),
     reorder: (data) => api.put('/services/reorder', data),
-    delete: (id) => api.delete(`/services/${id}`),
+    delete: (id, params) => api.delete(`/services/${id}`, { params }),
 };
 
 // ── Bookings ─────────────────────────────────────────
