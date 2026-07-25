@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, Eye, Ban, UserCheck, RotateCcw, ChevronLeft, ChevronRight, Edit2, Trash } from "lucide-react";
+import { Search, Filter, Eye, Ban, UserCheck, RotateCcw, ChevronLeft, ChevronRight, Edit2, Trash, FileDown } from "lucide-react";
 import Cookies from "js-cookie";
-import { userAPI, cityAPI } from "@/lib/api";
+import { userAPI, cityAPI, bookingAPI } from "@/lib/api";
 import { formatDate, formatDateTime, showToast } from "@/lib/hooks";
 
 export default function UsersPage() {
@@ -483,7 +483,15 @@ export default function UsersPage() {
                                                 <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                                                         <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>ID: {p.razorpayPaymentId || p.id}</span>
-                                                        <span className={`badge ${p.status === 'SUCCESS' ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: 10 }}>{p.status}</span>
+                                                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                                            <span className={`badge ${p.status === 'SUCCESS' ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: 10 }}>{p.status}</span>
+                                                            {p.bookingId && p.status === 'SUCCESS' && (
+                                                                <>
+                                                                    <button className="btn btn-sm btn-secondary" style={{ padding: '2px 6px', fontSize: 11 }} title="View Invoice Inline" onClick={() => setImageViewer({ title: `Invoice: ${p.razorpayPaymentId || p.id}`, url: bookingAPI.getInvoiceDownloadUrl(p.bookingId) })}><Eye size={12} /></button>
+                                                                    <a href={bookingAPI.getInvoiceDownloadUrl(p.bookingId)} download className="btn btn-sm btn-secondary" style={{ padding: '2px 6px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} title="Download Invoice PDF" target="_blank" rel="noreferrer"><FileDown size={12} /></a>
+                                                                </>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <div>Amount: ₹{p.amount} • Purpose: {p.purpose || 'Booking Payment'}</div>
                                                     <div>Date: {formatDate(p.createdAt)}</div>

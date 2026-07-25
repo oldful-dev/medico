@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, ChevronLeft, ChevronRight, Edit2, CreditCard, Smartphone, Banknote, Building2 } from "lucide-react";
-import { paymentAPI } from "@/lib/api";
+import { RefreshCw, ChevronLeft, ChevronRight, Edit2, CreditCard, Smartphone, Banknote, Building2, FileDown, Eye } from "lucide-react";
+import { paymentAPI, bookingAPI } from "@/lib/api";
 import { formatCurrency, formatDateTime, showToast } from "@/lib/hooks";
 
 const statusColors = { INITIATED: 'badge-default', SUCCESS: 'badge-success', FAILED: 'badge-danger', REFUND_INITIATED: 'badge-warning', REFUNDED: 'badge-info' };
@@ -35,6 +35,7 @@ export default function PaymentsPage() {
     const [statusModal, setStatusModal] = useState(null);
     const [newStatus, setNewStatus] = useState('');
     const [updatingStatus, setUpdatingStatus] = useState(false);
+    const [viewerModal, setViewerModal] = useState(null);
     const limit = 20;
 
     const loadPayments = useCallback(async () => {
@@ -98,6 +99,12 @@ export default function PaymentsPage() {
                                                     {p.status === 'SUCCESS' && p.paymentMethod !== 'CASH' && !p.refundId && (
                                                         <button className="btn btn-sm btn-warning" title="Refund" onClick={() => { setRefundModal(p); setRefundData({ refundType: 'CANCELLATION', refundReason: '', refundAmount: p.amount }); }}><RefreshCw size={14} /></button>
                                                     )}
+                                                    {p.bookingId && p.status === 'SUCCESS' && (
+                                                        <>
+                                                            <button className="btn btn-sm btn-secondary" title="View Invoice Inline" onClick={() => setViewerModal(bookingAPI.getInvoiceDownloadUrl(p.bookingId))}><Eye size={14} /></button>
+                                                            <a href={bookingAPI.getInvoiceDownloadUrl(p.bookingId)} download className="btn btn-sm btn-secondary" title="Download Invoice PDF" target="_blank" rel="noreferrer"><FileDown size={14} /></a>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -155,6 +162,31 @@ export default function PaymentsPage() {
                         </button>
                     </div>
                 </div></div>
+            )}
+
+            {viewerModal && (
+                <div className="modal-overlay" onClick={() => setViewerModal(null)} style={{ background: 'rgba(0, 0, 0, 0.85)' }}>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', padding: 20 }} onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setViewerModal(null)} style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', fontSize: 28, width: 40, height: 40, borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>✕</button>
+                        <div style={{ width: '90vw', height: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', borderRadius: 12, overflow: 'hidden' }}>
+                            <div style={{ padding: 16, borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Invoice Preview</div>
+                            </div>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: 'rgba(0,0,0,0.1)' }}>
+                                <iframe 
+                                    src={viewerModal} 
+                                    style={{ width: '100%', height: '100%', border: 'none' }} 
+                                    title="Invoice PDF" 
+                                />
+                            </div>
+                            <div style={{ padding: 16, borderTop: '1px solid var(--border-color)', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                                <button onClick={() => setViewerModal(null)} style={{ padding: '8px 16px', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: 'none', borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

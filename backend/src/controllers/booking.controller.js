@@ -780,7 +780,12 @@ const downloadInvoice = async (req, res, next) => {
         });
 
         if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
-        if (booking.userId !== req.user.id) return res.status(403).json({ success: false, message: 'Not authorized' });
+        
+        // Allow admins to bypass user matching
+        const isAdmin = req.user && (req.user.role || req.user.isStaffProfile === true || req.baseUrl.includes('/admin') || req.path.includes('/admin/'));
+        if (booking.userId !== req.user.id && !isAdmin) {
+            return res.status(403).json({ success: false, message: 'Not authorized' });
+        }
 
         const payment = booking.payments[0];
         if (!payment || !payment.invoice) {

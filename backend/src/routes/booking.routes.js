@@ -9,6 +9,7 @@ const ctrl = require('../controllers/booking.controller');
 router.get('/history', authenticateUser, ctrl.getMyBookings);
 router.get('/detail/:id', authenticateUser, ctrl.getMyBookingById);
 router.get('/:id/invoice', authenticateUser, ctrl.downloadInvoice);
+router.get('/admin/:id/invoice', authenticateAdmin, ctrl.downloadInvoice);
 router.post('/:id/cancel', authenticateUser, ctrl.cancelBooking);
 
 // Admin routes
