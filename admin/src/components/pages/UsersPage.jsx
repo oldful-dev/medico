@@ -14,6 +14,7 @@ export default function UsersPage() {
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [detailTab, setDetailTab] = useState('overview');
     const [imageViewer, setImageViewer] = useState(null);
     const limit = 20;
     const [editingUser, setEditingUser] = useState(null);
@@ -61,6 +62,7 @@ export default function UsersPage() {
     async function viewUser(id) {
         try {
             const res = await userAPI.getById(id);
+            setDetailTab('overview');
             setSelectedUser(res.data?.data);
         } catch (e) { showToast('Failed to load user', 'error'); }
     }
@@ -247,217 +249,221 @@ export default function UsersPage() {
                             <div style={{ flex: 1 }} />
                             <button onClick={() => setSelectedUser(null)} className="btn btn-sm btn-secondary">✕</button>
                         </div>
-                        <div className="modal-body">
-                            <div className="form-row">
-                                <div className="form-group"><label className="form-label">User ID</label><div className="text-sm">{selectedUser.uniqueUserId}</div></div>
-                                <div className="form-group"><label className="form-label">Phone</label><div className="text-sm">{selectedUser.phone}</div></div>
-                            </div>
-                            <div className="form-row">
-                                <div className="form-group"><label className="form-label">Email</label><div className="text-sm">{selectedUser.email || '—'}</div></div>
-                                <div className="form-group"><label className="form-label">City</label><div className="text-sm">{selectedUser.city?.name || '—'}</div></div>
-                            </div>
-                            <div className="form-row">
-                                <div className="form-group"><label className="form-label">Age</label><div className="text-sm">{calculateAge(selectedUser.dateOfBirth) || '—'} {calculateAge(selectedUser.dateOfBirth) ? 'years' : ''}</div></div>
-                                <div className="form-group"><label className="form-label">Date of Birth</label><div className="text-sm">{selectedUser.dateOfBirth ? formatDate(selectedUser.dateOfBirth) : '—'}</div></div>
-                            </div>
-                            <div className="form-row" style={{ marginBottom: 16 }}>
-                                <div className="form-group"><label className="form-label">Health Tag</label><span className={`badge ${healthBadge[selectedUser.healthTag]}`}>{selectedUser.healthTag}</span></div>
-                                <div className="form-group"><label className="form-label">Status</label><span className={`badge ${statusBadge[selectedUser.status]}`}>{selectedUser.status}</span></div>
+                        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            {/* Tabs Navigation */}
+                            <div className="tabs" style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--border-color)', paddingBottom: 8, marginBottom: 8, overflowX: 'auto' }}>
+                                {['overview', 'bookings', 'lab-orders', 'products', 'sos', 'payments'].map(tab => (
+                                    <button
+                                        key={tab}
+                                        type="button"
+                                        className={`tab ${(!detailTab && tab === 'overview') || detailTab === tab ? 'active' : ''}`}
+                                        onClick={() => setDetailTab(tab)}
+                                        style={{
+                                            padding: '6px 12px',
+                                            fontSize: 12,
+                                            fontWeight: 600,
+                                            borderRadius: 4,
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            background: ((!detailTab && tab === 'overview') || detailTab === tab) ? 'var(--accent-primary)' : 'transparent',
+                                            color: ((!detailTab && tab === 'overview') || detailTab === tab) ? '#fff' : 'var(--text-muted)'
+                                        }}
+                                    >
+                                        {tab.toUpperCase().replace('-', ' ')}
+                                    </button>
+                                ))}
                             </div>
 
-                            {selectedUser.addresses?.length > 0 && (
-                                <div className="form-group">
-                                    <label className="form-label">Registered Addresses</label>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-                                        {selectedUser.addresses.map((addr, i) => (
-                                            <div key={i} className="text-sm" style={{ padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 6 }}>
-                                                <strong>{addr.label}:</strong> {addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}, {addr.cityName}, {addr.state} - {addr.pincode}
-                                            </div>
-                                        ))}
+                            {(!detailTab || detailTab === 'overview') && (
+                                <>
+                                    <div className="form-row">
+                                        <div className="form-group"><label className="form-label">User ID</label><div className="text-sm">{selectedUser.uniqueUserId}</div></div>
+                                        <div className="form-group"><label className="form-label">Phone</label><div className="text-sm">{selectedUser.phone}</div></div>
                                     </div>
-                                </div>
-                            )}
+                                    <div className="form-row">
+                                        <div className="form-group"><label className="form-label">Email</label><div className="text-sm">{selectedUser.email || '—'}</div></div>
+                                        <div className="form-group"><label className="form-label">City</label><div className="text-sm">{selectedUser.city?.name || '—'}</div></div>
+                                    </div>
+                                    <div className="form-row">
+                                        <div className="form-group"><label className="form-label">Age</label><div className="text-sm">{calculateAge(selectedUser.dateOfBirth) || '—'} {calculateAge(selectedUser.dateOfBirth) ? 'years' : ''}</div></div>
+                                        <div className="form-group"><label className="form-label">Date of Birth</label><div className="text-sm">{selectedUser.dateOfBirth ? formatDate(selectedUser.dateOfBirth) : '—'}</div></div>
+                                    </div>
+                                    <div className="form-row" style={{ marginBottom: 16 }}>
+                                        <div className="form-group"><label className="form-label">Health Tag</label><span className={`badge ${healthBadge[selectedUser.healthTag]}`}>{selectedUser.healthTag}</span></div>
+                                        <div className="form-group"><label className="form-label">Status</label><span className={`badge ${statusBadge[selectedUser.status]}`}>{selectedUser.status}</span></div>
+                                    </div>
 
-                            {selectedUser.familyMembers?.length > 0 && (
-                                <div className="form-group">
-                                    <label className="form-label">Family Members</label>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-                                        {selectedUser.familyMembers.map((fm, i) => (
-                                            <div key={i} className="text-sm" style={{ padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 6 }}>
-                                                <strong>{fm.name}</strong> ({fm.relation}) {fm.bloodGroup ? `• Blood Group: ${fm.bloodGroup}` : ''}
-                                                {fm.allergies && <div style={{ fontSize: 11, color: 'var(--accent-danger)', marginTop: 2 }}>Allergies: {fm.allergies}</div>}
-                                                {fm.chronicConditions && <div style={{ fontSize: 11, color: 'var(--accent-warning)', marginTop: 2 }}>Conditions: {fm.chronicConditions}</div>}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                            {selectedUser.emergencyContacts?.length > 0 && (
-                                <div className="form-group">
-                                    <label className="form-label">Emergency Contacts</label>
-                                    {selectedUser.emergencyContacts.map((ec, i) => (
-                                        <div key={i} className="text-sm" style={{ marginBottom: 4 }}>{ec.name} — {ec.phone} ({ec.relationship})</div>
-                                    ))}
-                                </div>
-                            )}
-                            {selectedUser.medicalCards?.length > 0 && (
-                                <div className="form-group">
-                                    <label className="form-label">Medical Information</label>
-                                    {selectedUser.medicalCards.map((mc, i) => (
-                                        <div key={i} className="text-sm">
-                                            <div>Blood Group: {mc.bloodGroup || '—'}</div>
-                                            <div>Allergies: {mc.allergies?.join(', ') || '—'}</div>
-                                            <div>Chronic Conditions: {mc.chronicConditions?.join(', ') || '—'}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            {selectedUser.medicalCards?.length > 0 && selectedUser.medicalCards[0]?.currentMedications?.length > 0 && (
-                                <div className="form-group">
-                                    <label className="form-label">Current Medications</label>
-                                    <div style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
-                                        {selectedUser.medicalCards[0].currentMedications.map((med, i) => (
-                                            <div key={i} style={{ marginBottom: 8, paddingBottom: 8, borderBottom: i < selectedUser.medicalCards[0].currentMedications.length - 1 ? '1px solid var(--border-color)' : 'none' }}>
-                                                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{med}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                            {selectedUser.healthReports?.length > 0 && (
-                                <div className="form-group">
-                                    <label className="form-label">Prescriptions & Health Reports</label>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                                        {selectedUser.healthReports.map((hr, i) => {
-                                            const isPrescription = hr.title?.toLowerCase().includes('prescription') || hr.title?.toLowerCase().includes('rx') || hr.title?.toLowerCase().includes('drug');
-                                            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(hr.fileType?.toLowerCase());
-                                            return (
-                                                <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, borderLeft: `4px solid ${isPrescription ? 'var(--accent-danger)' : 'var(--accent-primary)'}`, fontSize: 13, flex: '1 1 200px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                                                    <div style={{ marginBottom: 8 }}>
-                                                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 3 }}>{hr.title}</div>
-                                                        <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Type: {hr.fileType?.toUpperCase()} • Uploaded: {formatDate(hr.createdAt)}</div>
-                                                        {isPrescription && <div style={{ fontSize: 11, background: 'var(--accent-danger)', color: 'white', padding: '2px 6px', borderRadius: 3, display: 'inline-block', marginTop: 4, fontWeight: 600 }}>💊 Prescription</div>}
+                                    {selectedUser.subscriptions?.length > 0 && (
+                                        <div className="form-group">
+                                            <label className="form-label">Active Subscriptions</label>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                                                {selectedUser.subscriptions.map((sub, i) => (
+                                                    <div key={i} className="text-sm" style={{ padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 6, borderLeft: '4px solid var(--accent-success)' }}>
+                                                        <strong>{sub.plan?.name}</strong> — {sub.status} • Exp: {formatDate(sub.expiresAt)}
                                                     </div>
-                                                    {hr.flagSeverity && (
-                                                        <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--accent-danger)', padding: 8, borderRadius: 4, marginBottom: 8, fontSize: 12 }}>
-                                                            ⚠️ Severity: {hr.flagSeverity}
-                                                            {hr.flagNote && <div style={{ marginTop: 2, fontSize: 11 }}>{hr.flagNote}</div>}
-                                                        </div>
-                                                    )}
-                                                    {hr.fileUrl && (
-                                                        <div style={{ marginTop: 8 }}>
-                                                            {isImage ? (
-                                                                <img 
-                                                                    src={hr.fileUrl} 
-                                                                    alt={hr.title} 
-                                                                    style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px', cursor: 'pointer' }} 
-                                                                    onClick={() => setImageViewer({ title: hr.title, url: hr.fileUrl })}
-                                                                />
-                                                            ) : (
-                                                                <button 
-                                                                    className="btn btn-sm btn-secondary" 
-                                                                    style={{ width: '100%' }}
-                                                                    onClick={() => setImageViewer({ title: hr.title, url: hr.fileUrl })}
-                                                                >
-                                                                    📄 View Document Inline
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    )}
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {selectedUser.addresses?.length > 0 && (
+                                        <div className="form-group">
+                                            <label className="form-label">Registered Addresses</label>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                                                {selectedUser.addresses.map((addr, i) => (
+                                                    <div key={i} className="text-sm" style={{ padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 6 }}>
+                                                        <strong>{addr.label}:</strong> {addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}, {addr.cityName}, {addr.state} - {addr.pincode}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {selectedUser.familyMembers?.length > 0 && (
+                                        <div className="form-group">
+                                            <label className="form-label">Family Members</label>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                                                {selectedUser.familyMembers.map((fm, i) => (
+                                                    <div key={i} className="text-sm" style={{ padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 6 }}>
+                                                        <strong>{fm.name}</strong> ({fm.relation}) {fm.bloodGroup ? `• Blood Group: ${fm.bloodGroup}` : ''}
+                                                        {fm.allergies && <div style={{ fontSize: 11, color: 'var(--accent-danger)', marginTop: 2 }}>Allergies: {fm.allergies}</div>}
+                                                        {fm.chronicConditions && <div style={{ fontSize: 11, color: 'var(--accent-warning)', marginTop: 2 }}>Conditions: {fm.chronicConditions}</div>}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {selectedUser.emergencyContacts?.length > 0 && (
+                                        <div className="form-group">
+                                            <label className="form-label">Emergency Contacts</label>
+                                            {selectedUser.emergencyContacts.map((ec, i) => (
+                                                <div key={i} className="text-sm" style={{ marginBottom: 4 }}>{ec.name} — {ec.phone} ({ec.relationship})</div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {selectedUser.medicalCards?.length > 0 && (
+                                        <div className="form-group">
+                                            <label className="form-label">Medical Information</label>
+                                            {selectedUser.medicalCards.map((mc, i) => (
+                                                <div key={i} className="text-sm">
+                                                    <div>Blood Group: {mc.bloodGroup || '—'}</div>
+                                                    <div>Allergies: {mc.allergies?.join(', ') || '—'}</div>
+                                                    <div>Chronic Conditions: {mc.chronicConditions?.join(', ') || '—'}</div>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {selectedUser.medicalCards?.length > 0 && selectedUser.medicalCards[0]?.currentMedications?.length > 0 && (
+                                        <div className="form-group">
+                                            <label className="form-label">Current Medications</label>
+                                            <div style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
+                                                {selectedUser.medicalCards[0].currentMedications.map((med, i) => (
+                                                    <div key={i} style={{ marginBottom: 8, paddingBottom: 8, borderBottom: i < selectedUser.medicalCards[0].currentMedications.length - 1 ? '1px solid var(--border-color)' : 'none' }}>
+                                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{med}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
 
-                            {selectedUser.bookings?.some(b => {
-                                if (b.prescriptionUrl) return true;
-                                if (b.formDataJson) {
-                                    try {
-                                        const parsed = typeof b.formDataJson === 'string' ? JSON.parse(b.formDataJson) : b.formDataJson;
-                                        return Object.values(parsed).some(val => 
-                                            (typeof val === 'string' && val.startsWith('http')) || 
-                                            (Array.isArray(val) && val.some(item => typeof item === 'string' && item.startsWith('http')))
-                                        );
-                                    } catch(e) { return false; }
-                                }
-                                return false;
-                            }) && (
+                            {detailTab === 'bookings' && (
                                 <div className="form-group">
-                                    <label className="form-label">Booking Photos & Attachments</label>
+                                    <label className="form-label">Service Bookings</label>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                        {selectedUser.bookings.map((booking, i) => {
-                                            const hasPrescription = !!booking.prescriptionUrl;
-                                            let uploads = [];
-                                            if (booking.formDataJson) {
-                                                try {
-                                                    const parsed = typeof booking.formDataJson === 'string' ? JSON.parse(booking.formDataJson) : booking.formDataJson;
-                                                    Object.entries(parsed).forEach(([key, val]) => {
-                                                        if (typeof val === 'string' && val.startsWith('http')) {
-                                                            uploads.push({ key, url: val });
-                                                        } else if (Array.isArray(val)) {
-                                                            val.forEach((item, index) => {
-                                                                if (typeof item === 'string' && item.startsWith('http')) {
-                                                                    uploads.push({ key: `${key} #${index + 1}`, url: item });
-                                                                }
-                                                            });
-                                                        }
-                                                    });
-                                                } catch(e) {}
-                                            }
-
-                                            if (!hasPrescription && uploads.length === 0) return null;
-
-                                            return (
+                                        {(!selectedUser.bookings || selectedUser.bookings.length === 0) ? <div className="text-muted text-sm">No bookings found</div> :
+                                            selectedUser.bookings.map((booking, i) => (
                                                 <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                                                         <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{booking.bookingCode} - {booking.service?.name}</span>
-                                                        <span className={`badge ${booking.status === 'COMPLETED' ? 'badge-success' : 'badge-info'}`} style={{ fontSize: 10 }}>{booking.status}</span>
+                                                        <span className="badge badge-info" style={{ fontSize: 10 }}>{booking.status}</span>
                                                     </div>
-                                                    <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 8 }}>Scheduled: {formatDate(booking.scheduledDate)} {booking.scheduledTime || ''}</div>
-                                                    
-                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 8 }}>
-                                                        {hasPrescription && (
-                                                            <div style={{ flex: '1 1 120px' }}>
-                                                                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>Prescription:</div>
-                                                                <img 
-                                                                    src={booking.prescriptionUrl} 
-                                                                    alt="Prescription" 
-                                                                    style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: 4, cursor: 'pointer', border: '1px solid var(--border-color)' }}
-                                                                    onClick={() => setImageViewer({ title: `Prescription - ${booking.bookingCode}`, url: booking.prescriptionUrl })}
-                                                                />
-                                                            </div>
-                                                        )}
-
-                                                        {uploads.map((up, idx) => {
-                                                            const isImg = /\.(jpg|jpeg|png|webp|gif)/i.test(up.url);
-                                                            return (
-                                                                <div key={idx} style={{ flex: '1 1 120px' }}>
-                                                                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>{up.key}:</div>
-                                                                    {isImg ? (
-                                                                        <img 
-                                                                            src={up.url} 
-                                                                            alt={up.key} 
-                                                                            style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: 4, cursor: 'pointer', border: '1px solid var(--border-color)' }}
-                                                                            onClick={() => setImageViewer({ title: `Attachment: ${up.key}`, url: up.url })}
-                                                                        />
-                                                                    ) : (
-                                                                        <button 
-                                                                            className="btn btn-sm btn-secondary" 
-                                                                            style={{ width: '100%', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                                            onClick={() => setImageViewer({ title: `Attachment: ${up.key}`, url: up.url })}
-                                                                        >
-                                                                            📄 View PDF
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
+                                                    <div>Price: ₹{booking.totalPrice} • Created: {formatDate(booking.createdAt)}</div>
+                                                    <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Scheduled: {formatDate(booking.scheduledDate)} {booking.scheduledTime || ''}</div>
                                                 </div>
-                                            );
-                                        })}
+                                            ))
+                                        }
+                                    </div>
+                                </div>
+                            )}
+
+                            {detailTab === 'lab-orders' && (
+                                <div className="form-group">
+                                    <label className="form-label">Blood Tests & Lab Orders</label>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        {(!selectedUser.labOrders || selectedUser.labOrders.length === 0) ? <div className="text-muted text-sm">No lab orders found</div> :
+                                            selectedUser.labOrders.map((lo, i) => (
+                                                <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Ref: {lo.clientRefId || lo.id}</span>
+                                                        <span className="badge badge-warning" style={{ fontSize: 10 }}>{lo.status}</span>
+                                                    </div>
+                                                    <div>Packages: {lo.packages?.map(p => p.name).join(', ') || '—'}</div>
+                                                    <div>Total Price: ₹{lo.totalPrice || lo.amount} • Created: {formatDate(lo.createdAt)}</div>
+                                                </div>
+                                            ))
+                                        }
+                                    </div>
+                                </div>
+                            )}
+
+                            {detailTab === 'products' && (
+                                <div className="form-group">
+                                    <label className="form-label">Wellness Store Orders</label>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        {(!selectedUser.productOrders || selectedUser.productOrders.length === 0) ? <div className="text-muted text-sm">No product orders found</div> :
+                                            selectedUser.productOrders.map((po, i) => (
+                                                <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Order: #{po.orderCode || po.id}</span>
+                                                        <span className="badge badge-success" style={{ fontSize: 10 }}>{po.status}</span>
+                                                    </div>
+                                                    <div>Product: {po.product?.name || (po.items?.length > 0 ? `${po.items[0].name} (${po.items.length} items)` : '—')}</div>
+                                                    <div>Amount: ₹{po.totalAmount} • Date: {formatDate(po.createdAt)}</div>
+                                                </div>
+                                            ))
+                                        }
+                                    </div>
+                                </div>
+                            )}
+
+                            {detailTab === 'sos' && (
+                                <div className="form-group">
+                                    <label className="form-label">SOS Trigger Alerts</label>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        {(!selectedUser.sosAlerts || selectedUser.sosAlerts.length === 0) ? <div className="text-muted text-sm">No SOS alerts triggered</div> :
+                                            selectedUser.sosAlerts.map((sos, i) => (
+                                                <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13, borderLeft: '4px solid var(--accent-danger)' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Triggered Alert</span>
+                                                        <span className="badge badge-danger" style={{ fontSize: 10 }}>{sos.status}</span>
+                                                    </div>
+                                                    <div>Location: {sos.latitude}, {sos.longitude}</div>
+                                                    <div>Date: {formatDate(sos.createdAt)}</div>
+                                                </div>
+                                            ))
+                                        }
+                                    </div>
+                                </div>
+                            )}
+
+                            {detailTab === 'payments' && (
+                                <div className="form-group">
+                                    <label className="form-label">Payments Ledger</label>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        {(!selectedUser.payments || selectedUser.payments.length === 0) ? <div className="text-muted text-sm">No payments recorded</div> :
+                                            selectedUser.payments.map((p, i) => (
+                                                <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>ID: {p.razorpayPaymentId || p.id}</span>
+                                                        <span className={`badge ${p.status === 'SUCCESS' ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: 10 }}>{p.status}</span>
+                                                    </div>
+                                                    <div>Amount: ₹{p.amount} • Purpose: {p.purpose || 'Booking Payment'}</div>
+                                                    <div>Date: {formatDate(p.createdAt)}</div>
+                                                </div>
+                                            ))
+                                        }
                                     </div>
                                 </div>
                             )}
