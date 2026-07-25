@@ -802,7 +802,7 @@ const downloadInvoice = async (req, res, next) => {
         const pdfBuffer = await generateInvoicePDF(invoiceData);
 
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=Invoice_${booking.bookingCode}.pdf`);
+        res.setHeader('Content-Disposition', `inline; filename=Invoice_${booking.bookingCode}.pdf`);
         res.send(pdfBuffer);
     } catch (error) {
         next(error);
