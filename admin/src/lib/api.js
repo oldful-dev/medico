@@ -139,6 +139,7 @@ export const bookingAPI = {
     updatePaymentStatus: (id, data) => api.put(`/bookings/${id}/payment-status`, data),
     updateServicePerson: (id, data) => api.put(`/bookings/${id}/service-person`, data),
     escalate: (id) => api.put(`/bookings/${id}/escalate`),
+    getInvoiceDownloadUrl: (id) => `${api.defaults.baseURL || '/api'}/bookings/admin/${id}/invoice`
 };
 
 // ── Caregivers ───────────────────────────────────────
