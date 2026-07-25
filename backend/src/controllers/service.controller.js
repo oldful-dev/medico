@@ -216,18 +216,33 @@ const uploadHeroImage = async (req, res, next) => {
 const deleteService = async (req, res, next) => {
     try {
         const id = req.params.id;
+        const force = req.query.force === 'true';
         const bookingsCount = await prisma.booking.count({ where: { serviceId: id } });
-        if (bookingsCount > 0) {
+
+        if (bookingsCount > 0 && !force) {
             const updated = await prisma.service.update({
                 where: { id },
                 data: { isEnabled: false },
             });
             await syncDbServicesToUIConfig();
-            return sendResponse(res, 200, updated, 'Service has active bookings; it has been disabled instead');
+            return res.status(200).json({
+                success: false,
+                isWarning: true,
+                message: `This service has ${bookingsCount} active bookings. Deleting it directly will break customer booking histories. We have disabled it instead. Would you like to force delete the service along with all its booking history?`,
+                data: updated
+            });
         }
+
+        if (bookingsCount > 0 && force) {
+            await prisma.booking.deleteMany({ where: { serviceId: id } });
+        }
+
         await prisma.service.delete({ where: { id } });
         await syncDbServicesToUIConfig();
-        sendResponse(res, 200, null, 'Service deleted successfully');
+        res.status(200).json({
+            success: true,
+            message: 'Service deleted successfully'
+        });
     } catch (error) {
         next(error);
     }

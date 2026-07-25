@@ -200,17 +200,25 @@ export default function HomeEssentialsPage() {
     }
   };
 
-  const handleDelete = async (s) => {
-    if (!confirm(`Are you sure you want to delete "${s.name}"? This action cannot be undone.`)) {
+  const handleDelete = async (s, isForce = false) => {
+    if (!isForce && !confirm(`Are you sure you want to delete "${s.name}"? This action cannot be undone.`)) {
       return;
     }
     try {
-      await serviceAPI.delete(s.id);
-      showToast("Service deleted successfully", "success");
+      const res = await serviceAPI.delete(s.id, { force: isForce });
+      if (res.data?.success === false) {
+        if (confirm(`${res.data.message}`)) {
+          handleDelete(s, true);
+        }
+      } else {
+        showToast("Service deleted successfully", "success");
+      }
       loadServices();
     } catch (e) {
       console.error(e);
-      showToast("Failed to delete service. Active bookings might exist.", "error");
+      const errMsg = e.response?.data?.message || "Failed to delete service. Active bookings might exist.";
+      showToast(errMsg, "error");
+      loadServices();
     }
   };
 

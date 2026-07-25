@@ -266,6 +266,19 @@ const verifyPayment = async (req, res, next) => {
 
         if (!isValid) {
             try {
+                const existingPayment = await prisma.payment.findUnique({
+                    where: { razorpayOrderId: orderId },
+                    select: { status: true, bookingId: true }
+                });
+
+                if (existingPayment?.status === 'SUCCESS') {
+                    logger.info(`[PaymentController] verifyPayment signature invalid but payment ${orderId} is already SUCCESS. Skipping failure update.`);
+                    return res.status(200).json({ 
+                        success: true, 
+                        message: 'Payment already processed successfully' 
+                    });
+                }
+
                 const failedPayment = await prisma.payment.update({
                     where: { razorpayOrderId: orderId },
                     data:  { status: 'FAILED' },
@@ -318,6 +331,16 @@ const cancelPayment = async (req, res, next) => {
 
         let bookingId = null;
         try {
+            const existingPayment = await prisma.payment.findUnique({
+                where: { razorpayOrderId: orderId },
+                select: { status: true, bookingId: true }
+            });
+
+            if (existingPayment?.status === 'SUCCESS') {
+                logger.info(`[PaymentController] cancelPayment called but payment ${orderId} is already SUCCESS. Skipping cancellation.`);
+                return sendResponse(res, 200, { orderId, bookingId: existingPayment.bookingId }, 'Payment already processed successfully');
+            }
+
             const payment = await prisma.payment.update({
                 where: { razorpayOrderId: orderId },
                 data:  { status: 'FAILED' },

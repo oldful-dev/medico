@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, RefreshControl, Linking, Platform, Image,
+    ActivityIndicator, RefreshControl, Linking, Platform, Image, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -15,6 +15,9 @@ import { useTheme } from '@/context/ThemeContext';
 import { storeService, ProductOrder, TrackingData, TrackingActivity } from '@/services/api/storeService';
 import { Fonts, FontSize, Spacing, Radius } from '@/constants/theme';
 import { getAssetUrl } from '@/utils/getAssetUrl';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import { apiClient } from '@/services/api/apiClient';
 
 // ─── Status → Icon/Color mapping ────────────────
 const STATUS_META: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; labelKey: string }> = {
@@ -64,6 +67,7 @@ export default function OrderTrackingScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
     const fetchTracking = useCallback(async () => {
         if (!orderId) return;
@@ -88,6 +92,39 @@ export default function OrderTrackingScreen() {
     useFocusEffect(useCallback(() => { fetchTracking(); }, [fetchTracking]));
 
     const onRefresh = () => { setRefreshing(true); fetchTracking(); };
+
+    const handleDownloadInvoice = async () => {
+        if (!order || downloadingInvoice) return;
+        setDownloadingInvoice(true);
+        try {
+            const token = apiClient.getAuthToken();
+            const baseUrl = apiClient.getBaseUrl();
+            const url = `${baseUrl}/orders/${order.id}/invoice`;
+            const localUri = `${FileSystem.cacheDirectory}Invoice_${order.orderCode || order.id}.pdf`;
+
+            const result = await FileSystem.downloadAsync(url, localUri, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
+
+            if (result.status !== 200) throw new Error(`Server ${result.status}`);
+
+            const canShare = await Sharing.isAvailableAsync();
+            if (canShare) {
+                await Sharing.shareAsync(result.uri, {
+                    mimeType: 'application/pdf',
+                    dialogTitle: `Invoice – ${order.orderCode || order.id}`,
+                    UTI: 'com.adobe.pdf',
+                });
+            } else {
+                Alert.alert('Invoice Downloaded', `Saved to: ${result.uri}`);
+            }
+        } catch (err: any) {
+            console.error('[OrderTracking] Invoice download failed:', err);
+            Alert.alert('Download Failed', 'Could not download invoice. Please try again.');
+        } finally {
+            setDownloadingInvoice(false);
+        }
+    };
 
     const currentStatus = order?.status || 'PENDING';
     const statusMeta = STATUS_META[currentStatus] || STATUS_META.PENDING;
@@ -370,6 +407,25 @@ export default function OrderTrackingScreen() {
                         </TouchableOpacity>
                     )}
 
+                    {/* Download Invoice — shown for paid orders */}
+                    {order && order.status !== 'PENDING' && order.status !== 'CANCELLED' && (
+                        <TouchableOpacity
+                            style={[styles.invoiceBtn, downloadingInvoice && { opacity: 0.6 }]}
+                            onPress={handleDownloadInvoice}
+                            disabled={downloadingInvoice}
+                            accessibilityLabel="Download Invoice"
+                        >
+                            {downloadingInvoice ? (
+                                <ActivityIndicator size="small" color={colors.primary} />
+                            ) : (
+                                <Ionicons name="receipt-outline" size={18} color={colors.primary} />
+                            )}
+                            <Text style={styles.invoiceBtnText}>
+                                {downloadingInvoice ? 'Generating Invoice...' : 'Download Invoice'}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+
                     <View style={{ height: 40 }} />
                 </ScrollView>
             )}
@@ -493,4 +549,11 @@ const makeStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
         gap: 8, marginBottom: Spacing.lg,
     },
     trackBtnText: { fontFamily: Fonts.bold, fontSize: FontSize.body, color: '#fff' },
+    invoiceBtn: {
+        borderWidth: 1.5, borderColor: colors.primary, borderRadius: Radius.md,
+        paddingVertical: 14, flexDirection: 'row', alignItems: 'center',
+        justifyContent: 'center', gap: 8, marginBottom: Spacing.md,
+        backgroundColor: isDark ? 'rgba(2,116,63,0.1)' : '#F0FDF4',
+    },
+    invoiceBtnText: { fontFamily: Fonts.bold, fontSize: FontSize.body, color: colors.primary },
 });

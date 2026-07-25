@@ -13,8 +13,12 @@ import { storeService, ProductOrder } from '@/services/api/storeService';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import { apiClient } from '@/services/api/apiClient';
 
 type TabType = 'Active' | 'Payment' | 'History' | 'Products';
+type ProductFilterType = 'All' | 'Active' | 'Completed' | 'Cancelled';
 
 const PRODUCT_STATUS_META: Record<string, { labelKey: string; bg: string; color: string; icon: keyof typeof Ionicons.glyphMap }> = {
     PENDING:    { labelKey: 'wellness.stage_placed',  bg: '#FFF8E1', color: '#F59E0B', icon: 'time-outline' },
@@ -43,6 +47,7 @@ export default function OrderHistoryScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>((params.tab as TabType) || 'Active');
+    const [productFilter, setProductFilter] = useState<ProductFilterType>('All');
 
     const fetchAll = useCallback(async () => {
         try {
@@ -70,6 +75,7 @@ export default function OrderHistoryScreen() {
     const onRefresh = () => { setRefreshing(true); fetchAll(); };
 
     const [cancellingId, setCancellingId] = useState<string | null>(null);
+    const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<string | null>(null);
 
     const isPastBooking = (booking: Booking) => {
         const scheduledDate = new Date(booking.scheduledDate);
@@ -110,6 +116,39 @@ export default function OrderHistoryScreen() {
         ]);
     };
 
+    const handleDownloadOrderInvoice = async (order: ProductOrder) => {
+        if (downloadingInvoiceId === order.id) return;
+        setDownloadingInvoiceId(order.id);
+        try {
+            const token = apiClient.getAuthToken();
+            const baseUrl = apiClient.getBaseUrl();
+            const url = `${baseUrl}/orders/${order.id}/invoice`;
+            const localUri = `${FileSystem.cacheDirectory}Invoice_${order.orderCode || order.id}.pdf`;
+
+            const result = await FileSystem.downloadAsync(url, localUri, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
+
+            if (result.status !== 200) throw new Error(`Server ${result.status}`);
+
+            const canShare = await Sharing.isAvailableAsync();
+            if (canShare) {
+                await Sharing.shareAsync(result.uri, {
+                    mimeType: 'application/pdf',
+                    dialogTitle: `Invoice – ${order.orderCode || order.id}`,
+                    UTI: 'com.adobe.pdf',
+                });
+            } else {
+                Alert.alert('Invoice Downloaded', `Saved to: ${result.uri}`);
+            }
+        } catch (err: any) {
+            console.error('[OrderHistory] Invoice download failed:', err);
+            Alert.alert('Download Failed', 'Could not download invoice. Please try again.');
+        } finally {
+            setDownloadingInvoiceId(null);
+        }
+    };
+
     // ─── Filtering Logic ───
     const filteredBookings = useMemo(() => {
         return bookings.filter(b => {
@@ -125,6 +164,17 @@ export default function OrderHistoryScreen() {
             return false;
         }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }, [bookings, activeTab]);
+
+    // ─── Product Orders Filtering ───
+    const filteredProductOrders = useMemo(() => {
+        return productOrders.filter(o => {
+            if (productFilter === 'All') return true;
+            if (productFilter === 'Active') return ['PENDING', 'PAID', 'CONFIRMED', 'DISPATCHED'].includes(o.status);
+            if (productFilter === 'Completed') return o.status === 'DELIVERED';
+            if (productFilter === 'Cancelled') return o.status === 'CANCELLED';
+            return true;
+        }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }, [productOrders, productFilter]);
 
     // ─── Render Empty State ───
     const renderEmptyState = (message: string, sub: string, icon: keyof typeof Ionicons.glyphMap) => (
@@ -222,6 +272,22 @@ export default function OrderHistoryScreen() {
                                 <Text style={styles.trackBtnText}>{t('order_history.track_btn') || 'Track'}</Text>
                             </TouchableOpacity>
                         )}
+                        {order.status === 'PAID' || order.status === 'CONFIRMED' || order.status === 'DISPATCHED' || order.status === 'DELIVERED' ? (
+                            <TouchableOpacity
+                                style={[styles.invoiceBtn, downloadingInvoiceId === order.id && { opacity: 0.6 }]}
+                                onPress={() => handleDownloadOrderInvoice(order)}
+                                disabled={downloadingInvoiceId === order.id}
+                            >
+                                {downloadingInvoiceId === order.id ? (
+                                    <ActivityIndicator size="small" color="#02743F" />
+                                ) : (
+                                    <Ionicons name="receipt-outline" size={13} color="#02743F" />
+                                )}
+                                <Text style={styles.invoiceBtnText}>
+                                    {downloadingInvoiceId === order.id ? '...' : 'Invoice'}
+                                </Text>
+                            </TouchableOpacity>
+                        ) : null}
                     </View>
                 </View>
             </TouchableOpacity>
@@ -270,9 +336,34 @@ export default function OrderHistoryScreen() {
                     <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 50 }} />
                 ) : activeTab === 'Products' ? (
                     // ── Products Tab ──────────────────────────────────────────
-                    productOrders.length === 0
-                        ? renderEmptyState(t('order_history.empty_products_title') || 'No product orders yet', t('order_history.empty_products_desc') || 'Shop our Wellness Store to see orders here.', 'bag-outline')
-                        : productOrders.map(renderProductCard)
+                    <>
+                        {/* Product Status Filter Pills */}
+                        <View style={styles.productFilterRow}>
+                            {(['All', 'Active', 'Completed', 'Cancelled'] as ProductFilterType[]).map(f => (
+                                <TouchableOpacity
+                                    key={f}
+                                    style={[styles.filterPill, productFilter === f && styles.filterPillActive]}
+                                    onPress={() => setProductFilter(f)}
+                                >
+                                    <Text style={[styles.filterPillText, productFilter === f && styles.filterPillTextActive]}>
+                                        {f}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                        {filteredProductOrders.length === 0
+                            ? renderEmptyState(
+                                productFilter === 'All'
+                                    ? (t('order_history.empty_products_title') || 'No product orders yet')
+                                    : `No ${productFilter.toLowerCase()} orders`,
+                                productFilter === 'All'
+                                    ? (t('order_history.empty_products_desc') || 'Shop our Wellness Store to see orders here.')
+                                    : `Your ${productFilter.toLowerCase()} product orders will appear here.`,
+                                'bag-outline'
+                            )
+                            : filteredProductOrders.map(renderProductCard)
+                        }
+                    </>
                 ) : (
                     // ── Service Booking Tabs ──────────────────────────────────
                     filteredBookings.length === 0
@@ -388,6 +479,27 @@ const makeStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
     container: { flex: 1 },
     scrollContent: { padding: 16, paddingBottom: 50 },
 
+    /* Product Filter Pills */
+    productFilterRow: {
+        flexDirection: 'row', gap: 8, flexWrap: 'wrap',
+        paddingBottom: 12, paddingTop: 4,
+    },
+    filterPill: {
+        paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
+        borderWidth: 1, borderColor: colors.borderLight,
+        backgroundColor: colors.bgCard,
+    },
+    filterPillActive: {
+        borderColor: colors.primary,
+        backgroundColor: isDark ? 'rgba(2,116,63,0.15)' : '#F0FDF4',
+    },
+    filterPillText: {
+        fontFamily: Fonts.medium, fontSize: 13, color: colors.textMuted,
+    },
+    filterPillTextActive: {
+        color: colors.primary, fontFamily: Fonts.bold,
+    },
+
     /* Tab Bar */
     tabBar: {
         flexDirection: 'row', backgroundColor: colors.bgCard,
@@ -436,6 +548,13 @@ const makeStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
         borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 4,
     },
     trackBtnText: { color: '#FFF', fontFamily: Fonts.bold, fontSize: 12 },
+    invoiceBtn: {
+        borderWidth: 1, borderColor: '#02743F',
+        paddingHorizontal: 12, paddingVertical: 6,
+        borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 4,
+        backgroundColor: isDark ? 'rgba(2,116,63,0.1)' : '#F0FDF4',
+    },
+    invoiceBtnText: { color: '#02743F', fontFamily: Fonts.bold, fontSize: 12 },
     payBtn: { backgroundColor: colors.primary, paddingHorizontal: 18, paddingVertical: 7, borderRadius: 10 },
     payBtnText: { color: '#FFF', fontFamily: Fonts.bold, fontSize: 13 },
     rebookBtn: { borderWidth: 1, borderColor: colors.primary, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 10 },

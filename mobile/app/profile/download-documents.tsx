@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Dimensions, ActivityIndicator, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,8 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import RenderHtml from 'react-native-render-html';
 import { useTranslation } from 'react-i18next';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
 export default function DownloadDocumentsScreen() {
     const router = useRouter();
@@ -19,6 +21,7 @@ export default function DownloadDocumentsScreen() {
     const { t } = useTranslation();
     const [document, setDocument] = useState<LegalDocument | null>(null);
     const [loading, setLoading] = useState(true);
+    const [downloading, setDownloading] = useState(false);
 
     useEffect(() => {
         fetchStatutoryDisclosures();
@@ -40,13 +43,64 @@ export default function DownloadDocumentsScreen() {
         }
     };
 
-    const handleDownload = () => {
-        if (!document) return;
-        Alert.alert(
-            t('legal.download_title') || 'Download Documents',
-            t('legal.download_started') || 'Your document download has started successfully.',
-            [{ text: t('common.ok') || 'OK' }]
-        );
+    const handleDownload = async () => {
+        if (!document || downloading) return;
+        setDownloading(true);
+        try {
+            const html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1" />
+                    <style>
+                        body { font-family: -apple-system, sans-serif; padding: 24px; color: #111; font-size: 14px; line-height: 1.6; }
+                        h1 { font-size: 22px; margin-bottom: 8px; }
+                        h2 { font-size: 18px; margin-top: 24px; }
+                        h3 { font-size: 15px; margin-top: 16px; }
+                        p  { margin: 8px 0; }
+                        li { margin: 4px 0; }
+                        .header { text-align: center; padding-bottom: 16px; border-bottom: 1px solid #ddd; margin-bottom: 24px; }
+                        .footer { text-align: center; margin-top: 32px; font-size: 11px; color: #888; border-top: 1px solid #eee; padding-top: 12px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>${document.title}</h1>
+                        ${document.publishedAt ? `<p style="color:#666;font-size:12px;">Last Updated: ${new Date(document.publishedAt).toLocaleDateString('en-IN')}</p>` : ''}
+                    </div>
+                    ${document.content}
+                    <div class="footer">Ayuxa Health Tech Platforms Pvt. Ltd. &bull; All rights reserved</div>
+                </body>
+                </html>
+            `;
+
+            const { uri } = await Print.printToFileAsync({ html, base64: false });
+
+            const canShare = await Sharing.isAvailableAsync();
+            if (canShare) {
+                await Sharing.shareAsync(uri, {
+                    mimeType: 'application/pdf',
+                    dialogTitle: document.title || 'Download Document',
+                    UTI: 'com.adobe.pdf',
+                });
+            } else {
+                Alert.alert(
+                    t('legal.download_title') || 'Download Ready',
+                    `PDF saved to: ${uri}`,
+                    [{ text: t('common.ok') || 'OK' }]
+                );
+            }
+        } catch (err) {
+            console.error('[DownloadDocuments] PDF generation failed:', err);
+            Alert.alert(
+                'Download Failed',
+                'Could not generate PDF. Please try again.',
+                [{ text: 'OK' }]
+            );
+        } finally {
+            setDownloading(false);
+        }
     };
 
     const styles = makeStyles(isDarkMode, colors);
@@ -106,10 +160,21 @@ export default function DownloadDocumentsScreen() {
 
                     {/* Download Button Footer */}
                     <View style={[styles.footer, { paddingBottom: 16 + insets.bottom }]}>
-                        <TouchableOpacity style={styles.downloadButton} onPress={handleDownload} activeOpacity={0.8}>
-                            <Ionicons name="download-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                        <TouchableOpacity
+                            style={[styles.downloadButton, downloading && { opacity: 0.6 }]}
+                            onPress={handleDownload}
+                            activeOpacity={0.8}
+                            disabled={downloading}
+                        >
+                            {downloading ? (
+                                <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />
+                            ) : (
+                                <Ionicons name="download-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                            )}
                             <Text style={styles.downloadButtonText}>
-                                {t('legal.download_pdf') || 'Download PDF'}
+                                {downloading
+                                    ? (t('legal.generating_pdf') || 'Generating PDF...')
+                                    : (t('legal.download_pdf') || 'Download PDF')}
                             </Text>
                         </TouchableOpacity>
                     </View>

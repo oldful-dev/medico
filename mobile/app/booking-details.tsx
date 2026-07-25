@@ -11,6 +11,9 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '@/context/CartContext';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import { apiClient } from '@/services/api/apiClient';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -202,6 +205,7 @@ export default function BookingDetailsScreen() {
     const [booking, setBooking] = useState<BookingDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [downloading, setDownloading] = useState(false);
+    const [downloadingInvoice, setDownloadingInvoice] = useState(false);
     const [rescheduleModalVisible, setRescheduleModalVisible] = useState(false);
 
     useEffect(() => {
@@ -261,6 +265,47 @@ export default function BookingDetailsScreen() {
             Alert.alert(t('common.error'), t('booking_details.fail_download'));
         } finally {
             setDownloading(false);
+        }
+    };
+
+    const handleDownloadInvoice = async () => {
+        if (!booking?.id || downloadingInvoice) return;
+        setDownloadingInvoice(true);
+        try {
+            const token = apiClient.getAuthToken();
+            const baseUrl = apiClient.getBaseUrl();
+            const url = `${baseUrl}/bookings/${booking.id}/invoice`;
+
+            const localUri = `${FileSystem.cacheDirectory}Invoice_${booking.bookingId || booking.id}.pdf`;
+
+            const downloadResult = await FileSystem.downloadAsync(url, localUri, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
+
+            if (downloadResult.status !== 200) {
+                throw new Error(`Server returned ${downloadResult.status}`);
+            }
+
+            const canShare = await Sharing.isAvailableAsync();
+            if (canShare) {
+                await Sharing.shareAsync(downloadResult.uri, {
+                    mimeType: 'application/pdf',
+                    dialogTitle: `Invoice – ${booking.bookingId || booking.id}`,
+                    UTI: 'com.adobe.pdf',
+                });
+            } else {
+                Alert.alert('Invoice Downloaded', `Saved to: ${downloadResult.uri}`);
+            }
+        } catch (err: any) {
+            console.error('[BookingDetails] Invoice download failed:', err);
+            Alert.alert(
+                'Download Failed',
+                err?.message?.includes('404') || err?.message?.includes('not found')
+                    ? 'Invoice not available yet. It may still be generating after payment.'
+                    : 'Could not download invoice. Please try again.'
+            );
+        } finally {
+            setDownloadingInvoice(false);
         }
     };
 
@@ -629,6 +674,25 @@ export default function BookingDetailsScreen() {
                         <Text style={styles.actionBtnText}>{t('booking_details.book_again')}</Text>
                     </TouchableOpacity>
                 )}
+
+                {/* Download Invoice — shown for paid non-lab bookings */}
+                {booking.paymentStatus === 'paid' && booking.serviceType !== 'blood-test' && (
+                    <TouchableOpacity
+                        style={[styles.invoiceBtn, downloadingInvoice && { opacity: 0.6 }]}
+                        onPress={handleDownloadInvoice}
+                        disabled={downloadingInvoice}
+                        activeOpacity={0.8}
+                    >
+                        {downloadingInvoice ? (
+                            <ActivityIndicator size="small" color={PRIMARY_GREEN} />
+                        ) : (
+                            <Ionicons name="receipt-outline" size={16} color={PRIMARY_GREEN} />
+                        )}
+                        <Text style={styles.invoiceBtnText}>
+                            {downloadingInvoice ? 'Generating...' : 'Download Invoice'}
+                        </Text>
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     );
@@ -888,6 +952,23 @@ const makeStyles = (isDarkMode: boolean, colors: any) => StyleSheet.create({
         fontSize: 13,
         fontWeight: '600',
         color: '#EF4444',
+    },
+    invoiceBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        marginTop: 8,
+        paddingVertical: 10,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: PRIMARY_GREEN,
+        backgroundColor: isDarkMode ? 'rgba(2,116,63,0.1)' : '#F0FDF4',
+    },
+    invoiceBtnText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: PRIMARY_GREEN,
     },
     rescheduleCard: {
         backgroundColor: isDarkMode ? 'rgba(139,92,246,0.15)' : '#F5F3FF',

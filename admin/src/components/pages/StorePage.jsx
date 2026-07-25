@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, Package, Tag, Layers, Eye, ShoppingCart, RefreshCw } from "lucide-react";
 import { productAPI, categoryAPI } from "@/lib/api";
 import { showToast, formatCurrency } from "@/lib/hooks";
-import { onSocketEvent } from "@/lib/socket";
+import { onSocketEvent, offSocketEvent } from "@/lib/socket";
 
 
 const EMPTY_FORM = { name: '', description: '', price: 0, mrp: 0, stock: 0, isEnabled: true, categoryId: '', imageUrl: '', sku: '', weight: 0.1, length: 10, width: 10, height: 10 };
@@ -40,7 +40,7 @@ export default function StorePage() {
 
     // ── Real-time new_product_order socket listener ────────────────
     useEffect(() => {
-        onSocketEvent('new_product_order', (data) => {
+        const handler = (data) => {
             setNewOrderCount(prev => prev + 1);
             // Auto-refresh orders if on orders tab
             setOrders(prev => {
@@ -57,7 +57,13 @@ export default function StorePage() {
                     _isLive: true,
                 }, ...prev];
             });
-        });
+        };
+
+        onSocketEvent('new_product_order', handler);
+
+        return () => {
+            offSocketEvent('new_product_order', handler);
+        };
     }, []);
 
     async function loadOrders() {

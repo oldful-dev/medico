@@ -16,7 +16,7 @@ export const Colors = {
   accentBright: '#0EDD94',   // Decorative accent
 
   // Backgrounds
-  bgScreen: '#FFFFE3',       // Main app background
+  bgScreen: '#F5F8F5',       // Standout neat background to make cards stand out
   bgCard: '#FFFFFF',         // Cards, containers
   bgHeader: '#FFFFF8',       // Header bar
   bgCardMuted: 'rgba(222,222,222,0.43)', // Muted card/grid item bg
@@ -128,17 +128,17 @@ export const Radius = {
 // ─── Shadow (standardized) ───
 export const Shadow = {
   card: {
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   header: {
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
 };

@@ -83,13 +83,39 @@ const triggerSOS = async (req, res) => {
         }
     }
 
-    // 2.5. Entitlement check (Swiggy One model — never block SOS)
-    // SOS is always processed. If the user has a free entitlement, consume it.
-    // If not (no subscription, or quota exhausted), the SOS proceeds as a paid service.
+    // 2.5. Entitlement check
     const { canConsumeBenefit, consumeBenefit } = require('../services/subscriptionBenefit.service');
     const check = await canConsumeBenefit(user.id, 'SOS');
     const isFreeEntitlement = check.allowed;
-    const isSosBlocked = false; // NEVER block SOS — emergencies must always go through
+
+    // Strict Free/Unsubscribed Rate-Limit: Limit to 1 SOS alert per calendar month
+    if (!isFreeEntitlement) {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const endOfMonth = new Date();
+        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+        endOfMonth.setDate(0);
+        endOfMonth.setHours(23, 59, 59, 999);
+
+        const monthlySosCount = await prisma.sOSAlert.count({
+            where: {
+                userId: user.id,
+                createdAt: {
+                    gte: startOfMonth,
+                    lte: endOfMonth
+                }
+            }
+        });
+
+        if (monthlySosCount >= 1) {
+            return res.status(403).json({
+                success: false,
+                message: 'Universal limit exceeded. Unsubscribed accounts are strictly limited to 1 emergency SOS dispatch per month to prevent system misuse.'
+            });
+        }
+    }
 
     // 3. Save SOS record to DB
     let sosAlert;
@@ -120,7 +146,12 @@ const triggerSOS = async (req, res) => {
             type: 'SOS',
             title: `Critical: SOS by ${sosAlert.user?.name || 'User'}`,
             time: sosAlert.createdAt,
-            href: '/sos'
+            href: '/sos',
+            userName: sosAlert.user?.name || user.name,
+            userPhone: sosAlert.user?.phone || user.phone,
+            addressSnapshot: addressSnapshot || 'GPS Coordinates Only',
+            latitude: resolvedLat,
+            longitude: resolvedLng,
         });
 
     } catch (dbErr) {

@@ -21,6 +21,10 @@ router.get('/my-orders', authenticate, ctrl.getMyOrders);
 // Get live Delhivery tracking for a product order
 router.get('/:id/tracking', authenticate, ctrl.getOrderTracking);
 
+// GET /api/orders/:id/invoice
+// Download GST invoice PDF for a product order
+router.get('/:id/invoice', authenticate, ctrl.downloadOrderInvoice);
+
 // POST /api/orders/shipping-rate
 // Estimate shipping cost before placing order
 // Body: { pincode, items: [{ weight, length, width, height }] }

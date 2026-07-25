@@ -305,6 +305,14 @@ export default function MyBookingsScreen() {
 
     const onRefresh = async () => { setRefreshing(true); await fetchAll(); setRefreshing(false); };
 
+    // Helper to determine if a booking or product order is "upcoming" vs "past"
+    const isItemUpcoming = (b: Booking) => {
+        if (b.category === 'wellness_product') {
+            return b.status !== 'cancelled' && b.status !== 'completed' && b.status !== 'expired';
+        }
+        return new Date(b.scheduledDate) > now && b.status !== 'cancelled' && b.status !== 'completed' && b.status !== 'expired';
+    };
+
     // ─── Counts per tab ──────────────────────────────────────────────────────
     const now = new Date();
     const counts: Record<FilterTab, number> = {
@@ -312,11 +320,13 @@ export default function MyBookingsScreen() {
         wellness:    bookings.filter(b => b.category === 'wellness' || b.category === 'wellness_product').length,
         health:      bookings.filter(b => b.category === 'health' || b.category === 'lab').length,
         concierge:   bookings.filter(b => b.category === 'concierge').length,
-        upcoming:    bookings.filter(b => new Date(b.scheduledDate) > now && b.status !== 'cancelled' && b.status !== 'completed').length,
+        upcoming:    bookings.filter(b => isItemUpcoming(b)).length,
         completed:   bookings.filter(b => b.status === 'completed').length,
         cancelled:   bookings.filter(b => b.status === 'cancelled').length,
         rescheduled: bookings.filter(b => b.status === 'rescheduled').length,
     };
+
+    console.log(`[MyBookings] activeTab=${activeTab} totalBookings=${bookings.length} wellnessCount=${counts.wellness}`);
 
     const filtered = bookings.filter(b => {
         switch (activeTab) {
@@ -324,7 +334,7 @@ export default function MyBookingsScreen() {
             case 'wellness':    return b.category === 'wellness' || b.category === 'wellness_product';
             case 'health':      return b.category === 'health' || b.category === 'lab';
             case 'concierge':   return b.category === 'concierge';
-            case 'upcoming':    return new Date(b.scheduledDate) > now && b.status !== 'cancelled' && b.status !== 'completed';
+            case 'upcoming':    return isItemUpcoming(b);
             case 'completed':   return b.status === 'completed';
             case 'cancelled':   return b.status === 'cancelled';
             case 'rescheduled': return b.status === 'rescheduled';
@@ -333,8 +343,8 @@ export default function MyBookingsScreen() {
     });
 
     // Group into Upcoming / Past sections
-    const upcomingItems = filtered.filter(b => new Date(b.scheduledDate) > now && b.status !== 'cancelled' && b.status !== 'completed');
-    const pastItems     = filtered.filter(b => !upcomingItems.includes(b));
+    const upcomingItems = filtered.filter(b => isItemUpcoming(b));
+    const pastItems     = filtered.filter(b => !isItemUpcoming(b));
 
     // ─── Cancel handler ──────────────────────────────────────────────────────
     const handleCancel = (booking: Booking) => {

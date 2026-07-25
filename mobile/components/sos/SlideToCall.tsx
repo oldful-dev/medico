@@ -6,12 +6,14 @@ import {
     PanResponder,
     StyleSheet,
     Linking,
+    Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import SOSCountdown from './SOSCountdown';
 import { Fonts } from '@/constants/theme';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router';
 import { sosService } from '@/services/device/sosService';
 import { AnalyticsEvents } from '@/services/firebase/analyticsEvents';
 
@@ -30,6 +32,7 @@ interface SlideToCallProps {
 
 export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
     const { t } = useTranslation();
+    const router = useRouter();
     const translateX = useRef(new Animated.Value(0)).current;
     const [showCountdown, setShowCountdown] = useState(false);
 
@@ -67,19 +70,41 @@ export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
     const handleSOSComplete = async () => {
         try {
             AnalyticsEvents.trackSOSTriggered();
-            // Fire BOTH actions simultaneously as per PDF requirement:
-            // 1. Foreground: Open native phone dialer (tel: deep link)
-            // 2. Background: Fetch GPS + alert admin/family via API
-            await Promise.allSettled([
-                Linking.openURL(HOTLINE_NUMBER),
-                sosService.triggerSOS(null).then((result) => {
-                    if (!result.success) {
-                        console.warn('SOS Backend Alert Failed:', result.message);
-                    }
-                }),
-            ]);
-        } catch (error) {
-            console.error('SOS Trigger Error:', error);
+            
+            // 1. Await background API request first to check limits
+            await sosService.triggerSOS(null);
+
+            // 2. Open native dialer if limits check succeeded
+            await Linking.openURL(HOTLINE_NUMBER);
+        } catch (err: any) {
+            // If it is our rate-limit code (403), show alert and navigate to plans
+            if (err?.status === 403 || err?.statusCode === 403 || err?.message?.includes('limit exceeded')) {
+                const message = err.message || 'Universal limit exceeded. Unsubscribed accounts are strictly limited to 1 emergency SOS dispatch per month.';
+                Alert.alert(
+                    'SOS Limit Exceeded',
+                    message,
+                    [
+                        {
+                            text: 'View Subscription Plans',
+                            onPress: () => {
+                                router.push('/plans');
+                            }
+                        },
+                        {
+                            text: 'Cancel',
+                            style: 'cancel'
+                        }
+                    ]
+                );
+            } else {
+                console.error('SOS Backend Alert Error:', err);
+                // In case of other network issues or errors, still allow dialing
+                try {
+                    await Linking.openURL(HOTLINE_NUMBER);
+                } catch (dialErr) {
+                    console.error('Dialer fallback failed:', dialErr);
+                }
+            }
         } finally {
             setShowCountdown(false);
             // Reset thumb

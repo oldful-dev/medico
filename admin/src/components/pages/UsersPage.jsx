@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, Eye, Ban, UserCheck, RotateCcw, ChevronLeft, ChevronRight, Edit2 } from "lucide-react";
+import { Search, Filter, Eye, Ban, UserCheck, RotateCcw, ChevronLeft, ChevronRight, Edit2, Trash } from "lucide-react";
 import Cookies from "js-cookie";
 import { userAPI, cityAPI } from "@/lib/api";
 import { formatDate, formatDateTime, showToast } from "@/lib/hooks";
@@ -144,7 +144,17 @@ export default function UsersPage() {
         } catch (e) { showToast(e.response?.data?.message || 'Failed', 'error'); }
     }
 
-    const statusBadge = { ACTIVE: 'badge-success', SUSPENDED: 'badge-warning', BLOCKED: 'badge-danger' };
+    async function deleteUser(id) {
+        if (!confirm('Are you sure you want to delete this user account? The user details will be anonymized, but history records will be archived for compliance.')) return;
+        try {
+            await userAPI.delete(id);
+            showToast('User account deleted successfully');
+            loadUsers();
+            setSelectedUser(null);
+        } catch (e) { showToast(e.response?.data?.message || 'Failed to delete user', 'error'); }
+    }
+
+    const statusBadge = { ACTIVE: 'badge-success', SUSPENDED: 'badge-warning', BLOCKED: 'badge-danger', DELETED: 'badge-default' };
     const healthBadge = { NORMAL: 'badge-success', DIABETIC: 'badge-warning', HYPERTENSION: 'badge-danger', CARDIAC: 'badge-danger', OTHER: 'badge-default' };
 
     return (
@@ -161,7 +171,10 @@ export default function UsersPage() {
                 </form>
                 <select className="form-select" style={{ width: 150 }} value={filters.status} onChange={e => { setFilters({ ...filters, status: e.target.value }); setPage(1); }}>
                     <option value="">All Status</option>
-                    <option value="ACTIVE">Active</option><option value="SUSPENDED">Suspended</option><option value="BLOCKED">Blocked</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="SUSPENDED">Suspended</option>
+                    <option value="BLOCKED">Blocked</option>
+                    <option value="DELETED">Deleted</option>
                 </select>
                 <select className="form-select" style={{ width: 150 }} value={filters.cityId} onChange={e => { setFilters({ ...filters, cityId: e.target.value }); setPage(1); }}>
                     <option value="">All Cities</option>
@@ -192,9 +205,10 @@ export default function UsersPage() {
                                             <td>
                                                 <div className="flex gap-2">
                                                     <button className="btn btn-sm btn-secondary" onClick={() => viewUser(u.id)}><Eye size={14} /></button>
-                                                    <button className="btn btn-sm btn-secondary" onClick={() => startEditUser(u)}><Edit2 size={14} /></button>
+                                                    {u.status !== 'DELETED' && <button className="btn btn-sm btn-secondary" onClick={() => startEditUser(u)}><Edit2 size={14} /></button>}
                                                     {u.status === 'ACTIVE' && <button className="btn btn-sm btn-danger" onClick={() => blockUser(u.id)}><Ban size={14} /></button>}
                                                     {u.status === 'BLOCKED' && <button className="btn btn-sm btn-success" onClick={() => activateUser(u.id)}><UserCheck size={14} /></button>}
+                                                    {u.status !== 'DELETED' && <button className="btn btn-sm btn-danger" style={{ background: '#DC2626', borderColor: '#DC2626' }} onClick={() => deleteUser(u.id)}><Trash size={14} /></button>}
                                                 </div>
                                             </td>
                                         </tr>
@@ -453,7 +467,10 @@ export default function UsersPage() {
                                 <button className="btn btn-warning" onClick={() => suspendUser(selectedUser.id)}>Suspend</button>
                                 <button className="btn btn-danger" onClick={() => blockUser(selectedUser.id)}>Block</button>
                             </>}
-                            {selectedUser.status !== 'ACTIVE' && <button className="btn btn-success" onClick={() => activateUser(selectedUser.id)}>Activate</button>}
+                            {selectedUser.status !== 'ACTIVE' && selectedUser.status !== 'DELETED' && <button className="btn btn-success" onClick={() => activateUser(selectedUser.id)}>Activate</button>}
+                            {selectedUser.status !== 'DELETED' && (
+                                <button className="btn btn-danger" style={{ background: '#DC2626', borderColor: '#DC2626' }} onClick={() => deleteUser(selectedUser.id)}>Delete Account</button>
+                            )}
                             <button className="btn btn-secondary" onClick={() => setSelectedUser(null)}>Close</button>
                         </div>
                     </div>

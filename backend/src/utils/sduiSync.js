@@ -176,6 +176,7 @@ const syncDbServicesToUIConfig = async () => {
                     } else {
                         // Deleted from DB
                         changed = true;
+                        // Skip pushing this item to updatedServices
                     }
                 }
                 
