@@ -91,6 +91,8 @@ const ALLOWED_ORIGINS = [
     'https://assets.ayuxa.com',
     'https://ayuxa.com',
     'https://www.ayuxa.com',
+    'https://ayuxacare.com',
+    'https://www.ayuxacare.com',
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3003',
