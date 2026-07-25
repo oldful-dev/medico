@@ -399,7 +399,20 @@ export default function UsersPage() {
                                                         <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Ref: {lo.clientRefId || lo.id}</span>
                                                         <span className="badge badge-warning" style={{ fontSize: 10 }}>{lo.status}</span>
                                                     </div>
-                                                    <div>Packages: {lo.packages?.map(p => p.name).join(', ') || '—'}</div>
+                                                                                  <div>
+                                                        Packages: {
+                                                            Array.isArray(lo.packages) 
+                                                                ? lo.packages.map(p => p.name || p.package_name || p).join(', ')
+                                                                : typeof lo.packages === 'string'
+                                                                    ? (() => {
+                                                                        try {
+                                                                            const parsed = JSON.parse(lo.packages);
+                                                                            return Array.isArray(parsed) ? parsed.map(p => p.name || p.package_name || p).join(', ') : parsed;
+                                                                        } catch(e) { return lo.packages; }
+                                                                    })()
+                                                                    : '—'
+                                                        }
+                                                    </div>
                                                     <div>Total Price: ₹{lo.totalPrice || lo.amount} • Created: {formatDate(lo.createdAt)}</div>
                                                 </div>
                                             ))

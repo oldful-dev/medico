@@ -119,8 +119,7 @@ const getUserById = async (req, res, next) => {
                 },
                 labOrders: {
                     take: 50,
-                    orderBy: { createdAt: 'desc' },
-                    include: { packages: true }
+                    orderBy: { createdAt: 'desc' }
                 },
                 productOrders: {
                     take: 50,
