@@ -113,11 +113,38 @@ const getUserById = async (req, res, next) => {
                     orderBy: { createdAt: 'desc' },
                 },
                 bookings: {
-                    take: 10,
+                    take: 50,
                     orderBy: { createdAt: 'desc' },
                     include: { service: { select: { name: true } } },
                 },
-                _count: { select: { bookings: true, payments: true, sosAlerts: true } },
+                labOrders: {
+                    take: 50,
+                    orderBy: { createdAt: 'desc' },
+                    include: { packages: true }
+                },
+                productOrders: {
+                    take: 50,
+                    orderBy: { createdAt: 'desc' },
+                    include: { items: true, product: true }
+                },
+                sosAlerts: {
+                    take: 50,
+                    orderBy: { createdAt: 'desc' }
+                },
+                payments: {
+                    take: 50,
+                    orderBy: { createdAt: 'desc' }
+                },
+                insuranceApps: {
+                    take: 50,
+                    orderBy: { createdAt: 'desc' }
+                },
+                meetupRegistrations: {
+                    take: 50,
+                    include: { meetup: true },
+                    orderBy: { createdAt: 'desc' }
+                },
+                _count: { select: { bookings: true, payments: true, sosAlerts: true, labOrders: true, productOrders: true } },
             },
         });
 
