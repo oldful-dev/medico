@@ -432,8 +432,21 @@ export default function UsersPage() {
                                                         <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Order: #{po.orderCode || po.id}</span>
                                                         <span className="badge badge-success" style={{ fontSize: 10 }}>{po.status}</span>
                                                     </div>
-                                                    <div>Product: {po.product?.name || (po.items?.length > 0 ? `${po.items[0].name} (${po.items.length} items)` : '—')}</div>
-                                                    <div>Amount: ₹{po.totalAmount} • Date: {formatDate(po.createdAt)}</div>
+                                                    <div>
+                                                        Items: {
+                                                            Array.isArray(po.items)
+                                                                ? po.items.map(it => `${it.name} (x${it.quantity || 1})`).join(', ')
+                                                                : typeof po.items === 'string'
+                                                                    ? (() => {
+                                                                        try {
+                                                                            const parsed = JSON.parse(po.items);
+                                                                            return Array.isArray(parsed) ? parsed.map(it => `${it.name} (x${it.quantity || 1})`).join(', ') : parsed;
+                                                                        } catch(e) { return po.items; }
+                                                                    })()
+                                                                    : po.product?.name || '—'
+                                                        }
+                                                    </div>
+                                                    <div>Amount: ₹{po.amount || po.totalAmount} • Date: {formatDate(po.createdAt)}</div>
                                                 </div>
                                             ))
                                         }
