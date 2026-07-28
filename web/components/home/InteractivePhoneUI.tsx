@@ -1,4 +1,4 @@
-import { Bell, HeartPulse, Stethoscope, Search, User, ShieldAlert, Activity, Pill, Loader2 } from 'lucide-react';
+import { Bell, HeartPulse, Stethoscope, Search, User, ShieldAlert, Activity, Pill, Loader2, Home, Sparkles, ShoppingCart } from 'lucide-react';
 import { useSDUIHooks } from '@/hooks/useSDUIHooks';
 import Image from 'next/image';
 import { getAssetUrl } from '@/utils/getAssetUrl';
@@ -144,9 +144,16 @@ export function InteractivePhoneUI() {
            <div className="absolute top-0 right-0 w-[150px] h-[150px] bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/4"></div>
            <div className="absolute bottom-0 left-0 w-[100px] h-[100px] bg-black/10 rounded-full blur-xl translate-y-1/2 -translate-x-1/4"></div>
            
-           <div className="relative z-10 px-5 pt-8 flex flex-col">
-              <h2 className="text-white text-xl font-bold tracking-tight">Good Morning,<br/>Mr. Chen</h2>
-              <p className="text-white/80 text-[11px] mt-1 font-medium italic">How can we assist you today?</p>
+           <div className="relative z-10 px-5 pt-8 flex items-center justify-between">
+              <div className="flex flex-col">
+                 <h2 className="text-white text-xl font-bold tracking-tight">Good Morning,<br/>Mr. Chen</h2>
+                 <p className="text-white/80 text-[11px] mt-1 font-medium italic">How can we assist you today?</p>
+              </div>
+              
+              {/* Profile Logo Placeholder */}
+              <div className="relative w-12 h-12 bg-white/15 backdrop-blur-md rounded-full border border-white/20 p-2 flex items-center justify-center overflow-hidden">
+                 <Image src="/onlylogo.png" alt="Ayuxa Logo Profile" width={28} height={28} className="object-contain" />
+              </div>
            </div>
         </motion.div>
 
@@ -216,14 +223,16 @@ export function InteractivePhoneUI() {
       {/* Simulated Tab Bar */}
       <div className="absolute bottom-0 left-0 w-full h-16 bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.05)] border-t border-gray-100 flex items-center justify-around px-2 z-30 pb-2 rounded-b-[26px]">
          {[
-           { t: "Home", active: true },
-           { t: "Plans", active: false },
-           { t: "Wellness", active: false },
-           { t: "Account", active: false },
-           { t: "Cart", active: false }
+           { t: "Home", active: true, icon: <Home className="w-4 h-4" /> },
+           { t: "Plans", active: false, icon: <Sparkles className="w-4 h-4" /> },
+           { t: "Wellness", active: false, icon: <HeartPulse className="w-4 h-4" /> },
+           { t: "Account", active: false, icon: <User className="w-4 h-4" /> },
+           { t: "Cart", active: false, icon: <ShoppingCart className="w-4 h-4" /> }
          ].map((t, i) => (
            <div key={i} className="flex flex-col items-center gap-1 cursor-pointer w-12">
-              <div className={`w-5 h-5 rounded-full ${t.active ? 'bg-[#048357]' : 'bg-gray-100'} flex items-center justify-center`}></div>
+              <div className={`w-7 h-7 rounded-full ${t.active ? 'bg-[#048357] text-white shadow-sm' : 'bg-transparent text-gray-400'} flex items-center justify-center`}>
+                 {t.icon}
+              </div>
               <span className={`text-[8px] font-bold ${t.active ? 'text-[#048357]' : 'text-gray-400'}`}>{t.t}</span>
            </div>
          ))}
