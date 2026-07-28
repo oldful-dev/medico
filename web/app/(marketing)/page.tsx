@@ -9,13 +9,23 @@ import { uiConfigService } from '@/services/api/uiConfigService';
 
 export default function LandingPage() {
   const [showReviews, setShowReviews] = useState(true);
+  const [partners, setPartners] = useState([]);
+  const [reviews, setReviews] = useState([]);
 
   useEffect(() => {
     const checkConfig = async () => {
       try {
         const config = await uiConfigService.getCompanyGlobalConfig();
-        if (config && config.show_reviews !== undefined) {
-          setShowReviews(config.show_reviews);
+        if (config) {
+          if (config.show_reviews !== undefined) {
+            setShowReviews(config.show_reviews);
+          }
+          if (Array.isArray(config.partners_list)) {
+            setPartners(config.partners_list);
+          }
+          if (Array.isArray(config.reviews_list)) {
+            setReviews(config.reviews_list);
+          }
         }
       } catch (err) {
         console.error('Failed to load landing page configs:', err);
@@ -37,11 +47,11 @@ export default function LandingPage() {
           Trusted by world class organizations
         </h2>
         
-        <LogoMarquee />
+        <LogoMarquee partners={partners} />
       </section>
 
       {/* Testimonials Section */}
-      {showReviews && <Testimonials />}
+      {showReviews && <Testimonials reviews={reviews} />}
 
       {/* CTA Section */}
       <section className="w-full bg-[var(--color-bg-screen)] py-20 px-8 flex flex-col items-center justify-center text-center">

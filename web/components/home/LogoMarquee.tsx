@@ -3,7 +3,12 @@
 import { motion } from 'framer-motion';
 import React from 'react';
 
-const PARTNERS = [
+export interface Partner {
+  name: string;
+  color: string;
+}
+
+const DEFAULT_PARTNERS: Partner[] = [
   { name: 'Redcliffe Labs', color: '#E91E63' },
   { name: 'Apollo Homecare', color: '#00BFA5' },
   { name: 'Fortis Health', color: '#1A237E' },
@@ -14,7 +19,9 @@ const PARTNERS = [
   { name: 'Practo', color: '#1565C0' },
 ];
 
-export function LogoMarquee() {
+export function LogoMarquee({ partners }: { partners?: Partner[] }) {
+  const activePartners = partners && partners.length > 0 ? partners : DEFAULT_PARTNERS;
+
   return (
     <div className="w-full overflow-hidden py-10 pointer-events-none select-none">
       <div className="relative flex max-w-[100vw]">
@@ -31,10 +38,10 @@ export function LogoMarquee() {
           }}
           className="flex flex-none gap-10 sm:gap-20 items-center whitespace-nowrap pr-10 sm:pr-20"
         >
-          {PARTNERS.map((partner, i) => (
+          {activePartners.map((partner, i) => (
             <PartnerBadge key={`p1-${i}`} partner={partner} />
           ))}
-          {PARTNERS.map((partner, i) => (
+          {activePartners.map((partner, i) => (
             <PartnerBadge key={`p1-dup-${i}`} partner={partner} />
           ))}
         </motion.div>
@@ -43,7 +50,7 @@ export function LogoMarquee() {
   );
 }
 
-function PartnerBadge({ partner }: { partner: typeof PARTNERS[0] }) {
+function PartnerBadge({ partner }: { partner: Partner }) {
   return (
     <div className="flex items-center gap-3 sm:gap-4 bg-gray-50/50 px-6 py-3 rounded-2xl border border-gray-100 shadow-sm backdrop-blur-sm">
       <div 
@@ -51,15 +58,12 @@ function PartnerBadge({ partner }: { partner: typeof PARTNERS[0] }) {
         style={{ backgroundColor: partner.color }}
       >
         <div className="w-full h-full flex items-center justify-center bg-black/10">
-          {partner.name[0]}
+          {partner.name ? partner.name[0] : 'P'}
         </div>
       </div>
       <span className="text-base sm:text-lg font-bold text-gray-400 uppercase tracking-tight">
         {partner.name}
       </span>
-      <div className="bg-red-500/10 text-red-500 text-[8px] sm:text-[10px] px-2 py-0.5 rounded font-black uppercase tracking-tighter ml-2">
-        Demo
-      </div>
     </div>
   );
 }

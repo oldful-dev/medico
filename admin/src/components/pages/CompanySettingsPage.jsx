@@ -41,7 +41,22 @@ export default function CompanySettingsPage() {
         },
         about_html: "",
         blogs_html: "",
-        show_reviews: true
+        show_reviews: true,
+        partners_list: [
+            { name: 'Redcliffe Labs', color: '#E91E63' },
+            { name: 'Apollo Homecare', color: '#00BFA5' },
+            { name: 'Fortis Health', color: '#1A237E' },
+            { name: 'Manipal Hospitals', color: '#FF6D00' },
+            { name: 'MedPlus', color: '#C62828' },
+            { name: 'Portea', color: '#6A1B9A' },
+            { name: 'HealthKart', color: '#2E7D32' },
+            { name: 'Practo', color: '#1565C0' }
+        ],
+        reviews_list: [
+            { text: "The physiotherapist was incredibly professional. Booking through the app took less than a minute.", author: "Arun K.", role: "Son of patient", rating: 5 },
+            { text: "Ayuxa's 24/7 care is a lifesaver. It feels like having an extended family looking out for my parents.", author: "Priya S.", role: "Verified User", rating: 5 },
+            { text: "Quick, reliable, and transparent pricing. The doctor arrived exactly on time for the routine checkup.", author: "Rahul M.", role: "Working Professional", rating: 5 }
+        ]
     });
 
     const [selectedBlogId, setSelectedBlogId] = useState("featured");
@@ -72,7 +87,9 @@ export default function CompanySettingsPage() {
                             },
                             about_html: parsedJson?.about_html || "",
                             blogs_html: parsedJson?.blogs_html || "",
-                            show_reviews: parsedJson?.show_reviews !== undefined ? parsedJson.show_reviews : true
+                            show_reviews: parsedJson?.show_reviews !== undefined ? parsedJson.show_reviews : true,
+                            partners_list: parsedJson?.partners_list || prev.partners_list,
+                            reviews_list: parsedJson?.reviews_list || prev.reviews_list
                         }));
                     }
                 }
@@ -336,6 +353,20 @@ export default function CompanySettingsPage() {
                 >
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <Heart size={16} /> Community &amp; Charity
+                    </div>
+                </button>
+                <button 
+                    onClick={() => setActiveSubTab("reviews")} 
+                    style={{
+                        padding: "8px 16px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer",
+                        fontWeight: 700, fontSize: 14,
+                        background: activeSubTab === "reviews" ? "var(--bg-glass)" : "transparent",
+                        color: activeSubTab === "reviews" ? "var(--accent-primary)" : "var(--text-muted)",
+                        borderBottom: activeSubTab === "reviews" ? "2.5px solid var(--accent-primary)" : "none"
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <Building2 size={16} /> Reviews &amp; Partners
                     </div>
                 </button>
             </div>
@@ -610,7 +641,155 @@ export default function CompanySettingsPage() {
                     </div>
                 )}
 
-                {/* ABOUT US TAB */}
+                {/* 6. REVIEWS & PARTNERS TAB */}
+                {activeSubTab === "reviews" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+                        {/* Partner organizations */}
+                        <div>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                                <div>
+                                    <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Trusted Partner Organizations</h3>
+                                    <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "4px 0 0" }}>Organizations scrolling on the landing page marquee banner.</p>
+                                </div>
+                                <button className="btn-secondary" onClick={() => setFormData({ ...formData, partners_list: [...(formData.partners_list || []), { name: 'New Partner', color: '#10b981' }] })} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <Plus size={16} /> Add Partner
+                                </button>
+                            </div>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                                {(formData.partners_list || []).map((partner, index) => (
+                                    <div key={index} style={{ display: "flex", gap: 12, alignItems: "center", padding: 14, background: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
+                                        <div className="form-group" style={{ flex: 2, display: "flex", flexDirection: "column", gap: 4 }}>
+                                            <label style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)" }}>Partner Name</label>
+                                            <input 
+                                                value={partner.name} 
+                                                onChange={e => {
+                                                    const updated = [...(formData.partners_list || [])];
+                                                    updated[index].name = e.target.value;
+                                                    setFormData({ ...formData, partners_list: updated });
+                                                }}
+                                                style={{ width: "100%", padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13 }}
+                                            />
+                                        </div>
+                                        <div className="form-group" style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+                                            <label style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)" }}>Hex Color</label>
+                                            <input 
+                                                value={partner.color} 
+                                                onChange={e => {
+                                                    const updated = [...(formData.partners_list || [])];
+                                                    updated[index].color = e.target.value;
+                                                    setFormData({ ...formData, partners_list: updated });
+                                                }}
+                                                style={{ width: "100%", padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13 }}
+                                            />
+                                        </div>
+                                        <button 
+                                            onClick={() => {
+                                                const updated = [...(formData.partners_list || [])];
+                                                updated.splice(index, 1);
+                                                setFormData({ ...formData, partners_list: updated });
+                                            }}
+                                            style={{ alignSelf: "flex-end", marginBottom: 6, border: "none", background: "transparent", color: "var(--accent-danger)", cursor: "pointer" }}
+                                            title="Delete partner"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Customer reviews */}
+                        <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: 24 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                                <div>
+                                    <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Loved by Families (Reviews)</h3>
+                                    <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "4px 0 0" }}>Testimonials and feedback showing in the review cards.</p>
+                                </div>
+                                <button className="btn-secondary" onClick={() => setFormData({ ...formData, reviews_list: [...(formData.reviews_list || []), { text: 'New review quote text...', author: 'Customer Name', role: 'Verified User', rating: 5 }] })} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <Plus size={16} /> Add Review
+                                </button>
+                            </div>
+
+                            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                                {(formData.reviews_list || []).map((review, index) => (
+                                    <div key={index} style={{ border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: 16, background: "var(--bg-secondary)", display: "flex", flexDirection: "column", gap: 12 }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)" }}>Review #{index + 1}</span>
+                                            <button 
+                                                onClick={() => {
+                                                    const updated = [...(formData.reviews_list || [])];
+                                                    updated.splice(index, 1);
+                                                    setFormData({ ...formData, reviews_list: updated });
+                                                }}
+                                                style={{ border: "none", background: "transparent", color: "var(--accent-danger)", cursor: "pointer" }}
+                                                title="Delete review"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+
+                                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                            <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)" }}>Review Text</label>
+                                            <textarea 
+                                                rows={2}
+                                                value={review.text} 
+                                                onChange={e => {
+                                                    const updated = [...(formData.reviews_list || [])];
+                                                    updated[index].text = e.target.value;
+                                                    setFormData({ ...formData, reviews_list: updated });
+                                                }}
+                                                style={{ width: "100%", padding: 10, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13, fontFamily: "inherit" }}
+                                            />
+                                        </div>
+
+                                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr 1fr", gap: 12 }}>
+                                            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                                <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)" }}>Author / Name</label>
+                                                <input 
+                                                    value={review.author} 
+                                                    onChange={e => {
+                                                        const updated = [...(formData.reviews_list || [])];
+                                                        updated[index].author = e.target.value;
+                                                        setFormData({ ...formData, reviews_list: updated });
+                                                    }}
+                                                    style={{ width: "100%", padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13 }}
+                                                />
+                                            </div>
+                                            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                                <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)" }}>Role / Label</label>
+                                                <input 
+                                                    value={review.role} 
+                                                    onChange={e => {
+                                                        const updated = [...(formData.reviews_list || [])];
+                                                        updated[index].role = e.target.value;
+                                                        setFormData({ ...formData, reviews_list: updated });
+                                                    }}
+                                                    style={{ width: "100%", padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13 }}
+                                                />
+                                            </div>
+                                            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                                <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)" }}>Rating (1-5)</label>
+                                                <input 
+                                                    type="number"
+                                                    min={1}
+                                                    max={5}
+                                                    value={review.rating} 
+                                                    onChange={e => {
+                                                        const updated = [...(formData.reviews_list || [])];
+                                                        updated[index].rating = parseInt(e.target.value) || 5;
+                                                        setFormData({ ...formData, reviews_list: updated });
+                                                    }}
+                                                    style={{ width: "100%", padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13 }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {activeSubTab === "about" && (
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, minHeight: 500 }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
