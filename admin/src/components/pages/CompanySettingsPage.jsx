@@ -406,18 +406,6 @@ export default function CompanySettingsPage() {
                 {/* 1. CONTACT TAB */}
                 {activeSubTab === "contact" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                        <div className="form-group" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", background: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", marginTop: 8 }}>
-                            <div>
-                                <label style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>Landing Page Reviews &amp; Testimonials</label>
-                                <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "4px 0 0" }}>Control whether the &quot;Loved by Families&quot; feedback slider appears on the main website.</p>
-                            </div>
-                            <button 
-                                onClick={() => setFormData({ ...formData, show_reviews: !formData.show_reviews })}
-                                style={{ background: "none", border: "none", cursor: "pointer", color: formData.show_reviews ? "var(--accent-success)" : "var(--text-muted)" }}
-                            >
-                                {formData.show_reviews ? "✅ Show Reviews" : "❌ Hide Reviews"}
-                            </button>
-                        </div>
 
                         <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                             <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Company Name</label>
