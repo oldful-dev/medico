@@ -14,7 +14,6 @@ const NAV_LINKS = [
   { href: '/community-care', label: 'Community' },
   { href: '/careers', label: 'Careers' },
   { href: '/blogs', label: 'Blog' },
-  { href: '/contact', label: 'Contact Us' },
 ];
 
 const TEAM_SUB_LINKS = [
@@ -228,7 +227,18 @@ export function Navbar() {
                 );
               })}
 
-              {/* Extra spacing for clean layout padding */}
+              {/* Dedicated Contact Us Link for Mobile Drawer */}
+              <Link
+                href="/contact"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`py-3 px-4 flex items-center gap-3 font-semibold text-sm border-t border-gray-100 rounded-lg transition-colors ${isActive('/contact')
+                    ? 'text-[var(--color-primary-deep)]'
+                    : 'text-gray-700 hover:text-[var(--color-primary)]'
+                  }`}
+              >
+                Contact Us
+                {isActive('/contact') && <div className="ml-auto w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full" />}
+              </Link>
             </div>
           </motion.div>
         )}
