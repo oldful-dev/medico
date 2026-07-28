@@ -1,20 +1,29 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { Hero } from '@/components/home/Hero';
 import { LogoMarquee } from '@/components/home/LogoMarquee';
 import { ServicesPreview } from '@/components/home/ServicesPreview';
 import { Testimonials } from '@/components/home/Testimonials';
-import { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: "Ayuxa",
-  description: "Comprehensive elder care management platform delivering healthcare to your door.",
-  openGraph: {
-    title: "Ayuxa",
-    description: "Technology meets human empathy to keep your loved ones safe.",
-    type: "website",
-  }
-};
+import { uiConfigService } from '@/services/api/uiConfigService';
 
 export default function LandingPage() {
+  const [showReviews, setShowReviews] = useState(true);
+
+  useEffect(() => {
+    const checkConfig = async () => {
+      try {
+        const config = await uiConfigService.getCompanyGlobalConfig();
+        if (config && config.show_reviews !== undefined) {
+          setShowReviews(config.show_reviews);
+        }
+      } catch (err) {
+        console.error('Failed to load landing page configs:', err);
+      }
+    };
+    checkConfig();
+  }, []);
+
   return (
     <div className="flex flex-col overflow-hidden">
       <Hero />
@@ -32,7 +41,7 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials Section */}
-      <Testimonials />
+      {showReviews && <Testimonials />}
 
       {/* CTA Section */}
       <section className="w-full bg-[var(--color-bg-screen)] py-20 px-8 flex flex-col items-center justify-center text-center">
