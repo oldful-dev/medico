@@ -31,8 +31,8 @@ const getPublishedConfigs = async (req, res, next) => {
             orderBy: { sortOrder: 'asc' },
         });
 
-        // Cache for 1 hour at edge, 5 mins in browser
-        res.set('Cache-Control', 'public, max-age=300, s-maxage=3600');
+        // Disable caching so configs publish immediately
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         sendResponse(res, 200, configs);
 
     } catch (error) {
