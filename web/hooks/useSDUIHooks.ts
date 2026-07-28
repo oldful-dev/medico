@@ -14,8 +14,7 @@ export const useSDUIHooks = () => {
                 try {
                     const res = await apiClient.get<any>('/app-config/home');
                     if (res && res.data) {
-                        // Translate backend home config structure to match website's HomeConfig schema
-                        // Sometimes res.data is wrapped inside res.data.data
+                        // Extract root config object
                         const backendConfig = res.data.sections ? res.data : (res.data.data || res.data);
                         
                         // Sections normalization mapping
@@ -34,9 +33,9 @@ export const useSDUIHooks = () => {
                                 return {
                                     id: item.id,
                                     label: cleanLabel,
-                                    icon: item.image_url || item.icon_key,
+                                    icon: item.image_url || item.icon || item.icon_key,
                                     route: item.route,
-                                    enabled: item.visible !== false
+                                    enabled: item.enabled !== false && item.visible !== false
                                 };
                             });
 
@@ -44,7 +43,7 @@ export const useSDUIHooks = () => {
                                 id: sec.id,
                                 title: sec.title || sec.id,
                                 type: sec.type,
-                                enabled: sec.visible !== false,
+                                enabled: sec.enabled !== false && sec.visible !== false,
                                 sort_order: sec.sort_order,
                                 services
                             };
