@@ -12,10 +12,11 @@ export const useSDUIHooks = () => {
             queryKey: SDUI_QUERY_KEYS.homeConfig,
             queryFn: async (): Promise<HomeConfig | null> => {
                 try {
-                    const res = await apiClient.get<HomeConfig>('/app-config/home');
-                    if (res.success && res.data) {
+                    const res = await apiClient.get<any>('/app-config/home');
+                    if (res && res.data) {
                         // Translate backend home config structure to match website's HomeConfig schema
-                        const backendConfig = res.data as any;
+                        // Sometimes res.data is wrapped inside res.data.data
+                        const backendConfig = res.data.sections ? res.data : (res.data.data || res.data);
                         
                         // Sections normalization mapping
                         const sections = (backendConfig.sections || []).map((sec: any) => {
