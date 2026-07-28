@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { 
     Building2, Phone, Mail, Sliders, Briefcase, Heart, Plus, Trash2, Save, Info, CheckCircle2,
-    BookOpen, FileText
+    BookOpen, FileText, Upload
 } from "lucide-react";
-import { uiConfigAPI } from "@/lib/api";
+import { uiConfigAPI, mediaAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
 
 export default function CompanySettingsPage() {
@@ -257,6 +257,35 @@ export default function CompanySettingsPage() {
                 }
             }
         }));
+    };
+
+    const handleLogoUpload = async (e, index) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("folder", "partners");
+        
+        try {
+            showToast("Uploading partner logo to GCS...", "info");
+            const res = await mediaAPI.upload(fd);
+            const url = res.data?.data?.url || res.data?.url;
+            
+            if (url) {
+                const updated = [...(formData.partners_list || [])];
+                updated[index] = { ...updated[index], logoUrl: url };
+                setFormData({ ...formData, partners_list: updated });
+                showToast("Partner logo uploaded successfully!", "success");
+            } else {
+                showToast("Upload succeeded but no URL returned", "error");
+            }
+        } catch (err) {
+            console.error("Partner logo upload failed:", err);
+            showToast("Failed to upload partner logo", "error");
+        } finally {
+            e.target.value = "";
+        }
     };
 
     if (loading) {
@@ -658,28 +687,52 @@ export default function CompanySettingsPage() {
 
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                                 {(formData.partners_list || []).map((partner, index) => (
-                                    <div key={index} style={{ display: "flex", gap: 12, alignItems: "center", padding: 14, background: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-                                        <div className="form-group" style={{ flex: 2, display: "flex", flexDirection: "column", gap: 4 }}>
-                                            <label style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)" }}>Partner Name</label>
-                                            <input 
-                                                value={partner.name} 
-                                                onChange={e => {
-                                                    const updated = [...(formData.partners_list || [])];
-                                                    updated[index].name = e.target.value;
-                                                    setFormData({ ...formData, partners_list: updated });
-                                                }}
-                                                style={{ width: "100%", padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13 }}
-                                            />
+                                        <div style={{ display: "flex", gap: 10, alignItems: "center", flex: 2 }}>
+                                            <div style={{ position: "relative", width: 44, height: 44, background: partner.color || "var(--bg-card)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", border: "1px solid var(--border-color)", cursor: "pointer" }} onClick={() => document.getElementById(`partner-file-${index}`).click()}>
+                                                {partner.logoUrl ? (
+                                                    <img src={partner.logoUrl} alt={partner.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                                                ) : (
+                                                    <span style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>{partner.name ? partner.name[0] : 'P'}</span>
+                                                )}
+                                                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 8, display: "flex", alignItems: "center", justifyContent: "center", padding: "2px 0" }}>
+                                                    <Upload size={8} />
+                                                </div>
+                                                <input 
+                                                    id={`partner-file-${index}`}
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={e => handleLogoUpload(e, index)}
+                                                    style={{ display: "none" }}
+                                                />
+                                            </div>
+                                            <div className="form-group" style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+                                                <label style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)" }}>Partner Name</label>
+                                                <input 
+                                                    value={partner.name} 
+                                                    onChange={e => {
+                                                        const updated = [...(formData.partners_list || [])];
+                                                        updated[index].name = e.target.value;
+                                                        setFormData({ ...formData, partners_list: updated });
+                                                    }}
+                                                    style={{ width: "100%", padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13 }}
+                                                />
+                                            </div>
                                         </div>
                                         <div className="form-group" style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-                                            <label style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)" }}>Hex Color</label>
+                                            <label style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)" }}>Hex Color / Logo URL</label>
                                             <input 
-                                                value={partner.color} 
+                                                value={partner.logoUrl || partner.color || ""} 
                                                 onChange={e => {
+                                                    const val = e.target.value;
                                                     const updated = [...(formData.partners_list || [])];
-                                                    updated[index].color = e.target.value;
+                                                    if (val.startsWith("http")) {
+                                                        updated[index].logoUrl = val;
+                                                    } else {
+                                                        updated[index].color = val;
+                                                    }
                                                     setFormData({ ...formData, partners_list: updated });
                                                 }}
+                                                placeholder="#HEX or URL"
                                                 style={{ width: "100%", padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13 }}
                                             />
                                         </div>

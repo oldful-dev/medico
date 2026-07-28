@@ -5,7 +5,8 @@ import React from 'react';
 
 export interface Partner {
   name: string;
-  color: string;
+  color?: string;
+  logoUrl?: string;
 }
 
 const DEFAULT_PARTNERS: Partner[] = [
@@ -55,10 +56,14 @@ function PartnerBadge({ partner }: { partner: Partner }) {
     <div className="flex items-center gap-3 sm:gap-4 bg-gray-50/50 px-6 py-3 rounded-2xl border border-gray-100 shadow-sm backdrop-blur-sm">
       <div 
         className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-white font-black text-sm sm:text-base shadow-inner overflow-hidden"
-        style={{ backgroundColor: partner.color }}
+        style={{ backgroundColor: partner.logoUrl ? 'transparent' : (partner.color || '#10b981') }}
       >
-        <div className="w-full h-full flex items-center justify-center bg-black/10">
-          {partner.name ? partner.name[0] : 'P'}
+        <div className="w-full h-full flex items-center justify-center bg-black/5">
+          {partner.logoUrl ? (
+            <img src={partner.logoUrl} alt={partner.name} className="w-full h-full object-contain" />
+          ) : (
+            partner.name ? partner.name[0] : 'P'
+          )}
         </div>
       </div>
       <span className="text-base sm:text-lg font-bold text-gray-400 uppercase tracking-tight">
