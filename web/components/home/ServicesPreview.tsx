@@ -14,10 +14,13 @@ export function ServicesPreview() {
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
 
+  console.log("ServicesPreview Render - Config Data:", config);
   const previewServices = (config?.sections || [])
+    .filter(s => s.enabled)
     .flatMap(s => s.services)
     .filter(s => s.enabled)
     .slice(0, 6);
+  console.log("ServicesPreview Render - Preview Services List:", previewServices);
 
   const handleViewAll = () => {
     // Redirect guests to login; authenticated users to services catalog
