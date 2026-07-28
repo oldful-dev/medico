@@ -687,6 +687,7 @@ export default function CompanySettingsPage() {
 
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                                 {(formData.partners_list || []).map((partner, index) => (
+                                    <div key={index} style={{ display: "flex", gap: 12, alignItems: "center", padding: 14, background: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
                                         <div style={{ display: "flex", gap: 10, alignItems: "center", flex: 2 }}>
                                             <div style={{ position: "relative", width: 44, height: 44, background: partner.color || "var(--bg-card)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", border: "1px solid var(--border-color)", cursor: "pointer" }} onClick={() => document.getElementById(`partner-file-${index}`).click()}>
                                                 {partner.logoUrl ? (
