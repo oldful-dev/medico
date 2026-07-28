@@ -1,6 +1,17 @@
 import React from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/common/Footer';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "Ayuxa",
+  description: "Comprehensive elder care management platform delivering healthcare to your door.",
+  openGraph: {
+    title: "Ayuxa",
+    description: "Technology meets human empathy to keep your loved ones safe.",
+    type: "website",
+  }
+};
 
 export default function MarketingLayout({
   children,

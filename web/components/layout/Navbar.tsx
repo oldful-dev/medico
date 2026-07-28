@@ -228,15 +228,7 @@ export function Navbar() {
                 );
               })}
 
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <Link
-                  href="/contact"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="block w-full text-center bg-[var(--color-primary-deep)] text-white py-3 rounded-full text-sm font-semibold shadow-lg active:scale-95 transition-all"
-                >
-                  Contact Us
-                </Link>
-              </div>
+              {/* Extra spacing for clean layout padding */}
             </div>
           </motion.div>
         )}

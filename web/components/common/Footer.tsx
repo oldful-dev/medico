@@ -155,8 +155,8 @@ export function Footer() {
       </div>
 
       <div className="max-w-6xl mx-auto mt-16 pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4">
-        <p className="text-xs text-gray-500">© {new Date().getFullYear()} {settings.company_name}. All rights reserved. Copyright Information.</p>
-        <p className="text-xs text-gray-500 text-center md:text-right">Designed with empathy in Bangalore, India.</p>
+        <p className="text-xs text-gray-500">© {new Date().getFullYear()} {settings.company_name}. All rights reserved. | ISO 9001:2015 Certified Elder Care Platform.</p>
+        <p className="text-xs text-gray-500 text-center md:text-right font-medium text-gray-400">Designed with empathy in Bangalore, India.</p>
       </div>
     </footer>
   );
