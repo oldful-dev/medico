@@ -13,14 +13,17 @@ export const useSDUIHooks = () => {
             queryFn: async (): Promise<HomeConfig | null> => {
                 try {
                     const res = await apiClient.get<any>('/app-config/home');
+                    console.log("SDUI Home Config Raw Response:", res);
                     if (res && res.data) {
                         // Extract root config object
                         const backendConfig = res.data.sections ? res.data : (res.data.data || res.data);
+                        console.log("SDUI Home Config Parsed BackendConfig:", backendConfig);
                         
                         // Sections normalization mapping
                         const sections = (backendConfig.sections || []).map((sec: any) => {
-                            // Extract items list
-                            const services = (sec.items || []).map((item: any) => {
+                            // Extract items list or services array
+                            const itemsList = sec.items || sec.services || [];
+                            const services = itemsList.map((item: any) => {
                                 // Parse label if it is stringified JSON locale values
                                 let cleanLabel = item.label;
                                 if (typeof cleanLabel === 'string' && cleanLabel.startsWith('{')) {
@@ -49,13 +52,15 @@ export const useSDUIHooks = () => {
                             };
                         });
 
-                        return {
+                        const result = {
                             version: backendConfig.version || '1.0.0',
                             banners: [],
                             sections,
                             trust_badges: [],
                             sos_banner: {} as any
                         };
+                        console.log("SDUI Home Config Normalized Result:", result);
+                        return result;
                     }
                 } catch (error) {
                     console.error("Failed to load backend dynamic home config:", error);
