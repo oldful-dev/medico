@@ -4,20 +4,20 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log('Seeding test admin: adarsharya2911@gmail.com...');
-    const passwordHash = await bcrypt.hash('12345', 12);
+    console.log('Seeding admin: backend@ayuxa.net...');
+    const passwordHash = await bcrypt.hash('admin123', 12);
 
     const admin = await prisma.admin.upsert({
-        where: { email: 'adarsharya2911@gmail.com' },
+        where: { email: 'backend@ayuxa.net' },
         update: {
-            name: 'Adarsh Arya',
+            name: 'Ayuxa Admin',
             passwordHash: passwordHash,
             role: 'SUPER_ADMIN',
             isActive: true
         },
         create: {
-            name: 'Adarsh Arya',
-            email: 'adarsharya2911@gmail.com',
+            name: 'Ayuxa Admin',
+            email: 'backend@ayuxa.net',
             passwordHash: passwordHash,
             role: 'SUPER_ADMIN',
             isActive: true
