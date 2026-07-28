@@ -665,7 +665,7 @@ export default function CompanySettingsPage() {
                         <div style={{ display: "flex", gap: 12, padding: 16, background: "rgba(4,131,87,0.06)", border: "1px solid rgba(4,131,87,0.15)", borderRadius: "var(--radius-md)", alignItems: "center" }}>
                             <Info size={20} style={{ color: "var(--accent-primary)", flexShrink: 0 }} />
                             <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: "1.4" }}>
-                                💡 <strong>Core Services Customization:</strong> The "Our Core Services" landing page cards are synchronized dynamically from the active mobile app services menu list. To configure, toggle, or edit service layout items, visit the <a href="/server-ui" style={{ color: "var(--accent-primary)", fontWeight: 700, textDecoration: "underline" }}>Server UI Layouts</a> manager.
+                                💡 <strong>Core Services Customization:</strong> The &quot;Our Core Services&quot; landing page cards are synchronized dynamically from the active mobile app services menu list. To configure, toggle, or edit service layout items, visit the <a href="/server-ui" style={{ color: "var(--accent-primary)", fontWeight: 700, textDecoration: "underline" }}>Server UI Layouts</a> manager.
                             </div>
                         </div>
                         {/* Partner organizations */}
