@@ -10,7 +10,7 @@ export default function UsersPage() {
     const [cities, setCities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
-    const [filters, setFilters] = useState({ status: '', cityId: '', healthTag: '' });
+    const [filters, setFilters] = useState({ status: 'ACTIVE', cityId: '', healthTag: '' });
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
     const [selectedUser, setSelectedUser] = useState(null);
@@ -163,6 +163,33 @@ export default function UsersPage() {
         <div>
             <div className="page-header"><h2>User Management</h2><p>Manage registered app users, health data, and emergency contacts</p></div>
 
+            <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+                <button 
+                    className={`btn ${filters.status === 'ACTIVE' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => { setFilters({ ...filters, status: 'ACTIVE', healthTag: '' }); setPage(1); }}
+                >
+                    Active
+                </button>
+                <button 
+                    className={`btn ${filters.status === 'SUSPENDED' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => { setFilters({ ...filters, status: 'SUSPENDED', healthTag: '' }); setPage(1); }}
+                >
+                    Suspended
+                </button>
+                <button 
+                    className={`btn ${filters.status === 'BLOCKED' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => { setFilters({ ...filters, status: 'BLOCKED', healthTag: '' }); setPage(1); }}
+                >
+                    Blocked
+                </button>
+                <button 
+                    className={`btn ${filters.status === 'DELETED' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => { setFilters({ ...filters, status: 'DELETED', healthTag: '' }); setPage(1); }}
+                >
+                    Deleted
+                </button>
+            </div>
+
             <div className="filter-bar">
                 <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8, flex: 1 }}>
                     <div style={{ position: "relative", flex: 1, maxWidth: 300 }}>
@@ -171,20 +198,9 @@ export default function UsersPage() {
                     </div>
                     <button type="submit" className="btn btn-primary"><Search size={16} /></button>
                 </form>
-                <select className="form-select" style={{ width: 150 }} value={filters.status} onChange={e => { setFilters({ ...filters, status: e.target.value }); setPage(1); }}>
-                    <option value="">All Status</option>
-                    <option value="ACTIVE">Active</option>
-                    <option value="SUSPENDED">Suspended</option>
-                    <option value="BLOCKED">Blocked</option>
-                    <option value="DELETED">Deleted</option>
-                </select>
                 <select className="form-select" style={{ width: 150 }} value={filters.cityId} onChange={e => { setFilters({ ...filters, cityId: e.target.value }); setPage(1); }}>
                     <option value="">All Cities</option>
                     {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <select className="form-select" style={{ width: 150 }} value={filters.healthTag} onChange={e => { setFilters({ ...filters, healthTag: e.target.value }); setPage(1); }}>
-                    <option value="">All Health</option>
-                    <option value="NORMAL">Normal</option><option value="DIABETIC">Diabetic</option><option value="HYPERTENSION">Hypertension</option><option value="CARDIAC">Cardiac</option>
                 </select>
             </div>
 
