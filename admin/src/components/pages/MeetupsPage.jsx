@@ -280,7 +280,7 @@ export default function MeetupsPage() {
                     )}
                 </div>
             ) : (
-                <div style={{ display: "grid", gap: 16 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
                     {filtered.map(meetup => {
                         const eventDate = new Date(meetup.eventDate);
                         const dateStr = eventDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
@@ -290,133 +290,167 @@ export default function MeetupsPage() {
                         return (
                             <div key={meetup.id} className="card" style={{
                                 padding: 0, overflow: "hidden",
-                                border: meetup.isFeatured ? "1.5px solid var(--accent-primary)" : "1px solid var(--border-color)",
-                                opacity: meetup.isActive ? 1 : 0.65,
+                                display: "flex", flexDirection: "column",
+                                border: meetup.isFeatured ? "2px solid var(--accent-primary)" : "1px solid var(--border-color)",
+                                opacity: meetup.isActive ? 1 : 0.75,
+                                transition: "all 0.2s ease-in-out",
+                                position: "relative",
+                                height: "100%",
+                                minHeight: 380,
+                                background: "var(--bg-card)"
                             }}>
-                                {/* Card top bar */}
-                                <div style={{
-                                    background: "linear-gradient(135deg, var(--accent-primary) 0%, #065F46 100%)",
-                                    padding: "12px 20px",
-                                    display: "flex", alignItems: "center", gap: 10,
-                                }}>
+                                {/* Featured badge / Status */}
+                                <div style={{ position: "absolute", top: 12, left: 12, zIndex: 10, display: "flex", gap: 6 }}>
                                     {meetup.isFeatured && (
-                                        <Star size={14} fill="#fff" color="#fff" />
+                                        <span style={{
+                                            fontSize: 9, fontWeight: 700,
+                                            background: "linear-gradient(135deg, #FBBF24 0%, #D97706 100%)",
+                                            color: "#fff", borderRadius: 20, padding: "3px 8px",
+                                            display: "flex", alignItems: "center", gap: 4,
+                                            boxShadow: "0 2px 4px rgba(0,0,0,0.15)"
+                                        }}>
+                                            <Star size={10} fill="#fff" /> FEATURED
+                                        </span>
                                     )}
-                                    <span style={{ fontWeight: 700, fontSize: 15, color: "#fff", flex: 1 }}>
-                                        {meetup.title}
-                                    </span>
                                     <span style={{
-                                        fontSize: 11, fontWeight: 600,
-                                        background: meetup.isExpired ? "#FEE2E2" : meetup.isActive ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)",
-                                        color: meetup.isExpired ? "#991B1B" : "#fff", borderRadius: 6, padding: "2px 10px",
+                                        fontSize: 9, fontWeight: 700,
+                                        background: meetup.isExpired ? "#EF4444" : meetup.isActive ? "var(--accent-primary)" : "#6B7280",
+                                        color: "#fff", borderRadius: 20, padding: "3px 8px",
+                                        boxShadow: "0 2px 4px rgba(0,0,0,0.10)"
                                     }}>
                                         {meetup.isExpired ? "EXPIRED" : meetup.isActive ? "ACTIVE" : "INACTIVE"}
                                     </span>
                                 </div>
 
-                                <div style={{ padding: "16px 20px" }}>
-                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 20, alignItems: "start" }}>
-                                        {/* Details */}
-                                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                <Calendar size={14} color="var(--accent-primary)" />
-                                                <span style={{ fontSize: 13, color: "var(--text-primary)" }}>{dateStr}</span>
-                                            </div>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                <Clock size={14} color="var(--accent-primary)" />
-                                                <span style={{ fontSize: 13, color: "var(--text-primary)" }}>
-                                                    {meetup.startTime}{meetup.endTime ? ` – ${meetup.endTime}` : ""}
-                                                </span>
-                                            </div>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                <MapPin size={14} color="var(--accent-primary)" />
-                                                <span style={{ fontSize: 13, color: "var(--text-primary)" }}>{meetup.venue}, {meetup.city}</span>
-                                            </div>
+                                {/* Event Header Image placeholder or custom url */}
+                                <div style={{ 
+                                    width: "100%", 
+                                    height: 140, 
+                                    background: meetup.imageUrl ? `url(${meetup.imageUrl})` : "linear-gradient(135deg, var(--accent-primary) 0%, #065F46 100%)",
+                                    backgroundSize: "cover",
+                                    backgroundPosition: "center",
+                                    position: "relative"
+                                }}>
+                                    {!meetup.imageUrl && (
+                                        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.25)" }}>
+                                            <Users size={36} color="rgba(255,255,255,0.7)" />
                                         </div>
+                                    )}
+                                    
+                                    {/* Cost tag */}
+                                    <div style={{ 
+                                        position: "absolute", 
+                                        bottom: 12, 
+                                        right: 12, 
+                                        background: "rgba(255,255,255,0.95)", 
+                                        backdropFilter: "blur(4px)",
+                                        padding: "4px 10px", 
+                                        borderRadius: 8,
+                                        fontWeight: 800,
+                                        fontSize: 14,
+                                        color: "var(--accent-primary)",
+                                        boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+                                    }}>
+                                        ₹{meetup.serviceCharge}
+                                    </div>
+                                </div>
 
-                                        {/* Capacity */}
-                                        <div>
-                                            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6 }}>
-                                                Registrations
-                                            </div>
-                                            <div style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)" }}>
-                                                {seatsFilled} <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 400 }}>/ {seatsTotal}</span>
-                                            </div>
+                                {/* Card Body */}
+                                <div style={{ padding: 16, display: "flex", flexDirection: "column", flex: 1, gap: 12 }}>
+                                    <div style={{ flex: 1 }}>
+                                        <h3 style={{ margin: "0 0 6px 0", fontSize: 16, fontWeight: 700, color: "var(--text-primary)", lineHeight: "1.3" }}>
+                                            {meetup.title}
+                                        </h3>
+                                        <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: "1.4" }}>
+                                            {meetup.description}
+                                        </p>
+                                    </div>
+
+                                    {/* Info items */}
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 6, borderTop: "1px solid var(--border-color)", paddingTop: 10 }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                            <Calendar size={13} color="var(--accent-primary)" style={{ flexShrink: 0 }} />
+                                            <span style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500 }}>{dateStr}</span>
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                            <Clock size={13} color="var(--accent-primary)" style={{ flexShrink: 0 }} />
+                                            <span style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500 }}>
+                                                {meetup.startTime}{meetup.endTime ? ` – ${meetup.endTime}` : ""}
+                                            </span>
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                            <MapPin size={13} color="var(--accent-primary)" style={{ flexShrink: 0 }} />
+                                            <span style={{ fontSize: 12, color: "var(--text-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={`${meetup.venue}, ${meetup.city}`}>
+                                                {meetup.venue}, {meetup.city}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Capacity Progress Bar */}
+                                    <div style={{ background: "var(--bg-secondary)", padding: 8, borderRadius: 8, border: "1px solid var(--border-color)" }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 4 }}>
+                                            <span>Registrations</span>
+                                            <span>{seatsFilled} / {seatsTotal}</span>
+                                        </div>
+                                        <div style={{ height: 6, borderRadius: 3, backgroundColor: "var(--border-color)", overflow: "hidden" }}>
                                             <div style={{
-                                                height: 6, borderRadius: 3, backgroundColor: "var(--border-color)",
-                                                marginTop: 8, overflow: "hidden",
-                                            }}>
-                                                <div style={{
-                                                    height: "100%", borderRadius: 3,
-                                                    width: `${fillPct}%`,
-                                                    background: fillPct >= 90 ? "#DC2626" : fillPct >= 70 ? "#D97706" : "var(--accent-primary)",
-                                                }} />
-                                            </div>
-                                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                                                {meetup.availableSeats ?? seatsTotal - seatsFilled} seats available
-                                            </div>
+                                                height: "100%",
+                                                width: `${fillPct}%`,
+                                                background: fillPct >= 90 ? "#EF4444" : fillPct >= 70 ? "#F59E0B" : "var(--accent-primary)",
+                                                transition: "width 0.3s ease"
+                                            }} />
                                         </div>
+                                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}>
+                                            <span>{meetup.availableSeats ?? seatsTotal - seatsFilled} seats left</span>
+                                            <span>{fillPct}% filled</span>
+                                        </div>
+                                    </div>
 
-                                        {/* Pricing */}
-                                        <div>
-                                            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6 }}>Service Charge</div>
-                                            <div style={{ fontSize: 22, fontWeight: 700, color: "var(--accent-primary)" }}>
-                                                ₹{meetup.serviceCharge}
-                                            </div>
-                                            {meetup.pinCode && (
-                                                <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8 }}>
-                                                    <Tag size={12} color="var(--text-muted)" />
-                                                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>PIN: {meetup.pinCode}</span>
-                                                </div>
-                                            )}
-                                        </div>
+                                    {/* Action Buttons */}
+                                    <div style={{ display: "flex", gap: 8, borderTop: "1px solid var(--border-color)", paddingTop: 12 }}>
+                                        <button
+                                            className="btn btn-primary"
+                                            style={{ flex: 1, fontSize: 11, padding: "6px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+                                            onClick={() => openRegistrations(meetup)}
+                                        >
+                                            <Users size={12} /> Guests ({seatsFilled})
+                                        </button>
+                                        
+                                        <button
+                                            onClick={() => openEdit(meetup)}
+                                            style={{
+                                                padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 11,
+                                                border: "1px solid var(--border-color)", background: "var(--bg-glass)",
+                                                display: "flex", alignItems: "center", gap: 4, color: "var(--text-primary)",
+                                            }}
+                                            title="Edit"
+                                        >
+                                            <Edit2 size={12} /> Edit
+                                        </button>
 
-                                        {/* Actions */}
-                                        <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
-                                            <button
-                                                className="btn btn-primary"
-                                                style={{ fontSize: 12, padding: "6px 14px", display: "flex", alignItems: "center", gap: 6 }}
-                                                onClick={() => openRegistrations(meetup)}
-                                            >
-                                                <Users size={13} /> Registrations
-                                            </button>
-                                            <div style={{ display: "flex", gap: 8 }}>
-                                                <button
-                                                    onClick={() => openEdit(meetup)}
-                                                    style={{
-                                                        padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: 12,
-                                                        border: "1px solid var(--border-color)", background: "var(--bg-glass)",
-                                                        display: "flex", alignItems: "center", gap: 5, color: "var(--text-primary)",
-                                                    }}
-                                                    title="Edit"
-                                                >
-                                                    <Edit2 size={13} /> Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => handleToggle(meetup)}
-                                                    style={{
-                                                        padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: 12,
-                                                        border: "1px solid var(--border-color)", background: "var(--bg-glass)",
-                                                        display: "flex", alignItems: "center", gap: 5, color: meetup.isActive ? "#D97706" : "var(--accent-primary)",
-                                                    }}
-                                                    title={meetup.isActive ? "Deactivate" : "Activate"}
-                                                >
-                                                    {meetup.isActive ? <EyeOff size={13} /> : <Eye size={13} />}
-                                                    {meetup.isActive ? "Disable" : "Enable"}
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(meetup.id)}
-                                                    style={{
-                                                        padding: "6px 10px", borderRadius: 8, cursor: "pointer",
-                                                        border: "1px solid #FEE2E2", background: "#FFF5F5",
-                                                        display: "flex", alignItems: "center", color: "#DC2626",
-                                                    }}
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 size={13} />
-                                                </button>
-                                            </div>
-                                        </div>
+                                        <button
+                                            onClick={() => handleToggle(meetup)}
+                                            style={{
+                                                padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 11,
+                                                border: "1px solid var(--border-color)", background: "var(--bg-glass)",
+                                                display: "flex", alignItems: "center", gap: 4, color: meetup.isActive ? "#F59E0B" : "var(--accent-primary)",
+                                            }}
+                                            title={meetup.isActive ? "Deactivate" : "Activate"}
+                                        >
+                                            {meetup.isActive ? <EyeOff size={12} /> : <Eye size={12} />}
+                                        </button>
+
+                                        <button
+                                            onClick={() => handleDelete(meetup.id)}
+                                            style={{
+                                                padding: "6px 8px", borderRadius: 8, cursor: "pointer",
+                                                border: "1px solid #FEE2E2", background: "#FFF5F5",
+                                                display: "flex", alignItems: "center", color: "#EF4444",
+                                            }}
+                                            title="Delete"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
                                     </div>
                                 </div>
                             </div>

@@ -465,49 +465,44 @@ export default function BookingsPage() {
                                         : <div className="text-sm text-muted">None added</div>}
                                 </div>
 
-                                {/* Trip & Travel Details — rendered when formDataJson.type === 'TRIP' */}
-                                {selected.formDataJson?.type === 'TRIP' && (() => {
+                                {/* Dynamic Booking Form Data Json Details (Rendered if formDataJson exists) */}
+                                {selected.formDataJson && typeof selected.formDataJson === 'object' && Object.keys(selected.formDataJson).length > 0 && (() => {
                                     const fd = selected.formDataJson;
+                                    const formatKey = (k) => {
+                                        // Convert camelCase or snake_case to human readable Title Case
+                                        const result = k.replace(/([A-Z])/g, " $1").replace(/[_-]/g, " ");
+                                        return result.charAt(0).toUpperCase() + result.slice(1);
+                                    };
+                                    const renderVal = (v) => {
+                                        if (typeof v === 'boolean') return v ? '✅ Yes' : '❌ No';
+                                        if (typeof v === 'object' && v !== null) return JSON.stringify(v);
+                                        return String(v);
+                                    };
                                     return (
                                         <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
-                                            <h4 style={{ marginBottom: 12, fontWeight: 600, color: '#02743F' }}>✈️ Trip & Travel Details</h4>
+                                            <h4 style={{ marginBottom: 12, fontWeight: 600, color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                📝 Form Submission & Special Requests
+                                            </h4>
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                                {fd.destination && (
-                                                    <div style={{ gridColumn: '1 / -1' }}>
-                                                        <label className="form-label">Destination</label>
-                                                        <div className="text-sm font-semibold">{fd.destination}</div>
-                                                    </div>
-                                                )}
-                                                {fd.travelDates && (
-                                                    <div>
-                                                        <label className="form-label">Travel Dates</label>
-                                                        <div className="text-sm">{fd.travelDates}</div>
-                                                    </div>
-                                                )}
-                                                {fd.numTravellers && (
-                                                    <div>
-                                                        <label className="form-label">Number of Travellers</label>
-                                                        <div className="text-sm">{fd.numTravellers} {fd.numTravellers === 1 ? 'person' : 'people'}</div>
-                                                    </div>
-                                                )}
-                                                {fd.purposeOfTravel && (
-                                                    <div style={{ gridColumn: '1 / -1' }}>
-                                                        <label className="form-label">Purpose of Travel</label>
-                                                        <div className="text-sm">{fd.purposeOfTravel}</div>
-                                                    </div>
-                                                )}
-                                                {fd.specialRequirements && (
-                                                    <div style={{ gridColumn: '1 / -1' }}>
-                                                        <label className="form-label">Special Requirements / Assistance</label>
-                                                        <div className="text-sm" style={{ background: 'var(--bg-glass)', padding: '8px 12px', borderRadius: 8 }}>{fd.specialRequirements}</div>
-                                                    </div>
-                                                )}
-                                                {fd.additionalDetails && (
-                                                    <div style={{ gridColumn: '1 / -1' }}>
-                                                        <label className="form-label">Additional Details</label>
-                                                        <div className="text-sm" style={{ background: 'var(--bg-glass)', padding: '8px 12px', borderRadius: 8 }}>{fd.additionalDetails}</div>
-                                                    </div>
-                                                )}
+                                                {Object.entries(fd).map(([key, val]) => {
+                                                    if (val === undefined || val === null || val === '') return null;
+                                                    // Make description/special fields full width
+                                                    const isLongText = String(val).length > 60 || ['description', 'notes', 'specialRequirements', 'additionalDetails', 'purposeOfTravel', 'symptoms', 'addressLine'].includes(key);
+                                                    return (
+                                                        <div key={key} style={{ gridColumn: isLongText ? '1 / -1' : 'auto' }}>
+                                                            <label className="form-label" style={{ color: 'var(--text-muted)', fontSize: 11 }}>{formatKey(key)}</label>
+                                                            <div className="text-sm font-semibold" style={{ 
+                                                                background: isLongText ? 'var(--bg-glass)' : 'transparent', 
+                                                                padding: isLongText ? '8px 12px' : '0', 
+                                                                borderRadius: isLongText ? 8 : 0,
+                                                                border: isLongText ? '1px solid var(--border-color)' : 'none',
+                                                                color: 'var(--text-primary)'
+                                                            }}>
+                                                                {renderVal(val)}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     );
