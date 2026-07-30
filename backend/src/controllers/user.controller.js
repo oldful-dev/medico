@@ -150,6 +150,35 @@ const getUserById = async (req, res, next) => {
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
         const { otpCode, otpExpiresAt, refreshToken, ...safeUser } = user;
+
+        // Dynamically sign health report private download URLs
+        if (safeUser.healthReports && safeUser.healthReports.length > 0) {
+            const { getSignedDownloadUrl } = require('../utils/storage.service');
+            safeUser.healthReports = await Promise.all(safeUser.healthReports.map(async (report) => {
+                let signedUrl = report.fileUrl;
+                if (report.fileUrl) {
+                    let pathKey = report.fileUrl;
+                    if (report.fileUrl.startsWith('http://') || report.fileUrl.startsWith('https://')) {
+                        const urlObj = new URL(report.fileUrl);
+                        const bucketName = process.env.GOOGLE_STORAGE_BUCKET_NAME || 'ayuxa-assets';
+                        const prefix = `/${bucketName}/`;
+                        if (urlObj.pathname.startsWith(prefix)) {
+                            pathKey = urlObj.pathname.replace(prefix, '');
+                        } else {
+                            pathKey = urlObj.pathname.substring(1);
+                        }
+                    }
+                    try {
+                        const freshUrl = await getSignedDownloadUrl(pathKey);
+                        if (freshUrl) signedUrl = freshUrl;
+                    } catch (signErr) {
+                        console.error('Failed to dynamically sign report url in admin user details:', signErr.message);
+                    }
+                }
+                return { ...report, fileUrl: signedUrl };
+            }));
+        }
+
         sendResponse(res, 200, formatDeletedPII(safeUser));
     } catch (error) {
         next(error);
@@ -594,6 +623,34 @@ const getMyProfile = async (req, res, next) => {
             safeUser.profileImageUrl = transformProfileImageToCDN(safeUser.profileImageUrl);
         }
 
+        // Dynamically sign health report private download URLs
+        if (safeUser.healthReports && safeUser.healthReports.length > 0) {
+            const { getSignedDownloadUrl } = require('../utils/storage.service');
+            safeUser.healthReports = await Promise.all(safeUser.healthReports.map(async (report) => {
+                let signedUrl = report.fileUrl;
+                if (report.fileUrl) {
+                    let pathKey = report.fileUrl;
+                    if (report.fileUrl.startsWith('http://') || report.fileUrl.startsWith('https://')) {
+                        const urlObj = new URL(report.fileUrl);
+                        const bucketName = process.env.GOOGLE_STORAGE_BUCKET_NAME || 'ayuxa-assets';
+                        const prefix = `/${bucketName}/`;
+                        if (urlObj.pathname.startsWith(prefix)) {
+                            pathKey = urlObj.pathname.replace(prefix, '');
+                        } else {
+                            pathKey = urlObj.pathname.substring(1);
+                        }
+                    }
+                    try {
+                        const freshUrl = await getSignedDownloadUrl(pathKey);
+                        if (freshUrl) signedUrl = freshUrl;
+                    } catch (signErr) {
+                        console.error('Failed to dynamically sign report url in profile:', signErr.message);
+                    }
+                }
+                return { ...report, fileUrl: signedUrl };
+            }));
+        }
+
         sendResponse(res, 200, safeUser);
     } catch (error) {
         next(error);
@@ -641,7 +698,38 @@ const getMyHealthReports = async (req, res, next) => {
             where: { userId: req.user.id },
             orderBy: { createdAt: 'desc' },
         });
-        sendResponse(res, 200, reports, 'Health reports fetched');
+
+        // Dynamically sign fileUrl values so they don't expire in the DB
+        const { getSignedDownloadUrl } = require('../utils/storage.service');
+        const signedReports = await Promise.all(reports.map(async (report) => {
+            // If the saved URL is a GCS signed URL (contains signature query params) or a storage path, re-sign it dynamically.
+            let signedUrl = report.fileUrl;
+            if (report.fileUrl) {
+                // If it's a full URL, extract the storage path key
+                let pathKey = report.fileUrl;
+                if (report.fileUrl.startsWith('http://') || report.fileUrl.startsWith('https://')) {
+                    const urlObj = new URL(report.fileUrl);
+                    // Decouple GCS bucket prefix to find pure storagePath
+                    const bucketName = process.env.GOOGLE_STORAGE_BUCKET_NAME || 'ayuxa-assets';
+                    const prefix = `/${bucketName}/`;
+                    if (urlObj.pathname.startsWith(prefix)) {
+                        pathKey = urlObj.pathname.replace(prefix, '');
+                    } else {
+                        // Strip leading slash
+                        pathKey = urlObj.pathname.substring(1);
+                    }
+                }
+                try {
+                    const freshUrl = await getSignedDownloadUrl(pathKey);
+                    if (freshUrl) signedUrl = freshUrl;
+                } catch (signErr) {
+                    console.error('Failed to dynamically sign report url:', signErr.message);
+                }
+            }
+            return { ...report, fileUrl: signedUrl };
+        }));
+
+        sendResponse(res, 200, signedReports, 'Health reports fetched');
     } catch (error) {
         next(error);
     }

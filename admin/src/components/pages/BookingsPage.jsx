@@ -418,12 +418,18 @@ export default function BookingsPage() {
                                 <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border-color)' }}>
                                     <h4 style={{ marginBottom: 12, fontWeight: 600 }}>Service Details</h4>
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                        <div><label className="form-label">Scheduled Date</label><div className="text-sm">{selected.scheduledDate ? formatDate(selected.scheduledDate) : '—'}</div></div>
-                                        <div><label className="form-label">Scheduled Time</label><div className="text-sm">{selected.scheduledTime || '—'}</div></div>
+                                        <div><label className="form-label">Scheduled Date</label><div className="text-sm">{selected.scheduledDate ? formatDate(selected.scheduledDate) : (selected.service?.slug === 'blood-test' && labOrders?.[0]?.slot?.date ? formatDate(labOrders[0].slot.date) : '—')}</div></div>
+                                        <div><label className="form-label">Scheduled Time</label><div className="text-sm">{selected.scheduledTime || (selected.service?.slug === 'blood-test' && labOrders?.[0]?.slot?.time ? labOrders[0].slot.time : selected.formDataJson?.scheduleTime || selected.formDataJson?.time || '—')}</div></div>
+                                        {selected.startDate && <div><label className="form-label">Start Date</label><div className="text-sm">{formatDate(selected.startDate)}</div></div>}
+                                        {selected.endDate && <div><label className="form-label">End Date</label><div className="text-sm">{formatDate(selected.endDate)}</div></div>}
+                                        {selected.pickupAddress && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Pickup Address</label><div className="text-sm">{selected.pickupAddress}</div></div>}
+                                        {selected.dropAddress && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Drop Address</label><div className="text-sm">{selected.dropAddress}</div></div>}
                                         {selected.addressLine && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Address</label><div className="text-sm">{selected.addressLine}</div></div>}
                                         {selected.doctorType && <><div><label className="form-label">Doctor Type</label><div className="text-sm">{selected.doctorType}</div></div>{selected.symptoms && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Symptoms</label><div className="text-sm">{Array.isArray(selected.symptoms) ? selected.symptoms.join(', ') : selected.symptoms}</div></div>}</>}
                                         {selected.staffType && <><div><label className="form-label">Staff Type</label><div className="text-sm">{selected.staffType}</div></div>{selected.shiftDuration && <div><label className="form-label">Shift</label><div className="text-sm">{selected.shiftDuration}</div></div>}</>}
                                         {selected.vehicleType && <div><label className="form-label">Vehicle</label><div className="text-sm">{selected.vehicleType}</div></div>}
+                                        {selected.requirements && selected.requirements.length > 0 && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Requirements</label><div className="text-sm">{selected.requirements.join(', ')}</div></div>}
+                                        {selected.prescriptionUrl && <div style={{ gridColumn: '1 / -1' }}><label className="form-label">Uploaded Prescription</label><div style={{ marginTop: 4 }}><a href={selected.prescriptionUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--accent-primary)', color: '#fff', padding: '6px 12px', borderRadius: 6, textDecoration: 'none', fontSize: 12, fontWeight: 600 }}>📄 View Prescription</a></div></div>}
                                     </div>
                                 </div>
 
@@ -475,6 +481,7 @@ export default function BookingsPage() {
                                     };
                                     const renderVal = (v) => {
                                         if (typeof v === 'boolean') return v ? '✅ Yes' : '❌ No';
+                                        if (Array.isArray(v)) return v.join(', ');
                                         if (typeof v === 'object' && v !== null) return JSON.stringify(v);
                                         return String(v);
                                     };
@@ -486,8 +493,29 @@ export default function BookingsPage() {
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                                 {Object.entries(fd).map(([key, val]) => {
                                                     if (val === undefined || val === null || val === '') return null;
+                                                    // Skip attributes already mapped at the top level
+                                                    if (['serviceId', 'id', 'price', 'address', 'scheduleTime', 'time', 'providerType'].includes(key)) return null;
                                                     // Make description/special fields full width
-                                                    const isLongText = String(val).length > 60 || ['description', 'notes', 'specialRequirements', 'additionalDetails', 'purposeOfTravel', 'symptoms', 'addressLine'].includes(key);
+                                                    // Detect if value is an attachment URL or list of URLs
+                                                    const isAttachment = key.toLowerCase().includes('attachment') || key.toLowerCase().includes('prescription') || key.toLowerCase().includes('file');
+                                                    let parsedAttachments = [];
+                                                    if (isAttachment) {
+                                                        try {
+                                                            if (Array.isArray(val)) {
+                                                                parsedAttachments = val;
+                                                            } else if (typeof val === 'string') {
+                                                                if (val.trim().startsWith('[') && val.trim().endsWith(']')) {
+                                                                    parsedAttachments = JSON.parse(val);
+                                                                } else if (val.startsWith('http')) {
+                                                                    parsedAttachments = [val];
+                                                                }
+                                                            }
+                                                        } catch (e) {
+                                                            parsedAttachments = [];
+                                                        }
+                                                    }
+                                                    
+                                                    const isLongText = String(val).length > 60 || ['description', 'notes', 'specialRequirements', 'additionalDetails', 'purposeOfTravel', 'symptoms', 'addressLine'].includes(key) || isAttachment;
                                                     return (
                                                         <div key={key} style={{ gridColumn: isLongText ? '1 / -1' : 'auto' }}>
                                                             <label className="form-label" style={{ color: 'var(--text-muted)', fontSize: 11 }}>{formatKey(key)}</label>
@@ -498,7 +526,33 @@ export default function BookingsPage() {
                                                                 border: isLongText ? '1px solid var(--border-color)' : 'none',
                                                                 color: 'var(--text-primary)'
                                                             }}>
-                                                                {renderVal(val)}
+                                                                {isAttachment && parsedAttachments.length > 0 ? (
+                                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 4 }}>
+                                                                        {parsedAttachments.map((url, idx) => (
+                                                                            <a 
+                                                                                key={idx} 
+                                                                                href={url} 
+                                                                                target="_blank" 
+                                                                                rel="noopener noreferrer" 
+                                                                                style={{ 
+                                                                                    display: 'inline-flex', 
+                                                                                    alignItems: 'center', 
+                                                                                    gap: 6, 
+                                                                                    background: 'var(--accent-primary)', 
+                                                                                    color: '#fff', 
+                                                                                    padding: '6px 12px', 
+                                                                                    borderRadius: 6, 
+                                                                                    textDecoration: 'none',
+                                                                                    fontSize: 12,
+                                                                                    fontWeight: 600,
+                                                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                                                                                }}
+                                                                            >
+                                                                                📁 View Attachment {parsedAttachments.length > 1 ? `#${idx + 1}` : ''}
+                                                                            </a>
+                                                                        ))}
+                                                                    </div>
+                                                                ) : renderVal(val)}
                                                             </div>
                                                         </div>
                                                     );
@@ -538,8 +592,8 @@ export default function BookingsPage() {
                                                 <div><label className="form-label" style={{ fontSize: 10 }}>Patient</label><div className="text-sm">{order.patient?.name || '—'}</div></div>
                                                 <div><label className="form-label" style={{ fontSize: 10 }}>Collection</label><div className="text-sm">{order.bookingType}</div></div>
                                                 <div><label className="form-label" style={{ fontSize: 10 }}>Slot</label><div className="text-sm">{order.slot?.date} {order.slot?.time}</div></div>
-                                                <div><label className="form-label" style={{ fontSize: 10 }}>Package</label><div className="text-sm">{order.packages?.[0]?.name || '—'}</div></div>
-                                                <div><label className="form-label" style={{ fontSize: 10 }}>Amount</label><div className="text-sm">₹{order.packages?.[0]?.price || order.paymentDetails?.amount || '—'}</div></div>
+                                                <div><label className="form-label" style={{ fontSize: 10 }}>Package</label><div className="text-sm">{order.packages && order.packages.length > 0 ? (Array.isArray(order.packages) && typeof order.packages[0] === 'object' ? order.packages.map(p => p.name).join(', ') : order.packages.join(', ')) : '—'}</div></div>
+                                                <div><label className="form-label" style={{ fontSize: 10 }}>Amount</label><div className="text-sm">₹{order.packages && order.packages.length > 0 ? (Array.isArray(order.packages) && typeof order.packages[0] === 'object' ? order.packages.reduce((sum, p) => sum + (p.price || p.cost || 0), 0) : order.paymentDetails?.amount || '—') : order.paymentDetails?.amount || '—'}</div></div>
                                                 {order.assignedStaff && (
                                                     <div><label className="form-label" style={{ fontSize: 10 }}>Assigned Staff</label>
                                                         <div className="text-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

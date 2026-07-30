@@ -44,7 +44,7 @@ export default function BookNursingCareScreen() {
     const [newMemberRelation, setNewMemberRelation] = useState('Parent');
 
     const [selectedStaff, setSelectedStaff] = useState('Qualified Nurse');
-    const [selectedDuration, setSelectedDuration] = useState('12 Hours (Night Shift)');
+    const [selectedDuration, setSelectedDuration] = useState('12 Hours');
     const [selectedCondition, setSelectedCondition] = useState('');
     const [selectedGender, setSelectedGender] = useState('');
     const [landmark, setLandmark] = useState('');
@@ -462,31 +462,10 @@ export default function BookNursingCareScreen() {
                             <Text style={dynamicStyles.sectionTitle}>{t('nurse_care.duration')}</Text>
 
                             <View style={dynamicStyles.gridRow}>
-                                <TouchableOpacity style={[dynamicStyles.durationCard, selectedDuration === 'Short Visit' && dynamicStyles.cardActive]} onPress={() => setSelectedDuration('Short Visit')}>
-                                    <Ionicons name={selectedDuration === 'Short Visit' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === 'Short Visit' ? "#02743F" : "#AAAEAC"} />
+                                <TouchableOpacity style={[dynamicStyles.durationCard, selectedDuration === '12 Hours' && dynamicStyles.cardActive]} onPress={() => setSelectedDuration('12 Hours')}>
+                                    <Ionicons name={selectedDuration === '12 Hours' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === '12 Hours' ? "#02743F" : "#AAAEAC"} />
                                     <View style={dynamicStyles.durationTextCol}>
-                                        <Text style={dynamicStyles.durationTitle}>{t('nurse_care.short_visit')}</Text>
-                                        <Text style={dynamicStyles.durationSubtitle}>{t('nurse_care.short_visit_detail')}</Text>
-                                    </View>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[dynamicStyles.durationCard, selectedDuration === '12 Hours (Night Shift)' && dynamicStyles.cardActive]} onPress={() => setSelectedDuration('12 Hours (Night Shift)')}>
-                                    <Ionicons name={selectedDuration === '12 Hours (Night Shift)' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === '12 Hours (Night Shift)' ? "#02743F" : "#AAAEAC"} />
-                                    <View style={dynamicStyles.durationTextCol}>
-                                        <Text style={dynamicStyles.durationTitle}>{t('nurse_care.twelve_hr_night')}</Text>
-                                    </View>
-                                </TouchableOpacity>
-                            </View>
-                            <View style={dynamicStyles.gridRow}>
-                                <TouchableOpacity style={[dynamicStyles.durationCard, selectedDuration === '12 Hours (Day Shift)' && dynamicStyles.cardActive]} onPress={() => setSelectedDuration('12 Hours (Day Shift)')}>
-                                    <Ionicons name={selectedDuration === '12 Hours (Day Shift)' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === '12 Hours (Day Shift)' ? "#02743F" : "#AAAEAC"} />
-                                    <View style={dynamicStyles.durationTextCol}>
-                                        <Text style={dynamicStyles.durationTitle}>{t('nurse_care.twelve_hr_day')}</Text>
-                                    </View>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[dynamicStyles.durationCard, selectedDuration === '24 Hours (Live-in)' && dynamicStyles.cardActive]} onPress={() => setSelectedDuration('24 Hours (Live-in)')}>
-                                    <Ionicons name={selectedDuration === '24 Hours (Live-in)' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedDuration === '24 Hours (Live-in)' ? "#02743F" : "#AAAEAC"} />
-                                    <View style={dynamicStyles.durationTextCol}>
-                                        <Text style={dynamicStyles.durationTitle}>{t('nurse_care.twenty_four_hr')}</Text>
+                                        <Text style={dynamicStyles.durationTitle}>12 Hours</Text>
                                     </View>
                                 </TouchableOpacity>
                             </View>

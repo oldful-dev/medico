@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Phone, Mail, MessageSquare, Search,
@@ -22,6 +22,52 @@ const SUPPORT_PROMISE = [
 
 export default function ContactPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [settings, setSettings] = useState({
+    company_name: "Ayuxa Health Tech Platforms Pvt. Ltd.",
+    address: "No. 42, 3rd Main Road, Sector 7, HSR Layout, Bengaluru, Karnataka 560102",
+    official_contact: "+91 94801 98108",
+    customer_care: "080 4728 0789",
+    emails: {
+      support: "support@ayuxacare.com",
+      investor: "office@ayuxa.co.in",
+      careers: "careers@ayuxa.co.in",
+      enquiries: "ho@ayuxa.co.in"
+    }
+  });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const res = await fetch(`${apiUrl}/ui-config/published?t=${Date.now()}`, { cache: 'no-store' });
+        const json = await res.json();
+        if (json.success && json.data) {
+          const found = json.data.find((c: any) => c.key === "company_global_config");
+          if (found && found.configJson) {
+            let parsed = found.configJson;
+            if (typeof parsed === "string") {
+              try { parsed = JSON.parse(parsed); } catch (_) {}
+            }
+            setSettings({
+              company_name: parsed.company_name || "Ayuxa Health Tech Platforms Pvt. Ltd.",
+              address: parsed.address || "No. 42, 3rd Main Road, Sector 7, HSR Layout, Bengaluru, Karnataka 560102",
+              official_contact: parsed.official_contact || "+91 94801 98108",
+              customer_care: parsed.customer_care || "080 4728 0789",
+              emails: {
+                support: parsed.emails?.support || "support@ayuxacare.com",
+                investor: parsed.emails?.investor || "office@ayuxa.co.in",
+                careers: parsed.emails?.careers || "careers@ayuxa.co.in",
+                enquiries: parsed.emails?.enquiries || "ho@ayuxa.co.in"
+              }
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load contact settings:", err);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const filteredFAQs = FAQ_DATA.filter(f => 
     f.q.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -78,22 +124,22 @@ export default function ContactPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <EmailCard 
                   title="Client Support"
-                  email="support@ayuxacare.com"
+                  email={settings.emails.support}
                   description="For patient care and caregiver enquiries"
                 />
                 <EmailCard 
                   title="Investor Relations"
-                  email="office@ayuxa.co.in"
+                  email={settings.emails.investor}
                   description="For corporate audits & shareholder details"
                 />
                 <EmailCard 
                   title="Careers"
-                  email="careers@ayuxa.co.in"
+                  email={settings.emails.careers}
                   description="For employment, nursing, and support roles"
                 />
                 <EmailCard 
                   title="General Enquiries"
-                  email="ho@ayuxa.co.in"
+                  email={settings.emails.enquiries}
                   description="For head office administration & partnerships"
                 />
               </div>
@@ -158,7 +204,7 @@ export default function ContactPage() {
                 {/* Entity */}
                 <div>
                   <h4 className="text-xs font-extrabold text-gray-400 uppercase tracking-widest mb-3">Registered Entity</h4>
-                  <p className="text-sm font-bold text-gray-900">Ayuxa Health Tech Platforms Pvt. Ltd.</p>
+                  <p className="text-sm font-bold text-gray-900">{settings.company_name}</p>
                 </div>
 
                 {/* Headquarters Address */}
@@ -167,9 +213,7 @@ export default function ContactPage() {
                   <div className="flex gap-3 items-start">
                     <MapPin className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                     <p className="text-xs text-gray-600 leading-relaxed font-medium">
-                      No. 42, 3rd Main Road, Sector 7,<br />
-                      HSR Layout, Bengaluru,<br />
-                      Karnataka 560102
+                      {settings.address}
                     </p>
                   </div>
                 </div>
@@ -178,22 +222,22 @@ export default function ContactPage() {
                 <div className="pt-6 border-t border-gray-50">
                   <h4 className="text-xs font-extrabold text-gray-400 uppercase tracking-widest mb-4">Official Phone Lines</h4>
                   <div className="space-y-4">
-                    <a href="tel:+919480198108" className="flex items-center gap-3 text-xs font-bold text-gray-700 hover:text-[var(--color-primary)] transition-colors">
+                    <a href={`tel:${settings.official_contact}`} className="flex items-center gap-3 text-xs font-bold text-gray-700 hover:text-[var(--color-primary)] transition-colors">
                       <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
                         <Phone className="w-4 h-4" />
                       </div>
                       <div>
                         <div className="text-[10px] text-gray-400 uppercase tracking-tight">Official Number</div>
-                        +91 94801 98108
+                        {settings.official_contact}
                       </div>
                     </a>
-                    <a href="tel:08047280789" className="flex items-center gap-3 text-xs font-bold text-gray-700 hover:text-[var(--color-primary)] transition-colors">
+                    <a href={`tel:${settings.customer_care}`} className="flex items-center gap-3 text-xs font-bold text-gray-700 hover:text-[var(--color-primary)] transition-colors">
                       <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
                         <Phone className="w-4 h-4" />
                       </div>
                       <div>
                         <div className="text-[10px] text-gray-400 uppercase tracking-tight">Customer Care</div>
-                        080 4728 0789
+                        {settings.customer_care}
                       </div>
                     </a>
                   </div>

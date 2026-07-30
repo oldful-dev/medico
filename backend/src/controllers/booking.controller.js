@@ -236,7 +236,24 @@ const createBooking = async (req, res, next) => {
                         scheduledDate: scheduledDate.includes('T')
                             ? new Date(scheduledDate)
                             : new Date(`${scheduledDate}T12:00:00.000Z`),
-                        scheduledTime,
+                        scheduledTime: scheduledTime || (() => {
+                            if (scheduledDate && scheduledDate.includes('T')) {
+                                try {
+                                    const d = new Date(scheduledDate);
+                                    // Format time as hh:mm AM/PM in India timezone (where the service runs)
+                                    const timeStr = d.toLocaleTimeString('en-US', {
+                                        timeZone: 'Asia/Kolkata',
+                                        hour: 'numeric',
+                                        minute: '2-digit',
+                                        hour12: true
+                                    });
+                                    return timeStr;
+                                } catch (e) {
+                                    return null;
+                                }
+                            }
+                            return null;
+                        })(),
                         addressLine,
                         latitude,
                         longitude,

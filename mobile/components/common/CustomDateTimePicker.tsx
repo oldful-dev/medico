@@ -118,28 +118,52 @@ export default function CustomDateTimePicker({
   }, [minimumDate, daysToShow, timeSlots]);
 
   const [selectedDateIdx, setSelectedDateIdx] = useState(0);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  // Default to the first valid time slot that is not in the past
+  const initialTime = useMemo(() => {
+    const today = datePills[0];
+    if (!today) return null;
+    return timeSlots.find(slot => !isSlotPast(today, slot)) || timeSlots[0] || null;
+  }, [datePills, timeSlots]);
+  const [selectedTime, setSelectedTime] = useState<string | null>(initialTime);
   const scrollRef = useRef<ScrollView>(null);
+
+  // Notify parent of the default selected slot on mount
+  React.useEffect(() => {
+    const selectedDate = datePills[selectedDateIdx];
+    if (selectedDate && selectedTime && notify) {
+      notify(mergeDateTime(selectedDate, selectedTime));
+    }
+  }, []);
 
   // Keep selection in sync and shift if selected time becomes past
   React.useEffect(() => {
     const selectedDate = datePills[selectedDateIdx];
-    if (!selectedDate || !selectedTime) return;
-    if (isSlotPast(selectedDate, selectedTime)) {
+    if (!selectedDate) return;
+    
+    // Auto-select a valid time slot if none is selected or if selected slot is in the past
+    let currentSlot = selectedTime;
+    if (!currentSlot || isSlotPast(selectedDate, currentSlot)) {
       const firstValid = timeSlots.find(
         (slot) => !isSlotPast(selectedDate, slot),
       );
-      if (firstValid) {
-        setSelectedTime(firstValid);
-        if (notify) notify(mergeDateTime(selectedDate, firstValid));
+      const targetSlot = firstValid || timeSlots[0] || null;
+      if (targetSlot) {
+        setSelectedTime(targetSlot);
+        currentSlot = targetSlot;
       }
+    }
+    
+    if (currentSlot && notify) {
+      notify(mergeDateTime(selectedDate, currentSlot));
     }
   }, [selectedDateIdx, datePills, timeSlots, selectedTime, notify]);
 
   const handleDateSelect = (idx: number) => {
     setSelectedDateIdx(idx);
-    if (selectedTime && notify) {
-      notify(mergeDateTime(datePills[idx], selectedTime));
+    const selectedDate = datePills[idx];
+    const currentSlot = selectedTime || initialTime;
+    if (selectedDate && currentSlot && notify) {
+      notify(mergeDateTime(selectedDate, currentSlot));
     }
   };
 

@@ -309,14 +309,29 @@ const getSignedUploadUrl = async (folder, originalName, contentType, expiresMinu
 // ══════════════════════════════════════════════════════════════
 //  SIGNED URL — DOWNLOAD (private files only)
 // ══════════════════════════════════════════════════════════════
-const getSignedDownloadUrl = async (storagePath, expiresMinutes = 60) => {
+const getSignedDownloadUrl = async (storagePath, expiresMinutes = null) => {
     if (!gcsBucket) return null;
+
+    // Determine granular expiration based on storage path folder patterns if not explicitly provided
+    let duration = expiresMinutes;
+    if (!duration) {
+        const pathLower = storagePath.toLowerCase();
+        if (pathLower.includes('invoice')) {
+            duration = 10080; // 7 days (invoices/receipts)
+        } else if (pathLower.includes('avatar') || pathLower.includes('profile')) {
+            duration = 10080; // 7 days (user profile images)
+        } else if (pathLower.includes('health-report') || pathLower.includes('record') || pathLower.includes('medical')) {
+            duration = 30;    // 30 minutes (highly sensitive medical reports)
+        } else {
+            duration = 60;    // 60 minutes default for other files
+        }
+    }
 
     const gcsFile = gcsBucket.file(storagePath);
     const [signedUrl] = await gcsFile.getSignedUrl({
         version: 'v4',
         action: 'read',
-        expires: Date.now() + expiresMinutes * 60 * 1000,
+        expires: Date.now() + duration * 60 * 1000,
     });
 
     return signedUrl;

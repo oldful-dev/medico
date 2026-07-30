@@ -35,13 +35,14 @@ export default function PaymentsPage() {
     const [statusModal, setStatusModal] = useState(null);
     const [newStatus, setNewStatus] = useState('');
     const [updatingStatus, setUpdatingStatus] = useState(false);
+    const [statusFilter, setStatusFilter] = useState('SUCCESS');
     const [viewerModal, setViewerModal] = useState(null);
     const limit = 20;
 
     const loadPayments = useCallback(async () => {
         try {
             setLoading(true);
-            const r = await paymentAPI.getAll({ page, limit });
+            const r = await paymentAPI.getAll({ page, limit, status: statusFilter || undefined });
             const data = r.data?.data;
             setPayments(data?.payments || (Array.isArray(data) ? data : []));
             setTotal(data?.total || 0);
@@ -49,7 +50,7 @@ export default function PaymentsPage() {
             console.error('Load payments error:', e);
             showToast('Failed to load payments', 'error');
         } finally { setLoading(false); }
-    }, [page, limit]);
+    }, [page, limit, statusFilter]);
 
     useEffect(() => { loadPayments(); }, [loadPayments]);
 
@@ -77,6 +78,40 @@ export default function PaymentsPage() {
     return (
         <div>
             <div className="page-header"><h2>Payments & Invoices</h2><p>Track transactions, process refunds</p></div>
+
+            <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+                <button 
+                    className={`btn ${statusFilter === 'INITIATED' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => { setStatusFilter('INITIATED'); setPage(1); }}
+                >
+                    Initiated
+                </button>
+                <button 
+                    className={`btn ${statusFilter === 'SUCCESS' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => { setStatusFilter('SUCCESS'); setPage(1); }}
+                >
+                    Success
+                </button>
+                <button 
+                    className={`btn ${statusFilter === 'FAILED' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => { setStatusFilter('FAILED'); setPage(1); }}
+                >
+                    Failed
+                </button>
+                <button 
+                    className={`btn ${statusFilter === 'REFUND_INITIATED' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => { setStatusFilter('REFUND_INITIATED'); setPage(1); }}
+                >
+                    Refund Initiated
+                </button>
+                <button 
+                    className={`btn ${statusFilter === 'REFUNDED' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => { setStatusFilter('REFUNDED'); setPage(1); }}
+                >
+                    Refunded
+                </button>
+            </div>
+
             <div className="card">
                 <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
                     <table className="data-table">
