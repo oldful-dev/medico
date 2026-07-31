@@ -303,6 +303,17 @@ const sendSOSAlertOps = ({ phone, userName, ayuxaId }) =>
         variables: [userName || 'User', ayuxaId || '-'],
     });
 
+/**
+ * SOS urgent alert sent to office/admin from Ayuxa Backend sender (AYUXA_FAMILY).
+ * Template: SOS_OFFICE — Var1=client_name, Var2=client_id, Var3=client_mobile
+ */
+const sendSOSOffice = ({ phone, clientName, clientId, clientMobile }) =>
+    sendWhatsApp({
+        template: 'SOS_OFFICE',
+        mobile: phone,
+        variables: [clientName || 'Client', clientId || '-', clientMobile || '-'],
+    });
+
 module.exports = {
     // Auth
     sendOTP,
@@ -329,6 +340,7 @@ module.exports = {
     sendPlanExpiryFamily,
     sendHealthCheckFamily,
     sendPrescriptionUploadedFamily,
+    sendSOSOffice,
 
     // Employee / caregiver (AYUXA_HQ)
     sendShiftAssigned,

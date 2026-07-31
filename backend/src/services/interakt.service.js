@@ -44,6 +44,7 @@ const LEGACY_NAME_MAP = {
     followup_feedback:      'WELLNESS_REMINDER',
     sos_alert_admin:        'SOS_ALERT_OPS',
     sos_alert_family:       'SOS_ALERT_CLIENT',
+    sos_office:             'SOS_OFFICE',
 };
 
 const _legacyTemplateNameToKey = (name) => LEGACY_NAME_MAP[name] || name;

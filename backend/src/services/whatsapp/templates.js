@@ -133,6 +133,14 @@ const WHATSAPP_TEMPLATES = {
         docRequired: false,
         description: 'Prescription uploaded by buddy — family notified',
     },
+    SOS_OFFICE: {
+        waba: 'AYUXA_FAMILY',
+        messageId: 27213,
+        variables: 3,              // Var1=client_name, Var2=client_id, Var3=client_mobile
+        mediaRequired: false,
+        docRequired: false,
+        description: 'EMERGENCY SOS TRIGGERED — alert sent to office/admin from family sender',
+    },
 
     // ════════════════════════════════════════════
     //  AYUXA_RELEASE — Marketing / promotions
