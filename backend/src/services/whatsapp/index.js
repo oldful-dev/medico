@@ -88,4 +88,5 @@ module.exports = {
 
     // Ops / emergency
     sendSOSAlertOps,
+    sendSOSOffice,
 };
