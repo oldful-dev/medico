@@ -4,9 +4,17 @@ const path = require('path');
 const fontsDir = path.resolve(__dirname, '../../public/invoice/fonts');
 
 function getBase64Font(filename) {
-    const filePath = path.join(fontsDir, filename);
-    if (!fs.existsSync(filePath)) {
-        console.warn(`[fontLoader] Font file missing: ${filePath}`);
+    const possiblePaths = [
+        path.resolve(__dirname, '../../public/invoice/fonts', filename),
+        path.resolve(__dirname, '../public/invoice/fonts', filename),
+        path.resolve(process.cwd(), 'public/invoice/fonts', filename),
+        path.resolve(process.cwd(), 'backend/public/invoice/fonts', filename)
+    ];
+
+    let filePath = possiblePaths.find(p => fs.existsSync(p));
+
+    if (!filePath) {
+        console.warn(`[fontLoader] Font file missing: ${possiblePaths[0]}`);
         return '';
     }
     const fontBuffer = fs.readFileSync(filePath);
