@@ -13,12 +13,12 @@ function getBase64Font(filename) {
     return `data:font/opentype;base64,${fontBuffer.toString('base64')}`;
 }
 
-const regular = getBase64Font('Montserrat-Regular.ttf');
-const semiBold = getBase64Font('Montserrat-SemiBold.ttf');
-const bold = getBase64Font('Montserrat-Bold.ttf');
+const getRegular = () => getBase64Font('Montserrat-Regular.ttf');
+const getSemiBold = () => getBase64Font('Montserrat-SemiBold.ttf');
+const getBold = () => getBase64Font('Montserrat-Bold.ttf');
 
 module.exports = {
-    regular,
-    semiBold,
-    bold
+    get regular() { return getRegular(); },
+    get semiBold() { return getSemiBold(); },
+    get bold() { return getBold(); }
 };
