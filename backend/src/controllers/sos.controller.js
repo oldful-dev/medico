@@ -174,16 +174,17 @@ const triggerSOS = async (req, res) => {
     // 5. Notify admin via WhatsApp + SMS — non-fatal
     let adminNotified = false;
     try {
-        const waSent = await wa.sendSOSAlertOps({
+        const waSent = await wa.sendSOSOffice({
             phone: adminPhone,
-            userName: user.name,
-            ayuxaId: sosDetails,   // pack all details into Var2
+            clientName: user.name,
+            clientId: user.uniqueUserId || user.id || 'N/A',
+            clientMobile: user.phone || 'N/A',
         });
         if (waSent) {
             adminNotified = true;
-            logger.info(`[SOS] Admin WhatsApp sent → ${adminPhone}`);
+            logger.info(`[SOS] Office/Admin WhatsApp (sos_office 27213) sent → ${adminPhone}`);
         } else {
-            logger.warn(`[SOS] Admin WhatsApp failed → ${adminPhone} (trying SMS fallback)`);
+            logger.warn(`[SOS] Office/Admin WhatsApp failed → ${adminPhone} (trying SMS fallback)`);
         }
     } catch (err) {
         logger.warn(`[SOS] Admin WhatsApp error (non-fatal): ${err.message}`);
