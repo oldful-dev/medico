@@ -449,10 +449,36 @@ const generateInvoicePDF = async (invoiceData) => {
         `;
 
         console.log('[PUPPETEER_LOG] Launching browser...');
-        browser = await puppeteer.launch({
+        const launchOptions = {
             headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-        });
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-software-rasterizer'
+            ]
+        };
+
+        if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+            launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+        } else if (process.platform === 'linux') {
+            const fs = require('fs');
+            const linuxPaths = [
+                '/usr/bin/chromium-browser',
+                '/usr/bin/chromium',
+                '/usr/bin/google-chrome-stable',
+                '/usr/bin/google-chrome'
+            ];
+            for (const p of linuxPaths) {
+                if (fs.existsSync(p)) {
+                    launchOptions.executablePath = p;
+                    break;
+                }
+            }
+        }
+
+        browser = await puppeteer.launch(launchOptions);
         console.log('[PUPPETEER_LOG] Browser launched');
 
         const page = await browser.newPage();
