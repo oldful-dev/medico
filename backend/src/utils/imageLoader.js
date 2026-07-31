@@ -4,9 +4,17 @@ const path = require('path');
 const invoicePublicDir = path.resolve(__dirname, '../../public/invoice');
 
 function getBase64Image(filename, mimeType = 'image/png') {
-    const filePath = path.join(invoicePublicDir, filename);
-    if (!fs.existsSync(filePath)) {
-        console.warn(`[imageLoader] Image file missing: ${filePath}`);
+    const possiblePaths = [
+        path.resolve(__dirname, '../../public/invoice', filename),
+        path.resolve(__dirname, '../public/invoice', filename),
+        path.resolve(process.cwd(), 'public/invoice', filename),
+        path.resolve(process.cwd(), 'backend/public/invoice', filename)
+    ];
+
+    let filePath = possiblePaths.find(p => fs.existsSync(p));
+
+    if (!filePath) {
+        console.warn(`[imageLoader] Image file missing: ${possiblePaths[0]}`);
         return '';
     }
     const fileBuffer = fs.readFileSync(filePath);
