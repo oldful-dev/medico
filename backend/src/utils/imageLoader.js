@@ -14,18 +14,18 @@ function getBase64Image(filename, mimeType = 'image/png') {
 }
 
 // Convert PNGs into Base64 Data URIs
-const logo = getBase64Image('logo.png', 'image/png');
-const signature = getBase64Image('signature.png', 'image/png');
-const phone = getBase64Image('phone.png', 'image/png');
-const email = getBase64Image('email.png', 'image/png');
-const globe = getBase64Image('globe.png', 'image/png');
-const check = getBase64Image('check.png', 'image/png');
+const getLogo = () => getBase64Image('logo.png', 'image/png');
+const getSignature = () => getBase64Image('signature.png', 'image/png');
+const getPhone = () => getBase64Image('phone.png', 'image/png');
+const getEmail = () => getBase64Image('email.png', 'image/png');
+const getGlobe = () => getBase64Image('globe.png', 'image/png');
+const getCheck = () => getBase64Image('check.png', 'image/png');
 
 module.exports = {
-    logo,
-    signature,
-    phone,
-    email,
-    globe,
-    check
+    get logo() { return getLogo(); },
+    get signature() { return getSignature(); },
+    get phone() { return getPhone(); },
+    get email() { return getEmail(); },
+    get globe() { return getGlobe(); },
+    get check() { return getCheck(); }
 };
