@@ -464,16 +464,25 @@ const generateInvoicePDF = async (invoiceData) => {
             launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
         } else if (process.platform === 'linux') {
             const fs = require('fs');
+            // Try official non-snap Google Chrome / Chromium binaries first
             const linuxPaths = [
-                '/usr/bin/chromium-browser',
-                '/usr/bin/chromium',
                 '/usr/bin/google-chrome-stable',
-                '/usr/bin/google-chrome'
+                '/usr/bin/google-chrome',
+                '/usr/bin/chromium-browser',
+                '/usr/bin/chromium'
             ];
             for (const p of linuxPaths) {
                 if (fs.existsSync(p)) {
-                    launchOptions.executablePath = p;
-                    break;
+                    try {
+                        // Check if path is a Snap wrapper link (which fails under PM2 systemd cgroups)
+                        const realPath = fs.realpathSync(p);
+                        if (!realPath.includes('/snap/')) {
+                            launchOptions.executablePath = p;
+                            break;
+                        }
+                    } catch (e) {
+                        // Ignore realpath errors
+                    }
                 }
             }
         }
