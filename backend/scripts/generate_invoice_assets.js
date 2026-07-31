@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const invDir = path.resolve(__dirname, '../public/invoice');
+const invDir = path.resolve(__dirname, '../src/assets/invoice');
 if (!fs.existsSync(invDir)) fs.mkdirSync(invDir, { recursive: true });
 
 // Minimal 1x1 / vector-based PNG helpers or SVG data generation

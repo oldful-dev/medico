@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="300" height="70" viewBox="0 0 300 70">
-  <path d="M 35 30 C 15 10, 5 45, 35 52 C 55 45, 48 10, 27 30 Z" fill="none" stroke="#1D5E35" stroke-width="7" stroke-linecap="round"/>
-  <path d="M 27 30 C 48 52, 55 17, 35 10 C 15 17, 22 52, 42 30 Z" fill="none" stroke="#1D5E35" stroke-width="7" stroke-linecap="round"/>
-  <text x="75" y="40" fill="#1D5E35" font-family="sans-serif" font-size="32" font-weight="bold">AYUXA</text>
-  <text x="77" y="56" fill="#666666" font-family="sans-serif" font-size="11" font-weight="600">Your Health, Synchronized</text>
-</svg>
