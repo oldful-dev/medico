@@ -5,8 +5,11 @@ const fontsDir = path.resolve(__dirname, '../../public/invoice/fonts');
 
 function getBase64Font(filename) {
     const possiblePaths = [
+        path.resolve(__dirname, '../assets/invoice/fonts', filename),
         path.resolve(__dirname, '../../public/invoice/fonts', filename),
         path.resolve(__dirname, '../public/invoice/fonts', filename),
+        path.resolve(process.cwd(), 'src/assets/invoice/fonts', filename),
+        path.resolve(process.cwd(), 'backend/src/assets/invoice/fonts', filename),
         path.resolve(process.cwd(), 'public/invoice/fonts', filename),
         path.resolve(process.cwd(), 'backend/public/invoice/fonts', filename)
     ];
