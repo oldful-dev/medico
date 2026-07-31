@@ -818,9 +818,19 @@ const downloadInvoice = async (req, res, next) => {
 
         const pdfBuffer = await generateInvoicePDF(invoiceData);
 
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename=Invoice_${booking.bookingCode}.pdf`);
-        res.send(pdfBuffer);
+        console.log('[PDF_DEBUG] Is Buffer:', Buffer.isBuffer(pdfBuffer));
+        console.log('[PDF_DEBUG] Length:', pdfBuffer?.length);
+        if (pdfBuffer && pdfBuffer.length >= 4) {
+            console.log('[PDF_DEBUG] Header:', pdfBuffer.slice(0, 4).toString('utf8'));
+        }
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename=Invoice_${booking.bookingCode}.pdf`,
+            'Content-Length': pdfBuffer.length,
+        });
+
+        return res.end(pdfBuffer);
     } catch (error) {
         next(error);
     }
