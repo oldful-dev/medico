@@ -5,8 +5,11 @@ const invoicePublicDir = path.resolve(__dirname, '../../public/invoice');
 
 function getBase64Image(filename, mimeType = 'image/png') {
     const possiblePaths = [
+        path.resolve(__dirname, '../assets/invoice', filename),
         path.resolve(__dirname, '../../public/invoice', filename),
         path.resolve(__dirname, '../public/invoice', filename),
+        path.resolve(process.cwd(), 'src/assets/invoice', filename),
+        path.resolve(process.cwd(), 'backend/src/assets/invoice', filename),
         path.resolve(process.cwd(), 'public/invoice', filename),
         path.resolve(process.cwd(), 'backend/public/invoice', filename)
     ];
