@@ -28,7 +28,7 @@ const getStateBusinessDetails = async (req, res, next) => {
             prisma.caregiver.count({ where: cityIds.length ? { cityId: { in: cityIds } } : {} }),
             prisma.payment.aggregate({
                 _sum: { amount: true },
-                where: { status: 'COMPLETED', ...(cityIds.length ? { booking: { cityId: { in: cityIds } } } : {}) },
+                where: { status: 'SUCCESS', ...(cityIds.length ? { booking: { cityId: { in: cityIds } } } : {}) },
             }),
         ]);
 
