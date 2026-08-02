@@ -350,7 +350,13 @@ const getSOSAlerts = async (req, res) => {
 
         const where = {};
         if (status) where.status = status;
-        if (cityId) where.cityId = cityId;
+
+        // City restriction: req.cityFilter is set by cityRestriction middleware for CITY_ADMIN
+        if (req.cityFilter) {
+            where.cityId = req.cityFilter;
+        } else if (cityId) {
+            where.cityId = cityId;
+        }
 
         const alerts = await prisma.sOSAlert.findMany({
             where,
