@@ -1,5 +1,27 @@
 const prisma = require('../config/database');
 const { logger } = require('../config/logger');
+const axios = require('axios');
+
+/**
+ * Geolocate external IP address
+ */
+async function geolocateIp(ip) {
+    if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+        return { city: 'Localhost', state: 'Local' };
+    }
+    try {
+        const response = await axios.get(`http://ip-api.com/json/${ip}`, { timeout: 2000 });
+        if (response.data && response.data.status === 'success') {
+            return {
+                city: response.data.city || 'Unknown City',
+                state: response.data.regionName || response.data.region || 'Unknown State'
+            };
+        }
+    } catch (err) {
+        // Fallback silently
+    }
+    return null;
+}
 
 /**
  * Extract real client IP, City, State, and OS/Browser info from request
@@ -64,6 +86,15 @@ const recordAdminSession = async ({ adminId, req }) => {
         let finalCity = info.city;
         let finalState = info.state;
 
+        // Geolocate external IP if headers are missing
+        if (!finalCity || !finalState) {
+            const geo = await geolocateIp(info.ipAddress);
+            if (geo) {
+                finalCity = geo.city;
+                finalState = geo.state;
+            }
+        }
+
         // Fallback to assigned Admin City in DB
         if (!finalCity || !finalState) {
             const admin = await prisma.admin.findUnique({
@@ -104,6 +135,15 @@ const recordUserSession = async ({ userId, req }) => {
 
         let finalCity = info.city;
         let finalState = info.state;
+
+        // Geolocate external IP if headers are missing
+        if (!finalCity || !finalState) {
+            const geo = await geolocateIp(info.ipAddress);
+            if (geo) {
+                finalCity = geo.city;
+                finalState = geo.state;
+            }
+        }
 
         // Fallback to assigned User City in DB
         if (!finalCity || !finalState) {

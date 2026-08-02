@@ -40,7 +40,7 @@ export default function DashboardPage() {
                 reportAPI.dashboard(params),
                 reportAPI.revenueByCity(params),
                 reportAPI.serviceUsage(params),
-                analyticsAPI.getStateBusiness({ stateCode: stCode || 'DL' }),
+                analyticsAPI.getStateBusiness({ stateCode: stCode || 'ALL' }),
             ]);
             setSummary(dashRes.data?.data || dashRes.data);
             setRevByCity(cityRes.data?.data || []);
