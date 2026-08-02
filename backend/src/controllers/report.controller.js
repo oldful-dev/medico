@@ -5,10 +5,36 @@
 const prisma = require('../config/database');
 const { sendResponse } = require('../utils/helpers');
 
+/**
+ * Get City IDs belonging to a specific stateCode (e.g. DL, UP, MH, KA, TN, WB)
+ */
+async function getCityIdsForState(stateCode) {
+    if (!stateCode || stateCode === 'ALL') return null;
+    const cities = await prisma.city.findMany({
+        where: {
+            OR: [
+                { stateCode: { equals: stateCode, mode: 'insensitive' } },
+                { name: { contains: stateCode, mode: 'insensitive' } },
+            ],
+        },
+        select: { id: true }
+    });
+    return cities.map(c => c.id);
+}
+
 // GET /api/reports/revenue-by-city
 const revenueByCity = async (req, res, next) => {
     try {
+        const { stateCode } = req.query;
+        const cityWhere = (stateCode && stateCode !== 'ALL') ? {
+            OR: [
+                { stateCode: { equals: stateCode, mode: 'insensitive' } },
+                { name: { contains: stateCode, mode: 'insensitive' } },
+            ]
+        } : {};
+
         const cities = await prisma.city.findMany({
+            where: cityWhere,
             select: { id: true, name: true, code: true },
         });
 
@@ -73,15 +99,22 @@ const revenueByPlan = async (req, res, next) => {
 // GET /api/reports/service-usage
 const serviceUsage = async (req, res, next) => {
     try {
+        const { stateCode } = req.query;
+        const cityIds = await getCityIdsForState(stateCode);
+
         const services = await prisma.service.findMany({
             select: { id: true, name: true },
         });
 
         const results = await Promise.all(
             services.map(async (service) => {
+                const whereClause = {
+                    serviceId: service.id,
+                    ...(cityIds && cityIds.length ? { cityId: { in: cityIds } } : {})
+                };
                 const bookings = await prisma.booking.groupBy({
                     by: ['status'],
-                    where: { serviceId: service.id },
+                    where: whereClause,
                     _count: { id: true },
                 });
 
@@ -180,26 +213,39 @@ const customerRetention = async (req, res, next) => {
 // GET /api/reports/dashboard-summary
 const dashboardSummary = async (req, res, next) => {
     try {
+        const { stateCode } = req.query;
+        const cityIds = await getCityIdsForState(stateCode);
+
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
         const nextWeek = new Date();
         nextWeek.setDate(nextWeek.getDate() + 7);
+
+        const userWhere = cityIds && cityIds.length ? { cityId: { in: cityIds } } : {};
+        const bookingWhere = cityIds && cityIds.length ? { cityId: { in: cityIds } } : {};
+        const subWhere = cityIds && cityIds.length ? { user: { cityId: { in: cityIds } } } : {};
+        const pmtWhere = cityIds && cityIds.length ? {
+            OR: [
+                { booking: { cityId: { in: cityIds } } },
+                { subscription: { user: { cityId: { in: cityIds } } } }
+            ]
+        } : {};
+        const sosWhere = cityIds && cityIds.length ? { cityId: { in: cityIds } } : {};
 
         const [
             totalUsers, totalBookings, activeSubscriptions,
             totalRevenue, activeSOSAlerts, pendingBookings,
             todayBookings, totalServices, expiringSubscriptions
         ] = await Promise.all([
-            prisma.user.count(),
-            prisma.booking.count(),
-            prisma.subscription.count({ where: { status: 'ACTIVE' } }),
-            prisma.payment.aggregate({ where: { status: 'SUCCESS' }, _sum: { amount: true } }),
-            prisma.sOSAlert.count({ where: { status: { not: 'RESOLVED' } } }),
-            // Count bookings that need caregiver assignment: CONFIRMED status but no assigned caregiver
-            prisma.booking.count({ where: { status: 'CONFIRMED', caregiverId: null } }),
-            prisma.booking.count({ where: { createdAt: { gte: todayStart } } }),
+            prisma.user.count({ where: userWhere }),
+            prisma.booking.count({ where: bookingWhere }),
+            prisma.subscription.count({ where: { status: 'ACTIVE', ...subWhere } }),
+            prisma.payment.aggregate({ where: { status: 'SUCCESS', ...pmtWhere }, _sum: { amount: true } }),
+            prisma.sOSAlert.count({ where: { status: { not: 'RESOLVED' }, ...sosWhere } }),
+            prisma.booking.count({ where: { status: 'CONFIRMED', caregiverId: null, ...bookingWhere } }),
+            prisma.booking.count({ where: { createdAt: { gte: todayStart }, ...bookingWhere } }),
             prisma.service.count({ where: { isEnabled: true } }),
-            prisma.subscription.count({ where: { status: 'ACTIVE', expiryDate: { lte: nextWeek, gte: new Date() } } }),
+            prisma.subscription.count({ where: { status: 'ACTIVE', expiryDate: { lte: nextWeek, gte: new Date() }, ...subWhere } }),
         ]);
 
         sendResponse(res, 200, {
@@ -238,82 +284,34 @@ const exportCSV = async (req, res, next) => {
                     select: { bookingCode: true, status: true, amount: true, scheduledDate: true, createdAt: true },
                     include: { user: { select: { name: true } }, service: { select: { name: true } } },
                 });
-                headers = ['Booking Code', 'User', 'Service', 'Status', 'Amount', 'Date', 'Created At'];
-                break;
-
-            case 'payments':
-                data = await prisma.payment.findMany({
-                    select: { amount: true, status: true, paymentMethod: true, createdAt: true },
-                    include: { user: { select: { name: true } } },
-                });
-                headers = ['User', 'Amount', 'Method', 'Status', 'Date'];
+                headers = ['Booking Code', 'User', 'Service', 'Status', 'Amount', 'Scheduled Date', 'Created At'];
                 break;
 
             default:
-                return res.status(400).json({ success: false, message: 'Invalid export type' });
+                return sendResponse(res, 400, null, 'Invalid report type');
         }
 
-        // Simple CSV generation
-        const csvRows = [headers.join(',')];
-        data.forEach((row) => {
-            const values = Object.values(row).map(v =>
-                typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v ?? '')
-            );
-            csvRows.push(values.join(','));
+        let csv = headers.join(',') + '\n';
+        data.forEach(row => {
+            const values = Object.values(row).map(v => typeof v === 'object' ? JSON.stringify(v) : `"${v}"`);
+            csv += values.join(',') + '\n';
         });
 
         res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename=${type}_export.csv`);
-        res.send(csvRows.join('\n'));
-    } catch (error) {
-        next(error);
-    }
-};
-
-// GET /api/reports/alerts
-const getAlertFeed = async (req, res, next) => {
-    try {
-        const [sos, bookings, payments, tickets] = await Promise.all([
-            prisma.sOSAlert.findMany({
-                where: { status: 'ACTIVE' },
-                take: 5,
-                orderBy: { createdAt: 'desc' },
-                include: { user: { select: { name: true } } }
-            }),
-            prisma.booking.findMany({
-                where: { status: { in: ['PENDING', 'SLA_BREACH'] } },
-                take: 5,
-                orderBy: { createdAt: 'desc' },
-                include: { user: { select: { name: true } }, service: { select: { name: true } } }
-            }),
-            prisma.payment.findMany({
-                where: { status: 'FAILED' },
-                take: 5,
-                orderBy: { createdAt: 'desc' },
-                include: { user: { select: { name: true } } }
-            }),
-            prisma.supportTicket.findMany({
-                where: { status: 'open' },
-                take: 5,
-                orderBy: { createdAt: 'desc' }
-            })
-        ]);
-
-        const feed = [
-            ...sos.map(a => ({ id: a.id, type: 'SOS', title: `Critical: SOS by ${a.user?.name || 'User'}`, time: a.createdAt, href: '/sos' })),
-            ...bookings.map(b => ({ id: b.id, type: 'BOOKING', title: `Pending: ${b.service?.name} for ${b.user?.name}`, time: b.createdAt, href: '/bookings' })),
-            ...payments.map(p => ({ id: p.id, type: 'PAYMENT', title: `Failed: ₹${p.amount} pmt by ${p.user?.name}`, time: p.createdAt, href: '/payments' })),
-            ...tickets.map(t => ({ id: t.id, type: 'TICKET', title: `Support: ${t.ticketCode} - ${t.subject}`, time: t.createdAt, href: '/support' }))
-        ].sort((a, b) => new Date(b.time) - new Date(a.time));
-
-        sendResponse(res, 200, feed.slice(0, 10)); // Top 10 most recent
+        res.setHeader('Content-Disposition', `attachment; filename=${type}_report.csv`);
+        res.status(200).send(csv);
     } catch (error) {
         next(error);
     }
 };
 
 module.exports = {
-    revenueByCity, revenueByPlan, serviceUsage, caregiverPerformance,
-    refundAnalysis, customerRetention, dashboardSummary, exportCSV,
-    getAlertFeed,
+    revenueByCity,
+    revenueByPlan,
+    serviceUsage,
+    caregiverPerformance,
+    refundAnalysis,
+    customerRetention,
+    dashboardSummary,
+    exportCSV,
 };

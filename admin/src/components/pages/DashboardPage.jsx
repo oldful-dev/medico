@@ -32,41 +32,36 @@ export default function DashboardPage() {
     const [currentState, setCurrentState] = useState("");
     const [stateMetrics, setStateMetrics] = useState(null);
 
-    const loadStateBusiness = async (stCode) => {
+    const loadDashboardData = async (stCode) => {
         try {
-            const res = await analyticsAPI.getStateBusiness({ stateCode: stCode || 'DL' });
-            if (res.data?.success) {
-                setStateMetrics(res.data.data.metrics);
+            setLoading(true);
+            const params = stCode ? { stateCode: stCode } : {};
+            const [dashRes, cityRes, svcRes, stateRes] = await Promise.all([
+                reportAPI.dashboard(params),
+                reportAPI.revenueByCity(params),
+                reportAPI.serviceUsage(params),
+                analyticsAPI.getStateBusiness({ stateCode: stCode || 'DL' }),
+            ]);
+            setSummary(dashRes.data?.data || dashRes.data);
+            setRevByCity(cityRes.data?.data || []);
+            setSvcUsage(svcRes.data?.data || []);
+            if (stateRes.data?.success) {
+                setStateMetrics(stateRes.data.data.metrics);
             }
-        } catch (err) {
-            console.error("State business load error:", err);
+        } catch (e) {
+            console.error('Dashboard load error:', e);
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleSelectState = (stCode) => {
         setCurrentState(stCode);
-        loadStateBusiness(stCode);
+        loadDashboardData(stCode);
     };
 
     useEffect(() => {
-        async function load() {
-            try {
-                const [dashRes, cityRes, svcRes] = await Promise.all([
-                    reportAPI.dashboard(),
-                    reportAPI.revenueByCity(),
-                    reportAPI.serviceUsage(),
-                ]);
-                setSummary(dashRes.data?.data || dashRes.data);
-                setRevByCity(cityRes.data?.data || []);
-                setSvcUsage(svcRes.data?.data || []);
-                loadStateBusiness("DL");
-            } catch (e) {
-                console.error('Dashboard load error:', e);
-            } finally {
-                setLoading(false);
-            }
-        }
-        load();
+        loadDashboardData("");
     }, []);
 
     if (loading) return <div className="page-header"><h2>Loading Dashboard...</h2></div>;

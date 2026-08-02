@@ -278,14 +278,14 @@ export const appConfigAPI = {
 
 // ── Reports ──────────────────────────────────────────
 export const reportAPI = {
-    dashboard: () => api.get('/reports/dashboard'),
-    revenueByCity: () => api.get('/reports/revenue-by-city'),
-    revenueByPlan: () => api.get('/reports/revenue-by-plan'),
-    serviceUsage: () => api.get('/reports/service-usage'),
-    caregiverPerformance: () => api.get('/reports/caregiver-performance'),
-    refundAnalysis: () => api.get('/reports/refund-analysis'),
-    customerRetention: () => api.get('/reports/customer-retention'),
-    getAlerts: () => api.get('/reports/alerts'),
+    dashboard: (params) => api.get('/reports/dashboard', { params }),
+    revenueByCity: (params) => api.get('/reports/revenue-by-city', { params }),
+    revenueByPlan: (params) => api.get('/reports/revenue-by-plan', { params }),
+    serviceUsage: (params) => api.get('/reports/service-usage', { params }),
+    caregiverPerformance: (params) => api.get('/reports/caregiver-performance', { params }),
+    refundAnalysis: (params) => api.get('/reports/refund-analysis', { params }),
+    customerRetention: (params) => api.get('/reports/customer-retention', { params }),
+    getAlerts: (params) => api.get('/reports/alerts', { params }),
     exportCSV: (type) => api.get(`/reports/csv/${type}`, { responseType: 'blob' }),
 };
 
