@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Monitor, Smartphone, Tablet, Globe, Shield, RefreshCw, XCircle, AlertCircle } from "lucide-react";
-import { showToast } from "@/lib/toast";
+import { showToast } from "@/lib/hooks";
 
 export default function ActiveSessionsPage() {
     const [sessions, setSessions] = useState({ totalActive: 0, adminSessions: [], userSessions: [] });
