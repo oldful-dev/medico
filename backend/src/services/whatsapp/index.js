@@ -47,6 +47,7 @@ const {
 
     // Ops / emergency
     sendSOSAlertOps,
+    sendSOSOffice,
 } = require('./router');
 
 module.exports = {
