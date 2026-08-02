@@ -19,6 +19,9 @@ async function main() {
         prisma.city.upsert({ where: { code: 'MUM' }, update: {}, create: { name: 'Mumbai', code: 'MUM', stateCode: 'MH-27', isEnabled: true } }),
         prisma.city.upsert({ where: { code: 'DEL' }, update: {}, create: { name: 'Delhi', code: 'DEL', stateCode: 'DL-07', isEnabled: true } }),
         prisma.city.upsert({ where: { code: 'PNE' }, update: {}, create: { name: 'Pune', code: 'PNE', stateCode: 'MH-27', isEnabled: false, isComingSoon: true } }),
+        prisma.city.upsert({ where: { code: 'NDA' }, update: {}, create: { name: 'Noida', code: 'NDA', stateCode: 'UP-16', isEnabled: true } }),
+        prisma.city.upsert({ where: { code: 'GZB' }, update: {}, create: { name: 'Ghaziabad', code: 'GZB', stateCode: 'UP-14', isEnabled: true } }),
+        prisma.city.upsert({ where: { code: 'LKO' }, update: {}, create: { name: 'Lucknow', code: 'LKO', stateCode: 'UP-32', isEnabled: true } }),
     ]);
 
     console.log(`✅ ${cities.length} cities seeded`);

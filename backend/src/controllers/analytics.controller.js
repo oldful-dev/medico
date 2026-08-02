@@ -17,7 +17,6 @@ const getStateBusinessDetails = async (req, res, next) => {
                     OR: [
                         { stateCode: { startsWith: stateCode, mode: 'insensitive' } },
                         { stateCode: { contains: stateCode, mode: 'insensitive' } },
-                        { name: { contains: stateCode, mode: 'insensitive' } },
                     ],
                 },
                 select: { id: true, name: true, code: true, stateCode: true },
