@@ -1,7 +1,7 @@
 // Booking Routes
 const router = require('express').Router();
 const { authenticate, authenticateAdmin, authenticateUser } = require('../middleware/auth');
-const { cityRestriction } = require('../middleware/rbac');
+const { cityRestriction, blockNonOperational, blockPaymentModulesForNonBilling } = require('../middleware/rbac');
 const { auditMiddleware } = require('../middleware/audit');
 const ctrl = require('../controllers/booking.controller');
 
@@ -16,11 +16,11 @@ router.post('/:id/cancel', authenticateUser, ctrl.cancelBooking);
 router.get('/', authenticateAdmin, cityRestriction, ctrl.getBookings);
 router.get('/:id', authenticateAdmin, ctrl.getBookingById);
 router.post('/', authenticateUser, ctrl.createBooking);
-router.put('/:id/assign', authenticateAdmin, auditMiddleware('Booking'), ctrl.assignCaregiver);
-router.put('/:id/reassign', authenticateAdmin, auditMiddleware('Booking'), ctrl.reassignCaregiver);
-router.put('/:id/status', authenticateAdmin, auditMiddleware('Booking'), ctrl.updateBookingStatus);
-router.put('/:id/payment-status', authenticateAdmin, auditMiddleware('Booking'), ctrl.updatePaymentStatus);
-router.put('/:id/service-person', authenticateAdmin, auditMiddleware('Booking'), ctrl.updateServicePerson);
-router.put('/:id/escalate', authenticateAdmin, auditMiddleware('Booking'), ctrl.escalateBooking);
+router.put('/:id/assign',         authenticateAdmin, blockNonOperational, auditMiddleware('Booking'), ctrl.assignCaregiver);
+router.put('/:id/reassign',       authenticateAdmin, blockNonOperational, auditMiddleware('Booking'), ctrl.reassignCaregiver);
+router.put('/:id/status',         authenticateAdmin, blockNonOperational, auditMiddleware('Booking'), ctrl.updateBookingStatus);
+router.put('/:id/payment-status', authenticateAdmin, blockPaymentModulesForNonBilling, auditMiddleware('Booking'), ctrl.updatePaymentStatus);
+router.put('/:id/service-person', authenticateAdmin, blockNonOperational, auditMiddleware('Booking'), ctrl.updateServicePerson);
+router.put('/:id/escalate',       authenticateAdmin, blockNonOperational, auditMiddleware('Booking'), ctrl.escalateBooking);
 
 module.exports = router;

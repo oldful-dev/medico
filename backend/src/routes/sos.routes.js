@@ -8,24 +8,17 @@ const ctrl = require('../controllers/sos.controller');
 const { authenticateUser, authenticateAdmin } = require('../middleware/auth');
 const { authorize } = require('../middleware/rbac');
 
-// ─── USER ROUTES (App) ──────────────────────────────────
-// Trigger SOS Alert
-router.post('/', authenticateUser, ctrl.triggerSOS);
+// All roles that can access SOS (all except BILLING_EXECUTIVE per spec)
+const SOS_ROLES = ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER', 'SUPPORT_AGENT'];
 
-// User's own SOS history
+// ─── USER ROUTES (App) ──────────────────────────────────
+router.post('/', authenticateUser, ctrl.triggerSOS);
 router.get('/my-alerts', authenticateUser, ctrl.getMySOSAlerts);
 
 // ─── ADMIN ROUTES (Panel) ──────────────────────────────
-// List SOS Alerts
-router.get('/', authenticateAdmin, authorize('CITY_ADMIN', 'SUPER_ADMIN'), ctrl.getSOSAlerts);
-
-// Assign Responder
-router.put('/:id/assign', authenticateAdmin, authorize('CITY_ADMIN', 'SUPER_ADMIN'), ctrl.assignResponder);
-
-// Resolve Alert
-router.put('/:id/resolve', authenticateAdmin, authorize('CITY_ADMIN', 'SUPER_ADMIN'), ctrl.resolveSOS);
-
-// Update Notification Logs
-router.put('/:id/notify', authenticateAdmin, authorize('CITY_ADMIN', 'SUPER_ADMIN'), ctrl.updateSOSNotification);
+router.get('/',          authenticateAdmin, authorize(...SOS_ROLES), ctrl.getSOSAlerts);
+router.put('/:id/assign',  authenticateAdmin, authorize(...SOS_ROLES), ctrl.assignResponder);
+router.put('/:id/resolve', authenticateAdmin, authorize(...SOS_ROLES), ctrl.resolveSOS);
+router.put('/:id/notify',  authenticateAdmin, authorize(...SOS_ROLES), ctrl.updateSOSNotification);
 
 module.exports = router;
