@@ -11,7 +11,9 @@ export default function RolesPage() {
     const [auditLogs, setAuditLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [form, setForm] = useState({ name: '', email: '', password: '', role: 'CITY_ADMIN', phone: '', cityId: '' });
+    const [isEditing, setIsEditing] = useState(false);
+    const [editingAdminId, setEditingAdminId] = useState(null);
+    const [form, setForm] = useState({ name: '', email: '', password: '', role: 'CITY_ADMIN', phone: '', cityId: '', isActive: true });
 
     useEffect(() => {
         loadData();
@@ -36,15 +38,60 @@ export default function RolesPage() {
 
     useEffect(() => { if (activeTab === 'audit') loadAuditLogs(); }, [activeTab]);
 
-    async function handleCreate(e) {
+    const startCreate = () => {
+        setIsEditing(false);
+        setEditingAdminId(null);
+        setForm({ name: '', email: '', password: '', role: 'CITY_ADMIN', phone: '', cityId: '', isActive: true });
+        setShowModal(true);
+    };
+
+    const startEdit = (admin) => {
+        setIsEditing(true);
+        setEditingAdminId(admin.id);
+        setForm({
+            name: admin.name || '',
+            email: admin.email || '',
+            password: '', // blank by default on edit
+            role: admin.role || 'CITY_ADMIN',
+            phone: admin.phone || '',
+            cityId: admin.cityId || '',
+            isActive: admin.isActive !== false
+        });
+        setShowModal(true);
+    };
+
+    async function handleFormSubmit(e) {
         e.preventDefault();
         try {
-            await authAPI.register(form);
-            showToast('Admin created successfully');
+            if (isEditing) {
+                // Update existing Admin
+                const updatePayload = {
+                    name: form.name,
+                    email: form.email,
+                    phone: form.phone,
+                    role: form.role,
+                    cityId: form.cityId || null,
+                    isActive: form.isActive
+                };
+                await adminAPI.update(editingAdminId, updatePayload);
+
+                // If password was typed, update it too
+                if (form.password && form.password.trim().length >= 8) {
+                    await adminAPI.updatePassword(editingAdminId, { password: form.password });
+                }
+
+                showToast('Admin updated successfully');
+            } else {
+                // Create Admin
+                await authAPI.register(form);
+                showToast('Admin created successfully');
+            }
             setShowModal(false);
-            setForm({ name: '', email: '', password: '', role: 'CITY_ADMIN', phone: '', cityId: '' });
+            setForm({ name: '', email: '', password: '', role: 'CITY_ADMIN', phone: '', cityId: '', isActive: true });
             loadData();
-        } catch (e) { showToast(e.response?.data?.message || 'Failed to create admin', 'error'); }
+        } catch (e) { 
+            showToast(e.response?.data?.message || 'Failed to process request', 'error'); 
+        }
     }
 
     async function handleDelete(id) {
@@ -80,7 +127,7 @@ export default function RolesPage() {
             {activeTab === "admins" && (
                 <>
                     <div className="filter-bar">
-                        <button className="btn btn-primary" onClick={() => setShowModal(true)}><UserPlus size={16} /> Add Admin</button>
+                        <button className="btn btn-primary" onClick={startCreate}><UserPlus size={16} /> Add Admin</button>
                     </div>
                     {loading ? <p className="text-muted">Loading...</p> : (
                         <div className="card">
@@ -99,7 +146,7 @@ export default function RolesPage() {
                                                 <td className="text-sm">{formatDateTime(a.lastLoginAt)}</td>
                                                 <td>
                                                     <div className="flex gap-2">
-                                                        <button className="btn btn-sm btn-secondary"><Edit2 size={14} /></button>
+                                                        <button className="btn btn-sm btn-secondary" onClick={() => startEdit(a)}><Edit2 size={14} /></button>
                                                         <button className="btn btn-sm btn-danger" onClick={() => handleDelete(a.id)}><Trash2 size={14} /></button>
                                                     </div>
                                                 </td>
@@ -132,7 +179,7 @@ export default function RolesPage() {
                                     </tr>
                                 ))}
                                 {auditLogs.length === 0 && <tr><td colSpan={6} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No audit logs yet</td></tr>}
-                            </tbody>
+                             </tbody>
                         </table>
                     </div>
                 </div>
@@ -141,15 +188,15 @@ export default function RolesPage() {
             {showModal && (
                 <div className="modal-overlay" onClick={() => setShowModal(false)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header"><h3>Create New Admin</h3><button onClick={() => setShowModal(false)} className="btn btn-sm btn-secondary">✕</button></div>
-                        <form onSubmit={handleCreate}>
+                        <div className="modal-header"><h3>{isEditing ? 'Edit Admin' : 'Create New Admin'}</h3><button onClick={() => setShowModal(false)} className="btn btn-sm btn-secondary">✕</button></div>
+                        <form onSubmit={handleFormSubmit}>
                             <div className="modal-body">
                                 <div className="form-row">
                                     <div className="form-group"><label className="form-label">Full Name *</label><input className="form-input" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
                                     <div className="form-group"><label className="form-label">Email *</label><input className="form-input" type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
                                 </div>
                                 <div className="form-row">
-                                    <div className="form-group"><label className="form-label">Password *</label><input className="form-input" type="password" required minLength={8} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
+                                    <div className="form-group"><label className="form-label">Password {isEditing ? '(Leave blank to keep current)' : '*'}</label><input className="form-input" type="password" required={!isEditing} minLength={8} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
                                     <div className="form-group"><label className="form-label">Phone</label><input className="form-input" type="tel" maxLength={10} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })} /></div>
                                 </div>
                                 <div className="form-row">
@@ -165,8 +212,20 @@ export default function RolesPage() {
                                         </select>
                                     </div>
                                 </div>
+                                <div className="form-row">
+                                    <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                                        <input 
+                                            type="checkbox" 
+                                            id="isActive"
+                                            checked={form.isActive} 
+                                            onChange={e => setForm({ ...form, isActive: e.target.checked })} 
+                                            style={{ width: 18, height: 18 }}
+                                        />
+                                        <label htmlFor="isActive" className="form-label" style={{ margin: 0, cursor: 'pointer' }}>Account Status: Active</label>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button><button type="submit" className="btn btn-primary">Create Admin</button></div>
+                            <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button><button type="submit" className="btn btn-primary">{isEditing ? 'Save Changes' : 'Create Admin'}</button></div>
                         </form>
                     </div>
                 </div>
