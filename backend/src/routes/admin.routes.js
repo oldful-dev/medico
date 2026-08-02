@@ -9,17 +9,8 @@ const dumpCtrl = require('../controllers/admin-customer-dump.controller');
 // All routes require admin auth
 router.use(authenticateAdmin);
 
-// ─── SUPER_ADMIN only: Admin account management ────────────────────────────────
-router.get('/customer-media-dump', authorize('SUPER_ADMIN'), dumpCtrl.getCustomerMediaDump);
-router.get('/',          authorize('SUPER_ADMIN'), ctrl.getAdmins);
-router.get('/:id',       authorize('SUPER_ADMIN'), ctrl.getAdminById);
-router.put('/:id',       authorize('SUPER_ADMIN'), auditMiddleware('Admin'), ctrl.updateAdmin);
-router.put('/:id/password', authorize('SUPER_ADMIN'), auditMiddleware('Admin'), ctrl.updateAdminPassword);
-router.delete('/:id',    authorize('SUPER_ADMIN'), auditMiddleware('Admin'), ctrl.deleteAdmin);
-
 // ─── Staff Profiles: SUPER_ADMIN + CITY_ADMIN + OPERATIONS_EXECUTIVE + CARE_MANAGER ──
-// blockNonManagement allows: SUPER_ADMIN, CITY_ADMIN, OPERATIONS_EXECUTIVE
-// City Admin sees profiles filtered by city on the frontend via cityId param
+// These static paths must be declared BEFORE /:id parameters to prevent route shadowing.
 router.get('/profiles',              blockNonManagement, ctrl.getProfiles);
 router.get('/profiles/metadata',     blockNonManagement, ctrl.getMetadata);
 router.post('/profiles/upload-url',  blockNonManagement, ctrl.requestUploadUrl);
@@ -31,5 +22,13 @@ router.post('/profiles/bulk-status', authorize('SUPER_ADMIN'), auditMiddleware('
 router.post('/profiles/bulk-delete', authorize('SUPER_ADMIN'), auditMiddleware('Admin'), ctrl.bulkDelete);
 router.delete('/profiles/:id',       authorize('SUPER_ADMIN'), auditMiddleware('Admin'), ctrl.deleteProfile);
 router.put('/profiles/:id',          authorize('SUPER_ADMIN'), auditMiddleware('Admin'), ctrl.updateProfile);
+
+// ─── SUPER_ADMIN only: Admin account management ────────────────────────────────
+router.get('/customer-media-dump', authorize('SUPER_ADMIN'), dumpCtrl.getCustomerMediaDump);
+router.get('/',                    authorize('SUPER_ADMIN'), ctrl.getAdmins);
+router.get('/:id',                 authorize('SUPER_ADMIN'), ctrl.getAdminById);
+router.put('/:id',                 authorize('SUPER_ADMIN'), auditMiddleware('Admin'), ctrl.updateAdmin);
+router.put('/:id/password',        authorize('SUPER_ADMIN'), auditMiddleware('Admin'), ctrl.updateAdminPassword);
+router.delete('/:id',              authorize('SUPER_ADMIN'), auditMiddleware('Admin'), ctrl.deleteAdmin);
 
 module.exports = router;
