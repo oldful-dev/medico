@@ -5,7 +5,7 @@ const { authorize } = require('../middleware/rbac');
 const ctrl = require('../controllers/audit.controller');
 
 router.use(authenticateAdmin);
-router.use(authorize('SUPER_ADMIN', 'CITY_ADMIN'));
+router.use(authorize('SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE'));
 
 router.get('/', ctrl.getAuditLogs);
 router.get('/:id', ctrl.getAuditLogById);
