@@ -43,12 +43,36 @@ export default function ActiveSessionsPage() {
         fetchSessions();
     }, [filterState, filterType]);
 
-    // Real-Time Auto Sync (5-second interval)
+    // WebSocket Real-Time Listener
+    useEffect(() => {
+        const handleSessionSocketUpdate = (data) => {
+            console.log('[Socket] 📡 Active session update received:', data);
+            fetchSessions(true); // Silent re-fetch in background
+            if (data.event === 'LOGIN') {
+                showToast(`Session Connected: ${data.sessionType} from ${data.city} (${data.browser} • ${data.os})`, "info");
+            } else if (data.event === 'TERMINATE') {
+                showToast(`Session Terminated: Remote session force disconnected`, "warning");
+            }
+        };
+
+        // Initialize listener
+        import("@/lib/socket").then(({ onSocketEvent, offSocketEvent }) => {
+            onSocketEvent("session_update", handleSessionSocketUpdate);
+        });
+
+        return () => {
+            import("@/lib/socket").then(({ offSocketEvent }) => {
+                offSocketEvent("session_update", handleSessionSocketUpdate);
+            });
+        };
+    }, [filterState, filterType]);
+
+    // Fallback Background Poll (every 30 seconds)
     useEffect(() => {
         if (!autoSync) return;
         const interval = setInterval(() => {
             fetchSessions(true);
-        }, 5000);
+        }, 30000);
         return () => clearInterval(interval);
     }, [autoSync, filterState, filterType]);
 
@@ -107,7 +131,7 @@ export default function ActiveSessionsPage() {
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, padding: '8px 16px', borderRadius: 10 }}
                     >
                         <Radio size={14} className={autoSync ? 'animate-pulse' : ''} />
-                        {autoSync ? 'Live Sync: ON (5s)' : 'Live Sync: OFF'}
+                        {autoSync ? 'Live Sync: ON (30s)' : 'Live Sync: OFF'}
                     </button>
                     <button
                         onClick={() => fetchSessions()}

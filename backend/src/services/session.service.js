@@ -112,7 +112,7 @@ const recordAdminSession = async ({ adminId, req }) => {
             }
         }
 
-        return await prisma.adminSession.create({
+        const session = await prisma.adminSession.create({
             data: {
                 adminId,
                 deviceType: info.deviceType,
@@ -125,6 +125,25 @@ const recordAdminSession = async ({ adminId, req }) => {
                 lastActiveAt: new Date(),
             },
         });
+
+        try {
+            const { emitToAdmins } = require('./socket.service');
+            emitToAdmins('session_update', {
+                event: 'LOGIN',
+                sessionType: 'ADMIN',
+                id: session.id,
+                ipAddress: info.ipAddress,
+                city: finalCity || 'Delhi NCR',
+                state: finalState || 'Delhi',
+                deviceType: info.deviceType,
+                os: info.os,
+                browser: info.browser
+            });
+        } catch (e) {
+            logger.warn('[SessionService] Socket emit error:', e.message);
+        }
+
+        return session;
     } catch (err) {
         logger.warn('[SessionService] recordAdminSession error:', err.message);
         return null;
@@ -162,7 +181,7 @@ const recordUserSession = async ({ userId, req }) => {
             }
         }
 
-        return await prisma.userSession.create({
+        const session = await prisma.userSession.create({
             data: {
                 userId,
                 deviceType: info.deviceType,
@@ -175,6 +194,25 @@ const recordUserSession = async ({ userId, req }) => {
                 lastActiveAt: new Date(),
             },
         });
+
+        try {
+            const { emitToAdmins } = require('./socket.service');
+            emitToAdmins('session_update', {
+                event: 'LOGIN',
+                sessionType: 'USER',
+                id: session.id,
+                ipAddress: info.ipAddress,
+                city: finalCity || 'Delhi NCR',
+                state: finalState || 'Delhi',
+                deviceType: info.deviceType,
+                os: info.os,
+                browser: info.browser
+            });
+        } catch (e) {
+            logger.warn('[SessionService] Socket emit error:', e.message);
+        }
+
+        return session;
     } catch (err) {
         logger.warn('[SessionService] recordUserSession error:', err.message);
         return null;
@@ -251,17 +289,45 @@ const getActiveSessions = async ({ type = 'all', state }) => {
 /**
  * Terminate a remote active session
  */
-const terminateSession = async (sessionId, sessionType = 'ADMIN') => {
-    if (sessionType === 'ADMIN') {
-        return await prisma.adminSession.update({
+const terminateSession = async (sessionId) => {
+    // Try to terminate admin session first
+    const adminSession = await prisma.adminSession.findUnique({ where: { id: sessionId } });
+    if (adminSession) {
+        const res = await prisma.adminSession.update({
             where: { id: sessionId },
             data: { isActive: false }
         });
-    } else {
-        return await prisma.userSession.update({
+        try {
+            const { emitToAdmins } = require('./socket.service');
+            emitToAdmins('session_update', {
+                event: 'TERMINATE',
+                sessionType: 'ADMIN',
+                id: sessionId
+            });
+        } catch (e) {
+            logger.warn('[SessionService] Socket emit error:', e.message);
+        }
+        return res;
+    }
+
+    // Try to terminate user session
+    const userSession = await prisma.userSession.findUnique({ where: { id: sessionId } });
+    if (userSession) {
+        const res = await prisma.userSession.update({
             where: { id: sessionId },
             data: { isActive: false }
         });
+        try {
+            const { emitToAdmins } = require('./socket.service');
+            emitToAdmins('session_update', {
+                event: 'TERMINATE',
+                sessionType: 'USER',
+                id: sessionId
+            });
+        } catch (e) {
+            logger.warn('[SessionService] Socket emit error:', e.message);
+        }
+        return res;
     }
 };
 
