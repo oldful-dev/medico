@@ -1,19 +1,23 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Monitor, Smartphone, Tablet, Globe, Shield, RefreshCw, XCircle, AlertCircle } from "lucide-react";
+import React, { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { Monitor, Smartphone, Tablet, Globe, Shield, RefreshCw, XCircle, AlertCircle, ArrowLeft, Radio } from "lucide-react";
 import { sessionAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
 
 export default function ActiveSessionsPage() {
+    const router = useRouter();
     const [sessions, setSessions] = useState({ totalActive: 0, adminSessions: [], userSessions: [] });
     const [loading, setLoading] = useState(true);
     const [filterState, setFilterState] = useState("");
     const [filterType, setFilterType] = useState("all");
+    const [autoSync, setAutoSync] = useState(true);
+    const [lastSyncTime, setLastSyncTime] = useState(null);
 
-    const fetchSessions = async () => {
+    const fetchSessions = async (isBackground = false) => {
         try {
-            setLoading(true);
+            if (!isBackground) setLoading(true);
             const params = {};
             if (filterType !== "all") params.type = filterType;
             if (filterState) params.state = filterState;
@@ -21,19 +25,32 @@ export default function ActiveSessionsPage() {
             const res = await sessionAPI.getActive(params);
             if (res.data?.success) {
                 setSessions(res.data.data);
-            } else {
+                setLastSyncTime(new Date());
+            } else if (!isBackground) {
                 showToast(res.data?.message || "Failed to load active sessions", "error");
             }
         } catch (err) {
-            showToast(err.response?.data?.message || "Network error loading sessions", "error");
+            if (!isBackground) {
+                showToast(err.response?.data?.message || "Network error loading sessions", "error");
+            }
         } finally {
-            setLoading(false);
+            if (!isBackground) setLoading(false);
         }
     };
 
+    // Initial load + filter change trigger
     useEffect(() => {
         fetchSessions();
     }, [filterState, filterType]);
+
+    // Real-Time Auto Sync (5-second interval)
+    useEffect(() => {
+        if (!autoSync) return;
+        const interval = setInterval(() => {
+            fetchSessions(true);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [autoSync, filterState, filterType]);
 
     const handleTerminate = async (id, type) => {
         if (!confirm("Are you sure you want to force disconnect this session?")) return;
@@ -63,21 +80,53 @@ export default function ActiveSessionsPage() {
 
     return (
         <div>
+            {/* Top Navigation & Breadcrumb */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <button
+                    onClick={() => router.back()}
+                    className="btn btn-secondary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', fontSize: 13 }}
+                >
+                    <ArrowLeft size={16} /> Back
+                </button>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                    Dashboard &nbsp;/&nbsp; Operations &nbsp;/&nbsp; <strong style={{ color: 'var(--text-primary)' }}>Active Sessions</strong>
+                </div>
+            </div>
+
             {/* Header */}
             <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                 <div>
                     <h2>Real-Time Active Sessions</h2>
                     <p>Monitor live multi-device PC & Mobile sessions across all states</p>
                 </div>
-                <button
-                    onClick={fetchSessions}
-                    className="btn btn-secondary"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                >
-                    <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-                    Refresh
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button
+                        onClick={() => setAutoSync(!autoSync)}
+                        className={`btn ${autoSync ? 'btn-success' : 'btn-secondary'}`}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '6px 12px' }}
+                    >
+                        <Radio size={14} className={autoSync ? 'animate-pulse' : ''} />
+                        {autoSync ? 'Live Sync: ON (5s)' : 'Live Sync: OFF'}
+                    </button>
+                    <button
+                        onClick={() => fetchSessions()}
+                        className="btn btn-secondary"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '6px 12px' }}
+                    >
+                        <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                        Refresh
+                    </button>
+                </div>
             </div>
+
+            {/* Live Sync Status Banner */}
+            {lastSyncTime && (
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: autoSync ? '#10B981' : '#F59E0B', display: 'inline-block' }}></span>
+                    {autoSync ? 'Real-time live updates active' : 'Auto-sync paused'}&nbsp;•&nbsp;Last updated at {lastSyncTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </div>
+            )}
 
             {/* Metrics Bar */}
             <div className="stats-grid mb-4">
@@ -139,7 +188,7 @@ export default function ActiveSessionsPage() {
             {/* Sessions Table */}
             <div className="card">
                 <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
-                    {loading ? (
+                    {loading && allSessionList.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>
                             <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 8px auto', display: 'block' }} />
                             Loading active device sessions...
@@ -184,7 +233,7 @@ export default function ActiveSessionsPage() {
                                             <code style={{ fontSize: 11, color: "var(--text-muted)" }}>{s.ipAddress}</code>
                                         </td>
                                         <td className="text-sm">
-                                            {new Date(s.lastActiveAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                            {new Date(s.lastActiveAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                                         </td>
                                         <td style={{ textAlign: 'right' }}>
                                             <button

@@ -53,8 +53,7 @@ const adminLogin = async (req, res, next) => {
         // Record active session for multi-device tracking
         await sessionService.recordAdminSession({
             adminId: admin.id,
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent'),
+            req,
         });
 
         // Audit log
@@ -235,8 +234,7 @@ const verifyOTP = async (req, res, next) => {
         // Record active session for multi-device tracking
         await sessionService.recordUserSession({
             userId: user.id,
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent'),
+            req,
         });
 
         // Set secure httpOnly cookies for web persistence
@@ -459,8 +457,7 @@ const googleSignIn = async (req, res, next) => {
         // Record active session for multi-device tracking
         await sessionService.recordUserSession({
             userId: user.id,
-            ipAddress: req.ip,
-            userAgent: req.get('user-agent'),
+            req,
         });
 
         res.json({

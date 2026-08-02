@@ -2,46 +2,89 @@ const prisma = require('../config/database');
 const { logger } = require('../config/logger');
 
 /**
- * Parse basic User-Agent string to identify device, OS, and browser
+ * Extract real client IP, City, State, and OS/Browser info from request
  */
-function parseUserAgent(uaString = '') {
-    const ua = uaString.toLowerCase();
+function extractClientInfo(req) {
+    const rawIp = req?.headers?.['cf-connecting-ip'] ||
+                  (req?.headers?.['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : null) ||
+                  req?.ip ||
+                  '127.0.0.1';
+
+    const ipAddress = rawIp.replace(/^.*:/, '') || rawIp;
+
+    let city = req?.headers?.['cf-ipcity'] ? decodeURIComponent(req.headers['cf-ipcity']) : null;
+    let rawState = req?.headers?.['cf-region-code'] || req?.headers?.['cf-region'] || null;
+
+    const STATE_MAP = {
+        'DL': 'Delhi',
+        'UP': 'Uttar Pradesh',
+        'MH': 'Maharashtra',
+        'KA': 'Karnataka',
+        'TN': 'Tamil Nadu',
+        'WB': 'West Bengal',
+        'HR': 'Haryana',
+        'PB': 'Punjab',
+        'GJ': 'Gujarat',
+        'RJ': 'Rajasthan',
+        'TS': 'Telangana',
+        'AP': 'Andhra Pradesh'
+    };
+
+    let state = rawState && STATE_MAP[rawState.toUpperCase()] ? STATE_MAP[rawState.toUpperCase()] : rawState;
+
+    const uaString = (req?.get?.('user-agent') || req?.headers?.['user-agent'] || '').toLowerCase();
     let deviceType = 'PC';
-    if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
+    if (uaString.includes('mobile') || uaString.includes('android') || uaString.includes('iphone')) {
         deviceType = 'Mobile';
-    } else if (ua.includes('ipad') || ua.includes('tablet')) {
+    } else if (uaString.includes('ipad') || uaString.includes('tablet')) {
         deviceType = 'Tablet';
     }
 
-    let os = 'Unknown OS';
-    if (ua.includes('windows')) os = 'Windows';
-    else if (ua.includes('macintosh') || ua.includes('mac os')) os = 'macOS';
-    else if (ua.includes('linux')) os = 'Linux';
-    else if (ua.includes('android')) os = 'Android';
-    else if (ua.includes('iphone') || ua.includes('ipad')) os = 'iOS';
+    let os = 'Windows';
+    if (uaString.includes('macintosh') || uaString.includes('mac os')) os = 'macOS';
+    else if (uaString.includes('linux')) os = 'Linux';
+    else if (uaString.includes('android')) os = 'Android';
+    else if (uaString.includes('iphone') || uaString.includes('ipad')) os = 'iOS';
 
     let browser = 'Chrome';
-    if (ua.includes('firefox')) browser = 'Firefox';
-    else if (ua.includes('safari') && !ua.includes('chrome')) browser = 'Safari';
-    else if (ua.includes('edg')) browser = 'Edge';
+    if (uaString.includes('firefox')) browser = 'Firefox';
+    else if (uaString.includes('safari') && !uaString.includes('chrome')) browser = 'Safari';
+    else if (uaString.includes('edg')) browser = 'Edge';
 
-    return { deviceType, os, browser };
+    return { ipAddress, city, state, deviceType, os, browser };
 }
 
 /**
  * Record new active Admin session upon login
  */
-const recordAdminSession = async ({ adminId, ipAddress, userAgent }) => {
+const recordAdminSession = async ({ adminId, req }) => {
     try {
-        const { deviceType, os, browser } = parseUserAgent(userAgent);
+        const info = extractClientInfo(req);
+
+        let finalCity = info.city;
+        let finalState = info.state;
+
+        // Fallback to assigned Admin City in DB
+        if (!finalCity || !finalState) {
+            const admin = await prisma.admin.findUnique({
+                where: { id: adminId },
+                select: { city: { select: { name: true, stateCode: true } } }
+            });
+            if (admin?.city) {
+                finalCity = finalCity || admin.city.name;
+                finalState = finalState || admin.city.stateCode || 'Delhi';
+            }
+        }
+
         return await prisma.adminSession.create({
             data: {
                 adminId,
-                deviceType,
-                os,
-                browser,
-                ipAddress: ipAddress || '127.0.0.1',
-                state: 'Delhi',
+                deviceType: info.deviceType,
+                os: info.os,
+                browser: info.browser,
+                ipAddress: info.ipAddress,
+                city: finalCity || 'Delhi NCR',
+                state: finalState || 'Delhi',
                 isActive: true,
                 lastActiveAt: new Date(),
             },
@@ -55,17 +98,34 @@ const recordAdminSession = async ({ adminId, ipAddress, userAgent }) => {
 /**
  * Record new active User session upon login
  */
-const recordUserSession = async ({ userId, ipAddress, userAgent }) => {
+const recordUserSession = async ({ userId, req }) => {
     try {
-        const { deviceType, os, browser } = parseUserAgent(userAgent);
+        const info = extractClientInfo(req);
+
+        let finalCity = info.city;
+        let finalState = info.state;
+
+        // Fallback to assigned User City in DB
+        if (!finalCity || !finalState) {
+            const user = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { city: { select: { name: true, stateCode: true } } }
+            });
+            if (user?.city) {
+                finalCity = finalCity || user.city.name;
+                finalState = finalState || user.city.stateCode || 'Delhi';
+            }
+        }
+
         return await prisma.userSession.create({
             data: {
                 userId,
-                deviceType,
-                os,
-                browser,
-                ipAddress: ipAddress || '127.0.0.1',
-                state: 'Delhi',
+                deviceType: info.deviceType,
+                os: info.os,
+                browser: info.browser,
+                ipAddress: info.ipAddress,
+                city: finalCity || 'Delhi NCR',
+                state: finalState || 'Delhi',
                 isActive: true,
                 lastActiveAt: new Date(),
             },
@@ -84,8 +144,8 @@ const getActiveSessions = async ({ type = 'all', state }) => {
     const userWhere = { isActive: true };
 
     if (state) {
-        adminWhere.state = state;
-        userWhere.state = state;
+        adminWhere.state = { contains: state, mode: 'insensitive' };
+        userWhere.state = { contains: state, mode: 'insensitive' };
     }
 
     const [adminSessions, userSessions] = await Promise.all([
@@ -117,8 +177,8 @@ const getActiveSessions = async ({ type = 'all', state }) => {
             name: s.admin?.name || 'Admin',
             email: s.admin?.email,
             role: s.admin?.role,
-            city: s.admin?.city?.name || 'Delhi',
-            state: s.state || 'Delhi',
+            city: s.city || s.admin?.city?.name || 'Delhi NCR',
+            state: s.state || s.admin?.city?.stateCode || 'Delhi',
             deviceType: s.deviceType,
             browser: s.browser,
             os: s.os,
@@ -132,8 +192,8 @@ const getActiveSessions = async ({ type = 'all', state }) => {
             phone: s.user?.phone,
             email: s.user?.email,
             uniqueUserId: s.user?.uniqueUserId,
-            city: s.user?.city?.name || 'Delhi',
-            state: s.state || 'Delhi',
+            city: s.city || s.user?.city?.name || 'Delhi NCR',
+            state: s.state || s.user?.city?.stateCode || 'Delhi',
             deviceType: s.deviceType,
             browser: s.browser,
             os: s.os,
