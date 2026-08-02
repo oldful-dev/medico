@@ -56,8 +56,15 @@ export default function RolesPage() {
         } catch (e) { showToast('Delete failed', 'error'); }
     }
 
-    const roles = ['SUPER_ADMIN', 'CITY_ADMIN', 'CARE_MANAGER', 'SUPPORT_AGENT', 'BILLING_EXECUTIVE'];
-    const roleBadge = { SUPER_ADMIN: 'badge-danger', CITY_ADMIN: 'badge-purple', CARE_MANAGER: 'badge-info', SUPPORT_AGENT: 'badge-warning', BILLING_EXECUTIVE: 'badge-success' };
+    const roles = ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER', 'BILLING_EXECUTIVE', 'SUPPORT_AGENT'];
+    const roleBadge = { 
+        SUPER_ADMIN: 'badge-danger', 
+        CITY_ADMIN: 'badge-purple', 
+        OPERATIONS_EXECUTIVE: 'badge-info', 
+        CARE_MANAGER: 'badge-purple', 
+        SUPPORT_AGENT: 'badge-warning', 
+        BILLING_EXECUTIVE: 'badge-success' 
+    };
 
     return (
         <div>
