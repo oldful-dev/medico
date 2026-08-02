@@ -38,7 +38,6 @@ export default function EditProfileScreen() {
         try {
             const res = await userService.updateProfile({
                 name: name.trim(),
-                email: email.trim() || undefined,
                 gender: gender || undefined,
                 dateOfBirth: dateOfBirth || undefined,
                 preferredLanguage,
@@ -82,10 +81,14 @@ export default function EditProfileScreen() {
                 <TextInput style={styles.input} value={name} onChangeText={setName} placeholder={t('edit_profile.placeholder_name')} placeholderTextColor={colors.textMuted} />
 
                 <Text style={styles.label}>{t('edit_profile.email')}</Text>
-                <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder={t('edit_profile.placeholder_email')} placeholderTextColor={colors.textMuted} keyboardType="email-address" autoCapitalize="none" />
+                <TextInput style={[styles.input, styles.inputDisabled]} value={email} editable={false} />
 
                 <Text style={styles.label}>{t('edit_profile.phone_read_only')}</Text>
                 <TextInput style={[styles.input, styles.inputDisabled]} value={profile?.phone || ''} editable={false} />
+
+                <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 4, marginBottom: 12, fontStyle: 'italic' }}>
+                    * Registered mobile number & email address can only be updated by Super Admin.
+                </Text>
 
                 <Text style={styles.label}>{t('edit_profile.gender')}</Text>
                 <View style={styles.genderRow}>

@@ -142,29 +142,35 @@ function ProfileTab({ profile }: { profile: UserProfile }) {
       {editing ? (
         <SectionCard>
           <SectionHeader title="Edit Profile" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
-            {([
-              { key: 'name', label: 'Full Name', type: 'text', icon: User },
-              { key: 'email', label: 'Email Address', type: 'email', icon: Mail },
-              { key: 'gender', label: 'Gender', type: 'text', icon: User },
-              { key: 'dateOfBirth', label: 'Date of Birth', type: 'date', icon: Activity },
-            ] as const).map(field => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+            {[
+              { key: 'name', label: 'Full Name', type: 'text', icon: User, disabled: false },
+              { key: 'email', label: 'Email Address (Super Admin Only)', type: 'email', icon: Mail, disabled: true },
+              { key: 'gender', label: 'Gender', type: 'text', icon: User, disabled: false },
+              { key: 'dateOfBirth', label: 'Date of Birth', type: 'date', icon: Activity, disabled: false },
+            ].map(field => (
               <div key={field.key}>
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">{field.label}</label>
                 <div className="relative">
                   <field.icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type={field.type}
-                    value={form[field.key]}
+                    value={form[field.key as keyof typeof form]}
+                    disabled={field.disabled}
                     onChange={e => setForm(f => ({ ...f, [field.key]: e.target.value }))}
-                    className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-[var(--color-primary)] transition-all"
+                    className={`w-full pl-9 pr-4 py-2.5 text-sm border rounded-xl outline-none transition-all ${
+                      field.disabled ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed' : 'border-gray-200 focus:border-[var(--color-primary)]'
+                    }`}
                   />
                 </div>
               </div>
             ))}
           </div>
+          <p className="text-xs text-gray-400 italic mb-5">
+            * Registered mobile number & email address can only be updated by Super Admin.
+          </p>
           <button
-            onClick={() => updateMut.mutate(form, { 
+            onClick={() => updateMut.mutate({ name: form.name, gender: form.gender, dateOfBirth: form.dateOfBirth }, { 
               onSuccess: () => {
                 setEditing(false);
                 toast.success('Profile updated successfully');

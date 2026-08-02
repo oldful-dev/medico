@@ -58,6 +58,8 @@ const remoteConfigRoutes = require('./routes/remoteConfig.routes');
 const appConfigRoutes = require('./routes/appConfig.routes');
 const uploadRoutes = require('./routes/upload.routes');
 const waitlistRoutes = require('./routes/waitlist.routes');
+const sessionRoutes = require('./routes/session.routes');
+const analyticsRoutes = require('./routes/analytics.routes');
 const whatsappTestRoutes = require('./routes/whatsapp-test.routes');
 const serviceChargeRoutes = require('./routes/serviceCharge.routes');
 const activityRoutes = require('./routes/activity.routes');
@@ -207,6 +209,7 @@ app.use('/api/admin/service-charges', serviceChargeRoutes);
 
 // Admin
 app.use('/api/admin', adminRoutes);
+app.use('/api/sessions', sessionRoutes);
 
 // Core
 app.use('/api/cities', cityRoutes);
@@ -246,6 +249,7 @@ app.use('/api/app-config', appConfigRoutes);
 
 // Admin tools
 app.use('/api/audit-logs', auditRoutes);
+app.use('/api/analytics', analyticsRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/insurance', insuranceRoutes);
 app.use('/api/labs', labRoutes);

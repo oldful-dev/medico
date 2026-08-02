@@ -300,6 +300,15 @@ const updateUser = async (req, res, next) => {
         }
 
         const { name, email, phone, cityId, gender, dateOfBirth, preferredLanguage, healthTag, status, pushEnabled, smsEnabled, whatsappEnabled, emailMarketingEnabled } = req.body;
+
+        // Strict Rule: Only Super Admin can add, remove, or update a user's mobile number and email address
+        if ((email !== undefined || phone !== undefined) && req.user?.role !== 'SUPER_ADMIN') {
+            return res.status(403).json({
+                success: false,
+                message: "Only Super Admin can add, remove, or update a user's mobile number and email address.",
+            });
+        }
+
         const data = {};
         if (name !== undefined) data.name = name;
         if (email !== undefined) data.email = email;
@@ -660,10 +669,16 @@ const getMyProfile = async (req, res, next) => {
 // PUT /api/users/profile  (App user — update own profile)
 const updateMyProfile = async (req, res, next) => {
     try {
-        const { name, email, gender, dateOfBirth, preferredLanguage, profileImageUrl, pushEnabled, smsEnabled, whatsappEnabled, emailMarketingEnabled } = req.body;
+        if (req.body.email !== undefined || req.body.phone !== undefined) {
+            return res.status(403).json({
+                success: false,
+                message: 'Users are not allowed to change their registered mobile number or email address. Please contact Super Admin.',
+            });
+        }
+
+        const { name, gender, dateOfBirth, preferredLanguage, profileImageUrl, pushEnabled, smsEnabled, whatsappEnabled, emailMarketingEnabled } = req.body;
         const data = {};
         if (name !== undefined) data.name = name;
-        if (email !== undefined) data.email = email;
         if (gender !== undefined) data.gender = gender;
         if (dateOfBirth !== undefined) data.dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null;
         if (preferredLanguage !== undefined) data.preferredLanguage = preferredLanguage;
