@@ -68,11 +68,6 @@ export default function ActiveSessionsPage() {
         const handleSessionSocketUpdate = (data) => {
             console.log('[Socket] 📡 Active session update received:', data);
             fetchSessions(true); // Silent re-fetch in background
-            if (data.event === 'LOGIN') {
-                showToast(`Session Connected: ${data.sessionType} from ${data.city} (${data.browser} • ${data.os})`, "info");
-            } else if (data.event === 'TERMINATE') {
-                showToast(`Session Terminated: Remote session force disconnected`, "warning");
-            }
         };
 
         // Initialize listener

@@ -5,13 +5,14 @@ import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import useAuthStore from "@/store/useAuthStore";
 import useThemeStore from "@/store/useThemeStore";
+import { showToast } from "@/lib/hooks";
 
 export default function AdminLayout({ children }) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const router = useRouter();
     const pathname = usePathname();
-    const { isAuthenticated, loading, checkAuth } = useAuthStore();
+    const { isAuthenticated, loading, checkAuth, user } = useAuthStore();
     const { theme } = useThemeStore();
 
     useEffect(() => {
@@ -21,6 +22,31 @@ export default function AdminLayout({ children }) {
     useEffect(() => {
         checkAuth();
     }, [checkAuth]);
+
+    // Global WebSocket Listener for SUPER_ADMIN notifications
+    useEffect(() => {
+        if (!isAuthenticated || user?.role !== 'SUPER_ADMIN') return;
+
+        const handleSessionSocketUpdate = (data) => {
+            console.log('[Socket] 📡 Global session update received:', data);
+            if (data.event === 'LOGIN') {
+                showToast(`Session Connected: ${data.sessionType} from ${data.city} (${data.browser} • ${data.os})`, "info");
+            } else if (data.event === 'TERMINATE') {
+                showToast(`Session Terminated: Remote session force disconnected`, "warning");
+            }
+        };
+
+        // Initialize listener
+        import("@/lib/socket").then(({ onSocketEvent, offSocketEvent }) => {
+            onSocketEvent("session_update", handleSessionSocketUpdate);
+        });
+
+        return () => {
+            import("@/lib/socket").then(({ offSocketEvent }) => {
+                offSocketEvent("session_update", handleSessionSocketUpdate);
+            });
+        };
+    }, [isAuthenticated, user]);
 
     useEffect(() => {
         if (!loading && !isAuthenticated) {
