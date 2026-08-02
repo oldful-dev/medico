@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Monitor, Smartphone, Tablet, Globe, Shield, RefreshCw, XCircle, AlertCircle, ArrowLeft, Radio } from "lucide-react";
 import { sessionAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
+import Cookies from "js-cookie";
 
 export default function ActiveSessionsPage() {
     const router = useRouter();
@@ -14,6 +15,7 @@ export default function ActiveSessionsPage() {
     const [filterType, setFilterType] = useState("all");
     const [autoSync, setAutoSync] = useState(true);
     const [lastSyncTime, setLastSyncTime] = useState(null);
+    const [currentSessionId, setCurrentSessionId] = useState(null);
 
     const fetchSessions = async (isBackground = false) => {
         try {
@@ -37,6 +39,24 @@ export default function ActiveSessionsPage() {
             if (!isBackground) setLoading(false);
         }
     };
+
+    // Decode JWT from cookie to find the current active session ID
+    useEffect(() => {
+        try {
+            const token = Cookies.get("adminToken");
+            if (token) {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                const decoded = JSON.parse(jsonPayload);
+                setCurrentSessionId(decoded.sessionId);
+            }
+        } catch (e) {
+            console.error('Failed to decode adminToken cookie:', e);
+        }
+    }, []);
 
     // Initial load + filter change trigger
     useEffect(() => {
@@ -101,6 +121,10 @@ export default function ActiveSessionsPage() {
         ...sessions.adminSessions.map(s => ({ ...s, sessionType: 'ADMIN' })),
         ...sessions.userSessions.map(s => ({ ...s, sessionType: 'USER' }))
     ];
+
+    const handleCurrentDeviceClick = () => {
+        alert("This is your active session. You cannot disconnect your current device from here.");
+    };
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '32px' }}>
@@ -237,91 +261,117 @@ export default function ActiveSessionsPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {allSessionList.map((s) => (
-                                            <tr key={s.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background-color 0.2s' }}>
-                                                <td style={{ padding: '18px 20px' }}>
-                                                    <div style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: '14px' }}>{s.name}</div>
-                                                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{s.email || s.phone || s.uniqueUserId}</div>
-                                                    <span className={`badge ${s.sessionType === 'ADMIN' ? 'badge-purple' : 'badge-info'}`} style={{ marginTop: 6 }}>
-                                                        {s.sessionType === 'ADMIN' ? (s.role || 'ADMIN') : 'CLIENT'}
-                                                    </span>
-                                                </td>
-                                                <td style={{ padding: '18px 20px' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                        {getDeviceIcon(s.deviceType)}
-                                                        <div>
-                                                            <div style={{ fontWeight: 500, color: "var(--text-primary)", fontSize: '13px' }}>{s.deviceType}</div>
-                                                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{s.browser} • {s.os}</div>
+                                        {allSessionList.map((s) => {
+                                            const isCurrent = s.id === currentSessionId;
+                                            return (
+                                                <tr key={s.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background-color 0.2s' }}>
+                                                    <td style={{ padding: '18px 20px' }}>
+                                                        <div style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: '14px' }}>{s.name}</div>
+                                                        <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{s.email || s.phone || s.uniqueUserId}</div>
+                                                        <span className={`badge ${s.sessionType === 'ADMIN' ? 'badge-purple' : 'badge-info'}`} style={{ marginTop: 6 }}>
+                                                            {s.sessionType === 'ADMIN' ? (s.role || 'ADMIN') : 'CLIENT'}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '18px 20px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                            {getDeviceIcon(s.deviceType)}
+                                                            <div>
+                                                                <div style={{ fontWeight: 500, color: "var(--text-primary)", fontSize: '13px' }}>{s.deviceType}</div>
+                                                                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{s.browser} • {s.os}</div>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </td>
-                                                <td style={{ padding: '18px 20px' }}>
-                                                    <div style={{ fontWeight: 500, color: "var(--text-primary)", fontSize: '13px' }}>{s.city}, {s.state}</div>
-                                                    <code style={{ fontSize: 11, color: "var(--text-muted)", display: 'block', marginTop: 4 }}>{s.ipAddress}</code>
-                                                </td>
-                                                <td style={{ padding: '18px 20px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                                                    {new Date(s.lastActiveAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                                </td>
-                                                <td style={{ padding: '18px 20px', textAlign: 'right' }}>
-                                                    <button
-                                                        onClick={() => handleTerminate(s.id, s.sessionType)}
-                                                        className="btn btn-sm btn-danger"
-                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8 }}
-                                                    >
-                                                        <XCircle size={14} />
-                                                        Disconnect
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                    </td>
+                                                    <td style={{ padding: '18px 20px' }}>
+                                                        <div style={{ fontWeight: 500, color: "var(--text-primary)", fontSize: '13px' }}>{s.city}, {s.state}</div>
+                                                        <code style={{ fontSize: 11, color: "var(--text-muted)", display: 'block', marginTop: 4 }}>{s.ipAddress}</code>
+                                                    </td>
+                                                    <td style={{ padding: '18px 20px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                                                        {new Date(s.lastActiveAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                                    </td>
+                                                    <td style={{ padding: '18px 20px', textAlign: 'right' }}>
+                                                        {isCurrent ? (
+                                                            <span 
+                                                                className="badge badge-success" 
+                                                                style={{ padding: '8px 16px', borderRadius: 8, fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: '1px solid var(--accent-primary)', display: 'inline-block' }}
+                                                                onClick={handleCurrentDeviceClick}
+                                                            >
+                                                                Current Device
+                                                            </span>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleTerminate(s.id, s.sessionType)}
+                                                                className="btn btn-sm btn-danger"
+                                                                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8 }}
+                                                            >
+                                                                <XCircle size={14} />
+                                                                Disconnect
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
 
                             {/* Mobile View Cards */}
                             <div className="mobile-only-cards" style={{ display: 'none', padding: '20px', flexDirection: 'column', gap: '16px' }}>
-                                {allSessionList.map((s) => (
-                                    <div key={s.id} style={{ padding: '18px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                                            <div>
-                                                <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>{s.name}</div>
-                                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{s.email || s.phone || s.uniqueUserId}</div>
-                                                <span className={`badge ${s.sessionType === 'ADMIN' ? 'badge-purple' : 'badge-info'}`} style={{ marginTop: 6 }}>
-                                                    {s.sessionType === 'ADMIN' ? (s.role || 'ADMIN') : 'CLIENT'}
-                                                </span>
+                                {allSessionList.map((s) => {
+                                    const isCurrent = s.id === currentSessionId;
+                                    return (
+                                        <div key={s.id} style={{ padding: '18px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                                                <div>
+                                                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>{s.name}</div>
+                                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{s.email || s.phone || s.uniqueUserId}</div>
+                                                    <span className={`badge ${s.sessionType === 'ADMIN' ? 'badge-purple' : 'badge-info'}`} style={{ marginTop: 6 }}>
+                                                        {s.sessionType === 'ADMIN' ? (s.role || 'ADMIN') : 'CLIENT'}
+                                                    </span>
+                                                </div>
+                                                {isCurrent ? (
+                                                    <span 
+                                                        className="badge badge-success" 
+                                                        style={{ padding: '6px 12px', borderRadius: 8, fontSize: '11px', fontWeight: 600, cursor: 'pointer', border: '1px solid var(--accent-primary)' }}
+                                                        onClick={handleCurrentDeviceClick}
+                                                    >
+                                                        Current Device
+                                                    </span>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleTerminate(s.id, s.sessionType)}
+                                                        className="btn btn-sm btn-danger"
+                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: 11, borderRadius: 8 }}
+                                                    >
+                                                        <XCircle size={12} /> Disconnect
+                                                    </button>
+                                                )}
                                             </div>
-                                            <button
-                                                onClick={() => handleTerminate(s.id, s.sessionType)}
-                                                className="btn btn-sm btn-danger"
-                                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', fontSize: 11, borderRadius: 8 }}
-                                            >
-                                                <XCircle size={12} /> Disconnect
-                                            </button>
-                                        </div>
 
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-color)', fontSize: 12 }}>
-                                            <div>
-                                                <div style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Device & OS</div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                                                    {getDeviceIcon(s.deviceType)}
-                                                    <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{s.deviceType} ({s.os})</span>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-color)', fontSize: 12 }}>
+                                                <div>
+                                                    <div style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Device & OS</div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                                                        {getDeviceIcon(s.deviceType)}
+                                                        <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{s.deviceType} ({s.os})</span>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Location & IP</div>
+                                                    <div style={{ color: 'var(--text-primary)', fontWeight: 500, marginTop: 4 }}>{s.city}, {s.state}</div>
+                                                    <code style={{ fontSize: 10, color: 'var(--text-muted)', display: 'block', marginTop: 2 }}>{s.ipAddress}</code>
                                                 </div>
                                             </div>
-                                            <div>
-                                                <div style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Location & IP</div>
-                                                <div style={{ color: 'var(--text-primary)', fontWeight: 500, marginTop: 4 }}>{s.city}, {s.state}</div>
-                                                <code style={{ fontSize: 10, color: 'var(--text-muted)', display: 'block', marginTop: 2 }}>{s.ipAddress}</code>
+
+                                            <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                                                <span>Last Active:</span>
+                                                <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                                                    {new Date(s.lastActiveAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                                </span>
                                             </div>
                                         </div>
-
-                                        <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                                            <span>Last Active:</span>
-                                            <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
-                                                {new Date(s.lastActiveAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </>
                     )}

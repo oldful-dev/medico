@@ -40,7 +40,13 @@ const adminLogin = async (req, res, next) => {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
-        const payload = { id: admin.id, role: admin.role, type: 'admin', cityId: admin.cityId };
+        // Record active session for multi-device tracking
+        const session = await sessionService.recordAdminSession({
+            adminId: admin.id,
+            req,
+        });
+
+        const payload = { id: admin.id, role: admin.role, type: 'admin', cityId: admin.cityId, sessionId: session?.id };
         const accessToken = generateAccessToken(payload);
         const refreshToken = generateRefreshToken(payload);
 
@@ -48,12 +54,6 @@ const adminLogin = async (req, res, next) => {
         await prisma.admin.update({
             where: { id: admin.id },
             data: { refreshToken, lastLoginAt: new Date() },
-        });
-
-        // Record active session for multi-device tracking
-        await sessionService.recordAdminSession({
-            adminId: admin.id,
-            req,
         });
 
         // Audit log
@@ -135,7 +135,7 @@ const adminRefreshToken = async (req, res, next) => {
             return res.status(401).json({ success: false, message: 'Invalid refresh token' });
         }
 
-        const payload = { id: admin.id, role: admin.role, type: 'admin', cityId: admin.cityId };
+        const payload = { id: admin.id, role: admin.role, type: 'admin', cityId: admin.cityId, sessionId: decoded.sessionId };
         const newAccessToken = generateAccessToken(payload);
 
         res.json({ success: true, data: { accessToken: newAccessToken } });
@@ -211,7 +211,13 @@ const verifyOTP = async (req, res, next) => {
             });
         }
 
-        const payload = { id: user.id, type: 'user' };
+        // Record active session for multi-device tracking
+        const session = await sessionService.recordUserSession({
+            userId: user.id,
+            req,
+        });
+
+        const payload = { id: user.id, type: 'user', sessionId: session?.id };
         const accessToken = generateAccessToken(payload);
         const refreshToken = generateRefreshToken(payload);
 
@@ -229,12 +235,6 @@ const verifyOTP = async (req, res, next) => {
         await prisma.user.update({
             where: { id: user.id },
             data: { refreshToken },
-        });
-
-        // Record active session for multi-device tracking
-        await sessionService.recordUserSession({
-            userId: user.id,
-            req,
         });
 
         // Set secure httpOnly cookies for web persistence
@@ -298,7 +298,7 @@ const userRefreshToken = async (req, res, next) => {
             return res.status(401).json({ success: false, message: 'Invalid session' });
         }
 
-        const payload = { id: user.id, type: 'user' };
+        const payload = { id: user.id, type: 'user', sessionId: decoded.sessionId };
         const newAccessToken = generateAccessToken(payload);
 
         // Update cookie
@@ -434,8 +434,14 @@ const googleSignIn = async (req, res, next) => {
             });
         }
 
+        // Record active session for multi-device tracking
+        const session = await sessionService.recordUserSession({
+            userId: user.id,
+            req,
+        });
+
         // Existing user — issue tokens
-        const payload = { id: user.id, type: 'user' };
+        const payload = { id: user.id, type: 'user', sessionId: session?.id };
         const jwtAccessToken = generateAccessToken(payload);
         const jwtRefreshToken = generateRefreshToken(payload);
 
@@ -452,12 +458,6 @@ const googleSignIn = async (req, res, next) => {
         await prisma.user.update({
             where: { id: user.id },
             data: { refreshToken: jwtRefreshToken },
-        });
-
-        // Record active session for multi-device tracking
-        await sessionService.recordUserSession({
-            userId: user.id,
-            req,
         });
 
         res.json({
