@@ -305,6 +305,28 @@ const exportCSV = async (req, res, next) => {
     }
 };
 
+// GET /api/reports/alerts
+const getAlertFeed = async (req, res, next) => {
+    try {
+        const nextWeek = new Date();
+        nextWeek.setDate(nextWeek.getDate() + 7);
+
+        const [sosCount, pendingBookings, expiringSubs] = await Promise.all([
+            prisma.sOSAlert.count({ where: { status: { not: 'RESOLVED' } } }),
+            prisma.booking.count({ where: { status: 'CONFIRMED', caregiverId: null } }),
+            prisma.subscription.count({ where: { status: 'ACTIVE', expiryDate: { lte: nextWeek, gte: new Date() } } }),
+        ]);
+
+        sendResponse(res, 200, {
+            sosCount,
+            pendingBookings,
+            expiringSubs,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     revenueByCity,
     revenueByPlan,
@@ -314,4 +336,5 @@ module.exports = {
     customerRetention,
     dashboardSummary,
     exportCSV,
+    getAlertFeed,
 };
