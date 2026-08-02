@@ -32,7 +32,12 @@ function extractClientInfo(req) {
                   req?.ip ||
                   '127.0.0.1';
 
-    const ipAddress = rawIp.replace(/^.*:/, '') || rawIp;
+    let ipAddress = rawIp;
+    if (ipAddress.includes('::ffff:')) {
+        ipAddress = ipAddress.split(':').pop();
+    } else if (ipAddress === '::1') {
+        ipAddress = '127.0.0.1';
+    }
 
     let city = req?.headers?.['cf-ipcity'] ? decodeURIComponent(req.headers['cf-ipcity']) : null;
     let rawState = req?.headers?.['cf-region-code'] || req?.headers?.['cf-region'] || null;
