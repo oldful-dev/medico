@@ -5,7 +5,7 @@
 const ADMIN_ROLES = {
     SUPER_ADMIN: 'SUPER_ADMIN',
     CITY_ADMIN: 'CITY_ADMIN',
-    OPS_EXEC: 'OPS_EXEC',
+    OPS_EXEC: 'OPERATIONS_EXECUTIVE',
     CARE_MANAGER: 'CARE_MANAGER',
     BILLING_EXEC: 'BILLING_EXECUTIVE',
     SUPPORT_AGENT: 'SUPPORT_AGENT',
@@ -13,7 +13,7 @@ const ADMIN_ROLES = {
 
 /**
  * Restrict access to specific admin roles
- * Usage: authorize('SUPER_ADMIN', 'CITY_ADMIN', 'OPS_EXEC')
+ * Usage: authorize('SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE')
  */
 const authorize = (...allowedRoles) => {
     return (req, res, next) => {
@@ -34,7 +34,7 @@ const authorize = (...allowedRoles) => {
 
 /**
  * Restrict admin to their assigned city's data
- * Roles with All-India access (SUPER_ADMIN, OPS_EXEC, CARE_MANAGER, BILLING_EXECUTIVE, SUPPORT_AGENT) bypass city restriction
+ * Roles with All-India access (SUPER_ADMIN, OPERATIONS_EXECUTIVE, CARE_MANAGER, BILLING_EXECUTIVE, SUPPORT_AGENT) bypass city restriction
  */
 const cityRestriction = (req, res, next) => {
     if (!req.user || req.user.type !== 'admin') {
@@ -42,7 +42,7 @@ const cityRestriction = (req, res, next) => {
     }
 
     // All-India roles bypass city restriction
-    const ALL_INDIA_ROLES = ['SUPER_ADMIN', 'OPS_EXEC', 'CARE_MANAGER', 'BILLING_EXECUTIVE', 'SUPPORT_AGENT'];
+    const ALL_INDIA_ROLES = ['SUPER_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER', 'BILLING_EXECUTIVE', 'SUPPORT_AGENT'];
     if (ALL_INDIA_ROLES.includes(req.user.role)) {
         return next();
     }
@@ -56,14 +56,14 @@ const cityRestriction = (req, res, next) => {
 };
 
 /**
- * Block payment & financial modules for roles that exclude financial access (e.g. CITY_ADMIN, OPS_EXEC)
+ * Block payment & financial modules for roles that exclude financial access (e.g. CITY_ADMIN, OPERATIONS_EXECUTIVE)
  */
 const blockPaymentModulesForNonBilling = (req, res, next) => {
     if (!req.user || req.user.type !== 'admin') {
         return next();
     }
 
-    const RESTRICTED_ROLES = ['CITY_ADMIN', 'OPS_EXEC', 'CARE_MANAGER', 'SUPPORT_AGENT'];
+    const RESTRICTED_ROLES = ['CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER', 'SUPPORT_AGENT'];
     if (RESTRICTED_ROLES.includes(req.user.role)) {
         return res.status(403).json({
             success: false,
