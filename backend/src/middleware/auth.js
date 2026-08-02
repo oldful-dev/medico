@@ -31,6 +31,21 @@ const authenticate = async (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        if (decoded.sessionId) {
+            if (decoded.type === 'admin') {
+                const activeSession = await prisma.adminSession.findUnique({ where: { id: decoded.sessionId } });
+                if (!activeSession || !activeSession.isActive) {
+                    return res.status(401).json({ success: false, message: 'Session terminated' });
+                }
+            } else {
+                const activeSession = await prisma.userSession.findUnique({ where: { id: decoded.sessionId } });
+                if (!activeSession || !activeSession.isActive) {
+                    return res.status(401).json({ success: false, message: 'Session terminated' });
+                }
+            }
+        }
+
         req.user = decoded;
         next();
     } catch (error) {
@@ -68,6 +83,13 @@ const authenticateAdmin = async (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         if (decoded.type !== 'admin') {
             return res.status(403).json({ success: false, message: 'Admin access restricted' });
+        }
+
+        if (decoded.sessionId) {
+            const activeSession = await prisma.adminSession.findUnique({ where: { id: decoded.sessionId } });
+            if (!activeSession || !activeSession.isActive) {
+                return res.status(401).json({ success: false, message: 'Session terminated. Please login again.' });
+            }
         }
 
         const admin = await prisma.admin.findUnique({ where: { id: decoded.id } });
@@ -109,6 +131,13 @@ const authenticateUser = async (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         if (decoded.type !== 'user') {
             return res.status(403).json({ success: false, message: 'User access restricted' });
+        }
+
+        if (decoded.sessionId) {
+            const activeSession = await prisma.userSession.findUnique({ where: { id: decoded.sessionId } });
+            if (!activeSession || !activeSession.isActive) {
+                return res.status(401).json({ success: false, message: 'Session terminated. Please login again.' });
+            }
         }
 
         const user = await prisma.user.findUnique({ where: { id: decoded.id } });
