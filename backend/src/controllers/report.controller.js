@@ -7,13 +7,15 @@ const { sendResponse } = require('../utils/helpers');
 
 /**
  * Get City IDs belonging to a specific stateCode (e.g. DL, UP, MH, KA, TN, WB)
+ * Returns null if stateCode is null, undefined, or 'ALL' (meaning All India)
  */
 async function getCityIdsForState(stateCode) {
     if (!stateCode || stateCode === 'ALL') return null;
     const cities = await prisma.city.findMany({
         where: {
             OR: [
-                { stateCode: { equals: stateCode, mode: 'insensitive' } },
+                { stateCode: { startsWith: stateCode, mode: 'insensitive' } },
+                { stateCode: { contains: stateCode, mode: 'insensitive' } },
                 { name: { contains: stateCode, mode: 'insensitive' } },
             ],
         },
@@ -28,7 +30,8 @@ const revenueByCity = async (req, res, next) => {
         const { stateCode } = req.query;
         const cityWhere = (stateCode && stateCode !== 'ALL') ? {
             OR: [
-                { stateCode: { equals: stateCode, mode: 'insensitive' } },
+                { stateCode: { startsWith: stateCode, mode: 'insensitive' } },
+                { stateCode: { contains: stateCode, mode: 'insensitive' } },
                 { name: { contains: stateCode, mode: 'insensitive' } },
             ]
         } : {};
@@ -110,7 +113,7 @@ const serviceUsage = async (req, res, next) => {
             services.map(async (service) => {
                 const whereClause = {
                     serviceId: service.id,
-                    ...(cityIds && cityIds.length ? { cityId: { in: cityIds } } : {})
+                    ...(cityIds !== null ? { cityId: { in: cityIds } } : {})
                 };
                 const bookings = await prisma.booking.groupBy({
                     by: ['status'],
@@ -221,16 +224,17 @@ const dashboardSummary = async (req, res, next) => {
         const nextWeek = new Date();
         nextWeek.setDate(nextWeek.getDate() + 7);
 
-        const userWhere = cityIds && cityIds.length ? { cityId: { in: cityIds } } : {};
-        const bookingWhere = cityIds && cityIds.length ? { cityId: { in: cityIds } } : {};
-        const subWhere = cityIds && cityIds.length ? { user: { cityId: { in: cityIds } } } : {};
-        const pmtWhere = cityIds && cityIds.length ? {
+        const userWhere = cityIds !== null ? { cityId: { in: cityIds } } : {};
+        const bookingWhere = cityIds !== null ? { cityId: { in: cityIds } } : {};
+        const subWhere = cityIds !== null ? { user: { cityId: { in: cityIds } } } : {};
+        const pmtWhere = cityIds !== null ? {
+            status: 'SUCCESS',
             OR: [
                 { booking: { cityId: { in: cityIds } } },
                 { subscription: { user: { cityId: { in: cityIds } } } }
             ]
-        } : {};
-        const sosWhere = cityIds && cityIds.length ? { cityId: { in: cityIds } } : {};
+        } : { status: 'SUCCESS' };
+        const sosWhere = cityIds !== null ? { cityId: { in: cityIds } } : {};
 
         const [
             totalUsers, totalBookings, activeSubscriptions,
@@ -240,7 +244,7 @@ const dashboardSummary = async (req, res, next) => {
             prisma.user.count({ where: userWhere }),
             prisma.booking.count({ where: bookingWhere }),
             prisma.subscription.count({ where: { status: 'ACTIVE', ...subWhere } }),
-            prisma.payment.aggregate({ where: { status: 'SUCCESS', ...pmtWhere }, _sum: { amount: true } }),
+            prisma.payment.aggregate({ where: pmtWhere, _sum: { amount: true } }),
             prisma.sOSAlert.count({ where: { status: { not: 'RESOLVED' }, ...sosWhere } }),
             prisma.booking.count({ where: { status: 'CONFIRMED', caregiverId: null, ...bookingWhere } }),
             prisma.booking.count({ where: { createdAt: { gte: todayStart }, ...bookingWhere } }),
@@ -258,6 +262,28 @@ const dashboardSummary = async (req, res, next) => {
             todayBookings,
             totalServices,
             expiringSubscriptions
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// GET /api/reports/alerts
+const getAlertFeed = async (req, res, next) => {
+    try {
+        const nextWeek = new Date();
+        nextWeek.setDate(nextWeek.getDate() + 7);
+
+        const [sosCount, pendingBookings, expiringSubs] = await Promise.all([
+            prisma.sOSAlert.count({ where: { status: { not: 'RESOLVED' } } }),
+            prisma.booking.count({ where: { status: 'CONFIRMED', caregiverId: null } }),
+            prisma.subscription.count({ where: { status: 'ACTIVE', expiryDate: { lte: nextWeek, gte: new Date() } } }),
+        ]);
+
+        sendResponse(res, 200, {
+            sosCount,
+            pendingBookings,
+            expiringSubs,
         });
     } catch (error) {
         next(error);
@@ -305,28 +331,6 @@ const exportCSV = async (req, res, next) => {
     }
 };
 
-// GET /api/reports/alerts
-const getAlertFeed = async (req, res, next) => {
-    try {
-        const nextWeek = new Date();
-        nextWeek.setDate(nextWeek.getDate() + 7);
-
-        const [sosCount, pendingBookings, expiringSubs] = await Promise.all([
-            prisma.sOSAlert.count({ where: { status: { not: 'RESOLVED' } } }),
-            prisma.booking.count({ where: { status: 'CONFIRMED', caregiverId: null } }),
-            prisma.subscription.count({ where: { status: 'ACTIVE', expiryDate: { lte: nextWeek, gte: new Date() } } }),
-        ]);
-
-        sendResponse(res, 200, {
-            sosCount,
-            pendingBookings,
-            expiringSubs,
-        });
-    } catch (error) {
-        next(error);
-    }
-};
-
 module.exports = {
     revenueByCity,
     revenueByPlan,
@@ -335,6 +339,6 @@ module.exports = {
     refundAnalysis,
     customerRetention,
     dashboardSummary,
-    exportCSV,
     getAlertFeed,
+    exportCSV,
 };
