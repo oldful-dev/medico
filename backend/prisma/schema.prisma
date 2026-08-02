@@ -26,6 +26,7 @@ model Admin {
   documentsJson   Json?
   city         City?      @relation(fields: [cityId], references: [id])
   auditLogs    AuditLog[]
+  sessions     AdminSession[]
 
   @@index([name, email, role, isActive])
   @@map("admins")
@@ -92,6 +93,7 @@ model User {
   city                  City                   @relation(fields: [cityId], references: [id])
   waitlistEntries       WaitlistEntry[]
   meetupRegistrations   MeetupRegistration[]
+  sessions              UserSession[]
 
   @@map("users")
 }
@@ -1133,4 +1135,42 @@ enum MeetupRegistrationStatus {
   PENDING
   ATTENDED
   CANCELLED
+}
+
+model UserSession {
+  id           String   @id @default(uuid())
+  userId       String
+  deviceId     String?
+  deviceType   String   @default("Mobile")
+  browser      String?
+  os           String?
+  ipAddress    String?
+  city         String?
+  state        String?  @default("Delhi")
+  isActive     Boolean  @default(true)
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive])
+  @@map("user_sessions")
+}
+
+model AdminSession {
+  id           String   @id @default(uuid())
+  adminId      String
+  deviceId     String?
+  deviceType   String   @default("PC")
+  browser      String?
+  os           String?
+  ipAddress    String?
+  city         String?
+  state        String?  @default("Delhi")
+  isActive     Boolean  @default(true)
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  admin        Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, isActive])
+  @@map("admin_sessions")
 }

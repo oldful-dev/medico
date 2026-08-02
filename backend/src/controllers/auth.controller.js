@@ -13,6 +13,7 @@ const {
 } = require('../utils/helpers');
 const { sendWhatsApp, requestOTP: requestSmsOTP, verifyOTP: verifySmsOTP } = require('../utils/notifications');
 const { auth: firebaseAuth } = require('../config/firebase');
+const sessionService = require('../services/session.service');
 
 // ═══════════════════════════════════════════
 //  ADMIN AUTH
@@ -47,6 +48,13 @@ const adminLogin = async (req, res, next) => {
         await prisma.admin.update({
             where: { id: admin.id },
             data: { refreshToken, lastLoginAt: new Date() },
+        });
+
+        // Record active session for multi-device tracking
+        await sessionService.recordAdminSession({
+            adminId: admin.id,
+            ipAddress: req.ip,
+            userAgent: req.get('user-agent'),
         });
 
         // Audit log
@@ -222,6 +230,13 @@ const verifyOTP = async (req, res, next) => {
         await prisma.user.update({
             where: { id: user.id },
             data: { refreshToken },
+        });
+
+        // Record active session for multi-device tracking
+        await sessionService.recordUserSession({
+            userId: user.id,
+            ipAddress: req.ip,
+            userAgent: req.get('user-agent'),
         });
 
         // Set secure httpOnly cookies for web persistence
@@ -439,6 +454,13 @@ const googleSignIn = async (req, res, next) => {
         await prisma.user.update({
             where: { id: user.id },
             data: { refreshToken: jwtRefreshToken },
+        });
+
+        // Record active session for multi-device tracking
+        await sessionService.recordUserSession({
+            userId: user.id,
+            ipAddress: req.ip,
+            userAgent: req.get('user-agent'),
         });
 
         res.json({

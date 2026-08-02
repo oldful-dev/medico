@@ -12,6 +12,8 @@ import {
 import { reportAPI } from "@/lib/api";
 import { formatCurrency } from "@/lib/hooks";
 
+import StateFilterBar from "@/components/StateFilterBar";
+
 const chartTooltipStyle = {
     backgroundColor: 'var(--bg-secondary)',
     border: '1px solid var(--border-color)',
@@ -27,6 +29,25 @@ export default function DashboardPage() {
     const [revByCity, setRevByCity] = useState([]);
     const [svcUsage, setSvcUsage] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [currentState, setCurrentState] = useState("");
+    const [stateMetrics, setStateMetrics] = useState(null);
+
+    const loadStateBusiness = async (stCode) => {
+        try {
+            const res = await fetch(`/api/analytics/state-business?stateCode=${stCode || 'DL'}`);
+            const data = await res.json();
+            if (data.success) {
+                setStateMetrics(data.data.metrics);
+            }
+        } catch (err) {
+            console.error("State business load error:", err);
+        }
+    };
+
+    const handleSelectState = (stCode) => {
+        setCurrentState(stCode);
+        loadStateBusiness(stCode);
+    };
 
     useEffect(() => {
         async function load() {
@@ -39,6 +60,7 @@ export default function DashboardPage() {
                 setSummary(dashRes.data?.data || dashRes.data);
                 setRevByCity(cityRes.data?.data || []);
                 setSvcUsage(svcRes.data?.data || []);
+                loadStateBusiness("DL");
             } catch (e) {
                 console.error('Dashboard load error:', e);
             } finally {
@@ -60,11 +82,17 @@ export default function DashboardPage() {
     }));
 
     return (
-        <div>
+        <div className="space-y-6">
             <div className="page-header">
-                <h2>Super Admin Dashboard</h2>
-                <p>Real-time overview of your healthcare operations</p>
+                <h2>Operations & Business Dashboard</h2>
+                <p>Real-time overview of your healthcare operations across India</p>
             </div>
+
+            <StateFilterBar
+                currentState={currentState}
+                onSelectState={handleSelectState}
+                stateMetrics={stateMetrics}
+            />
 
             <div className="stats-grid">
                 <div className="stat-card">
