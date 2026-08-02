@@ -360,5 +360,16 @@ export const serviceChargeAPI = {
     delete: (id) => api.delete(`/admin/service-charges/${id}`),
 };
 
+// ── Active Sessions ──────────────────────────────────
+export const sessionAPI = {
+    getActive: (params) => api.get('/sessions/active', { params }),
+    terminate: (id, type) => api.delete(`/sessions/${id}`, { data: { type } }),
+};
+
+// ── Analytics & State Business ───────────────────────
+export const analyticsAPI = {
+    getStateBusiness: (params) => api.get('/analytics/state-business', { params }),
+};
+
 export default api;
 

@@ -9,7 +9,7 @@ import {
     AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
-import { reportAPI } from "@/lib/api";
+import { reportAPI, analyticsAPI } from "@/lib/api";
 import { formatCurrency } from "@/lib/hooks";
 
 import StateFilterBar from "@/components/StateFilterBar";
@@ -34,10 +34,9 @@ export default function DashboardPage() {
 
     const loadStateBusiness = async (stCode) => {
         try {
-            const res = await fetch(`/api/analytics/state-business?stateCode=${stCode || 'DL'}`);
-            const data = await res.json();
-            if (data.success) {
-                setStateMetrics(data.data.metrics);
+            const res = await analyticsAPI.getStateBusiness({ stateCode: stCode || 'DL' });
+            if (res.data?.success) {
+                setStateMetrics(res.data.data.metrics);
             }
         } catch (err) {
             console.error("State business load error:", err);
