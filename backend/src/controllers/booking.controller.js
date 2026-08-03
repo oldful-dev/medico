@@ -72,7 +72,7 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
             .replace(/\s+/g, '');
         const smsSummary = `${bookingCode}:${serviceName.slice(0, 8)}/${dateStr.split('/')[0]}-${dateStr.split('/')[1]}/${shortTime}`.slice(0, 30);
 
-        const amountStr = booking.amount ? `₹${Math.round(booking.amount)}` : '₹0';
+        const amountStr = booking.amount ? `Rs.${Math.round(booking.amount)}` : 'Rs.0';
         const rawAddr = booking.addressLine || formData.addressLine || 'N/A';
         const cleanAddr = rawAddr.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').slice(0, 15);
         const smsSummary2 = `${amountStr}/${cleanAddr}`.slice(0, 30);
