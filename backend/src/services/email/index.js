@@ -16,6 +16,7 @@ const { EMAIL_TEMPLATES } = require('./templates');
 const {
     sendWelcome,
     sendBookingConfirmation,
+    sendBookingConfirmationAdmin,
     sendPaymentReceipt,
     sendPlanExpiryReminder,
     sendSupportTicketToAdmin,
@@ -37,6 +38,7 @@ module.exports = {
 
     // Transactional
     sendBookingConfirmation,
+    sendBookingConfirmationAdmin,
     sendPaymentReceipt,
     sendPlanExpiryReminder,
 

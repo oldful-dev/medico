@@ -31,6 +31,13 @@ const sendBookingConfirmation = ({ to, name, bookingCode, serviceName, scheduled
         userId,
     });
 
+const sendBookingConfirmationAdmin = (opts) =>
+    sendEmail({
+        to: opts.to,
+        subject: EMAIL_TEMPLATES.BOOKING_CONFIRMED_ADMIN.subject(opts),
+        html: EMAIL_TEMPLATES.BOOKING_CONFIRMED_ADMIN.html(opts),
+    });
+
 const sendPaymentReceipt = ({ to, name, invoiceNumber, amount, paymentId, invoicePdfUrl, userId }) =>
     sendEmail({
         to,
@@ -121,6 +128,7 @@ const sendWaitlistConfirm = ({ to, name, serviceName, city }) =>
 module.exports = {
     sendWelcome,
     sendBookingConfirmation,
+    sendBookingConfirmationAdmin,
     sendPaymentReceipt,
     sendPlanExpiryReminder,
     sendSupportTicketToAdmin,

@@ -112,6 +112,59 @@ const EMAIL_TEMPLATES = {
             <p style="margin:0;color:#777;font-size:13px;">Need help? Contact <a href="mailto:support@ayuxacare.com" style="color:${PRIMARY};">support@ayuxacare.com</a> or call us at <a href="tel:080-4728-0789" style="color:${PRIMARY};">080-4728-0789</a>.</p>
         `),
     },
+    
+    BOOKING_CONFIRMED_ADMIN: {
+        subject: (vars) => `[ADMIN ALERT] ${vars.eventLabel || 'New Booking'} — ${vars.bookingCode} | ${vars.serviceName}`,
+        html: (vars) => layout(`
+            <h2 style="margin:0 0 8px;color:${PRIMARY};font-size:20px;">Booking Confirmed (Admin Alert) 📢</h2>
+            <p style="margin:0 0 20px;color:#555;font-size:15px;line-height:1.5;">
+                A booking has been placed and confirmed. Below are the complete customer and operational details.
+            </p>
+            
+            <!-- Customer Section -->
+            <div style="margin-bottom:20px;">
+                <h3 style="margin:0 0 10px;font-size:14px;color:${PRIMARY};text-transform:uppercase;letter-spacing:0.5px;">Customer Profile</h3>
+                <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f9f9;border:1px solid #eee;border-radius:8px;padding:16px;">
+                    <tr><td style="padding:4px 0;font-size:13px;color:#666;width:120px;">Name</td><td style="font-size:14px;color:#222;font-weight:600;">${vars.customerName}</td></tr>
+                    <tr><td style="padding:4px 0;font-size:13px;color:#666;">Phone</td><td style="font-size:14px;color:#222;">${vars.customerPhone}</td></tr>
+                </table>
+            </div>
+
+            <!-- Booking Section -->
+            <div style="margin-bottom:20px;">
+                <h3 style="margin:0 0 10px;font-size:14px;color:${PRIMARY};text-transform:uppercase;letter-spacing:0.5px;">Service Details</h3>
+                <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f9f9;border:1px solid #eee;border-radius:8px;padding:16px;">
+                    <tr><td style="padding:4px 0;font-size:13px;color:#666;width:120px;">Booking Code</td><td style="font-size:14px;color:#222;font-weight:600;">${vars.bookingCode}</td></tr>
+                    <tr><td style="padding:4px 0;font-size:13px;color:#666;">Service</td><td style="font-size:14px;color:#222;font-weight:600;color:${PRIMARY};">${vars.serviceName}</td></tr>
+                    <tr><td style="padding:4px 0;font-size:13px;color:#666;">Date & Time</td><td style="font-size:14px;color:#222;">${vars.scheduledDate} ${vars.scheduledTime ? `| ${vars.scheduledTime}` : ''}</td></tr>
+                    <tr><td style="padding:4px 0;font-size:13px;color:#666;">Amount Paid</td><td style="font-size:14px;color:#222;font-weight:700;">₹${vars.amount}</td></tr>
+                </table>
+            </div>
+
+            <!-- Location & Requirements Section -->
+            <div style="margin-bottom:20px;">
+                <h3 style="margin:0 0 10px;font-size:14px;color:${PRIMARY};text-transform:uppercase;letter-spacing:0.5px;">Operational Info</h3>
+                <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f9f9;border:1px solid #eee;border-radius:8px;padding:16px;">
+                    <tr><td style="padding:4px 0;font-size:13px;color:#666;width:120px;vertical-align:top;">Address</td><td style="font-size:14px;color:#222;line-height:1.4;">${vars.addressLine || 'N/A'}</td></tr>
+                    ${vars.latitude ? `<tr><td style="padding:4px 0;font-size:13px;color:#666;">Coordinates</td><td style="font-size:14px;color:#222;">${vars.latitude}, ${vars.longitude}</td></tr>` : ''}
+                    
+                    <!-- Doctor / Staff specifics -->
+                    ${vars.staffType ? `<tr><td style="padding:4px 0;font-size:13px;color:#666;">Staff Type</td><td style="font-size:14px;color:#222;font-weight:600;">${vars.staffType}</td></tr>` : ''}
+                    ${vars.doctorType ? `<tr><td style="padding:4px 0;font-size:13px;color:#666;">Doctor Type</td><td style="font-size:14px;color:#222;font-weight:600;">${vars.doctorType}</td></tr>` : ''}
+                    ${vars.shiftDuration ? `<tr><td style="padding:4px 0;font-size:13px;color:#666;">Shift Duration</td><td style="font-size:14px;color:#222;">${vars.shiftDuration}</td></tr>` : ''}
+                    
+                    <!-- Symptoms / Notes -->
+                    ${vars.symptoms && vars.symptoms.length > 0 ? `<tr><td style="padding:4px 0;font-size:13px;color:#666;vertical-align:top;">Symptoms</td><td style="font-size:14px;color:#222;line-height:1.4;">${vars.symptoms.join(', ')}</td></tr>` : ''}
+                    ${vars.requirements && vars.requirements.length > 0 ? `<tr><td style="padding:4px 0;font-size:13px;color:#666;vertical-align:top;">Requirements</td><td style="font-size:14px;color:#222;line-height:1.4;">${vars.requirements.join(', ')}</td></tr>` : ''}
+
+                    <!-- Transport specifics -->
+                    ${vars.pickupAddress ? `<tr><td style="padding:4px 0;font-size:13px;color:#666;vertical-align:top;">Pickup</td><td style="font-size:14px;color:#222;line-height:1.4;">${vars.pickupAddress}</td></tr>` : ''}
+                    ${vars.dropAddress ? `<tr><td style="padding:4px 0;font-size:13px;color:#666;vertical-align:top;">Drop</td><td style="font-size:14px;color:#222;line-height:1.4;">${vars.dropAddress}</td></tr>` : ''}
+                    ${vars.vehicleType ? `<tr><td style="padding:4px 0;font-size:13px;color:#666;">Vehicle Type</td><td style="font-size:14px;color:#222;">${vars.vehicleType}</td></tr>` : ''}
+                </table>
+            </div>
+        `),
+    },
 
     PAYMENT_RECEIPT: {
         subject: (vars) => `Payment Receipt — ₹${vars.amount} | ${vars.invoiceNumber}`,
