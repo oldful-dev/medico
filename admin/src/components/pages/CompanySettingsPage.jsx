@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { 
     Building2, Phone, Mail, Sliders, Briefcase, Heart, Plus, Trash2, Save, Info, CheckCircle2,
-    BookOpen, FileText, Upload
+    BookOpen, FileText, Upload, Bell
 } from "lucide-react";
 import { uiConfigAPI, mediaAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
@@ -56,7 +56,11 @@ export default function CompanySettingsPage() {
             { text: "The physiotherapist was incredibly professional. Booking through the app took less than a minute.", author: "Arun K.", role: "Son of patient", rating: 5 },
             { text: "Ayuxa's 24/7 care is a lifesaver. It feels like having an extended family looking out for my parents.", author: "Priya S.", role: "Verified User", rating: 5 },
             { text: "Quick, reliable, and transparent pricing. The doctor arrived exactly on time for the routine checkup.", author: "Rahul M.", role: "Working Professional", rating: 5 }
-        ]
+        ],
+        notifications: {
+            booking: { sms: '', whatsapp: '', email: '' },
+            careers: { email: '' }
+        }
     });
 
     const [selectedBlogId, setSelectedBlogId] = useState("featured");
@@ -89,7 +93,17 @@ export default function CompanySettingsPage() {
                             blogs_html: parsedJson?.blogs_html || "",
                             show_reviews: parsedJson?.show_reviews !== undefined ? parsedJson.show_reviews : true,
                             partners_list: parsedJson?.partners_list || prev.partners_list,
-                            reviews_list: parsedJson?.reviews_list || prev.reviews_list
+                            reviews_list: parsedJson?.reviews_list || prev.reviews_list,
+                            notifications: {
+                                booking: {
+                                    sms:      parsedJson?.notifications?.booking?.sms      || '',
+                                    whatsapp: parsedJson?.notifications?.booking?.whatsapp  || '',
+                                    email:    parsedJson?.notifications?.booking?.email     || '',
+                                },
+                                careers: {
+                                    email: parsedJson?.notifications?.careers?.email || '',
+                                },
+                            },
                         }));
                     }
                 }
@@ -396,6 +410,20 @@ export default function CompanySettingsPage() {
                 >
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <Building2 size={16} /> Reviews &amp; Partners
+                    </div>
+                </button>
+                <button 
+                    onClick={() => setActiveSubTab("notifications")} 
+                    style={{
+                        padding: "8px 16px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer",
+                        fontWeight: 700, fontSize: 14,
+                        background: activeSubTab === "notifications" ? "var(--bg-glass)" : "transparent",
+                        color: activeSubTab === "notifications" ? "var(--accent-primary)" : "var(--text-muted)",
+                        borderBottom: activeSubTab === "notifications" ? "2.5px solid var(--accent-primary)" : "none"
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <Bell size={16} /> Notifications
                     </div>
                 </button>
             </div>
@@ -839,6 +867,138 @@ export default function CompanySettingsPage() {
                         </div>
                     </div>
                 )}
+                
+                {/* 7. NOTIFICATIONS TAB */}
+                {activeSubTab === "notifications" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+                        {/* Info Banner */}
+                        <div style={{ display: "flex", gap: 12, padding: 16, background: "rgba(4,131,87,0.06)", border: "1px solid rgba(4,131,87,0.15)", borderRadius: "var(--radius-md)", alignItems: "flex-start" }}>
+                            <Bell size={20} style={{ color: "var(--accent-primary)", flexShrink: 0, marginTop: 2 }} />
+                            <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: "1.6" }}>
+                                <strong>Dynamic Notification Recipients</strong><br/>
+                                Configure who receives SMS, WhatsApp, and Email notifications for key booking events.
+                                Recipients configured here replace any previously hardcoded numbers. Leaving a field blank disables that channel for admin notifications — it never affects user-facing notifications.
+                            </div>
+                        </div>
+
+                        {/* Booking Notifications Card */}
+                        <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
+                            <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: 10 }}>
+                                <Bell size={16} style={{ color: "var(--accent-primary)" }} />
+                                <div>
+                                    <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Booking Notifications</h3>
+                                    <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--text-muted)" }}>Notified on: New booking created, Assigned, Completed, Cancelled</p>
+                                </div>
+                            </div>
+                            <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 18 }}>
+                                <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                    <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                        <Phone size={12} style={{ display: "inline", marginRight: 5 }} />
+                                        Booking SMS Number
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        placeholder="+919876543210"
+                                        value={formData.notifications?.booking?.sms || ""}
+                                        onChange={e => setFormData({
+                                            ...formData,
+                                            notifications: {
+                                                ...formData.notifications,
+                                                booking: { ...formData.notifications?.booking, sms: e.target.value }
+                                            }
+                                        })}
+                                        style={{ width: "100%", padding: "10px 12px", background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontSize: 14, fontFamily: "inherit" }}
+                                    />
+                                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Receives DLT-approved SMS when a booking is created or updated. Use international format.</span>
+                                </div>
+
+                                <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                    <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                        <Phone size={12} style={{ display: "inline", marginRight: 5 }} />
+                                        Booking WhatsApp Number
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        placeholder="+919876543210"
+                                        value={formData.notifications?.booking?.whatsapp || ""}
+                                        onChange={e => setFormData({
+                                            ...formData,
+                                            notifications: {
+                                                ...formData.notifications,
+                                                booking: { ...formData.notifications?.booking, whatsapp: e.target.value }
+                                            }
+                                        })}
+                                        style={{ width: "100%", padding: "10px 12px", background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontSize: 14, fontFamily: "inherit" }}
+                                    />
+                                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Receives WhatsApp template messages via WABA when a booking event occurs.</span>
+                                </div>
+
+                                <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                    <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                        <Mail size={12} style={{ display: "inline", marginRight: 5 }} />
+                                        Booking Email Address
+                                    </label>
+                                    <input
+                                        type="email"
+                                        placeholder="bookings@ayuxacare.com"
+                                        value={formData.notifications?.booking?.email || ""}
+                                        onChange={e => setFormData({
+                                            ...formData,
+                                            notifications: {
+                                                ...formData.notifications,
+                                                booking: { ...formData.notifications?.booking, email: e.target.value }
+                                            }
+                                        })}
+                                        style={{ width: "100%", padding: "10px 12px", background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontSize: 14, fontFamily: "inherit" }}
+                                    />
+                                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Booking confirmation emails are sent to this address. Can be a shared inbox.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Careers Notifications Card */}
+                        <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
+                            <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: 10 }}>
+                                <Briefcase size={16} style={{ color: "var(--accent-primary)" }} />
+                                <div>
+                                    <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Career Application Notifications</h3>
+                                    <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--text-muted)" }}>Notified when a candidate submits a job application</p>
+                                </div>
+                            </div>
+                            <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 18 }}>
+                                <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                    <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                        <Mail size={12} style={{ display: "inline", marginRight: 5 }} />
+                                        Career Application Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        placeholder="careers@ayuxacare.com"
+                                        value={formData.notifications?.careers?.email || ""}
+                                        onChange={e => setFormData({
+                                            ...formData,
+                                            notifications: {
+                                                ...formData.notifications,
+                                                careers: { ...formData.notifications?.careers, email: e.target.value }
+                                            }
+                                        })}
+                                        style={{ width: "100%", padding: "10px 12px", background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontSize: 14, fontFamily: "inherit" }}
+                                    />
+                                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>HR inbox that receives career application details when candidates apply via the careers page.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Save Reminder */}
+                        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                            <button className="btn-primary" onClick={handleSave} disabled={isSaving}
+                                style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 24px", borderRadius: "var(--radius-md)", fontWeight: 600, border: "none", cursor: "pointer", background: "var(--gradient-primary)", color: "white", boxShadow: "var(--shadow-md)" }}>
+                                <Save size={16} /> {isSaving ? "Saving..." : "Save Notification Settings"}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {activeSubTab === "about" && (
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, minHeight: 500 }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

@@ -1,12 +1,85 @@
-// ──────────────────────────────────────────────
-//  Booking Management Controller
-// ──────────────────────────────────────────────
-
 const prisma = require('../config/database');
 const { sendResponse, sendPaginatedResponse, paginate, generateBookingCode } = require('../utils/helpers');
 const { sendPushToUser } = require('../utils/pushNotification.service');
 const { emitToAdmins } = require('../services/socket.service');
 const { logger } = require('../config/logger');
+const { getNotificationRecipients } = require('../services/companyConfig.service');
+
+// ─── Admin Booking Notification Helper ──────────────────────────────────────
+// Sends SMS, WhatsApp, and Email to dynamic admin recipients configured in
+// Company Settings → Notifications. Non-fatal: any failure is logged only.
+async function notifyBookingAdmin({ booking, eventLabel }) {
+    try {
+        const recipients = await getNotificationRecipients();
+        const { sms, whatsapp, email } = recipients.booking;
+
+        const bookingCode = booking.bookingCode || booking.id;
+        const serviceName = booking.service?.name || 'Service';
+        const userName    = booking.user?.name    || 'User';
+        const status      = booking.status        || 'CREATED';
+
+        // ── SMS ─────────────────────────────────────────────────────────────
+        if (sms) {
+            try {
+                const { sendSMS } = require('../services/sms');
+                // Use ORDER_CONFIRMED template (DLT approved): Var1=name, Var2=orderId, Var3=support
+                await sendSMS({
+                    template: 'ORDER_CONFIRMED',
+                    mobile: sms,
+                    variables: [userName, bookingCode, process.env.SUPPORT_PHONE || '9480198108'],
+                });
+                logger.info(`[BookingAdmin] SMS sent → ${sms} (${eventLabel} / ${bookingCode})`);
+            } catch (smsErr) {
+                logger.warn(`[BookingAdmin] SMS failed (non-fatal): ${smsErr.message}`);
+            }
+        } else {
+            logger.debug('[BookingAdmin] No booking SMS recipient configured — skipping');
+        }
+
+        // ── WhatsApp ────────────────────────────────────────────────────────
+        if (whatsapp) {
+            try {
+                const wa = require('../services/whatsapp');
+                // BOOKING_CONFIRMED template: Var1=name, Var2=orderId
+                await wa.sendWhatsApp({
+                    template: 'BOOKING_CONFIRMED',
+                    mobile: whatsapp,
+                    variables: [userName, bookingCode],
+                });
+                logger.info(`[BookingAdmin] WhatsApp sent → ${whatsapp} (${eventLabel} / ${bookingCode})`);
+            } catch (waErr) {
+                logger.warn(`[BookingAdmin] WhatsApp failed (non-fatal): ${waErr.message}`);
+            }
+        } else {
+            logger.debug('[BookingAdmin] No booking WhatsApp recipient configured — skipping');
+        }
+
+        // ── Email ───────────────────────────────────────────────────────────
+        if (email) {
+            try {
+                const emailService = require('../services/email');
+                await emailService.sendBookingConfirmation({
+                    to: email,
+                    name: `Admin (${eventLabel})`,
+                    bookingCode,
+                    serviceName,
+                    scheduledDate: booking.scheduledDate
+                        ? new Date(booking.scheduledDate).toLocaleDateString('en-IN')
+                        : 'TBD',
+                    amount: booking.amount || 0,
+                });
+                logger.info(`[BookingAdmin] Email sent → ${email} (${eventLabel} / ${bookingCode})`);
+            } catch (emailErr) {
+                logger.warn(`[BookingAdmin] Email failed (non-fatal): ${emailErr.message}`);
+            }
+        } else {
+            logger.debug('[BookingAdmin] No booking email recipient configured — skipping');
+        }
+    } catch (err) {
+        // Never let admin notification errors affect booking operations
+        logger.warn('[BookingAdmin] notifyBookingAdmin failed (non-fatal):', err.message);
+    }
+}
 
 // ─── Subscription Check ─────────────────────────────────────────
 // Returns true if user has an active subscription (covers all services)
@@ -360,6 +433,9 @@ const createBooking = async (req, res, next) => {
         });
 
         sendResponse(res, 201, booking, 'Booking created successfully');
+
+        // ── Notify admin via dynamic recipients (non-fatal, runs after response) ──
+        setImmediate(() => notifyBookingAdmin({ booking, eventLabel: 'New Booking' }));
     } catch (error) {
         next(error);
     }
@@ -574,6 +650,12 @@ const updateBookingStatus = async (req, res, next) => {
         });
 
         sendResponse(res, 200, booking, 'Booking status updated');
+
+        // ── Notify admin via dynamic recipients for key status changes (non-fatal) ──
+        const adminNotifyStatuses = ['ASSIGNED', 'COMPLETED', 'CANCELLED'];
+        if (adminNotifyStatuses.includes(status)) {
+            setImmediate(() => notifyBookingAdmin({ booking, eventLabel: `Booking ${status}` }));
+        }
     } catch (error) {
         next(error);
     }
