@@ -23,10 +23,11 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
             try {
                 const { sendSMS } = require('../services/sms');
                 // Use ORDER_CONFIRMED template (DLT approved): Var1=name, Var2=orderId, Var3=support
+                // Pass distinct name to prevent DLT gateway duplicate suppression
                 await sendSMS({
                     template: 'ORDER_CONFIRMED',
                     mobile: sms,
-                    variables: [userName, bookingCode, process.env.SUPPORT_PHONE || '9480198108'],
+                    variables: [`Admin (${eventLabel})`, bookingCode, process.env.SUPPORT_PHONE || '9480198108'],
                 });
                 logger.info(`[BookingAdmin] SMS sent → ${sms} (${eventLabel} / ${bookingCode})`);
             } catch (smsErr) {
@@ -41,10 +42,11 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
             try {
                 const wa = require('../services/whatsapp');
                 // BOOKING_CONFIRMED template: Var1=name, Var2=orderId
+                // Pass 'Admin' to prevent Meta duplicate message suppression
                 await wa.sendWhatsApp({
                     template: 'BOOKING_CONFIRMED',
                     mobile: whatsapp,
-                    variables: [userName, bookingCode],
+                    variables: [`Admin (${eventLabel})`, bookingCode],
                 });
                 logger.info(`[BookingAdmin] WhatsApp sent → ${whatsapp} (${eventLabel} / ${bookingCode})`);
             } catch (waErr) {
