@@ -18,10 +18,53 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
         const userName    = booking.user?.name    || 'User';
         const status      = booking.status        || 'CREATED';
 
-        // Format brief details summaries to fit in orderId fields
         const dateStr = booking.scheduledDate ? new Date(booking.scheduledDate).toLocaleDateString('en-IN') : 'TBD';
+        const formData = booking.formDataJson || {};
+
+        // Parse symptoms / requirements safely
+        let symptoms = booking.symptoms;
+        if (!symptoms && formData.symptoms) {
+            symptoms = Array.isArray(formData.symptoms) ? formData.symptoms : [formData.symptoms];
+        }
+        let requirements = booking.requirements;
+        if (!requirements && formData.requirements) {
+            requirements = Array.isArray(formData.requirements) ? formData.requirements : [formData.requirements];
+        } else if (!requirements && formData.additionalRequirements) {
+            requirements = Array.isArray(formData.additionalRequirements) ? formData.additionalRequirements : [formData.additionalRequirements];
+        }
+
+        // WhatsApp Multi-line Detailed Structured Summary
+        let waDetails = `${bookingCode}\n`;
+        waDetails += `• Customer: ${userName} (${booking.user?.phone || 'N/A'})\n`;
+        waDetails += `• Service: ${serviceName}\n`;
+        waDetails += `• Scheduled: ${dateStr} ${booking.scheduledTime || formData.scheduledTime || ''}\n`;
+        waDetails += `• Paid: ₹${booking.amount || 0}\n`;
+        waDetails += `• Address: ${booking.addressLine || formData.addressLine || 'N/A'}\n`;
+
+        const staffType = booking.staffType || formData.staffType || formData.staff_type;
+        const doctorType = booking.doctorType || formData.doctorType || formData.doctor_type;
+        const shiftDuration = booking.shiftDuration || formData.shiftDuration || formData.shift_duration;
+        if (staffType) waDetails += `• Staff: ${staffType}\n`;
+        if (doctorType) waDetails += `• Doctor: ${doctorType}\n`;
+        if (shiftDuration) waDetails += `• Shift: ${shiftDuration}\n`;
+
+        if (symptoms && symptoms.length > 0) {
+            waDetails += `• Symptoms: ${symptoms.join(', ')}\n`;
+        }
+        if (requirements && requirements.length > 0) {
+            waDetails += `• Req: ${requirements.join(', ')}\n`;
+        }
+
+        const pickup = booking.pickupAddress || formData.pickupAddress || formData.pickup_address;
+        const drop = booking.dropAddress || formData.dropAddress || formData.drop_address;
+        const vehicle = booking.vehicleType || formData.vehicleType || formData.vehicle_type;
+        if (pickup) waDetails += `• Pickup: ${pickup}\n`;
+        if (drop) waDetails += `• Drop: ${drop}\n`;
+        if (vehicle) waDetails += `• Vehicle: ${vehicle}\n`;
+
+        // Limit WA variable to 1000 characters just in case
+        const waSummary = waDetails.slice(0, 1000);
         const smsSummary = `${bookingCode} (${serviceName})`.slice(0, 30);
-        const waSummary = `${bookingCode} [${serviceName} | ${dateStr} | ${booking.scheduledTime || 'TBD'}]`;
 
         // ── SMS ─────────────────────────────────────────────────────────────
         if (sms) {
