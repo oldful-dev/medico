@@ -18,6 +18,11 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
         const userName    = booking.user?.name    || 'User';
         const status      = booking.status        || 'CREATED';
 
+        // Format brief details summaries to fit in orderId fields
+        const dateStr = booking.scheduledDate ? new Date(booking.scheduledDate).toLocaleDateString('en-IN') : 'TBD';
+        const smsSummary = `${bookingCode} (${serviceName})`.slice(0, 30);
+        const waSummary = `${bookingCode} [${serviceName} | ${dateStr} | ${booking.scheduledTime || 'TBD'}]`;
+
         // ── SMS ─────────────────────────────────────────────────────────────
         if (sms) {
             try {
@@ -27,7 +32,7 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
                 await sendSMS({
                     template: 'ORDER_CONFIRMED',
                     mobile: sms,
-                    variables: [`Admin (${eventLabel})`, bookingCode, process.env.SUPPORT_PHONE || '9480198108'],
+                    variables: [`Admin (${eventLabel})`, smsSummary, process.env.SUPPORT_PHONE || '9480198108'],
                 });
                 logger.info(`[BookingAdmin] SMS sent → ${sms} (${eventLabel} / ${bookingCode})`);
             } catch (smsErr) {
@@ -46,7 +51,7 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
                 await wa.sendWhatsApp({
                     template: 'BOOKING_CONFIRMED',
                     mobile: whatsapp,
-                    variables: [`Admin (${eventLabel})`, bookingCode],
+                    variables: [`Admin (${eventLabel})`, waSummary],
                 });
                 logger.info(`[BookingAdmin] WhatsApp sent → ${whatsapp} (${eventLabel} / ${bookingCode})`);
             } catch (waErr) {
@@ -60,15 +65,43 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
         if (email) {
             try {
                 const emailService = require('../services/email');
-                await emailService.sendBookingConfirmation({
+                const formData = booking.formDataJson || {};
+
+                // Parse symptoms / requirements safely if they are stored as JSON strings
+                let symptoms = booking.symptoms;
+                if (!symptoms && formData.symptoms) {
+                    symptoms = Array.isArray(formData.symptoms) ? formData.symptoms : [formData.symptoms];
+                }
+                let requirements = booking.requirements;
+                if (!requirements && formData.requirements) {
+                    requirements = Array.isArray(formData.requirements) ? formData.requirements : [formData.requirements];
+                } else if (!requirements && formData.additionalRequirements) {
+                    requirements = Array.isArray(formData.additionalRequirements) ? formData.additionalRequirements : [formData.additionalRequirements];
+                }
+
+                await emailService.sendBookingConfirmationAdmin({
                     to: email,
-                    name: `Admin (${eventLabel})`,
+                    eventLabel,
+                    customerName: userName,
+                    customerPhone: booking.user?.phone || 'N/A',
                     bookingCode,
                     serviceName,
                     scheduledDate: booking.scheduledDate
                         ? new Date(booking.scheduledDate).toLocaleDateString('en-IN')
                         : 'TBD',
+                    scheduledTime: booking.scheduledTime || formData.scheduledTime || '',
                     amount: booking.amount || 0,
+                    addressLine: booking.addressLine || formData.addressLine || 'N/A',
+                    latitude: booking.latitude,
+                    longitude: booking.longitude,
+                    staffType: booking.staffType || formData.staffType || formData.staff_type || '',
+                    doctorType: booking.doctorType || formData.doctorType || formData.doctor_type || '',
+                    shiftDuration: booking.shiftDuration || formData.shiftDuration || formData.shift_duration || '',
+                    symptoms: Array.isArray(symptoms) ? symptoms : [],
+                    requirements: Array.isArray(requirements) ? requirements : [],
+                    pickupAddress: booking.pickupAddress || formData.pickupAddress || formData.pickup_address || '',
+                    dropAddress: booking.dropAddress || formData.dropAddress || formData.drop_address || '',
+                    vehicleType: booking.vehicleType || formData.vehicleType || formData.vehicle_type || '',
                 });
                 logger.info(`[BookingAdmin] Email sent → ${email} (${eventLabel} / ${bookingCode})`);
             } catch (emailErr) {
