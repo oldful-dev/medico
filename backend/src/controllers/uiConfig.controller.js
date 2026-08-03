@@ -4,6 +4,7 @@
 
 const prisma = require('../config/database');
 const { sendResponse } = require('../utils/helpers');
+const { invalidateCompanyConfig } = require('../services/companyConfig.service');
 
 // GET /api/ui-config
 const getUIConfigs = async (req, res, next) => {
@@ -68,6 +69,8 @@ const updateUIConfig = async (req, res, next) => {
             where: { id: req.params.id },
             data: req.body,
         });
+        // Invalidate company config cache if this is the company settings record
+        if (config.key === 'company_global_config') invalidateCompanyConfig();
         sendResponse(res, 200, config, 'UI Config updated');
     } catch (error) {
         next(error);
@@ -86,6 +89,8 @@ const publishUIConfig = async (req, res, next) => {
                 publishedAt: new Date(),
             },
         });
+        // Invalidate company config cache if this is the company settings record
+        if (updated.key === 'company_global_config') invalidateCompanyConfig();
         sendResponse(res, 200, updated, 'UI Config published');
     } catch (error) {
         next(error);
