@@ -413,7 +413,7 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                     description: 'Ayuxa Health Tech Platforms Pvt. Ltd.',
                 });
 
-                const { url } = await uploadFile(pdfBuffer, 'invoices', `invoice-${invoice.invoiceNumber}.pdf`);
+                const { url } = await uploadFile(pdfBuffer, 'documents/invoices', `invoice-${invoice.invoiceNumber}.pdf`);
 
                 await prisma.invoice.update({
                     where: { id: invoice.id },
