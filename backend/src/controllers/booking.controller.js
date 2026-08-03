@@ -33,50 +33,6 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
             requirements = Array.isArray(formData.additionalRequirements) ? formData.additionalRequirements : [formData.additionalRequirements];
         }
 
-        // WhatsApp single-line summary (using '|' instead of newlines to avoid Meta template delivery rejection)
-        let waParts = [
-            bookingCode,
-            `Customer: ${userName} (${booking.user?.phone || 'N/A'})`,
-            `Service: ${serviceName}`,
-            `Scheduled: ${dateStr} ${booking.scheduledTime || formData.scheduledTime || ''}`,
-            `Paid: ₹${booking.amount || 0}`,
-            `Address: ${booking.addressLine || formData.addressLine || 'N/A'}`
-        ];
-
-        const staffType = booking.staffType || formData.staffType || formData.staff_type;
-        const doctorType = booking.doctorType || formData.doctorType || formData.doctor_type;
-        const shiftDuration = booking.shiftDuration || formData.shiftDuration || formData.shift_duration;
-        if (staffType) waParts.push(`Staff: ${staffType}`);
-        if (doctorType) waParts.push(`Doctor: ${doctorType}`);
-        if (shiftDuration) waParts.push(`Shift: ${shiftDuration}`);
-
-        if (symptoms && symptoms.length > 0) {
-            waParts.push(`Symptoms: ${symptoms.join(', ')}`);
-        }
-        if (requirements && requirements.length > 0) {
-            waParts.push(`Req: ${requirements.join(', ')}`);
-        }
-
-        const pickup = booking.pickupAddress || formData.pickupAddress || formData.pickup_address;
-        const drop = booking.dropAddress || formData.dropAddress || formData.drop_address;
-        const vehicle = booking.vehicleType || formData.vehicleType || formData.vehicle_type;
-        if (pickup) waParts.push(`Pickup: ${pickup}`);
-        if (drop) waParts.push(`Drop: ${drop}`);
-        if (vehicle) waParts.push(`Vehicle: ${vehicle}`);
-
-        const waSummary = waParts.join(' | ').slice(0, 1000);
-
-        // SMS variable 2 (orderId) and variable 3 (support) strictly capped at 30 characters for DLT.
-        const shortTime = (booking.scheduledTime || formData.scheduledTime || 'TBD')
-            .replace(/\s*[aApP][mM]\s*-\s*\d+:\d+\s*[aApP][mM]/, '') // remove end time
-            .replace(/\s+/g, '');
-        const smsSummary = `${bookingCode}:${serviceName.slice(0, 8)}/${dateStr.split('/')[0]}-${dateStr.split('/')[1]}/${shortTime}`.slice(0, 30);
-
-        const amountStr = booking.amount ? `Rs.${Math.round(booking.amount)}` : 'Rs.0';
-        const rawAddr = booking.addressLine || formData.addressLine || 'N/A';
-        const cleanAddr = rawAddr.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').slice(0, 15);
-        const smsSummary2 = `${amountStr}/${cleanAddr}`.slice(0, 30);
-
         // ── SMS ─────────────────────────────────────────────────────────────
         if (sms) {
             try {
@@ -86,7 +42,7 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
                 await sendSMS({
                     template: 'ORDER_CONFIRMED',
                     mobile: sms,
-                    variables: [`Admin (${eventLabel})`, smsSummary, smsSummary2],
+                    variables: [`Admin (${eventLabel})`, bookingCode, process.env.SUPPORT_PHONE || '9480198108'],
                 });
                 logger.info(`[BookingAdmin] SMS sent → ${sms} (${eventLabel} / ${bookingCode})`);
             } catch (smsErr) {
@@ -101,11 +57,11 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
             try {
                 const wa = require('../services/whatsapp');
                 // BOOKING_CONFIRMED template: Var1=name, Var2=orderId
-                // Pass 'Admin' to prevent Meta duplicate message suppression
+                // Pass distinct name to prevent Meta duplicate message suppression
                 await wa.sendWhatsApp({
                     template: 'BOOKING_CONFIRMED',
                     mobile: whatsapp,
-                    variables: [`Admin (${eventLabel})`, waSummary],
+                    variables: [`Admin (${eventLabel})`, bookingCode],
                 });
                 logger.info(`[BookingAdmin] WhatsApp sent → ${whatsapp} (${eventLabel} / ${bookingCode})`);
             } catch (waErr) {
