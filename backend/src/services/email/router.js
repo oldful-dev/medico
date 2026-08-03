@@ -75,12 +75,24 @@ const sendSOSAlertAdmin = ({ userName, userUniqueId, phone, location }) =>
 
 // ─── HR / Careers ─────────────────────────────
 
-const sendCareersNotifyAdmin = ({ name, email, phone, role, experience, resumeLink, coverLetter }) =>
-    sendEmail({
-        to: 'business@ayuxacare.com',
+const sendCareersNotifyAdmin = async ({ name, email, phone, role, experience, resumeLink, coverLetter }) => {
+    let toEmail = 'business@ayuxacare.com';
+    try {
+        const { getNotificationRecipients } = require('../companyConfig.service');
+        const recipients = await getNotificationRecipients();
+        if (recipients?.careers?.email) {
+            toEmail = recipients.careers.email;
+        }
+    } catch (err) {
+        // Fallback silently to default hardcoded email
+    }
+
+    return sendEmail({
+        to: toEmail,
         subject: EMAIL_TEMPLATES.CAREERS_ADMIN_NOTIFY.subject({ role, name }),
         html: EMAIL_TEMPLATES.CAREERS_ADMIN_NOTIFY.html({ name, email, phone, role, experience, resumeLink, coverLetter }),
     });
+};
 
 const sendCareersApplicantConfirm = ({ to, name, role }) =>
     sendEmail({
