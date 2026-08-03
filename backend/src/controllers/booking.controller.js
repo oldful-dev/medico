@@ -435,7 +435,9 @@ const createBooking = async (req, res, next) => {
         sendResponse(res, 201, booking, 'Booking created successfully');
 
         // ── Notify admin via dynamic recipients (non-fatal, runs after response) ──
-        setImmediate(() => notifyBookingAdmin({ booking, eventLabel: 'New Booking' }));
+        if (booking.status === 'CONFIRMED') {
+            setImmediate(() => notifyBookingAdmin({ booking, eventLabel: 'New Booking' }));
+        }
     } catch (error) {
         next(error);
     }
@@ -948,5 +950,6 @@ module.exports = {
     getBookings, getBookingById, createBooking,
     assignCaregiver, reassignCaregiver, updateBookingStatus, updatePaymentStatus, escalateBooking,
     getMyBookings, getMyBookingById, cancelBooking, downloadInvoice, updateServicePerson,
+    notifyBookingAdmin,
 };
 

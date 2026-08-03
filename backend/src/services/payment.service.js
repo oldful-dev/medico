@@ -448,6 +448,20 @@ const processPaymentSuccess = async (orderId, paymentId, signature, paymentMetho
                             bookingCode: payment.booking.bookingCode,
                             booking: payment.booking,
                         });
+
+                        // ── Notify admin via dynamic recipients on payment confirmation (non-fatal) ──
+                        try {
+                            const { notifyBookingAdmin } = require('../controllers/booking.controller');
+                            setImmediate(() => notifyBookingAdmin({ 
+                                booking: {
+                                    ...payment.booking,
+                                    user: payment.user
+                                }, 
+                                eventLabel: 'Payment Confirmed' 
+                            }));
+                        } catch (adminNotifErr) {
+                            logger.error('[PaymentService] Admin booking confirmation notify failed:', adminNotifErr.message);
+                        }
                     } catch (notifyErr) {
                         logger.error('[PaymentService] Booking confirmation notification failed:', notifyErr.message);
                     }
