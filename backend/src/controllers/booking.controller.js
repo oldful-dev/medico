@@ -66,12 +66,16 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
 
         const waSummary = waParts.join(' | ').slice(0, 1000);
 
-        // SMS variable 2 (orderId) strictly capped at 30 characters for DLT gateways.
-        // Format: BK-XXXXXX:Service/Date/Time
+        // SMS variable 2 (orderId) and variable 3 (support) strictly capped at 30 characters for DLT.
         const shortTime = (booking.scheduledTime || formData.scheduledTime || 'TBD')
             .replace(/\s*[aApP][mM]\s*-\s*\d+:\d+\s*[aApP][mM]/, '') // remove end time
             .replace(/\s+/g, '');
         const smsSummary = `${bookingCode}:${serviceName.slice(0, 8)}/${dateStr.split('/')[0]}-${dateStr.split('/')[1]}/${shortTime}`.slice(0, 30);
+
+        const amountStr = booking.amount ? `₹${Math.round(booking.amount)}` : '₹0';
+        const rawAddr = booking.addressLine || formData.addressLine || 'N/A';
+        const cleanAddr = rawAddr.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').slice(0, 15);
+        const smsSummary2 = `${amountStr}/${cleanAddr}`.slice(0, 30);
 
         // ── SMS ─────────────────────────────────────────────────────────────
         if (sms) {
@@ -82,7 +86,7 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
                 await sendSMS({
                     template: 'ORDER_CONFIRMED',
                     mobile: sms,
-                    variables: [`Admin (${eventLabel})`, smsSummary, process.env.SUPPORT_PHONE || '9480198108'],
+                    variables: [`Admin (${eventLabel})`, smsSummary, smsSummary2],
                 });
                 logger.info(`[BookingAdmin] SMS sent → ${sms} (${eventLabel} / ${bookingCode})`);
             } catch (smsErr) {
