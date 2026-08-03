@@ -33,38 +33,45 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
             requirements = Array.isArray(formData.additionalRequirements) ? formData.additionalRequirements : [formData.additionalRequirements];
         }
 
-        // WhatsApp Multi-line Detailed Structured Summary
-        let waDetails = `${bookingCode}\n`;
-        waDetails += `• Customer: ${userName} (${booking.user?.phone || 'N/A'})\n`;
-        waDetails += `• Service: ${serviceName}\n`;
-        waDetails += `• Scheduled: ${dateStr} ${booking.scheduledTime || formData.scheduledTime || ''}\n`;
-        waDetails += `• Paid: ₹${booking.amount || 0}\n`;
-        waDetails += `• Address: ${booking.addressLine || formData.addressLine || 'N/A'}\n`;
+        // WhatsApp single-line summary (using '|' instead of newlines to avoid Meta template delivery rejection)
+        let waParts = [
+            bookingCode,
+            `Customer: ${userName} (${booking.user?.phone || 'N/A'})`,
+            `Service: ${serviceName}`,
+            `Scheduled: ${dateStr} ${booking.scheduledTime || formData.scheduledTime || ''}`,
+            `Paid: ₹${booking.amount || 0}`,
+            `Address: ${booking.addressLine || formData.addressLine || 'N/A'}`
+        ];
 
         const staffType = booking.staffType || formData.staffType || formData.staff_type;
         const doctorType = booking.doctorType || formData.doctorType || formData.doctor_type;
         const shiftDuration = booking.shiftDuration || formData.shiftDuration || formData.shift_duration;
-        if (staffType) waDetails += `• Staff: ${staffType}\n`;
-        if (doctorType) waDetails += `• Doctor: ${doctorType}\n`;
-        if (shiftDuration) waDetails += `• Shift: ${shiftDuration}\n`;
+        if (staffType) waParts.push(`Staff: ${staffType}`);
+        if (doctorType) waParts.push(`Doctor: ${doctorType}`);
+        if (shiftDuration) waParts.push(`Shift: ${shiftDuration}`);
 
         if (symptoms && symptoms.length > 0) {
-            waDetails += `• Symptoms: ${symptoms.join(', ')}\n`;
+            waParts.push(`Symptoms: ${symptoms.join(', ')}`);
         }
         if (requirements && requirements.length > 0) {
-            waDetails += `• Req: ${requirements.join(', ')}\n`;
+            waParts.push(`Req: ${requirements.join(', ')}`);
         }
 
         const pickup = booking.pickupAddress || formData.pickupAddress || formData.pickup_address;
         const drop = booking.dropAddress || formData.dropAddress || formData.drop_address;
         const vehicle = booking.vehicleType || formData.vehicleType || formData.vehicle_type;
-        if (pickup) waDetails += `• Pickup: ${pickup}\n`;
-        if (drop) waDetails += `• Drop: ${drop}\n`;
-        if (vehicle) waDetails += `• Vehicle: ${vehicle}\n`;
+        if (pickup) waParts.push(`Pickup: ${pickup}`);
+        if (drop) waParts.push(`Drop: ${drop}`);
+        if (vehicle) waParts.push(`Vehicle: ${vehicle}`);
 
-        // Limit WA variable to 1000 characters just in case
-        const waSummary = waDetails.slice(0, 1000);
-        const smsSummary = `${bookingCode} (${serviceName})`.slice(0, 30);
+        const waSummary = waParts.join(' | ').slice(0, 1000);
+
+        // SMS variable 2 (orderId) strictly capped at 30 characters for DLT gateways.
+        // Format: BK-XXXXXX:Service/Date/Time
+        const shortTime = (booking.scheduledTime || formData.scheduledTime || 'TBD')
+            .replace(/\s*[aApP][mM]\s*-\s*\d+:\d+\s*[aApP][mM]/, '') // remove end time
+            .replace(/\s+/g, '');
+        const smsSummary = `${bookingCode}:${serviceName.slice(0, 8)}/${dateStr.split('/')[0]}-${dateStr.split('/')[1]}/${shortTime}`.slice(0, 30);
 
         // ── SMS ─────────────────────────────────────────────────────────────
         if (sms) {
