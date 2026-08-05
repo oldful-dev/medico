@@ -290,7 +290,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         alignItems: 'center',
     },
     tableHeader: {
-        backgroundColor: isDarkMode ? colors.bgScreen : '#F9FAFB',
+        backgroundColor: isDarkMode ? colors.bgScreen : '#F5F0E1',
     },
     cell: {
         flex: 1,

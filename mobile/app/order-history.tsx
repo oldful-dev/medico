@@ -547,7 +547,7 @@ const makeStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
         backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 7,
         borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 4,
     },
-    trackBtnText: { color: '#FFF', fontFamily: Fonts.bold, fontSize: 12 },
+    trackBtnText: { color: '#FAF7ED', fontFamily: Fonts.bold, fontSize: 12 },
     invoiceBtn: {
         borderWidth: 1, borderColor: '#02743F',
         paddingHorizontal: 12, paddingVertical: 6,
@@ -556,7 +556,7 @@ const makeStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
     },
     invoiceBtnText: { color: '#02743F', fontFamily: Fonts.bold, fontSize: 12 },
     payBtn: { backgroundColor: colors.primary, paddingHorizontal: 18, paddingVertical: 7, borderRadius: 10 },
-    payBtnText: { color: '#FFF', fontFamily: Fonts.bold, fontSize: 13 },
+    payBtnText: { color: '#FAF7ED', fontFamily: Fonts.bold, fontSize: 13 },
     rebookBtn: { borderWidth: 1, borderColor: colors.primary, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 10 },
     rebookBtnText: { color: colors.primary, fontFamily: Fonts.bold, fontSize: 12 },
     cancelBtn: { borderWidth: 1, borderColor: '#E53935', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 10, minWidth: 68, alignItems: 'center' },
@@ -579,5 +579,5 @@ const makeStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
         backgroundColor: colors.primary, paddingHorizontal: 30, paddingVertical: 12,
         borderRadius: 15,
     },
-    exploreBtnText: { fontFamily: Fonts.bold, color: '#FFF', fontSize: 14 },
+    exploreBtnText: { fontFamily: Fonts.bold, color: '#FAF7ED', fontSize: 14 },
 });

@@ -451,7 +451,7 @@ const makeStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
         backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 12,
         borderRadius: Radius.md,
     },
-    retryText: { fontFamily: Fonts.bold, fontSize: FontSize.bodySmall, color: '#fff' },
+    retryText: { fontFamily: Fonts.bold, fontSize: FontSize.bodySmall, color: '#FAF7ED' },
 
     heroCard: {
         backgroundColor: colors.bgCard, borderRadius: Radius.lg, borderWidth: 1.5,
@@ -548,7 +548,7 @@ const makeStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
         gap: 8, marginBottom: Spacing.lg,
     },
-    trackBtnText: { fontFamily: Fonts.bold, fontSize: FontSize.body, color: '#fff' },
+    trackBtnText: { fontFamily: Fonts.bold, fontSize: FontSize.body, color: '#FAF7ED' },
     invoiceBtn: {
         borderWidth: 1.5, borderColor: colors.primary, borderRadius: Radius.md,
         paddingVertical: 14, flexDirection: 'row', alignItems: 'center',

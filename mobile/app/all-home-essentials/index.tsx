@@ -74,42 +74,23 @@ export default function AllHomeEssentialsScreen() {
         setIsParentDisabled(false);
 
         // Utility to resolve mismatched slugs to valid mobile routes
-        const resolveSlugToRoute = (slug: string) => {
-          if (slug === "tech-helper-essentials") return "/tech-helper";
+        const resolveSlugToRoute = (s: any) => {
+          if (s.route) return s.route;
+          const slug = s.slug;
           if (slug === "home-essentials") return "/all-home-essentials";
-          if (slug === "bank-paperwork") return "/paper-legal";
-
-          const STATIC_ESSENTIALS = [
-            "appliance-repair",
-            "plumbing-electrical",
-            "deep-cleaning",
-            "driving-cab",
-            "bill-payment",
-            "grocery-run",
-            "anything-else",
-            "paper-legal",
-            "sanitisation",
-            "tech-helper"
-          ];
-          if (STATIC_ESSENTIALS.includes(slug)) {
-            return `/${slug}`;
-          }
-          return `/home-essentials-dynamic/${slug}`;
+          return `/${slug}`;
         };
 
-        // Filter for Home Essentials, excluding parent categories, smart-upgrade, trip-travels, bank-paperwork
+        // Filter for Home Essentials
         const filtered = res.data
           .filter(
             (s: any) =>
               s.serviceType === "HOME_ESSENTIALS" &&
-              s.slug !== "home-essentials" &&
-              s.slug !== "smart-upgrade" &&
-              s.slug !== "trip-travels" &&
-              s.slug !== "bank-paperwork",
+              s.slug !== "home-essentials"
           )
           .map((s: any) => ({
             ...s,
-            route: resolveSlugToRoute(s.slug),
+            route: resolveSlugToRoute(s),
             iconAsset: (s.icon && !isEmoji(s.icon)) ? { uri: getAssetUrl(s.icon) } : (ICON_MAPPING[s.slug] || anythingElseIcon),
           }));
         setServices(filtered);
@@ -240,7 +221,7 @@ const makeStyles = (isDarkMode: boolean, insets: any) =>
     card: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: isDarkMode ? "#1E293B" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#1E293B" : '#FAF7ED',
       borderRadius: 16,
       padding: 16,
       marginBottom: 12,

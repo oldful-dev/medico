@@ -16,10 +16,10 @@ export const Colors = {
   accentBright: '#0EDD94',   // Decorative accent
 
   // Backgrounds
-  bgScreen: '#F5F8F5',       // Standout neat background to make cards stand out
-  bgCard: '#FFFFFF',         // Cards, containers
-  bgHeader: '#FFFFF8',       // Header bar
-  bgCardMuted: 'rgba(222,222,222,0.43)', // Muted card/grid item bg
+  bgScreen: '#F5F0E1',       // Premium screen background (warm cream-gray)
+  bgCard: '#FAF7ED',         // Elegant warm cream card container
+  bgHeader: '#FAF7ED',       // Elegant warm cream header bar
+  bgCardMuted: 'rgba(235,230,215,0.43)', // Muted card/grid item bg
 
   // Text
   textDark: '#1E1E1E',       // Primary body text

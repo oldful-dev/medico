@@ -478,7 +478,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
         container: {
             minHeight: '70%',
             maxHeight: '95%',
-            backgroundColor: isDarkMode ? '#1A1A1A' : '#fff',
+            backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             overflow: 'hidden',
@@ -535,7 +535,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
             paddingVertical: 6,
             borderRadius: 6,
         },
-        saveBadgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+        saveBadgeText: { color: '#FAF7ED', fontSize: 10, fontWeight: 'bold' },
 
         // Info grid
         infoGrid: {
@@ -545,7 +545,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
         },
         infoItem: {
             flex: 1,
-            backgroundColor: isDarkMode ? '#252525' : '#F9FAFB',
+            backgroundColor: isDarkMode ? '#252525' : '#F5F0E1',
             padding: 12,
             borderRadius: 10,
             alignItems: 'center',
@@ -600,7 +600,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
 
         // Parameter groups (accordion)
         groupCard: {
-            backgroundColor: isDarkMode ? '#252525' : '#F9FAFB',
+            backgroundColor: isDarkMode ? '#252525' : '#F5F0E1',
             borderRadius: 10,
             marginBottom: 8,
             borderWidth: 1,
@@ -669,7 +669,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
         parametersBox: {
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: isDarkMode ? '#252525' : '#F9FAFB',
+            backgroundColor: isDarkMode ? '#252525' : '#F5F0E1',
             padding: 12,
             borderRadius: 10,
             borderWidth: 1,
@@ -721,7 +721,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
             paddingVertical: 12,
             borderTopWidth: 1,
             borderTopColor: isDarkMode ? '#3A3A3A' : '#F0F0F0',
-            backgroundColor: isDarkMode ? '#1A1A1A' : '#fff',
+            backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
             gap: 10,
         },
         cartBtn: {
@@ -733,7 +733,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
             justifyContent: 'center',
             borderWidth: 1.5,
             borderColor: PRIMARY_GREEN,
-            backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
+            backgroundColor: isDarkMode ? '#252525' : '#FAF7ED',
         },
         cartBtnText: {
             color: PRIMARY_GREEN,
@@ -748,5 +748,5 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
             alignItems: 'center',
             justifyContent: 'center',
         },
-        bookBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+        bookBtnText: { color: '#FAF7ED', fontSize: 14, fontWeight: '700' },
     });

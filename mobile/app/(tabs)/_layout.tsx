@@ -99,7 +99,7 @@ export default function TabLayout() {
           tabBarBadge: itemCount > 0 ? itemCount : undefined,
           tabBarBadgeStyle: {
             backgroundColor: colors.sosRed,
-            color: "#FFFFFF",
+            color: '#FAF7ED',
             fontSize: 10,
             lineHeight: 14,
           },

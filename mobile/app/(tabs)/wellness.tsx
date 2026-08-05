@@ -429,12 +429,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 2,
-        borderColor: '#fff',
+        borderColor: '#FAF7ED',
     },
     cartBadgeText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.bodySmall,
-        color: '#fff',
+        color: '#FAF7ED',
     },
     /* ─── Main Content Container (Cream Box) ─── */
     contentContainer: {
@@ -657,7 +657,7 @@ const styles = StyleSheet.create({
     discountText: {
         fontFamily: Fonts.semiBold,
         fontSize: 10,
-        color: '#fff',
+        color: '#FAF7ED',
     },
     lowStockBadge: {
         position: 'absolute',
@@ -671,7 +671,7 @@ const styles = StyleSheet.create({
     lowStockText: {
         fontFamily: Fonts.semiBold,
         fontSize: 10,
-        color: '#fff',
+        color: '#FAF7ED',
     },
     cardBody: {
         padding: Spacing.sm,
@@ -725,7 +725,7 @@ const styles = StyleSheet.create({
     addBtnText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.bodySmall,
-        color: '#fff',
+        color: '#FAF7ED',
     },
     qtyBtnMini: {
         paddingHorizontal: 8,

@@ -422,7 +422,7 @@ export default function CartScreen() {
                                 disabled={categorySelectedItems.length === 0}
                                 activeOpacity={0.88}
                             >
-                                <Ionicons name="arrow-forward" size={16} color={categorySelectedItems.length === 0 ? colors.textMuted : "#fff"} />
+                                <Ionicons name="arrow-forward" size={16} color={categorySelectedItems.length === 0 ? colors.textMuted : '#FAF7ED'} />
                                 <Text style={[styles.categoryCheckoutText, categorySelectedItems.length === 0 && { color: colors.textMuted }]}>{t('cart.checkout')}</Text>
                             </TouchableOpacity>
                         </View>
@@ -487,7 +487,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         backgroundColor: colors.primary, borderRadius: Radius.lg,
         paddingVertical: 14, paddingHorizontal: 28, marginTop: 16,
     },
-    browseBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: '#fff' },
+    browseBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: '#FAF7ED' },
 
     // Header
     header: {
@@ -527,7 +527,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         paddingVertical: 4,
         borderRadius: 6,
     },
-    benefitBadgeText: { fontFamily: Fonts.semiBold, fontSize: 10, color: '#fff' },
+    benefitBadgeText: { fontFamily: Fonts.semiBold, fontSize: 10, color: '#FAF7ED' },
 
     // Mixed cart banner
     mixedCartBanner: {
@@ -584,7 +584,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     checkoutAllBtnText: {
         fontFamily: Fonts.semiBold,
         fontSize: 15,
-        color: '#fff',
+        color: '#FAF7ED',
     },
     categorySection: {
         backgroundColor: colors.bgCard,
@@ -678,7 +678,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         paddingVertical: 12,
         borderRadius: Radius.md,
     },
-    categoryCheckoutText: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#fff' },
+    categoryCheckoutText: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#FAF7ED' },
 
     // Trust
     trustRow: {

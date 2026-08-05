@@ -62,51 +62,10 @@ const resolveRoute = (route?: string, id?: string) => {
   }
   const cleanId = id ? id.toLowerCase().trim() : '';
 
-  if (cleanId === 'physio_quick' || cleanId === 'physio') return '/physio';
-  if (cleanId === 'fitness') return '/fitness';
-  if (cleanId === 'scan_ecg') return '/scan-ecg';
-
   if (clean.includes('home-essentials') || clean.includes('home essentials')) return '/all-home-essentials';
   if (clean.includes('all-ayuxa') || clean.includes('all-ayuxacare') || clean.includes('all-oldful')) return '/all-ayuxa-services';
   if (clean.includes('account/medical-logs') || clean.includes('account/medical_logs')) return '/profile/medical-logs';
   
-  // Dynamic check for Home Essentials services
-  const STATIC_ESSENTIALS = [
-    '/appliance-repair',
-    '/plumbing-electrical',
-    '/deep-cleaning',
-    '/driving-cab',
-    '/bill-payment',
-    '/bank-paperwork',
-    '/grocery-run',
-    '/anything-else',
-    '/paper-legal',
-    '/sanitisation',
-    '/tech-helper'
-  ];
-  
-  if (cleanId && !STATIC_ESSENTIALS.includes(clean)) {
-    const OTHER_STATIC = [
-      '/doctor-visit',
-      '/doctor-home-visit',
-      '/hospital-trip',
-      '/nurse-care',
-      '/caregiver-support',
-      '/physio',
-      '/insurance',
-      '/blood-test',
-      '/order-medicines',
-      '/physio-fitness',
-      '/medical-equipment',
-      '/meal-service',
-      '/tech-helper',
-      '/club-events'
-    ];
-    if (!OTHER_STATIC.includes(clean)) {
-      return `/home-essentials-dynamic/${cleanId}`;
-    }
-  }
-
   return route.replace(/oldful/gi, 'ayuxa').replace(/ayuxacare/gi, 'ayuxa');
 };
 
@@ -431,31 +390,42 @@ function EssentialsGrid({ section, itemWidth, cardHeight, colors }: EssentialsGr
     }).flat()
   );
 
-  // Filter and sort active Home Essentials services from database
-  const dbServices = services
-    .filter(
-      sv =>
-        sv.serviceType === "HOME_ESSENTIALS" &&
-        sv.isEnabled &&
-        sv.slug !== "home-essentials" &&
-        sv.slug !== "smart-upgrade" &&
-        sv.slug !== "trip-travels" &&
-        sv.slug !== "bank-paperwork" &&
-        (enabledRoutesOrSlugs.has((sv.route || '').toLowerCase().trim()) || 
-         enabledRoutesOrSlugs.has(sv.slug.toLowerCase().trim()))
-    )
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  // Filter active Home Essentials services from database
+  const activeDbServices = services.filter(
+    sv =>
+      sv.serviceType === "HOME_ESSENTIALS" &&
+      sv.isEnabled &&
+      sv.slug !== "home-essentials" &&
+      sv.slug !== "smart-upgrade" &&
+      sv.slug !== "trip-travels"
+  );
 
-  // Map to matching layout structure
-  const items = dbServices.slice(0, section.max_items || 8).map(dbS => {
+  // Map exactly using the server-defined services layout configuration order (section.services) capped at max_items (8)
+  const rawItems = (section.services || []).map(layoutService => {
+    // Find matching service in database by matching layout route/id to db slug/route
+    const dbS = activeDbServices.find(ds => {
+      const layoutRoute = (layoutService.route || '').toLowerCase().trim();
+      const layoutSlug = layoutRoute.startsWith('/') ? layoutRoute.slice(1) : layoutRoute;
+      return ds.slug.toLowerCase().trim() === layoutService.id.toLowerCase().trim() ||
+             ds.slug.toLowerCase().trim() === layoutSlug ||
+             (ds.route || '').toLowerCase().trim() === layoutRoute;
+    });
+
+    const route = layoutService.route || (dbS ? dbS.route || `/${dbS.slug}` : `/${layoutService.id}`);
+    const label = layoutService.label || (dbS ? dbS.headline || dbS.name : layoutService.id);
+    const slug = dbS ? dbS.slug : layoutService.id;
+    const icon = layoutService.icon || dbS?.icon;
+
     return {
-      id: dbS.slug,
-      slug: dbS.slug,
-      label: dbS.headline || dbS.name,
-      route: dbS.route || `/${dbS.slug}`,
-      iconAsset: (dbS.icon && !isEmoji(dbS.icon)) ? { uri: getAssetUrl(dbS.icon) } : (ICON_MAPPING[dbS.slug] || anythingElseIcon),
+      id: layoutService.id || slug,
+      slug: slug,
+      label: label,
+      route: route,
+      iconAsset: (icon && !isEmoji(icon)) ? { uri: getAssetUrl(icon) } : (ICON_MAPPING[slug] || ICON_MAPPING[layoutService.id] || anythingElseIcon),
     };
-  });
+  }).filter((item): item is NonNullable<typeof item> => item !== null);
+
+  const items = rawItems.slice(0, section.max_items || 8);
 
   const rows: any[][] = [];
   for (let i = 0; i < items.length; i += 4) {
@@ -830,7 +800,7 @@ export default function HomeScreen() {
             activeOpacity={0.8}
           >
             <Ionicons name="refresh" size={16} color="#FFFFFF" />
-            <Text style={{ fontFamily: Fonts.bold, fontSize: 14, color: '#FFFFFF' }}>
+            <Text style={{ fontFamily: Fonts.bold, fontSize: 14, color: '#FAF7ED' }}>
               Tap to Retry
             </Text>
           </TouchableOpacity>
@@ -1205,7 +1175,7 @@ function makeStyles(c: ThemeColors, fontScale: number = 1.0, isLargeFont: boolea
       width: 3,
       height: 3,
       borderRadius: 1.5,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: '#FAF7ED',
     },
     ekgLineOverlay: {
       position: 'absolute',
@@ -1216,12 +1186,12 @@ function makeStyles(c: ThemeColors, fontScale: number = 1.0, isLargeFont: boolea
     },
     greetingContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', zIndex: 2 },
     greetingTextContainer: { flex: 1, marginRight: 12 },
-    newGreetingTimeText: { fontFamily: Fonts.bold, fontSize: Math.round(20 * fontScale), color: '#FFFFFF', lineHeight: Math.round(26 * fontScale) },
-    newGreetingNameText: { fontFamily: Fonts.bold, fontSize: Math.round(20 * fontScale), color: '#FFFFFF', lineHeight: Math.round(26 * fontScale), marginBottom: 6 },
+    newGreetingTimeText: { fontFamily: Fonts.bold, fontSize: Math.round(20 * fontScale), color: '#FAF7ED', lineHeight: Math.round(26 * fontScale) },
+    newGreetingNameText: { fontFamily: Fonts.bold, fontSize: Math.round(20 * fontScale), color: '#FAF7ED', lineHeight: Math.round(26 * fontScale), marginBottom: 6 },
     newGreetingSubtitle: { fontFamily: Fonts.semiBold, fontSize: Math.round(12.5 * fontScale), color: '#FEF08A', opacity: 0.95, lineHeight: Math.round(18 * fontScale) },
     goldenAccentLine: { width: 36, height: 2, backgroundColor: '#FACC15', borderRadius: 1, marginTop: 6, marginBottom: 14 },
     bookingStatusBtn: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: '#FAF7ED',
       paddingVertical: 8,
       paddingHorizontal: 16,
       borderRadius: Radius.full,
@@ -1238,7 +1208,7 @@ function makeStyles(c: ThemeColors, fontScale: number = 1.0, isLargeFont: boolea
     bookingStatusBtnText: { fontFamily: Fonts.bold, fontSize: Math.round(12 * fontScale), color: '#02743F' },
     greetingAvatarContainer: { width: 96, height: 96, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
     greetingAvatar: { width: 96, height: 96, borderRadius: 48, borderWidth: 3.5, borderColor: 'rgba(255, 255, 255, 0.85)' },
-    greetingAvatarPlaceholder: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', borderWidth: 3.5, borderColor: 'rgba(255, 255, 255, 0.85)' },
+    greetingAvatarPlaceholder: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#FAF7ED', justifyContent: 'center', alignItems: 'center', borderWidth: 3.5, borderColor: 'rgba(255, 255, 255, 0.85)' },
 
     featuredMeetupCard: {
       marginHorizontal: Spacing.cardMargin,
@@ -1261,13 +1231,13 @@ function makeStyles(c: ThemeColors, fontScale: number = 1.0, isLargeFont: boolea
       justifyContent: 'space-between',
     },
     featuredMeetupHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    featuredMeetupBadge: { fontFamily: Fonts.semiBold, fontSize: 10, color: '#FFFFFF', backgroundColor: 'rgba(255,255,255,0.25)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-    featuredMeetupTitle: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#FFFFFF', marginTop: 6, lineHeight: 18 },
+    featuredMeetupBadge: { fontFamily: Fonts.semiBold, fontSize: 10, color: '#FAF7ED', backgroundColor: 'rgba(255,255,255,0.25)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+    featuredMeetupTitle: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#FAF7ED', marginTop: 6, lineHeight: 18 },
     featuredMeetupMeta: { gap: 8 },
     featuredMeetupMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     featuredMeetupMetaText: { fontFamily: Fonts.regular, fontSize: 11, color: 'rgba(255,255,255,0.85)' },
     featuredMeetupFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.2)' },
-    featuredMeetupPrice: { fontFamily: Fonts.bold, fontSize: 16, color: '#FFFFFF' },
+    featuredMeetupPrice: { fontFamily: Fonts.bold, fontSize: 16, color: '#FAF7ED' },
 
     quickServiceCard: {
       marginHorizontal: Spacing.cardMargin,
@@ -1371,7 +1341,7 @@ function makeStyles(c: ThemeColors, fontScale: number = 1.0, isLargeFont: boolea
     comingSoonTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: c.textDark, marginBottom: 2 },
     comingSoonDesc: { fontFamily: Fonts.regular, fontSize: 12, color: c.textMuted },
     notifyMeButton: { backgroundColor: c.primary, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
-    notifyMeText: { fontFamily: Fonts.medium, fontSize: 14, color: '#FFFFFF' },
+    notifyMeText: { fontFamily: Fonts.medium, fontSize: 14, color: '#FAF7ED' },
 
     customCardContainer: {
       marginHorizontal: Spacing.cardMargin,
@@ -1401,7 +1371,7 @@ function makeStyles(c: ThemeColors, fontScale: number = 1.0, isLargeFont: boolea
       fontFamily: Fonts.bold,
       fontSize: Math.round(17 * fontScale),
       lineHeight: Math.round(22 * fontScale),
-      color: '#FFFFFF',
+      color: '#FAF7ED',
     },
     customCardSubtitle: {
       fontFamily: Fonts.medium,
@@ -1422,7 +1392,7 @@ function makeStyles(c: ThemeColors, fontScale: number = 1.0, isLargeFont: boolea
     customCardCtaText: {
       fontFamily: Fonts.bold,
       fontSize: Math.round(11.5 * fontScale),
-      color: '#FFFFFF',
+      color: '#FAF7ED',
     },
 
     // unused legacy styles kept to avoid TS errors in case referenced elsewhere

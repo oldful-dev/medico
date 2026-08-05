@@ -349,20 +349,20 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         letterSpacing: -0.24,
     },
     headerSubtitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 13,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         letterSpacing: -0.24,
         zIndex: 10,
         opacity: 0.9,
     },
     contentContainer: {
         flex: 1,
-        backgroundColor: isDarkMode ? '#0F172A' : '#FDFDE8',
+        backgroundColor: isDarkMode ? '#0F172A' : '#FAF7ED',
         borderTopLeftRadius: 45,
         borderTopRightRadius: 45,
         shadowColor: '#000',
@@ -389,7 +389,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     uploadOptionCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         borderRadius: 12,
         paddingHorizontal: 15,
         height: 59,
@@ -448,7 +448,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         position: 'absolute',
         top: -8,
         right: -8,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         borderRadius: 10,
     },
     divider: {
@@ -457,7 +457,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         marginVertical: 20,
     },
     addonsContainer: {
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         borderRadius: 11,
         padding: 20,
         paddingBottom: 15,
@@ -510,7 +510,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         marginTop: 10,
     },
     commentsContainer: {
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         borderRadius: 12,
         padding: 12,
         marginBottom: 25,
@@ -536,7 +536,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         fontSize: 15,
     },
 });

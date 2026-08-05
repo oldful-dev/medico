@@ -360,13 +360,13 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         letterSpacing: -0.24,
     },
     headerSubtitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 13,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         letterSpacing: -0.24,
         zIndex: 10,
     },
@@ -374,7 +374,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     /* ─── Main Content Container (Cream Box) ─── */
     contentContainer: {
         flex: 1,
-        backgroundColor: isDarkMode ? '#0F172A' : '#FDFDE8',
+        backgroundColor: isDarkMode ? '#0F172A' : '#FAF7ED',
         borderTopLeftRadius: 45,
         borderTopRightRadius: 45,
         shadowColor: '#000',
@@ -405,7 +405,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     uploadOptionCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         borderRadius: 12,
         paddingHorizontal: 15,
         height: 59,
@@ -515,7 +515,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         borderWidth: 1,
         borderColor: isDarkMode ? '#334155' : '#D3DFDD',
         borderRadius: 20,
@@ -531,7 +531,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         color: isDarkMode ? '#CCCCCC' : '#555555',
     },
     addressTypeChipTextActive: {
-        color: '#FFFFFF',
+        color: '#FAF7ED',
     },
     editAddressButton: {
         width: 27,
@@ -547,7 +547,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     autoRefillCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         borderWidth: 1,
         borderColor: '#02743F',
         borderRadius: 12,
@@ -589,7 +589,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         borderRadius: 8,
         paddingVertical: 12,
         alignItems: 'center',
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     durationButtonActive: {
         borderColor: '#048357',
@@ -617,7 +617,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         fontSize: 15,
     },
     /* ─── New Interactive Styles ─── */
@@ -627,7 +627,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         backgroundColor: isDarkMode ? 'rgba(4,131,87,0.15)' : '#F0FFF4',
     },
     manualEntryContainer: {
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         borderRadius: 12,
         padding: 10,
         marginBottom: 15,
@@ -663,7 +663,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         position: 'absolute',
         top: -8,
         right: -8,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         borderRadius: 10,
     },
 });

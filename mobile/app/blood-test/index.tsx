@@ -287,7 +287,7 @@ export default function BloodTestScreen() {
                                 ]}
                                 activeOpacity={0.75}
                             >
-                                <Text style={[styles.chipText, active ? { color: '#FFFFFF' } : { color: themeColors.textMuted }]}>
+                                <Text style={[styles.chipText, active ? { color: '#FAF7ED' } : { color: themeColors.textMuted }]}>
                                     {t(`blood_test.${catKeys[idx]}`)}
                                 </Text>
                             </TouchableOpacity>
@@ -355,7 +355,7 @@ const makeStyles = (themeColors: ThemeColors, isDarkMode: boolean) => StyleSheet
     headerTitle: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.heading2,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         letterSpacing: 0.2,
     },
     headerSub: {
@@ -386,7 +386,7 @@ const makeStyles = (themeColors: ThemeColors, isDarkMode: boolean) => StyleSheet
         borderWidth: 1.5,
         borderColor: themeColors.primary,
     },
-    cartBadgeText: { fontFamily: Fonts.semiBold, fontSize: 9, color: '#FFFFFF' },
+    cartBadgeText: { fontFamily: Fonts.semiBold, fontSize: 9, color: '#FAF7ED' },
 
     // Trust strip
     trustStrip: {
@@ -473,7 +473,7 @@ const makeStyles = (themeColors: ThemeColors, isDarkMode: boolean) => StyleSheet
     ribbonText: {
         fontFamily: Fonts.semiBold,
         fontSize: 9,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         letterSpacing: 0.5,
     },
     cardInner: {
@@ -536,7 +536,7 @@ const makeStyles = (themeColors: ThemeColors, isDarkMode: boolean) => StyleSheet
         borderRadius: Radius.sm,
         backgroundColor: themeColors.primary,
     },
-    bookBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: '#FFFFFF' },
+    bookBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: '#FAF7ED' },
 
     // Loading / empty
     loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.md, paddingTop: 60 },

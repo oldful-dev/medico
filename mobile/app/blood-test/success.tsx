@@ -22,7 +22,7 @@ export default function BloodTestSuccessScreen() {
         packageName?: string;
     }>();
 
-    const bg = isDarkMode ? '#121212' : '#FFFFFF';
+    const bg = isDarkMode ? '#121212' : '#FAF7ED';
     const cardBg = isDarkMode ? '#1E1E1E' : '#F8FAF9';
     const border = isDarkMode ? '#2A2A2A' : '#E5E7EB';
     const textPrimary = isDarkMode ? '#F0F0F0' : '#1A1A1A';
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
         gap: 8, paddingVertical: 15, borderRadius: 14,
     },
-    primaryBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+    primaryBtnText: { color: '#FAF7ED', fontSize: 16, fontWeight: '700' },
     secondaryBtn: {
         alignItems: 'center', justifyContent: 'center',
         paddingVertical: 14, borderRadius: 14, borderWidth: 1.5,

@@ -91,9 +91,9 @@ export default function SearchScreen() {
                 <Text style={styles.headerTitle}>Search</Text>
             </View>
 
-            <View style={[styles.contentCard, { backgroundColor: isDarkMode ? '#252525' : '#FDFDE8' }]}>
+            <View style={[styles.contentCard, { backgroundColor: isDarkMode ? '#252525' : '#FAF7ED' }]}>
                 <View style={styles.searchBarContainer}>
-                    <View style={[styles.searchBar, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FFFFFF' }]}>
+                    <View style={[styles.searchBar, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FAF7ED' }]}>
                         <Ionicons name="search" size={18} color={isDarkMode ? '#808080' : '#AAAEAC'} style={styles.searchIcon} />
                         <TextInput
                             style={[styles.searchInput, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}
@@ -124,7 +124,7 @@ export default function SearchScreen() {
                                 results.map((item, index) => (
                                     <TouchableOpacity
                                         key={item.id || index}
-                                        style={[styles.resultItem, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FFFFFF' }]}
+                                        style={[styles.resultItem, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FAF7ED' }]}
                                         onPress={() => handleServiceSelect(item)}
                                     >
                                         <View style={styles.resultIconBox}>
@@ -151,7 +151,7 @@ export default function SearchScreen() {
                                 {CATEGORIES.map((cat, index) => (
                                     <TouchableOpacity
                                         key={index}
-                                        style={[styles.categoryCard, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FFFFFF' }]}
+                                        style={[styles.categoryCard, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FAF7ED' }]}
                                         onPress={() => setQuery(cat.label)}
                                     >
                                         <View style={[styles.categoryIconCircle, { backgroundColor: `${cat.color}12` }]}>
@@ -170,7 +170,7 @@ export default function SearchScreen() {
                                             <Text style={[styles.clearText, { color: '#E05E5E' }]}>Clear</Text>
                                         </TouchableOpacity>
                                     </View>
-                                    <View style={[styles.recentList, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FFFFFF' }]}>
+                                    <View style={[styles.recentList, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FAF7ED' }]}>
                                         {recentSearches.map((item, index) => (
                                             <TouchableOpacity
                                                 key={index}
@@ -210,7 +210,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     screen: { flex: 1 },
     header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 20, paddingTop: 10 },
     backButton: { padding: 5 },
-    headerTitle: { flex: 1, fontFamily: 'Poppins_600SemiBold', fontSize: 20, color: '#FFFFFF', textAlign: 'left', marginLeft: 12 },
+    headerTitle: { flex: 1, fontFamily: 'Poppins_600SemiBold', fontSize: 20, color: '#FAF7ED', textAlign: 'left', marginLeft: 12 },
     contentCard: { flex: 1, borderTopLeftRadius: 45, borderTopRightRadius: 45, overflow: 'hidden' },
     searchBarContainer: { paddingHorizontal: 20, paddingTop: 28 },
     searchBar: {

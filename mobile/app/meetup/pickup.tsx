@@ -124,7 +124,7 @@ export default function MeetupPickupScreen() {
                             value={pickupEnabled}
                             onValueChange={setPickupEnabled}
                             trackColor={{ false: Colors.borderLight, true: '#86EFAC' }}
-                            thumbColor={pickupEnabled ? PRIMARY : '#fff'}
+                            thumbColor={pickupEnabled ? PRIMARY : '#FAF7ED'}
                         />
                     </View>
                 </View>
@@ -247,14 +247,14 @@ export default function MeetupPickupScreen() {
 
 const styles = StyleSheet.create({
     stepDotActive: { backgroundColor: Colors.accent },
-    stepLabelActive: { color: '#fff', fontFamily: Fonts.semiBold },
+    stepLabelActive: { color: '#FAF7ED', fontFamily: Fonts.semiBold },
     stepLineActive: { backgroundColor: Colors.accent },
     scrollContent: { padding: Spacing.lg },
     readOnlyInput: { backgroundColor: '#F0FDF4', borderColor: PRIMARY },
     selectInput: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     placeholderText: { color: Colors.textLight },
     timeOptionActive: { backgroundColor: PRIMARY },
-    timeTextActive: { fontFamily: Fonts.semiBold, color: '#fff' },
+    timeTextActive: { fontFamily: Fonts.semiBold, color: '#FAF7ED' },
 });
 
 const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.create({
@@ -264,7 +264,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
         backgroundColor: PRIMARY, paddingHorizontal: Spacing.lg, paddingVertical: 14,
     },
     backBtn: { padding: 4 },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: '#fff' },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: '#FAF7ED' },
     stepBar: {
         flexDirection: 'row', alignItems: 'center',
         backgroundColor: PRIMARY, paddingHorizontal: 20, paddingBottom: 18, paddingTop: 4,
@@ -279,10 +279,10 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     stepLine: { flex: 1, height: 2, backgroundColor: 'rgba(255,255,255,0.2)', marginBottom: 12 },
     stepLineActive: { backgroundColor: Colors.accent },
     stepLabel: { fontFamily: Fonts.regular, fontSize: 9, color: 'rgba(255,255,255,0.5)' },
-    stepLabelActive: { color: '#fff', fontFamily: Fonts.semiBold },
+    stepLabelActive: { color: '#FAF7ED', fontFamily: Fonts.semiBold },
     scrollContent: { padding: Spacing.lg },
     section: {
-        backgroundColor: isDarkMode ? '#252525' : '#fff', borderRadius: 16, padding: 16, marginBottom: 16,
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED', borderRadius: 16, padding: 16, marginBottom: 16,
         shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
     },
     toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -291,14 +291,14 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     fieldLabel: { fontFamily: Fonts.semiBold, fontSize: 13, color: isDarkMode ? '#CCCCCC' : Colors.textBody, marginBottom: 8, marginTop: 16 },
     required: { color: '#DC2626' },
     input: {
-        backgroundColor: isDarkMode ? '#3A3A3A' : '#F9FAFB', borderWidth: 1.5, borderColor: isDarkMode ? '#4A4A4A' : Colors.borderLight,
+        backgroundColor: isDarkMode ? '#3A3A3A' : '#F5F0E1', borderWidth: 1.5, borderColor: isDarkMode ? '#4A4A4A' : Colors.borderLight,
         borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
         fontFamily: Fonts.regular, fontSize: 14, color: isDarkMode ? '#FFFFFF' : Colors.textDark,
     },
     phoneInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: isDarkMode ? '#3A3A3A' : '#F9FAFB',
+        backgroundColor: isDarkMode ? '#3A3A3A' : '#F5F0E1',
         borderWidth: 1.5,
         borderColor: isDarkMode ? '#4A4A4A' : Colors.borderLight,
         borderRadius: 10,
@@ -330,7 +330,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     selectText: { fontFamily: Fonts.regular, fontSize: 14, color: isDarkMode ? '#FFFFFF' : Colors.textDark },
     placeholderText: { color: isDarkMode ? '#666666' : Colors.textLight },
     timePicker: {
-        backgroundColor: isDarkMode ? '#252525' : '#fff', borderWidth: 1, borderColor: isDarkMode ? '#3A3A3A' : Colors.borderLight,
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED', borderWidth: 1, borderColor: isDarkMode ? '#3A3A3A' : Colors.borderLight,
         borderRadius: 10, marginTop: 4, overflow: 'hidden',
     },
     timeOption: {
@@ -340,7 +340,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     },
     timeOptionActive: { backgroundColor: PRIMARY },
     timeText: { fontFamily: Fonts.regular, fontSize: 14, color: isDarkMode ? '#CCCCCC' : Colors.textBody },
-    timeTextActive: { fontFamily: Fonts.semiBold, color: '#fff' },
+    timeTextActive: { fontFamily: Fonts.semiBold, color: '#FAF7ED' },
     infoBox: {
         flexDirection: 'row', alignItems: 'flex-start', gap: 10,
         backgroundColor: '#EDF7F1', borderRadius: 12, padding: 14, marginBottom: 8,
@@ -351,12 +351,12 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     skippedTitle: { fontFamily: Fonts.semiBold, fontSize: 15, color: isDarkMode ? '#FFFFFF' : Colors.textDark },
     skippedSub: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#999999' : Colors.textMuted, textAlign: 'center' },
     footer: {
-        backgroundColor: isDarkMode ? '#252525' : '#fff', paddingHorizontal: 20, paddingTop: 14,
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED', paddingHorizontal: 20, paddingTop: 14,
         borderTopWidth: 1, borderTopColor: isDarkMode ? '#3A3A3A' : Colors.borderLight,
     },
     saveBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
         backgroundColor: PRIMARY, borderRadius: 14, paddingVertical: 15,
     },
-    saveBtnText: { fontFamily: Fonts.semiBold, fontSize: 16, color: '#fff' },
+    saveBtnText: { fontFamily: Fonts.semiBold, fontSize: 16, color: '#FAF7ED' },
 });

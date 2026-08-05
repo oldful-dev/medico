@@ -348,7 +348,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     headerSafe: { backgroundColor: colors.primary },
     headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
     backBtn: { padding: 4, marginRight: 8 },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: '#FFFFFF', flex: 1 },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: '#FAF7ED', flex: 1 },
 
     scrollView: { flex: 1, backgroundColor: colors.bgScreen, borderTopLeftRadius: 30, borderTopRightRadius: 30 },
     scrollContent: { padding: Spacing.lg, paddingBottom: Spacing.xl },
@@ -402,7 +402,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     },
     typeBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
     typeBtnText: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: colors.textMuted },
-    typeBtnTextActive: { color: '#FFF' },
+    typeBtnTextActive: { color: '#FAF7ED' },
 
     fieldLabel: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: colors.textBody ?? colors.textDark, marginBottom: 6, marginTop: 12 },
     input: {
@@ -429,5 +429,5 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     },
     cancelBtnText: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: colors.textMuted },
     saveBtn: { flex: 1, paddingVertical: 13, borderRadius: Radius.sm, backgroundColor: colors.primary, alignItems: 'center' },
-    saveBtnText: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: '#FFF' },
+    saveBtnText: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: '#FAF7ED' },
 });

@@ -196,7 +196,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
         paddingHorizontal: Spacing.lg, paddingVertical: 14,
     },
     backBtn: { padding: 4 },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: '#fff' },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: '#FAF7ED' },
     scrollContent: { paddingBottom: 20 },
     bannerImage: {
         width: '100%', height: 200,
@@ -207,7 +207,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     },
     bannerLabel: { fontFamily: Fonts.semiBold, fontSize: 13, color: 'rgba(255,255,255,0.5)' },
     card: {
-        backgroundColor: isDarkMode ? '#252525' : '#fff', marginHorizontal: 16, marginTop: -20,
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED', marginHorizontal: 16, marginTop: -20,
         borderRadius: 20, padding: 20,
         shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08, shadowRadius: 12, elevation: 5,
@@ -235,7 +235,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     includeText: { fontFamily: Fonts.regular, fontSize: 13, color: isDarkMode ? '#CCCCCC' : Colors.textBody, flex: 1 },
     footer: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        backgroundColor: isDarkMode ? '#252525' : '#fff', paddingHorizontal: 20, paddingTop: 14,
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED', paddingHorizontal: 20, paddingTop: 14,
         borderTopWidth: 1, borderTopColor: isDarkMode ? '#3A3A3A' : Colors.borderLight,
         shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.06, elevation: 8,
     },
@@ -247,5 +247,5 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
         paddingHorizontal: 28, paddingVertical: 14,
     },
     joinBtnDisabled: { opacity: 0.5 },
-    joinBtnText: { fontFamily: Fonts.semiBold, fontSize: 16, color: '#fff' },
+    joinBtnText: { fontFamily: Fonts.semiBold, fontSize: 16, color: '#FAF7ED' },
 });

@@ -252,7 +252,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     backBtn: { padding: 4, marginRight: 8 },
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 20, color: '#FFFFFF',
+        fontSize: 20, color: '#FAF7ED',
         flex: 1,
     },
     scrollView: { flex: 1, backgroundColor: colors.bgScreen, borderTopLeftRadius: 30, borderTopRightRadius: 30 },
@@ -336,7 +336,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     saveBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: colors.primary },
     saveBtnText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 14, color: '#FFFFFF',
+        fontSize: 14, color: '#FAF7ED',
     },
     addButton: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,

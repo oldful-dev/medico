@@ -706,14 +706,14 @@ function formatDate(dateStr: string): string {
 }
 
 const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.create({
-    screen:       { flex: 1, backgroundColor: isDarkMode ? '#111827' : '#F9FAFB' },
+    screen:       { flex: 1, backgroundColor: isDarkMode ? '#111827' : '#F5F0E1' },
 
     // ── Header ──
     header:       { backgroundColor: PRIMARY, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
     backBtn:      { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
     refreshBtn:   { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
     headerCenter: { flex: 1 },
-    headerTitle:  { fontSize: 18, fontWeight: '700', color: '#fff' },
+    headerTitle:  { fontSize: 18, fontWeight: '700', color: '#FAF7ED' },
     headerSub:    { fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
 
     // ── Stats strip ──
@@ -724,7 +724,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
 
     // ── Tabs ──
     tabsWrapper:  {
-        backgroundColor: isDarkMode ? '#1F2937' : '#fff',
+        backgroundColor: isDarkMode ? '#1F2937' : '#FAF7ED',
         borderBottomWidth: 1,
         borderBottomColor: isDarkMode ? '#374151' : '#E5E7EB',
         shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, elevation: 2,
@@ -738,11 +738,11 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     },
     tabActive:    { backgroundColor: PRIMARY, borderColor: PRIMARY },
     tabLabel:     { fontSize: 12, fontWeight: '500', color: isDarkMode ? '#9CA3AF' : TEXT_MUTED },
-    tabLabelActive: { color: '#fff', fontWeight: '600' },
+    tabLabelActive: { color: '#FAF7ED', fontWeight: '600' },
     tabCount:     { marginLeft: 5, backgroundColor: isDarkMode ? '#4B5563' : '#E5E7EB', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 10 },
     tabCountActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
     tabCountText: { fontSize: 10, fontWeight: '700', color: isDarkMode ? '#9CA3AF' : TEXT_MUTED },
-    tabCountTextActive: { color: '#fff' },
+    tabCountTextActive: { color: '#FAF7ED' },
 
     // ── Loader / empty ──
     loader:       { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
@@ -765,7 +765,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
 
     // ── Card ──
     card: {
-        backgroundColor: isDarkMode ? '#1F2937' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1F2937' : '#FAF7ED',
         borderRadius: 16,
         padding: 16,
         marginBottom: 12,

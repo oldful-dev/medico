@@ -256,7 +256,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         letterSpacing: -0.24,
     },
     headerSubtitle: {
@@ -267,7 +267,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     contentContainer: {
         flex: 1,
-        backgroundColor: isDarkMode ? '#0F172A' : '#FDFDE8',
+        backgroundColor: isDarkMode ? '#0F172A' : '#FAF7ED',
         borderTopLeftRadius: 45,
         borderTopRightRadius: 45,
         paddingTop: 25,
@@ -331,7 +331,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     discountText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
-        color: isDarkMode ? '#34D399' : '#FFFFFF',
+        color: isDarkMode ? '#34D399' : '#FAF7ED',
         fontSize: 11,
     },
     bodyPartGrid: {
@@ -350,7 +350,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 12,
-        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FAF7ED',
     },
     bodyPartPillSelected: {
         backgroundColor: 'rgba(4, 131, 87, 0.74)',
@@ -362,12 +362,12 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         color: isDarkMode ? '#94A3B8' : '#555555',
     },
     bodyPartTextSelected: {
-        color: '#FFFFFF',
+        color: '#FAF7ED',
     },
     inputCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FAF7ED',
         borderRadius: 12,
         paddingHorizontal: 15,
         minHeight: 59,
@@ -415,7 +415,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         fontSize: 14,
     },
 });

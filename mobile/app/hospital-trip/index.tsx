@@ -651,7 +651,7 @@ const makeStyles = (isDarkMode: boolean) =>
         default: "System",
       }),
       fontSize: 18,
-      color: "#FFFFFF",
+      color: '#FAF7ED',
       letterSpacing: -0.24,
     },
     headerSubtitle: {
@@ -681,14 +681,14 @@ const makeStyles = (isDarkMode: boolean) =>
         default: "System",
       }),
       fontSize: 10,
-      color: "#fff",
+      color: '#FAF7ED',
       letterSpacing: 0.5,
     },
 
     /* --- Main Content Container (Cream Box) --- */
     contentContainer: {
       flex: 1,
-      backgroundColor: isDarkMode ? "#0F172A" : "#FDFDE8",
+      backgroundColor: isDarkMode ? "#0F172A" : '#FAF7ED',
       borderTopLeftRadius: 45,
       borderTopRightRadius: 45,
       shadowColor: "#000",
@@ -840,7 +840,7 @@ const makeStyles = (isDarkMode: boolean) =>
     inputCard: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: isDarkMode ? "#1E293B" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#1E293B" : '#FAF7ED',
       borderRadius: 10,
       paddingHorizontal: 15,
       height: 57,
@@ -936,7 +936,7 @@ const makeStyles = (isDarkMode: boolean) =>
       marginLeft: 20,
       marginRight: 10,
       marginBottom: 15,
-      backgroundColor: isDarkMode ? "#1E293B" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#1E293B" : '#FAF7ED',
     },
     otherSpecialistInput: {
       height: 53,
@@ -947,7 +947,7 @@ const makeStyles = (isDarkMode: boolean) =>
       paddingHorizontal: 15,
       marginTop: 15,
       marginBottom: 5,
-      backgroundColor: isDarkMode ? "#1E293B" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#1E293B" : '#FAF7ED',
     },
     doctorTextInput: {
       fontFamily: Platform.select({
@@ -1029,7 +1029,7 @@ const makeStyles = (isDarkMode: boolean) =>
 
     /* --- Add-ons Container --- */
     addonsContainer: {
-      backgroundColor: isDarkMode ? "#1A1A1A" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#1A1A1A" : '#FAF7ED',
       borderRadius: 11,
       padding: 20,
       paddingBottom: 15,
@@ -1139,7 +1139,7 @@ const makeStyles = (isDarkMode: boolean) =>
         android: "LexendDeca_500Medium",
         default: "System",
       }),
-      color: "#FFFFFF",
+      color: '#FAF7ED',
       fontSize: 15,
     },
   });

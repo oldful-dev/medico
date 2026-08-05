@@ -492,7 +492,7 @@ export default function InsuranceScreen() {
                                                     >
                                                         {isAddingMember
                                                             ? <ActivityIndicator size="small" color="#FFF" />
-                                                            : <Text style={[dynamicStyles.addMemberText, { color: '#FFFFFF' }]}>{t('common.save')}</Text>}
+                                                            : <Text style={[dynamicStyles.addMemberText, { color: '#FAF7ED' }]}>{t('common.save')}</Text>}
                                                     </TouchableOpacity>
                                                 </View>
                                             </View>
@@ -659,7 +659,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         flex: 1,
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         textAlign: 'left', marginLeft: 12,
         letterSpacing: -0.24,
     },
@@ -667,7 +667,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     /* ─── Content Card ─── */
     contentCard: {
         flex: 1,
-        backgroundColor: isDarkMode ? '#0F172A' : '#FDFDE8',
+        backgroundColor: isDarkMode ? '#0F172A' : '#FAF7ED',
         borderTopLeftRadius: 45,
         borderTopRightRadius: 45,
         overflow: 'hidden',
@@ -683,7 +683,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
 
     /* ─── Form Wrapper (Figma Rectangle 157) ─── */
     formWrapper: {
-        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FAF7ED',
         borderRadius: 14,
         padding: 18,
         shadowColor: '#000000',
@@ -843,7 +843,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 14,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
     },
     familySelectionRow: {
         flexDirection: 'row',
@@ -856,7 +856,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         height: 36,
         borderRadius: 8,
         borderWidth: 1,
@@ -910,7 +910,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
         fontSize: 12,
         color: isDarkMode ? '#F1F5F9' : '#2F2F2F',
-        backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#0F172A' : '#FAF7ED',
     },
     uploadCard: {
         borderWidth: 1,
@@ -920,7 +920,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         padding: 12,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FAF7ED',
         minHeight: 56,
         marginTop: 6,
     },

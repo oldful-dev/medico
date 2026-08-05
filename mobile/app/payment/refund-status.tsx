@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         textAlign: 'left', marginLeft: 12,
         letterSpacing: -0.24,
     },
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     /* ─── Content Card ─── */
     contentCard: {
         flex: 1,
-        backgroundColor: '#FDFDE8',
+        backgroundColor: '#FAF7ED',
         borderTopLeftRadius: 45,
         borderTopRightRadius: 45,
         overflow: 'hidden',
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
 
     /* ─── Status Summary Card ─── */
     statusSummary: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FAF7ED',
         borderRadius: 14,
         padding: 20,
         alignItems: 'center',
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
 
     /* ─── Reference Card ─── */
     refCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FAF7ED',
         borderRadius: 14,
         padding: 16,
         marginBottom: 16,
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
 
     /* ─── Timeline Card ─── */
     timelineCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FAF7ED',
         borderRadius: 14,
         padding: 18,
         marginBottom: 16,
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#048357',
     },
     timelineDotCurrent: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FAF7ED',
         borderWidth: 2.5,
         borderColor: '#E8A317',
     },
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#E8A317',
     },
     timelineDotPending: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FAF7ED',
         borderWidth: 1.5,
         borderColor: '#DADADA',
     },
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     helpCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FAF7ED',
         borderRadius: 12,
         paddingHorizontal: 16,
         paddingVertical: 14,

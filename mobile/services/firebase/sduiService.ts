@@ -160,18 +160,22 @@ export const HOME_CONFIG_FALLBACK: HomeConfig = {
             max_items: 8,
             view_all_route: '/all-home-essentials',
             services: [
-                { id: 'ac_repair',     label: 'AC\nRepair',     icon: 'fa6360cf6179cebaed29a6c808bafae2d31ad753.png', route: '/appliance-repair',    enabled: false, sort_order: 1 },
-                { id: 'plumbing',      label: 'Plumbing',       icon: '8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png', route: '/plumbing-electrical', enabled: true, sort_order: 2 },
-                { id: 'cleaning',      label: 'Cleaning',       icon: 'ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png', route: '/deep-cleaning',       enabled: true, sort_order: 3 },
-                { id: 'driver',        label: 'Driver',         icon: '60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png', route: '/driving-cab',         enabled: true, sort_order: 4 },
-                { id: 'bills',         label: 'Bills',          icon: '056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png', route: '/bill-payment',        enabled: true, sort_order: 5 },
-                { id: 'bank',          label: 'Bank\nWork',     icon: '33ede0e57be708b9775957c3ecec7013b0a56c6d.png', route: '/bank-paperwork',      enabled: true, sort_order: 6 },
-                { id: 'grocery',       label: 'Gro-\ncery',     icon: '8888c71f466119aa294bd00136ff887f616d4737.png', route: '/grocery-run',         enabled: true, sort_order: 7 },
-                { id: 'anything',      label: 'Anything\nElse', icon: '6c8ed456023258e8b4095af93909c6cbc6c4b909.png', route: '/anything-else',       enabled: true, sort_order: 8 },
-                { id: 'paper_legal',   label: 'Paper &\nLegal', icon: '33ede0e57be708b9775957c3ecec7013b0a56c6d.png', route: '/paper-legal',         enabled: true, sort_order: 9 },
-                { id: 'trip_travel',   label: 'Trip &\nTravel', icon: '60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png', route: '/trip-travels',        enabled: true, sort_order: 10 },
-                { id: 'tech_helper',   label: 'Tech\nHelper',   icon: 'fa6360cf6179cebaed29a6c808bafae2d31ad753.png', route: '/tech-helper',         enabled: true, sort_order: 11 },
-                { id: 'smart_upgrade', label: 'Smart\nUpgrade', icon: 'ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png', route: '/smart-upgrade',       enabled: true, sort_order: 12 },
+                // 1. Bill Payment
+                { id: 'bills',        label: 'Bill\nPayment',               icon: '056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png', route: '/bill-payment',        enabled: true, sort_order: 1 },
+                // 2. Tech Help
+                { id: 'tech_helper',  label: 'Tech\nHelp',                  icon: 'fa6360cf6179cebaed29a6c808bafae2d31ad753.png', route: '/paper-legal',         enabled: true, sort_order: 2 },
+                // 3. Paperwork
+                { id: 'bank',         label: 'Paper-\nwork',                icon: '33ede0e57be708b9775957c3ecec7013b0a56c6d.png', route: '/bank-paperwork',      enabled: true, sort_order: 3 },
+                // 4. Appliance Repair
+                { id: 'ac_repair',    label: 'Appliance\nRepair',           icon: 'fa6360cf6179cebaed29a6c808bafae2d31ad753.png', route: '/appliance-repair',    enabled: true, sort_order: 4 },
+                // 5. Deep Cleaning & Pest Control
+                { id: 'cleaning',     label: 'Deep Cleaning\n& Pest Ctrl',  icon: 'ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png', route: '/deep-cleaning',       enabled: true, sort_order: 5 },
+                // 6. Washroom Sanitation
+                { id: 'sanitisation', label: 'Washroom\nSanitation',        icon: '8888c71f466119aa294bd00136ff887f616d4737.png', route: '/sanitisation',        enabled: true, sort_order: 6 },
+                // 7. Plumbing & Electrician
+                { id: 'plumbing',     label: 'Plumbing &\nElectrician',     icon: '8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png', route: '/plumbing-electrical', enabled: true, sort_order: 7 },
+                // 8. Driver Request
+                { id: 'driver',       label: 'Driver\nRequest',             icon: '60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png', route: '/driving-cab',         enabled: true, sort_order: 8 },
             ],
         },
     ],

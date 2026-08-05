@@ -85,7 +85,7 @@ export default function CitySelectionScreen() {
             </View>
 
             {/* ─── Content Card ─── */}
-            <View style={[styles.contentCard, { backgroundColor: isDarkMode ? '#252525' : '#FDFDE8' }]}>
+            <View style={[styles.contentCard, { backgroundColor: isDarkMode ? '#252525' : '#FAF7ED' }]}>
                 <ScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
@@ -158,7 +158,7 @@ export default function CitySelectionScreen() {
                                 return (
                                     <TouchableOpacity
                                         key={city.id}
-                                        style={[styles.cityCard, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FFFFFF' }, isSelected && styles.cityCardSelected]}
+                                        style={[styles.cityCard, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FAF7ED' }, isSelected && styles.cityCardSelected]}
                                         onPress={() => setSelectedId(city.id)}
                                     >
                                         <View style={[styles.cityIconCircle, isSelected && styles.cityIconCircleSelected]}>
@@ -195,7 +195,7 @@ export default function CitySelectionScreen() {
                         <>
                             <Text style={[styles.sectionLabel, { marginTop: 20 }]}>{t('city_selection.coming_soon_label')}</Text>
                             {comingSoonCities.map(city => (
-                                <View key={city.id} style={[styles.cityCard, styles.cityCardDisabled, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FFFFFF' }]}>
+                                <View key={city.id} style={[styles.cityCard, styles.cityCardDisabled, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FAF7ED' }]}>
                                     <View style={styles.cityIconCircle}>
                                         <Ionicons name="location-outline" size={22} color={isDarkMode ? '#666666' : '#AAAEAC'} />
                                     </View>
@@ -215,7 +215,7 @@ export default function CitySelectionScreen() {
                 </ScrollView>
 
                 {/* ─── Continue Button ─── */}
-                <View style={[styles.bottomBar, { backgroundColor: isDarkMode ? '#252525' : '#FDFDE8' }]}>
+                <View style={[styles.bottomBar, { backgroundColor: isDarkMode ? '#252525' : '#FAF7ED' }]}>
                     <TouchableOpacity style={styles.continueButton} activeOpacity={0.8} onPress={handleContinue}>
                         <Text style={styles.continueButtonText}>{t('city_selection.continue')}</Text>
                     </TouchableOpacity>
@@ -227,7 +227,7 @@ export default function CitySelectionScreen() {
                 <View style={styles.modalOverlay}>
                     <KeyboardAvoidingView
                         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                        style={[styles.modalSheet, { backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF' }]}
+                        style={[styles.modalSheet, { backgroundColor: isDarkMode ? '#2A2A2A' : '#FAF7ED' }]}
                     >
                         <View style={[styles.modalHeader, { borderBottomColor: isDarkMode ? '#3A3A3A' : '#F0F0F0' }]}>
                             <Text style={[styles.modalTitle, { color: isDarkMode ? '#E0E0E0' : '#2F2F2F' }]}>{t('city_selection.notify_modal_title')}</Text>
@@ -241,7 +241,7 @@ export default function CitySelectionScreen() {
                         <View style={styles.modalBody}>
                             <Text style={[styles.inputLabel, { color: isDarkMode ? '#C0C0C0' : '#555555' }]}>{t('city_selection.your_name')}</Text>
                             <TextInput
-                                style={[styles.modalInput, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FAFAFA', color: isDarkMode ? '#E0E0E0' : '#2F2F2F', borderColor: isDarkMode ? '#4A4A4A' : '#E0E0E0' }]}
+                                style={[styles.modalInput, { backgroundColor: isDarkMode ? '#3A3A3A' : '#F5F0E1', color: isDarkMode ? '#E0E0E0' : '#2F2F2F', borderColor: isDarkMode ? '#4A4A4A' : '#E0E0E0' }]}
                                 placeholder={t('city_selection.your_name_label')}
                                 placeholderTextColor={isDarkMode ? '#808080' : '#AAAEAC'}
                                 value={notifyName}
@@ -249,7 +249,7 @@ export default function CitySelectionScreen() {
                             />
                             <Text style={[styles.inputLabel, { color: isDarkMode ? '#C0C0C0' : '#555555' }]}>{t('city_selection.email_label')}</Text>
                             <TextInput
-                                style={[styles.modalInput, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FAFAFA', color: isDarkMode ? '#E0E0E0' : '#2F2F2F', borderColor: isDarkMode ? '#4A4A4A' : '#E0E0E0' }]}
+                                style={[styles.modalInput, { backgroundColor: isDarkMode ? '#3A3A3A' : '#F5F0E1', color: isDarkMode ? '#E0E0E0' : '#2F2F2F', borderColor: isDarkMode ? '#4A4A4A' : '#E0E0E0' }]}
                                 placeholder={t('city_selection.email_placeholder')}
                                 placeholderTextColor={isDarkMode ? '#808080' : '#AAAEAC'}
                                 keyboardType="email-address"
@@ -259,7 +259,7 @@ export default function CitySelectionScreen() {
                             />
                             <Text style={[styles.inputLabel, { color: isDarkMode ? '#C0C0C0' : '#555555' }]}>{t('city_selection.city_optional')}</Text>
                             <TextInput
-                                style={[styles.modalInput, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FAFAFA', color: isDarkMode ? '#E0E0E0' : '#2F2F2F', borderColor: isDarkMode ? '#4A4A4A' : '#E0E0E0' }]}
+                                style={[styles.modalInput, { backgroundColor: isDarkMode ? '#3A3A3A' : '#F5F0E1', color: isDarkMode ? '#E0E0E0' : '#2F2F2F', borderColor: isDarkMode ? '#4A4A4A' : '#E0E0E0' }]}
                                 placeholder={t('city_selection.city_placeholder')}
                                 placeholderTextColor={isDarkMode ? '#808080' : '#AAAEAC'}
                                 value={notifyCity}
@@ -291,7 +291,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         paddingHorizontal: 16, paddingBottom: 20, paddingTop: 10,
     },
     backButton: { padding: 5 },
-    headerTitle: { flex: 1, fontFamily: Fonts.semiBold, fontSize: 20, color: '#FFFFFF', textAlign: "left", marginLeft: 12 },
+    headerTitle: { flex: 1, fontFamily: Fonts.semiBold, fontSize: 20, color: '#FAF7ED', textAlign: "left", marginLeft: 12 },
     contentCard: { flex: 1, borderTopLeftRadius: 45, borderTopRightRadius: 45, overflow: 'hidden' },
     scrollView: { flex: 1 },
     scrollContent: { paddingHorizontal: 24, paddingTop: 30, paddingBottom: 120 },
@@ -332,12 +332,12 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         paddingHorizontal: 24, paddingTop: 12, paddingBottom: 36, alignItems: 'center',
     },
     continueButton: { width: '85%', maxWidth: 320, height: 48, backgroundColor: '#02743F', borderRadius: 24, justifyContent: 'center', alignItems: 'center' },
-    continueButtonText: { fontFamily: Fonts.medium, fontSize: 15, color: '#FFFFFF' },
+    continueButtonText: { fontFamily: Fonts.medium, fontSize: 15, color: '#FAF7ED' },
     autoDetectButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FAF7ED',
         borderWidth: 1,
         borderColor: '#048357',
         borderRadius: 12,
@@ -378,5 +378,5 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         backgroundColor: '#02743F', borderRadius: 24, height: 48,
         justifyContent: 'center', alignItems: 'center', marginTop: 20,
     },
-    notifySubmitText: { fontFamily: Fonts.semiBold, fontSize: 15, color: '#FFFFFF' },
+    notifySubmitText: { fontFamily: Fonts.semiBold, fontSize: 15, color: '#FAF7ED' },
 });

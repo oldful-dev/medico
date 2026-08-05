@@ -693,7 +693,7 @@ const styles = StyleSheet.create({
     backBtn: { padding: 4, marginRight: 8 },
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 20, color: '#FFFFFF', flex: 1,
+        fontSize: 20, color: '#FAF7ED', flex: 1,
     },
     scrollView: { flex: 1, backgroundColor: '#FFFFE3', borderTopLeftRadius: 30, borderTopRightRadius: 30 },
     scrollContent: { padding: 16, paddingBottom: 50 },
@@ -701,7 +701,7 @@ const styles = StyleSheet.create({
     // ─── Auto-Detect Section (Swiggy/Zomato Style) ───
     detectSection: { marginBottom: 24 },
     detectCard: {
-        backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, overflow: 'hidden',
+        backgroundColor: '#FAF7ED', borderRadius: 14, padding: 16, overflow: 'hidden',
         shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
     },
     detectHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
     },
     detectAddBtnText: {
         fontFamily: Platform.select({ ios: 'Poppins-Medium', android: 'Poppins_500Medium', default: 'System' }),
-        fontSize: 14, color: '#FFFFFF',
+        fontSize: 14, color: '#FAF7ED',
     },
     detectSearchBtn: {
         flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
 
     // ─── Address Cards ───
     card: {
-        backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, marginBottom: 12,
+        backgroundColor: '#FAF7ED', borderRadius: 14, padding: 16, marginBottom: 12,
         shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
     },
     cardDefault: { borderWidth: 1.5, borderColor: '#048357' },
@@ -767,12 +767,12 @@ const styles = StyleSheet.create({
     labelBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#048357', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, gap: 6 },
     labelText: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 13, color: '#FFFFFF',
+        fontSize: 13, color: '#FAF7ED',
     },
     defaultBadge: { backgroundColor: '#048357', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 },
     defaultBadgeText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        fontSize: 11, color: '#FFFFFF',
+        fontSize: 11, color: '#FAF7ED',
     },
     addressText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
@@ -792,7 +792,7 @@ const styles = StyleSheet.create({
 
     // ─── Form ───
     addForm: {
-        backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, marginBottom: 14,
+        backgroundColor: '#FAF7ED', borderRadius: 14, padding: 16, marginBottom: 14,
         shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
     },
     formTitle: {
@@ -806,14 +806,14 @@ const styles = StyleSheet.create({
     labelChips: { marginBottom: 12, marginHorizontal: -2 },
     labelChip: {
         paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#E5E5E5',
-        backgroundColor: '#FFFFFF', marginHorizontal: 2,
+        backgroundColor: '#FAF7ED', marginHorizontal: 2,
     },
     labelChipActive: { backgroundColor: '#048357', borderColor: '#048357' },
     labelChipText: {
         fontFamily: Platform.select({ ios: 'Poppins-Medium', android: 'Poppins_500Medium', default: 'System' }),
         fontSize: 13, color: '#555555',
     },
-    labelChipTextActive: { color: '#FFFFFF' },
+    labelChipTextActive: { color: '#FAF7ED' },
     inputWithButton: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
     input: {
         backgroundColor: '#F9F9F9', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
@@ -835,7 +835,7 @@ const styles = StyleSheet.create({
     saveFormBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, backgroundColor: '#048357' },
     saveFormText: {
         fontFamily: Platform.select({ ios: 'Poppins-Medium', android: 'Poppins_500Medium', default: 'System' }),
-        fontSize: 14, color: '#FFFFFF',
+        fontSize: 14, color: '#FAF7ED',
     },
 
     // ─── Add Button ───

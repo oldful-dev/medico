@@ -469,10 +469,10 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         elevation: 3,
     },
     headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    userName: { fontSize: 22, fontWeight: '700', color: '#FFFFFF', marginBottom: 4 },
+    userName: { fontSize: 22, fontWeight: '700', color: '#FAF7ED', marginBottom: 4 },
     userId: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontFamily: 'monospace' },
-    bloodGroupBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 2, borderColor: '#FFFFFF' },
-    bloodGroupText: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
+    bloodGroupBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 2, borderColor: '#FAF7ED' },
+    bloodGroupText: { fontSize: 18, fontWeight: '700', color: '#FAF7ED' },
 
     actionButtonsContainer: { flexDirection: 'row', gap: 10, marginBottom: 12 },
     actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, backgroundColor: colors.bgCard, borderColor: colors.borderLight },
@@ -494,7 +494,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
 
     tagContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     tag: { backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-    tagText: { fontSize: 12, fontWeight: '500', color: '#FFFFFF' },
+    tagText: { fontSize: 12, fontWeight: '500', color: '#FAF7ED' },
     emptyText: { fontSize: 12, color: colors.textMuted, fontStyle: 'italic' },
 
     medicationItem: { marginBottom: 6 },
@@ -522,6 +522,6 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         borderRadius: 12,
         marginTop: 20,
     },
-    editButtonText: { fontSize: 14, fontWeight: '600', color: '#FFFFFF' },
+    editButtonText: { fontSize: 14, fontWeight: '600', color: '#FAF7ED' },
     spacer: { height: 20 },
 });

@@ -233,9 +233,9 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     categoryChip: { borderRadius: 20, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderWidth: 1, borderColor: colors.borderLight, backgroundColor: colors.bgCard },
     categoryChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
     categoryChipText:   { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textBody },
-    categoryChipTextActive: { color: '#fff', fontFamily: Fonts.semiBold },
+    categoryChipTextActive: { color: '#FAF7ED', fontFamily: Fonts.semiBold },
     submitBtn:    { backgroundColor: colors.primary, borderRadius: Radius.md, paddingVertical: Spacing.md, alignItems: 'center', marginTop: Spacing.sm },
-    submitBtnText:{ fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: '#fff' },
+    submitBtnText:{ fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: '#FAF7ED' },
 
     // Tickets styling
     ticketCard: {
@@ -253,7 +253,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     ticketMeta:   { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall, color: colors.textMuted, textTransform: 'capitalize', flex: 1 },
     ticketBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     statusBadge:  { borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 },
-    statusText:   { fontFamily: Fonts.semiBold, fontSize: 10, color: '#fff', textTransform: 'capitalize' },
+    statusText:   { fontFamily: Fonts.semiBold, fontSize: 10, color: '#FAF7ED', textTransform: 'capitalize' },
     infoCard: {
         backgroundColor: colors.bgCard, borderRadius: Radius.md, padding: Spacing.lg,
         shadowColor: colors.shadowColor,

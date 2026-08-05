@@ -270,7 +270,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: colors.textWhite },
     headerSubtitle: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
     statusBadge: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 },
-    statusText: { fontFamily: Fonts.semiBold, fontSize: 10, color: '#fff', textTransform: 'capitalize' },
+    statusText: { fontFamily: Fonts.semiBold, fontSize: 10, color: '#FAF7ED', textTransform: 'capitalize' },
 
     descriptionCard: {
         backgroundColor: colors.bgCard, marginBottom: Spacing.md,

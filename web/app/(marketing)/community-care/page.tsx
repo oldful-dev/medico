@@ -99,7 +99,7 @@ export default function CommunityCarePage() {
               If you represent an NGO, a community shelter, or wish to contribute to our mission of making healthcare accessible to every elder in India, we&apos;d love to hear from you.
             </p>
             <a 
-              href="https://wa.me/918062180429?text=Hi%20Team%20Ayuxa,%20I'd%20love%20to%20know%20more%20about%20your%20Community%20Care%20and%20Charity%20initiatives!" 
+              href="https://wa.me/919480198108?text=Hi%20Team%20Ayuxa,%20I'd%20love%20to%20know%20more%20about%20your%20Community%20Care%20and%20Charity%20initiatives!" 
               target="_blank"
               rel="noreferrer"
               className="inline-block bg-white text-[var(--color-primary-deep)] px-8 py-4 rounded-2xl font-bold hover:shadow-2xl transition-all"

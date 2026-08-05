@@ -553,7 +553,7 @@ export default function AccountScreen() {
                 >
                     <MenuRow icon="call-outline" iconBg={isDarkMode ? '#0C3547' : '#DCF3FF'} iconColor="#0284C7"
                         title={t('account.call_support_title')} subtitle={t('account.call_support_sub')}
-                        onPress={() => Linking.openURL('tel:+918001234567')} colors={colors} />
+                        onPress={() => Linking.openURL('tel:08047280789')} colors={colors} />
                     <MenuRow icon="mail-outline" iconBg={isDarkMode ? '#2D1F0A' : '#FFF3E0'} iconColor="#F57C00"
                         title={t('account.email_support_title')} subtitle={t('account.email_support_sub')}
                         onPress={() => Linking.openURL('mailto:support@ayuxacare.com')} colors={colors} />
@@ -575,7 +575,7 @@ export default function AccountScreen() {
                         }]}
                         onPress={() => Alert.alert(t('account.emergency_assistance'), t('account.emergency_alert_msg'), [
                             { text: t('common.cancel'), style: 'cancel' },
-                            { text: t('account.call_now'), onPress: () => Linking.openURL('tel:+918001234567') },
+                            { text: t('account.call_now'), onPress: () => Linking.openURL('tel:+919480198108') },
                         ])}
                         activeOpacity={0.75}
                     >
@@ -664,7 +664,7 @@ export default function AccountScreen() {
                     {SOCIAL_LINKS.map((s) => (
                         <TouchableOpacity
                             key={s.key}
-                            style={[styles.socialMenuRow, { backgroundColor: isDarkMode ? '#1F2937' : '#fff' }]}
+                            style={[styles.socialMenuRow, { backgroundColor: isDarkMode ? '#1F2937' : '#FAF7ED' }]}
                             onPress={() => Linking.openURL(s.url)}
                             activeOpacity={0.7}
                         >
@@ -885,7 +885,7 @@ function makeStyles(c: ThemeColors) {
             flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
             backgroundColor: c.primary, borderRadius: 10, paddingVertical: 10,
         },
-        actionBtnPrimaryText: { fontFamily: Fonts.medium, fontSize: 13, color: '#fff' },
+        actionBtnPrimaryText: { fontFamily: Fonts.medium, fontSize: 13, color: '#FAF7ED' },
         actionBtnOutline: {
             flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
             borderWidth: 1, borderColor: c.borderLight, borderRadius: 10, paddingVertical: 10, backgroundColor: c.bgCardMuted,

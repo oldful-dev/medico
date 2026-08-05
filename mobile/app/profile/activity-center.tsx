@@ -267,7 +267,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         paddingHorizontal: 16, paddingVertical: 14, gap: 12,
     },
     backBtn: { padding: 4 },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: 18, color: '#fff' },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: 18, color: '#FAF7ED' },
     headerSub: { fontFamily: Fonts.regular, fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 1 },
     livePill: {
         flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -275,7 +275,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
     },
     liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#4ADE80' },
-    liveLabel: { fontFamily: Fonts.semiBold, fontSize: 10, color: '#fff', letterSpacing: 1 },
+    liveLabel: { fontFamily: Fonts.semiBold, fontSize: 10, color: '#FAF7ED', letterSpacing: 1 },
 
     body: {
         flex: 1, backgroundColor: colors.bgScreen,
@@ -331,7 +331,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         paddingHorizontal: 12, paddingVertical: 9,
         borderRadius: 10,
     },
-    callBtnText: { fontFamily: Fonts.semiBold, fontSize: 12, color: '#fff' },
+    callBtnText: { fontFamily: Fonts.semiBold, fontSize: 12, color: '#FAF7ED' },
 
     row4: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
     etaBadge: {

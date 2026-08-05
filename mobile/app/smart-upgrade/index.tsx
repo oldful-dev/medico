@@ -209,7 +209,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         marginRight: 12,
     },
     headerTitle: {
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         fontSize: 18,
         fontWeight: '700',
         flex: 1,
@@ -273,7 +273,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         marginBottom: 20,
     },
     upgradeButtonText: {
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         fontSize: 16,
         fontWeight: '700',
     },

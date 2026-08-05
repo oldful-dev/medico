@@ -152,7 +152,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors, fonts: typeof Font
         alignItems: 'center',
         paddingHorizontal: 20,
         paddingVertical: 15,
-        backgroundColor: isDarkMode ? colors.bgHeader : '#FFFFFF',
+        backgroundColor: isDarkMode ? colors.bgHeader : '#FAF7ED',
         borderBottomWidth: 1,
         borderBottomColor: isDarkMode ? colors.borderLight : '#E5E7EB',
     },
@@ -177,7 +177,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors, fonts: typeof Font
     gridItem: {
         marginBottom: 15,
         borderRadius: 12,
-        backgroundColor: isDarkMode ? colors.bgCard : '#FFFFFF',
+        backgroundColor: isDarkMode ? colors.bgCard : '#FAF7ED',
         borderWidth: isDarkMode ? 1 : 0,
         borderColor: isDarkMode ? '#475569' : 'transparent',
         overflow: 'hidden',

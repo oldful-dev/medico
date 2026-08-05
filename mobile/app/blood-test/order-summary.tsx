@@ -213,10 +213,10 @@ export default function BloodTestOrderSummaryScreen() {
 
     return (
         <KeyboardAvoidingView
-            style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}
+            style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED' }]}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} />
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FAF7ED'} />
 
             {/* Header */}
             <View style={styles.header}>
@@ -398,7 +398,7 @@ export default function BloodTestOrderSummaryScreen() {
 const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     header: {
         flexDirection: 'row',
@@ -423,7 +423,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
         paddingBottom: 20,
     },
     card: {
-        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED',
         borderWidth: 1,
         borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         borderRadius: 12,
@@ -548,7 +548,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
         paddingVertical: 10,
         fontSize: 13,
         color: isDarkMode ? '#FFFFFF' : TEXT_DARK,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     applyBtn: {
         paddingHorizontal: 16,
@@ -563,17 +563,17 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     applyBtnText: {
         fontSize: 12,
         fontWeight: '600',
-        color: '#FFFFFF',
+        color: '#FAF7ED',
     },
     applyBtnTextApplied: {
-        color: '#FFFFFF',
+        color: '#FAF7ED',
     },
     footer: {
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderTopWidth: 1,
         borderTopColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     payBtn: {
         paddingVertical: 14,
@@ -588,7 +588,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     payBtnText: {
         fontSize: 15,
         fontWeight: '700',
-        color: '#FFFFFF',
+        color: '#FAF7ED',
     },
     methodRow: {
         flexDirection: 'row',
@@ -600,7 +600,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
         borderWidth: 1.5,
         borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         marginBottom: 8,
-        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED',
     },
     methodRowActive: { borderColor: PRIMARY_GREEN, backgroundColor: LIGHT_GREEN_BG },
     methodLabel: { flex: 1, fontSize: 13, color: isDarkMode ? '#AAAAAA' : TEXT_MUTED, fontWeight: '400' },

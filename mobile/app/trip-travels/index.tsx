@@ -38,7 +38,7 @@ export default function TripTravelsScreen() {
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
 
-    const WHITE = isDarkMode ? '#1A1A1A' : '#FFFFFF';
+    const WHITE = isDarkMode ? '#1A1A1A' : '#FAF7ED';
 
     const [destination, setDestination]             = useState('');
     const [travelDates, setTravelDates]             = useState<Date | undefined>(undefined);
@@ -372,7 +372,7 @@ function ModalHeader({ title, onClose }: { title: string; onClose: () => void })
 
 const makeStyles = (isDarkMode: boolean) => {
     const BORDER = isDarkMode ? '#3A3A3A' : '#E5E7EB';
-    const WHITE = isDarkMode ? '#1A1A1A' : '#FFFFFF';
+    const WHITE = isDarkMode ? '#1A1A1A' : '#FAF7ED';
 
     return StyleSheet.create({
         container: {

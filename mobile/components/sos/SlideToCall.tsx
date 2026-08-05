@@ -24,7 +24,7 @@ const THUMB_WIDTH = 59;
 const PADDING = 6;
 const SLIDE_THRESHOLD = TRACK_WIDTH - THUMB_WIDTH - PADDING * 2 - 20;
 
-const HOTLINE_NUMBER = 'tel:+918062180429'; // ayuxacare emergency hotline
+const HOTLINE_NUMBER = 'tel:+919480198108'; // ayuxacare emergency hotline
 
 interface SlideToCallProps {
     onSlideComplete?: () => void;

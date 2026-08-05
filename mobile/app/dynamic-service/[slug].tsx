@@ -660,7 +660,7 @@ export default function DynamicServiceScreen() {
 
 const makeStyles = (isDarkMode: boolean, colors: any) => StyleSheet.create({
   card: {
-    backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
+    backgroundColor: isDarkMode ? '#1E293B' : '#FAF7ED',
     borderRadius: 13,
     padding: 18,
     marginBottom: 15,
@@ -681,7 +681,7 @@ const makeStyles = (isDarkMode: boolean, colors: any) => StyleSheet.create({
     fontSize: 13,
     borderWidth: 1,
     borderColor: isDarkMode ? '#334155' : '#E5E7EB',
-    backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF',
+    backgroundColor: isDarkMode ? '#0F172A' : '#FAF7ED',
     color: isDarkMode ? '#F3F4F6' : '#1F2937',
     borderRadius: 8,
     padding: 10,
@@ -692,7 +692,7 @@ const makeStyles = (isDarkMode: boolean, colors: any) => StyleSheet.create({
     fontSize: 13,
     borderWidth: 1,
     borderColor: isDarkMode ? '#334155' : '#E5E7EB',
-    backgroundColor: isDarkMode ? '#0F172A' : '#FFFFFF',
+    backgroundColor: isDarkMode ? '#0F172A' : '#FAF7ED',
     color: isDarkMode ? '#F3F4F6' : '#1F2937',
     borderRadius: 8,
     padding: 10,

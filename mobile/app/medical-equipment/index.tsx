@@ -170,7 +170,7 @@ export default function MedicalEquipmentScreen() {
 
     return (
         <View style={dynamicStyles.screen}>
-            <View style={{ height: insets.top, backgroundColor: isDarkMode ? '#1E293B' : '#FDFDE8' }} />
+            <View style={{ height: insets.top, backgroundColor: isDarkMode ? '#1E293B' : '#FAF7ED' }} />
             <StatusBar style={isDarkMode ? 'light' : 'dark'} />
 
             <View style={dynamicStyles.container}>
@@ -346,7 +346,7 @@ export default function MedicalEquipmentScreen() {
 const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: isDarkMode ? '#0F172A' : '#FDFDE8',
+        backgroundColor: isDarkMode ? '#0F172A' : '#FAF7ED',
     },
     container: {
         flex: 1,
@@ -419,7 +419,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         marginTop: 10,
     },
     equipmentCard: {
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         borderRadius: 8,
         width: '48%', // Allow wrapping nicely on narrow screens
         minWidth: 70,
@@ -558,12 +558,12 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     confirmButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 14,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
     },
     inputCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FAF7ED',
         borderRadius: 12,
         paddingHorizontal: 15,
         height: 53,

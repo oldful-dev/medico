@@ -248,7 +248,7 @@ export default function UpgradeScreen() {
                                         onPress={() => setSelectedCycle(c.key)}
                                         activeOpacity={0.8}
                                     >
-                                        <Text style={[S.cycleBtnLabel, active && { color: '#fff' }]}>{t(c.labelKey)}</Text>
+                                        <Text style={[S.cycleBtnLabel, active && { color: '#FAF7ED' }]}>{t(c.labelKey)}</Text>
                                         <Text style={[S.cycleBtnPrice, active && { color: 'rgba(255,255,255,0.9)' }]}>₹{price.toLocaleString('en-IN')}</Text>
                                         <Text style={[S.cycleBtnDays, active && { color: 'rgba(255,255,255,0.65)' }]}>{t(c.daysKey)}</Text>
                                     </TouchableOpacity>
@@ -339,7 +339,7 @@ const makeStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
     screen:           { flex: 1, backgroundColor: dark ? '#0F172A' : '#F0F4F8' },
     header:           { backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 14 },
     backBtn:          { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-    headerTitle:      { fontFamily: Fonts.bold, fontSize: FontSize.heading2, color: '#fff', flex: 1 },
+    headerTitle:      { fontFamily: Fonts.bold, fontSize: FontSize.heading2, color: '#FAF7ED', flex: 1 },
     scroll:           { padding: 16, paddingTop: 20 },
     loadingText:      { fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textMuted, marginTop: 12 },
 
@@ -348,10 +348,10 @@ const makeStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
 
     sectionLabel:     { fontFamily: Fonts.semiBold, fontSize: FontSize.caption, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10, marginTop: 4 },
 
-    emptyBox:         { alignItems: 'center', paddingVertical: 32, gap: 10, backgroundColor: dark ? '#1E293B' : '#fff', borderRadius: 16, marginBottom: 20, borderWidth: 1, borderColor: colors.borderLight },
+    emptyBox:         { alignItems: 'center', paddingVertical: 32, gap: 10, backgroundColor: dark ? '#1E293B' : '#FAF7ED', borderRadius: 16, marginBottom: 20, borderWidth: 1, borderColor: colors.borderLight },
     emptyText:        { fontFamily: Fonts.medium, fontSize: FontSize.body, color: colors.textMuted, textAlign: 'center' },
 
-    planCard:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: dark ? '#1E293B' : '#fff', borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1.5, borderColor: colors.borderLight, ...Shadow.card },
+    planCard:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: dark ? '#1E293B' : '#FAF7ED', borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1.5, borderColor: colors.borderLight, ...Shadow.card },
     planCardSelected: { borderColor: colors.primary },
     planCardLeft:     { flexDirection: 'row', alignItems: 'center', gap: 12 },
     radioCircle:      { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.borderLight, justifyContent: 'center', alignItems: 'center' },
@@ -363,20 +363,20 @@ const makeStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
     selectedBadgeText:{ fontFamily: Fonts.semiBold, fontSize: 10, color: colors.primary },
 
     cycleRow:         { flexDirection: 'row', gap: 10, marginBottom: 20 },
-    cycleBtn:         { flex: 1, backgroundColor: dark ? '#1E293B' : '#fff', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 6, alignItems: 'center', borderWidth: 1.5, borderColor: colors.borderLight },
+    cycleBtn:         { flex: 1, backgroundColor: dark ? '#1E293B' : '#FAF7ED', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 6, alignItems: 'center', borderWidth: 1.5, borderColor: colors.borderLight },
     cycleBtnActive:   { backgroundColor: colors.primary, borderColor: colors.primary },
     cycleBtnLabel:    { fontFamily: Fonts.semiBold, fontSize: 11, color: colors.textDark, marginBottom: 4 },
     cycleBtnPrice:    { fontFamily: Fonts.bold, fontSize: 13, color: colors.textDark },
     cycleBtnDays:     { fontFamily: Fonts.regular, fontSize: 10, color: colors.textMuted, marginTop: 2 },
 
-    creditCard:       { backgroundColor: dark ? '#1E293B' : '#fff', borderRadius: 16, padding: 18, marginBottom: 20, borderWidth: 1, borderColor: colors.borderLight, ...Shadow.card },
+    creditCard:       { backgroundColor: dark ? '#1E293B' : '#FAF7ED', borderRadius: 16, padding: 18, marginBottom: 20, borderWidth: 1, borderColor: colors.borderLight, ...Shadow.card },
     creditTitle:      { fontFamily: Fonts.bold, fontSize: FontSize.body, color: colors.textDark, marginBottom: 14 },
     sep:              { borderTopWidth: 1, borderTopColor: colors.borderLight, marginBottom: 10, marginTop: 2 },
     freeChip:         { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: dark ? '#052E16' : '#D1FAE5', borderRadius: 8, padding: 10, marginTop: 4 },
     freeChipText:     { fontFamily: Fonts.medium, fontSize: 12, color: dark ? '#6EE7B7' : '#065F46' },
     calcPlaceholder:  { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: colors.textMuted, textAlign: 'center', marginTop: 8 },
 
-    bottomBar:        { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: dark ? '#1E293B' : '#fff', borderTopWidth: 1, borderColor: colors.borderLight, paddingTop: 12, paddingHorizontal: 16 },
+    bottomBar:        { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: dark ? '#1E293B' : '#FAF7ED', borderTopWidth: 1, borderColor: colors.borderLight, paddingTop: 12, paddingHorizontal: 16 },
     ctaBtn:           { backgroundColor: colors.primary, borderRadius: Radius.lg, height: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-    ctaBtnText:       { fontFamily: Fonts.bold, fontSize: FontSize.body, color: '#fff' },
+    ctaBtnText:       { fontFamily: Fonts.bold, fontSize: FontSize.body, color: '#FAF7ED' },
 });

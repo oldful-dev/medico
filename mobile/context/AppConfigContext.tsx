@@ -275,125 +275,93 @@ const FALLBACK_CONFIG: AppConfig = {
           view_all_route: "/all-home-essentials",
           config: { columns: 4, max_visible_rows: 2 },
           items: [
-            {
-              id: "ac_repair",
-              label: '{"en":"AC\\nRepair","hi":"AC\\nमरम्मत","bn":"AC\\nমেরামত","kn":"AC\\nರಿಪೇರಿ","ml":"AC\\nറിപ്പയർ","mr":"AC\\nदुरुस्ती","ta":"AC\\nபழுதுபார்ப்பு","te":"AC\\nరిపేర్"}',
-              icon_key: "ess_ac_repair",
-              image_url:
-                "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png",
-              route: "/appliance-repair",
-              visible: true,
-              sort_order: 1,
-            },
-            {
-              id: "plumbing",
-              label: '{"en":"Plumbing","hi":"प्लम्बिंग","bn":"প্লাম্বিং","kn":"ಪ್ಲಂಬಿಂಗ್","ml":"പ്ലംബിംഗ്","mr":"प्लंबिंग","ta":"பிளம்பிங்","te":"ప్లంబింగ్"}',
-              icon_key: "ess_plumbing",
-              image_url:
-                "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png",
-              route: "/plumbing-electrical",
-              visible: true,
-              sort_order: 2,
-            },
-            {
-              id: "cleaning",
-              label: '{"en":"Cleaning","hi":"सफाई","bn":"পরিষ্কার","kn":"ಸ್ವಚ್ಛತೆ","ml":"ക്ലീനിംഗ്","mr":"स्वच्छता","ta":"சுத்தம்","te":"క్లీనింగ్"}',
-              icon_key: "ess_cleaning",
-              image_url:
-                "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png",
-              route: "/deep-cleaning",
-              visible: true,
-              sort_order: 3,
-            },
-            {
-              id: "driver",
-              label: '{"en":"Driver","hi":"ड्राइवर","bn":"ড্রাইভার","kn":"ಡ್ರೈವರ್","ml":"ഡ്രൈവർ","mr":"ड्रायव्हर","ta":"டிரைவர்","te":"డ్రైవర్"}',
-              icon_key: "ess_driver",
-              image_url:
-                "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png",
-              route: "/driving-cab",
-              visible: true,
-              sort_order: 4,
-            },
+            // 1. Bill Payment
             {
               id: "bills",
-              label: '{"en":"Bills","hi":"बिल","bn":"বিল","kn":"ಬಿಲ್ಗಳು","ml":"ബില്ലുകൾ","mr":"बिले","ta":"பில்கள்","te":"బిల్లులు"}',
+              label: '{"en":"Bill\\nPayment","hi":"बिल\\nभुगतान","bn":"বিল\\nপেমেন্ট","kn":"ಬಿಲ್\\nಪಾವತಿ","ml":"ബിൽ\\nപേമെന്റ്","mr":"बिल\\nपेमेंट","ta":"பில்\\nபேமெண்ட்","te":"బిల్\\nపేమెంట్"}',
               icon_key: "ess_bills",
               image_url:
                 "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/056ecb9c01dd2283b1c0db1e84c1eb94c6d8a45a.png",
               route: "/bill-payment",
               visible: true,
-              sort_order: 5,
+              sort_order: 1,
             },
+            // 2. Tech Help
+            {
+              id: "tech_helper",
+              label: '{"en":"Tech\\nHelp","hi":"टेक\\nसहायता","bn":"টেক\\nহেল্প","kn":"ತಂತ್ರಜ್ಞಾನ\\nಸಹಾಯ","ml":"ടെക്\\nഹെൽപ്","mr":"तंत्रज्ञान\\nमदत","ta":"டெக்\\nஹெல்ப்","te":"టెక్\\nహెల్ప్"}',
+              icon_key: "ess_ac_repair",
+              image_url:
+                "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png",
+              route: "/paper-legal",
+              visible: true,
+              sort_order: 2,
+            },
+            // 3. Paperwork
             {
               id: "bank",
-              label: '{"en":"Bank\\nWork","hi":"बैंक\\nकार्य","bn":"ব্যাংক\\nকাজ","kn":"ಬ್ಯಾಂಕ್\\nಕೆಲಸ","ml":"ബാങ്ക്\\nജോലി","mr":"बँक\\nकाम","ta":"வங்கி\\nவேலை","te":"బ్యాంక్\\nపని"}',
+              label: '{"en":"Paper-\\nwork","hi":"कागज़\\nकार्य","bn":"কাগজ\\nকাজ","kn":"ಕಾಗದ\\nಕೆಲಸ","ml":"പേപ്പർ\\nജോലി","mr":"कागद\\nकाम","ta":"காகிதம்\\nவேலை","te":"పేపర్\\nపని"}',
               icon_key: "ess_bank",
               image_url:
                 "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png",
               route: "/bank-paperwork",
               visible: true,
-              sort_order: 6,
+              sort_order: 3,
             },
+            // 4. Appliance Repair
             {
-              id: "grocery",
-              label: '{"en":"Grocery","hi":"किराना","bn":"মুদিখানা","kn":"ಕಿರಾಣಿ","ml":"ഗ്രോസറി","mr":"किराणा","ta":"மளிகை","te":"కిరాణా"}',
-              icon_key: "ess_grocery",
-              image_url:
-                "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png",
-              route: "/grocery-run",
-              visible: true,
-              sort_order: 7,
-            },
-            {
-              id: "anything",
-              label: '{"en":"Anything\\nElse","hi":"कुछ और","bn":"যেকোনো কিছু","kn":"ಇನ್ನಾವುದಾದರೂ","ml":"മറ്റെന്തും","mr":"इतर काही","ta":"வேறு எதுவும்","te":"ఇంకేదైనా"}',
-              icon_key: "ess_anything",
-              image_url:
-                "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/6c8ed456023258e8b4095af93909c6cbc6c4b909.png",
-              route: "/anything-else",
-              visible: true,
-              sort_order: 8,
-            },
-            {
-              id: "paper_legal",
-              label: '{"en":"Paper &\\nLegal","hi":"कागज &\\nकानूनी","bn":"কাগজ &\\nআইনি","kn":"ಕಾಗದ &\\nಕಾನೂನು","ml":"പേപ്പർ &\\nനിയമം","mr":"कागद &\\nकायदेशीर","ta":"காகிதம் &\\nசட்டம்","te":"పేపర్ &\\nలీగల్"}',
-              icon_key: "ess_bank",
-              image_url:
-                "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/33ede0e57be708b9775957c3ecec7013b0a56c6d.png",
-              route: "/paper-legal",
-              visible: true,
-              sort_order: 9,
-            },
-            {
-              id: "trip_travel",
-              label: '{"en":"Trip &\\nTravel","hi":"यात्रा &\\nट्रेवल","bn":"ভ্রমণ","kn":"ಪ್ರವಾಸ &\\nಟ್ರಾವೆಲ್","ml":"ട്രിപ്പ് &\\nട്രാവൽ","mr":"प्रवास &\\nट्रॅव्हल","ta":"பயணம் &\\nட்ராவல்","te":"ట్రిప్ &\\nట్రావెల్"}',
-              icon_key: "ess_driver",
-              image_url:
-                "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png",
-              route: "/trip-travels",
-              visible: true,
-              sort_order: 10,
-            },
-            {
-              id: "tech_helper",
-              label: '{"en":"Tech\\nHelper","hi":"टेक\\nसहायक","bn":"টেক\\nহেল্পার","kn":"ತಂತ್ರಜ್ಞಾನ\\nಸಹಾಯಕ","ml":"ടെക്\\nഹെൽപ്പർ","mr":"तंत्रज्ञान\\nसहाय्यक","ta":"டெக்\\nஹெல்பர்","te":"టెక్\\nహెల్పర్"}',
+              id: "ac_repair",
+              label: '{"en":"Appliance\\nRepair","hi":"उपकरण\\nमरम्मत","bn":"যন্ত্রপাতি\\nমেরামত","kn":"ಉಪಕರಣ\\nರಿಪೇರಿ","ml":"ഉപകരണ\\nറിപ്പയർ","mr":"उपकरण\\nदुरुस्ती","ta":"கருவி\\nபழுதுபார்ப்பு","te":"పరికరం\\nరిపేర్"}',
               icon_key: "ess_ac_repair",
               image_url:
                 "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png",
-              route: "/tech-helper",
+              route: "/appliance-repair",
               visible: true,
-              sort_order: 11,
+              sort_order: 4,
             },
+            // 5. Deep Cleaning & Pest Control
             {
-              id: "smart_upgrade",
-              label: '{"en":"Smart\\nUpgrade","hi":"स्मार्ट\\nअपग्रेड","bn":"স্মার্ট\\nআপগ্রেড","kn":"ಸ್ಮಾರ್ಟ್\\nಅಪ್‌ಗ್ರೇಡ್","ml":"സ്മാർട്ട്\\nഅപ്‌ഗ്രേഡ്","mr":"स्मार्ट\\nअपग्रेड","ta":"ஸ்மார்ட்\\nஅப்கிரேட்","te":"స్మార్ట్\\nఅప్‌గ్రేడ్"}',
+              id: "cleaning",
+              label: '{"en":"Deep Cleaning\\n& Pest Ctrl","hi":"गहरी सफाई\\nव कीट नियंत्रण","bn":"গভীর পরিষ্কার\\nও কীট নিয়ন্ত্রণ","kn":"ಆಳ ಸ್ವಚ್ಛತೆ\\nಮತ್ತು ಕೀಟ","ml":"ഡീപ് ക്ലീനിംഗ്\\nകീടനിയന്ത്രണം","mr":"खोल सफाई\\nकीड नियंत्रण","ta":"ஆழ் சுத்தம்\\nகீட கட்டுப்பாடு","te":"డీప్ క్లీనింగ్\\nకీట నియంత్రణ"}',
               icon_key: "ess_cleaning",
               image_url:
                 "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/ad6b9b061bc7b1487a0e73c2557f711136d2a4d9.png",
-              route: "/smart-upgrade",
+              route: "/deep-cleaning",
               visible: true,
-              sort_order: 12,
+              sort_order: 5,
+            },
+            // 6. Washroom Sanitation
+            {
+              id: "sanitisation",
+              label: '{"en":"Washroom\\nSanitation","hi":"शौचालय\\nस्वच्छता","bn":"বাথরুম\\nস্যানিটেশন","kn":"ವಾಶ್‌ರೂಮ್\\nಸ್ವಚ್ಛತೆ","ml":"ശൗചാലയ\\nശുചിത്വം","mr":"शौचालय\\nस्वच्छता","ta":"கழிவறை\\nசுகாதாரம்","te":"వాష్‌రూమ్\\nసానిటేషన్"}',
+              icon_key: "ess_cleaning",
+              image_url:
+                "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/8888c71f466119aa294bd00136ff887f616d4737.png",
+              route: "/sanitisation",
+              visible: true,
+              sort_order: 6,
+            },
+            // 7. Plumbing & Electrician
+            {
+              id: "plumbing",
+              label: '{"en":"Plumbing &\\nElectrician","hi":"प्लम्बिंग &\\nइलेक्ट्रीशियन","bn":"প্লাম্বিং &\\nইলেকট্রিশিয়ান","kn":"ಪ್ಲಂಬಿಂಗ್ &\\nಎಲೆಕ್ಟ್ರಿಷಿಯನ್","ml":"പ്ലംബിംഗ് &\\nഇലക്ട്രിഷ്യൻ","mr":"प्लंबिंग &\\nइलेक्ट्रिशियन","ta":"பிளம்பிங் &\\nமின்சாரி","te":"ప్లంబింగ్ &\\nఎలక్ట్రీషియన్"}',
+              icon_key: "ess_plumbing",
+              image_url:
+                "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/8ce612b04a3a83f1e834c7b71a6dd2c0174cb918.png",
+              route: "/plumbing-electrical",
+              visible: true,
+              sort_order: 7,
+            },
+            // 8. Driver Request
+            {
+              id: "driver",
+              label: '{"en":"Driver\\nRequest","hi":"ड्राइवर\\nअनुरोध","bn":"ড্রাইভার\\nঅনুরোধ","kn":"ಡ್ರೈವರ್\\nವಿನಂತಿ","ml":"ഡ്രൈവർ\\nഅഭ്യർത്ഥന","mr":"ड्रायव्हर\\nविनंती","ta":"டிரைவர்\\nகோரிக்கை","te":"డ్రైవర్\\nరిక్వెస్ట్"}',
+              icon_key: "ess_driver",
+              image_url:
+                "https://storage.googleapis.com/ayuxacare-assets/mobile/assets/images/60d4d0afa5801aeaa9e593bc049e3b017ef5624c.png",
+              route: "/driving-cab",
+              visible: true,
+              sort_order: 8,
             },
           ],
         },

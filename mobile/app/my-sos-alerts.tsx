@@ -228,7 +228,7 @@ function makeStyles(colors: ThemeColors, isDarkMode: boolean) {
             paddingHorizontal: Spacing.md, paddingVertical: 12,
         },
         backBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-        headerTitle: { color: '#fff', fontSize: FontSize.heading2, fontFamily: Fonts.semiBold },
+        headerTitle: { color: '#FAF7ED', fontSize: FontSize.heading2, fontFamily: Fonts.semiBold },
         center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.xl },
         emptyTitle: { fontSize: FontSize.heading2, fontFamily: Fonts.semiBold, color: colors.textDark, marginTop: 16 },
         emptySubtitle: { fontSize: FontSize.bodySmall, color: colors.textMuted, textAlign: 'center', marginTop: 8, lineHeight: 20 },

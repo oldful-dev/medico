@@ -296,9 +296,9 @@ function PlanCard({ plan, activeCycle, onCycleChange, activeSub, isInitiating, o
 
     // Gradient palette per index
     const gradients = [
-        { bg: dark ? '#1A2332' : '#F0F9F5', accent: '#048357', headerBg: '#048357', badge: '#E6F4EE', badgeText: '#048357' },
-        { bg: dark ? '#1C1E2C' : '#F5F3FF', accent: '#7C3AED', headerBg: '#7C3AED', badge: '#EDE9FE', badgeText: '#5B21B6' },
-        { bg: dark ? '#1E1A2E' : '#FFF7ED', accent: '#EA580C', headerBg: '#EA580C', badge: '#FEF3C7', badgeText: '#92400E' },
+        { bg: dark ? '#1A2332' : '#FAF7ED', accent: '#048357', headerBg: '#048357', badge: '#E6F4EE', badgeText: '#048357' },
+        { bg: dark ? '#1C1E2C' : '#FAF7ED', accent: '#7C3AED', headerBg: '#7C3AED', badge: '#EDE9FE', badgeText: '#5B21B6' },
+        { bg: dark ? '#1E1A2E' : '#FAF7ED', accent: '#EA580C', headerBg: '#EA580C', badge: '#FEF3C7', badgeText: '#92400E' },
     ];
     const palette = gradients[planIndex % gradients.length];
 
@@ -333,14 +333,14 @@ function PlanCard({ plan, activeCycle, onCycleChange, activeSub, isInitiating, o
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
                         {isOnDemand ? (
-                            <Text style={{ fontFamily: Fonts.bold, fontSize: 20, color: '#FFFFFF', marginTop: 4 }}>
+                            <Text style={{ fontFamily: Fonts.bold, fontSize: 20, color: '#FAF7ED', marginTop: 4 }}>
                                 {t('plans.pay_per_trip')}
                             </Text>
                         ) : (
                             <>
                                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
-                                    <Text style={{ fontFamily: Fonts.bold, fontSize: 24, color: '#FFFFFF' }}>₹</Text>
-                                    <Text style={{ fontFamily: Fonts.bold, fontSize: 28, color: '#FFFFFF' }}>
+                                    <Text style={{ fontFamily: Fonts.bold, fontSize: 24, color: '#FAF7ED' }}>₹</Text>
+                                    <Text style={{ fontFamily: Fonts.bold, fontSize: 28, color: '#FAF7ED' }}>
                                         {price > 0 ? price.toLocaleString('en-IN') : '—'}
                                     </Text>
                                 </View>
@@ -373,7 +373,7 @@ function PlanCard({ plan, activeCycle, onCycleChange, activeSub, isInitiating, o
                                     <Text style={{
                                         fontFamily: Fonts.semiBold,
                                         fontSize: 10,
-                                        color: isCycleActive ? palette.accent : '#FFFFFF',
+                                        color: isCycleActive ? palette.accent : '#FAF7ED',
                                     }}>
                                         {cycle.label}
                                     </Text>
@@ -483,7 +483,7 @@ function PlanCard({ plan, activeCycle, onCycleChange, activeSub, isInitiating, o
                 ) : (
                     <Text style={[
                         planCardStyles.ctaText,
-                        { color: btnDisabled ? (dark ? 'rgba(255,255,255,0.35)' : '#9CA3AF') : '#fff' },
+                        { color: btnDisabled ? (dark ? 'rgba(255,255,255,0.35)' : '#9CA3AF') : '#FAF7ED' },
                     ]}>
                         {btnLabel}
                     </Text>
@@ -520,7 +520,7 @@ const planCardStyles = StyleSheet.create({
     planName: {
         fontFamily: Fonts.bold,
         fontSize: 22,
-        color: '#fff',
+        color: '#FAF7ED',
     },
     planDesc: {
         fontFamily: Fonts.regular,
@@ -538,7 +538,7 @@ const planCardStyles = StyleSheet.create({
     activeBadgeText: {
         fontFamily: Fonts.bold,
         fontSize: 10,
-        color: '#fff',
+        color: '#FAF7ED',
         letterSpacing: 0.5,
     },
     priceRow: {
@@ -994,7 +994,7 @@ export default function PlansScreen() {
                 />
 
                 {/* Collapsible Plan Usage Policy Notice */}
-                <View style={[S.policyContainer, { backgroundColor: isDarkMode ? '#1E293B' : '#fff', borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : '#E5E7EB' }]}>
+                <View style={[S.policyContainer, { backgroundColor: isDarkMode ? '#1E293B' : '#FAF7ED', borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : '#E5E7EB' }]}>
                     <TouchableOpacity
                         style={S.policyHeader}
                         onPress={() => setPolicyExpanded(!policyExpanded)}
@@ -1048,7 +1048,7 @@ export default function PlansScreen() {
                 {benefits && benefits.length > 0 && (
                     <>
                         <Text style={[S.whyTitle, { color: colors.textDark }]}>{t('plans.why_ayuxa')}</Text>
-                        <View style={[S.whyCard, { backgroundColor: isDarkMode ? '#1A2332' : '#fff', borderColor: isDarkMode ? 'rgba(255,255,255,0.06)' : '#F3F4F6' }]}>
+                        <View style={[S.whyCard, { backgroundColor: isDarkMode ? '#1A2332' : '#FAF7ED', borderColor: isDarkMode ? 'rgba(255,255,255,0.06)' : '#F3F4F6' }]}>
                             {benefits.map((benefit: any) => (
                                 <View key={benefit.id} style={S.whyRow}>
                                     <View style={[S.whyIconBox, { backgroundColor: 'rgba(4,131,87,0.08)' }]}>
@@ -1071,7 +1071,7 @@ export default function PlansScreen() {
 
                 {/* Membership Dashboard Link */}
                 <TouchableOpacity
-                    style={[S.dashLink, { backgroundColor: isDarkMode ? '#1E293B' : '#fff', borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : '#E5E7EB' }]}
+                    style={[S.dashLink, { backgroundColor: isDarkMode ? '#1E293B' : '#FAF7ED', borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : '#E5E7EB' }]}
                     onPress={() => router.push('/plans/membership-dashboard' as any)}
                     activeOpacity={0.8}
                 >
@@ -1087,7 +1087,7 @@ export default function PlansScreen() {
 
                 {/* Collapsible Subscription Terms & Conditions */}
                 {terms && (
-                    <View style={[S.termsContainer, { backgroundColor: isDarkMode ? '#1E293B' : '#fff', borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : '#E5E7EB' }]}>
+                    <View style={[S.termsContainer, { backgroundColor: isDarkMode ? '#1E293B' : '#FAF7ED', borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : '#E5E7EB' }]}>
                         <TouchableOpacity
                             style={S.termsHeader}
                             onPress={() => setTermsExpanded(!termsExpanded)}
@@ -1118,7 +1118,7 @@ export default function PlansScreen() {
 const makeStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: dark ? '#0F172A' : '#F5F7FA',
+        backgroundColor: dark ? '#0F172A' : '#F5F0E1',
     },
     header: {
         backgroundColor: colors.primary,
@@ -1139,7 +1139,7 @@ const makeStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
     headerTitle: {
         fontFamily: Fonts.bold,
         fontSize: 18,
-        color: '#fff',
+        color: '#FAF7ED',
     },
     headerSub: {
         fontFamily: Fonts.regular,
