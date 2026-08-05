@@ -1992,7 +1992,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         fontSize: 13,
         color: colors.textDark,
     },
-    dayTextActive: { color: '#fff' },
+    dayTextActive: { color: '#FAF7ED' },
     slotsGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -2024,7 +2024,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         fontSize: 12,
         color: colors.textDark,
     },
-    slotTimeActive: { color: '#fff' },
+    slotTimeActive: { color: '#FAF7ED' },
     noSlotsText: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.body,
@@ -2168,7 +2168,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     modalConfirmText: {
         fontFamily: Fonts.semiBold,
         fontSize: 14,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
     },
     upgradeCard: {
         borderColor: colors.primary,

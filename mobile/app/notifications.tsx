@@ -176,7 +176,7 @@ export default function NotificationsScreen() {
                 key={item.id}
                 activeOpacity={0.7}
                 onPress={() => !item.read && handleMarkRead(item.id)}
-                style={[styles.notificationCard, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FFFFFF' }, !item.read && styles.notificationCardUnread]}
+                style={[styles.notificationCard, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FAF7ED' }, !item.read && styles.notificationCardUnread]}
             >
                 <View style={[styles.iconCircle, { backgroundColor: `${item.iconColor}15` }]}>
                     <Ionicons name={item.icon} size={22} color={item.iconColor} />
@@ -212,7 +212,7 @@ export default function NotificationsScreen() {
             </View>
 
             {/* ─── Content ─── */}
-            <View style={[styles.contentCard, { backgroundColor: isDarkMode ? '#252525' : '#FDFDE8' }]}>
+            <View style={[styles.contentCard, { backgroundColor: isDarkMode ? '#252525' : '#FAF7ED' }]}>
                 {loading ? (
                     <View style={styles.centerState}>
                         <ActivityIndicator size="large" color="#048357" />
@@ -268,7 +268,7 @@ const makeStyles = (isDarkMode: boolean, colors: any) => StyleSheet.create({
         flex: 1,
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         textAlign: 'left',
         marginLeft: 12,
         letterSpacing: -0.24,

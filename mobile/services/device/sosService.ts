@@ -107,7 +107,7 @@ export const sosService = {
      * canOpenURL returns false for tel: unless the scheme is declared in android.queries.
      * openURL always works on physical devices for phone calls.
      */
-    callEmergencyHotline: async (hotlineNumber: string = '112'): Promise<void> => {
+    callEmergencyHotline: async (hotlineNumber: string = '+919480198108'): Promise<void> => {
         const url = `tel:${hotlineNumber}`;
         try {
             await Linking.openURL(url);

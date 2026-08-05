@@ -190,7 +190,7 @@ export default function UpgradeHistoryScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const cardS = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
-    card:        { backgroundColor: dark ? '#1E293B' : '#fff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.borderLight, ...Shadow.card },
+    card:        { backgroundColor: dark ? '#1E293B' : '#FAF7ED', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.borderLight, ...Shadow.card },
     topRow:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
     badge:       { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
     badgeText:   { fontFamily: Fonts.semiBold, fontSize: 11 },
@@ -208,9 +208,9 @@ const makeStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
     header:      { backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 14 },
     backBtn:     { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
     headerCenter:{ flex: 1 },
-    headerTitle: { fontFamily: Fonts.bold, fontSize: FontSize.heading2, color: '#fff' },
+    headerTitle: { fontFamily: Fonts.bold, fontSize: FontSize.heading2, color: '#FAF7ED' },
     headerSub:   { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: 'rgba(255,255,255,0.75)', marginTop: 1 },
-    legend:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: dark ? '#1E293B' : '#fff', borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+    legend:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: dark ? '#1E293B' : '#FAF7ED', borderBottomWidth: 1, borderBottomColor: colors.borderLight },
     legendChip:  { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1 },
     legendText:  { fontFamily: Fonts.semiBold, fontSize: 10 },
     loader:      { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },

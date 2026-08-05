@@ -226,7 +226,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         letterSpacing: -0.24,
     },
     headerSubtitle: {
@@ -237,7 +237,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     contentContainer: {
         flex: 1,
-        backgroundColor: isDarkMode ? '#0F172A' : '#FDFDE8',
+        backgroundColor: isDarkMode ? '#0F172A' : '#FAF7ED',
         borderTopLeftRadius: 45,
         borderTopRightRadius: 45,
         paddingTop: 25,
@@ -302,7 +302,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     choiceCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FAF7ED',
         borderRadius: 12,
         padding: 16,
         gap: 16,
@@ -340,7 +340,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         fontSize: 14,
     },
 });

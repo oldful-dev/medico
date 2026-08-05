@@ -206,9 +206,9 @@ export default function CartScreen() {
 }
 
 const makeStyles = (isDarkMode: boolean) => {
-    const bgLight = isDarkMode ? '#1A1A1A' : '#FAFAFA';
-    const bgCard = isDarkMode ? '#252525' : '#FFFFFF';
-    const bgCardSecondary = isDarkMode ? '#2D2D2D' : '#F9FAFB';
+    const bgLight = isDarkMode ? '#1A1A1A' : '#F5F0E1';
+    const bgCard = isDarkMode ? '#252525' : '#FAF7ED';
+    const bgCardSecondary = isDarkMode ? '#2D2D2D' : '#F5F0E1';
     const borderColor = isDarkMode ? '#3A3A3A' : '#E5E7EB';
     const borderColorLight = isDarkMode ? '#404040' : '#F3F4F6';
     const textPrimary = isDarkMode ? '#E8E8E8' : '#2F2F2F';
@@ -356,7 +356,7 @@ const makeStyles = (isDarkMode: boolean) => {
             alignItems: 'center',
         },
         sepCheckoutBtnText: {
-            color: '#FFFFFF',
+            color: '#FAF7ED',
             fontSize: 12,
             fontWeight: '600',
         },
@@ -379,7 +379,7 @@ const makeStyles = (isDarkMode: boolean) => {
             alignItems: 'center',
         },
         checkoutBtnText: {
-            color: '#FFFFFF',
+            color: '#FAF7ED',
             fontSize: 14,
             fontWeight: '600',
         },
@@ -411,7 +411,7 @@ const makeStyles = (isDarkMode: boolean) => {
             alignItems: 'center',
         },
         checkoutAllTextEnabled: {
-            color: '#FFFFFF',
+            color: '#FAF7ED',
             fontSize: 14,
             fontWeight: '600',
         },

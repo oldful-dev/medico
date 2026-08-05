@@ -187,7 +187,7 @@ export default function DownloadDocumentsScreen() {
 const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     container: {
         flex: 1,
@@ -211,7 +211,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     },
     contentCard: {
         flex: 1,
-        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED',
         borderTopLeftRadius: Radius.lg,
         borderTopRightRadius: Radius.lg,
     },
@@ -286,12 +286,12 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     retryButtonText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
     },
     footer: {
         paddingHorizontal: Spacing.lg,
         paddingTop: 12,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         borderTopWidth: 1,
         borderTopColor: isDarkMode ? '#3A3A3A' : '#F0F0F0',
     },
@@ -306,6 +306,6 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     downloadButtonText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
     },
 });

@@ -513,7 +513,7 @@ export default function ProfileSetupScreen() {
                 {/* ─── Checkbox: Policies ─── */}
                 <View style={styles.checkboxRow}>
                     <TouchableOpacity
-                        style={[styles.checkboxContainer, { borderColor: '#02743F', backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF' }]}
+                        style={[styles.checkboxContainer, { borderColor: '#02743F', backgroundColor: isDarkMode ? '#2A2A2A' : '#FAF7ED' }]}
                         activeOpacity={0.8}
                         onPress={() => setAgreed(!agreed)}
                     >
@@ -769,7 +769,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         fontFamily: Platform.select({ ios: 'Poppins-Bold', android: 'Poppins_700Bold', default: 'System' }),
         fontWeight: '700',
         fontSize: 18,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         letterSpacing: -0.24,
     },
 

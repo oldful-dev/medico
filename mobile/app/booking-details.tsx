@@ -416,8 +416,8 @@ export default function BookingDetailsScreen() {
 
     if (loading) {
         return (
-            <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}>
-                <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} />
+            <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED' }]}>
+                <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FAF7ED'} />
                 <View style={styles.centerContainer}>
                     <ActivityIndicator size="large" color={PRIMARY_GREEN} />
                 </View>
@@ -427,8 +427,8 @@ export default function BookingDetailsScreen() {
 
     if (!booking) {
         return (
-            <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}>
-                <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} />
+            <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED' }]}>
+                <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FAF7ED'} />
                 <View style={styles.centerContainer}>
                     <Text style={[styles.errorText, { color: isDarkMode ? '#E0E0E0' : '#000000' }]}>{t('booking_details.booking_not_found')}</Text>
                 </View>
@@ -437,11 +437,11 @@ export default function BookingDetailsScreen() {
     }
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF' }]}>
-            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FFFFFF'} />
+        <View style={[styles.container, { paddingTop: insets.top, backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED' }]}>
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#1A1A1A' : '#FAF7ED'} />
 
             {/* Header */}
-            <View style={[styles.header, { backgroundColor: isDarkMode ? '#252525' : '#FFFFFF' }]}>
+            <View style={[styles.header, { backgroundColor: isDarkMode ? '#252525' : '#FAF7ED' }]}>
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color={isDarkMode ? '#E0E0E0' : TEXT_DARK} />
                 </TouchableOpacity>
@@ -725,7 +725,7 @@ const makeStyles = (isDarkMode: boolean, colors: any) => StyleSheet.create({
     statusBadgeText: {
         fontSize: 10,
         fontWeight: '700',
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         textTransform: 'capitalize',
     },
     content: {
@@ -735,7 +735,7 @@ const makeStyles = (isDarkMode: boolean, colors: any) => StyleSheet.create({
         paddingBottom: 20,
     },
     card: {
-        backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#2A2A2A' : '#FAF7ED',
         borderWidth: 1,
         borderColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
         borderRadius: 12,
@@ -849,7 +849,7 @@ const makeStyles = (isDarkMode: boolean, colors: any) => StyleSheet.create({
     paymentStatusText: {
         fontSize: 10,
         fontWeight: '700',
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         textTransform: 'capitalize',
     },
     reportHeader: {
@@ -928,7 +928,7 @@ const makeStyles = (isDarkMode: boolean, colors: any) => StyleSheet.create({
         paddingVertical: 12,
         borderTopWidth: 1,
         borderTopColor: isDarkMode ? '#3A3A3A' : CARD_BORDER,
-        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED',
     },
     actionBtn: {
         flex: 1,
@@ -939,14 +939,14 @@ const makeStyles = (isDarkMode: boolean, colors: any) => StyleSheet.create({
         justifyContent: 'center',
     },
     cancelBtn: {
-        backgroundColor: isDarkMode ? 'rgba(239,68,68,0.1)' : '#FFFFFF',
+        backgroundColor: isDarkMode ? 'rgba(239,68,68,0.1)' : '#FAF7ED',
         borderWidth: 1,
         borderColor: '#EF4444',
     },
     actionBtnText: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#FFFFFF',
+        color: '#FAF7ED',
     },
     cancelBtnText: {
         fontSize: 13,

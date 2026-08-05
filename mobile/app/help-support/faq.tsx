@@ -96,7 +96,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         borderTopLeftRadius: Radius.xl * 2, borderTopRightRadius: Radius.xl * 2, overflow: 'hidden',
     },
     searchWrapper:   { paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md, backgroundColor: colors.primary, paddingBottom: Spacing.lg },
-    searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: isDarkMode ? colors.bgCardMuted : '#FFF', borderRadius: Radius.lg, paddingHorizontal: Spacing.md, height: 44 },
+    searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: isDarkMode ? colors.bgCardMuted : '#FAF7ED', borderRadius: Radius.lg, paddingHorizontal: Spacing.md, height: 44 },
     searchInput:     { flex: 1, marginLeft: Spacing.xs, fontFamily: Fonts.regular, fontSize: FontSize.body, color: colors.textDark },
     scrollContent: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.xl, paddingBottom: Spacing.xl },
     sectionTitle: {

@@ -49,9 +49,9 @@ export default function SOSEmergencyScreen() {
         try {
             const result = await sosService.triggerSOS(prefetchedLocation);
             if (result.success) {
-                await sosService.callEmergencyHotline('+918062180429');
+                await sosService.callEmergencyHotline('+919480198108');
             } else {
-                await sosService.callEmergencyHotline('+918062180429');
+                await sosService.callEmergencyHotline('+919480198108');
                 Alert.alert(
                     t('sos.partial_alert_title'),
                     t('sos.partial_alert_msg')

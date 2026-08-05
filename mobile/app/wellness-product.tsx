@@ -416,7 +416,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     cartBadgeText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.bodySmall,
-        color: '#fff',
+        color: '#FAF7ED',
     },
     headerTitle: {
         flex: 1,
@@ -475,7 +475,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     discountText: {
         fontFamily: Fonts.semiBold,
         fontSize: 12,
-        color: '#fff',
+        color: '#FAF7ED',
     },
     lowStockBadge: {
         position: 'absolute',
@@ -489,7 +489,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     lowStockText: {
         fontFamily: Fonts.semiBold,
         fontSize: 12,
-        color: '#fff',
+        color: '#FAF7ED',
     },
     outBadge: {
         position: 'absolute',
@@ -503,7 +503,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     outText: {
         fontFamily: Fonts.semiBold,
         fontSize: 12,
-        color: '#fff',
+        color: '#FAF7ED',
     },
 
     // Details
@@ -712,7 +712,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     relatedBadgeText: {
         fontFamily: Fonts.semiBold,
         fontSize: 9,
-        color: '#fff',
+        color: '#FAF7ED',
     },
     relatedBody: {
         padding: Spacing.sm,
@@ -769,7 +769,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     quantityText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: '#fff',
+        color: '#FAF7ED',
     },
     addBtnDisabled: {
         backgroundColor: colors.bgCardMuted,
@@ -777,6 +777,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     addBtnText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: '#fff',
+        color: '#FAF7ED',
     },
 });

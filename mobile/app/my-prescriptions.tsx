@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     backBtn: { padding: 4, marginRight: 8 },
     headerTitle: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 20, color: '#FFFFFF',
+        fontSize: 20, color: '#FAF7ED',
         flex: 1,
     },
     body: { flex: 1, backgroundColor: '#FFFFE3', borderTopLeftRadius: 30, borderTopRightRadius: 30 },
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     listContent: { padding: 20, paddingBottom: 40 },
     card: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, marginBottom: 12,
+        backgroundColor: '#FAF7ED', borderRadius: 14, padding: 14, marginBottom: 12,
         shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
     },
     cardLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 },
@@ -216,6 +216,6 @@ const styles = StyleSheet.create({
     },
     uploadBtnText: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
-        fontSize: 15, color: '#FFFFFF',
+        fontSize: 15, color: '#FAF7ED',
     },
 });

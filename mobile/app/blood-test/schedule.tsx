@@ -702,14 +702,14 @@ export default function BloodTestScheduleScreen() {
         styles.container,
         {
           paddingTop: insets.top,
-          backgroundColor: isDarkMode ? "#1A1A1A" : "#FFFFFF",
+          backgroundColor: isDarkMode ? "#1A1A1A" : '#FAF7ED',
         },
       ]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <StatusBar
         style={isDarkMode ? "light" : "dark"}
-        backgroundColor={isDarkMode ? "#1A1A1A" : "#FFFFFF"}
+        backgroundColor={isDarkMode ? "#1A1A1A" : '#FAF7ED'}
       />
 
       {/* Header */}
@@ -838,7 +838,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDarkMode ? "#1A1A1A" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#1A1A1A" : '#FAF7ED',
     },
     header: {
       flexDirection: "row",
@@ -871,7 +871,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       borderColor: isDarkMode ? "#3A3A3A" : "#E5E7EB",
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: isDarkMode ? "#252525" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#252525" : '#FAF7ED',
     },
     stepDotActive: {
       backgroundColor: PRIMARY_GREEN,
@@ -883,7 +883,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       color: isDarkMode ? "#AAAAAA" : TEXT_MUTED,
     },
     stepDotTextActive: {
-      color: "#FFFFFF",
+      color: '#FAF7ED',
     },
     stepLine: {
       width: 2,
@@ -935,7 +935,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       borderColor: isDarkMode ? "#3A3A3A" : CARD_BORDER,
       borderRadius: 8,
       marginRight: 8,
-      backgroundColor: isDarkMode ? "#252525" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#252525" : '#FAF7ED',
     },
     dateChipActive: {
       backgroundColor: PRIMARY_GREEN,
@@ -947,7 +947,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       fontWeight: "500",
     },
     dateChipTextActive: {
-      color: "#FFFFFF",
+      color: '#FAF7ED',
     },
     slotsGrid: {
       flexDirection: "row",
@@ -963,7 +963,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       borderColor: isDarkMode ? "#3A3A3A" : CARD_BORDER,
       borderRadius: 8,
       alignItems: "center",
-      backgroundColor: isDarkMode ? "#252525" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#252525" : '#FAF7ED',
     },
     slotButtonActive: {
       backgroundColor: PRIMARY_GREEN,
@@ -975,7 +975,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       fontWeight: "500",
     },
     slotButtonTextActive: {
-      color: "#FFFFFF",
+      color: '#FAF7ED',
     },
     collectionOption: {
       flexDirection: "row",
@@ -984,7 +984,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       borderWidth: 1,
       borderColor: isDarkMode ? "#3A3A3A" : CARD_BORDER,
       borderRadius: 10,
-      backgroundColor: isDarkMode ? "#252525" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#252525" : '#FAF7ED',
       marginBottom: 12,
     },
     collectionOptionActive: {
@@ -1010,7 +1010,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       borderColor: CARD_BORDER,
       borderRadius: 8,
       marginBottom: 10,
-      backgroundColor: "#FFFFFF",
+      backgroundColor: '#FAF7ED',
       minHeight: 44,
     },
     searchInput: {
@@ -1073,7 +1073,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       paddingVertical: 10,
       borderBottomWidth: 1,
       borderBottomColor: isDarkMode ? "#3A3A3A" : CARD_BORDER,
-      backgroundColor: isDarkMode ? "#252525" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#252525" : '#FAF7ED',
     },
     resultName: {
       fontSize: 13,
@@ -1093,7 +1093,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       paddingVertical: 10,
       fontSize: 14,
       color: isDarkMode ? "#FFFFFF" : TEXT_DARK,
-      backgroundColor: isDarkMode ? "#1A1A1A" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#1A1A1A" : '#FAF7ED',
       height: 80,
       marginBottom: 10,
       textAlignVertical: "top",
@@ -1111,7 +1111,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       paddingVertical: 10,
       fontSize: 14,
       color: isDarkMode ? "#FFFFFF" : TEXT_DARK,
-      backgroundColor: isDarkMode ? "#1A1A1A" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#1A1A1A" : '#FAF7ED',
     },
     phoneInputContainer: {
       flexDirection: "row",
@@ -1120,7 +1120,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       borderColor: isDarkMode ? "#3A3A3A" : CARD_BORDER,
       borderRadius: 8,
       paddingHorizontal: 12,
-      backgroundColor: isDarkMode ? "#1A1A1A" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#1A1A1A" : '#FAF7ED',
       marginBottom: 10,
     },
     phonePrefix: {
@@ -1184,7 +1184,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       paddingVertical: 12,
       borderTopWidth: 1,
       borderTopColor: isDarkMode ? "#3A3A3A" : CARD_BORDER,
-      backgroundColor: isDarkMode ? "#1A1A1A" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#1A1A1A" : '#FAF7ED',
     },
     backButton: {
       flex: 1,
@@ -1193,7 +1193,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       borderColor: PRIMARY_GREEN,
       borderRadius: 10,
       alignItems: "center",
-      backgroundColor: isDarkMode ? "#252525" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#252525" : '#FAF7ED',
     },
     backButtonText: {
       fontSize: 14,
@@ -1214,7 +1214,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
     continueButtonText: {
       fontSize: 14,
       fontWeight: "600",
-      color: "#FFFFFF",
+      color: '#FAF7ED',
     },
     locationOptionsContainer: {
       flexDirection: "row",
@@ -1224,7 +1224,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
     locationOptionBtn: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: isDarkMode ? "#252525" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#252525" : '#FAF7ED',
       borderWidth: 1,
       borderColor: isDarkMode ? "#3A3A3A" : CARD_BORDER,
       borderRadius: 10,
@@ -1259,7 +1259,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       borderRadius: 20,
       borderWidth: 1,
       borderColor: PRIMARY_GREEN,
-      backgroundColor: isDarkMode ? "#252525" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#252525" : '#FAF7ED',
       marginRight: 8,
       maxWidth: 160,
     },
@@ -1273,7 +1273,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       fontWeight: "600",
     },
     savedAddrChipTextActive: {
-      color: "#FFFFFF",
+      color: '#FAF7ED',
     },
     serviceabilityBanner: {
       flexDirection: "row",
@@ -1299,7 +1299,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       color: PRIMARY_GREEN,
     },
     newAddrBox: {
-      backgroundColor: isDarkMode ? "#252525" : "#F9FAFB",
+      backgroundColor: isDarkMode ? "#252525" : '#F5F0E1',
       borderWidth: 1,
       borderColor: isDarkMode ? "#3A3A3A" : CARD_BORDER,
       borderRadius: 12,
@@ -1323,7 +1323,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       borderRadius: 20,
       borderWidth: 1,
       borderColor: isDarkMode ? "#3A3A3A" : CARD_BORDER,
-      backgroundColor: isDarkMode ? "#1A1A1A" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#1A1A1A" : '#FAF7ED',
     },
     labelChipActive: {
       backgroundColor: PRIMARY_GREEN,
@@ -1335,7 +1335,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       color: isDarkMode ? "#AAAAAA" : TEXT_MUTED,
     },
     labelChipTextActive: {
-      color: "#FFFFFF",
+      color: '#FAF7ED',
     },
     pickLocationBtn: {
       flexDirection: "row",
@@ -1345,7 +1345,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
       borderWidth: 1,
       borderColor: PRIMARY_GREEN,
       borderRadius: 8,
-      backgroundColor: isDarkMode ? "#252525" : "#FFFFFF",
+      backgroundColor: isDarkMode ? "#252525" : '#FAF7ED',
       marginBottom: 8,
     },
     pickLocationBtnText: {

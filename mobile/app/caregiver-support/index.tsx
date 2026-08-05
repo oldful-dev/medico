@@ -330,7 +330,7 @@ export default function BookCaregiverSupportScreen() {
                 </View>
 
                 {/* ─── Main Content Card (Cream Background with Top Radius) ─── */}
-                <View style={[dynamicStyles.contentCard, { backgroundColor: isDarkMode ? '#252525' : '#FDFDE8' }]}>
+                <View style={[dynamicStyles.contentCard, { backgroundColor: isDarkMode ? '#252525' : '#FAF7ED' }]}>
                     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <KeyboardAwareScrollView
                         style={dynamicStyles.scrollView}
@@ -536,7 +536,7 @@ export default function BookCaregiverSupportScreen() {
                         </View>
 
                         {/* ─── Not Sure Banner ─── */}
-                        <TouchableOpacity style={dynamicStyles.notSureBanner} onPress={() => Linking.openURL('tel:+918062180429')} activeOpacity={0.75}>
+                        <TouchableOpacity style={dynamicStyles.notSureBanner} onPress={() => Linking.openURL('tel:08047280789')} activeOpacity={0.75}>
                             <Image source={helpIcon} style={dynamicStyles.ideaIcon} resizeMode="contain" />
                             <View style={dynamicStyles.notSureTextGroup}>
                                 <Text style={dynamicStyles.notSureTitle}>{t('nurse_care.not_sure_title')}</Text>
@@ -612,7 +612,7 @@ export default function BookCaregiverSupportScreen() {
         </KeyboardAvoidingView>
 
                     {/* ─── Fixed Normal Bottom Bar ─── */}
-                    <View style={[dynamicStyles.bottomBarContainer, { paddingBottom: insets.bottom || 20, backgroundColor: isDarkMode ? '#252525' : '#FDFDE8' }]}>
+                    <View style={[dynamicStyles.bottomBarContainer, { paddingBottom: insets.bottom || 20, backgroundColor: isDarkMode ? '#252525' : '#FAF7ED' }]}>
                         <TouchableOpacity
                             style={[dynamicStyles.confirmButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
                             activeOpacity={0.8}
@@ -663,7 +663,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontWeight: '600',
         fontSize: 20,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         letterSpacing: -0.24,
         marginLeft: 12,
     },
@@ -674,10 +674,10 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     /* ─── Main Content Card ─── */
     contentCard: {
         flex: 1,
-        backgroundColor: isDarkMode ? '#252525' : '#FDFDE8', // Off-white cream / Dark
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED', // Off-white cream / Dark
         borderTopLeftRadius: 51,
         borderTopRightRadius: 51,
-        shadowColor: isDarkMode ? '#000000' : '#FFFFFF',
+        shadowColor: isDarkMode ? '#000000' : '#FAF7ED',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.18,
         shadowRadius: 42.8,
@@ -756,7 +756,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         height: 33,
         borderRadius: 7,
         marginHorizontal: 4,
@@ -784,7 +784,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     staffCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         borderWidth: 1,
         borderColor: isDarkMode ? '#3A3A3A' : '#AAAEAC',
         borderRadius: 9,
@@ -845,7 +845,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         borderWidth: 1,
         borderColor: isDarkMode ? '#3A3A3A' : '#AAAEAC',
         borderRadius: 11,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     radioCardStacked: {
         flexDirection: 'row',
@@ -855,7 +855,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         borderWidth: 1,
         borderColor: isDarkMode ? '#3A3A3A' : '#AAAEAC',
         borderRadius: 11,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     radioLabelStacked: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
@@ -887,7 +887,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         borderColor: isDarkMode ? '#3A3A3A' : '#AAAEAC',
         borderRadius: 11,
         marginHorizontal: 4,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     durationTextCol: {
         marginLeft: 8,
@@ -915,7 +915,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         borderColor: isDarkMode ? '#3A3A3A' : '#AAAEAC',
         borderRadius: 11,
         marginHorizontal: 4,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     radioCardSmall: {
         flex: 1,
@@ -927,7 +927,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         borderColor: isDarkMode ? '#3A3A3A' : '#AAAEAC',
         borderRadius: 11,
         marginHorizontal: 3,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     radioLabel: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
@@ -968,7 +968,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
 
     /* ─── Fixed Bottom Bar (New Setup) ─── */
     bottomBarContainer: {
-        backgroundColor: isDarkMode ? '#252525' : '#FDFDE8', // Matches the cream card color perfectly
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED', // Matches the cream card color perfectly
         borderTopWidth: 1,
         borderTopColor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', // Adds a tiny visual separation line from the scroll view
         paddingHorizontal: 20,
@@ -992,7 +992,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     confirmButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 15,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
     },
     subSectionTitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
@@ -1007,7 +1007,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 6,
         marginRight: 8,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     familyChipActive: {
         borderColor: '#02743F',
@@ -1041,7 +1041,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         borderRadius: 8,
         padding: 12,
         marginTop: 12,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     formLabel: {
         fontSize: 11,
@@ -1058,7 +1058,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         fontSize: 13,
         marginBottom: 8,
         color: isDarkMode ? '#FFFFFF' : '#2F2F2F',
-        backgroundColor: isDarkMode ? '#222222' : '#FFF',
+        backgroundColor: isDarkMode ? '#222222' : '#FAF7ED',
     },
     relationRow: {
         flexDirection: 'row',
@@ -1072,7 +1072,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         borderRadius: 12,
         paddingHorizontal: 10,
         paddingVertical: 4,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     relationChipActive: {
         borderColor: '#02743F',
@@ -1106,7 +1106,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         paddingVertical: 6,
     },
     saveFormBtnText: {
-        color: '#FFF',
+        color: '#FAF7ED',
         fontSize: 12,
         fontWeight: 'bold',
     },
@@ -1121,7 +1121,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         color: isDarkMode ? '#FFFFFF' : '#2F2F2F',
         minHeight: 72,
         textAlignVertical: 'top',
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     autoFetchBtn: {
         flexDirection: 'row',
@@ -1146,7 +1146,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 10,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         marginBottom: 8,
     },
     addressIcon: {
@@ -1166,7 +1166,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 10,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         fontSize: 13,
         color: isDarkMode ? '#FFFFFF' : '#2F2F2F',
         marginBottom: 8,
@@ -1189,7 +1189,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         borderRadius: 6,
         paddingHorizontal: 12,
         paddingVertical: 6,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     addressTypeChipActive: {
         borderColor: '#02743F',
@@ -1212,7 +1212,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         paddingVertical: 8,
         fontSize: 13,
         color: isDarkMode ? '#FFFFFF' : '#2F2F2F',
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         marginTop: 4,
         marginBottom: 8,
     },
@@ -1232,7 +1232,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 8,
         gap: 6,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     compactUploadText: {
         fontSize: 13,

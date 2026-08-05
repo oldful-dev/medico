@@ -199,7 +199,7 @@ export default function CartOrderSummaryScreen() {
 
     return (
         <KeyboardAvoidingView style={[dynamicStyles.container, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#252525' : '#FFFFFF'} />
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#252525' : '#FAF7ED'} />
 
             <View style={dynamicStyles.header}>
                 <TouchableOpacity onPress={() => router.back()}>
@@ -334,12 +334,12 @@ export default function CartOrderSummaryScreen() {
 }
 
 const makeStyles = (isDarkMode: boolean) => {
-    const bgLight = isDarkMode ? '#1A1A1A' : '#FFFFFF';
-    const bgCard = isDarkMode ? '#252525' : '#FFFFFF';
+    const bgLight = isDarkMode ? '#1A1A1A' : '#FAF7ED';
+    const bgCard = isDarkMode ? '#252525' : '#FAF7ED';
     const borderColor = isDarkMode ? '#3A3A3A' : CARD_BORDER;
     const textPrimary = isDarkMode ? '#E8E8E8' : TEXT_DARK;
     const textSecondary = isDarkMode ? '#A0A0A0' : TEXT_MUTED;
-    const inputBg = isDarkMode ? '#303030' : '#FFFFFF';
+    const inputBg = isDarkMode ? '#303030' : '#FAF7ED';
     const inputBorder = isDarkMode ? '#404040' : CARD_BORDER;
     const iconBg = isDarkMode ? 'rgba(52, 199, 89, 0.14)' : LIGHT_GREEN_BG;
     
@@ -374,12 +374,12 @@ const makeStyles = (isDarkMode: boolean) => {
         couponInput: { flex: 1, borderWidth: 1, borderColor: inputBorder, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: textPrimary, backgroundColor: inputBg },
         applyBtn: { paddingHorizontal: 16, borderRadius: 8, backgroundColor: PRIMARY_GREEN, justifyContent: 'center', alignItems: 'center' },
         applyBtnApplied: { backgroundColor: '#10B981' },
-        applyBtnText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
-        applyBtnTextApplied: { color: '#FFFFFF' },
+        applyBtnText: { fontSize: 12, fontWeight: '600', color: '#FAF7ED' },
+        applyBtnTextApplied: { color: '#FAF7ED' },
         footer: { paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: borderColor, backgroundColor: bgCard },
         payBtn: { paddingVertical: 14, backgroundColor: PRIMARY_GREEN, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
         payBtnDisabled: { opacity: 0.6 },
-        payBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
+        payBtnText: { fontSize: 15, fontWeight: '700', color: '#FAF7ED' },
         methodRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, borderWidth: 1.5, borderColor: borderColor, marginBottom: 8 },
         methodRowActive: { borderColor: PRIMARY_GREEN, backgroundColor: iconBg },
         methodLabel: { flex: 1, fontSize: 13, color: textSecondary, fontWeight: '400' },

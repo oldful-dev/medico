@@ -233,15 +233,15 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
         paddingBottom: 20, gap: Spacing.md,
     },
     backBtn: { padding: 4 },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: '#fff' },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: '#FAF7ED' },
     headerSub: { fontFamily: Fonts.regular, fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
     countBadge: {
         backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12,
     },
-    countText: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#fff' },
+    countText: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#FAF7ED' },
     tabsRow: {
         flexDirection: 'row',
-        backgroundColor: isDarkMode ? '#252525' : '#fff', borderBottomWidth: 1, borderBottomColor: isDarkMode ? '#3A3A3A' : Colors.borderLight,
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED', borderBottomWidth: 1, borderBottomColor: isDarkMode ? '#3A3A3A' : Colors.borderLight,
         paddingHorizontal: Spacing.lg,
     },
     tab: {
@@ -270,9 +270,9 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     browseBtn: {
         backgroundColor: PRIMARY, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12,
     },
-    browseBtnText: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#fff' },
+    browseBtnText: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#FAF7ED' },
     bookingCard: {
-        backgroundColor: isDarkMode ? '#252525' : '#fff', borderRadius: 16, marginBottom: 16,
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED', borderRadius: 16, marginBottom: 16,
         shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.07, shadowRadius: 10, elevation: 4,
         overflow: 'hidden',
     },
@@ -311,5 +311,5 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
         paddingHorizontal: 18, paddingVertical: 12,
         shadowColor: PRIMARY, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 8,
     },
-    fabText: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#fff' },
+    fabText: { fontFamily: Fonts.semiBold, fontSize: 14, color: '#FAF7ED' },
 });

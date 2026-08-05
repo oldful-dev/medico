@@ -45,7 +45,7 @@ export default function SOSPage() {
     } finally {
       setIsTriggering(false);
       // On web, we can't force a phone call, but we can open the tel: link
-      window.location.href = 'tel:+918062180429';
+      window.location.href = 'tel:+919480198108';
     }
   };
 

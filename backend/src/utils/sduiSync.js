@@ -51,11 +51,15 @@ const matchConfigToDb = (configId, configRoute, dbSlug, dbRoute) => {
  * Syncs the status of Database Services based on the newly published UIConfig home config.
  * Called when an admin updates the Server-Driven UI layout config.
  */
-const syncUIConfigToDbServices = async (config) => {
+const syncUIConfigToDbServices = async (config, sourceKey = 'home_config') => {
     if (!config || !config.sections) return;
     try {
         const dbServices = await prisma.service.findMany();
         const updates = [];
+
+        // Determine if config is in SDUI format (config.screens.home.sections) or simple Home config format (config.sections)
+        const isSduiFormat = !!(config.screens && config.screens.home);
+        const sectionsList = isSduiFormat ? config.screens.home.sections : config.sections;
 
         for (const dbSvc of dbServices) {
             let foundInConfig = false;
@@ -63,18 +67,21 @@ const syncUIConfigToDbServices = async (config) => {
             let configIcon = null;
             let configLabel = null;
 
-            for (const section of (config.sections || [])) {
-                for (const item of (section.services || [])) {
+            for (const section of (sectionsList || [])) {
+                const itemsList = section.services || section.items || [];
+                for (const item of (itemsList || [])) {
                     if (matchConfigToDb(item.id, item.route, dbSvc.slug, dbSvc.route)) {
                         foundInConfig = true;
-                        if (item.enabled) {
+                        if (item.enabled || item.visible) {
                             configIsEnabled = true;
                         }
-                        if (item.icon) {
-                            configIcon = item.icon;
+                        const itemIcon = item.icon || item.icon_key;
+                        if (itemIcon) {
+                            configIcon = itemIcon;
                         }
-                        if (item.label) {
-                            configLabel = item.label;
+                        const itemLabel = item.label;
+                        if (itemLabel) {
+                            configLabel = itemLabel;
                         }
                     }
                 }
@@ -110,10 +117,86 @@ const syncUIConfigToDbServices = async (config) => {
 
         if (updates.length > 0) {
             await prisma.$transaction(updates);
-            console.log(`[sduiSync] Synced ${updates.length} services (enabled/icon/label) from UIConfig to DB`);
+            console.log(`[sduiSync] Synced ${updates.length} services from ${sourceKey} to DB`);
         }
+
+        // Keep both config tables in sync
+        await syncConfigsCrossRelation(sourceKey, config);
     } catch (err) {
         console.error('[sduiSync] Error syncing UIConfig to DB:', err);
+    }
+};
+
+/**
+ * Ensures that changes made to home_config are mapped to sdui_app_config and vice versa
+ */
+const syncConfigsCrossRelation = async (sourceKey, configJson) => {
+    try {
+        if (sourceKey === 'home_config') {
+            // Update essentials_grid in sdui_app_config
+            const sduiRow = await prisma.uIConfig.findUnique({ where: { key: 'sdui_app_config' } });
+            if (sduiRow && sduiRow.configJson) {
+                const sConfig = sduiRow.configJson;
+                const homeSecs = sConfig.screens?.home?.sections || [];
+                const essSect = homeSecs.find(s => s.type === 'essentials_grid' || s.id === 'essentials');
+                const sourceEssentials = configJson.sections?.find(s => s.type === 'essentials_grid' || s.id === 'essentials');
+                
+                if (essSect && sourceEssentials) {
+                    const sortedServices = [...(sourceEssentials.services || [])].sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+                    essSect.items = sortedServices.map(s => ({
+                        id: s.id,
+                        label: s.label?.startsWith('{') ? s.label : JSON.stringify({ en: s.label }),
+                        route: s.route,
+                        visible: s.enabled !== false,
+                        icon_key: s.icon ? `ess_${s.id}` : undefined,
+                        image_url: s.icon?.startsWith('http') ? s.icon : `https://storage.googleapis.com/ayuxa-assets/mobile/assets/images/${s.icon}`,
+                        sort_order: s.sort_order
+                    }));
+                    await prisma.uIConfig.update({
+                        where: { key: 'sdui_app_config' },
+                        data: { configJson: sConfig, version: { increment: 1 } }
+                    });
+                    console.log('[sduiSync] Synced home_config changes to sdui_app_config');
+                }
+            }
+        } else if (sourceKey === 'sdui_app_config') {
+            // Update essentials_grid in home_config
+            const homeRow = await prisma.uIConfig.findUnique({ where: { key: 'home_config' } });
+            if (homeRow && homeRow.configJson) {
+                const hConfig = homeRow.configJson;
+                const essSect = hConfig.sections?.find(s => s.type === 'essentials_grid' || s.id === 'essentials');
+                const sourceEssentials = configJson.screens?.home?.sections?.find(s => s.type === 'essentials_grid' || s.id === 'essentials');
+                
+                if (essSect && sourceEssentials) {
+                    const sortedItems = [...(sourceEssentials.items || [])].sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+                    essSect.services = sortedItems.map(item => {
+                        let labelText = item.label;
+                        try {
+                            if (labelText.startsWith('{')) {
+                                const parsed = JSON.parse(labelText);
+                                labelText = parsed.en || Object.values(parsed)[0];
+                            }
+                        } catch (e) {}
+                        
+                        return {
+                            id: item.id,
+                            icon: item.image_url?.split('/').pop() || 'default.png',
+                            label: labelText,
+                            route: item.route,
+                            enabled: item.visible !== false,
+                            sort_order: item.sort_order
+                        };
+                    });
+                    await prisma.uIConfig.update({
+                        where: { key: 'home_config' },
+                        data: { configJson: hConfig, version: { increment: 1 } }
+                    });
+                    console.log('[sduiSync] Synced sdui_app_config changes to home_config');
+                }
+            }
+        }
+    } catch (e) {
+        console.error('[sduiSync] Cross-sync error:', e.message);
     }
 };
 
@@ -150,7 +233,6 @@ const syncDbServicesToUIConfig = async () => {
                     const dbSvc = homeEssentialDbSvcs.find(s => matchConfigToDb(item.id, item.route, s.slug, s.route));
                     if (dbSvc) {
                         // If DB service is disabled, UI item must be disabled.
-                        // If DB service is enabled, we allow the UI item to be either enabled or disabled (do not force enable).
                         if (!dbSvc.isEnabled && item.enabled) {
                             item.enabled = false;
                             changed = true;
@@ -176,7 +258,6 @@ const syncDbServicesToUIConfig = async () => {
                     } else {
                         // Deleted from DB
                         changed = true;
-                        // Skip pushing this item to updatedServices
                     }
                 }
                 
@@ -195,14 +276,23 @@ const syncDbServicesToUIConfig = async () => {
                         changed = true;
                     }
                 }
+
+                // Always keep updatedServices sorted by sort_order ascending
+                updatedServices.sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+                
+                // Check if order changed
+                const currentIds = (section.services || []).map(s => `${s.id}:${s.sort_order}`).join(',');
+                const newIds = updatedServices.map(s => `${s.id}:${s.sort_order}`).join(',');
+                if (currentIds !== newIds) {
+                    changed = true;
+                }
+
                 section.services = updatedServices;
             } else {
                 // For other sections, perform standard enablement status syncing
                 for (const item of (section.services || [])) {
                     const dbSvc = dbServices.find(s => matchConfigToDb(item.id, item.route, s.slug, s.route));
                     if (dbSvc) {
-                        // If DB service is disabled, UI item must be disabled.
-                        // If DB service is enabled, we allow the UI item to be either enabled or disabled (do not force enable).
                         if (!dbSvc.isEnabled && item.enabled) {
                             item.enabled = false;
                             changed = true;
@@ -230,7 +320,10 @@ const syncDbServicesToUIConfig = async () => {
                     publishedAt: new Date(),
                 },
             });
-            console.log(`[sduiSync] Synced DB services to UIConfig`);
+            console.log(`[sduiSync] Synced DB services to UIConfig (home_config)`);
+
+            // Also keep sdui_app_config synced
+            await syncConfigsCrossRelation('home_config', config);
         }
     } catch (err) {
         console.error('[sduiSync] Error syncing DB to UIConfig:', err);

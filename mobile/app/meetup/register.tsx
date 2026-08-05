@@ -310,7 +310,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
         paddingHorizontal: Spacing.lg, paddingVertical: 14,
     },
     backBtn: { padding: 4 },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: '#fff' },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: '#FAF7ED' },
     stepBar: {
         flexDirection: 'row', alignItems: 'center',
         backgroundColor: PRIMARY, paddingHorizontal: 20, paddingBottom: 18, paddingTop: 4,
@@ -324,10 +324,10 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     stepNum: { fontFamily: Fonts.semiBold, fontSize: 10, color: 'rgba(255,255,255,0.6)' },
     stepLine: { flex: 1, height: 2, backgroundColor: 'rgba(255,255,255,0.2)', marginBottom: 12 },
     stepLabel: { fontFamily: Fonts.regular, fontSize: 9, color: 'rgba(255,255,255,0.5)' },
-    stepLabelActive: { color: '#fff', fontFamily: Fonts.semiBold },
+    stepLabelActive: { color: '#FAF7ED', fontFamily: Fonts.semiBold },
     scrollContent: { padding: Spacing.lg, paddingBottom: 20 },
     section: {
-        backgroundColor: isDarkMode ? '#252525' : '#fff', borderRadius: 16, padding: 16,
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED', borderRadius: 16, padding: 16,
         marginBottom: 16, shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
     },
@@ -336,7 +336,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     label: { fontFamily: Fonts.semiBold, fontSize: 13, color: isDarkMode ? '#CCCCCC' : Colors.textBody, marginBottom: 6, marginTop: 12 },
     required: { color: '#DC2626' },
     input: {
-        backgroundColor: isDarkMode ? '#3A3A3A' : '#F9FAFB', borderWidth: 1.5, borderColor: isDarkMode ? '#4A4A4A' : Colors.borderLight,
+        backgroundColor: isDarkMode ? '#3A3A3A' : '#F5F0E1', borderWidth: 1.5, borderColor: isDarkMode ? '#4A4A4A' : Colors.borderLight,
         borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
         fontFamily: Fonts.regular, fontSize: 14, color: isDarkMode ? '#FFFFFF' : Colors.textDark,
     },
@@ -379,19 +379,19 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     },
     pickupNoticeText: { fontFamily: Fonts.medium, fontSize: 13, color: PRIMARY, flex: 1 },
     footer: {
-        backgroundColor: isDarkMode ? '#252525' : '#fff', paddingHorizontal: 20, paddingTop: 14,
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED', paddingHorizontal: 20, paddingTop: 14,
         borderTopWidth: 1, borderTopColor: isDarkMode ? '#3A3A3A' : Colors.borderLight,
     },
     continueBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
         backgroundColor: PRIMARY, borderRadius: 14, paddingVertical: 15,
     },
-    continueBtnText: { fontFamily: Fonts.semiBold, fontSize: 16, color: '#fff' },
+    continueBtnText: { fontFamily: Fonts.semiBold, fontSize: 16, color: '#FAF7ED' },
 });
 
 const styles = StyleSheet.create({
     stepDotActive: { backgroundColor: Colors.accent },
-    stepLabelActive: { color: '#fff', fontFamily: Fonts.semiBold },
+    stepLabelActive: { color: '#FAF7ED', fontFamily: Fonts.semiBold },
     scrollContent: { padding: Spacing.lg, paddingBottom: 20 },
     genderOptionActive: { borderColor: PRIMARY, backgroundColor: '#EDF7F1' },
     radioActive: { borderColor: PRIMARY },

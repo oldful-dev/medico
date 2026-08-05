@@ -927,7 +927,7 @@ export default function CartScheduleScreen() {
     >
       <StatusBar
         style={isDarkMode ? "light" : "dark"}
-        backgroundColor={isDarkMode ? "#252525" : "#FFFFFF"}
+        backgroundColor={isDarkMode ? "#252525" : '#FAF7ED'}
       />
       <View style={dynamicStyles.header}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -1041,13 +1041,13 @@ export default function CartScheduleScreen() {
 }
 
 const makeStyles = (isDarkMode: boolean) => {
-  const bgCard = isDarkMode ? "#252525" : "#FFFFFF";
-  const bgCardSecondary = isDarkMode ? "#2D2D2D" : "#F9FAFB";
+  const bgCard = isDarkMode ? "#252525" : '#FAF7ED';
+  const bgCardSecondary = isDarkMode ? "#2D2D2D" : '#F5F0E1';
   const borderColor = isDarkMode ? "#3A3A3A" : CARD_BORDER;
   const borderColorLight = isDarkMode ? "#404040" : "#F3F4F6";
   const textPrimary = isDarkMode ? "#E8E8E8" : TEXT_DARK;
   const textSecondary = isDarkMode ? "#A0A0A0" : TEXT_MUTED;
-  const inputBg = isDarkMode ? "#303030" : "#FFFFFF";
+  const inputBg = isDarkMode ? "#303030" : '#FAF7ED';
   const inputBorder = isDarkMode ? "#404040" : CARD_BORDER;
   const iconBg = isDarkMode ? "#2D2D2D" : LIGHT_GREEN_BG;
 
@@ -1092,7 +1092,7 @@ const makeStyles = (isDarkMode: boolean) => {
       borderColor: PRIMARY_GREEN,
     },
     stepDotText: { fontSize: 14, fontWeight: "600", color: textSecondary },
-    stepDotTextActive: { color: "#FFFFFF" },
+    stepDotTextActive: { color: '#FAF7ED' },
     stepLine: {
       width: 2,
       height: 16,
@@ -1143,7 +1143,7 @@ const makeStyles = (isDarkMode: boolean) => {
       borderColor: PRIMARY_GREEN,
     },
     dateChipText: { fontSize: 12, color: textPrimary, fontWeight: "500" },
-    dateChipTextActive: { color: "#FFFFFF" },
+    dateChipTextActive: { color: '#FAF7ED' },
     slotsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
     slotButton: {
       flex: 1,
@@ -1161,7 +1161,7 @@ const makeStyles = (isDarkMode: boolean) => {
       borderColor: PRIMARY_GREEN,
     },
     slotButtonText: { fontSize: 13, color: textPrimary, fontWeight: "500" },
-    slotButtonTextActive: { color: "#FFFFFF" },
+    slotButtonTextActive: { color: '#FAF7ED' },
     collectionOption: {
       flexDirection: "row",
       alignItems: "center",
@@ -1199,7 +1199,7 @@ const makeStyles = (isDarkMode: boolean) => {
       color: PRIMARY_GREEN,
       fontWeight: "600",
     },
-    savedAddrChipTextActive: { color: "#FFFFFF" },
+    savedAddrChipTextActive: { color: '#FAF7ED' },
     newAddrBox: {
       backgroundColor: bgCardSecondary,
       borderWidth: 1,
@@ -1228,7 +1228,7 @@ const makeStyles = (isDarkMode: boolean) => {
       borderColor: PRIMARY_GREEN,
     },
     labelChipText: { fontSize: 12, fontWeight: "600", color: textSecondary },
-    labelChipTextActive: { color: "#FFFFFF" },
+    labelChipTextActive: { color: '#FAF7ED' },
     pickLocationBtn: {
       flexDirection: "row",
       alignItems: "center",
@@ -1376,7 +1376,7 @@ const makeStyles = (isDarkMode: boolean) => {
       justifyContent: "center",
     },
     continueButtonDisabled: { backgroundColor: "#A7F3D0" },
-    continueButtonText: { fontSize: 14, fontWeight: "600", color: "#FFFFFF" },
+    continueButtonText: { fontSize: 14, fontWeight: "600", color: '#FAF7ED' },
   });
 };
 

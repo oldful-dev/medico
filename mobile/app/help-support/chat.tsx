@@ -143,7 +143,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean, insets: any) => St
     whatsappBtnText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: '#FFF',
+        color: '#FAF7ED',
     },
     sectionTitle: {
         fontFamily: Fonts.semiBold,

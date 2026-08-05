@@ -146,8 +146,8 @@ export default function ServiceConfirmationScreen() {
     };
 
     // ─── Theme tokens ─────────────────────────────────────────────────────────
-    const bg         = isDarkMode ? '#121212' : '#FFFFFF';
-    const cardBg     = isDarkMode ? '#1E1E1E' : '#FFFFFF';
+    const bg         = isDarkMode ? '#121212' : '#FAF7ED';
+    const cardBg     = isDarkMode ? '#1E1E1E' : '#FAF7ED';
     const cardBorder = isDarkMode ? '#2A2A2A' : '#E9ECF0';
     const textHigh   = isDarkMode ? '#F0F0F0' : '#1A1A1A';
     const textMid    = isDarkMode ? '#A0A0A0' : '#6B7280';
@@ -255,7 +255,7 @@ export default function ServiceConfirmationScreen() {
                         onPress={() => router.replace('/meetup/my-bookings' as any)} activeOpacity={0.85}
                     >
                         <Ionicons name="calendar-outline" size={18} color="#fff" />
-                        <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>Go to My Bookings</Text>
+                        <Text style={{ fontSize: 16, fontWeight: '700', color: '#FAF7ED' }}>Go to My Bookings</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={{ alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: cardBorder, borderRadius: 14, paddingVertical: 14 }}
@@ -298,7 +298,7 @@ export default function ServiceConfirmationScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={{ padding: 5 }}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={{ flex: 1, fontSize: 18, fontWeight: '700', color: '#FFFFFF', marginLeft: 12, letterSpacing: -0.3 }}>
+                <Text style={{ flex: 1, fontSize: 18, fontWeight: '700', color: '#FAF7ED', marginLeft: 12, letterSpacing: -0.3 }}>
                     {loading ? 'Loading...' : 'Booking Confirmed'}
                 </Text>
             </View>
@@ -377,7 +377,7 @@ export default function ServiceConfirmationScreen() {
                 {/* Footer buttons — inside scroll flow via paddingBottom, not absolute */}
                 <View style={{ backgroundColor: bg, paddingHorizontal: 20, paddingTop: 14, paddingBottom: insets.bottom + 12, borderTopWidth: 1, borderTopColor: cardBorder, gap: 10 }}>
                     <TouchableOpacity style={{ backgroundColor: PRIMARY, paddingVertical: 15, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.85}>
-                        <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '700' }}>{getTrackLabel(dispName)}</Text>
+                        <Text style={{ color: '#FAF7ED', fontSize: 15, fontWeight: '700' }}>{getTrackLabel(dispName)}</Text>
                     </TouchableOpacity>
 
                     <View style={{ flexDirection: 'row', gap: 10 }}>

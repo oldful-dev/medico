@@ -280,7 +280,7 @@ export default function MealServiceScreen() {
 const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: isDarkMode ? '#0F172A' : '#FDFDE8',
+        backgroundColor: isDarkMode ? '#0F172A' : '#FAF7ED',
     },
     header: {
         flexDirection: 'row',
@@ -297,7 +297,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         flex: 1,
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         textAlign: 'left', marginLeft: 12,
         letterSpacing: -0.24,
     },
@@ -309,7 +309,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
 
     /* ─── Top Meal Selection Card ─── */
     mealSelectionCard: {
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         borderRadius: 10,
         padding: 18,
         paddingTop: 20,
@@ -391,7 +391,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
 
     /* ─── Outlined Cards ─── */
     sectionCard: {
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         borderWidth: 1,
         borderColor: '#048357',
         borderRadius: 10,
@@ -444,7 +444,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         paddingHorizontal: 15,
         justifyContent: 'center',
         marginBottom: 35,
-        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FAF7ED',
     },
     textAreaPlaceholder: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
@@ -517,7 +517,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         borderWidth: 1,
         borderColor: isDarkMode ? '#334155' : '#D3DFDD',
         borderRadius: 20,
@@ -533,7 +533,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         color: isDarkMode ? '#CCCCCC' : '#555555',
     },
     addressTypeChipTextActive: {
-        color: '#FFFFFF',
+        color: '#FAF7ED',
     },
     addressLabelBold: {
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
@@ -545,7 +545,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         flex: 1,
     },
     manualEntryContainer: {
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         borderRadius: 12,
         padding: 10,
         marginBottom: 15,
@@ -569,7 +569,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     },
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         fontSize: 14,
     },
 });

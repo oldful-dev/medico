@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontFamily: Platform.select({ ios: 'Poppins-SemiBold', android: 'Poppins_600SemiBold', default: 'System' }),
         fontSize: 20,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
         textAlign: 'left', marginLeft: 12,
         letterSpacing: -0.24,
     },
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     /* ─── Content Card ─── */
     contentCard: {
         flex: 1,
-        backgroundColor: '#FDFDE8',
+        backgroundColor: '#FAF7ED',
         borderTopLeftRadius: 45,
         borderTopRightRadius: 45,
         overflow: 'hidden',
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
 
     /* ─── Order Card ─── */
     orderCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FAF7ED',
         borderRadius: 14,
         padding: 16,
         marginBottom: 16,
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
 
     /* ─── Reason Card ─── */
     reasonCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FAF7ED',
         borderRadius: 14,
         padding: 16,
         marginBottom: 16,
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
 
     /* ─── Additional Details ─── */
     detailsInputCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FAF7ED',
         borderRadius: 14,
         padding: 16,
         marginBottom: 16,
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         paddingVertical: 6,
         paddingHorizontal: 16,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#FAF7ED',
     },
     uploadButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Regular', android: 'LexendDeca_400Regular', default: 'System' }),
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#FDFDE8',
+        backgroundColor: '#FAF7ED',
         paddingHorizontal: 24,
         paddingTop: 12,
         paddingBottom: 36,
@@ -440,6 +440,6 @@ const styles = StyleSheet.create({
     submitButtonText: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
         fontSize: 14,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
     },
 });

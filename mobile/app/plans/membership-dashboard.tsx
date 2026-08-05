@@ -118,7 +118,7 @@ function MembershipCard({ sub, onUpgrade, onRenew }: {
                     {isExpired ? (
                         <TouchableOpacity style={[S.btn, S.renewBtn]} onPress={onRenew} activeOpacity={0.8}>
                             <Ionicons name="refresh-outline" size={15} color="#fff" />
-                            <Text style={[S.btnText, { color: '#fff' }]}>{t('membership.renew_plan_btn')}</Text>
+                            <Text style={[S.btnText, { color: '#FAF7ED' }]}>{t('membership.renew_plan_btn')}</Text>
                         </TouchableOpacity>
                     ) : (
                         <>
@@ -128,7 +128,7 @@ function MembershipCard({ sub, onUpgrade, onRenew }: {
                             </TouchableOpacity>
                             <TouchableOpacity style={[S.btn, S.renewBtn]} onPress={onRenew} activeOpacity={0.8}>
                                 <Ionicons name="refresh-outline" size={15} color="#fff" />
-                                <Text style={[S.btnText, { color: '#fff' }]}>{t('membership.renew_btn')}</Text>
+                                <Text style={[S.btnText, { color: '#FAF7ED' }]}>{t('membership.renew_btn')}</Text>
                             </TouchableOpacity>
                         </>
                     )}
@@ -144,7 +144,7 @@ function EmptyCard({ category, onSubscribe }: { category: string; onSubscribe: (
     const colors = useThemeColors();
     const { isDarkMode } = useTheme();
     const meta = CATEGORY_META[category] ?? CATEGORY_META.DEFAULT;
-    const bg = isDarkMode ? '#1E293B' : '#fff';
+    const bg = isDarkMode ? '#1E293B' : '#FAF7ED';
 
     return (
         <View style={{ backgroundColor: bg, borderRadius: 20, padding: 28, alignItems: 'center', borderWidth: 1.5, borderColor: colors.borderLight, borderStyle: 'dashed' }}>
@@ -160,7 +160,7 @@ function EmptyCard({ category, onSubscribe }: { category: string; onSubscribe: (
                 onPress={onSubscribe}
                 activeOpacity={0.85}
             >
-                <Text style={{ fontFamily: Fonts.semiBold, fontSize: FontSize.caption, color: '#fff' }}>{t('membership.subscribe_now')}</Text>
+                <Text style={{ fontFamily: Fonts.semiBold, fontSize: FontSize.caption, color: '#FAF7ED' }}>{t('membership.subscribe_now')}</Text>
             </TouchableOpacity>
         </View>
     );
@@ -279,7 +279,7 @@ const makeStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
     header:          { backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
     iconBtn:         { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
     headerCenter:    { flex: 1 },
-    headerTitle:     { fontFamily: Fonts.bold, fontSize: FontSize.heading2, color: '#fff' },
+    headerTitle:     { fontFamily: Fonts.bold, fontSize: FontSize.heading2, color: '#FAF7ED' },
     headerSub:       { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: 'rgba(255,255,255,0.75)', marginTop: 1 },
     loader:          { flex: 1, justifyContent: 'center', alignItems: 'center' },
     scroll:          { padding: 16, paddingTop: 20 },
@@ -290,19 +290,19 @@ const makeStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
     slotBadgeText:   { fontFamily: Fonts.semiBold, fontSize: 10 },
     slotBarTrack:    { height: 4, backgroundColor: dark ? 'rgba(255,255,255,0.08)' : '#E5E7EB', borderRadius: 2, marginBottom: 12, overflow: 'hidden' },
     slotBarFill:     { height: 4, borderRadius: 2 },
-    historyLink:     { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: dark ? '#1E293B' : '#fff', borderRadius: Radius.lg, borderWidth: 1, borderColor: colors.borderLight },
+    historyLink:     { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: dark ? '#1E293B' : '#FAF7ED', borderRadius: Radius.lg, borderWidth: 1, borderColor: colors.borderLight },
     historyLinkText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: colors.primary, flex: 1, textAlignVertical: 'center', includeFontPadding: false },
 });
 
 const cardStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
-    card:            { backgroundColor: dark ? '#1E293B' : '#fff', borderRadius: 20, overflow: 'hidden', ...Shadow.card, borderWidth: 1, borderColor: colors.borderLight },
+    card:            { backgroundColor: dark ? '#1E293B' : '#FAF7ED', borderRadius: 20, overflow: 'hidden', ...Shadow.card, borderWidth: 1, borderColor: colors.borderLight },
     cardHeader:      { padding: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     headerLeft:      { flexDirection: 'row', alignItems: 'center', gap: 12 },
     iconCircle:      { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
     categoryLabel:   { fontFamily: Fonts.medium, fontSize: 11, color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', letterSpacing: 0.5 },
-    planName:        { fontFamily: Fonts.bold, fontSize: 18, color: '#fff', marginTop: 2 },
+    planName:        { fontFamily: Fonts.bold, fontSize: 18, color: '#FAF7ED', marginTop: 2 },
     tierBadge:       { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)' },
-    tierText:        { fontFamily: Fonts.semiBold, fontSize: 11, color: '#fff' },
+    tierText:        { fontFamily: Fonts.semiBold, fontSize: 11, color: '#FAF7ED' },
     cardBody:        { padding: 16 },
     statsRow:        { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, backgroundColor: dark ? 'rgba(255,255,255,0.04)' : '#F8FAFC', borderRadius: 12, marginBottom: 12 },
     statItem:        { alignItems: 'center', flex: 1 },

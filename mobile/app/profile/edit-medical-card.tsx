@@ -173,7 +173,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     headerSafe: { backgroundColor: colors.primary },
     headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
     backBtn: { padding: 4, marginRight: 8 },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: '#FFFFFF', flex: 1 },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: '#FAF7ED', flex: 1 },
     scrollView: { flex: 1, backgroundColor: colors.bgScreen, borderTopLeftRadius: 30, borderTopRightRadius: 30 },
     scrollContent: { padding: 20, paddingBottom: 60 },
     label: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall, color: colors.textDark, marginBottom: 8, marginTop: 18 },
@@ -215,5 +215,5 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     emergencyNoteText: { flex: 1, fontFamily: Fonts.regular, fontSize: FontSize.caption, color: colors.textDark, lineHeight: 18 },
 
     saveBtn: { marginTop: 24, backgroundColor: colors.primary, paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
-    saveBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: '#FFFFFF' },
+    saveBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.body, color: '#FAF7ED' },
 });

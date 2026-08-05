@@ -64,11 +64,11 @@ function getPlanPrice(plan: Plan, cycle: CycleKey): number {
 
 // ─── Styles ───────────────────────────────────────────────
 const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.create({
-    screen: { flex: 1, backgroundColor: isDarkMode ? '#1A1A1A' : '#F9FAFB' },
+    screen: { flex: 1, backgroundColor: isDarkMode ? '#1A1A1A' : '#F5F0E1' },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: 16, paddingVertical: 14,
-        backgroundColor: isDarkMode ? '#252525' : '#fff', borderBottomWidth: 1, borderBottomColor: isDarkMode ? '#3A3A3A' : '#E5E7EB',
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED', borderBottomWidth: 1, borderBottomColor: isDarkMode ? '#3A3A3A' : '#E5E7EB',
     },
     headerTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: colors.textDark },
     scrollContent: { padding: 16 },
@@ -94,7 +94,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     renewalLabel: { fontFamily: Fonts.regular, fontSize: 12, color: '#B45309' },
     renewalDate: { fontFamily: Fonts.semiBold, fontSize: 13, color: '#92400E' },
     renewBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#B45309', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, width: '100%' },
-    renewBtnText: { fontFamily: Fonts.medium, fontSize: 13, color: '#fff' },
+    renewBtnText: { fontFamily: Fonts.medium, fontSize: 13, color: '#FAF7ED' },
     restrictionNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: isDarkMode ? 'rgba(180, 83, 9, 0.2)' : 'rgba(180, 83, 9, 0.1)', borderRadius: 8, padding: 10, borderLeftWidth: 3, borderLeftColor: '#B45309' },
     restrictionText: { fontFamily: Fonts.regular, fontSize: 12, color: '#92400E', flex: 1, lineHeight: 16 },
     sectionLabel: { fontFamily: Fonts.semiBold, fontSize: 14, color: colors.textDark, marginBottom: 10 },
@@ -102,13 +102,13 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     cycleBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: isDarkMode ? '#3A3A3A' : '#F3F4F6', borderWidth: 1, borderColor: 'transparent' },
     cycleBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
     cycleBtnText: { fontFamily: Fonts.medium, fontSize: 13, color: colors.textMuted },
-    cycleBtnTextActive: { color: '#fff' },
+    cycleBtnTextActive: { color: '#FAF7ED' },
     savingsBadge: { backgroundColor: isDarkMode ? '#654321' : '#FEF3C7', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1, marginTop: 2 },
     savingsBadgeText: { fontFamily: Fonts.medium, fontSize: 9, color: '#B45309' },
-    planCard: { backgroundColor: isDarkMode ? '#252525' : '#fff', borderRadius: 16, marginBottom: 14, borderWidth: 1, overflow: 'hidden', ...Shadow.card },
+    planCard: { backgroundColor: isDarkMode ? '#252525' : '#FAF7ED', borderRadius: 16, marginBottom: 14, borderWidth: 1, overflow: 'hidden', ...Shadow.card },
     planCardDisabled: { opacity: 0.5 },
     activeBadge: { paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-end', borderBottomLeftRadius: 8 },
-    activeBadgeText: { fontFamily: Fonts.medium, fontSize: 11, color: '#fff' },
+    activeBadgeText: { fontFamily: Fonts.medium, fontSize: 11, color: '#FAF7ED' },
     disabledOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: isDarkMode ? 'rgba(37, 37, 37, 0.85)' : 'rgba(255, 255, 255, 0.85)', justifyContent: 'center', alignItems: 'center', borderRadius: 16 },
     disabledText: { fontFamily: Fonts.semiBold, fontSize: 13, color: colors.textMuted, textAlign: 'center' },
     planHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, paddingBottom: 12 },
@@ -141,7 +141,7 @@ function PlanCard({
     const colors = useThemeColors();
     const styles = makeStyles(isDarkMode, colors);
     const tier = getTierConfig(plan.name);
-    const cardBg = isDarkMode ? '#1E1E1E' : '#FFFFFF';
+    const cardBg = isDarkMode ? '#1E1E1E' : '#FAF7ED';
     const headerBg = isDarkMode ? `${tier.color}22` : tier.gradient;
     const iconBg = isDarkMode ? `${tier.color}33` : tier.bg;
     const price = getPlanPrice(plan, cycle);
@@ -185,7 +185,7 @@ function PlanCard({
             </View>
 
             {benefits.length > 0 && (
-                <View style={[styles.benefitsList, { backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF' }]}>
+                <View style={[styles.benefitsList, { backgroundColor: isDarkMode ? '#1E1E1E' : '#FAF7ED' }]}>
                     {benefits.slice(0, 4).map((b, i) => (
                         <View key={i} style={styles.benefitRow}>
                             <Ionicons name="checkmark-circle" size={14} color={tier.color} />

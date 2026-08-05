@@ -280,7 +280,7 @@ export default function MedicalLogsScreen() {
                                 size={14}
                                 color={activeCategory === cat.key ? '#fff' : cat.color}
                             />
-                            <Text style={[styles.tabText, activeCategory === cat.key && { color: '#fff' }]}>
+                            <Text style={[styles.tabText, activeCategory === cat.key && { color: '#FAF7ED' }]}>
                                 {getTranslatedCategory(cat.key)}
                             </Text>
                         </TouchableOpacity>
@@ -354,7 +354,7 @@ export default function MedicalLogsScreen() {
                                     style={[styles.catChip, uploadCategory === cat.key && { backgroundColor: cat.color }]}
                                     onPress={() => setUploadCategory(cat.key)}
                                 >
-                                    <Text style={[styles.catChipText, uploadCategory === cat.key && { color: '#fff' }]}>
+                                    <Text style={[styles.catChipText, uploadCategory === cat.key && { color: '#FAF7ED' }]}>
                                         {getTranslatedCategory(cat.key)}
                                     </Text>
                                 </TouchableOpacity>
@@ -431,7 +431,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     emptyTitle: { fontFamily: Fonts.semiBold, fontSize: 16, color: colors.textDark, marginTop: 16, marginBottom: 8 },
     emptySubtitle: { fontFamily: Fonts.regular, fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 20 },
     emptyUploadBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 },
-    emptyUploadText: { fontFamily: Fonts.medium, fontSize: 14, color: '#fff' },
+    emptyUploadText: { fontFamily: Fonts.medium, fontSize: 14, color: '#FAF7ED' },
 
     // Modal
     modalOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },

@@ -119,7 +119,7 @@ export default function MembershipBenefitsScreen() {
                                     style={[
                                         styles.card, 
                                         { 
-                                            backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
+                                            backgroundColor: isDarkMode ? '#1E293B' : '#FAF7ED',
                                             borderColor: isDarkMode ? '#334155' : '#E2E8F0'
                                         }
                                     ]}
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontFamily: Fonts.bold,
         fontSize: FontSize.heading3,
-        color: '#fff',
+        color: '#FAF7ED',
     },
     headerSub: {
         fontFamily: Fonts.regular,
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     subscribeBtnText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: '#fff',
+        color: '#FAF7ED',
     },
     card: {
         borderRadius: 16,

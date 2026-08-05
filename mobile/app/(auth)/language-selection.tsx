@@ -52,7 +52,7 @@ export default function LanguageSelectionScreen() {
                 <Text style={styles.headerTitle}>{t('language_selection.header')}</Text>
             </View>
 
-            <View style={[styles.contentCard, { backgroundColor: isDarkMode ? '#252525' : '#FDFDE8' }]}>
+            <View style={[styles.contentCard, { backgroundColor: isDarkMode ? '#252525' : '#FAF7ED' }]}>
                 <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                     <View style={styles.illustrationCard}>
                         <Ionicons name="language" size={40} color="#048357" style={styles.illustrationIcon} />
@@ -65,7 +65,7 @@ export default function LanguageSelectionScreen() {
                         {languages.map(lang => (
                             <TouchableOpacity
                                 key={lang.code}
-                                style={[styles.languageCard, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FFFFFF' }, selected === lang.code && styles.languageCardSelected]}
+                                style={[styles.languageCard, { backgroundColor: isDarkMode ? '#3A3A3A' : '#FAF7ED' }, selected === lang.code && styles.languageCardSelected]}
                                 onPress={() => setSelected(lang.code)}
                                 activeOpacity={0.7}
                             >
@@ -87,7 +87,7 @@ export default function LanguageSelectionScreen() {
                     </View>
                 </ScrollView>
 
-                <View style={[styles.bottomBar, { backgroundColor: isDarkMode ? '#252525' : '#FDFDE8' }]}>
+                <View style={[styles.bottomBar, { backgroundColor: isDarkMode ? '#252525' : '#FAF7ED' }]}>
                     <TouchableOpacity
                         style={[styles.continueButton, saving && { opacity: 0.6 }]}
                         activeOpacity={0.8}
@@ -109,7 +109,7 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#048357' },
     header: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#048357', paddingHorizontal: 16, paddingBottom: 20, paddingTop: 10 },
     backButton: { padding: 5 },
-    headerTitle: { flex: 1, fontFamily: Fonts.semiBold, fontSize: 20, color: '#FFFFFF', textAlign: "left", marginLeft: 12 },
+    headerTitle: { flex: 1, fontFamily: Fonts.semiBold, fontSize: 20, color: '#FAF7ED', textAlign: "left", marginLeft: 12 },
     contentCard: { flex: 1, borderTopLeftRadius: 45, borderTopRightRadius: 45, overflow: 'hidden' },
     scrollView: { flex: 1 },
     scrollContent: { paddingHorizontal: 24, paddingTop: 30, paddingBottom: 120 },
@@ -135,5 +135,5 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         paddingHorizontal: 24, paddingTop: 12, paddingBottom: 36, alignItems: 'center',
     },
     continueButton: { width: '85%', maxWidth: 320, height: 48, backgroundColor: '#02743F', borderRadius: 24, justifyContent: 'center', alignItems: 'center' },
-    continueButtonText: { fontFamily: Fonts.medium, fontSize: 15, color: '#FFFFFF' },
+    continueButtonText: { fontFamily: Fonts.medium, fontSize: 15, color: '#FAF7ED' },
 });

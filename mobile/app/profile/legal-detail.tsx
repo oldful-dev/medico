@@ -111,7 +111,7 @@ export default function LegalDetailScreen() {
 const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
     },
     header: {
         flexDirection: 'row',
@@ -132,7 +132,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     },
     contentCard: {
         flex: 1,
-        backgroundColor: isDarkMode ? '#252525' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED',
         borderTopLeftRadius: Radius.lg,
         borderTopRightRadius: Radius.lg,
     },
@@ -215,6 +215,6 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     retryButtonText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: '#FFFFFF',
+        color: '#FAF7ED',
     },
 });

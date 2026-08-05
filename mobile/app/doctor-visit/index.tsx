@@ -794,7 +794,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
         borderTopLeftRadius: 10,
         borderTopRightRadius: 10,
         overflow: 'hidden',
-        backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF',
+        backgroundColor: isDarkMode ? '#1E293B' : '#FAF7ED',
     },
     problemIcon: {
         width: '100%',

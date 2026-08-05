@@ -309,7 +309,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     primaryBtnText: {
         fontFamily: Fonts.semiBold,
         fontSize: FontSize.body,
-        color: '#fff',
+        color: '#FAF7ED',
     },
     secondaryBtn: {
         width: '100%',

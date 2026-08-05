@@ -225,7 +225,7 @@ export default function MeetupsListScreen() {
                             onPress={() => fetchMeetups()}
                             style={{ marginTop: 16, backgroundColor: PRIMARY, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10 }}
                         >
-                            <Text style={{ fontFamily: Fonts.semiBold, fontSize: 14, color: '#fff' }}>{t('meetup.retry', 'Retry')}</Text>
+                            <Text style={{ fontFamily: Fonts.semiBold, fontSize: 14, color: '#FAF7ED' }}>{t('meetup.retry', 'Retry')}</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -255,7 +255,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
         paddingBottom: 18, gap: Spacing.md,
     },
     backBtn: { padding: 4 },
-    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: '#fff' },
+    headerTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading2, color: '#FAF7ED' },
     headerSub: { fontFamily: Fonts.regular, fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
     liveBadge: {
         flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -263,13 +263,13 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
         paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
     },
     liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#4ADE80' },
-    liveText: { fontFamily: Fonts.semiBold, fontSize: 10, color: '#fff', letterSpacing: 0.8 },
+    liveText: { fontFamily: Fonts.semiBold, fontSize: 10, color: '#FAF7ED', letterSpacing: 0.8 },
     scrollContent: { paddingTop: 16, paddingBottom: 20 },
 
     // Featured card
     featuredCard: {
         marginHorizontal: Spacing.lg, borderRadius: 18,
-        backgroundColor: isDarkMode ? '#252525' : '#fff',
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED',
         shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1, shadowRadius: 12, elevation: 5,
         overflow: 'hidden', marginBottom: 24,
@@ -297,12 +297,12 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
         backgroundColor: PRIMARY, alignSelf: 'flex-start',
         paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginBottom: 16,
     },
-    pinText: { fontFamily: Fonts.semiBold, fontSize: 12, color: '#fff' },
+    pinText: { fontFamily: Fonts.semiBold, fontSize: 12, color: '#FAF7ED' },
     joinBtn: {
         backgroundColor: PRIMARY, borderRadius: 12,
         paddingVertical: 15, alignItems: 'center', marginBottom: 8,
     },
-    joinBtnText: { fontFamily: Fonts.semiBold, fontSize: 16, color: '#fff' },
+    joinBtnText: { fontFamily: Fonts.semiBold, fontSize: 16, color: '#FAF7ED' },
     extraNote: { fontFamily: Fonts.regular, fontSize: 11, color: isDarkMode ? '#CCCCCC' : Colors.textMuted, textAlign: 'center' },
 
     // Upcoming
@@ -312,7 +312,7 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) => StyleSheet.crea
     viewAll: { fontFamily: Fonts.medium, fontSize: 13, color: PRIMARY },
     upcomingCard: {
         flexDirection: 'row', alignItems: 'flex-start',
-        backgroundColor: isDarkMode ? '#252525' : '#fff', borderRadius: 14,
+        backgroundColor: isDarkMode ? '#252525' : '#FAF7ED', borderRadius: 14,
         padding: 12, marginBottom: 12,
         borderWidth: 1, borderColor: isDarkMode ? '#3A3A3A' : Colors.borderLight,
         shadowColor: '#000', shadowOffset: { width: 0, height: 2 },

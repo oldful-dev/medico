@@ -30,7 +30,7 @@ export default function CartSuccessScreen() {
 
     return (
         <SafeAreaView style={dynamicStyles.container} edges={['top', 'bottom']}>
-            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#252525' : '#FFFFFF'} />
+            <StatusBar style={isDarkMode ? 'light' : 'dark'} backgroundColor={isDarkMode ? '#252525' : '#FAF7ED'} />
             
             <View style={dynamicStyles.content}>
                 <View style={dynamicStyles.iconContainer}>
@@ -74,8 +74,8 @@ export default function CartSuccessScreen() {
 }
 
 const makeStyles = (isDarkMode: boolean) => {
-    const bgCard = isDarkMode ? '#252525' : '#FFFFFF';
-    const bgCardSecondary = isDarkMode ? '#2D2D2D' : '#F9FAFB';
+    const bgCard = isDarkMode ? '#252525' : '#FAF7ED';
+    const bgCardSecondary = isDarkMode ? '#2D2D2D' : '#F5F0E1';
     const borderColor = isDarkMode ? '#3A3A3A' : '#E5E7EB';
     const textPrimary = isDarkMode ? '#E8E8E8' : TEXT_DARK;
     const textSecondary = isDarkMode ? '#A0A0A0' : TEXT_MUTED;
@@ -96,7 +96,7 @@ const makeStyles = (isDarkMode: boolean) => {
         detailAmount: { fontSize: 16, color: PRIMARY_GREEN, fontWeight: '700' },
         footer: { padding: 24, paddingBottom: 40 },
         primaryBtn: { backgroundColor: PRIMARY_GREEN, paddingVertical: 14, borderRadius: 10, alignItems: 'center', marginBottom: 12 },
-        primaryBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+        primaryBtnText: { color: '#FAF7ED', fontSize: 15, fontWeight: '600' },
         secondaryBtn: { backgroundColor: secondaryBg, paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
         secondaryBtnText: { color: textPrimary, fontSize: 15, fontWeight: '600' },
     });
