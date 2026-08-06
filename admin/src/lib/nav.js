@@ -1,7 +1,8 @@
 import {
     LayoutDashboard, Users, Shield, MapPin, Settings, CalendarCheck,
     HeartPulse, CreditCard, DollarSign, AlertTriangle, Bell, FileText,
-    ShoppingBag, Image as ImageIcon, BarChart3, ClipboardList, Sliders, LifeBuoy, Brain, Clock, Activity, Sparkles, PartyPopper
+    ShoppingBag, Image as ImageIcon, BarChart3, ClipboardList, Sliders, LifeBuoy, Brain, Clock, Activity, Sparkles, PartyPopper,
+    Trash2
 } from "lucide-react";
 
 export const NAV_SECTIONS = [
@@ -59,6 +60,7 @@ export const NAV_SECTIONS = [
             { id: "audit", href: "/audit", label: "Audit Logs", icon: ClipboardList, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE'] },
             { id: "support", href: "/support", label: "Support & Tickets", icon: LifeBuoy, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'SUPPORT_AGENT'] },
             { id: "smart", href: "/smart", label: "Smart Features", icon: Brain, roles: ['SUPER_ADMIN'] },
+            { id: "deleted-data", href: "/deleted-data", label: "Deleted Data Repository", icon: Trash2, roles: ['SUPER_ADMIN'] },
         ],
     },
 ];
