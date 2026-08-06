@@ -99,7 +99,7 @@ const getUsers = async (req, res, next) => {
                 select: {
                     bookings: {
                         select: {
-                            totalPrice: true
+                            amount: true
                         }
                     }
                 }
@@ -109,7 +109,7 @@ const getUsers = async (req, res, next) => {
             allDeletedUsers.forEach(u => {
                 totalBookings += u.bookings.length;
                 u.bookings.forEach(b => {
-                    totalFees += b.totalPrice || 0;
+                    totalFees += b.amount || 0;
                 });
             });
             return res.json({
