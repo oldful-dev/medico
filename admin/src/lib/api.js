@@ -115,6 +115,8 @@ export const userAPI = {
     removeEmergencyContact: (userId, contactId) => api.delete(`/users/${userId}/emergency-contacts/${contactId}`),
     upsertMedicalCard: (id, data) => api.post(`/users/${id}/medical-card`, data),
     delete: (id) => api.delete(`/users/${id}`),
+    uploadHealthReport: (id, formData) => api.post(`/users/${id}/health-reports`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+    deleteHealthReport: (reportId) => api.delete(`/users/health-reports/${reportId}`),
 };
 
 // ── Services ─────────────────────────────────────────

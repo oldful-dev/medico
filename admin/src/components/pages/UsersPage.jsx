@@ -35,6 +35,11 @@ export default function UsersPage() {
         emailMarketingEnabled: false
     });
 
+    const [reportFile, setReportFile] = useState(null);
+    const [reportTitle, setReportTitle] = useState("");
+    const [reportCategory, setReportCategory] = useState("Other");
+    const [uploadingReport, setUploadingReport] = useState(false);
+
     useEffect(() => {
         cityAPI.getAll().then(r => setCities(r.data?.data || [])).catch(() => { });
     }, []);
@@ -156,6 +161,44 @@ export default function UsersPage() {
         } catch (e) { showToast(e.response?.data?.message || 'Failed to delete user', 'error'); }
     }
 
+    async function handleUploadReport(e) {
+        e.preventDefault();
+        if (!reportFile) { showToast('Please select a file to upload', 'error'); return; }
+        try {
+            setUploadingReport(true);
+            const formData = new FormData();
+            formData.append('file', reportFile);
+            formData.append('title', reportTitle || reportFile.name);
+            formData.append('category', reportCategory);
+
+            await userAPI.uploadHealthReport(selectedUser.id, formData);
+            showToast('Health data uploaded successfully');
+            setReportFile(null);
+            setReportTitle("");
+            setReportCategory("Other");
+            // Reload user details
+            const res = await userAPI.getById(selectedUser.id);
+            setSelectedUser(res.data?.data);
+        } catch (err) {
+            showToast(err.response?.data?.message || 'Failed to upload report', 'error');
+        } finally {
+            setUploadingReport(false);
+        }
+    }
+
+    async function handleDeleteReport(reportId) {
+        if (!confirm('Are you sure you want to delete this health document?')) return;
+        try {
+            await userAPI.deleteHealthReport(reportId);
+            showToast('Health data deleted successfully');
+            // Reload user details
+            const res = await userAPI.getById(selectedUser.id);
+            setSelectedUser(res.data?.data);
+        } catch (err) {
+            showToast(err.response?.data?.message || 'Failed to delete report', 'error');
+        }
+    }
+
     const statusBadge = { ACTIVE: 'badge-success', SUSPENDED: 'badge-warning', BLOCKED: 'badge-danger', DELETED: 'badge-default' };
     const healthBadge = { NORMAL: 'badge-success', DIABETIC: 'badge-warning', HYPERTENSION: 'badge-danger', CARDIAC: 'badge-danger', OTHER: 'badge-default' };
 
@@ -268,7 +311,7 @@ export default function UsersPage() {
                         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                             {/* Tabs Navigation */}
                             <div className="tabs" style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--border-color)', paddingBottom: 8, marginBottom: 8, overflowX: 'auto' }}>
-                                {['overview', 'bookings', 'lab-orders', 'products', 'sos', 'payments'].map(tab => (
+                                {['overview', 'bookings', 'lab-orders', 'products', 'sos', 'payments', 'health-reports'].map(tab => (
                                     <button
                                         key={tab}
                                         type="button"
@@ -511,6 +554,73 @@ export default function UsersPage() {
                                                     </div>
                                                     <div>Amount: ₹{p.amount} • Purpose: {p.purpose || 'Booking Payment'}</div>
                                                     <div>Date: {formatDate(p.createdAt)}</div>
+                                                </div>
+                                            ))
+                                        }
+                                    </div>
+                                </div>
+                            )}
+
+                            {detailTab === 'health-reports' && (
+                                <div className="form-group">
+                                    <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span>Health Records & Medical History</span>
+                                    </label>
+
+                                    {/* Upload Form */}
+                                    <form onSubmit={handleUploadReport} style={{ background: 'var(--bg-secondary)', padding: 14, borderRadius: 8, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        <div style={{ fontWeight: 600, fontSize: 13, borderBottom: '1px solid var(--border-color)', paddingBottom: 6 }}>Upload New Health Document</div>
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label className="form-label" style={{ fontSize: 11 }}>Document Title</label>
+                                                <input className="form-input" style={{ padding: '6px 10px', fontSize: 12 }} placeholder="e.g. Lab Report Feb, Prescription..." value={reportTitle} onChange={e => setReportTitle(e.target.value)} required />
+                                            </div>
+                                            <div className="form-group">
+                                                <label className="form-label" style={{ fontSize: 11 }}>Category</label>
+                                                <select className="form-select" style={{ padding: '6px 10px', fontSize: 12, height: 'auto' }} value={reportCategory} onChange={e => setReportCategory(e.target.value)}>
+                                                    <option value="Prescription">Prescription</option>
+                                                    <option value="Lab Report">Lab Report</option>
+                                                    <option value="Vaccination">Vaccination</option>
+                                                    <option value="Other">Other</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label" style={{ fontSize: 11 }}>Select File (PDF, JPG, PNG)</label>
+                                            <input type="file" accept=".pdf,image/*" onChange={e => setReportFile(e.target.files[0])} required style={{ fontSize: 12 }} />
+                                        </div>
+                                        <button type="submit" disabled={uploadingReport} className="btn btn-sm btn-primary" style={{ alignSelf: 'flex-start', padding: '6px 16px', fontSize: 12 }}>
+                                            {uploadingReport ? 'Uploading & Processing OCR...' : 'Upload Document'}
+                                        </button>
+                                    </form>
+
+                                    {/* Reports List */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        {(!selectedUser.healthReports || selectedUser.healthReports.length === 0) ? <div className="text-muted text-sm">No health documents uploaded</div> :
+                                            selectedUser.healthReports.map((report) => (
+                                                <div key={report.id} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{report.title}</span>
+                                                        <span className="badge badge-info" style={{ fontSize: 10 }}>{report.category || 'Other'}</span>
+                                                    </div>
+                                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
+                                                        Uploaded: {formatDate(report.createdAt)} • By: {report.uploadedBy === selectedUser.id ? 'Client' : 'Staff / Admin'}
+                                                    </div>
+                                                    {report.ocrStatus && (
+                                                        <div style={{ fontSize: 11, marginBottom: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
+                                                            <span>OCR:</span>
+                                                            <span className={`badge ${report.ocrStatus === 'completed' ? 'badge-success' : report.ocrStatus === 'processing' ? 'badge-warning' : 'badge-danger'}`} style={{ fontSize: 9 }}>
+                                                                {report.ocrStatus}
+                                                            </span>
+                                                            {report.flagSeverity && (
+                                                                <span className="badge badge-danger" style={{ fontSize: 9 }}>{report.flagSeverity}</span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    <div style={{ display: 'flex', gap: 8 }}>
+                                                        <a href={report.fileUrl} target="_blank" rel="noreferrer" className="btn btn-sm btn-secondary" style={{ padding: '4px 10px', fontSize: 11 }}>View Document</a>
+                                                        <button onClick={() => handleDeleteReport(report.id)} className="btn btn-sm btn-danger" style={{ padding: '4px 10px', fontSize: 11, background: '#DC2626', borderColor: '#DC2626' }}>Delete</button>
+                                                    </div>
                                                 </div>
                                             ))
                                         }

@@ -68,6 +68,8 @@ const getUsers = async (req, res, next) => {
             ];
         }
 
+        const orderBy = status === 'ACTIVE' ? { name: 'asc' } : { createdAt: 'desc' };
+
         const [users, total] = await Promise.all([
             prisma.user.findMany({
                 where,
@@ -83,13 +85,50 @@ const getUsers = async (req, res, next) => {
                     },
                     _count: { select: { bookings: true, healthReports: true } },
                 },
-                orderBy: { createdAt: 'desc' },
+                orderBy,
             }),
             prisma.user.count({ where }),
         ]);
 
         // Strip sensitive data and format deleted users for admin display
         const safeUsers = users.map(({ otpCode, otpExpiresAt, refreshToken, ...rest }) => formatDeletedPII(rest));
+
+        if (status === 'DELETED') {
+            const allDeletedUsers = await prisma.user.findMany({
+                where: { status: 'DELETED' },
+                select: {
+                    bookings: {
+                        select: {
+                            totalPrice: true
+                        }
+                    }
+                }
+            });
+            let totalFees = 0;
+            let totalBookings = 0;
+            allDeletedUsers.forEach(u => {
+                totalBookings += u.bookings.length;
+                u.bookings.forEach(b => {
+                    totalFees += b.totalPrice || 0;
+                });
+            });
+            return res.json({
+                success: true,
+                data: safeUsers,
+                archiveMetrics: {
+                    totalBookings,
+                    totalFees
+                },
+                pagination: {
+                    total,
+                    page,
+                    limit,
+                    totalPages: Math.ceil(total / limit),
+                    hasMore: page * limit < total,
+                }
+            });
+        }
+
         sendPaginatedResponse(res, safeUsers, total, page, limit);
     } catch (error) {
         next(error);
@@ -762,7 +801,7 @@ const deleteHealthReport = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'Report not found' });
         }
 
-        if (report.userId !== req.user.id) {
+        if (req.user?.type !== 'admin' && report.userId !== req.user.id) {
             return res.status(403).json({ success: false, message: 'Unauthorized' });
         }
 
