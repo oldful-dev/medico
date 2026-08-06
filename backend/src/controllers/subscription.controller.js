@@ -13,14 +13,19 @@ const getSubscriptions = async (req, res, next) => {
         const { status, planId, userId, search } = req.query;
 
         const where = {};
+        if (!req.query.includeDeleted || req.query.includeDeleted !== 'true') {
+            where.user = {
+                status: { not: 'DELETED' }
+            };
+        }
         if (req.cityFilter) {
-            where.user = { cityId: req.cityFilter };
+            where.user = { ...where.user, cityId: req.cityFilter };
         }
         if (status) where.status = status;
         if (planId) where.planId = planId;
         if (userId) where.userId = userId;
         if (search) {
-            where.user = { name: { contains: search, mode: 'insensitive' } };
+            where.user = { ...where.user, name: { contains: search, mode: 'insensitive' } };
         }
 
         const [subscriptions, total] = await Promise.all([

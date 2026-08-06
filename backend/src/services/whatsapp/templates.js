@@ -82,9 +82,19 @@ const WHATSAPP_TEMPLATES = {
     },
 
     // ════════════════════════════════════════════
-    //  AYUXA_FAMILY — Client family members
+    //  AYUXA_FAMILY — Client family members & Order Notifications (+1555-973-5639)
     // ════════════════════════════════════════════
 
+    AYUXA_BACKEND_ORDER: {
+        waba: 'AYUXA_FAMILY',
+        messageId: 27945,
+        templateId: '1387588400132497',
+        name: 'ayuxa_backend_order',
+        variables: 6,              // Var1=Client Name, Var2=Order ID, Var3=State, Var4=Service Requested, Var5=Received At, Var6=Schedule On
+        mediaRequired: false,
+        docRequired: false,
+        description: 'New Order Alert via +1555-973-5639',
+    },
     FAMILY_OTP: {
         waba: 'AYUXA_FAMILY',
         messageId: 20912,

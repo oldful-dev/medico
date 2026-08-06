@@ -7,6 +7,7 @@ const ctrl = require('../controllers/uiConfig.controller');
 router.get('/published', ctrl.getPublishedConfigs);
 
 // Admin
+router.post('/purge-cache', authenticateAdmin, ctrl.purgeGlobalCache);
 router.get('/', authenticateAdmin, ctrl.getUIConfigs);
 router.get('/:id', authenticateAdmin, ctrl.getUIConfigById);
 router.post('/', authenticateAdmin, ctrl.createUIConfig);

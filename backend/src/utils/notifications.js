@@ -26,6 +26,7 @@ const wa = require('../services/whatsapp');
 const fast2smsUtils = require('./fast2sms');
 
 const WABA_TO_SMS_MAP = {
+    AYUXA_BACKEND_ORDER: 'ORDER_CONFIRMED',
     BOOKING_CONFIRMED: 'ORDER_CONFIRMED',
     PAYMENT_RECEIVED: 'PAYMENT_RECEIVED',
     ORDER_CANCELLED: 'ORDER_CANCELLED_USER',

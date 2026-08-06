@@ -155,9 +155,25 @@ const emitToUser = (userId, event, data) => {
     }
 };
 
+/**
+ * Emit event to ALL connected clients (broadcast)
+ * @param {string} event
+ * @param {any} data
+ */
+const emitToAll = (event, data) => {
+    if (io) {
+        try {
+            io.emit(event, data);
+        } catch (err) {
+            console.warn(`[Socket] Failed to emit ${event} to all clients:`, err.message);
+        }
+    }
+};
+
 module.exports = {
     init,
     emitToAdmins,
     emitToUser,
+    emitToAll,
     getIO: () => io
 };

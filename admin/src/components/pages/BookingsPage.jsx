@@ -40,6 +40,8 @@ export default function BookingsPage() {
     const [caregivers, setCaregivers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({ status: '', cityId: '' });
+    const [viewMode, setViewMode] = useState("dateGrid"); // dateGrid | clientConsolidated
+    const [expandedClients, setExpandedClients] = useState({});
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
@@ -318,11 +320,11 @@ export default function BookingsPage() {
             </div>
 
             {/* ── Filter Bar ── */}
-            <div className="filter-bar">
-                <form onSubmit={e => { e.preventDefault(); setPage(1); loadBookings(); }} style={{ display: 'flex', gap: 8, flex: 1 }}>
+            <div className="filter-bar" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+                <form onSubmit={e => { e.preventDefault(); setPage(1); loadBookings(); }} style={{ display: 'flex', gap: 8, flex: 1, minWidth: 280 }}>
                     <div style={{ position: "relative", flex: 1, maxWidth: 300 }}>
                         <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
-                        <input className="form-input" style={{ paddingLeft: 36 }} placeholder="Search booking code..." value={search} onChange={e => setSearch(e.target.value)} />
+                        <input className="form-input" style={{ paddingLeft: 36 }} placeholder="Search booking code, user..." value={search} onChange={e => setSearch(e.target.value)} />
                     </div>
                     <button type="submit" className="btn btn-primary"><Search size={16} /></button>
                 </form>
@@ -334,40 +336,171 @@ export default function BookingsPage() {
                     <option value="">All Cities</option>
                     {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-            </div>
-
-            {/* ── Table ── */}
-            <div className="card">
-                <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
-                    <table className="data-table">
-                        <thead><tr><th>Booking Code</th><th>User</th><th>Service</th><th>City</th><th>Scheduled</th><th>Amount</th><th>Status</th><th>Caregiver</th><th>Actions</th></tr></thead>
-                        <tbody>
-                            {loading
-                                ? <tr><td colSpan={9} style={{ textAlign: 'center', padding: 24 }}>Loading...</td></tr>
-                                : bookings.length === 0
-                                    ? <tr><td colSpan={9} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No bookings found</td></tr>
-                                    : bookings.map(b => (
-                                        <tr key={b.id}>
-                                            <td><code style={{ fontSize: 11, color: "var(--accent-primary-light)" }}>{b.bookingCode}</code></td>
-                                            <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{b.user?.name || '—'}</td>
-                                            <td className="text-sm">{b.service?.name || '—'}</td>
-                                            <td className="text-sm">{b.city?.name || '—'}</td>
-                                            <td className="text-sm">{formatDate(b.scheduledDate)}</td>
-                                            <td>{formatCurrency(b.amount)}</td>
-                                            <td><span className={`badge ${statusColors[b.status] || 'badge-default'}`}>{b.status?.replace(/_/g, ' ')}</span></td>
-                                            <td className="text-sm">{b.caregiver?.name || '—'}</td>
-                                            <td>
-                                                <div className="flex gap-2">
-                                                    <button className="btn btn-sm btn-secondary" onClick={() => viewBooking(b.id)}><Eye size={14} /></button>
-                                                    {!b.isEscalated && <button className="btn btn-sm btn-warning" onClick={() => escalateBooking(b.id)}><AlertTriangle size={14} /></button>}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                        </tbody>
-                    </table>
+                <div style={{ display: 'flex', background: 'var(--bg-secondary)', padding: 4, borderRadius: 8, gap: 4 }}>
+                    <button
+                        className={`btn btn-sm ${viewMode === 'dateGrid' ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{ padding: '6px 12px', fontSize: 12 }}
+                        onClick={() => setViewMode('dateGrid')}
+                    >
+                        Date Grid
+                    </button>
+                    <button
+                        className={`btn btn-sm ${viewMode === 'clientConsolidated' ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{ padding: '6px 12px', fontSize: 12 }}
+                        onClick={() => setViewMode('clientConsolidated')}
+                    >
+                        Client Consolidated
+                    </button>
                 </div>
             </div>
+
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: 48, background: 'var(--bg-secondary)', borderRadius: 12, color: 'var(--text-muted)' }}>Loading bookings...</div>
+            ) : bookings.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 48, background: 'var(--bg-secondary)', borderRadius: 12, color: 'var(--text-muted)' }}>No bookings found</div>
+            ) : viewMode === 'dateGrid' ? (
+                /* ─── DATE-WISE GRID LAYOUT ─── */
+                <div>
+                    {(() => {
+                        const dateGroups = {};
+                        bookings.forEach(b => {
+                            const dateStr = b.scheduledDate ? formatDate(b.scheduledDate) : "Unscheduled";
+                            if (!dateGroups[dateStr]) dateGroups[dateStr] = [];
+                            dateGroups[dateStr].push(b);
+                        });
+                        return Object.entries(dateGroups).map(([date, list]) => (
+                            <div key={date} style={{ marginBottom: 28 }}>
+                                <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--accent-primary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    📅 {date} <span className="badge badge-default" style={{ fontSize: 11, padding: '2px 8px' }}>{list.length} bookings</span>
+                                </h3>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 16 }}>
+                                    {list.map(b => (
+                                        <div key={b.id} className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <div>
+                                                    <code style={{ fontSize: 11, color: 'var(--accent-primary-light)' }}>{b.bookingCode}</code>
+                                                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginTop: 4 }}>{b.user?.name || '—'}</div>
+                                                </div>
+                                                <span className={`badge ${statusColors[b.status] || 'badge-default'}`}>{b.status?.replace(/_/g, ' ')}</span>
+                                            </div>
+
+                                            <div style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px dashed var(--border-color)', paddingTop: 10 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                    <span className="text-muted">Service:</span>
+                                                    <span style={{ fontWeight: 500 }}>{b.service?.name || '—'}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                    <span className="text-muted">City:</span>
+                                                    <span>{b.city?.name || '—'}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                    <span className="text-muted">Staff:</span>
+                                                    <span>{b.caregiver?.name || '—'}</span>
+                                                </div>
+                                            </div>
+
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: 10 }}>
+                                                <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)' }}>{formatCurrency(b.amount)}</span>
+                                                <div style={{ display: 'flex', gap: 4 }}>
+                                                    <button className="btn btn-sm btn-secondary" style={{ padding: 6 }} onClick={() => viewBooking(b.id)} title="View Detail"><Eye size={13} /></button>
+                                                    {!b.isEscalated && (
+                                                        <button className="btn btn-sm btn-warning" style={{ padding: 6 }} onClick={() => escalateBooking(b.id)} title="Escalate"><AlertTriangle size={13} /></button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ));
+                    })()}
+                </div>
+            ) : (
+                /* ─── CLIENT CONSOLIDATED LAYOUT ─── */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {(() => {
+                        const clientGroups = {};
+                        bookings.forEach(b => {
+                            const u = b.user || { id: "deleted", name: "Deleted User", phone: "—", uniqueUserId: "—" };
+                            if (!clientGroups[u.id]) {
+                                clientGroups[u.id] = {
+                                    user: u,
+                                    bookings: []
+                                };
+                            }
+                            clientGroups[u.id].bookings.push(b);
+                        });
+                        return Object.values(clientGroups).map(group => {
+                            const isExpanded = !!expandedClients[group.user.id];
+                            const totalSpent = group.bookings.reduce((sum, b) => sum + b.amount, 0);
+                            return (
+                                <div key={group.user.id} className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 12, overflow: 'hidden' }}>
+                                    <div 
+                                        style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: 'var(--bg-card)', borderBottom: isExpanded ? '1px solid var(--border-color)' : 'none' }}
+                                        onClick={() => setExpandedClients(prev => ({ ...prev, [group.user.id]: !prev[group.user.id] }))}
+                                    >
+                                        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                                            <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--accent-primary)', fontSize: 16 }}>
+                                                {group.user.name?.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14 }}>{group.user.name}</div>
+                                                <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                                                    <span>Ref ID: <code style={{ color: 'var(--accent-primary-light)' }}>{group.user.uniqueUserId}</code></span>
+                                                    <span>•</span>
+                                                    <span>{group.user.phone}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Spent / Orders</div>
+                                                <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 13, marginTop: 2 }}>
+                                                    {formatCurrency(totalSpent)} <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>({group.bookings.length})</span>
+                                                </div>
+                                            </div>
+                                            <button className="btn btn-sm btn-secondary" style={{ padding: '4px 10px', fontSize: 11 }}>
+                                                {isExpanded ? 'Collapse' : 'View History'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {isExpanded && (
+                                        <div style={{ padding: 20, background: 'rgba(0,0,0,0.12)' }}>
+                                            <h4 style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Date-Wise Order History</h4>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                                {group.bookings.map(b => (
+                                                    <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--bg-secondary)', borderRadius: 8, border: '1px solid var(--border-color)', fontSize: 12 }}>
+                                                        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                                                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', width: 140 }}>
+                                                                📅 {formatDate(b.scheduledDate)}
+                                                            </div>
+                                                            <div style={{ color: 'var(--text-secondary)' }}>
+                                                                {b.service?.name}
+                                                            </div>
+                                                            <code style={{ fontSize: 10, color: 'var(--accent-primary-light)' }}>{b.bookingCode}</code>
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                                                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formatCurrency(b.amount)}</span>
+                                                            <span className={`badge ${statusColors[b.status] || 'badge-default'}`} style={{ fontSize: 9 }}>{b.status}</span>
+                                                            <div style={{ display: 'flex', gap: 4 }}>
+                                                                <button className="btn btn-sm btn-secondary" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => viewBooking(b.id)}>Details</button>
+                                                                {!b.isEscalated && (
+                                                                    <button className="btn btn-sm btn-warning" style={{ padding: '4px' }} onClick={() => escalateBooking(b.id)}><AlertTriangle size={12} /></button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        });
+                    })()}
+                </div>
+            )}
 
             {/* ── Pagination ── */}
             {total > limit && (

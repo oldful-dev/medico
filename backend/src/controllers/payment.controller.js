@@ -19,14 +19,30 @@ const crypto = require('crypto');
 const getPayments = async (req, res, next) => {
     try {
         const { page, limit, skip } = paginate(req.query);
-        const { status, userId, dateFrom, dateTo } = req.query;
+        const { status, userId, dateFrom, dateTo, search, includeDeleted } = req.query;
 
         const where = {};
         if (req.cityFilter) {
             where.user = { cityId: req.cityFilter };
         }
+        if (includeDeleted !== 'true') {
+            where.user = {
+                ...where.user,
+                status: { not: 'DELETED' }
+            };
+        }
         if (status) where.status = status;
         if (userId) where.userId = userId;
+        if (search) {
+            where.user = {
+                ...where.user,
+                OR: [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search } },
+                    { uniqueUserId: { contains: search, mode: 'insensitive' } }
+                ]
+            };
+        }
         if (dateFrom || dateTo) {
             where.createdAt = {};
             if (dateFrom) where.createdAt.gte = new Date(dateFrom);

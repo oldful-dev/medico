@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { Search, Eye, ChevronLeft, ChevronRight, BarChart3, Database, ShieldAlert, Heart, Calendar } from "lucide-react";
-import { userAPI, cityAPI } from "@/lib/api";
+import { userAPI, cityAPI, bookingAPI } from "@/lib/api";
 import { formatDate, formatDateTime, formatCurrency, showToast } from "@/lib/hooks";
 
 export default function DeletedDataPage() {
@@ -288,11 +288,21 @@ export default function DeletedDataPage() {
                                         {(!selectedUser.payments || selectedUser.payments.length === 0) ? <div className="text-muted text-sm">No payments recorded</div> :
                                             selectedUser.payments.map((p, i) => (
                                                 <div key={i} style={{ padding: 12, background: "var(--bg-secondary)", borderRadius: 8, fontSize: 13 }}>
-                                                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                                                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, alignItems: "center" }}>
                                                         <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>ID: {p.razorpayPaymentId || p.id}</span>
-                                                        <span className="badge badge-success" style={{ fontSize: 10 }}>{p.status}</span>
+                                                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                                            <span className="badge badge-success" style={{ fontSize: 10 }}>{p.status}</span>
+                                                            {p.bookingId && p.status === 'SUCCESS' && (
+                                                                <a href={bookingAPI.getInvoiceDownloadUrl(p.bookingId)} target="_blank" rel="noreferrer" className="btn btn-sm btn-secondary" style={{ padding: '2px 6px', fontSize: 11 }} title="Download Invoice PDF">Download Invoice</a>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <div>Amount: {formatCurrency(p.amount)} • Purpose: {p.purpose || "Booking Payment"}</div>
+                                                    {p.invoice?.invoiceNumber && (
+                                                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                                                            Invoice No: <code style={{ color: "var(--accent-primary-light)" }}>{p.invoice.invoiceNumber}</code>
+                                                        </div>
+                                                    )}
                                                     <div>Date: {formatDate(p.createdAt)}</div>
                                                 </div>
                                             ))

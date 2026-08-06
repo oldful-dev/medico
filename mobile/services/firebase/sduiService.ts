@@ -220,9 +220,16 @@ export const sduiService = {
         if (res.success && res.data) {
             cachedConfig = res.data;
             lastFetchTime = Date.now();
-        } else {
-            throw new Error(res.message || 'Failed to fetch home config');
         }
+    },
+
+    /**
+     * Clear in-memory SDUI layout cache.
+     */
+    clearCache(): void {
+        cachedConfig = null;
+        lastFetchTime = 0;
+        console.log('[SDUI] 🧹 In-memory layout cache cleared');
     },
 
     /**

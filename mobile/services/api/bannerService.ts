@@ -45,8 +45,6 @@ class BannerService {
     try {
       const response = await apiClient.get<Banner[]>('/banners/home');
       if (response.success && Array.isArray(response.data)) {
-        this.cachedBanners = response.data.sort((a, b) => a.order - b.order);
-        this.lastFetchTime = Date.now();
         return this.cachedBanners;
       }
       return this.cachedBanners;
@@ -54,6 +52,15 @@ class BannerService {
       console.error('Failed to fetch home banners:', error);
       return this.cachedBanners;
     }
+  }
+
+  /**
+   * Clear in-memory banner cache
+   */
+  clearCache(): void {
+    this.cachedBanners = [];
+    this.lastFetchTime = 0;
+    console.log('[BannerService] 🧹 Banner cache cleared');
   }
 
   /**

@@ -107,7 +107,33 @@ const deleteUIConfig = async (req, res, next) => {
     }
 };
 
+// POST /api/ui-config/purge-cache (Global force refresh / cache purge)
+const purgeGlobalCache = async (req, res, next) => {
+    try {
+        const { invalidateCompanyConfig } = require('../services/companyConfig.service');
+        const { emitToAll } = require('../services/socket.service');
+
+        // 1. Invalidate in-memory server caches
+        invalidateCompanyConfig();
+
+        // 2. Emit WebSocket force refresh event to ALL connected mobile & web apps
+        emitToAll('CACHE_PURGE_FORCE_REFRESH', {
+            timestamp: Date.now(),
+            purgedBy: req.user?.id || 'admin',
+            message: 'Global cache purged by admin. Refreshing app data instantly.'
+        });
+
+        sendResponse(res, 200, {
+            timestamp: Date.now(),
+            message: 'Global cache purged successfully. Force refresh signal dispatched to all customer apps.'
+        }, 'Global cache purged');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getUIConfigs, getPublishedConfigs, getUIConfigById,
     createUIConfig, updateUIConfig, publishUIConfig, deleteUIConfig,
+    purgeGlobalCache,
 };

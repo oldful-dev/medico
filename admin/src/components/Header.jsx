@@ -3,12 +3,12 @@ import Link from "next/link";
 import {
     Bell, Moon, Sun, Menu, User, LogOut, Settings,
     AlertTriangle, Calendar, CreditCard, LifeBuoy, Clock, ChevronRight,
-    CheckCircle2, MessageSquare, AlertCircle, X, LayoutList, Trash2
+    CheckCircle2, MessageSquare, AlertCircle, X, LayoutList, Trash2, RefreshCw
 } from "lucide-react";
 import useThemeStore from "@/store/useThemeStore";
 import useAuthStore from "@/store/useAuthStore";
 import GlobalSearch from "./GlobalSearch";
-import { reportAPI } from "@/lib/api";
+import { reportAPI, uiConfigAPI } from "@/lib/api";
 import { timeAgo, showToast, playTing } from "@/lib/hooks";
 import { getSocket } from "@/lib/socket";
 
@@ -19,8 +19,22 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
     const [notifOpen, setNotifOpen] = useState(false);
     const [alerts, setAlerts] = useState([]);
     const [criticalSos, setCriticalSos] = useState(null);
+    const [purgingCache, setPurgingCache] = useState(false);
     const dropdownRef = useRef(null);
     const notifRef = useRef(null);
+
+    const handleGlobalPurgeCache = async () => {
+        try {
+            setPurgingCache(true);
+            const res = await uiConfigAPI.purgeCache();
+            showToast(res.data?.message || "Global Cache Purged! Force refreshed all customer apps.", "success");
+        } catch (err) {
+            console.error(err);
+            showToast(err.response?.data?.message || "Failed to purge global cache", "error");
+        } finally {
+            setPurgingCache(false);
+        }
+    };
 
     // Continuous siren loop when critical SOS is active
     useEffect(() => {
@@ -313,6 +327,32 @@ export default function Header({ onToggleSidebar, onMobileMenu }) {
                 <GlobalSearch />
             </div>
             <div className="header-right">
+                {/* Global Cache Purge / Force Refresh Button */}
+                <button 
+                    className="btn btn-sm"
+                    style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: "10px",
+                        padding: "6px 14px",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        boxShadow: "0 2px 8px rgba(16, 185, 129, 0.25)",
+                        transition: "all 0.2s"
+                    }}
+                    onClick={handleGlobalPurgeCache}
+                    disabled={purgingCache}
+                    title="Purge server caches & force real-time data refresh across all customer mobile apps (bypassing 24hr cache)"
+                >
+                    <RefreshCw size={13} style={{ animation: purgingCache ? "spin 1s linear infinite" : "none" }} />
+                    {purgingCache ? "Purging..." : "Purge/Refresh All"}
+                </button>
+
                 <button className="header-btn" onClick={toggleTheme} title="Toggle Dark Mode">
                     {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
                 </button>

@@ -11,6 +11,7 @@ export const NAV_SECTIONS = [
         items: [
             { id: "dashboard", href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER', 'SUPPORT_AGENT', 'BILLING_EXECUTIVE'] },
             { id: "sessions", href: "/sessions", label: "Active Sessions", icon: Activity, roles: ['SUPER_ADMIN'] },
+            { id: "audit", href: "/audit", label: "User Activity", icon: ClipboardList, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE'] },
         ],
     },
     {
@@ -18,13 +19,13 @@ export const NAV_SECTIONS = [
         items: [
             { id: "profiles", href: "/profiles", label: "Staff Profiles", icon: Shield, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
             { id: "staff-config", href: "/settings/profiles", label: "Staff Configuration", icon: Sliders, roles: ['SUPER_ADMIN'] },
+            { id: "roles", href: "/roles", label: "Roles & Access", icon: Shield, roles: ['SUPER_ADMIN'] },
             { id: "users", href: "/users", label: "Clients / Patients", icon: Users, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER', 'SUPPORT_AGENT'] },
         ],
     },
     {
         title: "System Config",
         items: [
-            { id: "roles", href: "/roles", label: "Roles & Access", icon: Shield, roles: ['SUPER_ADMIN'] },
             { id: "cities", href: "/cities", label: "City Management", icon: MapPin, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE'] },
             { id: "services", href: "/services", label: "Service Management", icon: Settings, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
             { id: "home-essentials", href: "/home-essentials", label: "Home Essentials", icon: HeartPulse, roles: ['SUPER_ADMIN', 'CITY_ADMIN', 'OPERATIONS_EXECUTIVE', 'CARE_MANAGER'] },
