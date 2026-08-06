@@ -171,7 +171,8 @@ const getUserById = async (req, res, next) => {
                 },
                 payments: {
                     take: 50,
-                    orderBy: { createdAt: 'desc' }
+                    orderBy: { createdAt: 'desc' },
+                    include: { invoice: { select: { invoiceNumber: true, pdfUrl: true } } }
                 },
                 insuranceApps: {
                     take: 50,
@@ -967,6 +968,35 @@ const deleteProfileByAdmin = async (req, res, next) => {
     }
 };
 
+const getAllHealthReports = async (req, res, next) => {
+    try {
+        const { search, category } = req.query;
+        const where = {};
+        if (category) {
+            where.category = category;
+        }
+        if (search) {
+            where.user = {
+                OR: [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { uniqueUserId: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search } }
+                ]
+            };
+        }
+        const reports = await prisma.healthReport.findMany({
+            where,
+            include: {
+                user: { select: { id: true, name: true, uniqueUserId: true, phone: true } }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        sendResponse(res, 200, reports, 'All health reports retrieved');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getUsers, getUserById, createUser, updateUser,
     blockUser, suspendUser, activateUser,
@@ -974,4 +1004,5 @@ module.exports = {
     addAddress, updateAddress, deleteAddress,
     upsertMedicalCard, uploadHealthReport, deleteHealthReport,
     getMyProfile, updateMyProfile, registerDeviceToken, uploadProfileAvatar, getMyHealthReports, deleteProfile, deleteProfileByAdmin,
+    getAllHealthReports,
 };

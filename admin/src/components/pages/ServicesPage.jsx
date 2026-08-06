@@ -360,6 +360,16 @@ export default function ServicesPage() {
     const hardcodedServices = services.filter(s => !s.isDynamic);
     const dynamicServices = services.filter(s => s.isDynamic);
 
+    const [categoryFilter, setCategoryFilter] = useState("all");
+    const [searchFilter, setSearchFilter] = useState("");
+
+    const platformModules = [
+        { id: "module_essentials", name: "Home Essentials Config", slug: "home-essentials", icon: "🏠", category: "PLATFORM_MODULE", isDynamic: false, route: "/home-essentials", description: "Manage essential items, pricing structures, and deliveries.", isEnabled: true },
+        { id: "module_meetups", name: "Local Meetups Config", slug: "meetups", icon: "🎉", category: "PLATFORM_MODULE", isDynamic: false, route: "/meetups", description: "Configure local community events, ticketing, and checkouts.", isEnabled: true },
+        { id: "module_banners", name: "Home Banners Config", slug: "banners", icon: "✨", category: "PLATFORM_MODULE", isDynamic: false, route: "/banners", description: "Update main dashboard banner slides, routes, and text.", isEnabled: true },
+        { id: "module_store", name: "Wellness Store Config", slug: "store", icon: "🛍️", category: "PLATFORM_MODULE", isDynamic: false, route: "/store", description: "Configure wellness products, categories, inventory, and details.", isEnabled: true }
+    ];
+
     if (loading && services.length === 0) return (
         <div className="loading-state">
             <div className="spinner" />
@@ -367,115 +377,135 @@ export default function ServicesPage() {
         </div>
     );
 
+    // Merge actual database services (dynamic + core/hardcoded) and static config modules
+    const allItems = [
+        ...services.map(s => ({ ...s, isModule: false })),
+        ...platformModules.map(m => ({ ...m, isModule: true }))
+    ];
+
+    // Filter list
+    const filteredItems = allItems.filter(item => {
+        // Search filter
+        if (searchFilter) {
+            const query = searchFilter.toLowerCase();
+            const matchesSearch = item.name?.toLowerCase().includes(query) || item.slug?.toLowerCase().includes(query);
+            if (!matchesSearch) return false;
+        }
+
+        // Category filter
+        if (categoryFilter === "all") return true;
+        if (categoryFilter === "dynamic") return item.isDynamic && !item.isModule;
+        if (categoryFilter === "core") return !item.isDynamic && !item.isModule;
+        if (categoryFilter === "modules") return item.isModule;
+        if (categoryFilter === "diagnostics") return item.category === "DIAGNOSTICS_FITNESS" && !item.isModule;
+        if (categoryFilter === "essentials") return item.category === "HOME_ESSENTIALS" && !item.isModule;
+        return true;
+    });
+
     return (
         <div className="services-simpl-container">
             {/* Page Header */}
-            <div className="page-header header-minimal">
-                <div className="header-icon-box">
-                    <Settings size={24} className="text-success" />
+            <div className="page-header header-minimal" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div className="header-icon-box">
+                        <Settings size={24} className="text-success" />
+                    </div>
+                    <div>
+                        <h2>Service Management Control</h2>
+                        <p>Configure dynamic checkout fields, core medical packages, and system platform configurations in a single screen.</p>
+                    </div>
                 </div>
-                <div>
-                    <h2>Service Management Control</h2>
-                    <p>Manage standard hardcoded service prices and dynamically build new services for the application.</p>
+                <button className="btn btn-primary" onClick={openAddDynamic}>
+                    <Plus size={16} /> Add Dynamic Service
+                </button>
+            </div>
+
+            {/* Filter Bar */}
+            <div className="filter-bar" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+                <div style={{ display: 'flex', background: 'var(--bg-secondary)', padding: 4, borderRadius: 8, gap: 4 }}>
+                    <button className={`btn btn-sm ${categoryFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setCategoryFilter('all')}>All</button>
+                    <button className={`btn btn-sm ${categoryFilter === 'dynamic' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setCategoryFilter('dynamic')}>Dynamic ({services.filter(s => s.isDynamic).length})</button>
+                    <button className={`btn btn-sm ${categoryFilter === 'core' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setCategoryFilter('core')}>Core ({services.filter(s => !s.isDynamic).length})</button>
+                    <button className={`btn btn-sm ${categoryFilter === 'modules' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setCategoryFilter('modules')}>Platform Modules ({platformModules.length})</button>
+                </div>
+                <div style={{ position: 'relative', flex: 1, minWidth: 200, maxWidth: 300 }}>
+                    <input 
+                        className="form-input" 
+                        placeholder="Search service/module..." 
+                        value={searchFilter} 
+                        onChange={e => setSearchFilter(e.target.value)} 
+                    />
                 </div>
             </div>
 
-            {/* TAB: DYNAMIC SERVICES */}
-            {activeTab === "dynamic" && (
-                <div className="dynamic-services-section">
-                    <div className="action-bar" style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
-                        <button className="btn btn-primary" onClick={openAddDynamic}>
-                            <Plus size={16} /> Add Dynamic Service
-                        </button>
-                    </div>
-
-                    <div className="card pricing-card">
-                        <div className="card-header">
-                            <h3>Active Dynamic Services ({dynamicServices.length})</h3>
+            {/* Grid Layout (identical to City Management layout) */}
+            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+                {filteredItems.map(item => (
+                    <div 
+                        key={item.id} 
+                        className="card" 
+                        style={{ 
+                            borderColor: item.isEnabled ? "rgba(16,185,129,0.3)" : "rgba(100,116,139,0.2)",
+                            background: item.isModule ? 'rgba(37,99,235,0.03)' : 'var(--bg-secondary)',
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            justifyContent: 'space-between',
+                            height: '100%'
+                        }}
+                    >
+                        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--border-color)', paddingBottom: 12, marginBottom: 12 }}>
+                            <h3 style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
+                                <span style={{ fontSize: 20 }}>
+                                    {item.icon ? (
+                                        isEmoji(item.icon) ? item.icon : <img src={item.icon} alt={item.name} style={{ width: 22, height: 22, borderRadius: 4, objectFit: "cover", display: 'inline-block', verticalAlign: 'middle' }} />
+                                    ) : "🩺"}
+                                </span> 
+                                {item.name}
+                            </h3>
+                            <span className={`badge ${item.isEnabled ? 'badge-success' : 'badge-default'}`} style={{ fontSize: 10 }}>
+                                {item.isModule ? 'Platform Module' : item.isEnabled ? 'Live' : 'Disabled'}
+                            </span>
                         </div>
-                        <div className="card-body p-0">
-                            <table className="minimal-table">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Category</th>
-                                        <th>Checkout Group</th>
-                                        <th>Price</th>
-                                        <th>Status</th>
-                                        <th className="text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {dynamicServices.length === 0 ? (
-                                        <tr>
-                                            <td colSpan="6" className="text-center text-muted" style={{ padding: 32 }}>
-                                                No dynamic services created yet. Click &quot;Add Dynamic Service&quot; to publish one.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        dynamicServices.map((s) => (
-                                            <tr key={s.id}>
-                                                <td className="font-bold" style={{ display: "flex", alignItems: "center" }}>
-                                                    <span style={{ marginRight: 8, display: "inline-block" }}>
-                                                        {s.icon ? (
-                                                            isEmoji(s.icon) ? s.icon : <img src={s.icon} alt={s.name} style={{ width: 24, height: 24, borderRadius: 4, objectFit: "cover" }} />
-                                                        ) : "🩺"}
-                                                    </span>
-                                                    <div>
-                                                        <div>{s.name}</div>
-                                                        <div className="text-muted text-xs font-normal">/{s.slug}</div>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <span className={`badge ${s.category === "HOME_ESSENTIALS" ? "badge-default" : "badge-success"}`}>
-                                                        {s.category || "DIAGNOSTICS_FITNESS"}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    {s.category === "DIAGNOSTICS_FITNESS" ? (
-                                                        <span className={`badge ${s.paymentMode === "PAID" ? "badge-success" : "badge-info"}`}>
-                                                            {s.paymentMode || "INQUIRY"}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="badge badge-info">Group {s.checkoutGroup || "D"}</span>
-                                                    )}
-                                                </td>
-                                                <td>₹{s.basePrice} ({s.pricingText})</td>
-                                                <td>
-                                                    <span className={`badge ${s.isEnabled ? "badge-success" : "badge-default"}`}>
-                                                        {s.isEnabled ? "Live" : "Disabled"}
-                                                    </span>
-                                                </td>
-                                                <td className="text-right">
-                                                    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                                                        <button className="btn btn-sm btn-ghost" onClick={() => openEditDynamic(s)}>
-                                                            <Edit2 size={14} /> Edit
-                                                        </button>
-                                                        <button 
-                                                            className={`btn btn-sm ${s.isEnabled ? 'btn-ghost text-warning' : 'btn-ghost text-success'}`}
-                                                            onClick={() => handleToggle(s)}
-                                                        >
-                                                            {s.isEnabled ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
-                                                        </button>
-                                                        <button className="btn btn-sm btn-ghost text-danger" onClick={() => handleDelete(s)}>
-                                                            <Trash2 size={14} />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                        <div className="card-body" style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
+                            {item.isModule ? (
+                                <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 16 }}>
+                                    {item.description}
+                                </p>
+                            ) : (
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16, fontSize: 12 }}>
+                                    <div><div className="text-sm text-muted" style={{ fontSize: 10 }}>Slug</div><div style={{ fontWeight: 600 }}>/{item.slug}</div></div>
+                                    <div><div className="text-sm text-muted" style={{ fontSize: 10 }}>Category</div><div style={{ fontWeight: 600, fontSize: 11 }}>{item.category?.replace(/_/g, ' ') || 'DIAGNOSTICS'}</div></div>
+                                    <div><div className="text-sm text-muted" style={{ fontSize: 10 }}>Base Price</div><div style={{ fontWeight: 700, color: 'var(--accent-primary-light)' }}>₹{item.basePrice}</div></div>
+                                    <div><div className="text-sm text-muted" style={{ fontSize: 10 }}>Type</div><div style={{ fontWeight: 600 }}>{item.isDynamic ? 'Dynamic' : 'Core'}</div></div>
+                                </div>
+                            )}
+
+                            <div style={{ display: "flex", gap: 8, marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: 12 }}>
+                                {item.isModule ? (
+                                    <a href={item.route} className="btn btn-sm btn-primary" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>
+                                        Configure Module
+                                    </a>
+                                ) : (
+                                    <>
+                                        <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => openEditDynamic(item)}>
+                                            <Edit2 size={13} style={{ marginRight: 4 }} /> Edit
+                                        </button>
+                                        <button className={`btn btn-sm ${item.isEnabled ? 'btn-warning' : 'btn-success'}`} onClick={() => handleToggle(item)}>
+                                            {item.isEnabled ? <><ToggleRight size={13} /> Disable</> : <><ToggleLeft size={13} /> Enable</>}
+                                        </button>
+                                        {item.isDynamic && (
+                                            <button className="btn btn-sm btn-danger" style={{ padding: '6px 8px' }} onClick={() => handleDelete(item)} title="Delete"><Trash2 size={13} /></button>
+                                        )}
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-
-
+                ))}
+            </div>
 
             {/* MODAL 2: DYNAMIC SERVICE CREATOR & FORM BUILDER */}
-            {showModal && activeTab === "dynamic" && (
+            {showModal && (
                 <div className="modal-overlay active" onClick={() => setShowModal(false)}>
                     <div className="modal" style={{ maxWidth: 750, width: "95%" }} onClick={e => e.stopPropagation()}>
                         <div className="modal-header">

@@ -14,7 +14,7 @@ router.put('/profile/avatar', authenticateUser, upload.single('avatar'), ctrl.up
 router.put('/profile/device-token', authenticateUser, ctrl.registerDeviceToken);
 router.get('/profile/health-reports', authenticateUser, ctrl.getMyHealthReports);
 
-// Admin user management
+router.get('/admin/health-reports', authenticateAdmin, ctrl.getAllHealthReports);
 router.get('/', authenticateAdmin, cityRestriction, ctrl.getUsers);
 router.get('/:id', authenticateAdmin, ctrl.getUserById);
 router.post('/', ctrl.createUser);  // Can be called post-OTP or by admin

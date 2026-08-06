@@ -126,14 +126,13 @@ exports.calculateCheckout = async (req, res) => {
         }
 
         let waiveGstActive = false;
-        // Only check for a matching-category subscription
-        if (requiredPlanType && isSubscriptionEligible && !req.body.isPaidBooking) {
+        // Check for any active subscription to apply subscription perks (waive booking/platform fees)
+        if (isSubscriptionEligible && !req.body.isPaidBooking) {
             const activeSubscription = await prisma.subscription.findFirst({
                 where: {
                     userId,
                     status: 'ACTIVE',
                     expiryDate: { gte: new Date() },
-                    plan: { planType: requiredPlanType },
                 },
                 include: { plan: { select: { planType: true, metadata: true } } },
             });

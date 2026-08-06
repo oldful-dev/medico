@@ -1,5 +1,8 @@
 import { io, Socket } from 'socket.io-client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '../api/apiClient';
+import { sduiService } from '../firebase/sduiService';
+import { bannerService } from '../api/bannerService';
 
 const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || 'https://api.ayuxacare.com';
 
@@ -86,6 +89,23 @@ export const initSocket = async (): Promise<Socket | null> => {
 
             socket.on('error', (err: any) => {
                 console.error('[Socket] ❌ Socket error:', err);
+            });
+
+            // Global Real-Time Force Cache Refresh Listener
+            socket.on('CACHE_PURGE_FORCE_REFRESH', async (data: any) => {
+                console.log('[Socket] 🔄 Received CACHE_PURGE_FORCE_REFRESH signal from admin:', data);
+                try {
+                    sduiService.clearCache();
+                    await sduiService.init(true);
+
+                    bannerService.clearCache();
+                    await bannerService.getHomeBanners(true);
+
+                    await AsyncStorage.multiRemove(['@ayuxacare_rc_cache', '@ayuxacare_rc_cache_ts']);
+                    console.log('[Socket] ✅ Real-time data force refreshed across mobile app');
+                } catch (err) {
+                    console.error('[Socket] Error handling CACHE_PURGE_FORCE_REFRESH:', err);
+                }
             });
 
             return socket;

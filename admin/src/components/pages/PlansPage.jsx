@@ -417,7 +417,7 @@ export default function PlansPage() {
             <div className="tabs mb-6">
                 {["plans", "subscriptions"].map(t => (
                     <button key={t} className={`tab ${activeTab === t ? "active" : ""}`} onClick={() => setActiveTab(t)}>
-                        {t === 'plans' ? 'Plans & Benefits' : 'Subscriptions'}
+                        {t === 'plans' ? 'Plans & Benefits' : 'Subscribed Members'}
                     </button>
                 ))}
             </div>

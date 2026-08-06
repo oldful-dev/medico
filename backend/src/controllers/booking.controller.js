@@ -33,12 +33,44 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
             requirements = Array.isArray(formData.additionalRequirements) ? formData.additionalRequirements : [formData.additionalRequirements];
         }
 
+        const userPhone   = booking.user?.phone   || 'N/A';
+        const scheduledTime = booking.scheduledTime || formData.scheduledTime || '';
+        const timeStr = scheduledTime ? `${dateStr} @ ${scheduledTime}` : dateStr;
+        const addressStr = booking.addressLine || formData.addressLine || 'N/A';
+        const amountStr  = `₹${booking.amount || 0}`;
+
+        const staffType = booking.staffType || formData.staffType || formData.staff_type || '';
+        const doctorType = booking.doctorType || formData.doctorType || formData.doctor_type || '';
+        const shiftDuration = booking.shiftDuration || formData.shiftDuration || formData.shift_duration || '';
+        const latLng = booking.latitude ? `(${booking.latitude}, ${booking.longitude})` : '';
+        const pickup = booking.pickupAddress || formData.pickupAddress || '';
+        const drop = booking.dropAddress || formData.dropAddress || '';
+        const vehicle = booking.vehicleType || formData.vehicleType || '';
+
+        const symptomsList = Array.isArray(symptoms) ? symptoms.join(', ') : (symptoms || '');
+        const requirementsList = Array.isArray(requirements) ? requirements.join(', ') : (requirements || '');
+        const notesParts = [
+            staffType ? `Staff: ${staffType}` : null,
+            doctorType ? `Doctor: ${doctorType}` : null,
+            shiftDuration ? `Shift: ${shiftDuration}` : null,
+            symptomsList ? `Symptoms: ${symptomsList}` : null,
+            requirementsList ? `Reqs: ${requirementsList}` : null,
+            pickup ? `Pickup: ${pickup}` : null,
+            drop ? `Drop: ${drop}` : null,
+            vehicle ? `Vehicle: ${vehicle}` : null,
+        ].filter(Boolean).join(' | ');
+
+        const extraNotes = notesParts || 'None';
+
+        const stateStr = booking.city?.name || 'Karnataka';
+        const receivedAtStr = new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+        const serviceReqStr = `${serviceName} (₹${booking.amount || 0})${extraNotes !== 'None' ? ' | ' + extraNotes : ''}`;
+
         // ── SMS ─────────────────────────────────────────────────────────────
         if (sms) {
             try {
                 const { sendSMS } = require('../services/sms');
-                // Use ORDER_CONFIRMED template (DLT approved): Var1=name, Var2=orderId, Var3=support
-                // Pass distinct name to prevent DLT gateway duplicate suppression
+                // Revert to clean DLT-approved ORDER_CONFIRMED variable format: Var1=name, Var2=orderId, Var3=support
                 await sendSMS({
                     template: 'ORDER_CONFIRMED',
                     mobile: sms,
@@ -56,14 +88,26 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
         if (whatsapp) {
             try {
                 const wa = require('../services/whatsapp');
-                // BOOKING_CONFIRMED template: Var1=name, Var2=orderId
-                // Pass distinct name to prevent Meta duplicate message suppression
+                // AYUXA_BACKEND_ORDER template (Message ID: 27945, Sender +1555-973-5639):
+                // {{1}} Client Name: Client Name + Phone
+                // {{2}} Order ID: Booking Code
+                // {{3}} State: City/State Name
+                // {{4}} Service/Item Requested: Service Name, Amount & Clinical Specs
+                // {{5}} Received At: Order Placement Timestamp
+                // {{6}} Schedule On: Scheduled Date & Time
                 await wa.sendWhatsApp({
-                    template: 'BOOKING_CONFIRMED',
+                    template: 'AYUXA_BACKEND_ORDER',
                     mobile: whatsapp,
-                    variables: [`Admin (${eventLabel})`, bookingCode],
+                    variables: [
+                        `${userName} (${userPhone})`, // {{1}} Client Name
+                        bookingCode,                 // {{2}} Order ID
+                        stateStr,                    // {{3}} State
+                        serviceReqStr,               // {{4}} Service/Item Requested
+                        receivedAtStr,               // {{5}} Received At
+                        timeStr                      // {{6}} Schedule On
+                    ],
                 });
-                logger.info(`[BookingAdmin] WhatsApp sent → ${whatsapp} (${eventLabel} / ${bookingCode})`);
+                logger.info(`[BookingAdmin] WhatsApp sent → ${whatsapp} (${eventLabel} / ${bookingCode}) via +1555-973-5639`);
             } catch (waErr) {
                 logger.warn(`[BookingAdmin] WhatsApp failed (non-fatal): ${waErr.message}`);
             }
@@ -146,6 +190,11 @@ const getBookings = async (req, res, next) => {
         const { status, cityId, serviceId, caregiverId, userId, search, dateFrom, dateTo } = req.query;
 
         const where = {};
+        if (!req.query.includeDeleted || req.query.includeDeleted !== 'true') {
+            where.user = {
+                status: { not: 'DELETED' }
+            };
+        }
         if (req.cityFilter) {
             where.cityId = req.cityFilter;
         } else if (cityId) {
@@ -570,6 +619,9 @@ const assignCaregiver = async (req, res, next) => {
             bookingId: booking.id,
             caregiverName: booking.caregiver.name
         });
+
+        // ── Notify admin via dynamic recipients (non-fatal) ──
+        setImmediate(() => notifyBookingAdmin({ booking, eventLabel: 'Caregiver Assigned' }));
 
         sendResponse(res, 200, booking, 'Caregiver assigned');
     } catch (error) {

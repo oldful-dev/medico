@@ -37,12 +37,22 @@ export default function PaymentsPage() {
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [statusFilter, setStatusFilter] = useState('SUCCESS');
     const [viewerModal, setViewerModal] = useState(null);
+    const [search, setSearch] = useState("");
+    const [dateFrom, setDateFrom] = useState("");
+    const [dateTo, setDateTo] = useState("");
     const limit = 20;
 
     const loadPayments = useCallback(async () => {
         try {
             setLoading(true);
-            const r = await paymentAPI.getAll({ page, limit, status: statusFilter || undefined });
+            const r = await paymentAPI.getAll({ 
+                page, 
+                limit, 
+                status: statusFilter || undefined,
+                search: search || undefined,
+                dateFrom: dateFrom || undefined,
+                dateTo: dateTo || undefined
+            });
             const data = r.data?.data;
             setPayments(data?.payments || (Array.isArray(data) ? data : []));
             setTotal(data?.total || 0);
@@ -50,7 +60,7 @@ export default function PaymentsPage() {
             console.error('Load payments error:', e);
             showToast('Failed to load payments', 'error');
         } finally { setLoading(false); }
-    }, [page, limit, statusFilter]);
+    }, [page, limit, statusFilter, search, dateFrom, dateTo]);
 
     useEffect(() => { loadPayments(); }, [loadPayments]);
 
@@ -111,43 +121,97 @@ export default function PaymentsPage() {
                     Refunded
                 </button>
             </div>
-
-            <div className="card">
-                <div className="card-body" style={{ padding: 0, overflowX: "auto" }}>
-                    <table className="data-table">
-                        <thead><tr><th>Date</th><th>User</th><th>Amount</th><th>Method</th><th>Status</th><th>Booking</th><th>Coupon</th><th>Actions</th></tr></thead>
-                        <tbody>
-                            {loading ? <tr><td colSpan={8} style={{ textAlign: 'center', padding: 24 }}>Loading...</td></tr> :
-                                payments.length === 0 ? <tr><td colSpan={8} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No payments found</td></tr> :
-                                    payments.map(p => (
-                                        <tr key={p.id}>
-                                            <td className="text-sm">{formatDateTime(p.createdAt)}</td>
-                                            <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{p.user?.name || '—'}</td>
-                                            <td>{formatCurrency(p.amount)}</td>
-                                            <td><PaymentMethodBadge method={p.paymentMethod} /></td>
-                                            <td><span className={`badge ${statusColors[p.status] || 'badge-default'}`}>{p.status}</span></td>
-                                            <td className="text-sm"><code>{p.booking?.bookingCode || p.subscription?.plan?.name || '—'}</code></td>
-                                            <td className="text-sm">{p.couponCode || '—'}</td>
-                                            <td>
-                                                <div className="flex gap-1">
-                                                    <button className="btn btn-sm btn-secondary" title="Update status" onClick={() => { setStatusModal(p); setNewStatus(p.status); }}><Edit2 size={14} /></button>
-                                                    {p.status === 'SUCCESS' && p.paymentMethod !== 'CASH' && !p.refundId && (
-                                                        <button className="btn btn-sm btn-warning" title="Refund" onClick={() => { setRefundModal(p); setRefundData({ refundType: 'CANCELLATION', refundReason: '', refundAmount: p.amount }); }}><RefreshCw size={14} /></button>
-                                                    )}
-                                                    {p.bookingId && p.status === 'SUCCESS' && (
-                                                        <>
-                                                            <button className="btn btn-sm btn-secondary" title="View Invoice Inline" onClick={() => setViewerModal(bookingAPI.getInvoiceDownloadUrl(p.bookingId))}><Eye size={14} /></button>
-                                                            <a href={bookingAPI.getInvoiceDownloadUrl(p.bookingId)} download className="btn btn-sm btn-secondary" title="Download Invoice PDF" target="_blank" rel="noreferrer"><FileDown size={14} /></a>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                        </tbody>
-                    </table>
+            <div className="filter-bar" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+                <div style={{ position: 'relative', flex: 1, minWidth: 200, maxWidth: 300 }}>
+                    <input 
+                        className="form-input" 
+                        placeholder="Search customer (name, ID)..." 
+                        value={search} 
+                        onChange={e => { setSearch(e.target.value); setPage(1); }} 
+                    />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span className="text-muted text-xs">From:</span>
+                    <input 
+                        type="date" 
+                        className="form-input" 
+                        style={{ padding: '6px 10px', fontSize: 12, width: 'auto' }}
+                        value={dateFrom} 
+                        onChange={e => { setDateFrom(e.target.value); setPage(1); }} 
+                    />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span className="text-muted text-xs">To:</span>
+                    <input 
+                        type="date" 
+                        className="form-input" 
+                        style={{ padding: '6px 10px', fontSize: 12, width: 'auto' }}
+                        value={dateTo} 
+                        onChange={e => { setDateTo(e.target.value); setPage(1); }} 
+                    />
                 </div>
             </div>
+
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: 48, background: 'var(--bg-secondary)', borderRadius: 12, color: 'var(--text-muted)' }}>Loading payments...</div>
+            ) : payments.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 48, background: 'var(--bg-secondary)', borderRadius: 12, color: 'var(--text-muted)' }}>No transactions found</div>
+            ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 16 }}>
+                    {payments.map(p => (
+                        <div key={p.id} className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div>
+                                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatDateTime(p.createdAt)}</div>
+                                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginTop: 4 }}>{p.user?.name || '—'}</div>
+                                    {p.user?.uniqueUserId && (
+                                        <div style={{ fontSize: 10, color: 'var(--accent-primary-light)' }}>{p.user.uniqueUserId}</div>
+                                    )}
+                                </div>
+                                <span className={`badge ${statusColors[p.status] || 'badge-default'}`}>{p.status}</span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                                <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)' }}>{formatCurrency(p.amount)}</span>
+                            </div>
+
+                            <div style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px dashed var(--border-color)', paddingTop: 10 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span className="text-muted">Method:</span>
+                                    <PaymentMethodBadge method={p.paymentMethod} />
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span className="text-muted">Reference:</span>
+                                    <code style={{ fontSize: 11 }}>{p.booking?.bookingCode || p.subscription?.plan?.name || '—'}</code>
+                                </div>
+                                {p.couponCode && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span className="text-muted">Coupon:</span>
+                                        <span style={{ fontWeight: 600 }}>{p.couponCode}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 8, marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: 10 }}>
+                                <button className="btn btn-sm btn-secondary" style={{ flex: 1, padding: '6px' }} title="Update status" onClick={() => { setStatusModal(p); setNewStatus(p.status); }}>
+                                    <Edit2 size={13} style={{ marginRight: 4 }} /> Status
+                                </button>
+                                {p.status === 'SUCCESS' && p.paymentMethod !== 'CASH' && !p.refundId && (
+                                    <button className="btn btn-sm btn-warning" style={{ flex: 1, padding: '6px' }} title="Refund" onClick={() => { setRefundModal(p); setRefundData({ refundType: 'CANCELLATION', refundReason: '', refundAmount: p.amount }); }}>
+                                        <RefreshCw size={13} style={{ marginRight: 4 }} /> Refund
+                                    </button>
+                                )}
+                                {p.bookingId && p.status === 'SUCCESS' && (
+                                    <div style={{ display: 'flex', gap: 4 }}>
+                                        <button className="btn btn-sm btn-secondary" style={{ padding: '6px' }} title="View Invoice Inline" onClick={() => setViewerModal(bookingAPI.getInvoiceDownloadUrl(p.bookingId))}><Eye size={13} /></button>
+                                        <a href={bookingAPI.getInvoiceDownloadUrl(p.bookingId)} download className="btn btn-sm btn-secondary" style={{ padding: '6px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} title="Download Invoice PDF" target="_blank" rel="noreferrer"><FileDown size={13} /></a>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
             {total > limit && <div className="flex justify-between items-center mt-4"><span className="text-sm text-muted">Page {page}</span><div className="flex gap-2"><button className="btn btn-sm btn-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}><ChevronLeft size={14} /></button><button className="btn btn-sm btn-secondary" disabled={page * limit >= total} onClick={() => setPage(page + 1)}><ChevronRight size={14} /></button></div></div>}
 
             {refundModal && (

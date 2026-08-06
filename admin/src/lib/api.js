@@ -117,6 +117,7 @@ export const userAPI = {
     delete: (id) => api.delete(`/users/${id}`),
     uploadHealthReport: (id, formData) => api.post(`/users/${id}/health-reports`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
     deleteHealthReport: (reportId) => api.delete(`/users/health-reports/${reportId}`),
+    getAllHealthReports: (params) => api.get('/users/admin/health-reports', { params }),
 };
 
 // ── Services ─────────────────────────────────────────
@@ -261,6 +262,8 @@ export const bannerAPI = {
 
 // ── UI Config (Server-Driven UI) ─────────────────────
 export const uiConfigAPI = {
+    purgeCache: () => api.post('/ui-config/purge-cache'),
+    getPublished: () => api.get('/ui-config/published'),
     getAll: () => api.get('/ui-config'),
     getById: (id) => api.get(`/ui-config/${id}`),
     create: (data) => api.post('/ui-config', data),
