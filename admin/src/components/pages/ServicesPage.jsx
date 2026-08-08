@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { serviceAPI, mediaAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
+import RouteSelector from "@/components/common/RouteSelector";
 
 const isEmoji = (str) => {
     if (!str) return false;
@@ -632,15 +633,13 @@ export default function ServicesPage() {
                                             />
                                         </div>
                                         <div className="form-group" style={{ marginBottom: 0 }}>
-                                            <label className="form-label">Custom Route (Optional)</label>
-                                            <input 
-                                                type="text" 
-                                                className="form-input" 
-                                                placeholder="Auto: /dynamic-service/[slug]"
-                                                value={form.route} 
-                                                onChange={e => setForm({ ...form, route: e.target.value })}
-                                            />
-                                        </div>
+                                             <label className="form-label">Service Route Path (Optional)</label>
+                                             <RouteSelector 
+                                                 value={form.route}
+                                                 onChange={val => setForm({ ...form, route: val })}
+                                                 placeholder="Auto: /dynamic-service/[slug]"
+                                             />
+                                         </div>
                                     </div>
                                 </div>
 

@@ -41,17 +41,50 @@ const generateInvoicePDF = async (invoiceData) => {
         const description = invoiceData.description || 'Home Nurse Visit';
         const discount = '0.00';
 
-        const invoiceRows = `
-            <tr>
-                <td style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf;">
-                    <img src="${imageLoader.check}" style="width: 11px; height: 11px; vertical-align: middle; margin-right: 6px;" alt="✔" />
-                    <span style="vertical-align: middle;">${description}</span>
-                </td>
-                <td class="center" style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf; text-align: center;">Rs. ${subTotalFormatted}</td>
-                <td class="center" style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf; text-align: center;">1</td>
-                <td class="right" style="padding: 10px; font-size: 10px; font-weight: 600; border-bottom: 1px solid #bfbfbf; text-align: right;">Rs. ${subTotalFormatted}</td>
-            </tr>
-        `;
+        const serviceFeeNum = invoiceData.serviceFee !== undefined 
+            ? Number(invoiceData.serviceFee) 
+            : (invoiceData.ayuxaPlatformCharge !== undefined ? Math.max(0, itemSubtotalNum - Number(invoiceData.ayuxaPlatformCharge)) : itemSubtotalNum);
+        
+        const platformChargeNum = invoiceData.ayuxaPlatformCharge !== undefined 
+            ? Number(invoiceData.ayuxaPlatformCharge) 
+            : (invoiceData.serviceFee !== undefined ? Math.max(0, itemSubtotalNum - serviceFeeNum) : 0);
+
+        let invoiceRows = '';
+
+        if (platformChargeNum > 0 && serviceFeeNum > 0) {
+            invoiceRows = `
+                <tr>
+                    <td style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf;">
+                        <img src="${imageLoader.check}" style="width: 11px; height: 11px; vertical-align: middle; margin-right: 6px;" alt="✔" />
+                        <span style="vertical-align: middle;">Service Fee (${description})</span>
+                    </td>
+                    <td class="center" style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf; text-align: center;">Rs. ${serviceFeeNum.toFixed(2)}</td>
+                    <td class="center" style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf; text-align: center;">1</td>
+                    <td class="right" style="padding: 10px; font-size: 10px; font-weight: 600; border-bottom: 1px solid #bfbfbf; text-align: right;">Rs. ${serviceFeeNum.toFixed(2)}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf;">
+                        <img src="${imageLoader.check}" style="width: 11px; height: 11px; vertical-align: middle; margin-right: 6px;" alt="✔" />
+                        <span style="vertical-align: middle;">Ayuxa Platform & Booking Surcharges</span>
+                    </td>
+                    <td class="center" style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf; text-align: center;">Rs. ${platformChargeNum.toFixed(2)}</td>
+                    <td class="center" style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf; text-align: center;">1</td>
+                    <td class="right" style="padding: 10px; font-size: 10px; font-weight: 600; border-bottom: 1px solid #bfbfbf; text-align: right;">Rs. ${platformChargeNum.toFixed(2)}</td>
+                </tr>
+            `;
+        } else {
+            invoiceRows = `
+                <tr>
+                    <td style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf;">
+                        <img src="${imageLoader.check}" style="width: 11px; height: 11px; vertical-align: middle; margin-right: 6px;" alt="✔" />
+                        <span style="vertical-align: middle;">Service Fee (${description})</span>
+                    </td>
+                    <td class="center" style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf; text-align: center;">Rs. ${subTotalFormatted}</td>
+                    <td class="center" style="padding: 10px; font-size: 10px; font-weight: 500; border-bottom: 1px solid #bfbfbf; text-align: center;">1</td>
+                    <td class="right" style="padding: 10px; font-size: 10px; font-weight: 600; border-bottom: 1px solid #bfbfbf; text-align: right;">Rs. ${subTotalFormatted}</td>
+                </tr>
+            `;
+        }
 
         const htmlContent = `
         <!DOCTYPE html>

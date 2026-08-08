@@ -579,7 +579,7 @@ export default function HomeScreen() {
     refreshData().catch(() => {});
 
     // ── 2. Banners ─────────────────────────────────────────────────────────────
-    bannerService.getHomeBanners()
+    bannerService.getHomeBanners(true)
       .then(setBanners)
       .catch(() => {});
 
@@ -731,12 +731,12 @@ export default function HomeScreen() {
   const serviceGridSection = sections.find(sec => sec.id === 'ayuxa_services' || sec.type === 'service_grid');
   const essentialsSection = sections.find(sec => sec.id === 'essentials' || sec.type === 'essentials_grid');
 
-  if (isLoading) {
+  if (isLoading && (!sections || sections.length === 0)) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgScreen, justifyContent: 'center', alignItems: 'center' }}>
         <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-        <View style={{ alignItems: 'center', gap: 24 }}>
-          <Animated.View style={{ transform: [{ scale: pulseAnim }], marginBottom: 8 }}>
+        <View style={{ alignItems: 'center', gap: 16 }}>
+          <Animated.View style={{ transform: [{ scale: pulseAnim }], marginBottom: 4 }}>
             <Image 
               source={logoSmall} 
               style={{ width: 85, height: 66, tintColor: '#02743F' }} 
@@ -744,9 +744,6 @@ export default function HomeScreen() {
             />
           </Animated.View>
           <ActivityIndicator size="large" color="#02743F" />
-          <Text style={{ fontFamily: Fonts.bold, fontSize: 15, color: colors.textDark }}>
-            Connecting to Ayuxa Server...
-          </Text>
         </View>
       </SafeAreaView>
     );

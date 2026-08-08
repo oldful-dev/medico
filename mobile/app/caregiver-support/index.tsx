@@ -319,7 +319,7 @@ export default function BookCaregiverSupportScreen() {
                             if (router.canGoBack()) {
                                 router.back();
                             } else {
-                                router.replace('/(tabs)' as any);
+                                router.replace('/all-ayuxa-services' as any);
                             }
                         }}
                         style={dynamicStyles.backButton}

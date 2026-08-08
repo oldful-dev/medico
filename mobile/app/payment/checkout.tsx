@@ -105,29 +105,7 @@ export default function CheckoutScreen() {
     const isBloodTest = bloodTestItems.length > 0;
     const isWellness = wellnessItems.length > 0;
 
-    // ─── Intercept and redirect to Smart Upgrade Prompt if no active plan
-    useEffect(() => {
-        if (params.bookingPayload && !params.subscriptionId && params.skipUpsell !== '1') {
-            const hasActivePlan = profile?.subscriptions?.some((s: any) => s.status === 'ACTIVE');
-            if (!hasActivePlan) {
-                router.replace({
-                    pathname: '/payment/upgrade-prompt',
-                    params: {
-                        bookingPayload: params.bookingPayload,
-                        amount: params.amount,
-                        label: params.label,
-                    }
-                });
-            }
-        }
-    }, [profile, params.bookingPayload, params.subscriptionId, params.skipUpsell]);
-
     const isSubscription = !!params.subscriptionId || !!params.upgradeSubId;
-
-    // ─── COD Restriction: Hide CASH if it's a subscription ──────────────────
-    const availableMethods = isSubscription 
-        ? PAYMENT_METHODS.filter(m => m.type !== 'CASH')
-        : PAYMENT_METHODS;
 
     const bloodTestBaseAmount = bloodTestItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
     const wellnessBaseAmount = wellnessItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
@@ -139,12 +117,14 @@ export default function CheckoutScreen() {
         taxPercentage?: number;
         requiredPlanType?: 'CARE' | 'HOMEMAKER' | null;
         breakdown: {
+            serviceFee?: number;
             vendorFee: number;
             diagnosticFee: number;
             bookingFee: number;
             platformFee: number;
             taxes: number;
-            ayuxaServiceFee: number;
+            ayuxaPlatformCharge?: number;
+            ayuxaServiceFee?: number;
             benefitDiscount: number;
             convenienceFee?: number;
             emergencyFee?: number;
@@ -186,6 +166,7 @@ export default function CheckoutScreen() {
     );
 
     const [isPaidBookingOverride, setIsPaidBookingOverride] = useState(false);
+    const isInquiryMode = (params.paymentMode === 'INQUIRY' || params.paymentMode === 'inquiry' || params.checkoutGroup === 'D') && !isPaidBookingOverride;
     const hasActivePlanForCategoryRaw = profile?.subscriptions?.some(
         (s: any) =>
             s.status === "ACTIVE" &&
@@ -215,7 +196,7 @@ export default function CheckoutScreen() {
 
     useEffect(() => {
         const fetchEligiblePlans = async () => {
-            if (hasActivePlanForCategory || !upsellPlanType) return;
+            if (isInquiryMode || hasActivePlanForCategory || !upsellPlanType) return;
             try {
                 setLoadingEligiblePlans(true);
                 const res = await planService.getPlansByType(upsellPlanType);
@@ -261,6 +242,19 @@ export default function CheckoutScreen() {
     }, [isUpgraded, selectedDuration, baseAmount, bloodTestBaseAmount, isBloodTest, selectedUpgradePlan, category]);
 
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(isSubscription ? 'UPI' : 'UPI');
+
+    // ─── COD Restriction: Hide CASH if it's a subscription or membership plan upgrade ───
+    const isMembershipUpgradeSelected = isUpgraded && !!selectedUpgradePlan;
+    const availableMethods = (isSubscription || isMembershipUpgradeSelected)
+        ? PAYMENT_METHODS.filter(m => m.type !== 'CASH')
+        : PAYMENT_METHODS;
+
+    useEffect(() => {
+        if ((isSubscription || isMembershipUpgradeSelected) && selectedMethod === 'CASH') {
+            setSelectedMethod('UPI');
+        }
+    }, [isSubscription, isMembershipUpgradeSelected, selectedMethod]);
+
     const [couponCode,     setCouponCode]     = useState('');
     const [couponApplied,  setCouponApplied]  = useState(false);
     const [discount,       setDiscount]       = useState(0);
@@ -790,7 +784,7 @@ export default function CheckoutScreen() {
                         if (isBloodTest && !isWellness) {
                             router.replace({
                                 pathname: '/blood-test/success',
-                                params: { bookingId: lastBookingId!, amount: String(finalAmount), packageName: label }
+                                params: { bookingId: lastBookingId!, amount: String(finalAmount), packageName: label, isCod: 'true' }
                             });
                         } else if (isWellness || (isBloodTest && isWellness)) {
                             router.replace({
@@ -800,7 +794,7 @@ export default function CheckoutScreen() {
                         } else {
                             router.replace({
                                 pathname: '/service-confirmation',
-                                params: { bookingId: sessionBookingId.current! }
+                                params: { bookingId: sessionBookingId.current!, isCod: 'true' }
                             });
                         }
                     }}]
@@ -1109,7 +1103,7 @@ export default function CheckoutScreen() {
                             ))}
                             <View style={styles.breakdownSection}>
                                 <View style={styles.breakdownRow}>
-                                    <Text style={styles.breakdownLabel}>{t('checkout.tests_subtotal', 'Tests Subtotal')}</Text>
+                                    <Text style={styles.breakdownLabel}>{t('checkout.tests_service_fee', 'Service Fee (Tests)')}</Text>
                                     <Text style={styles.breakdownValue}>{rupee}{bloodTestBaseAmount.toLocaleString('en-IN')}</Text>
                                 </View>
                                 {(!isSubscription || !!params.bookingPayload) && (
@@ -1385,7 +1379,7 @@ export default function CheckoutScreen() {
                 </View>
 
                 {/* Checkout Membership Upgrade Card (Swiggy One style) */}
-                {upsellPlanType && !hasActivePlanForCategory && eligiblePlans.length > 0 && (
+                {!isInquiryMode && upsellPlanType && !hasActivePlanForCategory && eligiblePlans.length > 0 && (
                     <View style={[styles.card, styles.upgradeCard]}>
                         <TouchableOpacity
                             style={styles.upgradeHeader}
@@ -1640,6 +1634,14 @@ export default function CheckoutScreen() {
                             />
                         </TouchableOpacity>
                     ))}
+                    {isMembershipUpgradeSelected && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingHorizontal: 4 }}>
+                            <Ionicons name="information-circle-outline" size={14} color={colors.primary} />
+                            <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '500' }}>
+                                Membership upgrades require online payment (UPI/Card) to activate instant benefits.
+                            </Text>
+                        </View>
+                    )}
                 </View>
 
                 {/* Security note */}

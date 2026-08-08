@@ -78,7 +78,7 @@ export default function DoctorVisitScreen() {
     const styles = makeStyles(colors, isDarkMode);
 
     // ─── Global State ───
-    const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, isLoading: isLoadingInit } = useServiceInitialization('doctor-home-visit');
+    const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, isLoading: isLoadingInit } = useServiceInitialization('doctor-visit');
     const { profile, refreshData } = useUser();
 
     // ─── State ───
@@ -391,7 +391,7 @@ export default function DoctorVisitScreen() {
                     bookingPayload,
                     amount: String(servicePrice),
                     label: serviceName || 'Doctor Home Visit',
-                    serviceSlug: 'doctor-home-visit',
+                    serviceSlug: 'doctor-visit',
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
@@ -427,7 +427,7 @@ export default function DoctorVisitScreen() {
             {/* ─── Header Section (Green Background) ─── */}
             <SafeAreaView style={[styles.headerSafe, { backgroundColor: colors.primary }]} edges={['top']}>
                 <View style={styles.headerRow}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/all-ayuxa-services')} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color={colors.textWhite} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{t('doctor_visit.header')}</Text>

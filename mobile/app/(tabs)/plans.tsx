@@ -959,7 +959,7 @@ export default function PlansScreen() {
 
             {/* Header */}
             <View style={S.header}>
-                <TouchableOpacity style={S.backBtn} onPress={() => router.replace('/(tabs)')}>
+                <TouchableOpacity style={S.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/all-ayuxa-services')}>
                     <Ionicons name="arrow-back" size={22} color="#fff" />
                 </TouchableOpacity>
                 <View style={{ flex: 1, alignItems: 'center' }}>

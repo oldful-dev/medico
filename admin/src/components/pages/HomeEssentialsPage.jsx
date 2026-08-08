@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { serviceAPI, mediaAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
+import RouteSelector from "@/components/common/RouteSelector";
 
 export default function HomeEssentialsPage() {
   const [services, setServices] = useState([]);
@@ -491,13 +492,10 @@ export default function HomeEssentialsPage() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Mobile Route *</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      required
-                      placeholder="e.g. /appliance-repair"
+                    <RouteSelector 
                       value={form.route}
-                      onChange={e => setForm({ ...form, route: e.target.value })}
+                      onChange={val => setForm({ ...form, route: val })}
+                      placeholder="e.g. /appliance-repair"
                     />
                   </div>
                 </div>

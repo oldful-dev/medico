@@ -30,7 +30,11 @@ export default function DynamicServiceScreen() {
   const { isDarkMode } = useTheme();
   const styles = makeStyles(isDarkMode, colors);
 
-  const { getServiceBySlug, profile } = useUser();
+  const { getServiceBySlug, profile, refreshData } = useUser();
+
+  useEffect(() => {
+    refreshData(true);
+  }, []);
 
   const {
     isReady,

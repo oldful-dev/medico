@@ -58,11 +58,28 @@ export default function ReportsPage() {
 
             <div className="grid-2">
                 <div className="card">
-                    <div className="card-header"><h3>Revenue by City</h3></div>
+                    <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3>Revenue Breakdown by City</h3>
+                        <div style={{ display: 'flex', gap: 12, fontSize: 11 }}>
+                            <span style={{ color: '#818cf8', fontWeight: 600 }}>■ Ayuxa Revenue</span>
+                            <span style={{ color: '#34d399', fontWeight: 600 }}>■ Provider Revenue</span>
+                        </div>
+                    </div>
                     <div className="card-body">
                         {revByCity.length > 0 ? (
                             <ResponsiveContainer width="100%" height={280}>
-                                <BarChart data={revByCity}><CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" /><XAxis dataKey="name" stroke="#64748b" fontSize={12} /><YAxis stroke="#64748b" fontSize={12} /><Tooltip contentStyle={chartTooltipStyle} /><Bar dataKey="totalRevenue" fill="#6366f1" radius={[6, 6, 0, 0]} /></BarChart>
+                                <BarChart data={revByCity.map(c => ({
+                                    ...c,
+                                    ayuxaRevenue: c.ayuxaRevenue ?? Math.round((c.totalRevenue || 0) * 0.2),
+                                    providerRevenue: c.providerRevenue ?? Math.round((c.totalRevenue || 0) * 0.8)
+                                }))}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                                    <XAxis dataKey="name" stroke="#64748b" fontSize={12} />
+                                    <YAxis stroke="#64748b" fontSize={12} />
+                                    <Tooltip contentStyle={chartTooltipStyle} />
+                                    <Bar dataKey="ayuxaRevenue" name="Ayuxa Revenue" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="providerRevenue" name="Provider Revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                </BarChart>
                             </ResponsiveContainer>
                         ) : <p className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No data</p>}
                     </div>

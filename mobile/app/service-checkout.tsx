@@ -1753,59 +1753,80 @@ export default function ServiceCheckoutScreen() {
             )}
 
             {/* Payment Method */}
-            {!isZeroPayment && (
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>
-                  {t("service_checkout.payment_method")}
-                </Text>
-                {PAYMENT_METHODS.map((m) => (
-                  <TouchableOpacity
-                    key={m.type}
-                    style={[
-                      styles.methodRow,
-                      selectedMethod === m.type && styles.methodRowActive,
-                    ]}
-                    onPress={() => setSelectedMethod(m.type)}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons
-                      name={m.icon}
-                      size={20}
-                      color={
-                        selectedMethod === m.type
-                          ? colors.primary
-                          : colors.textMuted
-                      }
-                    />
-                    <Text
+            {!isZeroPayment && (() => {
+              const isMembershipUpgradeSelected = isUpgraded && !!selectedUpgradePlan;
+              const isSub = !!params.subscriptionId;
+              const availableMethods = (isSub || isMembershipUpgradeSelected)
+                ? PAYMENT_METHODS.filter((m) => m.type !== "CASH")
+                : PAYMENT_METHODS;
+
+              if ((isSub || isMembershipUpgradeSelected) && selectedMethod === "CASH") {
+                setTimeout(() => setSelectedMethod("UPI"), 0);
+              }
+
+              return (
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>
+                    {t("service_checkout.payment_method")}
+                  </Text>
+                  {availableMethods.map((m) => (
+                    <TouchableOpacity
+                      key={m.type}
                       style={[
-                        styles.methodLabel,
-                        selectedMethod === m.type && styles.methodLabelActive,
+                        styles.methodRow,
+                        selectedMethod === m.type && styles.methodRowActive,
                       ]}
+                      onPress={() => setSelectedMethod(m.type)}
+                      activeOpacity={0.8}
                     >
-                      {m.label}
-                    </Text>
-                    <Ionicons
-                      name={
-                        selectedMethod === m.type
-                          ? "radio-button-on"
-                          : "radio-button-off"
-                      }
-                      size={20}
-                      color={
-                        selectedMethod === m.type
-                          ? colors.primary
-                          : colors.textMuted
-                      }
-                      style={{ marginLeft: "auto" }}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+                      <Ionicons
+                        name={m.icon}
+                        size={20}
+                        color={
+                          selectedMethod === m.type
+                            ? colors.primary
+                            : colors.textMuted
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.methodLabel,
+                          selectedMethod === m.type && styles.methodLabelActive,
+                        ]}
+                      >
+                        {m.label}
+                      </Text>
+                      <Ionicons
+                        name={
+                          selectedMethod === m.type
+                            ? "radio-button-on"
+                            : "radio-button-off"
+                        }
+                        size={20}
+                        color={
+                          selectedMethod === m.type
+                            ? colors.primary
+                            : colors.textMuted
+                        }
+                        style={{ marginLeft: "auto" }}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                  {isMembershipUpgradeSelected && (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8, paddingHorizontal: 4 }}>
+                      <Ionicons name="information-circle-outline" size={14} color={colors.primary} />
+                      <Text style={{ fontSize: 11, color: colors.primary, fontWeight: "500" }}>
+                        Membership upgrades require online payment (UPI/Card) to activate instant benefits.
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })()}
 
             {/* Checkout Membership Upgrade Card (Swiggy One style) */}
-            {(HOME_CATEGORIES.includes(category) ||
+            {!isZeroPayment && params.paymentMode !== 'INQUIRY' && params.paymentMode !== 'inquiry' &&
+              (HOME_CATEGORIES.includes(category) ||
               CARE_CATEGORIES.includes(category)) &&
               !hasActivePlanForCategory &&
               eligiblePlans.length > 0 && (

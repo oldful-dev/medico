@@ -190,13 +190,19 @@ export const paymentService = {
     }): Promise<ApiResponse<{
         totalAmount: number;
         requiredPlanType?: 'CARE' | 'HOMEMAKER' | null;
+        ayuxaRevenue?: number;
+        providerRevenue?: number;
         breakdown: {
+            serviceFee?: number;
             vendorFee: number;
             diagnosticFee: number;
             bookingFee: number;
             platformFee: number;
             taxes: number;
-            ayuxaServiceFee: number;
+            ayuxaPlatformCharge?: number;
+            ayuxaServiceFee?: number;
+            ayuxaRevenue?: number;
+            providerRevenue?: number;
             benefitDiscount: number;
         };
         benefitApplied: boolean;

@@ -31,7 +31,7 @@ export interface BannerResponse {
 class BannerService {
   private lastFetchTime = 0;
   private cachedBanners: Banner[] = [];
-  private THROTTLE_MS = 15000;
+  private THROTTLE_MS = 24 * 60 * 60 * 1000; // 24 Hours refresh interval
 
   /**
    * Get all active banners for home screen

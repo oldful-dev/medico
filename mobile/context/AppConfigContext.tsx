@@ -989,7 +989,7 @@ export function AppConfigProvider({ children }: { children: ReactNode }) {
   };
 
   const lastFetchRef = useRef<number>(0);
-  const MIN_REFETCH_INTERVAL = 60_000; // Don't refetch more than once per minute
+  const MIN_REFETCH_INTERVAL = 24 * 60 * 60 * 1000; // 24 Hours refresh interval
 
   const fetchFresh = useCallback(async (force = false) => {
     // Throttle: skip if fetched recently (unless forced)

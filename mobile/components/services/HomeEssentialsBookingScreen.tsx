@@ -39,6 +39,61 @@ const ICON_MAPPING: Record<string, any> = {
   'tech-helper': acRepairIcon,
 };
 
+const DEFAULT_META: Record<string, { headline: string; subhead: string }> = {
+  'appliance-repair': {
+    headline: 'AC & Appliance Repair',
+    subhead: 'Book a reliable technician for AC, refrigerator, washing machine and other household appliance repairs.',
+  },
+  'plumbing-electrical': {
+    headline: 'Plumbing & Electrical',
+    subhead: 'Book a certified plumber or electrician for pipe leaks, wiring faults, and all other home repairs.',
+  },
+  'deep-cleaning': {
+    headline: 'Deep Cleaning & Pest Control',
+    subhead: 'Book professional deep cleaning or pest control for your home. Safe & certified.',
+  },
+  'driving-cab': {
+    headline: 'Driver Request',
+    subhead: '24/7 Driver for hospital visits, errands, or any destination. Safe & comfortable.',
+  },
+  'grocery-run': {
+    headline: 'Grocery Delivery',
+    subhead: 'Share your grocery list and our Ayuxa buddy will shop from your nearest store and deliver to you.',
+  },
+  'bill-payment': {
+    headline: 'Bill Payment',
+    subhead: 'Share your utility bill, our Ayuxa buddy will take care of everything.',
+  },
+  'bank-paperwork': {
+    headline: 'Bank Paperwork',
+    subhead: 'Get professional help with bank visits, passbook updates, KYC, and other paperwork.',
+  },
+  'paper-legal': {
+    headline: 'Paperwork & Legal',
+    subhead: 'Legal & paperwork assistance, pension, life certificate, and document verification.',
+  },
+  'anything-else': {
+    headline: 'Anything Else',
+    subhead: 'Need help with something not on our list? Tell us what you need and our Ayuxa buddy will handle it.',
+  },
+  'tech-helper': {
+    headline: 'Media & Tech Support',
+    subhead: 'Simplifying smart tech configuration, device pairing, and audio/visual setups.',
+  },
+  'sanitisation': {
+    headline: 'Washroom Sanitisation',
+    subhead: 'Crafting a spotless, revitalised space with uncompromising safety standards.',
+  },
+  'trip-travels': {
+    headline: 'Trip & Travels',
+    subhead: 'Travel planning, booking assistance, and full concierge support.',
+  },
+  'smart-upgrade': {
+    headline: 'Smart Upgrade',
+    subhead: 'Make your home elderly-friendly with smart safety and accessibility upgrades.',
+  },
+};
+
 interface HomeEssentialsBookingScreenProps {
   slug: string;
 }
@@ -54,8 +109,10 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
   const dbService = getServiceBySlug(slug);
 
   // Fallback metadata
-  const headline = dbService?.headline || dbService?.name || '';
-  const subhead = dbService?.subhead || dbService?.tagline || '';
+  const defaultMeta = DEFAULT_META[slug] || { headline: 'Home Essentials', subhead: 'Concierge Services' };
+  const translationKey = slug ? slug.replace(/-/g, '_') : '';
+  const headline = dbService?.headline || dbService?.name || (translationKey ? t(`services.${translationKey}`, defaultMeta.headline) : defaultMeta.headline);
+  const subhead = dbService?.subhead || dbService?.tagline || (translationKey ? t(`services.${translationKey}_subhead`, defaultMeta.subhead) : defaultMeta.subhead);
   const checkoutGroup = dbService?.checkoutGroup || 'D';
 
   const {
@@ -77,6 +134,11 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
   const [deliveryMethod, setDeliveryMethod] = useState<'online' | 'home_visit'>('online');
   const [isBooking, setIsBooking] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
+
+  // Always fetch latest catalog data from DB when opening screen
+  useEffect(() => {
+    refreshData(true);
+  }, []);
 
   // Sync selectedAddress with initial fetched address on mount or when fetched
   useEffect(() => {

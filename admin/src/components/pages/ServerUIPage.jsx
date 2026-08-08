@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { appConfigAPI, mediaAPI, bannerAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
+import RouteSelector from "@/components/common/RouteSelector";
 
 export default function ServerUIPage() {
   const [rawJson, setRawJson] = useState("");
@@ -738,11 +739,10 @@ export default function ServerUIPage() {
                           </div>
                           <div className="form-group">
                             <label className="form-label">CTA Route Path</label>
-                            <input 
-                              type="text" 
-                              className="form-input" 
+                            <RouteSelector 
                               value={banner.cta_route || ""} 
-                              onChange={(e) => updateBanner(index, "cta_route", e.target.value)}
+                              onChange={(val) => updateBanner(index, "cta_route", val)}
+                              placeholder="/doctor-visit"
                             />
                           </div>
                         </div>
@@ -871,11 +871,9 @@ export default function ServerUIPage() {
                               </div>
                               <div className="form-group">
                                 <label className="form-label">Target Expo Route Path</label>
-                                <input 
-                                  type="text" 
-                                  className="form-input" 
+                                <RouteSelector 
                                   value={section.view_all_route || ""} 
-                                  onChange={(e) => updateSection(sIdx, "view_all_route", e.target.value)}
+                                  onChange={(val) => updateSection(sIdx, "view_all_route", val)}
                                   placeholder="/trip-travels"
                                 />
                               </div>
@@ -944,13 +942,11 @@ export default function ServerUIPage() {
                                       />
                                     </div>
                                     <div>
-                                      <input 
-                                        type="text" 
-                                        placeholder="Expo Route" 
-                                        className="form-input" 
+                                      <RouteSelector 
+                                        compact
                                         value={service.route || ""} 
-                                        onChange={(e) => updateService(sIdx, svIdx, "route", e.target.value)}
-                                        style={{ height: 28, fontSize: 11, padding: "2px 6px" }}
+                                        onChange={(val) => updateService(sIdx, svIdx, "route", val)}
+                                        placeholder="Expo Route"
                                       />
                                     </div>
                                     <div>

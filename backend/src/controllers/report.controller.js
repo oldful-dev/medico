@@ -41,7 +41,7 @@ const revenueByCity = async (req, res, next) => {
 
         const results = await Promise.all(
             cities.map(async (city) => {
-                const [bookingPmts, subPmts] = await Promise.all([
+                const [bookingPmts, subPmts, bookingDetails] = await Promise.all([
                     prisma.payment.aggregate({
                         where: { status: 'SUCCESS', booking: { cityId: city.id } },
                         _sum: { amount: true }
@@ -49,15 +49,39 @@ const revenueByCity = async (req, res, next) => {
                     prisma.payment.aggregate({
                         where: { status: 'SUCCESS', subscription: { user: { cityId: city.id } } },
                         _sum: { amount: true }
+                    }),
+                    prisma.payment.findMany({
+                        where: { status: 'SUCCESS', booking: { cityId: city.id } },
+                        select: { amount: true, booking: { select: { amount: true, formDataJson: true } } }
                     })
                 ]);
 
                 const userCount = await prisma.user.count({ where: { cityId: city.id } });
 
+                const totalBookingRev = bookingPmts._sum.amount || 0;
+                const totalSubRev = subPmts._sum.amount || 0;
+                const totalRevenue = totalBookingRev + totalSubRev;
+
+                // Compute explicit split: Ayuxa Platform Charges (Booking + Platform Fees + Subscriptions) vs Provider Service Revenue
+                let ayuxaBookingSurcharges = 0;
+                (bookingDetails || []).forEach(p => {
+                    const formData = p.booking?.formDataJson || {};
+                    const bFee = Number(formData.bookingFee || 299);
+                    const pFee = Number(formData.platformFee || 50);
+                    ayuxaBookingSurcharges += (bFee + pFee);
+                });
+                // Ensure surcharges do not exceed total booking amount
+                ayuxaBookingSurcharges = Math.min(totalBookingRev, ayuxaBookingSurcharges);
+
+                const ayuxaRevenue = Math.round((totalSubRev + ayuxaBookingSurcharges) * 100) / 100;
+                const providerRevenue = Math.max(0, Math.round((totalRevenue - ayuxaRevenue) * 100) / 100);
+
                 return {
                     name: city.name,
                     code: city.code,
-                    totalRevenue: (bookingPmts._sum.amount || 0) + (subPmts._sum.amount || 0),
+                    totalRevenue,
+                    ayuxaRevenue,
+                    providerRevenue,
                     userCount: userCount,
                 };
             })
@@ -83,9 +107,12 @@ const revenueByPlan = async (req, res, next) => {
                     _sum: { amount: true },
                     _count: { id: true },
                 });
+                const rev = payments._sum.amount || 0;
                 return {
                     plan: plan.name,
-                    totalRevenue: payments._sum.amount || 0,
+                    totalRevenue: rev,
+                    ayuxaRevenue: rev, // Subscriptions belong 100% to Ayuxa Revenue
+                    providerRevenue: 0,
                     totalSubscriptions: payments._count.id || 0,
                 };
             })

@@ -160,8 +160,8 @@ export default function ScanEcgScreen() {
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                     <View style={dynamicStyles.headerTextCol}>
-                        <Text style={dynamicStyles.headerTitle}>{t('scan_ecg.header')}</Text>
-                        <Text style={dynamicStyles.headerSubtitle}>{t('scan_ecg.header_subtitle')}</Text>
+                        <Text style={dynamicStyles.headerTitle}>{t('scan_ecg.header', 'Scan & ECG')}</Text>
+                        <Text style={dynamicStyles.headerSubtitle}>{t('scan_ecg.header_subtitle', 'Diagnostics at your doorstep')}</Text>
                     </View>
                 </View>
             </SafeAreaView>
@@ -177,7 +177,7 @@ export default function ScanEcgScreen() {
                         extraScrollHeight={20}
                     >
                         {/* Prescription Upload Title */}
-                        <Text style={dynamicStyles.sectionTitle}>{t('scan_ecg.document_upload')}</Text>
+                        <Text style={dynamicStyles.sectionTitle}>{t('scan_ecg.document_upload', 'Upload Prescription / Document')}</Text>
 
                         {/* Camera Option */}
                         <TouchableOpacity
@@ -187,8 +187,8 @@ export default function ScanEcgScreen() {
                         >
                             <Image source={cameraIcon} style={dynamicStyles.uploadIcon} resizeMode="contain" />
                             <View style={dynamicStyles.uploadTextContainer}>
-                                <Text style={dynamicStyles.uploadMainText}>{t('scan_ecg.camera_option')}</Text>
-                                <Text style={dynamicStyles.uploadSubText}>{t('scan_ecg.camera_sub')}</Text>
+                                <Text style={dynamicStyles.uploadMainText}>{t('scan_ecg.camera_option', 'Take a Photo')}</Text>
+                                <Text style={dynamicStyles.uploadSubText}>{t('scan_ecg.camera_sub', 'Use camera to upload prescription')}</Text>
                             </View>
                             <Ionicons name={selectedImages.length > 0 ? "checkmark-circle" : "chevron-forward"} size={20} color={selectedImages.length > 0 ? "#048357" : "#898989"} />
                         </TouchableOpacity>
@@ -201,8 +201,8 @@ export default function ScanEcgScreen() {
                         >
                             <Image source={galleryIcon} style={dynamicStyles.uploadIcon} resizeMode="contain" />
                             <View style={dynamicStyles.uploadTextContainer}>
-                                <Text style={dynamicStyles.uploadMainText}>{t('scan_ecg.gallery_option')}</Text>
-                                <Text style={dynamicStyles.uploadSubText}>{t('scan_ecg.gallery_sub')}</Text>
+                                <Text style={dynamicStyles.uploadMainText}>{t('scan_ecg.gallery_option', 'Choose from Gallery')}</Text>
+                                <Text style={dynamicStyles.uploadSubText}>{t('scan_ecg.gallery_sub', 'Select prescription from saved photos')}</Text>
                             </View>
                             <Ionicons name={selectedImages.length > 0 ? "checkmark-circle" : "chevron-forward"} size={20} color={selectedImages.length > 0 ? "#048357" : "#898989"} />
                         </TouchableOpacity>

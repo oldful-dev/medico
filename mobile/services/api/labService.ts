@@ -154,7 +154,7 @@ export const labService = {
         try {
             const response = await apiClient.request({
                 method: 'GET',
-                endpoint: `/labs/location/eloc/${eloc}`,
+                endpoint: `/labs/location/latlng?eloc=${eloc}`,
                 timeout: 10000
             });
             console.log('getCoordinatesByEloc raw response:', response);
