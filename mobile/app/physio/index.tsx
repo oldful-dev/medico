@@ -121,7 +121,7 @@ export default function PhysioScreen() {
 
             {/* ─── Header ─── */}
             <View style={dynamicStyles.headerRow}>
-                <TouchableOpacity onPress={() => router.back()} style={dynamicStyles.backButton}>
+                <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/all-ayuxa-services')} style={dynamicStyles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <View style={dynamicStyles.headerTextCol}>

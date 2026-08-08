@@ -118,6 +118,7 @@ export default function BloodTestOrderSummaryScreen() {
                         bookingId,
                         amount: String(totalAmount),
                         packageName: params.label,
+                        isCod: 'true',
                     },
                 });
                 return;
@@ -296,12 +297,12 @@ export default function BloodTestOrderSummaryScreen() {
                 {/* Price Breakdown */}
                 <View style={styles.card}>
                     <View style={styles.breakdownRow}>
-                        <Text style={styles.breakdownLabel}>{t('blood_test_summary.subtotal')}</Text>
+                        <Text style={styles.breakdownLabel}>{t('blood_test_summary.service_fee', 'Service Fee (Tests)')}</Text>
                         <Text style={styles.breakdownValue}>₹{baseAmount.toFixed(2)}</Text>
                     </View>
 
                     <View style={styles.breakdownRow}>
-                        <Text style={styles.breakdownLabel}>{t('blood_test_summary.convenience_fee')}</Text>
+                        <Text style={styles.breakdownLabel}>{t('blood_test_summary.platform_fee', 'Platform & Collection Charges')}</Text>
                         <Text style={styles.breakdownValue}>₹{convenienceFee.toFixed(2)}</Text>
                     </View>
 

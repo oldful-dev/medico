@@ -123,7 +123,15 @@ export default function DashboardPage() {
                         <div className="stat-card-icon green"><DollarSign size={22} /></div>
                     </div>
                     <div className="stat-card-value">{formatCurrency(s.totalRevenue || 0)}</div>
-                    <div className="stat-card-label">Total Revenue</div>
+                    <div className="stat-card-label">Total Gross Revenue</div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 10, fontSize: 11, flexWrap: 'wrap' }}>
+                        <span style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', padding: '3px 8px', borderRadius: 4, fontWeight: 600 }}>
+                            Ayuxa: {formatCurrency(revByCity?.reduce((acc, c) => acc + (c.ayuxaRevenue || 0), 0) || Math.round((s.totalRevenue || 0) * 0.2))}
+                        </span>
+                        <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '3px 8px', borderRadius: 4, fontWeight: 600 }}>
+                            Provider: {formatCurrency(revByCity?.reduce((acc, c) => acc + (c.providerRevenue || 0), 0) || Math.round((s.totalRevenue || 0) * 0.8))}
+                        </span>
+                    </div>
                 </div>
                 <div className="stat-card">
                     <div className="stat-card-header">
@@ -150,19 +158,21 @@ export default function DashboardPage() {
 
             <div className="grid-2">
                 <div className="card">
-                    <div className="card-header"><h3>City-wise Revenue</h3></div>
+                    <div className="card-header"><h3>City-wise Revenue Breakdown</h3></div>
                     <div className="card-body" style={{ padding: 0 }}>
                         <table className="data-table">
-                            <thead><tr><th>City</th><th>Users</th><th>Revenue</th></tr></thead>
+                            <thead><tr><th>City</th><th>Users</th><th>Ayuxa Revenue</th><th>Provider Revenue</th><th>Total</th></tr></thead>
                             <tbody>
                                 {(revByCity || []).map((c, i) => (
                                     <tr key={i}>
                                         <td style={{ fontWeight: 500, color: "var(--text-primary)" }}>{c.cityName || c.name}</td>
                                         <td>{(c.userCount || 0).toLocaleString()}</td>
-                                        <td>{formatCurrency(c.totalRevenue || c.revenue || 0)}</td>
+                                        <td style={{ color: "#818cf8", fontWeight: 600 }}>{formatCurrency(c.ayuxaRevenue ?? Math.round((c.totalRevenue || 0) * 0.2))}</td>
+                                        <td style={{ color: "#34d399", fontWeight: 600 }}>{formatCurrency(c.providerRevenue ?? Math.round((c.totalRevenue || 0) * 0.8))}</td>
+                                        <td style={{ fontWeight: 700 }}>{formatCurrency(c.totalRevenue || c.revenue || 0)}</td>
                                     </tr>
                                 ))}
-                                {(!revByCity || revByCity.length === 0) && <tr><td colSpan={3} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No revenue data yet</td></tr>}
+                                {(!revByCity || revByCity.length === 0) && <tr><td colSpan={5} className="text-muted" style={{ textAlign: 'center', padding: 24 }}>No revenue data yet</td></tr>}
                             </tbody>
                         </table>
                     </div>

@@ -13,9 +13,10 @@ const TEXT_MUTED = '#888888';
 
 export default function CartSuccessScreen() {
     const router = useRouter();
-    const params = useLocalSearchParams<{ bookingId?: string; amount?: string; category?: string }>();
+    const params = useLocalSearchParams<{ bookingId?: string; amount?: string; category?: string; isCod?: string; isCash?: string }>();
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
+    const isCod = params.isCod === 'true' || params.isCash === 'true';
 
     useEffect(() => {
         // Prevent back button from going back to payment
@@ -37,9 +38,12 @@ export default function CartSuccessScreen() {
                     <Ionicons name="checkmark-circle" size={80} color={PRIMARY_GREEN} />
                 </View>
                 
-                <Text style={dynamicStyles.title}>Payment Successful!</Text>
+                <Text style={dynamicStyles.title}>{isCod ? 'Order Confirmed!' : 'Payment Successful!'}</Text>
                 <Text style={dynamicStyles.subtitle}>
-                    Your {params.category} booking has been confirmed.
+                    {isCod 
+                        ? `Your ${params.category || 'order'} has been placed via Cash on Delivery.`
+                        : `Your ${params.category || 'booking'} has been confirmed.`
+                    }
                 </Text>
 
                 <View style={dynamicStyles.detailsCard}>
@@ -49,7 +53,7 @@ export default function CartSuccessScreen() {
                     </View>
                     <View style={dynamicStyles.divider} />
                     <View style={dynamicStyles.detailRow}>
-                        <Text style={dynamicStyles.detailLabel}>Amount Paid</Text>
+                        <Text style={dynamicStyles.detailLabel}>{isCod ? 'Payable on Delivery (COD)' : 'Amount Paid'}</Text>
                         <Text style={dynamicStyles.detailAmount}>₹{params.amount}</Text>
                     </View>
                 </View>

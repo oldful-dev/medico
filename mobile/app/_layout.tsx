@@ -22,6 +22,11 @@ import { ToastProvider } from '@/context/ToastContext';
 const RN = require('react-native');
 const OriginalText = RN.Text;
 
+// Completely disable all pop-up alert dialogs across the application
+if (RN.Alert) {
+  RN.Alert.alert = () => {};
+}
+
 if (OriginalText) {
   const ScaledText = React.forwardRef((props: any, ref: any) => {
     // Subscribe to ThemeContext updates to trigger re-renders dynamically!
@@ -162,18 +167,12 @@ function RootLayoutContent() {
 
         {/* Service Flow Screens */}
         <Stack.Screen name="meetup" options={{ headerShown: false }} />
-        <Stack.Screen name="meetup/index" options={{ headerShown: false }} />
-        <Stack.Screen name="meetup/details" options={{ headerShown: false }} />
-        <Stack.Screen name="meetup/register" options={{ headerShown: false }} />
-        <Stack.Screen name="meetup/pickup" options={{ headerShown: false }} />
-        <Stack.Screen name="meetup/my-bookings" options={{ headerShown: false }} />
         <Stack.Screen name="blood-test" options={{ headerShown: false }} />
         <Stack.Screen name="cart" options={{ headerShown: false }} />
         <Stack.Screen name="physio-fitness" options={{ headerShown: false }} />
         <Stack.Screen name="fitness" options={{ headerShown: false }} />
         <Stack.Screen name="physio" options={{ headerShown: false }} />
         <Stack.Screen name="scan-ecg" options={{ headerShown: false }} />
-        <Stack.Screen name="scan-ecg/index" options={{ headerShown: false }} />
         <Stack.Screen name="meal-service" options={{ headerShown: false }} />
         <Stack.Screen name="medical-equipment" options={{ headerShown: false }} />
         <Stack.Screen name="order-medicines" options={{ headerShown: false }} />
@@ -190,12 +189,6 @@ function RootLayoutContent() {
         <Stack.Screen name="smart-upgrade" options={{ headerShown: false }} />
         <Stack.Screen name="hospital-trip" options={{ headerShown: false }} />
         <Stack.Screen name="tech-helper" options={{ headerShown: false }} />
-
-        {/* Legacy index-based references (kept for compatibility) */}
-        <Stack.Screen name="smart-upgrade/index" options={{ headerShown: false }} />
-        <Stack.Screen name="hospital-trip/index" options={{ headerShown: false }} />
-        <Stack.Screen name="blood-test/index" options={{ headerShown: false }} />
-        <Stack.Screen name="tech-helper/index" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </NavigationThemeProvider>

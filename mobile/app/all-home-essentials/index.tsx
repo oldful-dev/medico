@@ -110,7 +110,7 @@ export default function AllHomeEssentialsScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => router.canGoBack() ? router.back() : router.replace('/all-ayuxa-services')}
         >
           <Ionicons
             name="arrow-back"
@@ -153,8 +153,8 @@ export default function AllHomeEssentialsScreen() {
           <View style={styles.listContainer}>
             {services.map((item, i) => {
               const key = item.slug ? item.slug.replace(/-/g, "_") : "";
-              const displayHeadline = key ? t(`services.${key}`, item.headline || item.name || "") : (item.headline || item.name || "");
-              const displaySubhead = key ? t(`services.${key}_subhead`, item.subhead || item.tagline || "") : (item.subhead || item.tagline || "");
+              const displayHeadline = item.headline || item.name || (key ? t(`services.${key}`) : "");
+              const displaySubhead = item.subhead || item.tagline || (key ? t(`services.${key}_subhead`) : "");
 
               return (
                 <TouchableOpacity

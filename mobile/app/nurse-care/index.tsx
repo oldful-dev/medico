@@ -150,7 +150,7 @@ export default function BookNursingCareScreen() {
         locationDenied,
         isLoading: isLoadingInit,
         isReady
-    } = useServiceInitialization('home-nurse');
+    } = useServiceInitialization('nurse-care');
 
     const [selectedAddress, setSelectedAddress] = React.useState<AddressData | null>(null);
     const [addressInitialized, setAddressInitialized] = React.useState(false);
@@ -288,13 +288,22 @@ export default function BookNursingCareScreen() {
                 },
             });
 
+            const calculatedPrice = (() => {
+                let base = servicePrice > 0 ? servicePrice : 499;
+                if (selectedDuration.includes('Short')) base = 499;
+                else if (selectedDuration.includes('Full') || selectedDuration.includes('8') || selectedDuration.includes('12')) base = 1299;
+                else if (selectedDuration.includes('24')) base = 2499;
+                if (selectedStaff === 'Qualified Nurse') base += 200;
+                return base;
+            })();
+
             router.push({
                 pathname: '/service-checkout',
                 params: {
                     bookingPayload,
-                    amount: String(servicePrice),
-                    label: serviceName,
-                    serviceSlug: 'home-nurse',
+                    amount: String(calculatedPrice),
+                    label: `${serviceName} (${selectedDuration})`,
+                    serviceSlug: 'nurse-care',
                     ...(params.subscriptionId && { subscriptionId: params.subscriptionId }),
                 },
             });
@@ -320,7 +329,7 @@ export default function BookNursingCareScreen() {
                             if (router.canGoBack()) {
                                 router.back();
                             } else {
-                                router.replace('/(tabs)' as any);
+                                router.replace('/all-ayuxa-services' as any);
                             }
                         }}
                         style={dynamicStyles.backButton}

@@ -39,7 +39,9 @@ const imgCancer = require("@/assets/images/12a939ac9402eccf1948ba9378dc7ffb07838
 const imgDental = require("@/assets/images/2e704f53861f02d36dae70114611506893870ca5.png");
 const imgRadioIcon = require("@/assets/images/9e6f2fbe6164dacc5707082a5ca833130f9cddd9.png");
 const imgOther = require("@/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png");
-const imgHospitalIcon = require("@/assets/images/e1baef7b977f856b4e0401f74fbf21e0ce5348f7.png");
+const imgGeriatrician = require("@/assets/images/geriatrician.png");
+
+const imgHospitalIcon = require("@/assets/images/meds.png");
 
 export default function HospitalTripScreen() {
   const { t } = useTranslation();
@@ -99,15 +101,45 @@ export default function HospitalTripScreen() {
   }, [address]);
 
   const SPECIALISTS = [
-    { id: "eye", label: t("hospital_trip.eye_specialist"), icon: imgEye },
-    { id: "brain", label: t("hospital_trip.brain_nerves"), icon: imgBrain },
-    { id: "kidney", label: t("hospital_trip.kidney_urinary"), icon: imgKidney },
-    { id: "lungs", label: t("hospital_trip.lungs_breathing"), icon: imgLungs },
-    { id: "dental", label: t("hospital_trip.dental_care"), icon: imgDental },
+    {
+      id: "eye",
+      label: t("hospital_trip.eye_specialist", "Eye Specialist"),
+      icon: imgEye,
+    },
+    {
+      id: "brain",
+      label: t("hospital_trip.brain_nerves", "Brain & Nerves"),
+      icon: imgBrain,
+    },
+    {
+      id: "kidney",
+      label: t("hospital_trip.kidney_urinary", "Kidney & Urinary"),
+      icon: imgKidney,
+    },
+    {
+      id: "lungs",
+      label: t("hospital_trip.lungs_breathing", "Lungs & Breathing"),
+      icon: imgLungs,
+    },
+    {
+      id: "dental",
+      label: t("hospital_trip.dental_care", "Dental Care"),
+      icon: imgDental,
+    },
     {
       id: "cancer",
-      label: t("hospital_trip.cancer_specialist"),
+      label: t("hospital_trip.cancer_specialist", "Cancer Specialist"),
       icon: imgCancer,
+    },
+    {
+      id: "geriatrician",
+      label: t("hospital_trip.geriatrician", "Geriatrician"),
+      icon: imgGeriatrician,
+    },
+    {
+      id: "medicine",
+      label: t("hospital_trip.medicine", "Medicine"),
+      icon: imgHospitalIcon,
     },
     {
       id: "other",
@@ -651,7 +683,7 @@ const makeStyles = (isDarkMode: boolean) =>
         default: "System",
       }),
       fontSize: 18,
-      color: '#FAF7ED',
+      color: "#FAF7ED",
       letterSpacing: -0.24,
     },
     headerSubtitle: {
@@ -681,14 +713,14 @@ const makeStyles = (isDarkMode: boolean) =>
         default: "System",
       }),
       fontSize: 10,
-      color: '#FAF7ED',
+      color: "#FAF7ED",
       letterSpacing: 0.5,
     },
 
     /* --- Main Content Container (Cream Box) --- */
     contentContainer: {
       flex: 1,
-      backgroundColor: isDarkMode ? "#0F172A" : '#FAF7ED',
+      backgroundColor: isDarkMode ? "#0F172A" : "#FAF7ED",
       borderTopLeftRadius: 45,
       borderTopRightRadius: 45,
       shadowColor: "#000",
@@ -840,7 +872,7 @@ const makeStyles = (isDarkMode: boolean) =>
     inputCard: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: isDarkMode ? "#1E293B" : '#FAF7ED',
+      backgroundColor: isDarkMode ? "#1E293B" : "#FAF7ED",
       borderRadius: 10,
       paddingHorizontal: 15,
       height: 57,
@@ -936,7 +968,7 @@ const makeStyles = (isDarkMode: boolean) =>
       marginLeft: 20,
       marginRight: 10,
       marginBottom: 15,
-      backgroundColor: isDarkMode ? "#1E293B" : '#FAF7ED',
+      backgroundColor: isDarkMode ? "#1E293B" : "#FAF7ED",
     },
     otherSpecialistInput: {
       height: 53,
@@ -947,7 +979,7 @@ const makeStyles = (isDarkMode: boolean) =>
       paddingHorizontal: 15,
       marginTop: 15,
       marginBottom: 5,
-      backgroundColor: isDarkMode ? "#1E293B" : '#FAF7ED',
+      backgroundColor: isDarkMode ? "#1E293B" : "#FAF7ED",
     },
     doctorTextInput: {
       fontFamily: Platform.select({
@@ -1029,7 +1061,7 @@ const makeStyles = (isDarkMode: boolean) =>
 
     /* --- Add-ons Container --- */
     addonsContainer: {
-      backgroundColor: isDarkMode ? "#1A1A1A" : '#FAF7ED',
+      backgroundColor: isDarkMode ? "#1A1A1A" : "#FAF7ED",
       borderRadius: 11,
       padding: 20,
       paddingBottom: 15,
@@ -1139,7 +1171,7 @@ const makeStyles = (isDarkMode: boolean) =>
         android: "LexendDeca_500Medium",
         default: "System",
       }),
-      color: '#FAF7ED',
+      color: "#FAF7ED",
       fontSize: 15,
     },
   });

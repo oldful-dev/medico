@@ -81,7 +81,7 @@ export default function CartOrderSummaryScreen() {
         }
     };
 
-    const handlePaymentSuccess = (bookingId: string) => {
+    const handlePaymentSuccess = (bookingId: string, isCod: boolean = false) => {
         // Clear only the checked-out items if provided, otherwise clear the category
         if (params.selectedItemIds) {
             removeItems(params.selectedItemIds.split(','));
@@ -95,6 +95,7 @@ export default function CartOrderSummaryScreen() {
                 bookingId,
                 amount: String(totalAmount),
                 category,
+                isCod: isCod ? 'true' : undefined,
             },
         } as any);
     };
@@ -125,7 +126,7 @@ export default function CartOrderSummaryScreen() {
             }
 
             if (selectedMethod === 'CASH') {
-                handlePaymentSuccess(bookingId);
+                handlePaymentSuccess(bookingId, true);
                 return;
             }
 

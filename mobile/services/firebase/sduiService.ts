@@ -203,7 +203,7 @@ const sortByOrder = <T extends { sort_order?: number }>(arr: T[]): T[] =>
 // In-memory cache for home configuration layout
 let cachedConfig: HomeConfig | null = null;
 let lastFetchTime = 0;
-const THROTTLE_MS = 15000;
+const THROTTLE_MS = 24 * 60 * 60 * 1000; // 24 Hours refresh interval
 
 // ─── SDUI Service ─────────────────────────────────────────────────────────────
 

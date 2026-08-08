@@ -750,3 +750,5 @@ const makeStyles = (isDarkMode: boolean, colors: ThemeColors) =>
         },
         bookBtnText: { color: '#FAF7ED', fontSize: 14, fontWeight: '700' },
     });
+
+export default BloodTestDetailModal;

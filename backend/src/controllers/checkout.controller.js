@@ -183,13 +183,19 @@ exports.calculateCheckout = async (req, res) => {
         }
         const totalAmount = serviceFeeVal + Number(diagnosticFee) + extraFeesSum + taxes;
 
+        const providerRevenue = serviceFeeVal + Number(diagnosticFee);
+        const ayuxaRevenue = extraFeesSum;
+
         res.status(200).json({
             success: true,
             data: {
                 totalAmount,
                 requiredPlanType,
                 taxPercentage: taxPercentage > 0 ? taxPercentage : 18,
+                ayuxaRevenue,
+                providerRevenue,
                 breakdown: {
+                    serviceFee: serviceFeeVal,
                     vendorFee: serviceFeeVal,
                     diagnosticFee: Number(diagnosticFee),
                     bookingFee,
@@ -200,7 +206,10 @@ exports.calculateCheckout = async (req, res) => {
                     nightCharge,
                     surgeCharge,
                     taxes,
-                    ayuxaServiceFee: extraFeesSum,
+                    ayuxaPlatformCharge: extraFeesSum,
+                    ayuxaServiceFee: extraFeesSum, // Deprecated fallback alias
+                    ayuxaRevenue,
+                    providerRevenue,
                     benefitDiscount: -benefitDiscount,
                     originalBookingFee: config && config.isActive ? config.bookingFee : 299,
                     originalPlatformFee: config && config.isActive ? config.platformFee : 50,

@@ -53,9 +53,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
 
     const lastLoadTimeRef = useRef<number>(0);
-    const THROTTLE_MS = 15000;
+    const THROTTLE_MS = 24 * 60 * 60 * 1000; // 24 Hours refresh interval
+
+    const loadServices = useCallback(async () => {
+        try {
+            const res = await serviceCatalogService.getServices();
+            if (res.success && res.data) {
+                setServices(res.data);
+            }
+        } catch (error) {
+            console.error('Failed to load services catalog:', error);
+        }
+    }, []);
 
     const loadData = useCallback(async (force = false) => {
+        // Always load services catalog so layout is 100% dynamic
+        loadServices();
+
         if (!isAuthenticated) return;
         const now = Date.now();
         if (!force && lastLoadTimeRef.current > 0 && (now - lastLoadTimeRef.current < THROTTLE_MS)) {
@@ -63,11 +77,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
         setIsLoading(true);
         try {
-            const [profileRes, servicesRes] = await Promise.all([
-                userService.getProfile(),
-                serviceCatalogService.getServices()
-            ]);
-
+            const profileRes = await userService.getProfile();
             if (profileRes.success && profileRes.data) {
                 setProfile(profileRes.data);
                 if (profileRes.data.preferredLanguage) {
@@ -75,29 +85,55 @@ export function UserProvider({ children }: { children: ReactNode }) {
                     i18n.changeLanguage(profileRes.data.preferredLanguage);
                 }
             }
-
-            if (servicesRes.success && servicesRes.data) {
-                setServices(servicesRes.data);
-            }
             lastLoadTimeRef.current = Date.now();
         } catch (error) {
-            console.error('Failed to load user/service data:', error);
+            console.error('Failed to load user profile data:', error);
         } finally {
             setIsLoading(false);
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, loadServices]);
 
     useEffect(() => {
+        loadServices();
         if (isAuthenticated) {
             loadData();
         } else {
             setProfile(null);
-            setServices([]);
         }
-    }, [isAuthenticated, loadData]);
+    }, [isAuthenticated, loadData, loadServices]);
 
     const getServiceBySlug = (slug: string) => {
-        return services.find(s => s.slug === slug);
+        if (!slug) return undefined;
+        const cleanSlug = slug.toLowerCase().replace(/_/g, '-');
+        const cleanRoute = `/${cleanSlug}`;
+
+        return services.find(s => {
+            if (!s) return false;
+            const sSlug = (s.slug || '').toLowerCase().replace(/_/g, '-');
+            const sRoute = (s.route || '').toLowerCase();
+            if (sSlug === cleanSlug) return true;
+            if (sRoute === cleanRoute || sRoute === cleanSlug) return true;
+
+            // Alias matching for Home Essentials & Services
+            const ALIASES: Record<string, string[]> = {
+                'appliance-repair': ['appliance-repair', 'ac-repair', 'acrepair', 'appliance'],
+                'plumbing-electrical': ['plumbing-electrical', 'plumbing', 'electrician', 'plumber'],
+                'deep-cleaning': ['deep-cleaning', 'cleaning', 'pest-control', 'pestcontrol'],
+                'driving-cab': ['driving-cab', 'driver', 'car-service', 'carservice'],
+                'grocery-run': ['grocery-run', 'grocery', 'gerocery'],
+                'bill-payment': ['bill-payment', 'bills'],
+                'bank-paperwork': ['bank-paperwork', 'paper-work', 'paperwork'],
+                'paper-legal': ['paper-legal', 'legal-help', 'legal'],
+                'anything-else': ['anything-else', 'washroom', 'anything'],
+                'tech-helper': ['tech-helper', 'tech'],
+                'sanitisation': ['sanitisation', 'washroom-sanitisation'],
+                'trip-travels': ['trip-travels', 'trips-tours', 'trip-travel'],
+                'smart-upgrade': ['smart-upgrade', 'smart_upgrade']
+            };
+
+            const aliases = ALIASES[cleanSlug] || [];
+            return aliases.includes(sSlug);
+        });
     };
 
     return (

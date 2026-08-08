@@ -985,16 +985,26 @@ const downloadInvoice = async (req, res, next) => {
             return res.status(403).json({ success: false, message: 'Not authorized' });
         }
 
-        const payment = booking.payments[0];
-        if (!payment || !payment.invoice) {
-            return res.status(404).json({ success: false, message: 'Invoice not found for this booking' });
-        }
-
-        const invoiceData = {
+        const payment = (booking.payments || [])[0];
+        const invoiceData = payment && payment.invoice ? {
             ...payment.invoice,
-            billingName: booking.user.name,
+            billingName: booking.user?.name || 'Customer',
             billingAddress: booking.addressLine || 'N/A',
-            description: `${booking.service.name} (${booking.bookingCode})`,
+            billingPhone: booking.user?.phone || 'N/A',
+            description: `${booking.service?.name || 'Healthcare Service'} (${booking.bookingCode})`,
+        } : {
+            invoiceNumber: `INV-${booking.bookingCode || booking.id.slice(-8).toUpperCase()}`,
+            invoiceDate: booking.createdAt || new Date(),
+            billingName: booking.user?.name || 'Customer',
+            billingAddress: booking.addressLine || 'N/A',
+            billingPhone: booking.user?.phone || 'N/A',
+            description: `${booking.service?.name || 'Healthcare Service'} (${booking.bookingCode})`,
+            serviceFee: Math.max(0, Number(booking.amount || 0) - 349),
+            ayuxaPlatformCharge: Math.min(349, Number(booking.amount || 0)),
+            subtotal: Number(booking.amount || 0),
+            gstRate: 18,
+            gstAmount: Math.round(Number(booking.amount || 0) * 0.18 * 100) / 100,
+            totalAmount: Number(booking.amount || 0)
         };
 
         const pdfBuffer = await generateInvoicePDF(invoiceData);

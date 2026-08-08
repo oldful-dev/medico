@@ -20,7 +20,11 @@ export default function BloodTestSuccessScreen() {
         bookingId?: string;
         amount?: string;
         packageName?: string;
+        isCod?: string;
+        isCash?: string;
     }>();
+
+    const isCod = params.isCod === 'true' || params.isCash === 'true';
 
     const bg = isDarkMode ? '#121212' : '#FAF7ED';
     const cardBg = isDarkMode ? '#1E1E1E' : '#F8FAF9';
@@ -37,7 +41,10 @@ export default function BloodTestSuccessScreen() {
     const details = [
         { label: t('blood_test_success.booking_id'), value: `#${params.bookingId || 'BT124567'}` },
         { label: t('blood_test_success.package_label'), value: params.packageName || 'Blood Test' },
-        { label: t('blood_test_success.amount_paid'), value: `₹${params.amount || '0'}` },
+        { 
+            label: isCod ? 'Payable Amount (COD)' : t('blood_test_success.amount_paid'), 
+            value: `₹${params.amount || '0'}` 
+        },
     ];
 
     return (
@@ -55,9 +62,14 @@ export default function BloodTestSuccessScreen() {
                             <Ionicons name="checkmark" size={36} color="#FFFFFF" />
                         </View>
                     </View>
-                    <Text style={[styles.title, { color: textPrimary }]}>{t('blood_test_success.payment_successful')}</Text>
+                    <Text style={[styles.title, { color: textPrimary }]}>
+                        {isCod ? 'Booking Confirmed!' : t('blood_test_success.payment_successful')}
+                    </Text>
                     <Text style={[styles.subtitle, { color: textMuted }]}>
-                        {t('blood_test_success.booked_successfully')}
+                        {isCod 
+                            ? 'Your blood test has been scheduled. Please pay in cash at sample collection.'
+                            : t('blood_test_success.booked_successfully')
+                        }
                     </Text>
                 </View>
 
