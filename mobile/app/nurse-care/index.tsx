@@ -149,8 +149,32 @@ export default function BookNursingCareScreen() {
         setAddress,
         locationDenied,
         isLoading: isLoadingInit,
-        isReady
+        isReady,
+        dbService
     } = useServiceInitialization('nurse-care');
+
+    // Parse duration prices dynamically from admin formFieldsJson / dbService or fall back to defaults
+    const durationPrices = React.useMemo(() => {
+        let short = 499;
+        let full = 1299;
+        let addon = 200;
+
+        if (dbService?.formFieldsJson?.sections) {
+            const durationSec = dbService.formFieldsJson.sections.find((s: any) => s.id === 'duration');
+            if (durationSec?.fields?.[0]?.options) {
+                const shortOpt = durationSec.fields[0].options.find((o: any) => o.id === 'short_visit' || o.label?.includes('Short'));
+                if (shortOpt?.price) short = Number(shortOpt.price);
+
+                const fullOpt = durationSec.fields[0].options.find((o: any) => o.id === '12hr_night' || o.id === 'full_shift' || o.label?.includes('Shift') || o.label?.includes('8') || o.label?.includes('12'));
+                if (fullOpt?.price) full = Number(fullOpt.price);
+            }
+        }
+        if (dbService?.basePrice && dbService.basePrice > 0) {
+            short = Number(dbService.basePrice);
+        }
+
+        return { short, full, addon };
+    }, [dbService]);
 
     const [selectedAddress, setSelectedAddress] = React.useState<AddressData | null>(null);
     const [addressInitialized, setAddressInitialized] = React.useState(false);
@@ -289,11 +313,11 @@ export default function BookNursingCareScreen() {
             });
 
             const calculatedPrice = (() => {
-                let base = servicePrice > 0 ? servicePrice : 499;
-                if (selectedDuration.includes('Short')) base = 499;
-                else if (selectedDuration.includes('Full') || selectedDuration.includes('8') || selectedDuration.includes('12')) base = 1299;
+                let base = durationPrices.short;
+                if (selectedDuration.includes('Short')) base = durationPrices.short;
+                else if (selectedDuration.includes('Full') || selectedDuration.includes('8') || selectedDuration.includes('12')) base = durationPrices.full;
                 else if (selectedDuration.includes('24')) base = 2499;
-                if (selectedStaff === 'Qualified Nurse') base += 200;
+                if (selectedStaff === 'Qualified Nurse') base += durationPrices.addon;
                 return base;
             })();
 
@@ -481,7 +505,12 @@ export default function BookNursingCareScreen() {
                                         size={18}
                                         color={selectedDuration === 'Short Visit (2 Hours)' ? "#02743F" : "#AAAEAC"}
                                     />
-                                    <Text style={dynamicStyles.radioLabelStacked}>Short Visit (2 Hours)</Text>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', flex: 1, alignItems: 'center', marginLeft: 8 }}>
+                                        <Text style={dynamicStyles.radioLabelStacked}>Short Visit (2 Hours)</Text>
+                                        <View style={{ backgroundColor: selectedDuration === 'Short Visit (2 Hours)' ? '#E8F5E9' : 'rgba(0,0,0,0.04)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: selectedDuration === 'Short Visit (2 Hours)' ? '#C8E6C9' : 'transparent' }}>
+                                            <Text style={{ fontSize: 13, fontWeight: '700', color: selectedDuration === 'Short Visit (2 Hours)' ? '#02743F' : '#555' }}>₹{durationPrices.short}</Text>
+                                        </View>
+                                    </View>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
@@ -493,7 +522,12 @@ export default function BookNursingCareScreen() {
                                         size={18}
                                         color={selectedDuration === 'Full Shift (8 Hours)' ? "#02743F" : "#AAAEAC"}
                                     />
-                                    <Text style={dynamicStyles.radioLabelStacked}>Full Shift (8 Hours)</Text>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', flex: 1, alignItems: 'center', marginLeft: 8 }}>
+                                        <Text style={dynamicStyles.radioLabelStacked}>Full Shift (8 Hours)</Text>
+                                        <View style={{ backgroundColor: selectedDuration === 'Full Shift (8 Hours)' ? '#E8F5E9' : 'rgba(0,0,0,0.04)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: selectedDuration === 'Full Shift (8 Hours)' ? '#C8E6C9' : 'transparent' }}>
+                                            <Text style={{ fontSize: 13, fontWeight: '700', color: selectedDuration === 'Full Shift (8 Hours)' ? '#02743F' : '#555' }}>₹{durationPrices.full}</Text>
+                                        </View>
+                                    </View>
                                 </TouchableOpacity>
                             </View>
 
