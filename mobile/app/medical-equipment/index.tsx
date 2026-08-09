@@ -102,7 +102,7 @@ export default function MedicalEquipmentScreen() {
             } else {
                 await userService.addAddress(profile.id, payload);
             }
-            await refreshData(true);
+            await refreshData();
         } catch {
             // non-fatal
         }

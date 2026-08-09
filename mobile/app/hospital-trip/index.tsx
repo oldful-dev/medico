@@ -176,7 +176,7 @@ export default function HospitalTripScreen() {
       } else {
         await userService.addAddress(profile.id, payload);
       }
-      await refreshData(true);
+      await refreshData();
     } catch {
       // non-fatal — booking still proceeds
     }
