@@ -128,6 +128,12 @@ const SMS_TEMPLATES = {
         variables: 3,
         text: 'Dear {#var#}, care plan for {#var#} cancelled/expired. Contact {#var#}. Team Ayuxa.',
     },
+    ADMIN_NEW_ORDER: {
+        senderId: 'AYUXAH',
+        templateId: '222576',
+        variables: 2,
+        text: 'AYUXA NEW ORDER ALERT: Order ID: {#var#}  | Schedule on: {#var#} | Please log in to the admin portal immediately to review and initiate processing. Ayuxa Backend Team.',
+    },
 };
 
 module.exports = { SMS_TEMPLATES };
