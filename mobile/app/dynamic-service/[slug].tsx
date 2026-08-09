@@ -14,6 +14,7 @@ import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { Ionicons } from '@expo/vector-icons';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
+import { safeScrollToPosition } from '@/utils/scrollUtils';
 
 const isEmoji = (str?: string) => {
   if (!str) return false;
@@ -206,11 +207,7 @@ export default function DynamicServiceScreen() {
       const firstErrorField = Object.keys(errs).find(f => sectionPositions.current[f] !== undefined);
       if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
         const targetY = sectionPositions.current[firstErrorField] - 20;
-        if (typeof scrollViewRef.current?.scrollToPosition === 'function') {
-          scrollViewRef.current.scrollToPosition(0, targetY, true);
-        } else if (typeof scrollViewRef.current?.scrollTo === 'function') {
-          scrollViewRef.current.scrollTo({ y: targetY, animated: true });
-        }
+        safeScrollToPosition(scrollViewRef, targetY);
       }
       return;
     }

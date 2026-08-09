@@ -14,6 +14,7 @@ import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { type AddressData } from '@/components/AddressPickerSection';
 import { userService } from '@/services/api/userService';
+import { safeScrollToPosition } from '@/utils/scrollUtils';
 
 // Map icons manually to match assets
 const acRepairIcon = require('@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png');
@@ -271,11 +272,7 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
       const firstErrorField = ['address', 'date', 'photo', 'comments'].find(f => errs[f]);
       if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
         const targetY = sectionPositions.current[firstErrorField] - 20;
-        if (typeof scrollViewRef.current?.scrollToPosition === 'function') {
-          scrollViewRef.current.scrollToPosition(0, targetY, true);
-        } else if (typeof scrollViewRef.current?.scrollTo === 'function') {
-          scrollViewRef.current.scrollTo({ y: targetY, animated: true });
-        }
+        safeScrollToPosition(scrollViewRef, targetY);
       }
       return;
     }

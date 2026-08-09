@@ -14,6 +14,7 @@ import { locationService } from '@/services/device/locationService';
 import FormInput from '@/components/common/FormInput';
 import * as ImagePicker from 'expo-image-picker';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
+import { safeScrollToPosition } from '@/utils/scrollUtils';
 import { familyMemberService, FamilyMember } from '@/services/api/familyMemberService';
 import { useUser } from '@/context/UserContext';
 import { Spacing } from '@/constants/theme';
@@ -289,12 +290,7 @@ export default function BookNursingCareScreen() {
             const firstErrorField = ['address', 'duration', 'condition', 'gender', 'date'].find(f => errs[f]);
             if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
                 const targetY = sectionPositions.current[firstErrorField] - 20;
-                const sv = scrollViewRef.current as any;
-                if (typeof sv?.scrollToPosition === 'function') {
-                    sv.scrollToPosition(0, targetY, true);
-                } else if (typeof sv?.scrollTo === 'function') {
-                    sv.scrollTo({ y: targetY, animated: true });
-                }
+                safeScrollToPosition(scrollViewRef, targetY);
             }
             return;
         }
