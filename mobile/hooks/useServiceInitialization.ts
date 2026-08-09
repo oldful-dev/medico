@@ -131,5 +131,6 @@ export function useServiceInitialization(slug: string) {
         // Location runs in the background and never blocks the button.
         isLoading: isCatalogLoading,
         isReady,
+        dbService: getServiceBySlug(slug),
     };
 }
