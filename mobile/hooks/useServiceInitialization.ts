@@ -87,7 +87,6 @@ export function useServiceInitialization(slug: string) {
 
         // Try context catalog first (fast path — usually already loaded)
         const svc = getServiceBySlug(slug);
-        console.log(`[useServiceInitialization] slug="${slug}" getServiceBySlug resolved:`, svc ? { id: svc.id, name: svc.name } : 'NOT_FOUND');
         if (svc) {
             setServiceId(svc.id);
             setServiceName(svc.name || '');
@@ -98,11 +97,9 @@ export function useServiceInitialization(slug: string) {
         // Fallback: direct API call when context service is not resolved yet
         (async () => {
             try {
-                console.log(`[useServiceInitialization] fetching fallback /services for slug="${slug}"...`);
                 const res = await apiClient.get<any[]>('/services');
                 if (res.success && res.data) {
                     const found = res.data.find((s: any) => s.slug === slug);
-                    console.log(`[useServiceInitialization] fallback query resolved found:`, found ? { id: found.id, name: found.name } : 'NOT_FOUND');
                     if (found) {
                         setServiceId(found.id);
                         setServiceName(found.name || '');
@@ -116,7 +113,6 @@ export function useServiceInitialization(slug: string) {
     }, [profile, getServiceBySlug, slug, selectedCityId, services]);
 
     const isReady = !!cityId && !!serviceId;
-    console.log(`[useServiceInitialization] render isReady=${isReady} cityId="${cityId}" serviceId="${serviceId}"`);
 
     return {
         cityId,
