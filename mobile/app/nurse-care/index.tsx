@@ -160,14 +160,19 @@ export default function BookNursingCareScreen() {
         let addon = 200;
 
         if (dbService?.formFieldsJson?.sections) {
-            const durationSec = dbService.formFieldsJson.sections.find((s: any) => s.id === 'duration');
-            if (durationSec?.fields?.[0]?.options) {
-                const shortOpt = durationSec.fields[0].options.find((o: any) => o.id === 'short_visit' || o.label?.includes('Short') || o.label?.includes('2'));
-                if (shortOpt?.price && Number(shortOpt.price) > 0) short = Number(shortOpt.price);
+            dbService.formFieldsJson.sections.forEach((sec: any) => {
+                if (sec.fields) {
+                    sec.fields.forEach((f: any) => {
+                        if (f.options && Array.isArray(f.options)) {
+                            const shortOpt = f.options.find((o: any) => o.id === 'short_visit' || o.label?.includes('Short') || o.label?.includes('2'));
+                            if (shortOpt?.price && Number(shortOpt.price) > 0) short = Number(shortOpt.price);
 
-                const fullOpt = durationSec.fields[0].options.find((o: any) => o.id === '12hr_night' || o.id === 'full_shift' || o.label?.includes('Shift') || o.label?.includes('8') || o.label?.includes('12'));
-                if (fullOpt?.price && Number(fullOpt.price) > 0) full = Number(fullOpt.price);
-            }
+                            const fullOpt = f.options.find((o: any) => o.id === '12hr_night' || o.id === 'full_shift' || o.label?.includes('Shift') || o.label?.includes('8') || o.label?.includes('12'));
+                            if (fullOpt?.price && Number(fullOpt.price) > 0) full = Number(fullOpt.price);
+                        }
+                    });
+                }
+            });
         } else {
             if (dbService?.basePrice && dbService.basePrice > 0) {
                 if (dbService.basePrice <= 800) {
