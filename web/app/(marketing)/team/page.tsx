@@ -137,7 +137,7 @@ export default function TeamPage() {
               The Missionaries of <span className="text-[var(--color-primary)] italic">Care</span>
             </h1>
             <p className="text-lg md:text-xl text-[var(--color-text-body)] leading-relaxed opacity-80">
-              Meet our dedicated leaders, medical division, nursing experts, shareholders, and caregivers committed to senior citizens well-being.
+              Meet our dedicated management team committed to senior citizens' well-being.
             </p>
           </motion.div>
         </div>
@@ -152,10 +152,6 @@ export default function TeamPage() {
       ) : (
         <div className="pb-12">
           {renderSection('Management', 'management', teamData.management)}
-          {renderSection('Shareholders', 'shareholders', teamData.shareholders)}
-          {renderSection('Doctors', 'doctors', teamData.doctors)}
-          {renderSection('Nurses', 'nurses', teamData.nurses)}
-          {renderSection('Caregivers', 'caregivers', teamData.caregivers)}
         </div>
       )}
 

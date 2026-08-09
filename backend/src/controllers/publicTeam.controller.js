@@ -23,28 +23,6 @@ const getPublicTeam = async (req, res, next) => {
             orderBy: { createdAt: 'asc' }
         });
 
-        // 2. Fetch all caregivers who are not rejected
-        const caregivers = await prisma.caregiver.findMany({
-            where: {
-                policeVerification: {
-                    not: 'REJECTED'
-                }
-            },
-            select: {
-                id: true,
-                name: true,
-                phone: true,
-                email: true,
-                specialization: true,
-                qualification: true,
-                profileImageUrl: true,
-                documentsJson: true,
-                city: { select: { name: true } },
-                createdAt: true
-            },
-            orderBy: { performanceRating: 'desc' }
-        });
-
         // Helper to normalize the role/category and extra attributes
         const normalizeMember = (item, isManagement) => {
             let docs = {};
@@ -86,32 +64,12 @@ const getPublicTeam = async (req, res, next) => {
 
         const managementList = admins.map(admin => normalizeMember(admin, true));
 
-        const shareholdersList = [];
-        const doctorsList = [];
-        const nursesList = [];
-        const caregiversList = [];
-
-        caregivers.forEach(cg => {
-            const spec = (cg.specialization || '').toLowerCase();
-            const member = normalizeMember(cg, false);
-
-            if (spec.includes('shareholder')) {
-                shareholdersList.push(member);
-            } else if (spec.includes('doctor')) {
-                doctorsList.push(member);
-            } else if (spec.includes('nurse')) {
-                nursesList.push(member);
-            } else {
-                caregiversList.push(member);
-            }
-        });
-
         sendResponse(res, 200, {
             management: managementList,
-            shareholders: shareholdersList,
-            doctors: doctorsList,
-            nurses: nursesList,
-            caregivers: caregiversList
+            shareholders: [],
+            doctors: [],
+            nurses: [],
+            caregivers: []
         }, 'Public team directory retrieved successfully');
     } catch (error) {
         next(error);
