@@ -289,10 +289,11 @@ export default function BookNursingCareScreen() {
             const firstErrorField = ['address', 'duration', 'condition', 'gender', 'date'].find(f => errs[f]);
             if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
                 const targetY = sectionPositions.current[firstErrorField] - 20;
-                if (typeof scrollViewRef.current?.scrollToPosition === 'function') {
-                    scrollViewRef.current.scrollToPosition(0, targetY, true);
-                } else if (typeof scrollViewRef.current?.scrollTo === 'function') {
-                    scrollViewRef.current.scrollTo({ y: targetY, animated: true });
+                const sv = scrollViewRef.current as any;
+                if (typeof sv?.scrollToPosition === 'function') {
+                    sv.scrollToPosition(0, targetY, true);
+                } else if (typeof sv?.scrollTo === 'function') {
+                    sv.scrollTo({ y: targetY, animated: true });
                 }
             }
             return;
