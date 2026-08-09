@@ -193,6 +193,10 @@ export default function BookNursingCareScreen() {
         return { short, full, addon };
     }, [dbService]);
 
+    const [formErrors, setFormErrors] = React.useState<Record<string, string | undefined>>({});
+    const scrollViewRef = React.useRef<ScrollView>(null);
+    const sectionPositions = React.useRef<Record<string, number>>({});
+
     const [selectedAddress, setSelectedAddress] = React.useState<AddressData | null>(null);
     const [addressInitialized, setAddressInitialized] = React.useState(false);
 
@@ -263,26 +267,29 @@ export default function BookNursingCareScreen() {
             Alert.alert(t('common.required'), 'Please select a family member.');
             return;
         }
-        if (!selectedStaff) {
-            Alert.alert(t('common.required'), t('nurse_care.alert_select_staff'));
-            return;
+        const errs: Record<string, string> = {};
+        if (!selectedAddress?.line1 && (!address || address.trim().length < 5)) {
+            errs.address = 'Please select or confirm your service address.';
         }
         if (!selectedDuration) {
-            Alert.alert(t('common.required'), t('nurse_care.alert_select_duration'));
-            return;
+            errs.duration = 'Please select preferred duration.';
+        }
+        if (!selectedCondition) {
+            errs.condition = 'Please select patient condition.';
+        }
+        if (!selectedGender) {
+            errs.gender = 'Please select preferred staff gender.';
         }
         if (!scheduledDate) {
-            Alert.alert(t('common.required'), 'Please select a date and time slot.');
-            return;
+            errs.date = 'Please select date & time slot.';
         }
-        if (!address || address.trim().length < 5) {
-            Alert.alert(t('nurse_care.alert_address_required'), locationDenied
-                ? t('nurse_care.alert_address_denied')
-                : t('nurse_care.alert_address_failed'));
-            return;
-        }
-        if (!isReady) {
-            Alert.alert(t('common.error'), t('booking.init_incomplete'));
+
+        if (Object.keys(errs).length > 0) {
+            setFormErrors(errs);
+            const firstErrorField = ['address', 'duration', 'condition', 'gender', 'date'].find(f => errs[f]);
+            if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
+                scrollViewRef.current?.scrollTo({ y: sectionPositions.current[firstErrorField] - 20, animated: true });
+            }
             return;
         }
         // Map duration to ShiftDuration enum
@@ -311,7 +318,7 @@ export default function BookNursingCareScreen() {
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
-                scheduledDate: scheduledDate.toISOString(),
+                scheduledDate: scheduledDate ? scheduledDate.toISOString() : new Date().toISOString(),
                 addressLine: address || undefined,
                 landmark: landmark || undefined,
                 staffType: selectedStaff === 'Qualified Nurse' ? 'qualified-nurse' : 'bedside-attendant',
@@ -383,6 +390,7 @@ export default function BookNursingCareScreen() {
                 <View style={[dynamicStyles.contentCard, { backgroundColor: isDarkMode ? '#252525' : '#FAF7ED' }]}>
                     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <KeyboardAwareScrollView
+                        ref={scrollViewRef as any}
                         style={dynamicStyles.scrollView}
                         contentContainerStyle={dynamicStyles.scrollContent}
                         showsVerticalScrollIndicator={false}
@@ -508,13 +516,13 @@ export default function BookNursingCareScreen() {
 
 
                         {/* ─── Preferred Duration ─── */}
-                        <View style={dynamicStyles.sectionContainer}>
+                        <View style={dynamicStyles.sectionContainer} onLayout={(e) => { sectionPositions.current['duration'] = e.nativeEvent.layout.y; }}>
                             <Text style={dynamicStyles.sectionTitle}>{t('nurse_care.duration')}</Text>
 
                             <View style={dynamicStyles.verticalStack}>
                                 <TouchableOpacity
                                     style={[dynamicStyles.durationCardStacked, selectedDuration === 'Short Visit (2 Hours)' && dynamicStyles.cardActive]}
-                                    onPress={() => setSelectedDuration('Short Visit (2 Hours)')}
+                                    onPress={() => { setSelectedDuration('Short Visit (2 Hours)'); setFormErrors(prev => ({ ...prev, duration: undefined })); }}
                                 >
                                     <Ionicons
                                         name={selectedDuration === 'Short Visit (2 Hours)' ? "radio-button-on" : "radio-button-off"}
@@ -531,7 +539,7 @@ export default function BookNursingCareScreen() {
 
                                 <TouchableOpacity
                                     style={[dynamicStyles.durationCardStacked, selectedDuration === 'Full Shift (8 Hours)' && dynamicStyles.cardActive]}
-                                    onPress={() => setSelectedDuration('Full Shift (8 Hours)')}
+                                    onPress={() => { setSelectedDuration('Full Shift (8 Hours)'); setFormErrors(prev => ({ ...prev, duration: undefined })); }}
                                 >
                                     <Ionicons
                                         name={selectedDuration === 'Full Shift (8 Hours)' ? "radio-button-on" : "radio-button-off"}
@@ -547,52 +555,62 @@ export default function BookNursingCareScreen() {
                                 </TouchableOpacity>
                             </View>
 
-                            <Text style={{ fontSize: 12, color: '#02743F', marginTop: 8, fontStyle: 'italic' }}>
-                                (Note: Rates vary based on selection)
-                            </Text>
+                            {formErrors.duration ? (
+                                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.duration}</Text>
+                            ) : (
+                                <Text style={{ fontSize: 12, color: '#02743F', marginTop: 8, fontStyle: 'italic' }}>
+                                    (Note: Rates vary based on selection)
+                                </Text>
+                            )}
                         </View>
 
                         {/* ─── Patient Condition ─── */}
-                        <View style={dynamicStyles.sectionContainer}>
+                        <View style={dynamicStyles.sectionContainer} onLayout={(e) => { sectionPositions.current['condition'] = e.nativeEvent.layout.y; }}>
                             <Text style={dynamicStyles.sectionTitle}>{t('nurse_care.condition')}</Text>
 
                             <View style={dynamicStyles.gridRow}>
-                                <TouchableOpacity style={[dynamicStyles.radioCard, selectedCondition === 'Walking/ Mobile' && dynamicStyles.cardActive]} onPress={() => setSelectedCondition('Walking/ Mobile')}>
+                                <TouchableOpacity style={[dynamicStyles.radioCard, selectedCondition === 'Walking/ Mobile' && dynamicStyles.cardActive]} onPress={() => { setSelectedCondition('Walking/ Mobile'); setFormErrors(prev => ({ ...prev, condition: undefined })); }}>
                                     <Ionicons name={selectedCondition === 'Walking/ Mobile' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedCondition === 'Walking/ Mobile' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('nurse_care.walking')}</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={[dynamicStyles.radioCard, selectedCondition === 'Bedridden' && dynamicStyles.cardActive]} onPress={() => setSelectedCondition('Bedridden')}>
+                                <TouchableOpacity style={[dynamicStyles.radioCard, selectedCondition === 'Bedridden' && dynamicStyles.cardActive]} onPress={() => { setSelectedCondition('Bedridden'); setFormErrors(prev => ({ ...prev, condition: undefined })); }}>
                                     <Ionicons name={selectedCondition === 'Bedridden' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedCondition === 'Bedridden' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('nurse_care.bedridden')}</Text>
                                 </TouchableOpacity>
                             </View>
                             <View style={dynamicStyles.gridRow}>
-                                <TouchableOpacity style={[dynamicStyles.radioCard, selectedCondition === 'Post-Surgery' && dynamicStyles.cardActive]} onPress={() => setSelectedCondition('Post-Surgery')}>
+                                <TouchableOpacity style={[dynamicStyles.radioCard, selectedCondition === 'Post-Surgery' && dynamicStyles.cardActive]} onPress={() => { setSelectedCondition('Post-Surgery'); setFormErrors(prev => ({ ...prev, condition: undefined })); }}>
                                     <Ionicons name={selectedCondition === 'Post-Surgery' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedCondition === 'Post-Surgery' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('nurse_care.post_surgery')}</Text>
                                 </TouchableOpacity>
                                 <View style={{ flex: 1, marginHorizontal: 4 }} />
                             </View>
+                            {formErrors.condition && (
+                                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.condition}</Text>
+                            )}
                         </View>
 
                         {/* ─── Gender preferences ─── */}
-                        <View style={dynamicStyles.sectionContainer}>
+                        <View style={dynamicStyles.sectionContainer} onLayout={(e) => { sectionPositions.current['gender'] = e.nativeEvent.layout.y; }}>
                             <Text style={dynamicStyles.sectionTitle}>{t('nurse_care.gender_pref')}</Text>
 
                             <View style={dynamicStyles.gridRow}>
-                                <TouchableOpacity style={[dynamicStyles.radioCardSmall, selectedGender === 'Male' && dynamicStyles.cardActive]} onPress={() => setSelectedGender('Male')}>
+                                <TouchableOpacity style={[dynamicStyles.radioCardSmall, selectedGender === 'Male' && dynamicStyles.cardActive]} onPress={() => { setSelectedGender('Male'); setFormErrors(prev => ({ ...prev, gender: undefined })); }}>
                                     <Ionicons name={selectedGender === 'Male' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Male' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('common.male')}</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={[dynamicStyles.radioCardSmall, selectedGender === 'Female' && dynamicStyles.cardActive]} onPress={() => setSelectedGender('Female')}>
+                                <TouchableOpacity style={[dynamicStyles.radioCardSmall, selectedGender === 'Female' && dynamicStyles.cardActive]} onPress={() => { setSelectedGender('Female'); setFormErrors(prev => ({ ...prev, gender: undefined })); }}>
                                     <Ionicons name={selectedGender === 'Female' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Female' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('common.female')}</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={[dynamicStyles.radioCardSmall, selectedGender === 'Any' && dynamicStyles.cardActive]} onPress={() => setSelectedGender('Any')}>
+                                <TouchableOpacity style={[dynamicStyles.radioCardSmall, selectedGender === 'Any' && dynamicStyles.cardActive]} onPress={() => { setSelectedGender('Any'); setFormErrors(prev => ({ ...prev, gender: undefined })); }}>
                                     <Ionicons name={selectedGender === 'Any' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Any' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('common.any')}</Text>
                                 </TouchableOpacity>
                             </View>
+                            {formErrors.gender && (
+                                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.gender}</Text>
+                            )}
                         </View>
 
                         {/* ─── Not Sure Banner ─── */}
@@ -605,12 +623,15 @@ export default function BookNursingCareScreen() {
                         </TouchableOpacity>
 
                         {/* ─── Date & Time Picker ─── */}
-                        <View style={dynamicStyles.sectionContainer}>
+                        <View style={dynamicStyles.sectionContainer} onLayout={(e) => { sectionPositions.current['date'] = e.nativeEvent.layout.y; }}>
                             <CustomDateTimePicker
                                 label={t('booking.schedule_appointment', 'Schedule Appointment')}
                                 value={scheduledDate}
-                                onDateChange={setScheduledDate}
+                                onDateChange={(dt) => { setScheduledDate(dt); setFormErrors(prev => ({ ...prev, date: undefined })); }}
                             />
+                            {formErrors.date && (
+                                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.date}</Text>
+                            )}
                         </View>
 
                         {/* ─── Compact Document Upload UI ─── */}
