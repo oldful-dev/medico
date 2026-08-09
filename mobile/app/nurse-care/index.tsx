@@ -329,7 +329,6 @@ export default function BookNursingCareScreen() {
                 if (selectedDuration.includes('Short')) base = durationPrices.short;
                 else if (selectedDuration.includes('Full') || selectedDuration.includes('8') || selectedDuration.includes('12')) base = durationPrices.full;
                 else if (selectedDuration.includes('24')) base = 2499;
-                if (selectedStaff === 'Qualified Nurse') base += durationPrices.addon;
                 return base;
             })();
 
