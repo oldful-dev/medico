@@ -84,6 +84,8 @@ export interface ServiceDetailScreenProps {
     /** Address picker support */
     selectedAddress?: AddressData | null;
     onAddressChange?: (address: AddressData) => void;
+    /** Ref for auto-scrolling KeyboardAwareScrollView */
+    scrollViewRef?: React.RefObject<any>;
     /** Service-specific form fields rendered between location card and book button */
     children?: React.ReactNode;
 }
@@ -108,11 +110,9 @@ export default function ServiceDetailScreen({
     hideLocation = false,
     selectedAddress,
     onAddressChange,
+    scrollViewRef,
     children,
-}: ServiceDetailScreenProps & {
-    selectedAddress?: AddressData | null;
-    onAddressChange?: (address: AddressData) => void;
-}) {
+}: ServiceDetailScreenProps) {
     const { t } = useTranslation();
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -136,6 +136,7 @@ export default function ServiceDetailScreen({
             </View>
 
             <KeyboardAwareScrollView
+                ref={scrollViewRef}
                 contentContainerStyle={dynamicStyles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"

@@ -47,6 +47,9 @@ export default function PhysioScreen() {
 
     const { cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('physio-fitness');
     const [isBooking, setIsBooking] = useState(false);
+    const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
+    const scrollViewRef = React.useRef<any>(null);
+    const sectionPositions = React.useRef<Record<string, number>>({});
 
     // Sync selectedAddress with initial fetched address on mount or when fetched
     React.useEffect(() => {
@@ -62,16 +65,29 @@ export default function PhysioScreen() {
     }, [address]);
 
     const handleBookService = async () => {
+        const errs: Record<string, string> = {};
+
         if (!selectedDate) {
-            Alert.alert(t('common.required'), t('physio_fitness.date_required') || 'Please select an appointment date and time.');
-            return;
+            errs.date = t('physio_fitness.date_required') || 'Please select an appointment date and time.';
         }
         if (selectedBodyPart === 'Other Parts' && !otherIssue.trim()) {
-            Alert.alert(t('common.required'), 'Please describe your affected body parts in the comments box.');
-            return;
+            errs.issue = 'Please describe your affected body parts.';
         }
-        if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert(t('common.required'), t('errors.address_required'));
+        if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
+            errs.address = t('errors.address_required') || 'Please confirm your service address.';
+        }
+
+        if (Object.keys(errs).length > 0) {
+            setFormErrors(errs);
+            const firstErrorField = ['address', 'issue', 'date'].find(f => errs[f]);
+            if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
+                const targetY = sectionPositions.current[firstErrorField] - 20;
+                if (typeof scrollViewRef.current?.scrollToPosition === 'function') {
+                    scrollViewRef.current.scrollToPosition(0, targetY, true);
+                } else if (typeof scrollViewRef.current?.scrollTo === 'function') {
+                    scrollViewRef.current.scrollTo({ y: targetY, animated: true });
+                }
+            }
             return;
         }
         if (!cityId || !serviceId) {
@@ -133,7 +149,7 @@ export default function PhysioScreen() {
             {/* Main Content Area (Rounded Cream Box) */}
             <View style={dynamicStyles.contentContainer}>
                 <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                    <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
+                    <KeyboardAwareScrollView ref={scrollViewRef} contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                         {/* Top Illustration Card */}
                         <View style={dynamicStyles.illustrationCard}>
@@ -166,7 +182,7 @@ export default function PhysioScreen() {
 
                         {/* Conditional Comments/Other Issue input */}
                         {selectedBodyPart === 'Other Parts' && (
-                            <View style={{ marginBottom: 15 }}>
+                            <View style={{ marginBottom: 15 }} onLayout={(e) => { sectionPositions.current['issue'] = e.nativeEvent.layout.y; }}>
                                 <Text style={dynamicStyles.sectionTitle}>{t('physio.comments')}</Text>
                                 <View style={dynamicStyles.inputCard}>
                                     <View style={dynamicStyles.issueIconBox}>
@@ -179,36 +195,48 @@ export default function PhysioScreen() {
                                         placeholderTextColor={isDarkMode ? '#94A3B8' : '#555'}
                                         multiline
                                         value={otherIssue}
-                                        onChangeText={setOtherIssue}
+                                        onChangeText={(val) => { setOtherIssue(val); setFormErrors(prev => ({ ...prev, issue: undefined })); }}
                                     />
                                 </View>
+                                {formErrors.issue && (
+                                    <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.issue}</Text>
+                                )}
                             </View>
                         )}
 
                         {/* Scheduling */}
-                        <View style={{ marginBottom: 15 }}>
+                        <View style={{ marginBottom: 15 }} onLayout={(e) => { sectionPositions.current['date'] = e.nativeEvent.layout.y; }}>
                             <CustomDateTimePicker
                                 label={t('physio.schedule_appointment')}
                                 value={selectedDate}
-                                onDateChange={setSelectedDate}
+                                onDateChange={(dt) => { setSelectedDate(dt); setFormErrors(prev => ({ ...prev, date: undefined })); }}
                             />
+                            {formErrors.date && (
+                                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.date}</Text>
+                            )}
                         </View>
 
                         {/* Location Selection UI */}
-                        <AddressPickerSection
-                            selectedAddress={selectedAddress}
-                            onAddressChange={(addr) => {
-                                setSelectedAddress(addr);
-                                setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
-                                if (addr.landmark) setLandmark(addr.landmark);
-                            }}
-                            title={t('order_medicines.address_label') || 'Address'}
-                            showPhoneField={false}
-                            showLandmarkField={true}
-                            landmark={landmark}
-                            onLandmarkChange={setLandmark}
-                            allowManualEntry={true}
-                        />
+                        <View onLayout={(e) => { sectionPositions.current['address'] = e.nativeEvent.layout.y; }}>
+                            <AddressPickerSection
+                                selectedAddress={selectedAddress}
+                                onAddressChange={(addr) => {
+                                    setSelectedAddress(addr);
+                                    setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
+                                    if (addr.landmark) setLandmark(addr.landmark);
+                                    setFormErrors(prev => ({ ...prev, address: undefined }));
+                                }}
+                                title={t('order_medicines.address_label') || 'Address'}
+                                showPhoneField={false}
+                                showLandmarkField={true}
+                                landmark={landmark}
+                                onLandmarkChange={setLandmark}
+                                allowManualEntry={true}
+                            />
+                            {formErrors.address && (
+                                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: -8, marginBottom: 12, fontWeight: '600' }}>⚠️ {formErrors.address}</Text>
+                            )}
+                        </View>
 
                         {/* Book Appointment Button */}
                         <TouchableOpacity

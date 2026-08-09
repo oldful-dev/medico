@@ -86,6 +86,9 @@ export default function HospitalTripScreen() {
   } = useServiceInitialization("hospital-trip");
 
   const [isBooking, setIsBooking] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
+  const scrollViewRef = React.useRef<any>(null);
+  const sectionPositions = React.useRef<Record<string, number>>({});
 
   // Sync selectedAddress with initial fetched address on mount or when fetched
   React.useEffect(() => {
@@ -179,67 +182,46 @@ export default function HospitalTripScreen() {
   };
 
   const handleBookService = async () => {
+    const errs: Record<string, string> = {};
+
     if (!selectedSpecialist) {
-      Alert.alert(
-        t("hospital_trip.alert_select_specialist"),
-        t("hospital_trip.alert_select_specialist_msg"),
-      );
-      return;
+      errs.specialist = t("hospital_trip.alert_select_specialist", "Please select a specialty.");
+    } else if (selectedSpecialist === "other" && !otherSpecialistText.trim()) {
+      errs.specialist = t("hospital_trip.alert_specialist_required", "Please describe your specialist requirement.");
     }
-    if (selectedSpecialist === "other" && !otherSpecialistText.trim()) {
-      Alert.alert(
-        t(
-          "hospital_trip.alert_other_specialist_required",
-          "Specify Specialist",
-        ),
-        t(
-          "hospital_trip.alert_other_specialist_msg",
-          "Please specify the requirement or specialist.",
-        ),
-      );
-      return;
-    }
+
     if (!hospitalPreference) {
-      Alert.alert(
-        t("hospital_trip.alert_select_hospital"),
-        t("hospital_trip.alert_select_hospital_msg"),
-      );
-      return;
+      errs.hospital = t("hospital_trip.alert_select_hospital", "Please select a hospital preference.");
+    } else if (hospitalPreference === "preferred" && !hospitalQuery.trim()) {
+      errs.hospital = t("hospital_trip.alert_hospital_required", "Please enter preferred hospital name.");
     }
-    if (hospitalPreference === "preferred" && !hospitalQuery.trim()) {
-      Alert.alert(
-        t("hospital_trip.alert_hospital_required"),
-        t("hospital_trip.alert_hospital_required_msg"),
-      );
-      return;
-    }
+
     if (selectedDoctorType === "preferred" && !preferredDoctor.trim()) {
-      Alert.alert(
-        t("hospital_trip.alert_doctor_required"),
-        t("hospital_trip.alert_doctor_required_msg"),
-      );
-      return;
+      errs.doctor = t("hospital_trip.alert_doctor_required", "Please enter preferred doctor name.");
     }
+
     if (!selectedDate) {
-      Alert.alert(
-        t("hospital_trip.alert_date_required"),
-        t("hospital_trip.alert_date_required_msg"),
-      );
+      errs.date = t("hospital_trip.alert_date_required", "Please select a date and time slot.");
+    }
+
+    if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === "Fetching address...")) {
+      errs.address = t("hospital_trip.alert_address_required", "Please confirm a valid service address.");
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setFormErrors(errs);
+      const firstErrorField = ['address', 'specialist', 'hospital', 'doctor', 'date'].find(f => errs[f]);
+      if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
+        const targetY = sectionPositions.current[firstErrorField] - 20;
+        if (typeof scrollViewRef.current?.scrollToPosition === 'function') {
+          scrollViewRef.current.scrollToPosition(0, targetY, true);
+        } else if (typeof scrollViewRef.current?.scrollTo === 'function') {
+          scrollViewRef.current.scrollTo({ y: targetY, animated: true });
+        }
+      }
       return;
     }
-    if (
-      !address ||
-      address.trim().length < 5 ||
-      address === "Fetching address..."
-    ) {
-      Alert.alert(
-        t("hospital_trip.alert_address_required"),
-        locationDenied
-          ? t("hospital_trip.alert_address_denied")
-          : t("hospital_trip.alert_address_failed"),
-      );
-      return;
-    }
+
     if (!isReady) {
       Alert.alert(t("common.error"), t("booking.init_incomplete"));
       return;
@@ -336,6 +318,7 @@ export default function HospitalTripScreen() {
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
           <KeyboardAwareScrollView
+            ref={scrollViewRef}
             contentContainerStyle={dynamicStyles.scrollContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -364,7 +347,7 @@ export default function HospitalTripScreen() {
             <View style={dynamicStyles.divider} />
 
             {/* --- Specialists Grid --- */}
-            <View style={dynamicStyles.specialistGrid}>
+            <View style={dynamicStyles.specialistGrid} onLayout={(e) => { sectionPositions.current['specialist'] = e.nativeEvent.layout.y; }}>
               {SPECIALISTS.map((item) => {
                 const isSelected = selectedSpecialist === item.id;
                 return (
@@ -375,7 +358,7 @@ export default function HospitalTripScreen() {
                       isSelected && dynamicStyles.specialistCardSelected,
                     ]}
                     activeOpacity={0.7}
-                    onPress={() => setSelectedSpecialist(item.id)}
+                    onPress={() => { setSelectedSpecialist(item.id); setFormErrors(prev => ({ ...prev, specialist: undefined })); }}
                   >
                     {isSelected && (
                       <View style={dynamicStyles.specialistCheckmark}>
@@ -411,71 +394,80 @@ export default function HospitalTripScreen() {
                   )}
                   placeholderTextColor={isDarkMode ? "#64748B" : "#888888"}
                   value={otherSpecialistText}
-                  onChangeText={setOtherSpecialistText}
+                  onChangeText={(val) => { setOtherSpecialistText(val); setFormErrors(prev => ({ ...prev, specialist: undefined })); }}
                 />
               </View>
+            )}
+
+            {formErrors.specialist && (
+              <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.specialist}</Text>
             )}
 
             <View style={dynamicStyles.divider} />
 
             {/* --- Hospital Details --- */}
-            <View style={dynamicStyles.sectionHeaderRow}>
-              <Ionicons
-                name="medkit-outline"
-                size={20}
-                color={isDarkMode ? "#34D399" : "#02743F"}
-                style={{ marginRight: 8 }}
-              />
-              <Text style={[dynamicStyles.sectionTitle, { marginBottom: 0 }]}>
-                {t("hospital_trip.hospital_details", "Hospital Details")}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={dynamicStyles.doctorOptionRow}
-              activeOpacity={0.7}
-              onPress={() => setHospitalPreference("preferred")}
-            >
-              <View
-                style={[
-                  dynamicStyles.radioCircle,
-                  hospitalPreference === "preferred" &&
-                    dynamicStyles.radioCircleSelected,
-                ]}
-              />
-              <Text style={dynamicStyles.doctorOptionText}>
-                {t("hospital_trip.preferred_hospital_option")}
-              </Text>
-            </TouchableOpacity>
-
-            {hospitalPreference === "preferred" && (
-              <View style={dynamicStyles.doctorNameInput}>
-                <TextInput
-                  style={dynamicStyles.doctorTextInput}
-                  placeholder={t("hospital_trip.hospital_name_placeholder")}
-                  placeholderTextColor={isDarkMode ? "#64748B" : "#888888"}
-                  value={hospitalQuery}
-                  onChangeText={setHospitalQuery}
+            <View onLayout={(e) => { sectionPositions.current['hospital'] = e.nativeEvent.layout.y; }}>
+              <View style={dynamicStyles.sectionHeaderRow}>
+                <Ionicons
+                  name="medkit-outline"
+                  size={20}
+                  color={isDarkMode ? "#34D399" : "#02743F"}
+                  style={{ marginRight: 8 }}
                 />
+                <Text style={[dynamicStyles.sectionTitle, { marginBottom: 0 }]}>
+                  {t("hospital_trip.hospital_details", "Hospital Details")}
+                </Text>
               </View>
-            )}
 
-            <TouchableOpacity
-              style={dynamicStyles.doctorOptionRow}
-              activeOpacity={0.7}
-              onPress={() => setHospitalPreference("recommend")}
-            >
-              <View
-                style={[
-                  dynamicStyles.radioCircle,
-                  hospitalPreference === "recommend" &&
-                    dynamicStyles.radioCircleSelected,
-                ]}
-              />
-              <Text style={dynamicStyles.doctorOptionText}>
-                {t("hospital_trip.recommend_hospital")}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={dynamicStyles.doctorOptionRow}
+                activeOpacity={0.7}
+                onPress={() => { setHospitalPreference("preferred"); setFormErrors(prev => ({ ...prev, hospital: undefined })); }}
+              >
+                <View
+                  style={[
+                    dynamicStyles.radioCircle,
+                    hospitalPreference === "preferred" &&
+                      dynamicStyles.radioCircleSelected,
+                  ]}
+                />
+                <Text style={dynamicStyles.doctorOptionText}>
+                  {t("hospital_trip.preferred_hospital_option")}
+                </Text>
+              </TouchableOpacity>
+
+              {hospitalPreference === "preferred" && (
+                <View style={dynamicStyles.doctorNameInput}>
+                  <TextInput
+                    style={dynamicStyles.doctorTextInput}
+                    placeholder={t("hospital_trip.hospital_name_placeholder")}
+                    placeholderTextColor={isDarkMode ? "#64748B" : "#888888"}
+                    value={hospitalQuery}
+                    onChangeText={(val) => { setHospitalQuery(val); setFormErrors(prev => ({ ...prev, hospital: undefined })); }}
+                  />
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={dynamicStyles.doctorOptionRow}
+                activeOpacity={0.7}
+                onPress={() => { setHospitalPreference("recommend"); setFormErrors(prev => ({ ...prev, hospital: undefined })); }}
+              >
+                <View
+                  style={[
+                    dynamicStyles.radioCircle,
+                    hospitalPreference === "recommend" &&
+                      dynamicStyles.radioCircleSelected,
+                  ]}
+                />
+                <Text style={dynamicStyles.doctorOptionText}>
+                  {t("hospital_trip.recommend_hospital_option")}
+                </Text>
+              </TouchableOpacity>
+              {formErrors.hospital && (
+                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.hospital}</Text>
+              )}
+            </View>
 
             <View style={dynamicStyles.divider} />
 
@@ -533,11 +525,16 @@ export default function HospitalTripScreen() {
             <View style={dynamicStyles.divider} />
 
             {/* --- Schedule --- */}
-            <CustomDateTimePicker
-              label={t("hospital_trip.destination_details")}
-              value={selectedDate}
-              onDateChange={setSelectedDate}
-            />
+            <View onLayout={(e) => { sectionPositions.current['date'] = e.nativeEvent.layout.y; }}>
+              <CustomDateTimePicker
+                label={t("hospital_trip.destination_details")}
+                value={selectedDate}
+                onDateChange={(dt) => { setSelectedDate(dt); setFormErrors(prev => ({ ...prev, date: undefined })); }}
+              />
+              {formErrors.date && (
+                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.date}</Text>
+              )}
+            </View>
 
             {/* --- Service Add-ons --- */}
             <View style={dynamicStyles.addonsContainer}>
@@ -606,22 +603,28 @@ export default function HospitalTripScreen() {
             </View>
 
             {/* --- Pickup Address (Global AddressPickerSection) --- */}
-            <AddressPickerSection
-              selectedAddress={selectedAddress}
-              onAddressChange={(addr) => {
-                setSelectedAddress(addr);
-                setAddress(
-                  `${addr.line1}${addr.line2 ? ", " + addr.line2 : ""}`,
-                );
-                if (addr.landmark) setLandmark(addr.landmark);
-              }}
-              title={t("hospital_trip.confirm_pickup")}
-              showPhoneField={false}
-              showLandmarkField={true}
-              landmark={landmark}
-              onLandmarkChange={setLandmark}
-              allowManualEntry={true}
-            />
+            <View onLayout={(e) => { sectionPositions.current['address'] = e.nativeEvent.layout.y; }}>
+              <AddressPickerSection
+                selectedAddress={selectedAddress}
+                onAddressChange={(addr) => {
+                  setSelectedAddress(addr);
+                  setAddress(
+                    `${addr.line1}${addr.line2 ? ", " + addr.line2 : ""}`,
+                  );
+                  if (addr.landmark) setLandmark(addr.landmark);
+                  setFormErrors(prev => ({ ...prev, address: undefined }));
+                }}
+                title={t("hospital_trip.confirm_pickup")}
+                showPhoneField={false}
+                showLandmarkField={true}
+                landmark={landmark}
+                onLandmarkChange={setLandmark}
+                allowManualEntry={true}
+              />
+              {formErrors.address && (
+                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: -8, marginBottom: 12, fontWeight: '600' }}>⚠️ {formErrors.address}</Text>
+              )}
+            </View>
 
             {/* --- Confirm Button --- */}
             <TouchableOpacity

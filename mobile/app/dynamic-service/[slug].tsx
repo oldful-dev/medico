@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Switch, ActivityIndicator, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -33,7 +33,7 @@ export default function DynamicServiceScreen() {
   const { getServiceBySlug, profile, refreshData } = useUser();
 
   useEffect(() => {
-    refreshData(true);
+    refreshData();
   }, []);
 
   const {
@@ -78,6 +78,9 @@ export default function DynamicServiceScreen() {
   const [landmark, setLandmark] = useState('');
   const [comments, setComments] = useState('');
   const [isBooking, setIsBooking] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
+  const scrollViewRef = useRef<any>(null);
+  const sectionPositions = useRef<Record<string, number>>({});
   const [addressInitialized, setAddressInitialized] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
 
@@ -138,27 +141,23 @@ export default function DynamicServiceScreen() {
   };
 
   const handleBook = async () => {
-    // 1. Validate fields if custom form is configured
+    const errs: Record<string, string> = {};
+
     if (hasConfiguredFields) {
       for (const field of dynamicFields) {
         if (field.type === 'address_picker') {
-          if (field.required && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
-            Alert.alert(t('common.required', 'Required'), t('service_detail.address_required', 'Please provide a valid address.'));
-            return;
+          if (field.required && (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...'))) {
+            errs.address = t('service_detail.address_required', 'Please provide a valid address.');
           }
         } else if (field.type === 'datetime') {
           if (field.required && !scheduledDate) {
-            Alert.alert(t('common.required', 'Required'), t('service_detail.date_required', 'Please select a date and time slot.'));
-            return;
-          }
-          if (scheduledDate && scheduledDate <= new Date()) {
-            Alert.alert(t('common.error', 'Error'), t('service_detail.invalid_time', 'Please select a future date and time.'));
-            return;
+            errs.date = t('service_detail.date_required', 'Please select a date and time slot.');
+          } else if (scheduledDate && scheduledDate <= new Date()) {
+            errs.date = t('service_detail.invalid_time', 'Please select a future date and time.');
           }
         } else if (field.type === 'comments') {
           if (field.required && !comments.trim()) {
-            Alert.alert(t('common.required', 'Required'), t('service_detail.comments_required', 'Please enter comments or details of your request.'));
-            return;
+            errs.comments = t('service_detail.comments_required', 'Please enter comments or details of your request.');
           }
         } else if (field.type === 'benefits' || field.type === 'info_banner') {
           continue;
@@ -167,48 +166,53 @@ export default function DynamicServiceScreen() {
             const val = formAnswers[field.id];
             const isEmpty = val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0);
             if (isEmpty) {
-              Alert.alert(t('common.required', 'Required'), `${field.label} is required.`);
-              return;
+              errs[field.id] = `${field.label} is required.`;
             }
           }
         }
       }
     } else {
-      // Legacy fallback validation
       for (const field of dynamicFields) {
         if (field.required && field.type !== 'info_banner') {
           const val = formAnswers[field.id];
           const isEmpty = val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0);
           if (isEmpty) {
-            Alert.alert(t('common.required', 'Required'), `${field.label} is required.`);
-            return;
+            errs[field.id] = `${field.label} is required.`;
           }
         }
       }
 
       if (!comments.trim()) {
-        Alert.alert(t('common.required', 'Required'), t('service_detail.comments_required', 'Please enter comments or details of your request.'));
-        return;
+        errs.comments = t('service_detail.comments_required', 'Please enter comments or details of your request.');
       }
 
-      if (!hideLocationCard && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
-        Alert.alert(t('common.required', 'Required'), t('service_detail.address_required', 'Please provide a valid address.'));
-        return;
+      if (!hideLocationCard && (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...'))) {
+        errs.address = t('service_detail.address_required', 'Please provide a valid address.');
       }
 
       if (showDatePicker && !scheduledDate) {
-        Alert.alert(t('common.required', 'Required'), t('service_detail.date_required', 'Please select a date and time slot.'));
-        return;
-      }
-      if (showDatePicker && scheduledDate && scheduledDate <= new Date()) {
-        Alert.alert(t('common.error', 'Error'), t('service_detail.invalid_time', 'Please select a future date and time.'));
-        return;
+        errs.date = t('service_detail.date_required', 'Please select a date and time slot.');
+      } else if (showDatePicker && scheduledDate && scheduledDate <= new Date()) {
+        errs.date = t('service_detail.invalid_time', 'Please select a future date and time.');
       }
 
       if (checkoutGroup === 'B' && selectedImages.length === 0 && !isDiagnosticsDynamic) {
-        Alert.alert(t('common.required', 'Required'), t('service_detail.bill_photo_required', 'Please upload a photo of the bills.'));
-        return;
+        errs.photo = t('service_detail.bill_photo_required', 'Please upload a photo of the bills.');
       }
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setFormErrors(errs);
+      const firstErrorField = Object.keys(errs).find(f => sectionPositions.current[f] !== undefined);
+      if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
+        const targetY = sectionPositions.current[firstErrorField] - 20;
+        if (typeof scrollViewRef.current?.scrollToPosition === 'function') {
+          scrollViewRef.current.scrollToPosition(0, targetY, true);
+        } else if (typeof scrollViewRef.current?.scrollTo === 'function') {
+          scrollViewRef.current.scrollTo({ y: targetY, animated: true });
+        }
+      }
+      return;
     }
 
     if (!isReady) {
@@ -327,13 +331,15 @@ export default function DynamicServiceScreen() {
       isLoading={isLoadingInit || isBooking}
       hidePricing={isZeroPayment}
       hideLocation={true}
+      scrollViewRef={scrollViewRef}
       bookButtonLabel={bookButtonLabel}
     >
       {hasConfiguredFields ? (
         dynamicFields.map((field: any) => {
           const isDark = isDarkMode;
+          const fieldKey = field.type === 'address_picker' ? 'address' : field.type === 'datetime' ? 'date' : field.type === 'comments' ? 'comments' : field.id;
           return (
-            <View key={field.id} style={styles.card}>
+            <View key={field.id} style={styles.card} onLayout={(e) => { sectionPositions.current[fieldKey] = e.nativeEvent.layout.y; }}>
               {!['info_banner', 'benefits', 'address_picker', 'datetime', 'comments'].includes(field.type) && (
                 <Text style={styles.cardTitle}>
                   {field.label} {field.required ? '*' : ''}
@@ -487,6 +493,10 @@ export default function DynamicServiceScreen() {
                   <Text style={styles.infoText}>{field.placeholder || field.label}</Text>
                 </View>
               )}
+
+              {formErrors[fieldKey] && (
+                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors[fieldKey]}</Text>
+              )}
             </View>
           );
         })
@@ -494,23 +504,28 @@ export default function DynamicServiceScreen() {
         <>
           {/* Legacy fallback mode: render hardcoded items in legacy order */}
           {!hideLocationCard && (
-            <AddressPickerSection
-              selectedAddress={selectedAddress}
-              onAddressChange={handleAddressChange}
-              title={t('order_medicines.address_label')}
-              showPhoneField={false}
-              showLandmarkField={true}
-              landmark={landmark}
-              onLandmarkChange={setLandmark}
-              allowManualEntry={true}
-            />
+            <View onLayout={(e) => { sectionPositions.current['address'] = e.nativeEvent.layout.y; }}>
+              <AddressPickerSection
+                selectedAddress={selectedAddress}
+                onAddressChange={(addr) => { handleAddressChange(addr); setFormErrors(prev => ({ ...prev, address: undefined })); }}
+                title={t('order_medicines.address_label')}
+                showPhoneField={false}
+                showLandmarkField={true}
+                landmark={landmark}
+                onLandmarkChange={setLandmark}
+                allowManualEntry={true}
+              />
+              {formErrors.address && (
+                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: -8, marginBottom: 12, fontWeight: '600' }}>⚠️ {formErrors.address}</Text>
+              )}
+            </View>
           )}
 
           {/* Render Dynamic Form Fields */}
           {dynamicFields.map((field: any) => {
             const isDark = isDarkMode;
             return (
-              <View key={field.id} style={styles.card}>
+              <View key={field.id} style={styles.card} onLayout={(e) => { sectionPositions.current[field.id] = e.nativeEvent.layout.y; }}>
                 {field.type !== 'info_banner' && (
                   <Text style={styles.cardTitle}>
                     {field.label} {field.required ? '*' : ''}
@@ -523,7 +538,7 @@ export default function DynamicServiceScreen() {
                     placeholder={field.placeholder || t('common.enter_here', 'Enter here...')}
                     placeholderTextColor="#9CA3AF"
                     value={formAnswers[field.id] || ''}
-                    onChangeText={(val) => handleFieldChange(field.id, val)}
+                    onChangeText={(val) => { handleFieldChange(field.id, val); setFormErrors(prev => ({ ...prev, [field.id]: undefined })); }}
                   />
                 )}
 
@@ -533,7 +548,7 @@ export default function DynamicServiceScreen() {
                     placeholder={field.placeholder || t('common.enter_here', 'Enter here...')}
                     placeholderTextColor="#9CA3AF"
                     value={formAnswers[field.id] || ''}
-                    onChangeText={(val) => handleFieldChange(field.id, val)}
+                    onChangeText={(val) => { handleFieldChange(field.id, val); setFormErrors(prev => ({ ...prev, [field.id]: undefined })); }}
                     multiline
                     numberOfLines={3}
                   />
@@ -547,7 +562,7 @@ export default function DynamicServiceScreen() {
                         <TouchableOpacity
                           key={opt.id}
                           style={styles.radioOption}
-                          onPress={() => handleFieldChange(field.id, opt.id)}
+                          onPress={() => { handleFieldChange(field.id, opt.id); setFormErrors(prev => ({ ...prev, [field.id]: undefined })); }}
                         >
                           <View style={[styles.radioOutline, isSelected && styles.radioOutlineActive]}>
                             {isSelected && <View style={styles.radioDot} />}
@@ -571,6 +586,7 @@ export default function DynamicServiceScreen() {
                           onPress={() => {
                             const next = isSelected ? current.filter((x: string) => x !== opt.id) : [...current, opt.id];
                             handleFieldChange(field.id, next);
+                            setFormErrors(prev => ({ ...prev, [field.id]: undefined }));
                           }}
                         >
                           <View style={[styles.checkboxOutline, isSelected && styles.checkboxOutlineActive]}>
@@ -587,7 +603,7 @@ export default function DynamicServiceScreen() {
                   <CustomDateTimePicker
                     label={field.placeholder || t('booking.select_date_time', 'Select Date & Time')}
                     value={formAnswers[field.id] ? new Date(formAnswers[field.id]) : undefined}
-                    onDateChange={(date) => handleFieldChange(field.id, date ? date.toISOString() : undefined)}
+                    onDateChange={(date) => { handleFieldChange(field.id, date ? date.toISOString() : undefined); setFormErrors(prev => ({ ...prev, [field.id]: undefined })); }}
                   />
                 )}
 
@@ -595,7 +611,7 @@ export default function DynamicServiceScreen() {
                   <ImageUploadBox
                     title={field.placeholder || t('service_detail.upload_optional_photos', 'Upload Photos (Optional)')}
                     subtitle={t('service_detail.image_upload_subtitle', 'JPG, PNG up to 10MB')}
-                    onImagesChange={(images) => handleFieldChange(field.id, images)}
+                    onImagesChange={(images) => { handleFieldChange(field.id, images); setFormErrors(prev => ({ ...prev, [field.id]: undefined })); }}
                     maxImages={3}
                   />
                 )}
@@ -605,7 +621,7 @@ export default function DynamicServiceScreen() {
                     <Text style={styles.optionLabel}>{field.placeholder || field.label}</Text>
                     <Switch
                       value={!!formAnswers[field.id]}
-                      onValueChange={(val) => handleFieldChange(field.id, val)}
+                      onValueChange={(val) => { handleFieldChange(field.id, val); setFormErrors(prev => ({ ...prev, [field.id]: undefined })); }}
                       trackColor={{ false: '#E5E7EB', true: Colors.primary }}
                       thumbColor={formAnswers[field.id] ? '#FFFFFF' : '#F4F3F1'}
                     />
@@ -618,43 +634,58 @@ export default function DynamicServiceScreen() {
                     <Text style={styles.infoText}>{field.placeholder || field.label}</Text>
                   </View>
                 )}
+
+                {formErrors[field.id] && (
+                  <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors[field.id]}</Text>
+                )}
               </View>
             );
           })}
 
           {/* Date Picker (base config) */}
           {showDatePicker && (
-            <View style={styles.card}>
+            <View style={styles.card} onLayout={(e) => { sectionPositions.current['date'] = e.nativeEvent.layout.y; }}>
               <CustomDateTimePicker
                 label={t('booking.schedule_appointment', 'Schedule Appointment')}
                 value={scheduledDate}
-                onDateChange={setScheduledDate}
+                onDateChange={(dt) => { setScheduledDate(dt); setFormErrors(prev => ({ ...prev, date: undefined })); }}
               />
+              {formErrors.date && (
+                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.date}</Text>
+              )}
             </View>
           )}
 
           {/* Comments Input */}
-          <View style={styles.card}>
+          <View style={styles.card} onLayout={(e) => { sectionPositions.current['comments'] = e.nativeEvent.layout.y; }}>
             <Text style={styles.cardTitle}>{t('service_detail.comments', 'Comments / Requirements')} *</Text>
             <TextInput
               style={[styles.textArea, { color: isDarkMode ? '#F3F4F6' : '#1F2937' }]}
               placeholder={t('service_detail.comments_placeholder', 'Describe your requirements or any instructions here...')}
               placeholderTextColor="#9CA3AF"
               value={comments}
-              onChangeText={setComments}
+              onChangeText={(val) => { setComments(val); setFormErrors(prev => ({ ...prev, comments: undefined })); }}
               multiline
               numberOfLines={3}
             />
+            {formErrors.comments && (
+              <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.comments}</Text>
+            )}
           </View>
 
           {/* Base Photo Upload */}
           {showPhotoUpload && (
-            <ImageUploadBox
-              title={checkoutGroup === 'B' ? t('service_detail.upload_bill_photos', 'Upload Bill Copies') + ' *' : t('service_detail.upload_optional_photos', 'Upload Photos (Optional)')}
-              subtitle={t('service_detail.image_upload_subtitle', 'JPG, PNG up to 10MB')}
-              onImagesChange={setSelectedImages}
-              maxImages={5}
-            />
+            <View onLayout={(e) => { sectionPositions.current['photo'] = e.nativeEvent.layout.y; }}>
+              <ImageUploadBox
+                title={checkoutGroup === 'B' ? t('service_detail.upload_bill_photos', 'Upload Bill Copies') + ' *' : t('service_detail.upload_optional_photos', 'Upload Photos (Optional)')}
+                subtitle={t('service_detail.image_upload_subtitle', 'JPG, PNG up to 10MB')}
+                onImagesChange={(imgs) => { setSelectedImages(imgs); setFormErrors(prev => ({ ...prev, photo: undefined })); }}
+                maxImages={5}
+              />
+              {formErrors.photo && (
+                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.photo}</Text>
+              )}
+            </View>
           )}
         </>
       )}
