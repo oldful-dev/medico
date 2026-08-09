@@ -106,7 +106,7 @@ exports.calculateCheckout = async (req, res) => {
             visitFee = config.visitFee || 0;
             nightCharge = config.nightCharge || 0;
             surgeCharge = config.surgeCharge || 0;
-            if (config.serviceFee > 0) {
+            if (config.serviceFee > 0 && (!vendorFee || Number(vendorFee) === 0)) {
                 serviceFeeVal = config.serviceFee;
             }
         }
@@ -301,7 +301,7 @@ exports.calculateMembershipSavings = async (req, res) => {
             visitFee = config.visitFee || 0;
             nightCharge = config.nightCharge || 0;
             surgeCharge = config.surgeCharge || 0;
-            if (config.serviceFee > 0) {
+            if (config.serviceFee > 0 && (!vendorFee || Number(vendorFee) === 0)) {
                 serviceFeeVal = config.serviceFee;
             }
         }
