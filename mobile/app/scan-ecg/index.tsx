@@ -32,6 +32,9 @@ export default function ScanEcgScreen() {
     const [comments, setComments] = useState('');
     const [isBooking, setIsBooking] = useState(false);
     const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
+    const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
+    const scrollViewRef = React.useRef<any>(null);
+    const sectionPositions = React.useRef<Record<string, number>>({});
 
     const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('scan-ecg');
 
@@ -96,12 +99,27 @@ export default function ScanEcgScreen() {
     };
 
     const handleBookService = async () => {
+        const errs: Record<string, string> = {};
+
         if (!selectedDate) {
-            Alert.alert(t('scan_ecg.alert_datetime_required'), t('scan_ecg.alert_datetime_required_msg'));
-            return;
+            errs.date = t('scan_ecg.alert_datetime_required', 'Please select a date and time slot.');
         }
-        if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert(t('scan_ecg.alert_address_required'), t('scan_ecg.alert_address_required_msg'));
+
+        if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
+            errs.address = t('scan_ecg.alert_address_required', 'Please confirm a valid service address.');
+        }
+
+        if (Object.keys(errs).length > 0) {
+            setFormErrors(errs);
+            const firstErrorField = ['address', 'date'].find(f => errs[f]);
+            if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
+                const targetY = sectionPositions.current[firstErrorField] - 20;
+                if (typeof scrollViewRef.current?.scrollToPosition === 'function') {
+                    scrollViewRef.current.scrollToPosition(0, targetY, true);
+                } else if (typeof scrollViewRef.current?.scrollTo === 'function') {
+                    scrollViewRef.current.scrollTo({ y: targetY, animated: true });
+                }
+            }
             return;
         }
         if (!isReady) {
@@ -169,6 +187,7 @@ export default function ScanEcgScreen() {
             <View style={dynamicStyles.contentContainer}>
                 <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
                     <KeyboardAwareScrollView
+                        ref={scrollViewRef}
                         style={dynamicStyles.scrollView}
                         contentContainerStyle={dynamicStyles.scrollContent}
                         showsVerticalScrollIndicator={false}
@@ -224,12 +243,17 @@ export default function ScanEcgScreen() {
                         <View style={dynamicStyles.divider} />
 
                         {/* Custom Date Time Picker */}
-                        <CustomDateTimePicker
-                            label={t('scan_ecg.schedule_service')}
-                            value={selectedDate}
-                            onDateChange={setSelectedDate}
-                            timeSlots={['8 AM - 11 AM', '12 PM - 3 PM', '4 PM - 7 PM']}
-                        />
+                        <View onLayout={(e) => { sectionPositions.current['date'] = e.nativeEvent.layout.y; }}>
+                            <CustomDateTimePicker
+                                label={t('scan_ecg.schedule_service')}
+                                value={selectedDate}
+                                onDateChange={(dt) => { setSelectedDate(dt); setFormErrors(prev => ({ ...prev, date: undefined })); }}
+                                timeSlots={['8 AM - 11 AM', '12 PM - 3 PM', '4 PM - 7 PM']}
+                            />
+                            {formErrors.date && (
+                                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.date}</Text>
+                            )}
+                        </View>
 
                         <View style={dynamicStyles.divider} />
 

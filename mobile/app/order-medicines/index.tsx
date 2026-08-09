@@ -34,6 +34,9 @@ export default function OrderMedicinesScreen() {
     const [landmark, setLandmark] = useState('');
     const [selectedImages, setSelectedImages] = useState<string[]>([]);
     const [isBooking, setIsBooking] = useState(false);
+    const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
+    const scrollViewRef = React.useRef<any>(null);
+    const sectionPositions = React.useRef<Record<string, number>>({});
     const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
 
     const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('medicines');
@@ -99,16 +102,29 @@ export default function OrderMedicinesScreen() {
     };
 
     const handleBookService = async () => {
+        const errs: Record<string, string> = {};
+
         if (!isManualEntry && selectedImages.length === 0) {
-            Alert.alert(t('order_medicines.alert_prescription_required_title'), t('order_medicines.alert_prescription_required_msg'));
-            return;
+            errs.prescription = t('order_medicines.alert_prescription_required_msg', 'Please upload a prescription image.');
         }
         if (isManualEntry && !manualText.trim()) {
-            Alert.alert(t('order_medicines.alert_prescription_required_title'), t('order_medicines.alert_manual_empty_msg'));
-            return;
+            errs.prescription = t('order_medicines.alert_manual_empty_msg', 'Please enter medicine names or notes.');
         }
-        if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert(t('common.required'), t('errors.address_required'));
+        if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
+            errs.address = t('errors.address_required', 'Please confirm your delivery address.');
+        }
+
+        if (Object.keys(errs).length > 0) {
+            setFormErrors(errs);
+            const firstErrorField = ['address', 'prescription'].find(f => errs[f]);
+            if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
+                const targetY = sectionPositions.current[firstErrorField] - 20;
+                if (typeof scrollViewRef.current?.scrollToPosition === 'function') {
+                    scrollViewRef.current.scrollToPosition(0, targetY, true);
+                } else if (typeof scrollViewRef.current?.scrollTo === 'function') {
+                    scrollViewRef.current.scrollTo({ y: targetY, animated: true });
+                }
+            }
             return;
         }
         if (!isReady) {
@@ -176,6 +192,7 @@ export default function OrderMedicinesScreen() {
                 {/* ─── ScrollView Added for Small Screens ─── */}
                 <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <KeyboardAwareScrollView
+                    ref={scrollViewRef}
                     style={dynamicStyles.scrollView}
                     contentContainerStyle={dynamicStyles.scrollContent}
                     showsVerticalScrollIndicator={false}
@@ -183,96 +200,108 @@ export default function OrderMedicinesScreen() {
                     enableOnAndroid
                     extraScrollHeight={20}
                 >
-                    <Text style={dynamicStyles.sectionTitle}>{t('order_medicines.upload_prescription')}</Text>
+                    <View onLayout={(e) => { sectionPositions.current['prescription'] = e.nativeEvent.layout.y; }}>
+                        <Text style={dynamicStyles.sectionTitle}>{t('order_medicines.upload_prescription')}</Text>
 
-                    {/* ─── Options Card 1: Camera ─── */}
-                    <TouchableOpacity
-                        style={[dynamicStyles.uploadOptionCard, selectedImages.length > 0 && dynamicStyles.uploadOptionCardActive]}
-                        activeOpacity={0.7}
-                        onPress={() => handleCapture('camera')}
-                    >
-                        <Image source={cameraIcon} style={dynamicStyles.uploadIcon} resizeMode="contain" />
-                        <View style={dynamicStyles.uploadTextContainer}>
-                            <Text style={dynamicStyles.uploadMainText}>{t('order_medicines.camera')}</Text>
-                            <Text style={dynamicStyles.uploadSubText}>{t('order_medicines.camera_take_photo')}</Text>
-                        </View>
-                        <Ionicons name={selectedImages.length > 0 ? "checkmark-circle" : "chevron-forward"} size={20} color={selectedImages.length > 0 ? "#048357" : "#898989"} />
-                    </TouchableOpacity>
+                        {/* ─── Options Card 1: Camera ─── */}
+                        <TouchableOpacity
+                            style={[dynamicStyles.uploadOptionCard, selectedImages.length > 0 && dynamicStyles.uploadOptionCardActive]}
+                            activeOpacity={0.7}
+                            onPress={() => { handleCapture('camera'); setFormErrors(prev => ({ ...prev, prescription: undefined })); }}
+                        >
+                            <Image source={cameraIcon} style={dynamicStyles.uploadIcon} resizeMode="contain" />
+                            <View style={dynamicStyles.uploadTextContainer}>
+                                <Text style={dynamicStyles.uploadMainText}>{t('order_medicines.camera')}</Text>
+                                <Text style={dynamicStyles.uploadSubText}>{t('order_medicines.camera_take_photo')}</Text>
+                            </View>
+                            <Ionicons name={selectedImages.length > 0 ? "checkmark-circle" : "chevron-forward"} size={20} color={selectedImages.length > 0 ? "#048357" : "#898989"} />
+                        </TouchableOpacity>
 
-                    {/* ─── Options Card 2: Gallery ─── */}
-                    <TouchableOpacity
-                        style={[dynamicStyles.uploadOptionCard, selectedImages.length > 0 && dynamicStyles.uploadOptionCardActive]}
-                        activeOpacity={0.7}
-                        onPress={() => handleCapture('gallery')}
-                    >
-                        <Image source={galleryIcon} style={dynamicStyles.uploadIcon} resizeMode="contain" />
-                        <View style={dynamicStyles.uploadTextContainer}>
-                            <Text style={dynamicStyles.uploadMainText}>{t('order_medicines.gallery')}</Text>
-                            <Text style={dynamicStyles.uploadSubText}>{t('order_medicines.gallery_choose')}</Text>
-                        </View>
-                        <Ionicons name={selectedImages.length > 0 ? "checkmark-circle" : "chevron-forward"} size={20} color={selectedImages.length > 0 ? "#048357" : "#898989"} />
-                    </TouchableOpacity>
+                        {/* ─── Options Card 2: Gallery ─── */}
+                        <TouchableOpacity
+                            style={[dynamicStyles.uploadOptionCard, selectedImages.length > 0 && dynamicStyles.uploadOptionCardActive]}
+                            activeOpacity={0.7}
+                            onPress={() => { handleCapture('gallery'); setFormErrors(prev => ({ ...prev, prescription: undefined })); }}
+                        >
+                            <Image source={galleryIcon} style={dynamicStyles.uploadIcon} resizeMode="contain" />
+                            <View style={dynamicStyles.uploadTextContainer}>
+                                <Text style={dynamicStyles.uploadMainText}>{t('order_medicines.gallery')}</Text>
+                                <Text style={dynamicStyles.uploadSubText}>{t('order_medicines.gallery_choose')}</Text>
+                            </View>
+                            <Ionicons name={selectedImages.length > 0 ? "checkmark-circle" : "chevron-forward"} size={20} color={selectedImages.length > 0 ? "#048357" : "#898989"} />
+                        </TouchableOpacity>
 
-                    {/* ─── Selected Images Preview ─── */}
-                    {selectedImages.length > 0 && (
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={dynamicStyles.previewScroll} contentContainerStyle={dynamicStyles.previewContent}>
-                            {selectedImages.map((uri, index) => (
-                                <View key={index} style={dynamicStyles.previewThumbWrapper}>
-                                    <Image source={{ uri }} style={dynamicStyles.previewThumb} />
-                                    <TouchableOpacity style={dynamicStyles.removePreviewBtn} onPress={() => removeImage(index)}>
-                                        <Ionicons name="close-circle" size={20} color="#FF6B6B" />
-                                    </TouchableOpacity>
-                                </View>
-                            ))}
-                        </ScrollView>
-                    )}
+                        {/* ─── Selected Images Preview ─── */}
+                        {selectedImages.length > 0 && (
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={dynamicStyles.previewScroll} contentContainerStyle={dynamicStyles.previewContent}>
+                                {selectedImages.map((uri, index) => (
+                                    <View key={index} style={dynamicStyles.previewThumbWrapper}>
+                                        <Image source={{ uri }} style={dynamicStyles.previewThumb} />
+                                        <TouchableOpacity style={dynamicStyles.removePreviewBtn} onPress={() => removeImage(index)}>
+                                            <Ionicons name="close-circle" size={20} color="#FF6B6B" />
+                                        </TouchableOpacity>
+                                    </View>
+                                ))}
+                            </ScrollView>
+                        )}
 
-                    {/* ─── Options Card 3: Manual Entry ─── */}
-                    <TouchableOpacity
-                        style={[dynamicStyles.uploadOptionCard, isManualEntry && dynamicStyles.uploadOptionCardActive]}
-                        activeOpacity={0.7}
-                        onPress={() => setIsManualEntry(!isManualEntry)}
-                    >
-                       {/* Simulated "Type" Icon (lines) */}
-                        <View style={dynamicStyles.typeIconBox}>
-                            <View style={dynamicStyles.typeIconLine} />
-                            <View style={dynamicStyles.typeIconLine} />
-                        </View>
-                        <View style={dynamicStyles.uploadTextContainer}>
-                            <Text style={dynamicStyles.uploadMainText}>{t('order_medicines.type')}</Text>
-                            <Text style={dynamicStyles.uploadSubText}>{t('order_medicines.manual_entry')}</Text>
-                        </View>
-                        <Ionicons name={isManualEntry ? "close-circle" : "chevron-forward"} size={20} color={isManualEntry ? "#048357" : "#898989"} />
-                    </TouchableOpacity>
+                        {/* ─── Options Card 3: Manual Entry ─── */}
+                        <TouchableOpacity
+                            style={[dynamicStyles.uploadOptionCard, isManualEntry && dynamicStyles.uploadOptionCardActive]}
+                            activeOpacity={0.7}
+                            onPress={() => setIsManualEntry(!isManualEntry)}
+                        >
+                           {/* Simulated "Type" Icon (lines) */}
+                            <View style={dynamicStyles.typeIconBox}>
+                                <View style={dynamicStyles.typeIconLine} />
+                                <View style={dynamicStyles.typeIconLine} />
+                            </View>
+                            <View style={dynamicStyles.uploadTextContainer}>
+                                <Text style={dynamicStyles.uploadMainText}>{t('order_medicines.type')}</Text>
+                                <Text style={dynamicStyles.uploadSubText}>{t('order_medicines.manual_entry')}</Text>
+                            </View>
+                            <Ionicons name={isManualEntry ? "close-circle" : "chevron-forward"} size={20} color={isManualEntry ? "#048357" : "#898989"} />
+                        </TouchableOpacity>
 
-                    {isManualEntry && (
-                        <View style={dynamicStyles.manualEntryContainer}>
-                            <TextInput
-                                style={dynamicStyles.manualInput}
-                                placeholder={t('order_medicines.manual_placeholder')}
-                                placeholderTextColor="#898989"
-                                multiline
-                                value={manualText}
-                                onChangeText={setManualText}
-                            />
-                        </View>
-                    )}
+                        {isManualEntry && (
+                            <View style={dynamicStyles.manualEntryContainer}>
+                                <TextInput
+                                    style={dynamicStyles.manualInput}
+                                    placeholder={t('order_medicines.manual_placeholder')}
+                                    placeholderTextColor="#898989"
+                                    multiline
+                                    value={manualText}
+                                    onChangeText={(val) => { setManualText(val); setFormErrors(prev => ({ ...prev, prescription: undefined })); }}
+                                />
+                            </View>
+                        )}
+
+                        {formErrors.prescription && (
+                            <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.prescription}</Text>
+                        )}
+                    </View>
 
                     {/* ─── Address Section ─── */}
-                    <AddressPickerSection
-                        selectedAddress={selectedAddress}
-                        onAddressChange={(addr) => {
-                            setSelectedAddress(addr);
-                            setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
-                            if (addr.landmark) setLandmark(addr.landmark);
-                        }}
-                        title={t('order_medicines.address_label')}
-                        showPhoneField={false}
-                        showLandmarkField={true}
-                        landmark={landmark}
-                        onLandmarkChange={setLandmark}
-                        allowManualEntry={true}
-                    />
+                    <View onLayout={(e) => { sectionPositions.current['address'] = e.nativeEvent.layout.y; }}>
+                        <AddressPickerSection
+                            selectedAddress={selectedAddress}
+                            onAddressChange={(addr) => {
+                                setSelectedAddress(addr);
+                                setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
+                                if (addr.landmark) setLandmark(addr.landmark);
+                                setFormErrors(prev => ({ ...prev, address: undefined }));
+                            }}
+                            title={t('order_medicines.address_label')}
+                            showPhoneField={false}
+                            showLandmarkField={true}
+                            landmark={landmark}
+                            onLandmarkChange={setLandmark}
+                            allowManualEntry={true}
+                        />
+                        {formErrors.address && (
+                            <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: -8, marginBottom: 12, fontWeight: '600' }}>⚠️ {formErrors.address}</Text>
+                        )}
+                    </View>
 
                     {/* ─── Auto-Refill Card ─── */}
                     <TouchableOpacity
