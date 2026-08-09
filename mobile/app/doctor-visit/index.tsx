@@ -10,6 +10,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
+import { safeScrollToPosition } from '@/utils/scrollUtils';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
@@ -348,12 +349,7 @@ export default function DoctorVisitScreen() {
             const firstErrorField = ['address', 'problem', 'date'].find(f => errs[f]);
             if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
                 const targetY = sectionPositions.current[firstErrorField] - 20;
-                const sv = scrollViewRef.current as any;
-                if (typeof sv?.scrollToPosition === 'function') {
-                    sv.scrollToPosition(0, targetY, true);
-                } else if (typeof sv?.scrollTo === 'function') {
-                    sv.scrollTo({ y: targetY, animated: true });
-                }
+                safeScrollToPosition(scrollViewRef, targetY);
             }
             return;
         }

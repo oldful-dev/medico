@@ -9,6 +9,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
+import { safeScrollToPosition } from '@/utils/scrollUtils';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { useTranslation } from 'react-i18next';
 
@@ -75,11 +76,7 @@ export default function MealServiceScreen() {
             const firstErrorField = ['address', 'mealType', 'subMode', 'date'].find(f => errs[f]);
             if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
                 const targetY = sectionPositions.current[firstErrorField] - 20;
-                if (typeof scrollViewRef.current?.scrollToPosition === 'function') {
-                    scrollViewRef.current.scrollToPosition(0, targetY, true);
-                } else if (typeof scrollViewRef.current?.scrollTo === 'function') {
-                    scrollViewRef.current.scrollTo({ y: targetY, animated: true });
-                }
+                safeScrollToPosition(scrollViewRef, targetY);
             }
             return;
         }

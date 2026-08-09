@@ -12,6 +12,7 @@ import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { mediaService } from '@/services/api/mediaService';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
+import { safeScrollToPosition } from '@/utils/scrollUtils';
 import { useTranslation } from 'react-i18next';
 
 const cameraIcon = require('@/assets/images/288b8d22e862e8e7e85fb51ab6158d4b0fd84dcc.png');
@@ -114,11 +115,7 @@ export default function ScanEcgScreen() {
             const firstErrorField = ['address', 'date'].find(f => errs[f]);
             if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
                 const targetY = sectionPositions.current[firstErrorField] - 20;
-                if (typeof scrollViewRef.current?.scrollToPosition === 'function') {
-                    scrollViewRef.current.scrollToPosition(0, targetY, true);
-                } else if (typeof scrollViewRef.current?.scrollTo === 'function') {
-                    scrollViewRef.current.scrollTo({ y: targetY, animated: true });
-                }
+                safeScrollToPosition(scrollViewRef, targetY);
             }
             return;
         }

@@ -8,6 +8,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
+import { safeScrollToPosition } from '@/utils/scrollUtils';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { useTranslation } from 'react-i18next';
 import { useUser } from '@/context/UserContext';
@@ -134,11 +135,7 @@ export default function MedicalEquipmentScreen() {
             const firstErrorField = ['address', 'equipment', 'duration', 'date'].find(f => errs[f]);
             if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
                 const targetY = sectionPositions.current[firstErrorField] - 20;
-                if (typeof scrollViewRef.current?.scrollToPosition === 'function') {
-                    scrollViewRef.current.scrollToPosition(0, targetY, true);
-                } else if (typeof scrollViewRef.current?.scrollTo === 'function') {
-                    scrollViewRef.current.scrollTo({ y: targetY, animated: true });
-                }
+                safeScrollToPosition(scrollViewRef, targetY);
             }
             return;
         }

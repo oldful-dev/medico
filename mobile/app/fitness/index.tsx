@@ -8,6 +8,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
+import { safeScrollToPosition } from '@/utils/scrollUtils';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { useTranslation } from 'react-i18next';
@@ -64,11 +65,7 @@ export default function FitnessScreen() {
             const firstErrorField = ['address', 'date'].find(f => errs[f]);
             if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
                 const targetY = sectionPositions.current[firstErrorField] - 20;
-                if (typeof scrollViewRef.current?.scrollToPosition === 'function') {
-                    scrollViewRef.current.scrollToPosition(0, targetY, true);
-                } else if (typeof scrollViewRef.current?.scrollTo === 'function') {
-                    scrollViewRef.current.scrollTo({ y: targetY, animated: true });
-                }
+                safeScrollToPosition(scrollViewRef, targetY);
             }
             return;
         }
