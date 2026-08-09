@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -135,9 +135,13 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
   const [isBooking, setIsBooking] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
 
+  const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
+  const scrollViewRef = useRef<any>(null);
+  const sectionPositions = useRef<Record<string, number>>({});
+
   // Always fetch latest catalog data from DB when opening screen
   useEffect(() => {
-    refreshData(true);
+    refreshData();
   }, []);
 
   // Sync selectedAddress with initial fetched address on mount or when fetched
@@ -201,7 +205,7 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
       } else {
         await userService.addAddress(profile.id, payload);
       }
-      await refreshData(true);
+      await refreshData();
     } catch {
       // non-fatal
     }
@@ -238,37 +242,36 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
   };
 
   const handleBook = async () => {
+    const errs: Record<string, string> = {};
+
     // 1. Validate comments field
     if (!comments.trim()) {
-      Alert.alert(t('common.required', 'Required'), t('service_detail.comments_required', 'Please enter comments or details of your request.'));
-      return;
+      errs.comments = t('service_detail.comments_required', 'Please enter comments or details of your request.');
     }
 
     // 2. Validate location if required
-    if (!hideLocationCard && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
-      Alert.alert(t('common.required', 'Required'), t('service_detail.address_required', 'Please provide a valid address.'));
-      return;
+    if (!hideLocationCard && (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...'))) {
+      errs.address = t('service_detail.address_required', 'Please confirm a valid service address.');
     }
 
     // 3. Validate date if required
     if (showDatePicker && !scheduledDate) {
-      Alert.alert(t('common.required', 'Required'), t('service_detail.date_required', 'Please select a date and time slot.'));
-      return;
-    }
-
-    if (showDatePicker && scheduledDate && scheduledDate <= new Date()) {
-      Alert.alert(t('common.error', 'Error'), t('service_detail.invalid_time', 'Please select a future date and time.'));
-      return;
+      errs.date = t('service_detail.date_required', 'Please select a date and time slot.');
+    } else if (showDatePicker && scheduledDate && scheduledDate <= new Date()) {
+      errs.date = t('service_detail.invalid_time', 'Please select a future date and time.');
     }
 
     // 4. Validate photo upload if strictly required (Group B)
     if (checkoutGroup === 'B' && selectedImages.length === 0) {
-      Alert.alert(t('common.required', 'Required'), t('service_detail.bill_photo_required', 'Please upload a photo of the bills.'));
-      return;
+      errs.photo = t('service_detail.bill_photo_required', 'Please upload a photo of the bills.');
     }
 
-    if (!isReady) {
-      Alert.alert(t('common.error', 'Error'), t('booking.init_incomplete', 'Service initialization failed.'));
+    if (Object.keys(errs).length > 0) {
+      setFormErrors(errs);
+      const firstErrorField = ['address', 'date', 'photo', 'comments'].find(f => errs[f]);
+      if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
+        scrollViewRef.current?.scrollTo({ y: sectionPositions.current[firstErrorField] - 20, animated: true });
+      }
       return;
     }
 
@@ -403,37 +406,48 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
 
       {/* Date & Time Picker */}
       {showDatePicker && (
-        <View style={styles.card}>
+        <View style={styles.card} onLayout={(e) => { sectionPositions.current['date'] = e.nativeEvent.layout.y; }}>
           <CustomDateTimePicker
             label={t('booking.schedule_appointment', 'Schedule Appointment')}
             value={scheduledDate}
-            onDateChange={setScheduledDate}
+            onDateChange={(dt) => { setScheduledDate(dt); setFormErrors(prev => ({ ...prev, date: undefined })); }}
           />
+          {formErrors.date && (
+            <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.date}</Text>
+          )}
         </View>
       )}
 
       {/* Comments input field (mandatory for all services) */}
-      <View style={styles.card}>
+      <View style={styles.card} onLayout={(e) => { sectionPositions.current['comments'] = e.nativeEvent.layout.y; }}>
         <Text style={styles.cardTitle}>{t('service_detail.comments', 'Comments / Requirements')} *</Text>
         <TextInput
           style={styles.textArea}
           placeholder={t('service_detail.comments_placeholder', 'Describe your requirements or any instructions here...')}
           placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
           value={comments}
-          onChangeText={setComments}
+          onChangeText={(text) => { setComments(text); setFormErrors(prev => ({ ...prev, comments: undefined })); }}
           multiline
           numberOfLines={3}
         />
+        {formErrors.comments && (
+          <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.comments}</Text>
+        )}
       </View>
 
       {/* Photo Upload Box */}
       {showPhotoUpload && (
-        <ImageUploadBox
-          title={checkoutGroup === 'B' ? t('service_detail.upload_bill_photos', 'Upload Bill Copies') + ' *' : t('service_detail.upload_optional_photos', 'Upload Photos (Optional)')}
-          subtitle={t('service_detail.image_upload_subtitle', 'JPG, PNG up to 10MB')}
-          onImagesChange={setSelectedImages}
-          maxImages={5}
-        />
+        <View onLayout={(e) => { sectionPositions.current['photo'] = e.nativeEvent.layout.y; }}>
+          <ImageUploadBox
+            title={checkoutGroup === 'B' ? t('service_detail.upload_bill_photos', 'Upload Bill Copies') + ' *' : t('service_detail.upload_optional_photos', 'Upload Photos (Optional)')}
+            subtitle={t('service_detail.image_upload_subtitle', 'JPG, PNG up to 10MB')}
+            onImagesChange={(imgs) => { setSelectedImages(imgs); setFormErrors(prev => ({ ...prev, photo: undefined })); }}
+            maxImages={5}
+          />
+          {formErrors.photo && (
+            <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: -8, marginBottom: 12, fontWeight: '600' }}>⚠️ {formErrors.photo}</Text>
+          )}
+        </View>
       )}
     </ServiceDetailScreen>
   );

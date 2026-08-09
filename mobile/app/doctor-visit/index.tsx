@@ -196,6 +196,10 @@ export default function DoctorVisitScreen() {
         }
     };
 
+    const [formErrors, setFormErrors] = React.useState<Record<string, string | undefined>>({});
+    const scrollViewRef = React.useRef<ScrollView>(null);
+    const sectionPositions = React.useRef<Record<string, number>>({});
+
     // ─── Repeat Order: Load last physio booking on mount ───
     React.useEffect(() => {
         (async () => {
@@ -324,30 +328,27 @@ export default function DoctorVisitScreen() {
     };
 
     const handleBookService = async () => {
+        const errs: Record<string, string> = {};
         if (selectedProblems.length === 0) {
-            Alert.alert(t('common.required'), t('doctor_visit.please_select_problem'));
-            return;
-        }
-        if (selectedProblems.includes('Other') && !otherProblemText.trim()) {
-            Alert.alert(t('common.required'), t('doctor_visit.describe_problem_alert'));
-            return;
+            errs.problem = 'Please select at least one reason for visit.';
+        } else if (selectedProblems.includes('Other') && !otherProblemText.trim()) {
+            errs.problem = 'Please describe your requirement.';
         }
         if (!scheduledDate) {
-            Alert.alert(t('common.required'), 'Please select a date and time slot.');
-            return;
+            errs.date = 'Please select a date and time slot.';
+        } else if (scheduledDate <= new Date()) {
+            errs.date = 'Selected date & time cannot be in the past.';
         }
-        if (scheduledDate <= new Date()) {
-            Alert.alert(t('common.error'), t('doctor_visit.invalid_time_alert'));
-            return;
+        if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
+            errs.address = 'Please confirm your service address.';
         }
-        if (!address || address.trim().length < 5 || address === 'Fetching address...') {
-            Alert.alert(t('common.required'), locationDenied
-                ? t('doctor_visit.address_required_gps_denied')
-                : t('doctor_visit.address_required_failed'));
-            return;
-        }
-        if (!isReady) {
-            Alert.alert(t('common.error'), t('booking.init_incomplete'));
+
+        if (Object.keys(errs).length > 0) {
+            setFormErrors(errs);
+            const firstErrorField = ['address', 'problem', 'date'].find(f => errs[f]);
+            if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
+                scrollViewRef.current?.scrollTo({ y: sectionPositions.current[firstErrorField] - 20, animated: true });
+            }
             return;
         }
         try {
@@ -370,7 +371,7 @@ export default function DoctorVisitScreen() {
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
-                scheduledDate: scheduledDate.toISOString(),
+                scheduledDate: scheduledDate ? scheduledDate.toISOString() : new Date().toISOString(),
                 addressLine: address || undefined,
                 landmark: landmark.trim() || undefined,
                 latitude: gps?.latitude,
@@ -438,6 +439,7 @@ export default function DoctorVisitScreen() {
             <View style={[styles.contentCard, { backgroundColor: colors.bgScreen }]}>
                 <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <KeyboardAwareScrollView
+                    ref={scrollViewRef as any}
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
@@ -470,7 +472,7 @@ export default function DoctorVisitScreen() {
                     <View style={styles.divider} />
 
                     {/* ─── Select Problem Card ─── */}
-                    <View style={[styles.sectionCard, { backgroundColor: colors.bgCard }]}>
+                    <View style={[styles.sectionCard, { backgroundColor: colors.bgCard }]} onLayout={(e) => { sectionPositions.current['problem'] = e.nativeEvent.layout.y; }}>
                         <Text style={[styles.sectionTitle, { color: colors.primary }]}>{t('booking.select_problem')}</Text>
 
                         <View style={styles.problemsGrid}>
@@ -490,7 +492,7 @@ export default function DoctorVisitScreen() {
                                             { width: exactProblemWidth, backgroundColor: colors.bgScreen },
                                             isSelected && [styles.problemItemActive, { borderColor: colors.primary }]
                                         ]}
-                                        onPress={() => handleProblemSelect(item.label)}
+                                        onPress={() => { handleProblemSelect(item.label); setFormErrors(prev => ({ ...prev, problem: undefined })); }}
                                     >
                                         <View style={[styles.problemIconContainer, { height: exactIconHeight }]}>
                                             <Image source={item.icon} style={styles.problemIcon} resizeMode="cover" />
@@ -508,10 +510,14 @@ export default function DoctorVisitScreen() {
                                 placeholder={t('doctor_visit.describe_problem_placeholder')}
                                 placeholderTextColor={colors.textMuted}
                                 value={otherProblemText}
-                                onChangeText={setOtherProblemText}
+                                onChangeText={(val) => { setOtherProblemText(val); setFormErrors(prev => ({ ...prev, problem: undefined })); }}
                                 multiline
                                 maxLength={200}
                             />
+                        )}
+
+                        {formErrors.problem && (
+                            <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 8, fontWeight: '600' }}>⚠️ {formErrors.problem}</Text>
                         )}
                     </View>
 
@@ -540,12 +546,15 @@ export default function DoctorVisitScreen() {
                     </View>
 
                     {/* ─── When? Card (Scheduling using standard slot picker) ─── */}
-                    <View style={styles.sectionCardSmall}>
+                    <View style={styles.sectionCardSmall} onLayout={(e) => { sectionPositions.current['date'] = e.nativeEvent.layout.y; }}>
                         <CustomDateTimePicker
                             label={t('booking.schedule_appointment', 'Schedule Appointment')}
                             value={scheduledDate}
-                            onDateChange={setScheduledDate}
+                            onDateChange={(dt) => { setScheduledDate(dt); setFormErrors(prev => ({ ...prev, date: undefined })); }}
                         />
+                        {formErrors.date && (
+                            <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.date}</Text>
+                        )}
                     </View>
 
                     {/* ─── Compact Document Upload UI ─── */}
@@ -578,16 +587,21 @@ export default function DoctorVisitScreen() {
                     </View>
 
                     {/* ─── Confirm Address Card ─── */}
-                    <AddressPickerSection
-                        selectedAddress={selectedAddress}
-                        onAddressChange={handleAddressChange}
-                        title={t('booking.confirm_address')}
-                        showPhoneField={false}
-                        showLandmarkField={true}
-                        landmark={landmark}
-                        onLandmarkChange={setLandmark}
-                        allowManualEntry={true}
-                    />
+                    <View onLayout={(e) => { sectionPositions.current['address'] = e.nativeEvent.layout.y; }}>
+                        <AddressPickerSection
+                            selectedAddress={selectedAddress}
+                            onAddressChange={(addr) => { handleAddressChange(addr); setFormErrors(prev => ({ ...prev, address: undefined })); }}
+                            title={t('booking.confirm_address')}
+                            showPhoneField={false}
+                            showLandmarkField={true}
+                            landmark={landmark}
+                            onLandmarkChange={setLandmark}
+                            allowManualEntry={true}
+                        />
+                        {formErrors.address && (
+                            <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: -8, marginBottom: 12, fontWeight: '600' }}>⚠️ {formErrors.address}</Text>
+                        )}
+                    </View>
 
 
 
