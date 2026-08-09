@@ -70,11 +70,13 @@ async function notifyBookingAdmin({ booking, eventLabel }) {
         if (sms) {
             try {
                 const { sendSMS } = require('../services/sms');
-                // Revert to clean DLT-approved ORDER_CONFIRMED variable format: Var1=name, Var2=orderId, Var3=support
+                // Use DLT-approved ADMIN_NEW_ORDER template with sender AYUXAH (222576):
+                // Var1 = Order ID (bookingCode)
+                // Var2 = Schedule on (timeStr)
                 await sendSMS({
-                    template: 'ORDER_CONFIRMED',
+                    template: 'ADMIN_NEW_ORDER',
                     mobile: sms,
-                    variables: [`Admin (${eventLabel})`, bookingCode, process.env.SUPPORT_PHONE || '9480198108'],
+                    variables: [bookingCode, timeStr || 'As scheduled'],
                 });
                 logger.info(`[BookingAdmin] SMS sent → ${sms} (${eventLabel} / ${bookingCode})`);
             } catch (smsErr) {
