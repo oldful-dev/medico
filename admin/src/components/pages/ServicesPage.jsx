@@ -195,8 +195,8 @@ export default function ServicesPage() {
             pricingText: s.pricingText || "",
             sortOrder: s.sortOrder || 1,
             isEnabled: s.isEnabled ?? true,
-            category: s.category || "DIAGNOSTICS_FITNESS",
-            isDynamic: true,
+            category: s.category || "CARE",
+            isDynamic: s.isDynamic !== undefined ? !!s.isDynamic : false,
             serviceType: s.serviceType || "OTHER",
             paymentMode: s.paymentMode || "INQUIRY"
         });
@@ -557,6 +557,7 @@ export default function ServicesPage() {
                                                 value={form.category} 
                                                 onChange={e => setForm({ ...form, category: e.target.value })}
                                             >
+                                                <option value="CARE">Care Services (Doctor, Nurse, Physio, Hospital)</option>
                                                 <option value="DIAGNOSTICS_FITNESS">Diagnostics & Fitness</option>
                                                 <option value="HOME_ESSENTIALS">Home Essentials</option>
                                             </select>
@@ -639,13 +640,25 @@ export default function ServicesPage() {
                                             />
                                         </div>
                                         <div className="form-group" style={{ marginBottom: 0 }}>
-                                             <label className="form-label">Service Route Path (Optional)</label>
-                                             <RouteSelector 
-                                                 value={form.route}
-                                                 onChange={val => setForm({ ...form, route: val })}
-                                                 placeholder="Auto: /dynamic-service/[slug]"
-                                             />
-                                         </div>
+                                            <label className="form-label">Service Architecture Type *</label>
+                                            <select 
+                                                className="form-input" 
+                                                style={{ cursor: "pointer" }}
+                                                value={form.isDynamic ? "dynamic" : "core"} 
+                                                onChange={e => setForm({ ...form, isDynamic: e.target.value === "dynamic" })}
+                                            >
+                                                <option value="core">Core Built-in Page (Native Code / Direct Route)</option>
+                                                <option value="dynamic">Dynamic SDUI Page (Form Builder / SDUI)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="form-group" style={{ marginTop: "16px", marginBottom: 0 }}>
+                                        <label className="form-label">Service Route Path (Optional)</label>
+                                        <RouteSelector 
+                                            value={form.route}
+                                            onChange={val => setForm({ ...form, route: val })}
+                                            placeholder="Auto: /dynamic-service/[slug]"
+                                        />
                                     </div>
                                 </div>
 
