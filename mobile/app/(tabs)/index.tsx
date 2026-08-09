@@ -306,7 +306,17 @@ function ServiceGrid({ section, itemWidth, imageHeight, cardHeight, colors }: Se
       enabled: true
     }));
 
-  const allServices = [...section.services, ...dbDynamicServices];
+  const existingRoutes = new Set(section.services.map(s => resolveRoute(s.route, s.id)));
+  const existingIds = new Set(section.services.map(s => s.id.toLowerCase()));
+
+  const uniqueDynamicServices = dbDynamicServices.filter(
+    ds => !existingRoutes.has(resolveRoute(ds.route, ds.id)) && 
+          !existingIds.has(ds.id.toLowerCase()) && 
+          ds.id !== 'nurse-care' && 
+          ds.id !== 'nurse_care'
+  );
+
+  const allServices = [...section.services, ...uniqueDynamicServices];
 
   const primaryItems = allServices.slice(0, 6);
   const remainingItems = allServices.slice(6);
