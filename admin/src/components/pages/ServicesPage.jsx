@@ -211,7 +211,7 @@ export default function ServicesPage() {
                     label: f.label || "",
                     placeholder: f.placeholder || "",
                     required: !!f.required,
-                    optionsString: f.options ? f.options.map(o => o.label).join(", ") : ""
+                    optionsString: f.options ? f.options.map(o => o.price !== undefined ? `${o.label}: ${o.price}` : o.label).join(", ") : ""
                 });
             });
         } else {
@@ -311,11 +311,17 @@ export default function ServicesPage() {
                 placeholder: f.placeholder,
                 required: f.required,
                 options: ["radio", "dropdown", "checkbox", "benefits"].includes(f.type) && f.optionsString
-                    ? f.optionsString.split(",").map((opt, optIdx) => ({
-                        id: opt.trim().toLowerCase().replace(/\s+/g, "_"),
-                        label: opt.trim(),
-                        sort_order: optIdx + 1
-                    }))
+                    ? f.optionsString.split(",").map((opt, optIdx) => {
+                        const parts = opt.split(":");
+                        const labelStr = parts[0].trim();
+                        const priceVal = parts[1] ? parseFloat(parts[1].trim()) : undefined;
+                        return {
+                            id: labelStr.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""),
+                            label: labelStr,
+                            ...(priceVal !== undefined && !isNaN(priceVal) && { price: priceVal }),
+                            sort_order: optIdx + 1
+                        };
+                    })
                     : undefined
             }));
 
@@ -876,12 +882,12 @@ export default function ServicesPage() {
 
                                                  {["dropdown", "radio", "checkbox", "benefits"].includes(field.type) && (
                                                      <div className="form-group" style={{ marginTop: 4, marginBottom: 12 }}>
-                                                         <label className="form-label text-xs">Options List (Comma separated) *</label>
+                                                         <label className="form-label text-xs">Options List (Comma separated — format as "Option: Price" to set custom prices e.g. "Short Visit (2 Hours): 499, Full Shift (8 Hours): 1299") *</label>
                                                          <input 
                                                              type="text" 
                                                              className="form-input" 
                                                              required
-                                                             placeholder="e.g. Option A, Option B, Option C"
+                                                             placeholder='e.g. Short Visit (2 Hours): 499, Full Shift (8 Hours): 1299'
                                                              value={field.optionsString} 
                                                              onChange={e => updateFormField(idx, "optionsString", e.target.value)}
                                                          />
