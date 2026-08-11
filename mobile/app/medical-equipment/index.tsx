@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Alert, ActivityIndicator, KeyboardAvoidingView, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, ActivityIndicator, KeyboardAvoidingView, TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -8,12 +8,12 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
-import { safeScrollToPosition } from '@/utils/scrollUtils';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { useTranslation } from 'react-i18next';
 import { useUser } from '@/context/UserContext';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { userService } from '@/services/api/userService';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 
 // ─── Figma Assets ───
@@ -39,10 +39,14 @@ export default function MedicalEquipmentScreen() {
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [isBooking, setIsBooking] = useState(false);
     const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
-    const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
-    const scrollViewRef = React.useRef<any>(null);
-    const sectionPositions = React.useRef<Record<string, number>>({});
     const [landmark, setLandmark] = useState('');
+
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false, title: '', message: '', iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
 
     const { cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('equipment-rental');
 
@@ -108,39 +112,44 @@ export default function MedicalEquipmentScreen() {
         }
     };
 
-    const handleBookService = async () => {
-        const errs: Record<string, string> = {};
+    const isFormValid = React.useMemo(() => {
+        return !!(
+            selectedEquipment &&
+            (selectedEquipment !== 'other' || otherType.trim()) &&
+            selectedDuration &&
+            (selectedDuration !== 'Custom' || customDuration.trim()) &&
+            selectedDate &&
+            (selectedAddress?.line1 || (address && address.trim().length >= 5 && address !== 'Fetching address...'))
+        );
+    }, [selectedEquipment, otherType, selectedDuration, customDuration, selectedDate, address, selectedAddress]);
 
+    const handleBookService = async () => {
         if (!selectedEquipment) {
-            errs.equipment = t('medical_equipment.select_equipment', 'Please select equipment type.');
+            triggerAlert(t('common.required') || 'Required', t('medical_equipment.select_equipment', 'Please select equipment type.'));
+            return;
         }
         if (selectedEquipment === 'other' && !otherType.trim()) {
-            errs.equipment = t('medical_equipment.alert_other_required', 'Please specify the equipment required.');
+            triggerAlert(t('common.required') || 'Required', t('medical_equipment.alert_other_required', 'Please specify the equipment required.'));
+            return;
         }
         if (!selectedDuration) {
-            errs.duration = t('medical_equipment.select_duration', 'Please select duration.');
+            triggerAlert(t('common.required') || 'Required', t('medical_equipment.select_duration', 'Please select duration.'));
+            return;
         }
         if (selectedDuration === 'Custom' && !customDuration.trim()) {
-            errs.duration = t('medical_equipment.alert_custom_duration_required', 'Please enter custom duration.');
+            triggerAlert(t('common.required') || 'Required', t('medical_equipment.alert_custom_duration_required', 'Please enter custom duration.'));
+            return;
         }
         if (!selectedDate) {
-            errs.date = t('medical_equipment.select_date', 'Please select date and time.');
+            triggerAlert(t('common.required') || 'Required', t('medical_equipment.select_date', 'Please select date and time.'));
+            return;
         }
         if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
-            errs.address = t('service_detail.address_required', 'Please provide a valid address.');
-        }
-
-        if (Object.keys(errs).length > 0) {
-            setFormErrors(errs);
-            const firstErrorField = ['address', 'equipment', 'duration', 'date'].find(f => errs[f]);
-            if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
-                const targetY = sectionPositions.current[firstErrorField] - 20;
-                safeScrollToPosition(scrollViewRef, targetY);
-            }
+            triggerAlert(t('common.required') || 'Required', t('service_detail.address_required', 'Please provide a valid address.'));
             return;
         }
         if (!cityId || !serviceId) {
-            Alert.alert(t('common.error'), t('booking.init_incomplete'));
+            triggerAlert(t('common.error') || 'Error', t('booking.init_incomplete') || 'Service initialization failed.');
             return;
         }
         try {
@@ -170,7 +179,7 @@ export default function MedicalEquipmentScreen() {
             });
         } catch (error) {
             console.error('Equipment error:', error);
-            Alert.alert(t('common.error'), t('booking.something_wrong'));
+            triggerAlert(t('common.error') || 'Error', t('booking.something_wrong') || 'Something went wrong. Please try again.');
         } finally {
             setIsBooking(false);
         }
@@ -197,17 +206,17 @@ export default function MedicalEquipmentScreen() {
                 </View>
 
                 <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-            <KeyboardAwareScrollView ref={scrollViewRef} contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
+            <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                     {/* ─── Select Equipment Section ─── */}
-                    <View style={dynamicStyles.sectionCardTintedDark} onLayout={(e) => { sectionPositions.current['equipment'] = e.nativeEvent.layout.y; }}>
+                    <View style={dynamicStyles.sectionCardTintedDark}>
                         <Text style={dynamicStyles.sectionTitle}>{t('medical_equipment.equipment_section')}</Text>
 
                         <View style={dynamicStyles.equipmentGrid}>
                             {/* Wheelchair */}
                             <TouchableOpacity
                                 style={[dynamicStyles.equipmentCard, selectedEquipment === 'wheelchair' && dynamicStyles.equipmentCardActive]}
-                                onPress={() => { setSelectedEquipment('wheelchair'); setFormErrors(prev => ({ ...prev, equipment: undefined })); }}
+                                onPress={() => setSelectedEquipment('wheelchair')}
                                 activeOpacity={0.7}
                             >
                                 <Image source={imgWheelchair} style={dynamicStyles.equipmentImage} resizeMode="contain" />
@@ -218,7 +227,7 @@ export default function MedicalEquipmentScreen() {
                             {/* Hospital Bed */}
                             <TouchableOpacity
                                 style={[dynamicStyles.equipmentCard, selectedEquipment === 'bed' && dynamicStyles.equipmentCardActive]}
-                                onPress={() => { setSelectedEquipment('bed'); setFormErrors(prev => ({ ...prev, equipment: undefined })); }}
+                                onPress={() => setSelectedEquipment('bed')}
                                 activeOpacity={0.7}
                             >
                                 <Image source={imgHospitalBed} style={[dynamicStyles.equipmentImage, dynamicStyles.bedImage]} resizeMode="contain" />
@@ -229,7 +238,7 @@ export default function MedicalEquipmentScreen() {
                             {/* Oxygen Concentrator */}
                             <TouchableOpacity
                                 style={[dynamicStyles.equipmentCard, selectedEquipment === 'oxygen' && dynamicStyles.equipmentCardActive]}
-                                onPress={() => { setSelectedEquipment('oxygen'); setFormErrors(prev => ({ ...prev, equipment: undefined })); }}
+                                onPress={() => setSelectedEquipment('oxygen')}
                                 activeOpacity={0.7}
                             >
                                 <Image source={imgOxygen} style={[dynamicStyles.equipmentImage, dynamicStyles.oxygenImage]} resizeMode="contain" />
@@ -239,7 +248,7 @@ export default function MedicalEquipmentScreen() {
                             {/* Walker/stick */}
                             <TouchableOpacity
                                 style={[dynamicStyles.equipmentCard, selectedEquipment === 'walker' && dynamicStyles.equipmentCardActive]}
-                                onPress={() => { setSelectedEquipment('walker'); setFormErrors(prev => ({ ...prev, equipment: undefined })); }}
+                                onPress={() => setSelectedEquipment('walker')}
                                 activeOpacity={0.7}
                             >
                                 <Image source={imgWalker} style={[dynamicStyles.equipmentImage, dynamicStyles.walkerImage]} resizeMode="contain" />
@@ -249,16 +258,13 @@ export default function MedicalEquipmentScreen() {
                             {/* Other */}
                             <TouchableOpacity
                                 style={[dynamicStyles.equipmentCard, selectedEquipment === 'other' && dynamicStyles.equipmentCardActive]}
-                                onPress={() => { setSelectedEquipment('other'); setFormErrors(prev => ({ ...prev, equipment: undefined })); }}
+                                onPress={() => setSelectedEquipment('other')}
                                 activeOpacity={0.7}
                             >
                                 <Ionicons name="help-circle-outline" size={32} color={colors.primary} style={{ marginTop: 8, marginBottom: 2 }} />
                                 <Text style={dynamicStyles.equipmentName}>{t('medical_equipment.other')}</Text>
                             </TouchableOpacity>
                         </View>
-                        {formErrors.equipment && (
-                            <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.equipment}</Text>
-                        )}
                     </View>
 
                     {/* Conditional input for Other Type */}
@@ -271,27 +277,27 @@ export default function MedicalEquipmentScreen() {
                                     placeholder={t('medical_equipment.other_placeholder')}
                                     placeholderTextColor={isDarkMode ? '#94A3B8' : '#888888'}
                                     value={otherType}
-                                    onChangeText={(val) => { setOtherType(val); setFormErrors(prev => ({ ...prev, equipment: undefined })); }}
+                                    onChangeText={setOtherType}
                                 />
                             </View>
                         </View>
                     )}
 
                     {/* ─── Set Rental Duration Section ─── */}
-                    <View style={dynamicStyles.sectionCardTintedLight} onLayout={(e) => { sectionPositions.current['duration'] = e.nativeEvent.layout.y; }}>
+                    <View style={dynamicStyles.sectionCardTintedLight}>
                         <Text style={dynamicStyles.sectionTitle}>{t('medical_equipment.duration')}</Text>
 
-                        <TouchableOpacity style={dynamicStyles.radioRow} onPress={() => { setSelectedDuration('Weekly'); setFormErrors(prev => ({ ...prev, duration: undefined })); }} activeOpacity={0.7}>
+                        <TouchableOpacity style={dynamicStyles.radioRow} onPress={() => setSelectedDuration('Weekly')} activeOpacity={0.7}>
                             <Ionicons name={selectedDuration === 'Weekly' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedDuration === 'Weekly' ? colors.primary : (isDarkMode ? '#64748B' : '#AAAEAC')} />
                             <Text style={dynamicStyles.radioLabel}>{t('medical_equipment.weekly')}</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={dynamicStyles.radioRow} onPress={() => { setSelectedDuration('Monthly'); setFormErrors(prev => ({ ...prev, duration: undefined })); }} activeOpacity={0.7}>
+                        <TouchableOpacity style={dynamicStyles.radioRow} onPress={() => setSelectedDuration('Monthly')} activeOpacity={0.7}>
                             <Ionicons name={selectedDuration === 'Monthly' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedDuration === 'Monthly' ? colors.primary : (isDarkMode ? '#64748B' : '#AAAEAC')} />
                             <Text style={dynamicStyles.radioLabel}>{t('medical_equipment.monthly')}</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={dynamicStyles.radioRow} onPress={() => { setSelectedDuration('Custom'); setFormErrors(prev => ({ ...prev, duration: undefined })); }} activeOpacity={0.7}>
+                        <TouchableOpacity style={dynamicStyles.radioRow} onPress={() => setSelectedDuration('Custom')} activeOpacity={0.7}>
                             <Ionicons name={selectedDuration === 'Custom' ? "radio-button-on" : "radio-button-off"} size={20} color={selectedDuration === 'Custom' ? colors.primary : (isDarkMode ? '#64748B' : '#AAAEAC')} />
                             <Text style={dynamicStyles.radioLabel}>{t('medical_equipment.custom')}</Text>
                         </TouchableOpacity>
@@ -304,32 +310,26 @@ export default function MedicalEquipmentScreen() {
                                     placeholder={t('medical_equipment.custom_duration_placeholder')}
                                     placeholderTextColor={isDarkMode ? '#94A3B8' : '#888888'}
                                     value={customDuration}
-                                    onChangeText={(val) => { setCustomDuration(val); setFormErrors(prev => ({ ...prev, duration: undefined })); }}
+                                    onChangeText={setCustomDuration}
                                 />
                             </View>
-                        )}
-                        {formErrors.duration && (
-                            <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.duration}</Text>
                         )}
                     </View>
 
                     {/* ─── Schedule Pick-up Section ─── */}
-                    <View style={dynamicStyles.sectionCardTransparent} onLayout={(e) => { sectionPositions.current['date'] = e.nativeEvent.layout.y; }}>
+                    <View style={dynamicStyles.sectionCardTransparent}>
                         <CustomDateTimePicker
                             label={t('medical_equipment.when')}
                             value={selectedDate}
-                            onDateChange={(dt) => { setSelectedDate(dt); setFormErrors(prev => ({ ...prev, date: undefined })); }}
+                            onDateChange={setSelectedDate}
                         />
-                        {formErrors.date && (
-                            <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.date}</Text>
-                        )}
                     </View>
 
                     {/* ─── Confirm Address Card ─── */}
-                    <View onLayout={(e) => { sectionPositions.current['address'] = e.nativeEvent.layout.y; }}>
+                    <View>
                         <AddressPickerSection
                             selectedAddress={selectedAddress}
-                            onAddressChange={(addr) => { handleAddressChange(addr); setFormErrors(prev => ({ ...prev, address: undefined })); }}
+                            onAddressChange={handleAddressChange}
                             title={t('booking.confirm_address')}
                             showPhoneField={false}
                             showLandmarkField={true}
@@ -337,17 +337,14 @@ export default function MedicalEquipmentScreen() {
                             onLandmarkChange={setLandmark}
                             allowManualEntry={true}
                         />
-                        {formErrors.address && (
-                            <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: -8, marginBottom: 12, fontWeight: '600' }}>⚠️ {formErrors.address}</Text>
-                        )}
                     </View>
 
                     {/* ─── Confirm Rental Button ─── */}
                     <View style={dynamicStyles.buttonContainer}>
                         <TouchableOpacity
-                            style={[dynamicStyles.confirmButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
-                            activeOpacity={0.8}
-                            disabled={isBooking || isLoadingInit}
+                            style={[dynamicStyles.confirmButton, (!isFormValid || isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                            activeOpacity={isFormValid && !isBooking && !isLoadingInit ? 0.8 : 0.5}
+                            disabled={!isFormValid || isBooking || isLoadingInit}
                             onPress={handleBookService}
                         >
                             {isLoadingInit ? (
@@ -363,6 +360,15 @@ export default function MedicalEquipmentScreen() {
                 </KeyboardAwareScrollView>
         </KeyboardAvoidingView>
             </View>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText="OK"
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </View>
     );
 }

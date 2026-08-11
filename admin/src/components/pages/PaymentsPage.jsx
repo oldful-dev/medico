@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { RefreshCw, ChevronLeft, ChevronRight, Edit2, CreditCard, Smartphone, Banknote, Building2, FileDown, Eye } from "lucide-react";
-import { paymentAPI, bookingAPI } from "@/lib/api";
+import { paymentAPI, bookingAPI, labAPI } from "@/lib/api";
 import { formatCurrency, formatDateTime, showToast } from "@/lib/hooks";
 
 const statusColors = { INITIATED: 'badge-default', SUCCESS: 'badge-success', FAILED: 'badge-danger', REFUND_INITIATED: 'badge-warning', REFUNDED: 'badge-info' };
@@ -182,8 +182,18 @@ export default function PaymentsPage() {
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <span className="text-muted">Reference:</span>
-                                    <code style={{ fontSize: 11 }}>{p.booking?.bookingCode || p.subscription?.plan?.name || '—'}</code>
+                                    <code style={{ fontSize: 11 }}>
+                                        {p.booking?.bookingCode || p.labOrder?.clientRefId || p.subscription?.plan?.name || '—'}
+                                    </code>
                                 </div>
+                                {p.labOrder && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span className="text-muted">Test:</span>
+                                        <span style={{ fontSize: 11, fontWeight: 600, textAlign: 'right' }}>
+                                            {Array.isArray(p.labOrder.packages) && p.labOrder.packages[0]?.name || 'Blood Test'}
+                                        </span>
+                                    </div>
+                                )}
                                 {p.couponCode && (
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <span className="text-muted">Coupon:</span>
@@ -201,12 +211,17 @@ export default function PaymentsPage() {
                                         <RefreshCw size={13} style={{ marginRight: 4 }} /> Refund
                                     </button>
                                 )}
-                                {p.bookingId && p.status === 'SUCCESS' && (
-                                    <div style={{ display: 'flex', gap: 4 }}>
-                                        <button className="btn btn-sm btn-secondary" style={{ padding: '6px' }} title="View Invoice Inline" onClick={() => setViewerModal(bookingAPI.getInvoiceDownloadUrl(p.bookingId))}><Eye size={13} /></button>
-                                        <a href={bookingAPI.getInvoiceDownloadUrl(p.bookingId)} download className="btn btn-sm btn-secondary" style={{ padding: '6px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} title="Download Invoice PDF" target="_blank" rel="noreferrer"><FileDown size={13} /></a>
-                                    </div>
-                                )}
+                                {(p.bookingId || p.labOrderId) && p.status === 'SUCCESS' && (() => {
+                                    const invoiceUrl = p.bookingId
+                                        ? bookingAPI.getInvoiceDownloadUrl(p.bookingId)
+                                        : labAPI.getInvoiceDownloadUrl(p.labOrderId);
+                                    return (
+                                        <div style={{ display: 'flex', gap: 4 }}>
+                                            <button className="btn btn-sm btn-secondary" style={{ padding: '6px' }} title="View Invoice Inline" onClick={() => setViewerModal(invoiceUrl)}><Eye size={13} /></button>
+                                            <a href={invoiceUrl} download className="btn btn-sm btn-secondary" style={{ padding: '6px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} title="Download Invoice PDF" target="_blank" rel="noreferrer"><FileDown size={13} /></a>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </div>
                     ))}
@@ -218,7 +233,12 @@ export default function PaymentsPage() {
                 <div className="modal-overlay" onClick={() => setRefundModal(null)}><div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 450 }}>
                     <div className="modal-header"><h3>Process Refund</h3><button onClick={() => setRefundModal(null)} className="btn btn-sm btn-secondary">✕</button></div>
                     <div className="modal-body">
-                        <p className="text-sm mb-4">Payment: {formatCurrency(refundModal.amount)} — {refundModal.user?.name}</p>
+                        <p className="text-sm mb-4">
+                            Payment: {formatCurrency(refundModal.amount)} — {refundModal.user?.name}
+                            {(refundModal.booking?.bookingCode || refundModal.labOrder?.clientRefId) && (
+                                <> · <code style={{ fontSize: 11 }}>{refundModal.booking?.bookingCode || refundModal.labOrder?.clientRefId}</code></>
+                            )}
+                        </p>
                         <div className="form-group"><label className="form-label">Refund Type</label><select className="form-select" value={refundData.refundType} onChange={e => setRefundData({ ...refundData, refundType: e.target.value })}>{['SLA_BREACH', 'COMPASSIONATE', 'CANCELLATION', 'OTHER'].map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}</select></div>
                         <div className="form-group"><label className="form-label">Refund Amount</label><input className="form-input" type="number" value={refundData.refundAmount} onChange={e => setRefundData({ ...refundData, refundAmount: parseFloat(e.target.value) || 0 })} /></div>
                         <div className="form-group"><label className="form-label">Reason</label><textarea className="form-input" rows={2} value={refundData.refundReason} onChange={e => setRefundData({ ...refundData, refundReason: e.target.value })} /></div>

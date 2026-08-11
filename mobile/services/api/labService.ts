@@ -13,6 +13,12 @@ export interface LabPackage {
     collectionType?: string;
     reportTime?: string;
     description?: string;
+    // Real Redcliffe fields (pass-through from backend, no fallback needed)
+    fasting_time?: string | null;
+    tat_time?: string | null;
+    specimen_instructions?: string | null;
+    test_category?: string | null;
+    category_for_web?: { id: number; name: string }[];
 }
 
 export interface LabSlot {
@@ -75,9 +81,34 @@ export interface LabOrderListItem {
     rescheduledTime?: string; // Admin-updated time if rescheduled
     address: any;
     assignedStaff?: { name: string; staffId?: string; phone?: string; photoUrl?: string };
+    trackingLink?: string | null; // Opaque Redcliffe phlebo-tracking URL, set once phleboassigned webhook fires
     reportUrl?: string;
     createdAt: string;
     payments?: Array<{ status: string; amount: number }>;
+}
+
+// Shape of GET /labs/booking/:id/digital-report — real Redcliffe structured test values
+// (name/value/unit/reference range/highlight), NOT a PDF. Confirmed against the Redcliffe
+// API Wiki: distinct from get-consolidated-report, which only returns a report PDF link.
+export interface DigitalReportTestValue {
+    id: string;
+    test_parameter: {
+        id: number;
+        name: string;
+        unit: string;
+        reference_range_male?: string;
+        reference_range_female?: string;
+    };
+    value: string;
+    is_highlighted?: boolean;
+}
+
+export interface DigitalReportEntry {
+    booking_id: number;
+    collection_date: string;
+    test_code: string;
+    test_name: string;
+    test_values: DigitalReportTestValue[];
 }
 
 export const labService = {
@@ -172,6 +203,11 @@ export const labService = {
 
     getLabOrderById: async (id: string) => {
         const response = await apiClient.get<LabOrderListItem>(`/labs/booking/${id}`);
+        return response;
+    },
+
+    getDigitalReport: async (id: string) => {
+        const response = await apiClient.get<DigitalReportEntry[]>(`/labs/booking/${id}/digital-report`);
         return response;
     },
 

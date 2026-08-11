@@ -175,9 +175,9 @@ export function SectionRenderer({
         .sort((a, b) => a.sort_order - b.sort_order);
 
     const translateSOSText = (text: string) => {
-        if (text === 'Need Immediate') return t('sos.need_medical');
-        if (text === 'Medical Support?') return t('sos.medical_support');
-        if (text === 'Click here') return t('sos.click_here');
+        if (text === 'Need Immediate') return t('sos.need_medical', 'Need Immediate');
+        if (text === 'Medical Support?') return t('sos.medical_support', 'Medical Support?');
+        if (text === 'Click here') return t('sos.click_here', 'Click here');
         return text;
     };
 

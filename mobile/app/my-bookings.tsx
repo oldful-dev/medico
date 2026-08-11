@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, RefreshControl, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl, Linking } from 'react-native';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,7 +45,8 @@ interface Booking {
     scheduledTime?: string;
     rescheduledDate?: string;
     rescheduledTime?: string;
-    status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled' | 'expired';
+    status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled' | 'expired'
+        | 'hold_created' | 'payment_pending' | 'processing' | 'needs_attention';
     paymentStatus: 'pending' | 'paid' | 'failed';
     assignedPersonnel?: string;
     collectionType?: string;
@@ -73,12 +75,16 @@ const TAB_CONFIG: { key: FilterTab; label: string; icon: string }[] = [
 ];
 
 const STATUS_META: Record<Booking['status'], { label: string; color: string }> = {
-    confirmed:   { label: 'Confirmed',   color: '#059669' },
-    pending:     { label: 'Pending',     color: '#D97706' },
-    completed:   { label: 'Completed',   color: PRIMARY },
-    cancelled:   { label: 'Cancelled',   color: '#EF4444' },
-    rescheduled: { label: 'Rescheduled', color: '#7C3AED' },
-    expired:     { label: 'Expired',     color: '#EF4444' },
+    confirmed:       { label: 'Confirmed',            color: '#059669' },
+    pending:         { label: 'Pending',              color: '#D97706' },
+    completed:       { label: 'Completed',            color: PRIMARY },
+    cancelled:       { label: 'Cancelled',             color: '#EF4444' },
+    rescheduled:     { label: 'Rescheduled',           color: '#7C3AED' },
+    expired:         { label: 'Expired',               color: '#EF4444' },
+    hold_created:    { label: 'Slot Reserved',         color: '#D97706' },
+    payment_pending: { label: 'Payment Pending',       color: '#D97706' },
+    processing:      { label: 'Sample Processing',     color: '#0EA5E9' },
+    needs_attention: { label: 'Needs Attention',       color: '#EA580C' },
 };
 
 const CATEGORY_META: Record<string, { icon: string; color: string; label: string }> = {
@@ -91,11 +97,19 @@ const CATEGORY_META: Record<string, { icon: string; color: string; label: string
 };
 
 // ─── Normalizers ───────────────────────────────────────────────────────────────
+// Maps the real Redcliffe-backed LabStatus enum (PENDING|HOLD_CREATED|PAYMENT_PENDING|
+// CONFIRMED|SAMPLE_COLLECTED|PROCESSING|REPORT_GENERATED|FAILED|MANUAL_RECOVERY_NEEDED|
+// RESCHEDULED) to distinct UI states — preserving the granularity so "sample being
+// processed" never looks identical to "just booked" or "fully done".
 function mapLabStatus(s: string): Booking['status'] {
-    if (s === 'REPORT_GENERATED' || s === 'SAMPLE_COLLECTED') return 'completed';
+    if (s === 'REPORT_GENERATED') return 'completed';
+    if (s === 'SAMPLE_COLLECTED' || s === 'PROCESSING') return 'processing';
     if (s === 'CANCELLED' || s === 'FAILED') return 'cancelled';
     if (s === 'RESCHEDULED') return 'rescheduled';
-    if (s === 'CONFIRMED' || s === 'HOLD_CREATED') return 'confirmed';
+    if (s === 'CONFIRMED') return 'confirmed';
+    if (s === 'HOLD_CREATED') return 'hold_created';
+    if (s === 'PAYMENT_PENDING') return 'payment_pending';
+    if (s === 'MANUAL_RECOVERY_NEEDED') return 'needs_attention';
     return 'pending';
 }
 
@@ -346,34 +360,51 @@ export default function MyBookingsScreen() {
     const upcomingItems = filtered.filter(b => isItemUpcoming(b));
     const pastItems     = filtered.filter(b => !isItemUpcoming(b));
 
+    // ─── Alert state (Native Alert.alert is globally muted app-wide, see app/_layout.tsx) ──
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
+
+    // ─── Cancel confirmation dialog (needs 2 real actions, so it's separate from alertConfig) ──
+    const [cancelDialog, setCancelDialog] = useState<{ visible: boolean; booking: Booking | null }>({ visible: false, booking: null });
+
     // ─── Cancel handler ──────────────────────────────────────────────────────
     const handleCancel = (booking: Booking) => {
-        Alert.alert(t('my_bookings.cancel_alert_title'), t('my_bookings.cancel_alert_msg'), [
-            { text: t('common.no'), style: 'cancel' },
-            {
-                text: t('my_bookings.cancel_confirm_btn'), style: 'destructive',
-                onPress: async () => {
-                    try {
-                        let res: any;
-                        if (booking.category === 'lab') {
-                            res = await labService.cancelLabOrder(booking.id);
-                        } else if (booking.category === 'meetup') {
-                            res = await meetupService.cancelRegistration(booking.id);
-                        } else {
-                            res = await bookingService.cancelBooking(booking.id);
-                        }
-                        if (res?.success) {
-                            Alert.alert(t('my_bookings.cancelled_title'), t('my_bookings.cancelled_msg'));
-                            fetchAll();
-                        } else {
-                            Alert.alert(t('common.error'), res?.message || t('my_bookings.cancel_failed'));
-                        }
-                    } catch {
-                        Alert.alert(t('common.error'), t('common.generic_error'));
-                    }
-                },
-            },
-        ]);
+        if (!isItemUpcoming(booking)) {
+            triggerAlert(t('common.error'), t('my_bookings.cancel_failed'));
+            return;
+        }
+        setCancelDialog({ visible: true, booking });
+    };
+
+    const confirmCancel = async () => {
+        const booking = cancelDialog.booking;
+        setCancelDialog({ visible: false, booking: null });
+        if (!booking) return;
+        try {
+            let res: any;
+            if (booking.category === 'lab') {
+                res = await labService.cancelLabOrder(booking.id);
+            } else if (booking.category === 'meetup') {
+                res = await meetupService.cancelRegistration(booking.id);
+            } else {
+                res = await bookingService.cancelBooking(booking.id);
+            }
+            if (res?.success) {
+                triggerAlert(t('my_bookings.cancelled_title'), t('my_bookings.cancelled_msg'), 'checkmark-circle-outline');
+                fetchAll();
+            } else {
+                triggerAlert(t('common.error'), res?.message || t('my_bookings.cancel_failed'));
+            }
+        } catch {
+            triggerAlert(t('common.error'), t('common.generic_error'));
+        }
     };
 
     const S = makeStyles(isDarkMode, colors);
@@ -382,7 +413,10 @@ export default function MyBookingsScreen() {
     const renderCard = (booking: Booking) => {
         const meta   = CATEGORY_META[booking.category] ?? CATEGORY_META.concierge;
         const status = STATUS_META[booking.status];
-        const isUpcoming = booking.status === 'confirmed' || booking.status === 'pending';
+        const isUpcoming = isItemUpcoming(booking) && (
+            booking.status === 'confirmed' || booking.status === 'pending'
+            || booking.status === 'hold_created' || booking.status === 'payment_pending'
+        );
         const isRescheduled = booking.status === 'rescheduled';
         const showDate = !!booking.scheduledDate;
 
@@ -693,6 +727,26 @@ export default function MyBookingsScreen() {
                     <View style={{ height: 32 }} />
                 </ScrollView>
             )}
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText={t('common.ok')}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
+
+            <CustomAlertModal
+                visible={cancelDialog.visible}
+                title={t('my_bookings.cancel_alert_title')}
+                message={t('my_bookings.cancel_alert_msg')}
+                iconName="close-circle-outline"
+                buttonText={t('my_bookings.cancel_confirm_btn')}
+                onClose={confirmCancel}
+                secondaryButtonText={t('common.no')}
+                onSecondaryPress={() => setCancelDialog({ visible: false, booking: null })}
+            />
         </View>
     );
 }

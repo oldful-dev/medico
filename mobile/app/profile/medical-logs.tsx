@@ -1,7 +1,8 @@
 // Medical Logs — Document vault
 // Prescriptions, blood work reports, scans, discharge summaries, etc.
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert, Linking, TextInput, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Linking, TextInput, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -117,6 +118,20 @@ export default function MedicalLogsScreen() {
     const [uploadTitle, setUploadTitle] = useState('');
     const [uploadCategory, setUploadCategory] = useState('Other');
 
+    // Native Alert.alert is globally muted app-wide (see app/_layout.tsx)
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
+
+    // Delete confirmation (needs 2 real actions, so it's separate from alertConfig)
+    const [deleteConfirm, setDeleteConfirm] = useState<{ visible: boolean; id: string | null }>({ visible: false, id: null });
+
     const getTranslatedCategory = (key: string) => {
         const tKey = `medical_logs.categories.${key.toLowerCase().replace(/\s+/g, '_')}`;
         return t(tKey, { defaultValue: key });
@@ -153,27 +168,27 @@ export default function MedicalLogsScreen() {
     });
 
     const handleOpenFile = (url: string) => {
-        Linking.openURL(url).catch(() => Alert.alert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_open')));
+        Linking.openURL(url).catch(() => triggerAlert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_open')));
     };
 
     const handleDownload = (url: string) => {
-        Linking.openURL(url).catch(() => Alert.alert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_download')));
+        Linking.openURL(url).catch(() => triggerAlert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_download')));
     };
 
     const handleDelete = (id: string) => {
-        Alert.alert(t('medical_logs.alerts.delete_confirm_title'), t('medical_logs.alerts.delete_confirm_msg'), [
-            { text: t('common.cancel'), style: 'cancel' },
-            {
-                text: t('medical_logs.alerts.delete_btn'), style: 'destructive', onPress: async () => {
-                    try {
-                        await userService.deleteHealthReport(id);
-                        setReports(prev => prev.filter(r => r.id !== id));
-                    } catch {
-                        Alert.alert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_delete'));
-                    }
-                }
-            },
-        ]);
+        setDeleteConfirm({ visible: true, id });
+    };
+
+    const confirmDelete = async () => {
+        const id = deleteConfirm.id;
+        setDeleteConfirm({ visible: false, id: null });
+        if (!id) return;
+        try {
+            await userService.deleteHealthReport(id);
+            setReports(prev => prev.filter(r => r.id !== id));
+        } catch {
+            triggerAlert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_delete'));
+        }
     };
 
     const handleUpload = () => {
@@ -184,19 +199,19 @@ export default function MedicalLogsScreen() {
 
     const doUpload = async (file: any) => {
         if (!profile?.id) return;
-        if (!uploadTitle.trim()) { Alert.alert(t('medical_logs.alerts.title_required_title'), t('medical_logs.alerts.title_required_msg')); return; }
+        if (!uploadTitle.trim()) { triggerAlert(t('medical_logs.alerts.title_required_title'), t('medical_logs.alerts.title_required_msg')); return; }
         setUploading(true);
         setUploadModalVisible(false);
         try {
             const res = await userService.uploadHealthReport(profile.id, file, uploadTitle.trim(), uploadCategory);
             if (res.success) {
-                Alert.alert(t('medical_logs.alerts.uploaded_title'), t('medical_logs.alerts.uploaded_msg'));
+                triggerAlert(t('medical_logs.alerts.uploaded_title'), t('medical_logs.alerts.uploaded_msg'), 'checkmark-circle-outline');
                 fetchReports(true);
             } else {
-                Alert.alert(t('medical_logs.alerts.error_title'), res.message || t('medical_logs.alerts.failed_upload'));
+                triggerAlert(t('medical_logs.alerts.error_title'), res.message || t('medical_logs.alerts.failed_upload'));
             }
         } catch {
-            Alert.alert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_upload_retry'));
+            triggerAlert(t('medical_logs.alerts.error_title'), t('medical_logs.alerts.failed_upload_retry'));
         } finally {
             setUploading(false);
         }
@@ -204,7 +219,7 @@ export default function MedicalLogsScreen() {
 
     const pickFromCamera = async () => {
         const perm = await ImagePicker.requestCameraPermissionsAsync();
-        if (!perm.granted) { Alert.alert(t('medical_logs.alerts.permission_required_title'), t('medical_logs.alerts.camera_access_needed')); return; }
+        if (!perm.granted) { triggerAlert(t('medical_logs.alerts.permission_required_title'), t('medical_logs.alerts.camera_access_needed')); return; }
         const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8, allowsEditing: true });
         if (!result.canceled && result.assets[0]) {
             const asset = result.assets[0];
@@ -214,7 +229,7 @@ export default function MedicalLogsScreen() {
 
     const pickFromGallery = async () => {
         const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!perm.granted) { Alert.alert(t('medical_logs.alerts.permission_required_title'), t('medical_logs.alerts.gallery_access_needed')); return; }
+        if (!perm.granted) { triggerAlert(t('medical_logs.alerts.permission_required_title'), t('medical_logs.alerts.gallery_access_needed')); return; }
         const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
         if (!result.canceled && result.assets[0]) {
             const asset = result.assets[0];
@@ -378,6 +393,27 @@ export default function MedicalLogsScreen() {
                     </KeyboardAvoidingView>
                 </View>
             )}
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText={t('common.ok')}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
+
+            <CustomAlertModal
+                visible={deleteConfirm.visible}
+                title={t('medical_logs.alerts.delete_confirm_title')}
+                message={t('medical_logs.alerts.delete_confirm_msg')}
+                iconName="trash-outline"
+                buttonText={t('common.cancel')}
+                onClose={() => setDeleteConfirm({ visible: false, id: null })}
+                secondaryButtonText={t('medical_logs.alerts.delete_btn')}
+                onSecondaryPress={confirmDelete}
+                secondaryDestructive={true}
+            />
         </SafeAreaView>
     );
 }

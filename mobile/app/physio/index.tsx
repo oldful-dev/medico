@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, TextInput, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -8,10 +8,10 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
-import { safeScrollToPosition } from '@/utils/scrollUtils';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { useTranslation } from 'react-i18next';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 // Pain relief illustration
 const imgPainRelief = require('@/assets/images/19384cdb0d3b6490a3d5bfa98457389b6d565416.png');
@@ -48,9 +48,13 @@ export default function PhysioScreen() {
 
     const { cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('physio-fitness');
     const [isBooking, setIsBooking] = useState(false);
-    const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
-    const scrollViewRef = React.useRef<any>(null);
-    const sectionPositions = React.useRef<Record<string, number>>({});
+
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false, title: '', message: '', iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
 
     // Sync selectedAddress with initial fetched address on mount or when fetched
     React.useEffect(() => {
@@ -65,30 +69,29 @@ export default function PhysioScreen() {
         }
     }, [address]);
 
-    const handleBookService = async () => {
-        const errs: Record<string, string> = {};
+    const isFormValid = React.useMemo(() => {
+        return !!(
+            selectedDate &&
+            (selectedBodyPart !== 'Other Parts' || otherIssue.trim()) &&
+            (selectedAddress?.line1 || (address && address.trim().length >= 5 && address !== 'Fetching address...'))
+        );
+    }, [selectedDate, selectedBodyPart, otherIssue, address, selectedAddress]);
 
+    const handleBookService = async () => {
         if (!selectedDate) {
-            errs.date = t('physio_fitness.date_required') || 'Please select an appointment date and time.';
+            triggerAlert(t('common.required') || 'Required', t('physio_fitness.date_required') || 'Please select an appointment date and time.');
+            return;
         }
         if (selectedBodyPart === 'Other Parts' && !otherIssue.trim()) {
-            errs.issue = 'Please describe your affected body parts.';
+            triggerAlert(t('common.required') || 'Required', 'Please describe your affected body parts.');
+            return;
         }
         if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
-            errs.address = t('errors.address_required') || 'Please confirm your service address.';
-        }
-
-        if (Object.keys(errs).length > 0) {
-            setFormErrors(errs);
-            const firstErrorField = ['address', 'issue', 'date'].find(f => errs[f]);
-            if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
-                const targetY = sectionPositions.current[firstErrorField] - 20;
-                safeScrollToPosition(scrollViewRef, targetY);
-            }
+            triggerAlert(t('common.required') || 'Required', t('errors.address_required') || 'Please confirm your service address.');
             return;
         }
         if (!cityId || !serviceId) {
-            Alert.alert(t('common.error'), t('booking.init_incomplete'));
+            triggerAlert(t('common.error') || 'Error', t('booking.init_incomplete') || 'Service initialization failed.');
             return;
         }
         try {
@@ -118,7 +121,7 @@ export default function PhysioScreen() {
             });
         } catch (error) {
             console.error('Physio error:', error);
-            Alert.alert(t('common.error'), t('booking.something_wrong'));
+            triggerAlert(t('common.error') || 'Error', t('booking.something_wrong') || 'Something went wrong. Please try again.');
         } finally {
             setIsBooking(false);
         }
@@ -146,7 +149,7 @@ export default function PhysioScreen() {
             {/* Main Content Area (Rounded Cream Box) */}
             <View style={dynamicStyles.contentContainer}>
                 <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                    <KeyboardAwareScrollView ref={scrollViewRef} contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
+                    <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                         {/* Top Illustration Card */}
                         <View style={dynamicStyles.illustrationCard}>
@@ -179,7 +182,7 @@ export default function PhysioScreen() {
 
                         {/* Conditional Comments/Other Issue input */}
                         {selectedBodyPart === 'Other Parts' && (
-                            <View style={{ marginBottom: 15 }} onLayout={(e) => { sectionPositions.current['issue'] = e.nativeEvent.layout.y; }}>
+                            <View style={{ marginBottom: 15 }}>
                                 <Text style={dynamicStyles.sectionTitle}>{t('physio.comments')}</Text>
                                 <View style={dynamicStyles.inputCard}>
                                     <View style={dynamicStyles.issueIconBox}>
@@ -192,36 +195,29 @@ export default function PhysioScreen() {
                                         placeholderTextColor={isDarkMode ? '#94A3B8' : '#555'}
                                         multiline
                                         value={otherIssue}
-                                        onChangeText={(val) => { setOtherIssue(val); setFormErrors(prev => ({ ...prev, issue: undefined })); }}
+                                        onChangeText={setOtherIssue}
                                     />
                                 </View>
-                                {formErrors.issue && (
-                                    <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.issue}</Text>
-                                )}
                             </View>
                         )}
 
                         {/* Scheduling */}
-                        <View style={{ marginBottom: 15 }} onLayout={(e) => { sectionPositions.current['date'] = e.nativeEvent.layout.y; }}>
+                        <View style={{ marginBottom: 15 }}>
                             <CustomDateTimePicker
                                 label={t('physio.schedule_appointment')}
                                 value={selectedDate}
-                                onDateChange={(dt) => { setSelectedDate(dt); setFormErrors(prev => ({ ...prev, date: undefined })); }}
+                                onDateChange={setSelectedDate}
                             />
-                            {formErrors.date && (
-                                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.date}</Text>
-                            )}
                         </View>
 
                         {/* Location Selection UI */}
-                        <View onLayout={(e) => { sectionPositions.current['address'] = e.nativeEvent.layout.y; }}>
+                        <View>
                             <AddressPickerSection
                                 selectedAddress={selectedAddress}
                                 onAddressChange={(addr) => {
                                     setSelectedAddress(addr);
                                     setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
                                     if (addr.landmark) setLandmark(addr.landmark);
-                                    setFormErrors(prev => ({ ...prev, address: undefined }));
                                 }}
                                 title={t('order_medicines.address_label') || 'Address'}
                                 showPhoneField={false}
@@ -230,16 +226,13 @@ export default function PhysioScreen() {
                                 onLandmarkChange={setLandmark}
                                 allowManualEntry={true}
                             />
-                            {formErrors.address && (
-                                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: -8, marginBottom: 12, fontWeight: '600' }}>⚠️ {formErrors.address}</Text>
-                            )}
                         </View>
 
                         {/* Book Appointment Button */}
                         <TouchableOpacity
-                            style={[dynamicStyles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
-                            activeOpacity={0.8}
-                            disabled={isBooking || isLoadingInit}
+                            style={[dynamicStyles.submitButton, (!isFormValid || isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                            activeOpacity={isFormValid && !isBooking && !isLoadingInit ? 0.8 : 0.5}
+                            disabled={!isFormValid || isBooking || isLoadingInit}
                             onPress={handleBookService}
                         >
                             {isLoadingInit ? (
@@ -254,6 +247,15 @@ export default function PhysioScreen() {
                     </KeyboardAwareScrollView>
                 </KeyboardAvoidingView>
             </View>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText="OK"
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </View>
     );
 }

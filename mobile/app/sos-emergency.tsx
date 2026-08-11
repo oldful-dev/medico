@@ -3,7 +3,7 @@
 // NO close button per Figma design
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,8 +12,9 @@ import { useRouter } from 'expo-router';
 import { SOSButton, SlideToCall, BackgroundGlow } from '@/components/sos';
 import SOSCountdown from '@/components/sos/SOSCountdown';
 import { sosService } from '@/services/device/sosService';
-import { Fonts } from '@/constants/theme';
+import { Fonts, Colors, FontSize, Radius } from '@/constants/theme';
 import { useTranslation } from 'react-i18next';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 export default function SOSEmergencyScreen() {
     const router = useRouter();
@@ -21,6 +22,13 @@ export default function SOSEmergencyScreen() {
     const [showCountdown, setShowCountdown] = useState(false);
     const [isTriggering, setIsTriggering] = useState(false);
     const [prefetchedLocation, setPrefetchedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+    // Native Alert.alert is globally muted app-wide (see app/_layout.tsx) — every
+    // dialog on this screen must use a visible custom modal instead.
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string }>({
+        visible: false, title: '', message: '',
+    });
+    const [limitExceededVisible, setLimitExceededVisible] = useState(false);
+    const [limitExceededMsg, setLimitExceededMsg] = useState('');
 
     // ─── Pre-fetch Location on Mount ───
     useEffect(() => {
@@ -52,33 +60,29 @@ export default function SOSEmergencyScreen() {
                 await sosService.callEmergencyHotline('+919480198108');
             } else {
                 await sosService.callEmergencyHotline('+919480198108');
-                Alert.alert(
-                    t('sos.partial_alert_title'),
-                    t('sos.partial_alert_msg')
-                );
+                setAlertConfig({
+                    visible: true,
+                    title: t('sos.partial_alert_title'),
+                    message: t('sos.partial_alert_msg'),
+                });
             }
         } catch (err: any) {
             if (err?.status === 403 || err?.statusCode === 403 || err?.message?.includes('limit exceeded')) {
-                const message = err.message || 'Universal limit exceeded. Unsubscribed accounts are strictly limited to 1 emergency SOS dispatch per month.';
-                Alert.alert(
-                    'SOS Limit Exceeded',
-                    message,
-                    [
-                        {
-                            text: 'View Subscription Plans',
-                            onPress: () => router.push('/plans')
-                        },
-                        {
-                            text: 'Cancel',
-                            style: 'cancel'
-                        }
-                    ]
-                );
+                const code = err?.details?.code;
+                const message = code === 'PLAN_LIMIT_EXCEEDED'
+                    ? (err.message || 'Your plan\'s SOS quota for this period has been used up.')
+                    : (err.message || 'Universal limit exceeded. Unsubscribed accounts are strictly limited to 1 emergency SOS dispatch per month.');
+                setLimitExceededMsg(message);
+                setLimitExceededVisible(true);
             } else {
                 try {
                     await sosService.callEmergencyHotline('112');
                 } catch {
-                    Alert.alert(t('sos.emergency_title'), t('sos.emergency_fallback_msg'));
+                    setAlertConfig({
+                        visible: true,
+                        title: t('sos.emergency_title'),
+                        message: t('sos.emergency_fallback_msg'),
+                    });
                 }
             }
         } finally {
@@ -146,6 +150,49 @@ export default function SOSEmergencyScreen() {
                     />
                 )}
             </SafeAreaView>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName="warning-outline"
+                buttonText="OK"
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
+
+            {/* SOS quota-exceeded — 2 real actions (View Plans / Cancel), so it
+                needs its own modal since native Alert.alert is globally muted. */}
+            <Modal
+                visible={limitExceededVisible}
+                transparent
+                animationType="fade"
+                statusBarTranslucent
+                onRequestClose={() => setLimitExceededVisible(false)}
+            >
+                <View style={styles.limitOverlay}>
+                    <View style={styles.limitDialog}>
+                        <Text style={styles.limitTitle}>SOS Limit Exceeded</Text>
+                        <Text style={styles.limitMessage}>{limitExceededMsg}</Text>
+                        <TouchableOpacity
+                            style={styles.limitPrimaryBtn}
+                            activeOpacity={0.85}
+                            onPress={() => {
+                                setLimitExceededVisible(false);
+                                router.push('/plans');
+                            }}
+                        >
+                            <Text style={styles.limitPrimaryBtnText}>View Subscription Plans</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.limitCancelBtn}
+                            activeOpacity={0.7}
+                            onPress={() => setLimitExceededVisible(false)}
+                        >
+                            <Text style={styles.limitCancelBtnText}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </LinearGradient>
     );
 }
@@ -214,5 +261,59 @@ const styles = StyleSheet.create({
         lineHeight: 17,
         color: '#9CA3AF',
         textAlign: 'center',
+    },
+
+    /* ─── SOS Limit Exceeded modal ─── */
+    limitOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 32,
+    },
+    limitDialog: {
+        backgroundColor: Colors.bgScreen || '#FFFFFF',
+        borderRadius: Radius.xl || 16,
+        padding: 24,
+        width: '100%',
+        alignItems: 'center',
+    },
+    limitTitle: {
+        fontFamily: Fonts.bold,
+        fontSize: FontSize.heading1 || 20,
+        color: Colors.textDark || '#333333',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    limitMessage: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall || 14,
+        color: Colors.textMuted || '#666666',
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 20,
+    },
+    limitPrimaryBtn: {
+        backgroundColor: Colors.primary || '#02743F',
+        borderRadius: Radius.lg || 12,
+        paddingVertical: 14,
+        width: '100%',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    limitPrimaryBtnText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.button || 16,
+        color: '#FFFFFF',
+    },
+    limitCancelBtn: {
+        paddingVertical: 10,
+        width: '100%',
+        alignItems: 'center',
+    },
+    limitCancelBtnText: {
+        fontFamily: Fonts.medium,
+        fontSize: FontSize.bodySmall || 14,
+        color: Colors.textMuted || '#666666',
     },
 });

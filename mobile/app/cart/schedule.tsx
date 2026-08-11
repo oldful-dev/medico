@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Alert,
   TextInput,
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -23,6 +22,7 @@ import { LocationPickerModal } from "@/components/LocationPickerModal";
 import { useCart } from "@/context/CartContext";
 import { useThemeColors } from "@/hooks/use-theme-colors";
 import { useTheme } from "@/context/ThemeContext";
+import { CustomAlertModal } from "@/components/common/CustomAlertModal";
 
 const PRIMARY_GREEN = "#02743F";
 const TEXT_DARK = "#2F2F2F";
@@ -104,10 +104,28 @@ export default function CartScheduleScreen() {
   // Step 3: Confirm
   const [isBooking, setIsBooking] = useState(false);
 
+  // Native Alert.alert is globally muted app-wide (see app/_layout.tsx)
+  const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+    visible: false,
+    title: "",
+    message: "",
+    iconName: "warning-outline",
+  });
+  const alertCloseAction = useRef<(() => void) | null>(null);
+  const triggerAlert = (title: string, message: string, iconName = "warning-outline", onCloseAction?: () => void) => {
+    alertCloseAction.current = onCloseAction ?? null;
+    setAlertConfig({ visible: true, title, message, iconName });
+  };
+  const closeAlert = () => {
+    setAlertConfig((prev) => ({ ...prev, visible: false }));
+    const action = alertCloseAction.current;
+    alertCloseAction.current = null;
+    if (action) action();
+  };
+
   useEffect(() => {
     if (cartItems.length === 0) {
-      Alert.alert("Error", "No items found in this category");
-      router.back();
+      triggerAlert("Error", "No items found in this category", "warning-outline", () => router.back());
     }
     const today = new Date();
     if (today.getHours() >= 16) today.setDate(today.getDate() + 1);
@@ -189,7 +207,7 @@ export default function CartScheduleScreen() {
       if (pc) setPincode(pc);
       checkServiceability(String(c.latitude), String(c.longitude));
     } catch {
-      Alert.alert("Location Error", "Unable to detect your location.");
+      triggerAlert("Location Error", "Unable to detect your location.");
     } finally {
       setDetectingLocation(false);
     }
@@ -215,11 +233,11 @@ export default function CartScheduleScreen() {
 
   const handleSaveNewAddress = async () => {
     if (!newAddrText.trim()) {
-      Alert.alert("Required", "Please select or enter an address");
+      triggerAlert("Required", "Please select or enter an address");
       return;
     }
     if (newAddrPincode.length !== 6) {
-      Alert.alert("Required", "Please enter a valid 6-digit pincode");
+      triggerAlert("Required", "Please enter a valid 6-digit pincode");
       return;
     }
     if (!profile?.id) return;
@@ -257,7 +275,7 @@ export default function CartScheduleScreen() {
       setNewAddrLabel("Home");
       setAddingNewAddr(false);
     } catch {
-      Alert.alert("Error", "Could not save address. Please try again.");
+      triggerAlert("Error", "Could not save address. Please try again.");
     } finally {
       setSavingNewAddr(false);
     }
@@ -266,18 +284,18 @@ export default function CartScheduleScreen() {
   const handleContinue = async () => {
     if (step === 1) {
       if (!selectedDate || !selectedTime) {
-        Alert.alert("Required", "Please select date and time");
+        triggerAlert("Required", "Please select date and time");
         return;
       }
       setStep(2);
     } else if (step === 2) {
       if (collectionType === "HOME") {
         if (!selectedAddress.trim() || pincode.length !== 6) {
-          Alert.alert("Required", "Please enter valid address and pincode");
+          triggerAlert("Required", "Please enter valid address and pincode");
           return;
         }
         if (serviceabilityStatus === "non-serviceable") {
-          Alert.alert("Not Serviceable", "This location is not serviceable.");
+          triggerAlert("Not Serviceable", "This location is not serviceable.");
           return;
         }
       }
@@ -290,7 +308,7 @@ export default function CartScheduleScreen() {
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedTime) return;
     if (!phoneNumber.trim()) {
-      Alert.alert("Required", "Please enter a valid phone number");
+      triggerAlert("Required", "Please enter a valid phone number");
       return;
     }
     setIsBooking(true);
@@ -346,7 +364,6 @@ export default function CartScheduleScreen() {
         } else {
           await userService.addAddress(profile.id, addrPayload).catch(() => {});
         }
-        await refreshData(true).catch(() => {});
       }
 
       router.push({
@@ -360,7 +377,7 @@ export default function CartScheduleScreen() {
         },
       } as any);
     } catch {
-      Alert.alert("Error", "Failed to proceed with booking");
+      triggerAlert("Error", "Failed to proceed with booking");
     } finally {
       setIsBooking(false);
     }
@@ -1035,6 +1052,15 @@ export default function CartScheduleScreen() {
         }}
         initialLat={parseFloat(coords.lat)}
         initialLng={parseFloat(coords.long)}
+      />
+
+      <CustomAlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        iconName={alertConfig.iconName as any}
+        buttonText="OK"
+        onClose={closeAlert}
       />
     </KeyboardAvoidingView>
   );

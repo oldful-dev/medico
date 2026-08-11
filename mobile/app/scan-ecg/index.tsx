@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, ScrollView, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, ScrollView, TextInput, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -14,6 +14,7 @@ import { AddressPickerSection, type AddressData } from '@/components/AddressPick
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import { safeScrollToPosition } from '@/utils/scrollUtils';
 import { useTranslation } from 'react-i18next';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 const cameraIcon = require('@/assets/images/288b8d22e862e8e7e85fb51ab6158d4b0fd84dcc.png');
 const galleryIcon = require('@/assets/images/82b1e49607f9f5b0817c6d51de25f6b752ac4908.png');
@@ -37,6 +38,13 @@ export default function ScanEcgScreen() {
     const scrollViewRef = React.useRef<any>(null);
     const sectionPositions = React.useRef<Record<string, number>>({});
 
+    const [alertConfig, setAlertConfig] = React.useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false, title: '', message: '', iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
+
     const { isReady, cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('scan-ecg');
 
     // Sync selectedAddress with initial fetched address
@@ -55,7 +63,7 @@ export default function ScanEcgScreen() {
     const openCamera = async () => {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-            Alert.alert('Permission Denied', 'Camera permission is required to upload a prescription.');
+            triggerAlert('Permission Denied', 'Camera permission is required to upload a prescription.');
             return;
         }
 
@@ -72,7 +80,7 @@ export default function ScanEcgScreen() {
     const openGallery = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-            Alert.alert('Permission Denied', 'Gallery permission is required to upload a prescription.');
+            triggerAlert('Permission Denied', 'Gallery permission is required to upload a prescription.');
             return;
         }
 
@@ -99,6 +107,13 @@ export default function ScanEcgScreen() {
         else await openGallery();
     };
 
+    const isFormValid = React.useMemo(() => {
+        return !!(
+            selectedDate &&
+            (selectedAddress?.line1 || (address && address.trim().length >= 5 && address !== 'Fetching address...'))
+        );
+    }, [selectedDate, address, selectedAddress]);
+
     const handleBookService = async () => {
         const errs: Record<string, string> = {};
 
@@ -120,7 +135,7 @@ export default function ScanEcgScreen() {
             return;
         }
         if (!isReady) {
-            Alert.alert(t('common.error'), t('booking.init_incomplete'));
+            triggerAlert(t('common.error'), t('booking.init_incomplete'));
             return;
         }
         try {
@@ -158,7 +173,7 @@ export default function ScanEcgScreen() {
             });
         } catch (error) {
             console.error('Scan & ECG booking error:', error);
-            Alert.alert(t('common.error'), t('booking.something_wrong'));
+            triggerAlert(t('common.error'), t('booking.something_wrong'));
         } finally {
             setIsBooking(false);
         }
@@ -324,9 +339,9 @@ export default function ScanEcgScreen() {
 
                         {/* Confirm Button */}
                         <TouchableOpacity
-                            style={[dynamicStyles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
-                            activeOpacity={0.8}
-                            disabled={isBooking || isLoadingInit}
+                            style={[dynamicStyles.submitButton, (!isFormValid || isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                            activeOpacity={isFormValid && !isBooking && !isLoadingInit ? 0.8 : 0.5}
+                            disabled={!isFormValid || isBooking || isLoadingInit}
                             onPress={handleBookService}
                         >
                             {isBooking ? (
@@ -340,6 +355,15 @@ export default function ScanEcgScreen() {
 
                     </KeyboardAwareScrollView>
                 </KeyboardAvoidingView>
+
+                <CustomAlertModal
+                    visible={alertConfig.visible}
+                    title={alertConfig.title}
+                    message={alertConfig.message}
+                    iconName={alertConfig.iconName as any}
+                    buttonText="OK"
+                    onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                />
             </View>
         </View>
     );

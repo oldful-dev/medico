@@ -1,7 +1,7 @@
 // Doctor Home Visit - Booking Screen
 // PRD: Grid of symptoms, smart routing to GP or Physio, Time selection, Address confirmation
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Platform, useWindowDimensions, Alert, ActivityIndicator, TextInput, KeyboardAvoidingView } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Platform, useWindowDimensions, ActivityIndicator, TextInput, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,7 +10,6 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
-import { safeScrollToPosition } from '@/utils/scrollUtils';
 import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/theme';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
@@ -22,6 +21,7 @@ import { bookingService, Booking } from '@/services/api/bookingService';
 import { userService } from '@/services/api/userService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 // Problems that auto-trigger Physiotherapist selection
 const PHYSIO_PROBLEMS = new Set(['Poster-surgery Rehab', 'Frozen shoulder', 'Stroke Recovery']);
@@ -110,46 +110,42 @@ export default function DoctorVisitScreen() {
         if (addr.landmark) setLandmark(addr.landmark);
     };
 
-    const handlePickReport = async () => {
+    const handlePickReport = async (source: 'camera' | 'gallery') => {
         if (selectedImages.length >= 5) {
-            Alert.alert('Limit Reached', 'You can upload up to 5 files.');
+            triggerAlert('Limit Reached', 'You can upload up to 5 files.');
             return;
         }
-        Alert.alert(
-            'Upload report (Optional)',
-            '',
-            [
-                { text: 'Take Photo', onPress: async () => {
-                    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-                    if (permissionResult.granted === false) {
-                        Alert.alert('Permission Required', 'Camera permission is required.');
-                        return;
-                    }
-                    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
-                    if (!result.canceled && result.assets && result.assets.length > 0) {
-                        setSelectedImages(prev => [...prev, result.assets[0].uri]);
-                    }
-                }},
-                { text: 'Choose from Gallery', onPress: async () => {
-                    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                    if (permissionResult.granted === false) {
-                        Alert.alert('Permission Required', 'Gallery permission is required.');
-                        return;
-                    }
-                    const result = await ImagePicker.launchImageLibraryAsync({
-                        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                        allowsMultipleSelection: true,
-                        selectionLimit: 5 - selectedImages.length,
-                        quality: 0.8,
-                    });
-                    if (!result.canceled && result.assets && result.assets.length > 0) {
-                        const newUris = result.assets.map(asset => asset.uri);
-                        setSelectedImages(prev => [...prev, ...newUris]);
-                    }
-                }},
-                { text: 'Cancel', style: 'cancel' }
-            ]
-        );
+        try {
+            if (source === 'camera') {
+                const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+                if (permissionResult.granted === false) {
+                    triggerAlert('Permission Required', 'Camera permission is required.');
+                    return;
+                }
+                const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
+                if (!result.canceled && result.assets && result.assets.length > 0) {
+                    setSelectedImages(prev => [...prev, result.assets[0].uri]);
+                }
+            } else if (source === 'gallery') {
+                const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (permissionResult.granted === false) {
+                    triggerAlert('Permission Required', 'Gallery permission is required.');
+                    return;
+                }
+                const result = await ImagePicker.launchImageLibraryAsync({
+                    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                    allowsMultipleSelection: true,
+                    selectionLimit: 5 - selectedImages.length,
+                    quality: 0.8,
+                });
+                if (!result.canceled && result.assets && result.assets.length > 0) {
+                    const newUris = result.assets.map(asset => asset.uri);
+                    setSelectedImages(prev => [...prev, ...newUris]);
+                }
+            }
+        } catch (error) {
+            console.error('Error picking report:', error);
+        }
     };
 
     // ─── Auto-fill profile address only on mount when GPS address is not available ───
@@ -197,9 +193,16 @@ export default function DoctorVisitScreen() {
         }
     };
 
-    const [formErrors, setFormErrors] = React.useState<Record<string, string | undefined>>({});
-    const scrollViewRef = React.useRef<ScrollView>(null);
-    const sectionPositions = React.useRef<Record<string, number>>({});
+    const [alertConfig, setAlertConfig] = React.useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'warning-outline'
+    });
+
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
 
     // ─── Repeat Order: Load last physio booking on mount ───
     React.useEffect(() => {
@@ -274,8 +277,8 @@ export default function DoctorVisitScreen() {
 
         const isPhysio = lastPhysioBooking.doctorType === 'physiotherapist';
         setSelectedDoctorType(isPhysio ? 'Physio' : 'GP');
-        
-        Alert.alert(t('doctor_visit.applied_title'), t('doctor_visit.applied_msg'));
+
+        triggerAlert(t('doctor_visit.applied_title'), t('doctor_visit.applied_msg'), 'checkmark-circle-outline');
     };
 
     // ─── Date/Time helpers for inline picker ───
@@ -328,29 +331,40 @@ export default function DoctorVisitScreen() {
         }
     };
 
+    const isFormValid = React.useMemo(() => {
+        return !!(
+            selectedProblems.length > 0 &&
+            (selectedProblems.includes('Other') ? otherProblemText.trim() : true) &&
+            scheduledDate &&
+            address && address.trim().length >= 5 && address !== 'Fetching address...'
+        );
+    }, [selectedProblems, otherProblemText, scheduledDate, address]);
+
     const handleBookService = async () => {
-        const errs: Record<string, string> = {};
         if (selectedProblems.length === 0) {
-            errs.problem = 'Please select at least one reason for visit.';
-        } else if (selectedProblems.includes('Other') && !otherProblemText.trim()) {
-            errs.problem = 'Please describe your requirement.';
+            triggerAlert(t('common.required'), t('doctor_visit.select_problem_alert'));
+            return;
+        }
+        if (selectedProblems.includes('Other') && !otherProblemText.trim()) {
+            triggerAlert(t('common.required'), t('doctor_visit.describe_problem_alert'));
+            return;
         }
         if (!scheduledDate) {
-            errs.date = 'Please select a date and time slot.';
-        } else if (scheduledDate <= new Date()) {
-            errs.date = 'Selected date & time cannot be in the past.';
+            triggerAlert(t('common.required'), 'Please select a date and time slot.');
+            return;
         }
-        if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
-            errs.address = 'Please confirm your service address.';
+        if (scheduledDate <= new Date()) {
+            triggerAlert(t('common.error'), t('doctor_visit.invalid_time_alert'));
+            return;
         }
-
-        if (Object.keys(errs).length > 0) {
-            setFormErrors(errs);
-            const firstErrorField = ['address', 'problem', 'date'].find(f => errs[f]);
-            if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
-                const targetY = sectionPositions.current[firstErrorField] - 20;
-                safeScrollToPosition(scrollViewRef, targetY);
-            }
+        if (!address || address.trim().length < 5 || address === 'Fetching address...') {
+            triggerAlert(t('common.required'), locationDenied
+                ? t('doctor_visit.address_required_gps_denied')
+                : t('doctor_visit.address_required_failed'));
+            return;
+        }
+        if (!isReady) {
+            triggerAlert(t('common.error'), t('booking.init_incomplete'));
             return;
         }
         try {
@@ -373,7 +387,7 @@ export default function DoctorVisitScreen() {
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
-                scheduledDate: scheduledDate ? scheduledDate.toISOString() : new Date().toISOString(),
+                scheduledDate: scheduledDate.toISOString(),
                 addressLine: address || undefined,
                 landmark: landmark.trim() || undefined,
                 latitude: gps?.latitude,
@@ -400,7 +414,7 @@ export default function DoctorVisitScreen() {
             });
         } catch (error) {
             console.error('Doctor visit error:', error);
-            Alert.alert('Error', 'Failed to upload attachments. Please try again.');
+            triggerAlert('Error', 'Failed to upload attachments. Please try again.');
         } finally {
             setIsBooking(false);
         }
@@ -441,7 +455,6 @@ export default function DoctorVisitScreen() {
             <View style={[styles.contentCard, { backgroundColor: colors.bgScreen }]}>
                 <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <KeyboardAwareScrollView
-                    ref={scrollViewRef as any}
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
@@ -474,7 +487,7 @@ export default function DoctorVisitScreen() {
                     <View style={styles.divider} />
 
                     {/* ─── Select Problem Card ─── */}
-                    <View style={[styles.sectionCard, { backgroundColor: colors.bgCard }]} onLayout={(e) => { sectionPositions.current['problem'] = e.nativeEvent.layout.y; }}>
+                    <View style={[styles.sectionCard, { backgroundColor: colors.bgCard }]}>
                         <Text style={[styles.sectionTitle, { color: colors.primary }]}>{t('booking.select_problem')}</Text>
 
                         <View style={styles.problemsGrid}>
@@ -494,7 +507,7 @@ export default function DoctorVisitScreen() {
                                             { width: exactProblemWidth, backgroundColor: colors.bgScreen },
                                             isSelected && [styles.problemItemActive, { borderColor: colors.primary }]
                                         ]}
-                                        onPress={() => { handleProblemSelect(item.label); setFormErrors(prev => ({ ...prev, problem: undefined })); }}
+                                        onPress={() => handleProblemSelect(item.label)}
                                     >
                                         <View style={[styles.problemIconContainer, { height: exactIconHeight }]}>
                                             <Image source={item.icon} style={styles.problemIcon} resizeMode="cover" />
@@ -512,14 +525,10 @@ export default function DoctorVisitScreen() {
                                 placeholder={t('doctor_visit.describe_problem_placeholder')}
                                 placeholderTextColor={colors.textMuted}
                                 value={otherProblemText}
-                                onChangeText={(val) => { setOtherProblemText(val); setFormErrors(prev => ({ ...prev, problem: undefined })); }}
+                                onChangeText={setOtherProblemText}
                                 multiline
                                 maxLength={200}
                             />
-                        )}
-
-                        {formErrors.problem && (
-                            <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 8, fontWeight: '600' }}>⚠️ {formErrors.problem}</Text>
                         )}
                     </View>
 
@@ -548,15 +557,12 @@ export default function DoctorVisitScreen() {
                     </View>
 
                     {/* ─── When? Card (Scheduling using standard slot picker) ─── */}
-                    <View style={styles.sectionCardSmall} onLayout={(e) => { sectionPositions.current['date'] = e.nativeEvent.layout.y; }}>
+                    <View style={styles.sectionCardSmall}>
                         <CustomDateTimePicker
                             label={t('booking.schedule_appointment', 'Schedule Appointment')}
                             value={scheduledDate}
-                            onDateChange={(dt) => { setScheduledDate(dt); setFormErrors(prev => ({ ...prev, date: undefined })); }}
+                            onDateChange={setScheduledDate}
                         />
-                        {formErrors.date && (
-                            <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.date}</Text>
-                        )}
                     </View>
 
                     {/* ─── Compact Document Upload UI ─── */}
@@ -564,11 +570,19 @@ export default function DoctorVisitScreen() {
                         <View style={styles.compactUploadContainer}>
                             <TouchableOpacity
                                 style={[styles.compactUploadButton, { borderColor: colors.primary }]}
-                                onPress={handlePickReport}
+                                onPress={() => handlePickReport('camera')}
                                 activeOpacity={0.8}
                             >
-                                <Ionicons name="document-attach-outline" size={16} color={colors.primary} />
-                                <Text style={[styles.compactUploadText, { color: colors.primary }]}>Upload report (Optional)</Text>
+                                <Ionicons name="camera-outline" size={16} color={colors.primary} />
+                                <Text style={[styles.compactUploadText, { color: colors.primary }]}>Take Photo</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.compactUploadButton, { borderColor: colors.primary }]}
+                                onPress={() => handlePickReport('gallery')}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="image-outline" size={16} color={colors.primary} />
+                                <Text style={[styles.compactUploadText, { color: colors.primary }]}>Choose from Gallery</Text>
                             </TouchableOpacity>
                             {selectedImages.length > 0 && (
                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.compactThumbScroll}>
@@ -589,21 +603,16 @@ export default function DoctorVisitScreen() {
                     </View>
 
                     {/* ─── Confirm Address Card ─── */}
-                    <View onLayout={(e) => { sectionPositions.current['address'] = e.nativeEvent.layout.y; }}>
-                        <AddressPickerSection
-                            selectedAddress={selectedAddress}
-                            onAddressChange={(addr) => { handleAddressChange(addr); setFormErrors(prev => ({ ...prev, address: undefined })); }}
-                            title={t('booking.confirm_address')}
-                            showPhoneField={false}
-                            showLandmarkField={true}
-                            landmark={landmark}
-                            onLandmarkChange={setLandmark}
-                            allowManualEntry={true}
-                        />
-                        {formErrors.address && (
-                            <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: -8, marginBottom: 12, fontWeight: '600' }}>⚠️ {formErrors.address}</Text>
-                        )}
-                    </View>
+                    <AddressPickerSection
+                        selectedAddress={selectedAddress}
+                        onAddressChange={handleAddressChange}
+                        title={t('booking.confirm_address')}
+                        showPhoneField={false}
+                        showLandmarkField={true}
+                        landmark={landmark}
+                        onLandmarkChange={setLandmark}
+                        allowManualEntry={true}
+                    />
 
 
 
@@ -616,9 +625,9 @@ export default function DoctorVisitScreen() {
             {/* ─── Fixed Bottom Bar ─── */}
             <View style={styles.bottomBar}>
                 <TouchableOpacity
-                    style={[styles.bookButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
-                    activeOpacity={0.8}
-                    disabled={isBooking || isLoadingInit}
+                    style={[styles.bookButton, (!isFormValid || isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                    activeOpacity={isFormValid && !isBooking && !isLoadingInit ? 0.8 : 0.5}
+                    disabled={!isFormValid || isBooking || isLoadingInit}
                     onPress={handleBookService}
                 >
                     {isBooking ? (
@@ -630,6 +639,15 @@ export default function DoctorVisitScreen() {
                     )}
                 </TouchableOpacity>
             </View>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText="OK"
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </View>
     );
 }

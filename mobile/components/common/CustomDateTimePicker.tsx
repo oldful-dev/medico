@@ -117,59 +117,44 @@ export default function CustomDateTimePicker({
     return pills;
   }, [minimumDate, daysToShow, timeSlots]);
 
-  const [selectedDateIdx, setSelectedDateIdx] = useState(0);
-  // Default to the first valid time slot that is not in the past
-  const initialTime = useMemo(() => {
-    const today = datePills[0];
-    if (!today) return null;
-    return timeSlots.find(slot => !isSlotPast(today, slot)) || timeSlots[0] || null;
-  }, [datePills, timeSlots]);
-  const [selectedTime, setSelectedTime] = useState<string | null>(initialTime);
+  // Nothing is selected by default — the user must explicitly tap a date and
+  // a time slot. Parents rely on `value`/`onDateChange` staying unset until
+  // then to gate "required field" checkout validation, and showing a
+  // pre-highlighted pill would visually lie about that.
+  const [selectedDateIdx, setSelectedDateIdx] = useState<number | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
-  // Notify parent of the default selected slot on mount
+  // If the currently-selected time slot rolls into the past (clock ticks
+  // forward while the screen is open), clear it rather than silently
+  // jumping to a different slot the user never chose.
   React.useEffect(() => {
+    if (selectedDateIdx === null || !selectedTime) return;
     const selectedDate = datePills[selectedDateIdx];
-    if (selectedDate && selectedTime && notify) {
-      notify(mergeDateTime(selectedDate, selectedTime));
+    if (selectedDate && isSlotPast(selectedDate, selectedTime)) {
+      setSelectedTime(null);
     }
-  }, []);
-
-  // Keep selection in sync and shift if selected time becomes past
-  React.useEffect(() => {
-    const selectedDate = datePills[selectedDateIdx];
-    if (!selectedDate) return;
-    
-    // Auto-select a valid time slot if none is selected or if selected slot is in the past
-    let currentSlot = selectedTime;
-    if (!currentSlot || isSlotPast(selectedDate, currentSlot)) {
-      const firstValid = timeSlots.find(
-        (slot) => !isSlotPast(selectedDate, slot),
-      );
-      const targetSlot = firstValid || timeSlots[0] || null;
-      if (targetSlot) {
-        setSelectedTime(targetSlot);
-        currentSlot = targetSlot;
-      }
-    }
-    
-    if (currentSlot && notify) {
-      notify(mergeDateTime(selectedDate, currentSlot));
-    }
-  }, [selectedDateIdx, datePills, timeSlots, selectedTime, notify]);
+  }, [selectedDateIdx, datePills, selectedTime]);
 
   const handleDateSelect = (idx: number) => {
     setSelectedDateIdx(idx);
     const selectedDate = datePills[idx];
-    const currentSlot = selectedTime || initialTime;
-    if (selectedDate && currentSlot && notify) {
-      notify(mergeDateTime(selectedDate, currentSlot));
+    // Changing the date can invalidate the previously chosen time (e.g. it
+    // was only valid for "today"); drop it if so and wait for a fresh pick.
+    if (selectedTime && selectedDate && isSlotPast(selectedDate, selectedTime)) {
+      setSelectedTime(null);
+      return;
+    }
+    if (selectedDate && selectedTime && notify) {
+      notify(mergeDateTime(selectedDate, selectedTime));
     }
   };
 
   const handleTimeSelect = (slot: string) => {
     setSelectedTime(slot);
-    if (notify) notify(mergeDateTime(datePills[selectedDateIdx], slot));
+    if (selectedDateIdx === null) return;
+    const selectedDate = datePills[selectedDateIdx];
+    if (selectedDate && notify) notify(mergeDateTime(selectedDate, slot));
   };
 
   return (
@@ -217,9 +202,8 @@ export default function CustomDateTimePicker({
         <View style={styles.timeGrid}>
           {timeSlots.map((slot, idx) => {
             const active = selectedTime === slot;
-            const isPast = datePills[selectedDateIdx]
-              ? isSlotPast(datePills[selectedDateIdx], slot)
-              : false;
+            const referenceDate = selectedDateIdx !== null ? datePills[selectedDateIdx] : datePills[0];
+            const isPast = referenceDate ? isSlotPast(referenceDate, slot) : false;
             return (
               <TouchableOpacity
                 key={idx}

@@ -661,23 +661,23 @@ function DotIndicator({ count, active, color }: { count: number; active: number;
 }
 
 // ─── Active subscription mini-banner ─────────────────────────────────────────
-function ActiveSubBanner({ sub, colors }: { sub: any; colors: ThemeColors }) {
+function ActiveSubBanner({ sub, colors, dark }: { sub: any; colors: ThemeColors; dark: boolean }) {
     if (!sub) return null;
     const expiry = sub.expiryDate
         ? new Date(sub.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
         : 'N/A';
     return (
-        <View style={[activeBannerStyles.banner, { backgroundColor: 'rgba(4,131,87,0.07)', borderColor: colors.primary }]}>
+        <View style={[activeBannerStyles.banner, { backgroundColor: dark ? 'rgba(52, 199, 89, 0.1)' : 'rgba(4,131,87,0.07)', borderColor: colors.primary }]}>
             <View style={[activeBannerStyles.iconBox, { backgroundColor: colors.primary }]}>
                 <Ionicons name="shield-checkmark" size={16} color="#fff" />
             </View>
             <View style={{ flex: 1 }}>
                 <Text style={[activeBannerStyles.label, { color: colors.primary }]}>Your Active Plan</Text>
-                <Text style={[activeBannerStyles.name, { color: '#1E1E1E' }]}>{sub.planName ?? 'Active'}</Text>
+                <Text style={[activeBannerStyles.name, { color: dark ? '#FAF7ED' : '#1E1E1E' }]}>{sub.planName ?? 'Active'}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-                <Text style={[activeBannerStyles.expLabel, { color: '#9CA3AF' }]}>Expires</Text>
-                <Text style={[activeBannerStyles.expDate, { color: '#374151' }]}>{expiry}</Text>
+                <Text style={[activeBannerStyles.expLabel, { color: dark ? '#9CA3AF' : '#6B7280' }]}>Expires</Text>
+                <Text style={[activeBannerStyles.expDate, { color: dark ? '#FAF7ED' : '#374151' }]}>{expiry}</Text>
             </View>
         </View>
     );
@@ -765,7 +765,7 @@ function PlanSection({
             />
 
             {/* Active subscription banner */}
-            {activeSub && <ActiveSubBanner sub={activeSub} colors={colors} />}
+            {activeSub && <ActiveSubBanner sub={activeSub} colors={colors} dark={dark} />}
 
             {/* Carousel */}
             {loading ? (

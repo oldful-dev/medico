@@ -407,7 +407,6 @@ export default function BloodTestScheduleScreen() {
         } else {
           await userService.addAddress(profile.id, addrPayload).catch(() => {});
         }
-        await refreshData(true).catch(() => {});
       }
 
       const amount = pkg.discounted_cost || pkg.cost;

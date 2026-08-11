@@ -89,6 +89,12 @@ const getPackages = async (req, res, next) => {
             tests_count: pkg.parameter ?? pkg.tests_count ?? null,
             fasting: !!(pkg.fasting_time ?? pkg.fasting ?? pkg.is_fasting),
             type: pkg.type ?? null,
+            description: pkg.description ?? null,
+            fasting_time: pkg.fasting_time ?? null,
+            tat_time: pkg.tat_time ?? null,
+            specimen_instructions: pkg.specimen_instructions || null,
+            test_category: pkg.test_category ?? null,
+            category_for_web: pkg.category_for_web ?? [],
         }));
 
         // Enrich with packages_count and verified tests_count
@@ -110,9 +116,9 @@ const getPackages = async (req, res, next) => {
                 if (details?.data && Array.isArray(details.data)) {
                     const groupMap = new Map();
                     for (const g of details.data) {
-                        if (!g.package_detail) continue;
+                        if (!g.package_details) continue;
                         const existing = groupMap.get(g.name) || new Set();
-                        for (const p of g.package_detail) {
+                        for (const p of g.package_details) {
                             existing.add(p.name);
                         }
                         groupMap.set(g.name, existing);
@@ -442,7 +448,8 @@ const adminGetLabOrders = async (req, res, next) => {
                 take: limit,
                 include: {
                     user: { select: { name: true, phone: true } },
-                    booking: { select: { bookingCode: true } }
+                    booking: { select: { bookingCode: true } },
+                    payments: { select: { status: true }, where: { status: 'SUCCESS' }, take: 1 },
                 },
                 orderBy: { createdAt: 'desc' },
             }),
@@ -553,6 +560,141 @@ const rescheduleLabOrder = async (req, res, next) => {
     }
 };
 
+// POST /api/labs/booking/:id/admin-cancel (ADMIN ONLY)
+// Unlike cancelLabOrder (user-facing, restricted to the order's own owner), this
+// lets an admin cancel on the customer's behalf and also notifies Redcliffe via
+// updateBooking, which the user-facing cancel path currently does not do.
+const adminCancelLabOrder = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body;
+        const adminId = req.user.id;
+
+        const order = await prisma.labOrder.findUnique({ where: { id } });
+        if (!order) return sendResponse(res, 404, null, 'Lab order not found');
+
+        if (['SAMPLE_COLLECTED', 'REPORT_GENERATED', 'FAILED'].includes(order.status)) {
+            return sendResponse(res, 400, null, 'Cannot cancel at this stage');
+        }
+
+        // Tell Redcliffe if a real booking exists there yet (best-effort — a
+        // PENDING/HOLD_CREATED order may not have a confirmed Redcliffe booking).
+        if (order.redcliffeBookingId) {
+            try {
+                await rc.updateBooking({
+                    booking_id: parseInt(order.redcliffeBookingId, 10),
+                    booking_status: 'cancelled',
+                    remark: reason || 'Cancelled by Ayuxa admin',
+                });
+            } catch (rcErr) {
+                logger.warn(`[adminCancelLabOrder] Redcliffe cancel failed for ${id}: ${rcErr.message}`);
+            }
+        }
+
+        const updated = await prisma.labOrder.update({
+            where: { id },
+            data: { status: 'FAILED' },
+        });
+
+        const { emitToUser } = require('../services/socket.service');
+        const { sendPushToUser } = require('../utils/notifications');
+
+        emitToUser(updated.userId, 'activity_update_created', {
+            id: `cancel_${id}_${Date.now()}`,
+            eventType: 'service_rescheduled',
+            serviceType: 'Blood Test',
+            staffName: 'Admin',
+            staffId: adminId,
+            staffPhone: '',
+            staffPhotoUrl: null,
+            statusDetail: reason ? `Your booking was cancelled: ${reason}` : 'Your booking has been cancelled.',
+            createdAt: new Date(),
+        });
+
+        try {
+            await sendPushToUser(updated.userId, {
+                title: 'Booking Cancelled',
+                body: reason ? `Your blood test booking was cancelled: ${reason}` : 'Your blood test booking has been cancelled.',
+                data: { type: 'lab_cancelled', labOrderId: id },
+            });
+        } catch (pushErr) {
+            logger.warn('Failed to send cancel FCM:', pushErr.message);
+        }
+
+        logger.info(`Lab order ${id} cancelled by admin ${adminId}`);
+        sendResponse(res, 200, updated, 'Lab order cancelled successfully');
+    } catch (error) {
+        logger.error('adminCancelLabOrder error:', error.message);
+        next(error);
+    }
+};
+
+// GET /api/labs/booking/:id/invoice
+// LabOrder payments use Payment.labOrderId, not Payment.bookingId, so they were
+// structurally invisible to the generic Booking invoice endpoint. This mirrors
+// booking.controller.js's downloadInvoice using the same shared PDF generator.
+const getLabOrderInvoice = async (req, res, next) => {
+    try {
+        const { generateInvoicePDF } = require('../utils/pdfGenerator');
+
+        const order = await prisma.labOrder.findUnique({
+            where: { id: req.params.id },
+            include: {
+                user: { select: { name: true, phone: true } },
+                payments: {
+                    where: { status: 'SUCCESS' },
+                    include: { invoice: true },
+                    orderBy: { createdAt: 'desc' },
+                },
+            },
+        });
+
+        if (!order) return sendResponse(res, 404, null, 'Lab order not found');
+
+        const isAdmin = req.user && (req.user.role || req.user.isStaffProfile === true || req.baseUrl.includes('/admin') || req.path.includes('/admin/'));
+        if (order.userId !== req.user.id && !isAdmin) {
+            return sendResponse(res, 403, null, 'Not authorized');
+        }
+
+        const payment = (order.payments || [])[0];
+        const pkg = order.packages?.[0];
+        const address = order.address || {};
+        const description = `${pkg?.name || 'Blood Test'} (${order.clientRefId})`;
+
+        const invoiceData = payment && payment.invoice ? {
+            ...payment.invoice,
+            billingName: order.user?.name || order.patient?.name || 'Customer',
+            billingAddress: address.line1 || 'N/A',
+            billingPhone: order.user?.phone || order.patient?.phone || 'N/A',
+            description,
+        } : {
+            invoiceNumber: `INV-${order.clientRefId}`,
+            invoiceDate: order.createdAt || new Date(),
+            billingName: order.user?.name || order.patient?.name || 'Customer',
+            billingAddress: address.line1 || 'N/A',
+            billingPhone: order.user?.phone || order.patient?.phone || 'N/A',
+            description,
+            subtotal: Number(payment?.amount || pkg?.cost || 0),
+            gstRate: 18,
+            gstAmount: Math.round(Number(payment?.amount || pkg?.cost || 0) * 0.18 * 100) / 100,
+            totalAmount: Number(payment?.amount || pkg?.cost || 0),
+        };
+
+        const pdfBuffer = await generateInvoicePDF(invoiceData);
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename=Invoice_${order.clientRefId}.pdf`,
+            'Content-Length': pdfBuffer.length,
+        });
+
+        return res.end(pdfBuffer);
+    } catch (error) {
+        logger.error('getLabOrderInvoice error:', error.message);
+        next(error);
+    }
+};
+
 module.exports = {
     checkServiceability,
     searchLocation,
@@ -573,4 +715,6 @@ module.exports = {
     adminGetLabOrders,
     cancelLabOrder,
     rescheduleLabOrder,
+    adminCancelLabOrder,
+    getLabOrderInvoice,
 };

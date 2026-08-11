@@ -2,7 +2,7 @@
 // Flow: Order summary → optional coupon → create booking → initiate order → native Razorpay → verify → success
 // Edge cases: cancel (ondismiss), failure (retry), app crash (AsyncStorage recovery)
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, StyleSheet, Platform, Alert, NativeModules, KeyboardAvoidingView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, StyleSheet, Platform, NativeModules, KeyboardAvoidingView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +21,7 @@ import { AddressPickerSection, type AddressData } from '@/components/AddressPick
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { planService, Plan, BillingCycle } from '@/services/api/planService';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 // ─── Payment Flow States (for debugging & recovery) ──────
 type PaymentFlowState = 'idle' | 'creating_booking' | 'initiating_order' | 'checkout_opened' | 'verifying' | 'success' | 'failed' | 'cancelled';
@@ -166,7 +167,7 @@ export default function CheckoutScreen() {
     );
 
     const [isPaidBookingOverride, setIsPaidBookingOverride] = useState(false);
-    const isInquiryMode = (params.paymentMode === 'INQUIRY' || params.paymentMode === 'inquiry' || params.checkoutGroup === 'D') && !isPaidBookingOverride;
+    const isInquiryMode = (params.checkoutRoute === 'D') && !isPaidBookingOverride;
     const hasActivePlanForCategoryRaw = profile?.subscriptions?.some(
         (s: any) =>
             s.status === "ACTIVE" &&
@@ -263,6 +264,41 @@ export default function CheckoutScreen() {
     const [, setFlowState] = useState<PaymentFlowState>('idle');
     const [, setPendingRecovery] = useState(false);
 
+    // Native Alert.alert is globally muted app-wide (see app/_layout.tsx) — all
+    // single-button notices go through CustomAlertModal via triggerAlert.
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
+    // Optional one-shot action to run when the alert's OK button is pressed (e.g. navigate back)
+    const alertCloseAction = useRef<(() => void) | null>(null);
+    const closeAlert = () => {
+        setAlertConfig(prev => ({ ...prev, visible: false }));
+        const action = alertCloseAction.current;
+        alertCloseAction.current = null;
+        if (action) action();
+    };
+
+    // CustomAlertModal only supports 2 buttons where the primary always just
+    // closes — these 3 dialogs need real per-button actions, so they use a
+    // shared generic 2-button modal instead.
+    const [actionModal, setActionModal] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+        primaryText: string;
+        onPrimary: () => void;
+        secondaryText?: string;
+        onSecondary?: () => void;
+        primaryDestructive?: boolean;
+    } | null>(null);
+    const closeActionModal = () => setActionModal(null);
+
     // ─── Wellness Specific State ───────────────────────────────────────────
     const [shippingDetails, setShippingDetails] = useState<{
         rate: number;
@@ -309,6 +345,9 @@ export default function CheckoutScreen() {
     }, [profile?.addresses, selectedAddress, profile?.name]);
 
     // ─── Blood Test Specific State ─────────────────────────────────────────
+    // selectedDate/selectedTime are only ever set by an explicit tap (handleDaySelect/
+    // handleSlotSelect) — never auto-populated — so "please pick a date" validation
+    // can't be silently bypassed by a default that was never really chosen.
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedTime, setSelectedTime] = useState<string>('');
     const [selectedSlotId, setSelectedSlotId] = useState<number>(0);
@@ -430,31 +469,43 @@ export default function CheckoutScreen() {
 
     useEffect(() => { setFinalAmount(Math.round(amountWithTaxAndFee - discount)); }, [amountWithTaxAndFee, discount]);
 
-    // ─── Blood Test: Initialize collection date
-    useEffect(() => {
-        if (!isBloodTest) return;
+    // ─── Blood Test: default day shown in the picker before the user taps anything.
+    // Display-only — never written to selectedDate, so it can't masquerade as a
+    // real user choice.
+    const defaultCollectionDay = useCallback(() => {
         const today = new Date();
         if (today.getHours() >= 16) today.setDate(today.getDate() + 1);
-        setSelectedDate(today);
-    }, [isBloodTest]);
+        return today;
+    }, []);
 
-    // ─── Blood Test: Fetch time slots when date changes
+    // ─── Blood Test: Fetch time slots for whichever day is showing (default or
+    // user-picked), but only auto-select a slot once the user has actually
+    // chosen a date — otherwise leave selectedTime empty.
     useEffect(() => {
-        if (!isBloodTest || !selectedDate) return;
+        if (!isBloodTest) return;
+        const dateForSlots = selectedDate || defaultCollectionDay();
         setSlotsLoading(true);
-        const dateStr = selectedDate.toISOString().split('T')[0];
+        const dateStr = dateForSlots.toISOString().split('T')[0];
         labService.getTimeSlots(dateStr, coords.lat, coords.long)
             .then(data => {
-                const slots = Array.isArray(data) ? data : [];
-                setSlots(slots);
-                if (slots.length > 0) {
-                    setSelectedTime(slots[0].slot || slots[0].slot_time || '');
-                    setSelectedSlotId(slots[0].slot_id || 0);
-                }
+                const fetchedSlots = Array.isArray(data) ? data : [];
+                setSlots(fetchedSlots);
             })
             .catch(() => setSlots([]))
             .finally(() => setSlotsLoading(false));
-    }, [isBloodTest, selectedDate, coords.lat, coords.long]);
+    }, [isBloodTest, selectedDate, coords.lat, coords.long, defaultCollectionDay]);
+
+    const handleDaySelect = (day: Date) => {
+        setSelectedDate(day);
+        setSelectedTime('');
+        setSelectedSlotId(0);
+    };
+
+    const handleSlotSelect = (slot: LabSlot) => {
+        if (!selectedDate) setSelectedDate(defaultCollectionDay());
+        setSelectedTime(slot.slot || slot.slot_time || '');
+        setSelectedSlotId(slot.slot_id || 0);
+    };
 
     // ─── Update coords when selected address changes (for blood test slot fetching)
     useEffect(() => {
@@ -507,35 +558,31 @@ export default function CheckoutScreen() {
                 if (pendingOrderId && pendingBookingId) {
                     setPendingRecovery(true);
                     sessionBookingId.current = pendingBookingId;
-                    Alert.alert(
-                        t('checkout.pending_payment_title'),
-                        t('checkout.pending_payment_msg'),
-                        [
-                            {
-                                text: t('checkout.dismiss'),
-                                style: 'cancel',
-                                onPress: async () => {
-                                    // Clear stale pending order
-                                    await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_ID);
-                                    await storageService.removeItem(STORAGE_KEYS.PENDING_BOOKING_ID);
-                                    setPendingRecovery(false);
-                                },
-                            },
-                            {
-                                text: t('checkout.check_status'),
-                                onPress: async () => {
-                                    // Navigate to service-confirmation which fetches booking from backend
-                                    // The backend will have the real payment status from Razorpay webhooks
-                                    await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_ID);
-                                    await storageService.removeItem(STORAGE_KEYS.PENDING_BOOKING_ID);
-                                    router.replace({
-                                        pathname: '/service-confirmation',
-                                        params: { bookingId: pendingBookingId },
-                                    });
-                                },
-                            },
-                        ],
-                    );
+                    setActionModal({
+                        visible: true,
+                        title: t('checkout.pending_payment_title'),
+                        message: t('checkout.pending_payment_msg'),
+                        secondaryText: t('checkout.dismiss'),
+                        onSecondary: async () => {
+                            closeActionModal();
+                            // Clear stale pending order
+                            await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_ID);
+                            await storageService.removeItem(STORAGE_KEYS.PENDING_BOOKING_ID);
+                            setPendingRecovery(false);
+                        },
+                        primaryText: t('checkout.check_status'),
+                        onPrimary: async () => {
+                            closeActionModal();
+                            // Navigate to service-confirmation which fetches booking from backend
+                            // The backend will have the real payment status from Razorpay webhooks
+                            await storageService.removeItem(STORAGE_KEYS.PENDING_ORDER_ID);
+                            await storageService.removeItem(STORAGE_KEYS.PENDING_BOOKING_ID);
+                            router.replace({
+                                pathname: '/service-confirmation',
+                                params: { bookingId: pendingBookingId },
+                            });
+                        },
+                    });
                 }
             } catch (e) {
                 console.warn('Pending order check failed:', e);
@@ -554,12 +601,12 @@ export default function CheckoutScreen() {
                 setDiscount(res.data.discount);
                 setFinalAmount(amountWithTaxAndFee - res.data.discount);
                 setCouponApplied(true);
-                Alert.alert(t('checkout.coupon_applied_title'), t('checkout.coupon_saved', { amount: res.data.discount.toLocaleString('en-IN') }));
+                triggerAlert(t('checkout.coupon_applied_title'), t('checkout.coupon_saved', { amount: res.data.discount.toLocaleString('en-IN') }), 'checkmark-circle-outline');
             } else {
-                Alert.alert(t('checkout.invalid_coupon'), t('checkout.invalid_coupon_msg'));
+                triggerAlert(t('checkout.invalid_coupon'), t('checkout.invalid_coupon_msg'));
             }
         } catch {
-            Alert.alert(t('common.error'), t('checkout.coupon_error'));
+            triggerAlert(t('common.error'), t('checkout.coupon_error'));
         } finally {
             setCouponLoading(false);
         }
@@ -603,11 +650,8 @@ export default function CheckoutScreen() {
                     }
                 });
                 if (disabledItems.length > 0) {
-                    Alert.alert(
-                        t('checkout.products_unavailable'),
-                        t('checkout.products_unavailable_msg'),
-                        [{ text: t('common.ok'), onPress: () => router.back() }]
-                    );
+                    alertCloseAction.current = () => router.back();
+                    triggerAlert(t('checkout.products_unavailable'), t('checkout.products_unavailable_msg'));
                     setPayLoading(false);
                     return;
                 }
@@ -616,11 +660,11 @@ export default function CheckoutScreen() {
             }
 
             if (!selectedAddress || !selectedAddress.line1) {
-                Alert.alert(t('checkout.address_required'), t('checkout.address_required_msg'));
+                triggerAlert(t('checkout.address_required'), t('checkout.address_required_msg'));
                 return;
             }
             if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) {
-                Alert.alert(t('checkout.pincode_required'), t('checkout.pincode_required_msg'));
+                triggerAlert(t('checkout.pincode_required'), t('checkout.pincode_required_msg'));
                 return;
             }
         }
@@ -683,7 +727,7 @@ export default function CheckoutScreen() {
                     const bookingRes = await labService.holdBooking(bookingPayload);
                     if (!bookingRes || !(bookingRes as any)?.id) {
                         setFlowState('failed');
-                        Alert.alert(t('checkout.booking_error'), t('checkout.blood_test_booking_error', { name: item.title || 'Blood Test' }));
+                        triggerAlert(t('checkout.booking_error'), t('checkout.blood_test_booking_error', { name: item.title || 'Blood Test' }));
                         return;
                     }
                     lastBookingId = (bookingRes as any).id;
@@ -714,7 +758,7 @@ export default function CheckoutScreen() {
                 const checkoutRes = await storeService.checkoutCart(checkoutPayload);
                 if (!checkoutRes.success || !checkoutRes.data?.order) {
                     setFlowState('failed');
-                    Alert.alert(t('checkout.booking_error'), checkoutRes.message || t('checkout.booking_error'));
+                    triggerAlert(t('checkout.booking_error'), checkoutRes.message || t('checkout.booking_error'));
                     return;
                 }
                 lastProductOrderId = checkoutRes.data.order.id;
@@ -731,7 +775,7 @@ export default function CheckoutScreen() {
                 });
                 if (!bookingRes.success || !bookingRes.data) {
                     setFlowState('failed');
-                    Alert.alert(t('checkout.booking_error'), bookingRes.message ?? t('checkout.booking_error'));
+                    triggerAlert(t('checkout.booking_error'), bookingRes.message ?? t('checkout.booking_error'));
                     return;
                 }
                 sessionBookingId.current = bookingRes.data.id;
@@ -777,10 +821,13 @@ export default function CheckoutScreen() {
                     alertMsg = t('checkout.booking_received_msg', { amount: Math.round(finalAmount) });
                 }
 
-                Alert.alert(
-                    t('checkout.booking_confirmed') || 'Booking Confirmed',
-                    alertMsg,
-                    [{ text: t('common.ok'), onPress: () => {
+                setActionModal({
+                    visible: true,
+                    title: t('checkout.booking_confirmed') || 'Booking Confirmed',
+                    message: alertMsg,
+                    primaryText: t('common.ok'),
+                    onPrimary: () => {
+                        closeActionModal();
                         if (isBloodTest && !isWellness) {
                             router.replace({
                                 pathname: '/blood-test/success',
@@ -797,8 +844,8 @@ export default function CheckoutScreen() {
                                 params: { bookingId: sessionBookingId.current!, isCod: 'true' }
                             });
                         }
-                    }}]
-                );
+                    },
+                });
                 return;
             }
 
@@ -832,7 +879,7 @@ export default function CheckoutScreen() {
 
             if (!initiateRes.success || !initiateRes.data) {
                 setFlowState('failed');
-                Alert.alert(t('checkout.payment_error'), initiateRes.message ?? t('checkout.payment_error'));
+                triggerAlert(t('checkout.payment_error'), initiateRes.message ?? t('checkout.payment_error'));
                 return;
             }
 
@@ -861,10 +908,7 @@ export default function CheckoutScreen() {
 
             // ─── STEP 5: Guard — native module must exist (fails in Expo Go)
             if (!NativeModules.RNRazorpayCheckout) {
-                Alert.alert(
-                    t('checkout.build_required'),
-                    t('checkout.build_required_msg'),
-                );
+                triggerAlert(t('checkout.build_required'), t('checkout.build_required_msg'));
                 return;
             }
 
@@ -982,10 +1026,7 @@ export default function CheckoutScreen() {
                 }
             } else {
                 setFlowState('failed');
-                Alert.alert(
-                    t('checkout.verification_failed'),
-                    t('checkout.verification_failed_msg'),
-                );
+                triggerAlert(t('checkout.verification_failed'), t('checkout.verification_failed_msg'));
             }
         } catch (error: any) {
             // ─── Clear pending order from storage
@@ -1001,11 +1042,7 @@ export default function CheckoutScreen() {
                 // Without this, the PAYMENT_PENDING booking stays visible in Cart/Active.
                 await cancelPaymentOnBackend();
                 await clearPendingOrder();
-                Alert.alert(
-                    t('checkout.payment_cancelled'),
-                    t('checkout.payment_cancelled_msg'),
-                    [{ text: t('common.ok') }],
-                );
+                triggerAlert(t('checkout.payment_cancelled'), t('checkout.payment_cancelled_msg'));
                 return;
             }
 
@@ -1014,21 +1051,47 @@ export default function CheckoutScreen() {
             await cancelPaymentOnBackend();
             await clearPendingOrder();
             const msg = error?.description ?? error?.message ?? t('errors.generic');
-            Alert.alert(
-                t('checkout.payment_failed'),
-                msg,
-                [
-                    { text: t('checkout.go_back'), style: 'cancel', onPress: () => router.back() },
-                    { text: t('checkout.retry_payment'), onPress: () => {
-                        setFlowState('idle');
-                        // handlePay will be called again by the user pressing the button
-                    }},
-                ],
-            );
+            setActionModal({
+                visible: true,
+                title: t('checkout.payment_failed'),
+                message: msg,
+                secondaryText: t('checkout.go_back'),
+                onSecondary: () => {
+                    closeActionModal();
+                    router.back();
+                },
+                primaryText: t('checkout.retry_payment'),
+                onPrimary: () => {
+                    closeActionModal();
+                    setFlowState('idle');
+                    // handlePay will be called again by the user pressing the button
+                },
+            });
         } finally {
             setPayLoading(false);
         }
     }, [payLoading, finalAmount, selectedMethod, couponApplied, couponCode, params, label, router, collectionType, selectedDate, selectedTime, selectedAddress, serviceabilityStatus, phoneNumber, wellnessItems, shippingDetails]);
+
+    // ─── Live form validity — gates the Pay button itself, mirroring the same
+    // checks handlePay/executePayment already enforce at submit time. Deliberately
+    // excludes loading/infra state (e.g. payLoading) — that's handled separately
+    // via the button's own disabled prop so it never gets stuck permanently off.
+    const isFormValid = React.useMemo(() => {
+        if (isBloodTest) {
+            if (!selectedDate || !selectedTime) return false;
+            if (collectionType === 'HOME') {
+                if (!selectedAddress?.line1) return false;
+                if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) return false;
+                if (serviceabilityStatus !== 'serviceable') return false;
+            }
+            if (!phoneNumber?.trim() || phoneNumber.length < 10) return false;
+        }
+        if (isWellness) {
+            if (!selectedAddress?.line1) return false;
+            if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) return false;
+        }
+        return true;
+    }, [isBloodTest, isWellness, selectedDate, selectedTime, collectionType, selectedAddress, serviceabilityStatus, phoneNumber]);
 
     // ─── Open Razorpay native popup ─────────────────────────
     const handlePay = useCallback(async () => {
@@ -1037,29 +1100,29 @@ export default function CheckoutScreen() {
         // ─── Blood Test Validation ────────────────────────────────────────────
         if (isBloodTest) {
             if (!selectedDate || !selectedTime) {
-                Alert.alert(t('checkout.required'), t('checkout.select_date_time'));
+                triggerAlert(t('checkout.required'), t('checkout.select_date_time'));
                 return;
             }
             if (collectionType === 'HOME') {
                 if (!selectedAddress || !selectedAddress.line1) {
-                    Alert.alert(t('checkout.address_required'), t('checkout.address_required_msg2'));
+                    triggerAlert(t('checkout.address_required'), t('checkout.address_required_msg2'));
                     return;
                 }
                 if (!selectedAddress.pincode || selectedAddress.pincode.length !== 6) {
-                    Alert.alert(t('checkout.pincode_required'), t('checkout.pincode_required_msg'));
+                    triggerAlert(t('checkout.pincode_required'), t('checkout.pincode_required_msg'));
                     return;
                 }
                 if (serviceabilityStatus === 'non-serviceable') {
-                    Alert.alert(t('checkout.location_not_serviceable'), t('checkout.location_not_serviceable_msg'));
+                    triggerAlert(t('checkout.location_not_serviceable'), t('checkout.location_not_serviceable_msg'));
                     return;
                 }
                 if (serviceabilityStatus !== 'serviceable') {
-                    Alert.alert(t('checkout.address_verification_needed'), t('checkout.address_verification_needed_msg'));
+                    triggerAlert(t('checkout.address_verification_needed'), t('checkout.address_verification_needed_msg'));
                     return;
                 }
             }
             if (!phoneNumber?.trim() || phoneNumber.length < 10) {
-                Alert.alert(t('checkout.phone_required'), t('checkout.phone_required_msg'));
+                triggerAlert(t('checkout.phone_required'), t('checkout.phone_required_msg'));
                 return;
             }
             // Show summary confirmation before Razorpay
@@ -1491,7 +1554,7 @@ export default function CheckoutScreen() {
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.daysScroll}>
                             {(() => {
                                 const days = [];
-                                const start = selectedDate || new Date();
+                                const start = selectedDate || defaultCollectionDay();
                                 for (let i = 0; i < 14; i++) {
                                     const d = new Date(start);
                                     d.setDate(start.getDate() + i);
@@ -1505,7 +1568,7 @@ export default function CheckoutScreen() {
                                         styles.dayCard,
                                         selectedDate?.toDateString() === day.toDateString() && styles.dayCardActive,
                                     ]}
-                                    onPress={() => setSelectedDate(day)}
+                                    onPress={() => handleDaySelect(day)}
                                 >
                                     <Text style={[
                                         styles.dayText,
@@ -1529,10 +1592,7 @@ export default function CheckoutScreen() {
                                             styles.slotCard,
                                             selectedTime === (slot.slot || slot.slot_time) && styles.slotCardActive,
                                         ]}
-                                        onPress={() => {
-                                            setSelectedTime(slot.slot || slot.slot_time || '');
-                                            setSelectedSlotId(slot.slot_id || 0);
-                                        }}
+                                        onPress={() => handleSlotSelect(slot)}
                                     >
                                         <Text style={[
                                             styles.slotTime,
@@ -1672,10 +1732,10 @@ export default function CheckoutScreen() {
                 <TouchableOpacity
                     style={[
                         styles.payBtn,
-                        (payLoading || (isBloodTest && serviceabilityStatus === 'non-serviceable')) && styles.payBtnLoading
+                        (payLoading || !isFormValid || (isBloodTest && serviceabilityStatus === 'non-serviceable')) && styles.payBtnLoading
                     ]}
                     onPress={handlePay}
-                    disabled={payLoading || (isBloodTest && serviceabilityStatus === 'non-serviceable')}
+                    disabled={payLoading || !isFormValid || (isBloodTest && serviceabilityStatus === 'non-serviceable')}
                     activeOpacity={0.85}
                 >
                     {payLoading
@@ -1775,6 +1835,53 @@ export default function CheckoutScreen() {
                                     }
                                 </TouchableOpacity>
                             </View>
+                        </View>
+                    </View>
+                </Modal>
+            )}
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText={t('common.ok')}
+                onClose={closeAlert}
+            />
+
+            {actionModal?.visible && (
+                <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={closeActionModal}>
+                    <View style={styles.actionOverlay}>
+                        <View style={styles.actionDialog}>
+                            <Text style={styles.actionTitle}>{actionModal.title}</Text>
+                            <Text style={styles.actionMessage}>{actionModal.message}</Text>
+
+                            {actionModal.secondaryText ? (
+                                <View style={styles.actionRow}>
+                                    <TouchableOpacity
+                                        style={styles.actionOutlineBtn}
+                                        activeOpacity={0.85}
+                                        onPress={actionModal.onSecondary}
+                                    >
+                                        <Text style={styles.actionOutlineBtnText}>{actionModal.secondaryText}</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.actionPrimaryBtnHalf}
+                                        activeOpacity={0.85}
+                                        onPress={actionModal.onPrimary}
+                                    >
+                                        <Text style={styles.actionPrimaryBtnText}>{actionModal.primaryText}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <TouchableOpacity
+                                    style={styles.actionPrimaryBtnFull}
+                                    activeOpacity={0.85}
+                                    onPress={actionModal.onPrimary}
+                                >
+                                    <Text style={styles.actionPrimaryBtnText}>{actionModal.primaryText}</Text>
+                                </TouchableOpacity>
+                            )}
                         </View>
                     </View>
                 </Modal>
@@ -2288,5 +2395,73 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     planSelectorTextActive: {
         fontFamily: Fonts.bold,
         color: colors.primary,
+    },
+
+    /* ─── Shared action modal (pending recovery / payment failed / COD confirmed) ─── */
+    actionOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 32,
+    },
+    actionDialog: {
+        backgroundColor: colors.bgCard,
+        borderRadius: Radius.xl || 16,
+        padding: 24,
+        width: '100%',
+        alignItems: 'center',
+    },
+    actionTitle: {
+        fontFamily: Fonts.bold,
+        fontSize: FontSize.heading1 || 20,
+        color: colors.textDark,
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    actionMessage: {
+        fontFamily: Fonts.regular,
+        fontSize: FontSize.bodySmall || 14,
+        color: colors.textMuted,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 20,
+    },
+    actionRow: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
+    },
+    actionOutlineBtn: {
+        flex: 1,
+        borderRadius: Radius.lg || 12,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        paddingVertical: 14,
+        alignItems: 'center',
+    },
+    actionOutlineBtnText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.button || 16,
+        color: colors.textDark,
+    },
+    actionPrimaryBtnHalf: {
+        flex: 1,
+        backgroundColor: colors.primary,
+        borderRadius: Radius.lg || 12,
+        paddingVertical: 14,
+        alignItems: 'center',
+    },
+    actionPrimaryBtnFull: {
+        backgroundColor: colors.primary,
+        borderRadius: Radius.lg || 12,
+        paddingVertical: 14,
+        width: '100%',
+        alignItems: 'center',
+    },
+    actionPrimaryBtnText: {
+        fontFamily: Fonts.semiBold,
+        fontSize: FontSize.button || 16,
+        color: '#FFFFFF',
     },
 });

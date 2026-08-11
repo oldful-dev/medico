@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { Search, Eye, UserPlus, AlertTriangle, ChevronLeft, ChevronRight, Edit2, Save, X, Send, Clock, Phone } from "lucide-react";
+import { Search, Eye, UserPlus, AlertTriangle, ChevronLeft, ChevronRight, Edit2, Save, X, Clock, Phone } from "lucide-react";
 import { bookingAPI, caregiverAPI, cityAPI, labAPI, activityAPI } from "@/lib/api";
 import { formatDate, formatDateTime, formatCurrency, showToast } from "@/lib/hooks";
 import { getSocket } from "@/lib/socket";
@@ -32,8 +32,6 @@ const EVENT_COLORS = {
     payment_confirmed:     '#0284C7',
 };
 
-const EMPTY_ASSIGN = { eventType: '', serviceType: '', staffName: '', staffId: '', staffPhone: '', staffPhotoUrl: '', eta: '', statusDetail: '' };
-
 export default function BookingsPage() {
     const [bookings, setBookings] = useState([]);
     const [cities, setCities] = useState([]);
@@ -60,13 +58,13 @@ export default function BookingsPage() {
     const [labLoading, setLabLoading] = useState(false);
     const [detailTab, setDetailTab] = useState('details'); // 'details' | 'lab'
 
-    // ── Assign staff modal ──────────────────────────
-    const [assignStaffModal, setAssignStaffModal] = useState(null); // labOrder object
-    const [assignForm, setAssignForm] = useState(EMPTY_ASSIGN);
-    const [assigning, setAssigning] = useState(false);
-    const [orderUpdates, setOrderUpdates] = useState([]); // activity updates for selected lab order
-    const [editUpdateModal, setEditUpdateModal] = useState(null); // update being edited
-    const [editUpdateForm, setEditUpdateForm] = useState({});
+    // ── Lab order activity history (read-only) ──────
+    // Phlebotomist assignment is done entirely by Redcliffe's own dispatch —
+    // Ayuxa has no roster to assign from, so this is view-only: it shows
+    // whatever ActivityUpdate rows Redcliffe's webhook has actually produced,
+    // never lets an admin type in a fabricated staff name/phone.
+    const [expandedLabOrderId, setExpandedLabOrderId] = useState(null);
+    const [orderUpdates, setOrderUpdates] = useState([]); // activity updates for the expanded lab order
 
     const limit = 20;
 
@@ -223,82 +221,15 @@ export default function BookingsPage() {
         } catch { showToast('Failed to add service person', 'error'); }
     }
 
-    async function handleAssignStaff() {
-        const { eventType, staffName, staffId, staffPhone } = assignForm;
-        if (!eventType) { showToast('Select an event type', 'error'); return; }
-        if (!staffName.trim() || !staffId.trim() || !staffPhone.trim()) {
-            showToast('Staff name, ID, and phone are required', 'error');
+    // Toggle the read-only activity history for a lab order card in the "lab" tab.
+    function toggleLabOrderHistory(order) {
+        if (expandedLabOrderId === order.id) {
+            setExpandedLabOrderId(null);
+            setOrderUpdates([]);
             return;
         }
-        setAssigning(true);
-        try {
-            await activityAPI.assignStaff(assignStaffModal.id, {
-                ...assignForm,
-                staffName: staffName.trim(),
-                staffId: staffId.trim(),
-                staffPhone: staffPhone.trim(),
-                staffPhotoUrl: assignForm.staffPhotoUrl.trim() || null,
-                eta: assignForm.eta.trim() || null,
-                statusDetail: assignForm.statusDetail.trim() || null,
-                serviceType: assignForm.serviceType.trim() || 'Blood Test',
-            });
-            showToast('Staff assigned & update pushed to user ✓', 'success');
-            setAssignStaffModal(null);
-            setAssignForm(EMPTY_ASSIGN);
-            await loadOrderUpdates(assignStaffModal.id);
-        } catch (e) {
-            showToast(e.response?.data?.message || 'Assignment failed', 'error');
-        } finally {
-            setAssigning(false);
-        }
-    }
-
-    function openAssignStaff(order) {
-        setAssignStaffModal(order);
-        setAssignForm({
-            ...EMPTY_ASSIGN,
-            serviceType: order.packages?.[0]?.name || 'Blood Test',
-        });
-        setEditUpdateModal(null);
+        setExpandedLabOrderId(order.id);
         loadOrderUpdates(order.id);
-    }
-
-    async function handleEditUpdate(update) {
-        setEditUpdateModal(update);
-        setEditUpdateForm({
-            eventType: update.eventType,
-            serviceType: update.serviceType,
-            staffName: update.staffName,
-            staffId: update.staffId,
-            staffPhone: update.staffPhone,
-            staffPhotoUrl: update.staffPhotoUrl || '',
-            eta: update.eta || '',
-            statusDetail: update.statusDetail || '',
-        });
-    }
-
-    async function saveEditUpdate() {
-        if (!editUpdateModal) return;
-        try {
-            await activityAPI.updateUpdate(editUpdateModal.id, editUpdateForm);
-            showToast('Activity update saved');
-            setEditUpdateModal(null);
-            setEditUpdateForm({});
-            await loadOrderUpdates(assignStaffModal.id);
-        } catch (e) {
-            showToast(e.response?.data?.message || 'Save failed', 'error');
-        }
-    }
-
-    async function deleteUpdate(id) {
-        if (!window.confirm('Delete this activity update?')) return;
-        try {
-            await activityAPI.deleteUpdate(id);
-            showToast('Activity update deleted');
-            await loadOrderUpdates(assignStaffModal.id);
-        } catch (e) {
-            showToast(e.response?.data?.message || 'Delete failed', 'error');
-        }
     }
 
     function formatTs(iso) {
@@ -580,7 +511,20 @@ export default function BookingsPage() {
                                             ? <select className="form-select" value={editData.paymentStatus || ''} onChange={e => setEditData({ ...editData, paymentStatus: e.target.value })}>{Object.keys(paymentStatusColors).map(s => <option key={s} value={s}>{s}</option>)}</select>
                                             : <span className={`badge ${paymentStatusColors[selected.paymentStatus] || 'badge-warning'}`}>{selected.paymentStatus || 'PENDING'}</span>}
                                     </div>
-                                    <div><label className="form-label">Amount</label><div className="text-sm font-semibold">{formatCurrency(selected.amount)}</div></div>
+                                    <div>
+                                        <label className="form-label">Amount</label>
+                                        <div className="text-sm font-semibold">{formatCurrency(selected.amount)}</div>
+                                        {selected.paymentStatus === 'SUCCESS' && (
+                                            <a
+                                                href={bookingAPI.getInvoiceDownloadUrl(selected.id)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 11, fontWeight: 600, color: 'var(--accent-primary)', textDecoration: 'none' }}
+                                            >
+                                                📄 View Invoice
+                                            </a>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Staff Assignment */}
@@ -736,6 +680,40 @@ export default function BookingsPage() {
                                                     </div>
                                                 )}
                                             </div>
+
+                                            {/* Phlebotomist assignment is done entirely by Redcliffe's own
+                                                dispatch, not Ayuxa — this only displays whatever ActivityUpdate
+                                                rows Redcliffe's webhook has actually produced. Read-only. */}
+                                            <div style={{ borderTop: '1px solid var(--border-color)', padding: '8px 14px' }}>
+                                                <button
+                                                    className="btn btn-xs btn-secondary"
+                                                    style={{ fontSize: 11 }}
+                                                    onClick={() => toggleLabOrderHistory(order)}
+                                                >
+                                                    {expandedLabOrderId === order.id ? 'Hide Activity History' : 'View Activity History'}
+                                                </button>
+                                                {expandedLabOrderId === order.id && (
+                                                    orderUpdates.length === 0 ? (
+                                                        <div className="text-sm text-muted" style={{ padding: '10px 0' }}>No activity updates received from Redcliffe yet.</div>
+                                                    ) : (
+                                                        <div style={{ marginTop: 10 }}>
+                                                            {orderUpdates.map(u => (
+                                                                <div key={u.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px', background: 'var(--bg-glass)', borderRadius: 8, marginBottom: 8 }}>
+                                                                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: `${EVENT_COLORS[u.eventType] || '#048357'}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
+                                                                        {EVENT_TYPES.find(e => e.value === u.eventType)?.label?.split(' ')[0] || '📋'}
+                                                                    </div>
+                                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                                        <div style={{ fontSize: 12, fontWeight: 600, color: EVENT_COLORS[u.eventType] || 'var(--text-primary)', marginBottom: 2 }}>{EVENT_TYPES.find(e => e.value === u.eventType)?.label?.replace(/^.{2}/, '') || u.eventType}</div>
+                                                                        <div style={{ fontSize: 12, marginBottom: 2 }}>{u.staffName} <span style={{ color: 'var(--text-muted)' }}>· {u.staffId}</span></div>
+                                                                        {u.statusDetail && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{u.statusDetail}</div>}
+                                                                    </div>
+                                                                    <div style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0, whiteSpace: 'nowrap' }}>{formatTs(u.createdAt)}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -875,62 +853,6 @@ export default function BookingsPage() {
             })()}
 
             {/* ══════════════════════════════════════════
-                EDIT ACTIVITY UPDATE MODAL
-            ══════════════════════════════════════════ */}
-            {editUpdateModal && (
-                <div className="modal-overlay" onClick={() => setEditUpdateModal(null)}>
-                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
-                        <div className="modal-header">
-                            <h3>Edit Activity Update</h3>
-                            <button onClick={() => setEditUpdateModal(null)} className="btn btn-sm btn-secondary">✕</button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="form-group mb-4">
-                                <label className="form-label">Event Type</label>
-                                <select className="form-select" value={editUpdateForm.eventType} onChange={e => setEditUpdateForm({ ...editUpdateForm, eventType: e.target.value })}>
-                                    {EVENT_TYPES.map(et => <option key={et.value} value={et.value}>{et.label}</option>)}
-                                </select>
-                            </div>
-
-                            <div className="form-group mb-4">
-                                <label className="form-label">Service Type</label>
-                                <input type="text" className="form-input" placeholder="Blood Test" value={editUpdateForm.serviceType} onChange={e => setEditUpdateForm({ ...editUpdateForm, serviceType: e.target.value })} />
-                            </div>
-
-                            <div className="form-group mb-4">
-                                <label className="form-label">Full Name</label>
-                                <input type="text" className="form-input" placeholder="e.g. Dr. Priya Sharma" value={editUpdateForm.staffName} onChange={e => setEditUpdateForm({ ...editUpdateForm, staffName: e.target.value })} />
-                            </div>
-
-                            <div className="form-group mb-4">
-                                <label className="form-label">AYUXA Staff ID</label>
-                                <input type="text" className="form-input" placeholder="e.g. AYX-DOC-0041" value={editUpdateForm.staffId} onChange={e => setEditUpdateForm({ ...editUpdateForm, staffId: e.target.value })} />
-                            </div>
-
-                            <div className="form-group mb-4">
-                                <label className="form-label">Mobile Number</label>
-                                <input type="tel" className="form-input" placeholder="+91 98765 43210" value={editUpdateForm.staffPhone} onChange={e => setEditUpdateForm({ ...editUpdateForm, staffPhone: e.target.value })} />
-                            </div>
-
-                            <div className="form-group mb-4">
-                                <label className="form-label">ETA <span className="text-muted">(optional)</span></label>
-                                <input type="text" className="form-input" placeholder="e.g. 20 mins" value={editUpdateForm.eta} onChange={e => setEditUpdateForm({ ...editUpdateForm, eta: e.target.value })} />
-                            </div>
-
-                            <div className="form-group mb-4">
-                                <label className="form-label">Status Detail <span className="text-muted">(shown to user)</span></label>
-                                <input type="text" className="form-input" placeholder="e.g. En route to your location" value={editUpdateForm.statusDetail} onChange={e => setEditUpdateForm({ ...editUpdateForm, statusDetail: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setEditUpdateModal(null)}>Cancel</button>
-                            <button className="btn btn-primary" onClick={saveEditUpdate}>Save Changes</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ══════════════════════════════════════════
                 ADD SERVICE PERSON MODAL (existing)
             ══════════════════════════════════════════ */}
             {servicePersonModal && (
@@ -947,133 +869,6 @@ export default function BookingsPage() {
                 </div>
             )}
 
-            {/* ══════════════════════════════════════════
-                ASSIGN STAFF + PUSH ACTIVITY UPDATE MODAL
-            ══════════════════════════════════════════ */}
-            {assignStaffModal && (
-                <div className="modal-overlay" onClick={() => setAssignStaffModal(null)}>
-                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 560, maxHeight: '92vh', overflowY: 'auto' }}>
-                        <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                                <h3 style={{ marginBottom: 2 }}>Assign Staff</h3>
-                                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Lab Order: {assignStaffModal.clientRefId} · {assignStaffModal.packages?.[0]?.name || 'Blood Test'}</div>
-                            </div>
-                            <button onClick={() => setAssignStaffModal(null)} className="btn btn-sm btn-secondary"><X size={14} /></button>
-                        </div>
-
-                        <div className="modal-body" style={{ padding: 20 }}>
-
-                            {/* ── Event Type ── */}
-                            <div className="form-group mb-4">
-                                <label className="form-label">Event Type <span style={{ color: 'red' }}>*</span></label>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                                    {EVENT_TYPES.map(et => (
-                                        <button key={et.value}
-                                            type="button"
-                                            onClick={() => setAssignForm(f => ({ ...f, eventType: et.value }))}
-                                            style={{
-                                                padding: '8px 10px', borderRadius: 8, border: '1.5px solid',
-                                                borderColor: assignForm.eventType === et.value ? EVENT_COLORS[et.value] : 'var(--border-color)',
-                                                background: assignForm.eventType === et.value ? `${EVENT_COLORS[et.value]}15` : 'var(--bg-card)',
-                                                color: assignForm.eventType === et.value ? EVENT_COLORS[et.value] : 'var(--text-secondary)',
-                                                cursor: 'pointer', fontSize: 12, fontWeight: assignForm.eventType === et.value ? 600 : 400,
-                                                textAlign: 'left', transition: 'all 0.15s',
-                                            }}>
-                                            {et.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* ── Staff Details ── */}
-                            <div style={{ background: 'var(--bg-glass)', borderRadius: 10, padding: 16, marginBottom: 16 }}>
-                                <h4 style={{ fontWeight: 600, marginBottom: 12, fontSize: 13 }}>Staff Details</h4>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                                        <label className="form-label">Full Name <span style={{ color: 'red' }}>*</span></label>
-                                        <input className="form-input" placeholder="e.g. Dr. Priya Sharma" value={assignForm.staffName} onChange={e => setAssignForm(f => ({ ...f, staffName: e.target.value }))} />
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">AYUXA Staff ID <span style={{ color: 'red' }}>*</span></label>
-                                        <input className="form-input" placeholder="e.g. AYX-DOC-0041" value={assignForm.staffId} onChange={e => setAssignForm(f => ({ ...f, staffId: e.target.value }))} />
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Mobile Number <span style={{ color: 'red' }}>*</span></label>
-                                        <input className="form-input" type="tel" placeholder="+91 98765 43210" value={assignForm.staffPhone} onChange={e => setAssignForm(f => ({ ...f, staffPhone: e.target.value }))} />
-                                    </div>
-                                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                                        <label className="form-label">Profile Photo URL <span className="text-muted">(optional)</span></label>
-                                        <input className="form-input" placeholder="https://..." value={assignForm.staffPhotoUrl} onChange={e => setAssignForm(f => ({ ...f, staffPhotoUrl: e.target.value }))} />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* ── Update Details ── */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-                                <div className="form-group">
-                                    <label className="form-label">Service Type</label>
-                                    <input className="form-input" placeholder="Blood Test" value={assignForm.serviceType} onChange={e => setAssignForm(f => ({ ...f, serviceType: e.target.value }))} />
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">ETA <span className="text-muted">(optional)</span></label>
-                                    <input className="form-input" placeholder="e.g. 20 mins" value={assignForm.eta} onChange={e => setAssignForm(f => ({ ...f, eta: e.target.value }))} />
-                                </div>
-                                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                                    <label className="form-label">Status Detail <span className="text-muted">(shown to user)</span></label>
-                                    <input className="form-input" placeholder="e.g. Phlebotomist assigned and en route" value={assignForm.statusDetail} onChange={e => setAssignForm(f => ({ ...f, statusDetail: e.target.value }))} />
-                                </div>
-                            </div>
-
-                            {/* ── Preview ── */}
-                            {assignForm.eventType && assignForm.staffName && (
-                                <div style={{ border: `1.5px solid ${EVENT_COLORS[assignForm.eventType] || '#048357'}`, borderRadius: 10, padding: 14, background: `${EVENT_COLORS[assignForm.eventType]}08`, marginBottom: 16 }}>
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: EVENT_COLORS[assignForm.eventType], marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Preview — what the user will see</div>
-                                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: `${EVENT_COLORS[assignForm.eventType]}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>👤</div>
-                                        <div>
-                                            <div style={{ fontWeight: 600, fontSize: 13 }}>{assignForm.staffName}</div>
-                                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{assignForm.staffId} · {assignForm.staffPhone}</div>
-                                            {assignForm.statusDetail && <div style={{ fontSize: 12, marginTop: 2, color: 'var(--text-secondary)' }}>{assignForm.statusDetail}</div>}
-                                        </div>
-                                        {assignForm.eta && <div style={{ marginLeft: 'auto', background: '#ECFDF5', padding: '4px 10px', borderRadius: 8, fontSize: 12, color: '#059669', fontWeight: 600 }}>ETA {assignForm.eta}</div>}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* ── Existing Activity Updates ── */}
-                            {orderUpdates.length > 0 && (
-                                <div>
-                                    <h4 style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>Previous Updates ({orderUpdates.length})</h4>
-                                    {orderUpdates.map(u => (
-                                        <div key={u.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px', background: 'var(--bg-glass)', borderRadius: 8, marginBottom: 8 }}>
-                                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: `${EVENT_COLORS[u.eventType] || '#048357'}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
-                                                {EVENT_TYPES.find(e => e.value === u.eventType)?.label?.split(' ')[0] || '📋'}
-                                            </div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontSize: 12, fontWeight: 600, color: EVENT_COLORS[u.eventType] || 'var(--text-primary)', marginBottom: 2 }}>{EVENT_TYPES.find(e => e.value === u.eventType)?.label?.replace(/^.{2}/, '') || u.eventType}</div>
-                                                <div style={{ fontSize: 12, marginBottom: 2 }}>{u.staffName} <span style={{ color: 'var(--text-muted)' }}>· {u.staffId}</span></div>
-                                                {u.statusDetail && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{u.statusDetail}</div>}
-                                            </div>
-                                            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                                                <button className="btn btn-xs btn-secondary" style={{ padding: '3px 8px', fontSize: 10 }} onClick={() => handleEditUpdate(u)}>Edit</button>
-                                                <button className="btn btn-xs btn-danger" style={{ padding: '3px 8px', fontSize: 10 }} onClick={() => deleteUpdate(u.id)}>Delete</button>
-                                            </div>
-                                            <div style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0, whiteSpace: 'nowrap' }}>{formatTs(u.createdAt)}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setAssignStaffModal(null)}>Cancel</button>
-                            <button className="btn btn-primary" onClick={handleAssignStaff} disabled={assigning}>
-                                {assigning ? 'Assigning…' : <><Send size={14} style={{ marginRight: 6 }} />Assign &amp; Notify User</>}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

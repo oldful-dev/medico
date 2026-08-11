@@ -88,6 +88,17 @@ const triggerSOS = async (req, res) => {
     const check = await canConsumeBenefit(user.id, 'SOS');
     const isFreeEntitlement = check.allowed;
 
+    // Subscribed user whose plan's own SOS quota is exhausted this period —
+    // distinct from the unsubscribed 1/month limit below, so the message must
+    // not claim they have no subscription.
+    if (!isFreeEntitlement && check.reason === 'LIMIT_EXCEEDED') {
+        return res.status(403).json({
+            success: false,
+            code: 'PLAN_LIMIT_EXCEEDED',
+            message: 'Your plan\'s SOS quota for this period has been used up.'
+        });
+    }
+
     // Strict Free/Unsubscribed Rate-Limit: Limit to 1 SOS alert per calendar month
     if (!isFreeEntitlement) {
         const startOfMonth = new Date();
@@ -112,6 +123,7 @@ const triggerSOS = async (req, res) => {
         if (monthlySosCount >= 1) {
             return res.status(403).json({
                 success: false,
+                code: 'UNSUBSCRIBED_LIMIT_EXCEEDED',
                 message: 'Universal limit exceeded. Unsubscribed accounts are strictly limited to 1 emergency SOS dispatch per month to prevent system misuse.'
             });
         }

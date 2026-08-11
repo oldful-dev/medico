@@ -57,6 +57,7 @@ const getPayments = async (req, res, next) => {
                 include: {
                     user: { select: { name: true, uniqueUserId: true } },
                     booking: { select: { bookingCode: true } },
+                    labOrder: { select: { clientRefId: true, packages: true } },
                     subscription: { select: { id: true }, },
                     invoice: { select: { invoiceNumber: true } },
                 },

@@ -89,7 +89,7 @@ export default function TripTravelsScreen() {
             }
         } catch (error) {
             console.error('Trip booking error:', error);
-            Alert.alert(t('common.error'), t('service_detail.generic_error'));
+            Alert.alert(t('common.error'), t('common.generic_error'));
         } finally {
             setIsBooking(false);
         }

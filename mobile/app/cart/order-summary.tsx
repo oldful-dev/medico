@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { useUser } from '@/context/UserContext';
 import { useCart } from '@/context/CartContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 const PRIMARY_GREEN = '#02743F';
 const TEXT_DARK = '#2F2F2F';
@@ -47,6 +48,12 @@ export default function CartOrderSummaryScreen() {
     const [couponApplied, setCouponApplied] = useState(false);
     const [discount, setDiscount] = useState(0);
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('UPI');
+    // Native Alert.alert is globally muted app-wide (see app/_layout.tsx) —
+    // every alert on this screen is single-button, so one shared modal covers all of them.
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string }>({
+        visible: false, title: '', message: '',
+    });
+    const showAlert = (title: string, message: string) => setAlertConfig({ visible: true, title, message });
 
     let bookingData: any = null;
     try {
@@ -72,12 +79,12 @@ export default function CartOrderSummaryScreen() {
             if (res.success && res.data?.valid) {
                 setDiscount(res.data.discount);
                 setCouponApplied(true);
-                Alert.alert('Success', `Coupon applied! You saved ₹${res.data.discount}`);
+                showAlert('Success', `Coupon applied! You saved ₹${res.data.discount}`);
             } else {
-                Alert.alert('Invalid', 'This coupon is not valid');
+                showAlert('Invalid', 'This coupon is not valid');
             }
         } catch {
-            Alert.alert('Error', 'Could not apply coupon');
+            showAlert('Error', 'Could not apply coupon');
         }
     };
 
@@ -102,7 +109,7 @@ export default function CartOrderSummaryScreen() {
 
     const handlePayment = async () => {
         if (!bookingData) {
-            Alert.alert('Error', 'Invalid booking data');
+            showAlert('Error', 'Invalid booking data');
             return;
         }
 
@@ -114,14 +121,14 @@ export default function CartOrderSummaryScreen() {
             const bookingRes = await labService.holdBooking(finalBookingData);
 
             if (!bookingRes) {
-                Alert.alert('Error', 'Could not create booking');
+                showAlert('Error', 'Could not create booking');
                 return;
             }
 
             const bookingId = (bookingRes as any)?.id;
 
             if (!bookingId) {
-                Alert.alert('Error', `Could not create booking`);
+                showAlert('Error', `Could not create booking`);
                 return;
             }
 
@@ -138,7 +145,7 @@ export default function CartOrderSummaryScreen() {
             });
 
             if (!payRes.success || !payRes.data) {
-                Alert.alert('Error', 'Could not initiate payment');
+                showAlert('Error', 'Could not initiate payment');
                 return;
             }
 
@@ -184,12 +191,12 @@ export default function CartOrderSummaryScreen() {
             if (verifyRes.success) {
                 handlePaymentSuccess(bookingId);
             } else {
-                Alert.alert('Error', 'Payment verification failed');
+                showAlert('Error', 'Payment verification failed');
             }
         } catch (error: any) {
             if (error.code !== 'E_CANCELED') {
                 const errorMsg = error.details?.message || error.message || 'Payment failed';
-                Alert.alert('Error', errorMsg);
+                showAlert('Error', errorMsg);
             }
         } finally {
             setIsLoading(false);
@@ -330,6 +337,15 @@ export default function CartOrderSummaryScreen() {
                     )}
                 </TouchableOpacity>
             </View>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName="alert-circle-outline"
+                buttonText="OK"
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </KeyboardAvoidingView>
     );
 }

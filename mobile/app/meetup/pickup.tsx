@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Switch, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Switch, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { AddressPickerSection, AddressData } from '@/components/AddressPickerSection';
 import { useTranslation } from 'react-i18next';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 const PRIMARY = '#02743F';
 
@@ -29,6 +30,13 @@ export default function MeetupPickupScreen() {
         console.log('🚗 [MEETUP PICKUP] Screen loaded with params:', params);
     }, []);
 
+    const [alertConfig, setAlertConfig] = React.useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false, title: '', message: '', iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
+
     const [pickupEnabled, setPickupEnabled] = useState(true);
     const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
     const [alternateContact, setAlternateContact] = useState('');
@@ -38,8 +46,8 @@ export default function MeetupPickupScreen() {
     const handleSave = () => {
         console.log('🚗 [MEETUP PICKUP] handleSave called, pickupEnabled:', pickupEnabled);
         if (pickupEnabled) {
-            if (!selectedAddress) { Alert.alert(t('common.required', 'Required'), t('meetup.alert_address_required', 'Please select pickup address')); return; }
-            if (!preferredTime) { Alert.alert(t('common.required', 'Required'), t('meetup.alert_time_required', 'Please select preferred pickup time')); return; }
+            if (!selectedAddress) { triggerAlert(t('common.required', 'Required'), t('meetup.alert_address_required', 'Please select pickup address')); return; }
+            if (!preferredTime) { triggerAlert(t('common.required', 'Required'), t('meetup.alert_time_required', 'Please select preferred pickup time')); return; }
         }
 
         const serviceCharge = params.meetupServiceCharge ? parseFloat(params.meetupServiceCharge) : 299;
@@ -241,6 +249,15 @@ export default function MeetupPickupScreen() {
                     <Ionicons name="arrow-forward" size={18} color="#fff" />
                 </TouchableOpacity>
             </View>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText="OK"
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </KeyboardAvoidingView>
     );
 }

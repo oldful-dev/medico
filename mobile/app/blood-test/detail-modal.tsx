@@ -22,9 +22,11 @@ const TEXT_MUTED = '#888888';
 const CREAM_BG = '#FDFDE8';
 
 // ─── Redcliffe parameter group shape ──────────────────────────────────────────
+// Real field is `package_details` (plural) — confirmed against a live
+// package-parameter-data response (e.g. code BC030).
 interface ParameterGroup {
     name: string;
-    package_detail: { name: string }[];
+    package_details: { name: string }[];
 }
 
 interface PackageDetailsResponse {
@@ -92,9 +94,9 @@ export function BloodTestDetailModal({
                 // deduplicate individual parameter names within each group.
                 const groupMap = new Map<string, Set<string>>();
                 for (const g of groups) {
-                    if (!g.package_detail || g.package_detail.length === 0) continue;
+                    if (!g.package_details || g.package_details.length === 0) continue;
                     const existing = groupMap.get(g.name) ?? new Set<string>();
-                    for (const p of g.package_detail) {
+                    for (const p of g.package_details) {
                         existing.add(p.name);
                     }
                     groupMap.set(g.name, existing);
@@ -103,7 +105,7 @@ export function BloodTestDetailModal({
                 const meaningful: ParameterGroup[] = Array.from(groupMap.entries()).map(
                     ([name, paramSet]) => ({
                         name,
-                        package_detail: Array.from(paramSet).map((n) => ({ name: n })),
+                        package_details: Array.from(paramSet).map((n) => ({ name: n })),
                     })
                 );
                 setParamGroups(meaningful);
@@ -127,7 +129,7 @@ export function BloodTestDetailModal({
     };
 
     const totalParams = paramGroups.reduce(
-        (sum, g) => sum + g.package_detail.length,
+        (sum, g) => sum + g.package_details.length,
         0
     );
 
@@ -193,7 +195,7 @@ export function BloodTestDetailModal({
                                         />
                                         <Text style={styles.infoLabel}>{t('blood_test.report_time') || 'Report Time'}</Text>
                                         <Text style={styles.infoValue}>
-                                            {(pkg as any).reportTime || '12-24 Hrs'}
+                                            {pkg.tat_time || t('blood_test.report_time_unavailable') || 'Not specified'}
                                         </Text>
                                     </View>
                                     <View style={styles.infoItem}>
@@ -237,7 +239,7 @@ export function BloodTestDetailModal({
                                         <View style={{ flex: 1 }}>
                                             <Text style={styles.fastingTitle}>{t('blood_test.fasting_required') || 'Fasting Required'}</Text>
                                             <Text style={styles.fastingDesc}>
-                                                {t('blood_test.fasting_desc') || 'Avoid food & water for 10-12 hours before collection'}
+                                                {pkg.fasting_time || t('blood_test.fasting_desc') || 'Fasting required before collection'}
                                             </Text>
                                         </View>
                                     </View>
@@ -286,7 +288,7 @@ export function BloodTestDetailModal({
                                                         </View>
                                                         <View style={styles.groupHeaderRight}>
                                                             <Text style={styles.groupCount}>
-                                                                {group.package_detail.length} {group.package_detail.length === 1 ? t('blood_test.parameter_one') : t('blood_test.parameter_other') || 'tests'}
+                                                                {group.package_details.length} {group.package_details.length === 1 ? t('blood_test.parameter_one') : t('blood_test.parameter_other') || 'tests'}
                                                             </Text>
                                                             <Ionicons
                                                                 name={
@@ -303,7 +305,7 @@ export function BloodTestDetailModal({
                                                     {/* Expanded sub-parameters */}
                                                     {isExpanded && (
                                                         <View style={styles.paramList}>
-                                                            {group.package_detail.map(
+                                                            {group.package_details.map(
                                                                 (param, idx) => (
                                                                     <View
                                                                         key={idx}
@@ -363,9 +365,9 @@ export function BloodTestDetailModal({
                                             style={{ marginRight: 8 }}
                                         />
                                         <Text style={styles.prepText}>
-                                            {(pkg as any).preparation ||
-                                                (pkg.fasting
-                                                    ? t('blood_test.fasting_desc') || 'Avoid food & water for 10-12 hours before collection'
+                                            {pkg.specimen_instructions ||
+                                                (pkg.fasting_time
+                                                    ? pkg.fasting_time
                                                     : t('blood_test.no_prep') || 'No special preparation required')}
                                         </Text>
                                     </View>

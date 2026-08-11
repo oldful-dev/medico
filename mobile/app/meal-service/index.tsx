@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, TextInput, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -9,9 +9,9 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
-import { safeScrollToPosition } from '@/utils/scrollUtils';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { useTranslation } from 'react-i18next';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 
 // ─── Figma Assets ───
@@ -38,9 +38,13 @@ export default function MealServiceScreen() {
     // Global Initialization
     const { cityId, serviceId, serviceName, servicePrice, address, setAddress, locationDenied, setIsManualAddress, isLoading: isLoadingInit } = useServiceInitialization('tiffin');
     const [isBooking, setIsBooking] = useState(false);
-    const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
-    const scrollViewRef = React.useRef<any>(null);
-    const sectionPositions = React.useRef<Record<string, number>>({});
+
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false, title: '', message: '', iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
 
     // Sync selectedAddress with initial fetched address on mount or when fetched
     React.useEffect(() => {
@@ -55,33 +59,34 @@ export default function MealServiceScreen() {
         }
     }, [address]);
 
-    const handleBookService = async () => {
-        const errs: Record<string, string> = {};
+    const isFormValid = React.useMemo(() => {
+        return !!(
+            mealType &&
+            subMode &&
+            selectedDate &&
+            (selectedAddress?.line1 || (address && address.trim().length >= 5 && address !== 'Fetching address...'))
+        );
+    }, [mealType, subMode, selectedDate, address, selectedAddress]);
 
+    const handleBookService = async () => {
         if (!mealType) {
-            errs.mealType = t('meal_service.meal_type_required', 'Please select a meal type.');
+            triggerAlert(t('common.required') || 'Required', t('meal_service.meal_type_required', 'Please select a meal type.'));
+            return;
         }
         if (!subMode) {
-            errs.subMode = t('meal_service.mode_required', 'Please select subscription mode.');
+            triggerAlert(t('common.required') || 'Required', t('meal_service.mode_required', 'Please select subscription mode.'));
+            return;
         }
         if (!selectedDate) {
-            errs.date = t('medical_equipment.select_date', 'Please select date and time');
+            triggerAlert(t('common.required') || 'Required', t('medical_equipment.select_date', 'Please select date and time.'));
+            return;
         }
         if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
-            errs.address = t('errors.address_required', 'Please confirm your delivery address.');
-        }
-
-        if (Object.keys(errs).length > 0) {
-            setFormErrors(errs);
-            const firstErrorField = ['address', 'mealType', 'subMode', 'date'].find(f => errs[f]);
-            if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
-                const targetY = sectionPositions.current[firstErrorField] - 20;
-                safeScrollToPosition(scrollViewRef, targetY);
-            }
+            triggerAlert(t('common.required') || 'Required', t('errors.address_required', 'Please confirm your delivery address.'));
             return;
         }
         if (!cityId || !serviceId) {
-            Alert.alert(t('common.error'), t('booking.init_incomplete'));
+            triggerAlert(t('common.error') || 'Error', t('booking.init_incomplete') || 'Service initialization failed.');
             return;
         }
         try {
@@ -109,7 +114,7 @@ export default function MealServiceScreen() {
             });
         } catch (error) {
             console.error('Meal service error:', error);
-            Alert.alert(t('common.error'), t('booking.something_wrong'));
+            triggerAlert(t('common.error') || 'Error', t('booking.something_wrong') || 'Something went wrong. Please try again.');
         } finally {
             setIsBooking(false);
         }
@@ -149,13 +154,13 @@ export default function MealServiceScreen() {
             </View>
 
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-            <KeyboardAwareScrollView ref={scrollViewRef} contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
+            <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                 {/* ─── Top Meal Selection Card ─── */}
-                <View style={dynamicStyles.mealSelectionCard} onLayout={(e) => { sectionPositions.current['mealType'] = e.nativeEvent.layout.y; }}>
+                <View style={dynamicStyles.mealSelectionCard}>
                     <View style={dynamicStyles.mealOptionsContainer}>
 
-                        <TouchableOpacity style={dynamicStyles.mealOptionItem} onPress={() => { setMealType('Diabetic Friendly'); setFormErrors(prev => ({ ...prev, mealType: undefined })); }} activeOpacity={0.7}>
+                        <TouchableOpacity style={dynamicStyles.mealOptionItem} onPress={() => setMealType('Diabetic Friendly')} activeOpacity={0.7}>
                             {mealType === 'Diabetic Friendly' ? <CheckedRadio /> : <UncheckedRadio />}
                             <View>
                                 <Text style={dynamicStyles.mealOptionTitle}>{t('meal_service.diabetic_title')}</Text>
@@ -163,7 +168,7 @@ export default function MealServiceScreen() {
                             </View>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={dynamicStyles.mealOptionItem} onPress={() => { setMealType('Home Style'); setFormErrors(prev => ({ ...prev, mealType: undefined })); }} activeOpacity={0.7}>
+                        <TouchableOpacity style={dynamicStyles.mealOptionItem} onPress={() => setMealType('Home Style')} activeOpacity={0.7}>
                             {mealType === 'Home Style' ? <CheckedRadio /> : <UncheckedRadio />}
                             <View>
                                 <Text style={dynamicStyles.mealOptionTitle}>{t('meal_service.home_style_title')}</Text>
@@ -171,7 +176,7 @@ export default function MealServiceScreen() {
                             </View>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={dynamicStyles.mealOptionItem} onPress={() => { setMealType('Soft Food'); setFormErrors(prev => ({ ...prev, mealType: undefined })); }} activeOpacity={0.7}>
+                        <TouchableOpacity style={dynamicStyles.mealOptionItem} onPress={() => setMealType('Soft Food')} activeOpacity={0.7}>
                             {mealType === 'Soft Food' ? <CheckedRadio /> : <UncheckedRadio />}
                             <View>
                                 <Text style={dynamicStyles.mealOptionTitle}>{t('meal_service.soft_food_title')}</Text>
@@ -193,27 +198,21 @@ export default function MealServiceScreen() {
                         <View style={[dynamicStyles.dot, mealType === 'Soft Food' ? dynamicStyles.dotActive : dynamicStyles.dotInactive]} />
                     </View>
                 </View>
-                {formErrors.mealType && (
-                    <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: -6, marginBottom: 10, fontWeight: '600' }}>⚠️ {formErrors.mealType}</Text>
-                )}
 
                 {/* ─── Subscription Mode ─── */}
-                <View onLayout={(e) => { sectionPositions.current['subMode'] = e.nativeEvent.layout.y; }}>
+                <View>
                     <Text style={dynamicStyles.sectionTitle}>{t('meal_service.subscription_mode')}</Text>
                     <View style={dynamicStyles.sectionCard}>
-                        <TouchableOpacity style={dynamicStyles.optionRow} onPress={() => { setSubMode('Trial'); setFormErrors(prev => ({ ...prev, subMode: undefined })); }} activeOpacity={0.7}>
+                        <TouchableOpacity style={dynamicStyles.optionRow} onPress={() => setSubMode('Trial')} activeOpacity={0.7}>
                             {subMode === 'Trial' ? <CheckedSolidRadio /> : <UncheckedRadio />}
                             <Text style={dynamicStyles.optionMainText}>{t('meal_service.trial')}<Text style={dynamicStyles.optionSubText}> {t('meal_service.trial_days')}</Text></Text>
                         </TouchableOpacity>
                         <View style={{ height: 18 }} />
-                        <TouchableOpacity style={dynamicStyles.optionRow} onPress={() => { setSubMode('Monthly Subscription'); setFormErrors(prev => ({ ...prev, subMode: undefined })); }} activeOpacity={0.7}>
+                        <TouchableOpacity style={dynamicStyles.optionRow} onPress={() => setSubMode('Monthly Subscription')} activeOpacity={0.7}>
                             {subMode === 'Monthly Subscription' ? <CheckedSolidRadio /> : <UncheckedRadio />}
                             <Text style={dynamicStyles.optionMainText}>{t('meal_service.monthly')}</Text>
                         </TouchableOpacity>
                     </View>
-                    {formErrors.subMode && (
-                        <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.subMode}</Text>
-                    )}
                 </View>
 
                 {/* ─── Dietary Preferences ─── */}
@@ -239,15 +238,12 @@ export default function MealServiceScreen() {
                 </View>
 
                 {/* ─── Scheduling ─── */}
-                <View style={dynamicStyles.sectionCardTransparent} onLayout={(e) => { sectionPositions.current['date'] = e.nativeEvent.layout.y; }}>
+                <View style={dynamicStyles.sectionCardTransparent}>
                     <CustomDateTimePicker
                         label={t('medical_equipment.when')}
                         value={selectedDate}
-                        onDateChange={(dt) => { setSelectedDate(dt); setFormErrors(prev => ({ ...prev, date: undefined })); }}
+                        onDateChange={setSelectedDate}
                     />
-                    {formErrors.date && (
-                        <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.date}</Text>
-                    )}
                 </View>
 
                 {/* ─── Something Else? ─── */}
@@ -263,14 +259,13 @@ export default function MealServiceScreen() {
                 </View>
 
                 {/* ─── Location UI Section ─── */}
-                <View onLayout={(e) => { sectionPositions.current['address'] = e.nativeEvent.layout.y; }}>
+                <View>
                     <AddressPickerSection
                         selectedAddress={selectedAddress}
                         onAddressChange={(addr) => {
                             setSelectedAddress(addr);
                             setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
                             if (addr.landmark) setLandmark(addr.landmark);
-                            setFormErrors(prev => ({ ...prev, address: undefined }));
                         }}
                         title={t('order_medicines.address_label')}
                         showPhoneField={false}
@@ -279,16 +274,13 @@ export default function MealServiceScreen() {
                         onLandmarkChange={setLandmark}
                         allowManualEntry={true}
                     />
-                    {formErrors.address && (
-                        <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: -8, marginBottom: 12, fontWeight: '600' }}>⚠️ {formErrors.address}</Text>
-                    )}
                 </View>
 
                 {/* ─── Action Button ─── */}
                 <TouchableOpacity
-                    style={[dynamicStyles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
-                    activeOpacity={0.8}
-                    disabled={isBooking || isLoadingInit}
+                    style={[dynamicStyles.submitButton, (!isFormValid || isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                    activeOpacity={isFormValid && !isBooking && !isLoadingInit ? 0.8 : 0.5}
+                    disabled={!isFormValid || isBooking || isLoadingInit}
                     onPress={handleBookService}
                 >
                     {isLoadingInit ? (
@@ -302,6 +294,15 @@ export default function MealServiceScreen() {
 
             </KeyboardAwareScrollView>
         </KeyboardAvoidingView>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText="OK"
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </View>
     );
 }

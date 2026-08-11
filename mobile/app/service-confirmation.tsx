@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator, Alert, Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator, Animated } from 'react-native';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +16,42 @@ export default function ServiceConfirmationScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { isDarkMode } = useTheme();
+
+    const [alertConfig, setAlertConfig] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+        iconName?: string;
+        buttonText?: string;
+        onClose?: () => void;
+        secondaryButtonText?: string;
+        onSecondaryPress?: () => void;
+        secondaryDestructive?: boolean;
+    }>({
+        visible: false, title: '', message: ''
+    });
+    const triggerAlert = (
+        title: string,
+        message: string,
+        iconName = 'warning-outline',
+        buttonText = 'OK',
+        onClose?: () => void,
+        secondaryButtonText?: string,
+        onSecondaryPress?: () => void,
+        secondaryDestructive = false
+    ) => {
+        setAlertConfig({
+            visible: true,
+            title,
+            message,
+            iconName,
+            buttonText,
+            onClose,
+            secondaryButtonText,
+            onSecondaryPress,
+            secondaryDestructive
+        });
+    };
 
     const params = useLocalSearchParams<{
         bookingId?: string;
@@ -70,25 +107,31 @@ export default function ServiceConfirmationScreen() {
 
     const handleCancel = () => {
         if (!booking?.id) return;
-        Alert.alert('Cancel Request', 'Are you sure you want to cancel this booking?', [
-            { text: 'No, Keep It', style: 'cancel' },
-            {
-                text: 'Yes, Cancel', style: 'destructive',
-                onPress: async () => {
-                    try {
-                        const res = await bookingService.cancelBooking(booking.id);
-                        if (res.success) {
-                            Alert.alert('Cancelled', 'Booking cancelled successfully');
+        triggerAlert(
+            'Cancel Request',
+            'Are you sure you want to cancel this booking?',
+            'warning-outline',
+            'Yes, Cancel',
+            async () => {
+                setAlertConfig(prev => ({ ...prev, visible: false }));
+                try {
+                    const res = await bookingService.cancelBooking(booking.id);
+                    if (res.success) {
+                        triggerAlert('Cancelled', 'Booking cancelled successfully', 'checkmark-circle-outline', 'OK', () => {
+                            setAlertConfig(prev => ({ ...prev, visible: false }));
                             fetchBooking(booking.id);
-                        } else {
-                            Alert.alert('Error', res.message || 'Failed to cancel');
-                        }
-                    } catch {
-                        Alert.alert('Error', 'Something went wrong');
+                        });
+                    } else {
+                        triggerAlert('Error', res.message || 'Failed to cancel');
                     }
-                },
+                } catch {
+                    triggerAlert('Error', 'Something went wrong');
+                }
             },
-        ]);
+            'No, Keep It',
+            () => setAlertConfig(prev => ({ ...prev, visible: false })),
+            true
+        );
     };
 
     const formatDescription = (b: Booking) => {
@@ -264,6 +307,18 @@ export default function ServiceConfirmationScreen() {
                         <Text style={{ fontSize: 15, fontWeight: '600', color: textMid }}>Back to Home</Text>
                     </TouchableOpacity>
                 </View>
+
+                <CustomAlertModal
+                    visible={alertConfig.visible}
+                    title={alertConfig.title}
+                    message={alertConfig.message}
+                    iconName={alertConfig.iconName as any || 'warning-outline'}
+                    buttonText={alertConfig.buttonText || 'OK'}
+                    onClose={alertConfig.onClose || (() => setAlertConfig(prev => ({ ...prev, visible: false })))}
+                    secondaryButtonText={alertConfig.secondaryButtonText}
+                    onSecondaryPress={alertConfig.onSecondaryPress}
+                    secondaryDestructive={alertConfig.secondaryDestructive}
+                />
             </View>
         );
     }
@@ -406,6 +461,18 @@ export default function ServiceConfirmationScreen() {
                     </TouchableOpacity>
                 </View>
             </View>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any || 'warning-outline'}
+                buttonText={alertConfig.buttonText || 'OK'}
+                onClose={alertConfig.onClose || (() => setAlertConfig(prev => ({ ...prev, visible: false })))}
+                secondaryButtonText={alertConfig.secondaryButtonText}
+                onSecondaryPress={alertConfig.onSecondaryPress}
+                secondaryDestructive={alertConfig.secondaryDestructive}
+            />
         </View>
     );
 }
