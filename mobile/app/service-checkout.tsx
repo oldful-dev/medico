@@ -17,10 +17,11 @@ import {
   ActivityIndicator,
   StyleSheet,
   Platform,
-  Alert,
   NativeModules,
   KeyboardAvoidingView,
+  Modal,
 } from "react-native";
+import { CustomAlertModal } from "@/components/common/CustomAlertModal";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -162,13 +163,16 @@ export default function ServiceCheckoutScreen() {
     totalAmount: number;
     taxPercentage?: number;
     requiredPlanType?: "CARE" | "HOMEMAKER" | null;
+    ayuxaRevenue?: number;
+    providerRevenue?: number;
     breakdown: {
-      vendorFee: number;
-      diagnosticFee: number;
-      bookingFee: number;
-      platformFee: number;
-      taxes: number;
-      ayuxaServiceFee: number;
+      serviceFee?: number;
+      vendorFee?: number;
+      diagnosticFee?: number;
+      bookingFee?: number;
+      platformFee?: number;
+      taxes?: number;
+      ayuxaServiceFee?: number;
       benefitDiscount: number;
       convenienceFee?: number;
       emergencyFee?: number;
@@ -177,6 +181,7 @@ export default function ServiceCheckoutScreen() {
       surgeCharge?: number;
     };
     benefitApplied: boolean;
+    remainingCountAfterOrder?: number;
   } | null>(null);
 
   // ─── Determine which plan type covers this service (for upsell banner) ────────
@@ -312,6 +317,46 @@ export default function ServiceCheckoutScreen() {
   const [payLoading, setPayLoading] = useState(false);
   const [, setFlowState] = useState<PaymentFlowState>("idle");
   const [, setPendingRecovery] = useState(false);
+  const [quotaExceededVisible, setQuotaExceededVisible] = useState(false);
+
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    iconName?: string;
+    buttonText?: string;
+    onClose?: () => void;
+    secondaryButtonText?: string;
+    onSecondaryPress?: () => void;
+    secondaryDestructive?: boolean;
+  }>({
+    visible: false,
+    title: "",
+    message: "",
+  });
+
+  const triggerAlert = (
+    title: string,
+    message: string,
+    iconName = "warning-outline",
+    buttonText = "OK",
+    onClose?: () => void,
+    secondaryButtonText?: string,
+    onSecondaryPress?: () => void,
+    secondaryDestructive = false
+  ) => {
+    setAlertConfig({
+      visible: true,
+      title,
+      message,
+      iconName,
+      buttonText,
+      onClose,
+      secondaryButtonText,
+      onSecondaryPress,
+      secondaryDestructive,
+    });
+  };
 
   const [eligiblePlans, setEligiblePlans] = useState<Plan[]>([]);
   const [loadingEligiblePlans, setLoadingEligiblePlans] = useState(false);
@@ -511,9 +556,7 @@ export default function ServiceCheckoutScreen() {
     visitFee +
     nightCharge +
     surgeCharge;
-  const displayVendorFee = calculatedPrices
-    ? calculatedPrices.breakdown.vendorFee
-    : baseAmount;
+  const displayVendorFee = calculatedPrices?.breakdown.vendorFee ?? baseAmount;
 
   const isHomeEssential = HOME_CATEGORIES.includes(category);
   const isGroupA = [
@@ -534,16 +577,14 @@ export default function ServiceCheckoutScreen() {
     : isUpgraded && savingsInfo
       ? Math.max(
           0,
-          (calculatedPrices
-            ? calculatedPrices.breakdown.taxes
-            : Math.round(
+          (calculatedPrices?.breakdown.taxes ??
+            Math.round(
                 (isHomeEssential ? baseAmount + extraFeesSum : extraFeesSum) *
                   (taxRate / 100),
               )) - savingsInfo.gstWaived,
         )
-      : calculatedPrices
-        ? calculatedPrices.breakdown.taxes
-        : Math.round(
+      : calculatedPrices?.breakdown.taxes ??
+        Math.round(
             (isHomeEssential ? baseAmount + extraFeesSum : extraFeesSum) *
               (taxRate / 100),
           );
@@ -562,14 +603,14 @@ export default function ServiceCheckoutScreen() {
   const originalTaxes = isZeroPayment
     ? 0
     : calculatedPrices && !benefitApplied
-      ? calculatedPrices.breakdown.taxes
+      ? calculatedPrices.breakdown.taxes ?? 0
       : Math.round(
           (isHomeEssential
             ? baseAmount + originalExtraFeesSum
             : originalExtraFeesSum) *
             (taxRate / 100),
         );
-  const taxSavings = Math.max(0, originalTaxes - taxes);
+  const taxSavings = Math.max(0, (originalTaxes ?? 0) - (taxes ?? 0));
 
   const totalFeeSavings =
     isUpgraded && savingsInfo
@@ -616,39 +657,35 @@ export default function ServiceCheckoutScreen() {
         if (pendingOrderIdStr && pendingBookingId) {
           setPendingRecovery(true);
           sessionBookingId.current = pendingBookingId;
-          Alert.alert(
+          triggerAlert(
             "Pending Payment Found",
             "You have a payment that was interrupted. Would you like to check its status?",
-            [
-              {
-                text: "Dismiss",
-                style: "cancel",
-                onPress: async () => {
-                  await storageService.removeItem(
-                    STORAGE_KEYS.PENDING_ORDER_ID,
-                  );
-                  await storageService.removeItem(
-                    STORAGE_KEYS.PENDING_BOOKING_ID,
-                  );
-                  setPendingRecovery(false);
-                },
-              },
-              {
-                text: "Check Status",
-                onPress: async () => {
-                  await storageService.removeItem(
-                    STORAGE_KEYS.PENDING_ORDER_ID,
-                  );
-                  await storageService.removeItem(
-                    STORAGE_KEYS.PENDING_BOOKING_ID,
-                  );
-                  router.replace({
-                    pathname: "/service-confirmation",
-                    params: { bookingId: pendingBookingId },
-                  });
-                },
-              },
-            ],
+            "wallet-outline",
+            "Check Status",
+            async () => {
+              setAlertConfig(prev => ({ ...prev, visible: false }));
+              await storageService.removeItem(
+                STORAGE_KEYS.PENDING_ORDER_ID,
+              );
+              await storageService.removeItem(
+                STORAGE_KEYS.PENDING_BOOKING_ID,
+              );
+              router.replace({
+                pathname: "/service-confirmation",
+                params: { bookingId: pendingBookingId },
+              });
+            },
+            "Dismiss",
+            async () => {
+              setAlertConfig(prev => ({ ...prev, visible: false }));
+              await storageService.removeItem(
+                STORAGE_KEYS.PENDING_ORDER_ID,
+              );
+              await storageService.removeItem(
+                STORAGE_KEYS.PENDING_BOOKING_ID,
+              );
+              setPendingRecovery(false);
+            }
           );
         }
       } catch (e) {
@@ -671,18 +708,20 @@ export default function ServiceCheckoutScreen() {
         setDiscount(res.data.discount);
         setFinalAmount(amountWithTaxAndFee - res.data.discount);
         setCouponApplied(true);
-        Alert.alert(
+        triggerAlert(
           "Coupon Applied!",
           `You saved ₹${res.data.discount.toLocaleString("en-IN")}`,
+          "checkmark-circle-outline"
         );
       } else {
-        Alert.alert(
+        triggerAlert(
           "Invalid Coupon",
           "This coupon code is not valid or has expired.",
+          "warning-outline"
         );
       }
     } catch {
-      Alert.alert("Error", "Could not apply coupon. Please try again.");
+      triggerAlert("Error", "Could not apply coupon. Please try again.", "warning-outline");
     } finally {
       setCouponLoading(false);
     }
@@ -713,6 +752,12 @@ export default function ServiceCheckoutScreen() {
   // ─── Open Razorpay native popup ─────────────────────────────────────
   const handlePay = useCallback(
     async (isPaidBookingForce?: boolean) => {
+      // Re-entrancy guard: a fast double-tap could otherwise fire this twice
+      // before the `disabled={payLoading}` prop re-renders, double-submitting
+      // the booking and stacking two Alert.alert calls (the second silently
+      // replaces the first, making errors look like they never showed).
+      if (payLoading) return;
+
       let payloadAddressLine = "";
       if (params.bookingPayload) {
         try {
@@ -722,9 +767,10 @@ export default function ServiceCheckoutScreen() {
       }
 
       if (!params.meetupId && !selectedAddress && !payloadAddressLine) {
-        Alert.alert(
+        triggerAlert(
           t("service_checkout.address_required_title"),
           t("service_checkout.address_required_msg"),
+          "location-outline"
         );
         return;
       }
@@ -793,10 +839,11 @@ export default function ServiceCheckoutScreen() {
           });
           if (!bookingRes.success || !bookingRes.data) {
             setFlowState("failed");
-            Alert.alert(
+            triggerAlert(
               "Booking Error",
               bookingRes.message ??
                 "Could not create booking. Please try again.",
+              "warning-outline"
             );
             return;
           }
@@ -805,44 +852,42 @@ export default function ServiceCheckoutScreen() {
 
         if (isZeroPayment) {
           setFlowState("success");
-          Alert.alert(
+          triggerAlert(
             "Request Submitted",
             category === "MEDICINES"
               ? "Your medicine order has been successfully placed."
               : category === "TIFFIN"
                 ? "Your meal service request has been successfully submitted."
                 : "Your physio booking request has been successfully submitted.",
-            [
-              {
-                text: "OK",
-                onPress: () =>
-                  router.replace({
-                    pathname: "/service-confirmation",
-                    params: { bookingId: sessionBookingId.current! },
-                  }),
-              },
-            ],
+            "checkmark-circle-outline",
+            "OK",
+            () => {
+              setAlertConfig(prev => ({ ...prev, visible: false }));
+              router.replace({
+                pathname: "/service-confirmation",
+                params: { bookingId: sessionBookingId.current! },
+              });
+            }
           );
           return;
         }
 
         if (selectedMethod === "CASH") {
           setFlowState("success");
-          Alert.alert(
+          triggerAlert(
             "Booking Received",
             "Your service has been scheduled. Please pay ₹" +
               finalAmount +
               " in cash to our provider when they arrive.",
-            [
-              {
-                text: "OK",
-                onPress: () =>
-                  router.replace({
-                    pathname: "/service-confirmation",
-                    params: { bookingId: sessionBookingId.current! },
-                  }),
-              },
-            ],
+            "checkmark-circle-outline",
+            "OK",
+            () => {
+              setAlertConfig(prev => ({ ...prev, visible: false }));
+              router.replace({
+                pathname: "/service-confirmation",
+                params: { bookingId: sessionBookingId.current! },
+              });
+            }
           );
           return;
         }
@@ -865,9 +910,10 @@ export default function ServiceCheckoutScreen() {
 
         if (!initiateRes.success || !initiateRes.data) {
           setFlowState("failed");
-          Alert.alert(
+          triggerAlert(
             "Payment Error",
             initiateRes.message ?? "Could not initiate payment.",
+            "warning-outline"
           );
           return;
         }
@@ -896,9 +942,10 @@ export default function ServiceCheckoutScreen() {
         }
 
         if (!NativeModules.RNRazorpayCheckout) {
-          Alert.alert(
+          triggerAlert(
             "Build Required",
             "Razorpay involves native code and cannot run in standard Expo Go.\nRun `npx expo run:android` to build a Custom Dev Client.",
+            "code-working-outline"
           );
           return;
         }
@@ -1022,17 +1069,19 @@ export default function ServiceCheckoutScreen() {
                 });
                 return;
               } else {
-                Alert.alert(
+                triggerAlert(
                   "Registration Failed",
                   regRes.message ||
                     "Could not register for meetup. Please try again.",
+                  "warning-outline"
                 );
               }
             } catch (e: any) {
               console.error("Meetup registration error:", e);
-              Alert.alert(
+              triggerAlert(
                 "Error",
                 e?.message || "Failed to register for meetup",
+                "warning-outline"
               );
             }
           }
@@ -1050,38 +1099,18 @@ export default function ServiceCheckoutScreen() {
           });
         } else {
           setFlowState("failed");
-          Alert.alert(
+          triggerAlert(
             "Verification Failed",
             "Payment was received but could not be verified. Our team will resolve this within 24 hours. Please do NOT retry the payment.",
+            "warning-outline"
           );
         }
       } catch (error: any) {
         await clearPendingOrder();
 
         if (error?.details?.code === "LIMIT_EXCEEDED") {
-          Alert.alert(
-            "Free Quota Used Up",
-            "You've used all your free bookings for this service this month.\n\nYou can still book — standard rates apply, or upgrade your plan for more free visits.",
-            [
-              {
-                text: "Book at Standard Rate",
-                onPress: () => {
-                  setIsPaidBookingOverride(true);
-                  handlePay(true);
-                },
-              },
-              {
-                text: "Upgrade Plan",
-                onPress: () => {
-                  router.push("/plans");
-                },
-              },
-              {
-                text: "Not Now",
-                style: "cancel",
-              },
-            ],
-          );
+          setFlowState("failed");
+          setQuotaExceededVisible(true);
           return;
         }
 
@@ -1089,10 +1118,10 @@ export default function ServiceCheckoutScreen() {
           setFlowState("cancelled");
           await cancelPaymentOnBackend();
           await clearPendingOrder();
-          Alert.alert(
+          triggerAlert(
             "Payment Cancelled",
             "You can try again whenever you are ready. Your booking details have been saved.",
-            [{ text: "OK" }],
+            "warning-outline"
           );
           return;
         }
@@ -1102,15 +1131,21 @@ export default function ServiceCheckoutScreen() {
         await clearPendingOrder();
         const msg =
           error?.description ?? error?.message ?? "Something went wrong.";
-        Alert.alert("Payment Failed", msg, [
-          { text: "Go Back", style: "cancel", onPress: () => router.back() },
-          {
-            text: "Retry Payment",
-            onPress: () => {
-              setFlowState("idle");
-            },
+        triggerAlert(
+          "Payment Failed",
+          msg,
+          "warning-outline",
+          "Retry Payment",
+          () => {
+            setAlertConfig(prev => ({ ...prev, visible: false }));
+            setFlowState("idle");
           },
-        ]);
+          "Go Back",
+          () => {
+            setAlertConfig(prev => ({ ...prev, visible: false }));
+            router.back();
+          }
+        );
       } finally {
         setPayLoading(false);
       }
@@ -2031,6 +2066,71 @@ export default function ServiceCheckoutScreen() {
             </View>
           </View>
         </View>
+
+        {/* Free-quota-exceeded prompt — 3 real actions, so it can't use the
+            2-button CustomAlertModal, and native Alert.alert is globally
+            muted app-wide (see app/_layout.tsx). Self-contained here. */}
+        <Modal
+          visible={quotaExceededVisible}
+          transparent
+          animationType="fade"
+          statusBarTranslucent
+          onRequestClose={() => setQuotaExceededVisible(false)}
+        >
+          <View style={styles.quotaOverlay}>
+            <View style={styles.quotaDialog}>
+              <View style={styles.quotaIconBox}>
+                <Ionicons name="alert-circle" size={30} color={colors.primary} />
+              </View>
+              <Text style={styles.quotaTitle}>Free Quota Used Up</Text>
+              <Text style={styles.quotaMessage}>
+                You've used all your free bookings for this service this month.{"\n\n"}
+                You can still book — standard rates apply, or upgrade your plan for more free visits.
+              </Text>
+
+              <TouchableOpacity
+                style={styles.quotaPrimaryBtn}
+                activeOpacity={0.85}
+                onPress={() => {
+                  setQuotaExceededVisible(false);
+                  setIsPaidBookingOverride(true);
+                  handlePay(true);
+                }}
+              >
+                <Text style={styles.quotaPrimaryBtnText}>Book at Standard Rate</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quotaOutlineBtn}
+                activeOpacity={0.85}
+                onPress={() => {
+                  setQuotaExceededVisible(false);
+                  router.push("/plans");
+                }}
+              >
+                <Text style={styles.quotaOutlineBtnText}>Upgrade Plan</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quotaCancelBtn}
+                activeOpacity={0.7}
+                onPress={() => setQuotaExceededVisible(false)}
+              >
+                <Text style={styles.quotaCancelBtnText}>Not Now</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        <CustomAlertModal
+          visible={alertConfig.visible}
+          title={alertConfig.title}
+          message={alertConfig.message}
+          iconName={alertConfig.iconName as any || "warning-outline"}
+          buttonText={alertConfig.buttonText || "OK"}
+          onClose={alertConfig.onClose || (() => setAlertConfig(prev => ({ ...prev, visible: false })))}
+          secondaryButtonText={alertConfig.secondaryButtonText}
+          onSecondaryPress={alertConfig.onSecondaryPress}
+          secondaryDestructive={alertConfig.secondaryDestructive}
+        />
       </SafeAreaView>
     </KeyboardAvoidingView>
   );
@@ -2504,5 +2604,80 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) =>
     planSelectorTextActive: {
       fontFamily: Fonts.bold,
       color: colors.primary,
+    },
+    quotaOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 32,
+    },
+    quotaDialog: {
+      backgroundColor: colors.bgScreen,
+      borderRadius: Radius.xl || 16,
+      padding: 24,
+      width: "100%",
+      alignItems: "center",
+    },
+    quotaIconBox: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: isDarkMode ? "rgba(4, 131, 87, 0.15)" : "#E8F5EC",
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: 14,
+    },
+    quotaTitle: {
+      fontFamily: Fonts.bold,
+      fontSize: FontSize.heading1 || 20,
+      color: colors.textDark,
+      marginBottom: 8,
+      textAlign: "center",
+    },
+    quotaMessage: {
+      fontFamily: Fonts.regular,
+      fontSize: FontSize.bodySmall || 14,
+      color: colors.textMuted,
+      textAlign: "center",
+      lineHeight: 20,
+      marginBottom: 20,
+    },
+    quotaPrimaryBtn: {
+      backgroundColor: colors.primary,
+      borderRadius: Radius.lg || 12,
+      paddingVertical: 14,
+      width: "100%",
+      alignItems: "center",
+      marginBottom: 10,
+    },
+    quotaPrimaryBtnText: {
+      fontFamily: Fonts.semiBold,
+      fontSize: FontSize.button || 16,
+      color: "#FFFFFF",
+    },
+    quotaOutlineBtn: {
+      borderWidth: 1.5,
+      borderColor: colors.primary,
+      borderRadius: Radius.lg || 12,
+      paddingVertical: 14,
+      width: "100%",
+      alignItems: "center",
+      marginBottom: 10,
+    },
+    quotaOutlineBtnText: {
+      fontFamily: Fonts.semiBold,
+      fontSize: FontSize.button || 16,
+      color: colors.primary,
+    },
+    quotaCancelBtn: {
+      paddingVertical: 10,
+      width: "100%",
+      alignItems: "center",
+    },
+    quotaCancelBtnText: {
+      fontFamily: Fonts.medium,
+      fontSize: FontSize.bodySmall || 14,
+      color: colors.textMuted,
     },
   });

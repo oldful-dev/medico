@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, Alert,
+    ActivityIndicator, Modal,
 } from 'react-native';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,6 +48,38 @@ export default function UpgradeScreen() {
     const [calculating, setCalculating] = useState(false);
     const [confirming, setConfirming] = useState(false);
 
+    // Native Alert.alert is globally muted app-wide (see app/_layout.tsx) — the
+    // free-upgrade confirm dialog gates a real credit-spending action, so it
+    // needs a real visible modal rather than a silent no-op.
+    const [actionModal, setActionModal] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+        primaryText: string;
+        onPrimary: () => void;
+        secondaryText?: string;
+        onSecondary?: () => void;
+    } | null>(null);
+    const closeActionModal = () => setActionModal(null);
+
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'warning-outline',
+    });
+    const alertCloseAction = useRef<(() => void) | null>(null);
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline', onCloseAction?: () => void) => {
+        alertCloseAction.current = onCloseAction ?? null;
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
+    const closeAlert = () => {
+        setAlertConfig(prev => ({ ...prev, visible: false }));
+        const action = alertCloseAction.current;
+        alertCloseAction.current = null;
+        if (action) action();
+    };
+
     // Load available upgrades
     useEffect(() => {
         if (!subId) return;
@@ -59,12 +92,10 @@ export default function UpgradeScreen() {
                     setUpgrades(res.data.availableUpgrades ?? []);
                     if (res.data.availableUpgrades?.length > 0) setSelectedPlan(res.data.availableUpgrades[0]);
                 } else {
-                    Alert.alert(t('membership.no_upgrades'), res.message ?? t('membership.no_upgrades_msg'));
-                    router.back();
+                    triggerAlert(t('membership.no_upgrades'), res.message ?? t('membership.no_upgrades_msg'), 'warning-outline', () => router.back());
                 }
             } catch {
-                Alert.alert(t('common.error'), t('membership.load_error'));
-                router.back();
+                triggerAlert(t('common.error'), t('membership.load_error'), 'warning-outline', () => router.back());
             } finally { setLoading(false); }
         })();
     }, [subId]);
@@ -113,10 +144,10 @@ export default function UpgradeScreen() {
                         },
                     } as any);
                 } else {
-                    Alert.alert(t('membership.upgrade_failed'), subRes.message ?? t('membership.upgrade_error'));
+                    triggerAlert(t('membership.upgrade_failed'), subRes.message ?? t('membership.upgrade_error'));
                 }
             } catch (e: any) {
-                Alert.alert(t('common.error'), e?.message ?? t('membership.upgrade_generic_error'));
+                triggerAlert(t('common.error'), e?.message ?? t('membership.upgrade_generic_error'));
             } finally {
                 setConfirming(false);
             }
@@ -124,39 +155,43 @@ export default function UpgradeScreen() {
         }
 
         // Free upgrade — confirm then execute
-        Alert.alert(
-            t('membership.confirm_upgrade_title'),
-            t('membership.confirm_upgrade_msg', {
+        setActionModal({
+            visible: true,
+            title: t('membership.confirm_upgrade_title'),
+            message: t('membership.confirm_upgrade_msg', {
                 plan: selectedPlan.name,
                 credit: creditAmount.toLocaleString('en-IN'),
             }),
-            [
-                { text: t('membership.cancel_btn'), style: 'cancel' },
-                {
-                    text: t('membership.upgrade_now_btn'),
-                    onPress: async () => {
-                        try {
-                            setConfirming(true);
-                            const res = await planService.executeUpgrade(subId, {
-                                newPlanId: selectedPlan.id,
-                                newBillingCycle: selectedCycle,
-                            });
-                            if (res.success) {
-                                Alert.alert(
-                                    t('membership.upgrade_success_title'),
-                                    t('membership.upgrade_success_msg', { plan: selectedPlan.name }),
-                                    [{ text: 'OK', onPress: () => router.replace('/plans/membership-dashboard' as any) }]
-                                );
-                            } else {
-                                Alert.alert(t('membership.upgrade_failed'), res.message ?? t('membership.upgrade_error'));
-                            }
-                        } catch (e: any) {
-                            Alert.alert(t('common.error'), e?.message ?? t('membership.upgrade_generic_error'));
-                        } finally { setConfirming(false); }
-                    },
-                },
-            ]
-        );
+            secondaryText: t('membership.cancel_btn'),
+            onSecondary: closeActionModal,
+            primaryText: t('membership.upgrade_now_btn'),
+            onPrimary: async () => {
+                closeActionModal();
+                try {
+                    setConfirming(true);
+                    const res = await planService.executeUpgrade(subId, {
+                        newPlanId: selectedPlan.id,
+                        newBillingCycle: selectedCycle,
+                    });
+                    if (res.success) {
+                        setActionModal({
+                            visible: true,
+                            title: t('membership.upgrade_success_title'),
+                            message: t('membership.upgrade_success_msg', { plan: selectedPlan.name }),
+                            primaryText: 'OK',
+                            onPrimary: () => {
+                                closeActionModal();
+                                router.replace('/plans/membership-dashboard' as any);
+                            },
+                        });
+                    } else {
+                        triggerAlert(t('membership.upgrade_failed'), res.message ?? t('membership.upgrade_error'));
+                    }
+                } catch (e: any) {
+                    triggerAlert(t('common.error'), e?.message ?? t('membership.upgrade_generic_error'));
+                } finally { setConfirming(false); }
+            },
+        });
     };
 
     const calc = calculation?.calculation;
@@ -167,6 +202,14 @@ export default function UpgradeScreen() {
                 <StatusBar style="light" backgroundColor={colors.primary} />
                 <ActivityIndicator size="large" color={colors.primary} />
                 <Text style={S.loadingText}>{t('membership.loading_upgrades')}</Text>
+                <CustomAlertModal
+                    visible={alertConfig.visible}
+                    title={alertConfig.title}
+                    message={alertConfig.message}
+                    iconName={alertConfig.iconName as any}
+                    buttonText={t('common.ok')}
+                    onClose={closeAlert}
+                />
             </View>
         );
     }
@@ -318,6 +361,41 @@ export default function UpgradeScreen() {
                     </TouchableOpacity>
                 </View>
             )}
+
+            {actionModal?.visible && (
+                <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={closeActionModal}>
+                    <View style={S.actionOverlay}>
+                        <View style={S.actionDialog}>
+                            <Text style={S.actionTitle}>{actionModal.title}</Text>
+                            <Text style={S.actionMessage}>{actionModal.message}</Text>
+
+                            {actionModal.secondaryText ? (
+                                <View style={S.actionRow}>
+                                    <TouchableOpacity style={S.actionOutlineBtn} activeOpacity={0.85} onPress={actionModal.onSecondary}>
+                                        <Text style={S.actionOutlineBtnText}>{actionModal.secondaryText}</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={S.actionPrimaryBtnHalf} activeOpacity={0.85} onPress={actionModal.onPrimary}>
+                                        <Text style={S.actionPrimaryBtnText}>{actionModal.primaryText}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <TouchableOpacity style={S.actionPrimaryBtnFull} activeOpacity={0.85} onPress={actionModal.onPrimary}>
+                                    <Text style={S.actionPrimaryBtnText}>{actionModal.primaryText}</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+                </Modal>
+            )}
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText={t('common.ok')}
+                onClose={closeAlert}
+            />
         </View>
     );
 }
@@ -379,4 +457,16 @@ const makeStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
     bottomBar:        { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: dark ? '#1E293B' : '#FAF7ED', borderTopWidth: 1, borderColor: colors.borderLight, paddingTop: 12, paddingHorizontal: 16 },
     ctaBtn:           { backgroundColor: colors.primary, borderRadius: Radius.lg, height: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
     ctaBtnText:       { fontFamily: Fonts.bold, fontSize: FontSize.body, color: '#FAF7ED' },
+
+    /* ─── Shared action modal (free-upgrade confirm / success) ─── */
+    actionOverlay:        { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
+    actionDialog:         { backgroundColor: dark ? '#1E293B' : '#FAF7ED', borderRadius: Radius.xl || 16, padding: 24, width: '100%', alignItems: 'center' },
+    actionTitle:          { fontFamily: Fonts.bold, fontSize: FontSize.heading1 || 20, color: colors.textDark, marginBottom: 8, textAlign: 'center' },
+    actionMessage:        { fontFamily: Fonts.regular, fontSize: FontSize.bodySmall || 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 20 },
+    actionRow:            { flexDirection: 'row', gap: 12, width: '100%' },
+    actionOutlineBtn:     { flex: 1, borderRadius: Radius.lg || 12, borderWidth: 1, borderColor: colors.borderLight, paddingVertical: 14, alignItems: 'center' },
+    actionOutlineBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.button || 16, color: colors.textDark },
+    actionPrimaryBtnHalf: { flex: 1, backgroundColor: colors.primary, borderRadius: Radius.lg || 12, paddingVertical: 14, alignItems: 'center' },
+    actionPrimaryBtnFull: { backgroundColor: colors.primary, borderRadius: Radius.lg || 12, paddingVertical: 14, width: '100%', alignItems: 'center' },
+    actionPrimaryBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.button || 16, color: '#FFFFFF' },
 });

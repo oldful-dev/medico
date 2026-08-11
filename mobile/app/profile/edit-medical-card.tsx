@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Switch, Platform, KeyboardAvoidingView } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Switch, Platform, KeyboardAvoidingView } from 'react-native';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -42,9 +43,28 @@ export default function EditMedicalCardScreen() {
 
     const parseList = (str: string): string[] => str.split(',').map(s => s.trim()).filter(Boolean);
 
+    // Native Alert.alert is globally muted app-wide (see app/_layout.tsx)
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'warning-outline',
+    });
+    const alertCloseAction = useRef<(() => void) | null>(null);
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline', onCloseAction?: () => void) => {
+        alertCloseAction.current = onCloseAction ?? null;
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
+    const closeAlert = () => {
+        setAlertConfig(prev => ({ ...prev, visible: false }));
+        const action = alertCloseAction.current;
+        alertCloseAction.current = null;
+        if (action) action();
+    };
+
     const handleSave = async () => {
         if (!profile?.id) {
-            Alert.alert(t('edit_medical_card.alerts.error_title'), t('edit_medical_card.alerts.profile_not_loaded'));
+            triggerAlert(t('edit_medical_card.alerts.error_title'), t('edit_medical_card.alerts.profile_not_loaded'));
             return;
         }
         setSaving(true);
@@ -67,14 +87,12 @@ export default function EditMedicalCardScreen() {
                 if (profileRes.success && profileRes.data) {
                     setProfile(profileRes.data);
                 }
-                Alert.alert(t('edit_medical_card.alerts.success_title'), t('edit_medical_card.alerts.updated_success'), [
-                    { text: t('common.ok'), onPress: () => router.back() },
-                ]);
+                triggerAlert(t('edit_medical_card.alerts.success_title'), t('edit_medical_card.alerts.updated_success'), 'checkmark-circle-outline', () => router.back());
             } else {
-                Alert.alert(t('edit_medical_card.alerts.error_title'), res.message || t('edit_medical_card.alerts.failed_update'));
+                triggerAlert(t('edit_medical_card.alerts.error_title'), res.message || t('edit_medical_card.alerts.failed_update'));
             }
         } catch (err: any) {
-            Alert.alert(t('edit_medical_card.alerts.error_title'), err.message || t('edit_medical_card.alerts.something_went_wrong'));
+            triggerAlert(t('edit_medical_card.alerts.error_title'), err.message || t('edit_medical_card.alerts.something_went_wrong'));
         } finally {
             setSaving(false);
         }
@@ -164,6 +182,15 @@ export default function EditMedicalCardScreen() {
                     </TouchableOpacity>
             </KeyboardAwareScrollView>
         </KeyboardAvoidingView>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText={t('common.ok')}
+                onClose={closeAlert}
+            />
         </View>
     );
 }

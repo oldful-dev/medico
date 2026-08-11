@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, TextInput, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -8,10 +8,10 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
-import { safeScrollToPosition } from '@/utils/scrollUtils';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
 import { useTranslation } from 'react-i18next';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 // Illustrations
 const imgSeniorFitnessRight = require('@/assets/images/a6d4ed0a2bd9de082ab0ad9c67504e0708c7343f.png');
@@ -33,9 +33,13 @@ export default function FitnessScreen() {
 
     const { cityId, serviceId, serviceName, servicePrice, address, setAddress, isLoading: isLoadingInit } = useServiceInitialization('physio-fitness');
     const [isBooking, setIsBooking] = useState(false);
-    const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
-    const scrollViewRef = React.useRef<any>(null);
-    const sectionPositions = React.useRef<Record<string, number>>({});
+
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false, title: '', message: '', iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
 
     // Sync selectedAddress with initial fetched address on mount or when fetched
     React.useEffect(() => {
@@ -50,27 +54,25 @@ export default function FitnessScreen() {
         }
     }, [address]);
 
-    const handleBookService = async () => {
-        const errs: Record<string, string> = {};
+    const isFormValid = React.useMemo(() => {
+        if (!selectedDate) return false;
+        if (serviceType === 'HOME') {
+            return !!(selectedAddress?.line1 || (address && address.trim().length >= 5 && address !== 'Fetching address...'));
+        }
+        return true;
+    }, [selectedDate, serviceType, address, selectedAddress]);
 
+    const handleBookService = async () => {
         if (!selectedDate) {
-            errs.date = t('physio_fitness.date_required') || 'Please select an appointment date and time.';
+            triggerAlert(t('common.required') || 'Required', t('physio_fitness.date_required') || 'Please select an appointment date and time.');
+            return;
         }
         if (serviceType === 'HOME' && (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...'))) {
-            errs.address = t('errors.address_required') || 'Please confirm your service address.';
-        }
-
-        if (Object.keys(errs).length > 0) {
-            setFormErrors(errs);
-            const firstErrorField = ['address', 'date'].find(f => errs[f]);
-            if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
-                const targetY = sectionPositions.current[firstErrorField] - 20;
-                safeScrollToPosition(scrollViewRef, targetY);
-            }
+            triggerAlert(t('common.required') || 'Required', t('errors.address_required') || 'Please confirm your service address.');
             return;
         }
         if (!cityId || !serviceId) {
-            Alert.alert(t('common.error'), t('booking.init_incomplete'));
+            triggerAlert(t('common.error') || 'Error', t('booking.init_incomplete') || 'Service initialization failed.');
             return;
         }
         try {
@@ -99,7 +101,7 @@ export default function FitnessScreen() {
             });
         } catch (error) {
             console.error('Fitness error:', error);
-            Alert.alert(t('common.error'), t('booking.something_wrong'));
+            triggerAlert(t('common.error') || 'Error', t('booking.something_wrong') || 'Something went wrong. Please try again.');
         } finally {
             setIsBooking(false);
         }
@@ -127,7 +129,7 @@ export default function FitnessScreen() {
             {/* Main Content Area (Rounded Cream Box) */}
             <View style={dynamicStyles.contentContainer}>
                 <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-                    <KeyboardAwareScrollView ref={scrollViewRef} contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
+                    <KeyboardAwareScrollView contentContainerStyle={dynamicStyles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid extraScrollHeight={20}>
 
                         {/* Illustration section */}
                         <View style={dynamicStyles.illustrationCard}>
@@ -166,27 +168,23 @@ export default function FitnessScreen() {
                         </View>
 
                         {/* Scheduling */}
-                        <View style={{ marginBottom: 15 }} onLayout={(e) => { sectionPositions.current['date'] = e.nativeEvent.layout.y; }}>
+                        <View style={{ marginBottom: 15 }}>
                             <CustomDateTimePicker
                                 label={t('physio_fitness.when') || 'When?'}
                                 value={selectedDate}
-                                onDateChange={(dt) => { setSelectedDate(dt); setFormErrors(prev => ({ ...prev, date: undefined })); }}
+                                onDateChange={setSelectedDate}
                             />
-                            {formErrors.date && (
-                                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.date}</Text>
-                            )}
                         </View>
 
                         {/* Conditional Location UI */}
                         {serviceType === 'HOME' && (
-                            <View onLayout={(e) => { sectionPositions.current['address'] = e.nativeEvent.layout.y; }}>
+                            <View>
                                 <AddressPickerSection
                                     selectedAddress={selectedAddress}
                                     onAddressChange={(addr) => {
                                         setSelectedAddress(addr);
                                         setAddress(`${addr.line1}${addr.line2 ? ', ' + addr.line2 : ''}`);
                                         if (addr.landmark) setLandmark(addr.landmark);
-                                        setFormErrors(prev => ({ ...prev, address: undefined }));
                                     }}
                                     title={t('fitness.standard_location')}
                                     showPhoneField={false}
@@ -195,17 +193,14 @@ export default function FitnessScreen() {
                                     onLandmarkChange={setLandmark}
                                     allowManualEntry={true}
                                 />
-                                {formErrors.address && (
-                                    <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: -8, marginBottom: 12, fontWeight: '600' }}>⚠️ {formErrors.address}</Text>
-                                )}
                             </View>
                         )}
 
                         {/* Book Button */}
                         <TouchableOpacity
-                            style={[dynamicStyles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
-                            activeOpacity={0.8}
-                            disabled={isBooking || isLoadingInit}
+                            style={[dynamicStyles.submitButton, (!isFormValid || isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                            activeOpacity={isFormValid && !isBooking && !isLoadingInit ? 0.8 : 0.5}
+                            disabled={!isFormValid || isBooking || isLoadingInit}
                             onPress={handleBookService}
                         >
                             {isLoadingInit ? (
@@ -220,6 +215,15 @@ export default function FitnessScreen() {
                     </KeyboardAwareScrollView>
                 </KeyboardAvoidingView>
             </View>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText="OK"
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </View>
     );
 }

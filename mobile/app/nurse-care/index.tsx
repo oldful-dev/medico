@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Platform, Alert, ActivityIndicator, Linking, KeyboardAvoidingView, ScrollView, TextInput } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Platform, ActivityIndicator, Linking, KeyboardAvoidingView, ScrollView, TextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,12 +10,9 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { useServiceInitialization } from '@/hooks/useServiceInitialization';
-import { mediaService } from '@/services/api/mediaService';
 import { locationService } from '@/services/device/locationService';
 import FormInput from '@/components/common/FormInput';
-import * as ImagePicker from 'expo-image-picker';
 import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
-import { safeScrollToPosition } from '@/utils/scrollUtils';
 import { familyMemberService, FamilyMember } from '@/services/api/familyMemberService';
 import { useUser } from '@/context/UserContext';
 import { Spacing } from '@/constants/theme';
@@ -49,7 +47,6 @@ export default function BookNursingCareScreen() {
     const [selectedCondition, setSelectedCondition] = useState('');
     const [selectedGender, setSelectedGender] = useState('');
     const [landmark, setLandmark] = useState('');
-    const [selectedImages, setSelectedImages] = useState<string[]>([]);
     const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
     const [comments, setComments] = useState('');
 
@@ -75,7 +72,7 @@ export default function BookNursingCareScreen() {
     const handleAddFamilyMember = async () => {
         if (!profile?.id) return;
         if (!newMemberName.trim()) {
-            Alert.alert('Required', 'Please enter a name.');
+            triggerAlert('Required', 'Please enter a name.');
             return;
         }
         try {
@@ -84,61 +81,19 @@ export default function BookNursingCareScreen() {
                 relation: newMemberRelation,
             });
             if (res.success && res.data) {
-                Alert.alert('Success', 'Family member added!');
+                triggerAlert('Success', 'Family member added!', 'checkmark-circle-outline');
                 const newMember = res.data;
                 setFamilyMembers(prev => [...prev, newMember]);
                 setSelectedFamilyMemberId(newMember.id);
                 setNewMemberName('');
                 setShowAddFamilyModal(false);
             } else {
-                Alert.alert('Error', res.message || 'Failed to add family member.');
+                triggerAlert('Error', res.message || 'Failed to add family member.');
             }
         } catch (error) {
             console.error('Add family member error:', error);
-            Alert.alert('Error', 'Failed to add family member.');
+            triggerAlert('Error', 'Failed to add family member.');
         }
-    };
-
-    const handlePickReport = async () => {
-        if (selectedImages.length >= 5) {
-            Alert.alert('Limit Reached', 'You can upload up to 5 files.');
-            return;
-        }
-        Alert.alert(
-            'Upload report (Optional)',
-            '',
-            [
-                { text: 'Take Photo', onPress: async () => {
-                    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-                    if (permissionResult.granted === false) {
-                        Alert.alert('Permission Required', 'Camera permission is required.');
-                        return;
-                    }
-                    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
-                    if (!result.canceled && result.assets && result.assets.length > 0) {
-                        setSelectedImages(prev => [...prev, result.assets[0].uri]);
-                    }
-                }},
-                { text: 'Choose from Gallery', onPress: async () => {
-                    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                    if (permissionResult.granted === false) {
-                        Alert.alert('Permission Required', 'Gallery permission is required.');
-                        return;
-                    }
-                    const result = await ImagePicker.launchImageLibraryAsync({
-                        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                        allowsMultipleSelection: true,
-                        selectionLimit: 5 - selectedImages.length,
-                        quality: 0.8,
-                    });
-                    if (!result.canceled && result.assets && result.assets.length > 0) {
-                        const newUris = result.assets.map(asset => asset.uri);
-                        setSelectedImages(prev => [...prev, ...newUris]);
-                    }
-                }},
-                { text: 'Cancel', style: 'cancel' }
-            ]
-        );
     };
 
     const {
@@ -194,20 +149,29 @@ export default function BookNursingCareScreen() {
         return { short, full, addon };
     }, [dbService]);
 
-    const [formErrors, setFormErrors] = React.useState<Record<string, string | undefined>>({});
-    const scrollViewRef = React.useRef<ScrollView>(null);
-    const sectionPositions = React.useRef<Record<string, number>>({});
-
     const [selectedAddress, setSelectedAddress] = React.useState<AddressData | null>(null);
     const [addressInitialized, setAddressInitialized] = React.useState(false);
+
+    const [alertConfig, setAlertConfig] = React.useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'warning-outline'
+    });
+
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
 
     // Sync selectedAddress with initial fetched address on mount or when fetched
     React.useEffect(() => {
         if (address && address !== 'Fetching address...' && !selectedAddress) {
             setSelectedAddress({
                 line1: address,
+                cityName: '',
                 pincode: '',
-                addressType: 'Home'
+                latitude: 0,
+                longitude: 0
             });
         }
     }, [address]);
@@ -218,7 +182,7 @@ export default function BookNursingCareScreen() {
         const addressEmpty = !address || address === 'Fetching address...' || address === '';
         if (addressEmpty && profile?.addresses?.length) {
             const defaultAddr = profile.addresses.find((a: any) => a.isDefault) || profile.addresses[0];
-            const parts = [defaultAddr.line1, defaultAddr.line2, defaultAddr.city, defaultAddr.state].filter(Boolean);
+            const parts = [defaultAddr.line1, defaultAddr.line2, defaultAddr.cityName, defaultAddr.state].filter(Boolean);
             if (parts.length) {
                 setAddress(parts.join(', '));
                 setAddressInitialized(true);
@@ -239,19 +203,21 @@ export default function BookNursingCareScreen() {
         if (!profile?.id || !addressText.trim()) return;
         try {
             const existing = profile.addresses?.find((a: any) => a.isDefault) || profile.addresses?.[0];
-            const payload = {
+            const payload: any = {
                 line1: addressText.trim(),
                 landmark: landmarkText.trim() || undefined,
-                addressType: selectedAddress?.addressType || 'Home',
+                label: 'Home' as string,
+                state: (selectedAddress?.state || 'Unknown') as string,
+                cityName: (selectedAddress?.cityName || 'Unknown') as string,
                 isDefault: true,
-                pincode: selectedAddress?.pincode || '',
+                pincode: (selectedAddress?.pincode || '000000') as string,
             };
-            if (existing) {
+            if (existing?.id) {
                 await userService.updateAddress(profile.id, existing.id, payload);
             } else {
                 await userService.addAddress(profile.id, payload);
             }
-            await refreshData(true);
+            await refreshData();
         } catch (e) {
             console.warn('Sync address to profile failed:', e);
         }
@@ -259,39 +225,46 @@ export default function BookNursingCareScreen() {
 
     const [isBooking, setIsBooking] = useState(false);
 
+    const isFormValid = React.useMemo(() => {
+        return !!(
+            selectedWho &&
+            (selectedWho !== 'Family' || selectedFamilyMemberId) &&
+            selectedStaff &&
+            selectedDuration &&
+            scheduledDate &&
+            address && address.trim().length >= 5 && address !== 'Fetching address...'
+        );
+    }, [selectedWho, selectedFamilyMemberId, selectedStaff, selectedDuration, scheduledDate, address]);
+
     const handleBookService = async () => {
         if (!selectedWho) {
-            Alert.alert(t('common.required'), t('nurse_care.alert_select_who'));
+            triggerAlert(t('common.required'), t('nurse_care.alert_select_who'));
             return;
         }
         if (selectedWho === 'Family' && !selectedFamilyMemberId) {
-            Alert.alert(t('common.required'), 'Please select a family member.');
+            triggerAlert(t('common.required'), 'Please select a family member.');
             return;
         }
-        const errs: Record<string, string> = {};
-        if (!selectedAddress?.line1 && (!address || address.trim().length < 5)) {
-            errs.address = 'Please select or confirm your service address.';
+        if (!selectedStaff) {
+            triggerAlert(t('common.required'), t('nurse_care.alert_select_staff'));
+            return;
         }
         if (!selectedDuration) {
-            errs.duration = 'Please select preferred duration.';
-        }
-        if (!selectedCondition) {
-            errs.condition = 'Please select patient condition.';
-        }
-        if (!selectedGender) {
-            errs.gender = 'Please select preferred staff gender.';
+            triggerAlert(t('common.required'), t('nurse_care.alert_select_duration'));
+            return;
         }
         if (!scheduledDate) {
-            errs.date = 'Please select date & time slot.';
+            triggerAlert(t('common.required'), 'Please select a date and time slot.');
+            return;
         }
-
-        if (Object.keys(errs).length > 0) {
-            setFormErrors(errs);
-            const firstErrorField = ['address', 'duration', 'condition', 'gender', 'date'].find(f => errs[f]);
-            if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
-                const targetY = sectionPositions.current[firstErrorField] - 20;
-                safeScrollToPosition(scrollViewRef, targetY);
-            }
+        if (!address || address.trim().length < 5) {
+            triggerAlert(t('nurse_care.alert_address_required'), locationDenied
+                ? t('nurse_care.alert_address_denied')
+                : t('nurse_care.alert_address_failed'));
+            return;
+        }
+        if (!isReady) {
+            triggerAlert(t('common.error'), t('booking.init_incomplete'));
             return;
         }
         // Map duration to ShiftDuration enum
@@ -302,7 +275,7 @@ export default function BookNursingCareScreen() {
         else if (selectedDuration.includes('24')) shiftDuration = 'TWENTY_FOUR_HOUR';
 
         const selectedFamilyMember = familyMembers.find(m => m.id === selectedFamilyMemberId);
-        const resolvedAddressType = selectedAddress?.addressType || 'Home';
+        const resolvedAddressType = 'Home';
 
         try {
             setIsBooking(true);
@@ -310,17 +283,11 @@ export default function BookNursingCareScreen() {
             // Sync address back to profile (non-blocking, non-fatal)
             syncAddressToProfile(address, landmark);
 
-            // Upload images first (safe before payment — no booking created yet)
-            let uploadedImageUrls: string[] = [];
-            if (selectedImages.length > 0) {
-                uploadedImageUrls = await mediaService.uploadMultipleMedia(selectedImages, 'nurse-care');
-            }
-
             // Navigate to checkout — booking created inside checkout after payment succeeds
             const bookingPayload = JSON.stringify({
                 serviceId,
                 cityId,
-                scheduledDate: scheduledDate ? scheduledDate.toISOString() : new Date().toISOString(),
+                scheduledDate: scheduledDate.toISOString(),
                 addressLine: address || undefined,
                 landmark: landmark || undefined,
                 staffType: selectedStaff === 'Qualified Nurse' ? 'qualified-nurse' : 'bedside-attendant',
@@ -331,7 +298,6 @@ export default function BookNursingCareScreen() {
                     condition: selectedCondition || 'Not specified',
                     gender: selectedGender || 'Any',
                     duration: selectedDuration,
-                    attachments: uploadedImageUrls,
                     comments: comments || undefined,
                     addressType: resolvedAddressType,
                     landmark: landmark || undefined,
@@ -358,7 +324,7 @@ export default function BookNursingCareScreen() {
             });
         } catch (error) {
             console.error('Nurse care error:', error);
-            Alert.alert(t('common.error'), t('nurse_care.alert_upload_failed'));
+            triggerAlert(t('common.error'), t('nurse_care.alert_upload_failed'));
         } finally {
             setIsBooking(false);
         }
@@ -392,7 +358,6 @@ export default function BookNursingCareScreen() {
                 <View style={[dynamicStyles.contentCard, { backgroundColor: isDarkMode ? '#252525' : '#FAF7ED' }]}>
                     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <KeyboardAwareScrollView
-                        ref={scrollViewRef as any}
                         style={dynamicStyles.scrollView}
                         contentContainerStyle={dynamicStyles.scrollContent}
                         showsVerticalScrollIndicator={false}
@@ -518,13 +483,13 @@ export default function BookNursingCareScreen() {
 
 
                         {/* ─── Preferred Duration ─── */}
-                        <View style={dynamicStyles.sectionContainer} onLayout={(e) => { sectionPositions.current['duration'] = e.nativeEvent.layout.y; }}>
+                        <View style={dynamicStyles.sectionContainer}>
                             <Text style={dynamicStyles.sectionTitle}>{t('nurse_care.duration')}</Text>
 
                             <View style={dynamicStyles.verticalStack}>
                                 <TouchableOpacity
                                     style={[dynamicStyles.durationCardStacked, selectedDuration === 'Short Visit (2 Hours)' && dynamicStyles.cardActive]}
-                                    onPress={() => { setSelectedDuration('Short Visit (2 Hours)'); setFormErrors(prev => ({ ...prev, duration: undefined })); }}
+                                    onPress={() => setSelectedDuration('Short Visit (2 Hours)')}
                                 >
                                     <Ionicons
                                         name={selectedDuration === 'Short Visit (2 Hours)' ? "radio-button-on" : "radio-button-off"}
@@ -541,7 +506,7 @@ export default function BookNursingCareScreen() {
 
                                 <TouchableOpacity
                                     style={[dynamicStyles.durationCardStacked, selectedDuration === 'Full Shift (8 Hours)' && dynamicStyles.cardActive]}
-                                    onPress={() => { setSelectedDuration('Full Shift (8 Hours)'); setFormErrors(prev => ({ ...prev, duration: undefined })); }}
+                                    onPress={() => setSelectedDuration('Full Shift (8 Hours)')}
                                 >
                                     <Ionicons
                                         name={selectedDuration === 'Full Shift (8 Hours)' ? "radio-button-on" : "radio-button-off"}
@@ -557,62 +522,52 @@ export default function BookNursingCareScreen() {
                                 </TouchableOpacity>
                             </View>
 
-                            {formErrors.duration ? (
-                                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.duration}</Text>
-                            ) : (
-                                <Text style={{ fontSize: 12, color: '#02743F', marginTop: 8, fontStyle: 'italic' }}>
-                                    (Note: Rates vary based on selection)
-                                </Text>
-                            )}
+                            <Text style={{ fontSize: 12, color: '#02743F', marginTop: 8, fontStyle: 'italic' }}>
+                                (Note: Rates vary based on selection)
+                            </Text>
                         </View>
 
                         {/* ─── Patient Condition ─── */}
-                        <View style={dynamicStyles.sectionContainer} onLayout={(e) => { sectionPositions.current['condition'] = e.nativeEvent.layout.y; }}>
+                        <View style={dynamicStyles.sectionContainer}>
                             <Text style={dynamicStyles.sectionTitle}>{t('nurse_care.condition')}</Text>
 
                             <View style={dynamicStyles.gridRow}>
-                                <TouchableOpacity style={[dynamicStyles.radioCard, selectedCondition === 'Walking/ Mobile' && dynamicStyles.cardActive]} onPress={() => { setSelectedCondition('Walking/ Mobile'); setFormErrors(prev => ({ ...prev, condition: undefined })); }}>
+                                <TouchableOpacity style={[dynamicStyles.radioCard, selectedCondition === 'Walking/ Mobile' && dynamicStyles.cardActive]} onPress={() => setSelectedCondition('Walking/ Mobile')}>
                                     <Ionicons name={selectedCondition === 'Walking/ Mobile' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedCondition === 'Walking/ Mobile' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('nurse_care.walking')}</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={[dynamicStyles.radioCard, selectedCondition === 'Bedridden' && dynamicStyles.cardActive]} onPress={() => { setSelectedCondition('Bedridden'); setFormErrors(prev => ({ ...prev, condition: undefined })); }}>
+                                <TouchableOpacity style={[dynamicStyles.radioCard, selectedCondition === 'Bedridden' && dynamicStyles.cardActive]} onPress={() => setSelectedCondition('Bedridden')}>
                                     <Ionicons name={selectedCondition === 'Bedridden' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedCondition === 'Bedridden' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('nurse_care.bedridden')}</Text>
                                 </TouchableOpacity>
                             </View>
                             <View style={dynamicStyles.gridRow}>
-                                <TouchableOpacity style={[dynamicStyles.radioCard, selectedCondition === 'Post-Surgery' && dynamicStyles.cardActive]} onPress={() => { setSelectedCondition('Post-Surgery'); setFormErrors(prev => ({ ...prev, condition: undefined })); }}>
+                                <TouchableOpacity style={[dynamicStyles.radioCard, selectedCondition === 'Post-Surgery' && dynamicStyles.cardActive]} onPress={() => setSelectedCondition('Post-Surgery')}>
                                     <Ionicons name={selectedCondition === 'Post-Surgery' ? "radio-button-on" : "radio-button-off"} size={18} color={selectedCondition === 'Post-Surgery' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('nurse_care.post_surgery')}</Text>
                                 </TouchableOpacity>
                                 <View style={{ flex: 1, marginHorizontal: 4 }} />
                             </View>
-                            {formErrors.condition && (
-                                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.condition}</Text>
-                            )}
                         </View>
 
                         {/* ─── Gender preferences ─── */}
-                        <View style={dynamicStyles.sectionContainer} onLayout={(e) => { sectionPositions.current['gender'] = e.nativeEvent.layout.y; }}>
+                        <View style={dynamicStyles.sectionContainer}>
                             <Text style={dynamicStyles.sectionTitle}>{t('nurse_care.gender_pref')}</Text>
 
                             <View style={dynamicStyles.gridRow}>
-                                <TouchableOpacity style={[dynamicStyles.radioCardSmall, selectedGender === 'Male' && dynamicStyles.cardActive]} onPress={() => { setSelectedGender('Male'); setFormErrors(prev => ({ ...prev, gender: undefined })); }}>
+                                <TouchableOpacity style={[dynamicStyles.radioCardSmall, selectedGender === 'Male' && dynamicStyles.cardActive]} onPress={() => setSelectedGender('Male')}>
                                     <Ionicons name={selectedGender === 'Male' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Male' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('common.male')}</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={[dynamicStyles.radioCardSmall, selectedGender === 'Female' && dynamicStyles.cardActive]} onPress={() => { setSelectedGender('Female'); setFormErrors(prev => ({ ...prev, gender: undefined })); }}>
+                                <TouchableOpacity style={[dynamicStyles.radioCardSmall, selectedGender === 'Female' && dynamicStyles.cardActive]} onPress={() => setSelectedGender('Female')}>
                                     <Ionicons name={selectedGender === 'Female' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Female' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('common.female')}</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={[dynamicStyles.radioCardSmall, selectedGender === 'Any' && dynamicStyles.cardActive]} onPress={() => { setSelectedGender('Any'); setFormErrors(prev => ({ ...prev, gender: undefined })); }}>
+                                <TouchableOpacity style={[dynamicStyles.radioCardSmall, selectedGender === 'Any' && dynamicStyles.cardActive]} onPress={() => setSelectedGender('Any')}>
                                     <Ionicons name={selectedGender === 'Any' ? "radio-button-on" : "radio-button-off"} size={16} color={selectedGender === 'Any' ? "#02743F" : "#AAAEAC"} />
                                     <Text style={dynamicStyles.radioLabel}>{t('common.any')}</Text>
                                 </TouchableOpacity>
                             </View>
-                            {formErrors.gender && (
-                                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.gender}</Text>
-                            )}
                         </View>
 
                         {/* ─── Not Sure Banner ─── */}
@@ -625,44 +580,12 @@ export default function BookNursingCareScreen() {
                         </TouchableOpacity>
 
                         {/* ─── Date & Time Picker ─── */}
-                        <View style={dynamicStyles.sectionContainer} onLayout={(e) => { sectionPositions.current['date'] = e.nativeEvent.layout.y; }}>
+                        <View style={dynamicStyles.sectionContainer}>
                             <CustomDateTimePicker
                                 label={t('booking.schedule_appointment', 'Schedule Appointment')}
                                 value={scheduledDate}
-                                onDateChange={(dt) => { setScheduledDate(dt); setFormErrors(prev => ({ ...prev, date: undefined })); }}
+                                onDateChange={setScheduledDate}
                             />
-                            {formErrors.date && (
-                                <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.date}</Text>
-                            )}
-                        </View>
-
-                        {/* ─── Compact Document Upload UI ─── */}
-                        <View style={dynamicStyles.sectionContainer}>
-                            <View style={dynamicStyles.compactUploadContainer}>
-                                <TouchableOpacity
-                                    style={dynamicStyles.compactUploadButton}
-                                    onPress={handlePickReport}
-                                    activeOpacity={0.8}
-                                >
-                                    <Ionicons name="document-attach-outline" size={16} color="#02743F" />
-                                    <Text style={dynamicStyles.compactUploadText}>Upload report (Optional)</Text>
-                                </TouchableOpacity>
-                                {selectedImages.length > 0 && (
-                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={dynamicStyles.compactThumbScroll}>
-                                        {selectedImages.map((uri, idx) => (
-                                            <View key={idx} style={dynamicStyles.compactThumbWrapper}>
-                                                <Image source={{ uri }} style={dynamicStyles.compactThumb} />
-                                                <TouchableOpacity
-                                                    style={dynamicStyles.compactRemoveBtn}
-                                                    onPress={() => setSelectedImages(prev => prev.filter((_, i) => i !== idx))}
-                                                >
-                                                    <Ionicons name="close-circle" size={18} color="#EF4444" />
-                                                </TouchableOpacity>
-                                            </View>
-                                        ))}
-                                    </ScrollView>
-                                )}
-                            </View>
                         </View>
 
                         {/* ─── Comments input ─── */}
@@ -697,9 +620,9 @@ export default function BookNursingCareScreen() {
                     {/* ─── Fixed Normal Bottom Bar ─── */}
                     <View style={[dynamicStyles.bottomBarContainer, { paddingBottom: insets.bottom || 20, backgroundColor: isDarkMode ? '#252525' : '#FAF7ED' }]}>
                         <TouchableOpacity
-                            style={[dynamicStyles.confirmButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
-                            activeOpacity={0.8}
-                            disabled={isBooking || isLoadingInit}
+                            style={[dynamicStyles.confirmButton, (!isFormValid || isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                            activeOpacity={isFormValid && !isBooking && !isLoadingInit ? 0.8 : 0.5}
+                            disabled={!isFormValid || isBooking || isLoadingInit}
                             onPress={handleBookService}
                         >
                             {isBooking ? (
@@ -713,6 +636,15 @@ export default function BookNursingCareScreen() {
                     </View>
                 </View>
             </View>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText="OK"
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </View>
     );
 }
@@ -735,9 +667,9 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-start',
-        paddingHorizontal: 20,
-        paddingBottom: 20,
-        paddingTop: 10,
+        paddingHorizontal: 16,
+        paddingBottom: 12,
+        paddingTop: 8,
     },
     backButton: {
         padding: 4,
@@ -771,9 +703,9 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        paddingHorizontal: 16,
-        paddingTop: 24,
-        paddingBottom: 20, // Reduced padding since the button is no longer overlapping
+        paddingHorizontal: 18,
+        paddingTop: 16,
+        paddingBottom: 30,
     },
 
     /* ─── Hero ─── */
@@ -814,10 +746,10 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         borderRadius: 9,
         paddingVertical: 12,
         paddingHorizontal: 16,
-        marginBottom: 24,
+        marginBottom: 32,
     },
     sectionContainer: {
-        marginBottom: 24,
+        marginBottom: 32,
     },
     sectionTitle: {
         fontFamily: Platform.select({ ios: 'LexendDeca-Medium', android: 'LexendDeca_500Medium', default: 'System' }),
@@ -1298,47 +1230,5 @@ const makeStyles = (isDarkMode: boolean) => StyleSheet.create({
         backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
         marginTop: 4,
         marginBottom: 8,
-    },
-    compactUploadContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    compactUploadButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#02743F',
-        borderRadius: 4,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        gap: 6,
-        backgroundColor: isDarkMode ? '#1A1A1A' : '#FAF7ED',
-    },
-    compactUploadText: {
-        fontSize: 13,
-        color: '#02743F',
-        fontWeight: 'bold',
-    },
-    compactThumbScroll: {
-        flexDirection: 'row',
-    },
-    compactThumbWrapper: {
-        position: 'relative',
-        marginRight: 8,
-    },
-    compactThumb: {
-        width: 36,
-        height: 36,
-        borderRadius: 4,
-        borderWidth: 1,
-        borderColor: '#DDD',
-    },
-    compactRemoveBtn: {
-        position: 'absolute',
-        top: -6,
-        right: -6,
     },
 });

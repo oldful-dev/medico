@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -30,7 +31,44 @@ export default function PaymentsWalletScreen() {
     const router = useRouter();
     const colors = useThemeColors();
     const { isDarkMode } = useTheme();
+    const insets = useSafeAreaInsets();
     const styles = makeStyles(colors, isDarkMode);
+
+    const [alertConfig, setAlertConfig] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+        iconName?: string;
+        buttonText?: string;
+        onClose?: () => void;
+        secondaryButtonText?: string;
+        onSecondaryPress?: () => void;
+        secondaryDestructive?: boolean;
+    }>({
+        visible: false, title: '', message: ''
+    });
+    const triggerAlert = (
+        title: string,
+        message: string,
+        iconName = 'warning-outline',
+        buttonText = 'OK',
+        onClose?: () => void,
+        secondaryButtonText?: string,
+        onSecondaryPress?: () => void,
+        secondaryDestructive = false
+    ) => {
+        setAlertConfig({
+            visible: true,
+            title,
+            message,
+            iconName,
+            buttonText,
+            onClose,
+            secondaryButtonText,
+            onSecondaryPress,
+            secondaryDestructive
+        });
+    };
     const [cards, setCards] = useState<SavedCard[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -61,22 +99,23 @@ export default function PaymentsWalletScreen() {
     useFocusEffect(useCallback(() => { loadCards(); }, [loadCards]));
 
     const handleDelete = (card: SavedCard) => {
-        Alert.alert(
+        triggerAlert(
             t('payments_wallet.remove_title'),
             t('payments_wallet.remove_confirm', { details: card.cardType === 'UPI' ? card.upiId : `•••• ${card.cardLast4}` }),
-            [
-                { text: t('common.cancel'), style: 'cancel' },
-                {
-                    text: t('common.remove'), style: 'destructive', onPress: async () => {
-                        try {
-                            await paymentService.deleteSavedCard(card.id);
-                            setCards(prev => prev.filter(c => c.id !== card.id));
-                        } catch {
-                            Alert.alert(t('common.error'), t('payments_wallet.remove_failed'));
-                        }
-                    }
-                },
-            ]
+            'warning-outline',
+            t('common.remove'),
+            async () => {
+                setAlertConfig(prev => ({ ...prev, visible: false }));
+                try {
+                    await paymentService.deleteSavedCard(card.id);
+                    setCards(prev => prev.filter(c => c.id !== card.id));
+                } catch {
+                    triggerAlert(t('common.error'), t('payments_wallet.remove_failed'));
+                }
+            },
+            t('common.cancel'),
+            () => setAlertConfig(prev => ({ ...prev, visible: false })),
+            true
         );
     };
 
@@ -86,7 +125,7 @@ export default function PaymentsWalletScreen() {
             await paymentService.setDefaultCard(card.id);
             setCards(prev => prev.map(c => ({ ...c, isDefault: c.id === card.id })));
         } catch {
-            Alert.alert(t('common.error'), t('payments_wallet.set_default_failed'));
+            triggerAlert(t('common.error'), t('payments_wallet.set_default_failed'));
         }
     };
 
@@ -98,13 +137,19 @@ export default function PaymentsWalletScreen() {
 
     const handleAdd = async () => {
         if (addType === 'CARD') {
-            if (cardLast4.length !== 4 || !/^\d{4}$/.test(cardLast4))
-                return Alert.alert(t('common.invalid'), t('payments_wallet.invalid_card_last4'));
-            if (!expiryMonth || !expiryYear)
-                return Alert.alert(t('common.invalid'), t('payments_wallet.invalid_expiry'));
+            if (cardLast4.length !== 4 || !/^\d{4}$/.test(cardLast4)) {
+                triggerAlert(t('common.invalid'), t('payments_wallet.invalid_card_last4'));
+                return;
+            }
+            if (!expiryMonth || !expiryYear) {
+                triggerAlert(t('common.invalid'), t('payments_wallet.invalid_expiry'));
+                return;
+            }
         } else {
-            if (!upiId.includes('@'))
-                return Alert.alert(t('common.invalid'), t('payments_wallet.invalid_upi'));
+            if (!upiId.includes('@')) {
+                triggerAlert(t('common.invalid'), t('payments_wallet.invalid_upi'));
+                return;
+            }
         }
 
         const payload: AddCardPayload = addType === 'CARD'
@@ -123,10 +168,10 @@ export default function PaymentsWalletScreen() {
                 setShowAddModal(false);
                 resetForm();
             } else {
-                Alert.alert(t('common.error'), res.message || t('payments_wallet.save_failed'));
+                triggerAlert(t('common.error'), res.message || t('payments_wallet.save_failed'));
             }
         } catch {
-            Alert.alert(t('common.error'), t('payments_wallet.network_error'));
+            triggerAlert(t('common.error'), t('payments_wallet.network_error'));
         } finally {
             setSaving(false);
         }
@@ -213,7 +258,7 @@ export default function PaymentsWalletScreen() {
                 <View style={styles.modalOverlay}>
                     <KeyboardAvoidingView
                         behavior="padding"
-                        style={[styles.modalSheet, { maxHeight: '90%', flexShrink: 1 }]}
+                        style={[styles.modalSheet, { maxHeight: '90%', flexShrink: 1, paddingBottom: Math.max(insets.bottom, Spacing.lg) + (Platform.OS === 'ios' ? 20 : 0) }]}
                         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
                     >
                         <View style={styles.modalHandle} />
@@ -339,6 +384,18 @@ export default function PaymentsWalletScreen() {
                     </KeyboardAvoidingView>
                 </View>
             </Modal>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any || 'warning-outline'}
+                buttonText={alertConfig.buttonText || 'OK'}
+                onClose={alertConfig.onClose || (() => setAlertConfig(prev => ({ ...prev, visible: false })))}
+                secondaryButtonText={alertConfig.secondaryButtonText}
+                onSecondaryPress={alertConfig.onSecondaryPress}
+                secondaryDestructive={alertConfig.secondaryDestructive}
+            />
         </View>
     );
 }
@@ -390,7 +447,7 @@ const makeStyles = (colors: ThemeColors, isDarkMode: boolean) => StyleSheet.crea
     modalSheet: {
         backgroundColor: colors.bgCard,
         borderTopLeftRadius: 24, borderTopRightRadius: 24,
-        padding: Spacing.lg, paddingBottom: Platform.OS === 'ios' ? 40 : Spacing.lg,
+        padding: Spacing.lg,
     },
     modalHandle: { width: 40, height: 4, backgroundColor: colors.borderLight, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
     modalTitle: { fontFamily: Fonts.semiBold, fontSize: FontSize.heading3, color: colors.textDark, marginBottom: 20 },

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -10,6 +11,7 @@ import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useUser } from '@/context/UserContext';
 import { planService, Plan, BillingCycle, ActiveSubscription } from '@/services/api/planService';
+import { renderBenefitSvg } from '@/utils/benefitIconMap';
 
 const BILLING_CYCLES: { key: BillingCycle; labelKey: string; suffixKey: string; daysKey: string }[] = [
     { key: 'QUARTERLY', labelKey: 'plans.quarterly', suffixKey: 'plans.quarterly_suffix', daysKey: 'plans.quarterly_days' },
@@ -34,6 +36,12 @@ export default function PlanDetailsScreen() {
     const { isDarkMode } = useTheme();
     const styles = makeStyles(colors, isDarkMode);
     const { profile } = useUser();
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName?: string }>({
+        visible: false, title: '', message: ''
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
     
     // params: 
     // id (plan ID), or 'renew' if coming directly from Renew button.
@@ -102,14 +110,14 @@ export default function PlanDetailsScreen() {
 
     const handleAction = async () => {
         if (!profile) {
-            Alert.alert(t('plans.login_required'), t('plans.login_required_desc'));
+            triggerAlert(t('plans.login_required'), t('plans.login_required_desc'));
             return;
         }
         if (!plan) return;
 
         const price = getPriceForCycle(plan, activeCycle);
         if (!price || price <= 0) {
-            Alert.alert(t('plans.unavailable'), t('plans.unavailable_desc'));
+            triggerAlert(t('plans.unavailable'), t('plans.unavailable_desc'));
             return;
         }
 
@@ -124,10 +132,9 @@ export default function PlanDetailsScreen() {
 
         if (actionType === 'CHANGE_PLAN') {
             // Block downgrade — plans/[id].tsx only allows upgrade or renew
-            Alert.alert(
+            triggerAlert(
                 t('plans.downgrade_blocked_title'),
-                t('plans.downgrade_blocked_msg'),
-                [{ text: t('common.ok') }]
+                t('plans.downgrade_blocked_msg')
             );
             return;
         }
@@ -148,7 +155,7 @@ export default function PlanDetailsScreen() {
                     amount: price,
                 });
                 if (!subRes.success || !subRes.data) {
-                    Alert.alert(t('plans.error'), subRes.message ?? t('plans.initiate_error'));
+                    triggerAlert(t('plans.error'), subRes.message ?? t('plans.initiate_error'));
                     return;
                 }
                 subscriptionId = subRes.data.id;
@@ -168,7 +175,7 @@ export default function PlanDetailsScreen() {
                 },
             });
         } catch (e: any) {
-            Alert.alert(t('plans.error'), e?.message || t('plans.subscribe_error'));
+            triggerAlert(t('plans.error'), e?.message || t('plans.subscribe_error'));
         } finally {
             setInitiating(false);
         }
@@ -248,12 +255,43 @@ export default function PlanDetailsScreen() {
                 {/* ─── Features ─── */}
                 <Text style={styles.sectionTitle}>Plan Features</Text>
                 <View style={styles.featuresContainer}>
-                    {plan.benefits?.split(',').map((benefit, bIdx) => (
-                        <View key={bIdx} style={styles.featureItem}>
-                            <Ionicons name="checkmark-circle" size={20} color={colors.primary} style={styles.featureCheck} />
-                            <Text style={styles.featureText}>{benefit.trim()}</Text>
-                        </View>
-                    ))}
+                    {plan.planBenefits && plan.planBenefits.length > 0 ? (
+                        [...plan.planBenefits]
+                            .sort((a, b) => a.displayOrder - b.displayOrder)
+                            .map((benefit, idx, arr) => (
+                                <View
+                                    key={benefit.id}
+                                    style={[styles.featureItem, idx === arr.length - 1 && { marginBottom: 0 }]}
+                                >
+                                    <View style={[styles.featureIconBox, { backgroundColor: `${colors.primary}14` }]}>
+                                        {renderBenefitSvg(benefit.benefitCode, 18, colors.primary)}
+                                    </View>
+                                    <View style={styles.featureTextCol}>
+                                        <Text style={styles.featureText}>{benefit.title}</Text>
+                                        {benefit.description ? (
+                                            <Text style={styles.featureSubtext}>{benefit.description}</Text>
+                                        ) : null}
+                                        {benefit.usageLimit > 0 && (
+                                            <Text style={styles.featureUsage}>
+                                                {benefit.usageLimit}x per {benefit.usagePeriod.toLowerCase()}
+                                            </Text>
+                                        )}
+                                    </View>
+                                </View>
+                            ))
+                    ) : plan.benefits ? (
+                        plan.benefits.split(',').map((benefit, bIdx, arr) => (
+                            <View
+                                key={bIdx}
+                                style={[styles.featureItem, bIdx === arr.length - 1 && { marginBottom: 0 }]}
+                            >
+                                <Ionicons name="checkmark-circle" size={20} color={colors.primary} style={styles.featureCheck} />
+                                <Text style={styles.featureText}>{benefit.trim()}</Text>
+                            </View>
+                        ))
+                    ) : (
+                        <Text style={[styles.featureText, { color: colors.textMuted }]}>No features listed for this plan.</Text>
+                    )}
                 </View>
             </ScrollView>
 
@@ -280,6 +318,15 @@ export default function PlanDetailsScreen() {
                     )}
                 </TouchableOpacity>
             </View>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any || 'warning-outline'}
+                buttonText="OK"
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </View>
     );
 }
@@ -329,9 +376,16 @@ const makeStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
         padding: Spacing.xl, ...Shadow.card, borderWidth: 1, borderColor: colors.borderLight,
         marginBottom: 30,
     },
-    featureItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16 },
+    featureItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 18 },
     featureCheck: { marginRight: 12, marginTop: 2 },
     featureText: { fontFamily: Fonts.medium, fontSize: FontSize.body, color: colors.textDark, flex: 1, lineHeight: 22 },
+    featureIconBox: {
+        width: 34, height: 34, borderRadius: Radius.md, marginRight: 12,
+        alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    },
+    featureTextCol: { flex: 1, gap: 3 },
+    featureSubtext: { fontFamily: Fonts.regular, fontSize: FontSize.caption, color: colors.textMuted, lineHeight: 18 },
+    featureUsage: { fontFamily: Fonts.medium, fontSize: FontSize.caption, color: colors.primary, marginTop: 1 },
 
     bottomBar: {
         position: 'absolute', bottom: 0, left: 0, right: 0,

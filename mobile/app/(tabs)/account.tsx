@@ -2,8 +2,9 @@
 import React, { useState, useCallback } from 'react';
 import {
     View, Text, Image, TouchableOpacity, StyleSheet,
-    Switch, Modal, Alert, ActivityIndicator, Linking,
+    Switch, Modal, ActivityIndicator, Linking,
 } from 'react-native';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -91,6 +92,33 @@ export default function AccountScreen() {
     const [publishedDocs, setPublishedDocs] = useState<LegalDocument[]>([]);
     const [loadingDocs, setLoadingDocs] = useState(false);
 
+    // Native Alert.alert is globally muted app-wide (see app/_layout.tsx)
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
+
+    // 2-button confirmation dialogs (logout / delete-account / emergency-call)
+    const [confirmDialog, setConfirmDialog] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+        iconName: string;
+        confirmText: string;
+        onConfirm: () => void;
+        cancelText?: string;
+        destructive?: boolean;
+    } | null>(null);
+    const closeConfirmDialog = () => setConfirmDialog(null);
+
+    // Avatar picker action sheet (Camera / Gallery / Cancel)
+    const [avatarPickerVisible, setAvatarPickerVisible] = useState(false);
+
     const fetchPublishedDocs = async () => {
         try {
             setLoadingDocs(true);
@@ -119,11 +147,11 @@ export default function AccountScreen() {
             const res = await userService.updateProfile({ [key]: value } as any);
             if (!res.success) {
                 setProfile(oldProfile);
-                Alert.alert(t('common.error'), res.message || t('account.failed_update_pref'));
+                triggerAlert(t('common.error'), res.message || t('account.failed_update_pref'));
             }
         } catch {
             setProfile(oldProfile);
-            Alert.alert(t('common.error'), t('common.generic_error'));
+            triggerAlert(t('common.error'), t('common.generic_error'));
         }
     };
 
@@ -177,26 +205,24 @@ export default function AccountScreen() {
     ];
     const completionPct = Math.round((completionFields.filter(Boolean).length / completionFields.length) * 100);
 
-    const handleAvatarUpload = async () => {
-        Alert.alert(t('account.update_photo'), t('account.choose_option'), [
-            {
-                text: t('account.camera'), onPress: async () => {
-                    const perm = await ImagePicker.requestCameraPermissionsAsync();
-                    if (!perm.granted) { Alert.alert(t('account.permission_required'), t('account.camera_access_needed')); return; }
-                    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
-                    if (!result.canceled && result.assets[0]) uploadImage(result.assets[0]);
-                }
-            },
-            {
-                text: t('account.gallery'), onPress: async () => {
-                    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                    if (!perm.granted) { Alert.alert(t('account.permission_required'), t('account.gallery_access_needed')); return; }
-                    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
-                    if (!result.canceled && result.assets[0]) uploadImage(result.assets[0]);
-                }
-            },
-            { text: t('common.cancel'), style: 'cancel' },
-        ]);
+    const handleAvatarUpload = () => {
+        setAvatarPickerVisible(true);
+    };
+
+    const pickFromCamera = async () => {
+        setAvatarPickerVisible(false);
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) { triggerAlert(t('account.permission_required'), t('account.camera_access_needed')); return; }
+        const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
+        if (!result.canceled && result.assets[0]) uploadImage(result.assets[0]);
+    };
+
+    const pickFromGallery = async () => {
+        setAvatarPickerVisible(false);
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) { triggerAlert(t('account.permission_required'), t('account.gallery_access_needed')); return; }
+        const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [1, 1] });
+        if (!result.canceled && result.assets[0]) uploadImage(result.assets[0]);
     };
 
     const uploadImage = async (asset: ImagePicker.ImagePickerAsset) => {
@@ -207,50 +233,56 @@ export default function AccountScreen() {
             if (res.success && res.data) {
                 setProfile(res.data);
             } else {
-                Alert.alert(t('common.error'), res.message || t('account.upload_failed'));
+                triggerAlert(t('common.error'), res.message || t('account.upload_failed'));
             }
         } catch (err: any) {
-            Alert.alert(t('common.error'), err.message || t('account.upload_failed'));
+            triggerAlert(t('common.error'), err.message || t('account.upload_failed'));
         } finally {
             setUploadingAvatar(false);
         }
     };
 
     const handleLogout = () => {
-        Alert.alert(t('account.log_out'), t('account.logout_confirm'), [
-            { text: t('common.cancel'), style: 'cancel' },
-            {
-                text: t('account.log_out'), style: 'destructive', onPress: async () => {
-                    try { await logout(); } catch { }
-                    router.replace('/(auth)/login' as any);
-                }
+        setConfirmDialog({
+            visible: true,
+            title: t('account.log_out'),
+            message: t('account.logout_confirm'),
+            iconName: 'log-out-outline',
+            confirmText: t('account.log_out'),
+            cancelText: t('common.cancel'),
+            destructive: true,
+            onConfirm: async () => {
+                closeConfirmDialog();
+                try { await logout(); } catch { }
+                router.replace('/(auth)/login' as any);
             },
-        ]);
+        });
     };
 
     const handleDeleteAccount = () => {
-        Alert.alert(
-            t('account.delete_account'),
-            t('account.delete_account_confirm'),
-            [
-                { text: t('common.cancel'), style: 'cancel' },
-                {
-                    text: t('common.delete'), style: 'destructive', onPress: async () => {
-                        try {
-                            const res = await userService.deleteAccount();
-                            if (res.success) {
-                                await logout();
-                                router.replace('/(auth)/login' as any);
-                            } else {
-                                Alert.alert(t('common.error'), res.message || t('account.delete_failed'));
-                            }
-                        } catch (err: any) {
-                            Alert.alert(t('common.error'), err.message || t('account.delete_failed'));
-                        }
+        setConfirmDialog({
+            visible: true,
+            title: t('account.delete_account'),
+            message: t('account.delete_account_confirm'),
+            iconName: 'trash-outline',
+            confirmText: t('common.delete'),
+            cancelText: t('common.cancel'),
+            destructive: true,
+            onConfirm: async () => {
+                closeConfirmDialog();
+                try {
+                    const res = await userService.deleteAccount();
+                    if (res.success) {
+                        await logout();
+                        router.replace('/(auth)/login' as any);
+                    } else {
+                        triggerAlert(t('common.error'), res.message || t('account.delete_failed'));
                     }
-                },
-            ]
-        );
+                } catch (err: any) {
+                    triggerAlert(t('common.error'), err.message || t('account.delete_failed'));
+                }
+            },
+        });
     };
 
     // ─── Render ───
@@ -288,7 +320,11 @@ export default function AccountScreen() {
                                 ) : (
                                     <Image
                                         source={profile?.profileImageUrl
-                                            ? { uri: `${getAssetUrl(profile.profileImageUrl)}&_=${Math.random()}` }
+                                            ? { uri: (() => {
+                                                const resolvedUrl = getAssetUrl(profile.profileImageUrl);
+                                                const separator = resolvedUrl.includes('?') ? '&' : '?';
+                                                return `${resolvedUrl}${separator}_=${Math.random()}`;
+                                            })() }
                                             : avatarImg}
                                         style={profile?.profileImageUrl ? styles.avatarFull : styles.avatarDefault}
                                         resizeMode="cover"
@@ -573,10 +609,19 @@ export default function AccountScreen() {
                             borderColor: isDarkMode ? '#7F1D1D' : '#FEE2E2',
                             backgroundColor: isDarkMode ? '#450A0A' : '#FEF2F2',
                         }]}
-                        onPress={() => Alert.alert(t('account.emergency_assistance'), t('account.emergency_alert_msg'), [
-                            { text: t('common.cancel'), style: 'cancel' },
-                            { text: t('account.call_now'), onPress: () => Linking.openURL('tel:+919480198108') },
-                        ])}
+                        onPress={() => setConfirmDialog({
+                            visible: true,
+                            title: t('account.emergency_assistance'),
+                            message: t('account.emergency_alert_msg'),
+                            iconName: 'alert-circle-outline',
+                            confirmText: t('account.call_now'),
+                            cancelText: t('common.cancel'),
+                            destructive: true,
+                            onConfirm: () => {
+                                closeConfirmDialog();
+                                Linking.openURL('tel:+919480198108');
+                            },
+                        })}
                         activeOpacity={0.75}
                     >
                         <View style={[styles.emergencyIcon, { backgroundColor: isDarkMode ? '#7F1D1D' : '#FFE4E6' }]}>
@@ -715,6 +760,48 @@ export default function AccountScreen() {
                     </View>
                 </View>
             </Modal>
+
+            {/* ─── Avatar Picker Action Sheet ─── */}
+            <Modal visible={avatarPickerVisible} transparent animationType="fade" onRequestClose={() => setAvatarPickerVisible(false)}>
+                <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setAvatarPickerVisible(false)}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalTitle}>{t('account.update_photo')}</Text>
+                        <Text style={[styles.langNative, { textAlign: 'center', marginBottom: Spacing.md }]}>{t('account.choose_option')}</Text>
+                        <TouchableOpacity style={styles.langOption} onPress={pickFromCamera}>
+                            <Text style={styles.langText}>{t('account.camera')}</Text>
+                            <Ionicons name="camera-outline" size={20} color={colors.textMuted} />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.langOption} onPress={pickFromGallery}>
+                            <Text style={styles.langText}>{t('account.gallery')}</Text>
+                            <Ionicons name="images-outline" size={20} color={colors.textMuted} />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.modalCancel} onPress={() => setAvatarPickerVisible(false)}>
+                            <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText={t('common.ok')}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
+
+            <CustomAlertModal
+                visible={!!confirmDialog?.visible}
+                title={confirmDialog?.title || ''}
+                message={confirmDialog?.message || ''}
+                iconName={(confirmDialog?.iconName as any) || 'warning-outline'}
+                buttonText={confirmDialog?.cancelText || t('common.cancel')}
+                onClose={closeConfirmDialog}
+                secondaryButtonText={confirmDialog?.confirmText}
+                onSecondaryPress={confirmDialog?.onConfirm}
+                secondaryDestructive={confirmDialog?.destructive}
+            />
         </View>
     );
 }

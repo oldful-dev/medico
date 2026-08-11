@@ -19,7 +19,9 @@ const imageLoader = require('./imageLoader');
 const generateInvoicePDF = async (invoiceData) => {
     let browser;
     try {
-        const itemSubtotalNum = Number(invoiceData.subtotal || invoiceData.totalAmount || 1999);
+        const itemSubtotalNum = invoiceData.subtotal !== undefined
+            ? Number(invoiceData.subtotal)
+            : (invoiceData.totalAmount !== undefined ? Number(invoiceData.totalAmount) : 1999);
         const gstRateNum = Number(invoiceData.gstRate || 18);
         const gstAmountNum = invoiceData.gstAmount !== undefined ? Number(invoiceData.gstAmount) : (itemSubtotalNum * gstRateNum / 100);
         const totalAmountNum = invoiceData.totalAmount !== undefined ? Number(invoiceData.totalAmount) : (itemSubtotalNum + gstAmountNum);

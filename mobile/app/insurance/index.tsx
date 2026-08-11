@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, TextInput, Alert, ActivityIndicator, Image, KeyboardAvoidingView, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, TextInput, ActivityIndicator, Image, KeyboardAvoidingView, ScrollView } from 'react-native';
 
 // ─── Figma Assets ───
 const familyIcon = require('../../assets/images/cb86876504871abc5e6db19e5612175dae2b0479.png');
@@ -20,6 +20,7 @@ import { mediaService } from '@/services/api/mediaService';
 import { familyMemberService, FamilyMember } from '@/services/api/familyMemberService';
 import { useUser } from '@/context/UserContext';
 import { AddressPickerSection, type AddressData } from '@/components/AddressPickerSection';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 // ─── Initial State Constants ───
 const INITIAL_CONDITIONS = [
@@ -36,6 +37,13 @@ export default function InsuranceScreen() {
     const { isDarkMode } = useTheme();
     const colors = useThemeColors();
     const { profile, refreshData } = useUser();
+
+    const [alertConfig, setAlertConfig] = React.useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false, title: '', message: '', iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
 
     // UI State
     const [whoFor, setWhoFor] = React.useState('Self'); // 'Self' or 'Family'
@@ -85,7 +93,7 @@ export default function InsuranceScreen() {
     const handleAddFamilyMember = async () => {
         if (!profile?.id) return;
         if (!newMemberName.trim()) {
-            Alert.alert(t('common.required'), t('nurse_care.add_member_name_required', 'Please enter a name.'));
+            triggerAlert(t('common.required'), t('nurse_care.add_member_name_required', 'Please enter a name.'));
             return;
         }
         try {
@@ -101,11 +109,11 @@ export default function InsuranceScreen() {
                 setNewMemberName('');
                 setShowAddFamilyForm(false);
             } else {
-                Alert.alert(t('common.error'), res.message || t('nurse_care.add_member_failed', 'Failed to add family member.'));
+                triggerAlert(t('common.error'), res.message || t('nurse_care.add_member_failed', 'Failed to add family member.'));
             }
         } catch (error) {
             console.error('Add family member error:', error);
-            Alert.alert(t('common.error'), t('nurse_care.add_member_failed', 'Failed to add family member.'));
+            triggerAlert(t('common.error'), t('nurse_care.add_member_failed', 'Failed to add family member.'));
         } finally {
             setIsAddingMember(false);
         }
@@ -188,7 +196,7 @@ export default function InsuranceScreen() {
             } else {
                 await userService.addAddress(profile.id, payload);
             }
-            await refreshData(true);
+            await refreshData();
         } catch {
             // non-fatal
         }
@@ -197,7 +205,7 @@ export default function InsuranceScreen() {
     const handleUploadDocument = async (docType: 'aadhaar' | 'pan') => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-            Alert.alert(t('common.permission_required'), 'Gallery permission is required to upload documents.');
+            triggerAlert(t('common.permission_required'), 'Gallery permission is required to upload documents.');
             return;
         }
 
@@ -215,25 +223,34 @@ export default function InsuranceScreen() {
         }
     };
 
+    const isFormValid = React.useMemo(() => {
+        return !!(
+            whoFor &&
+            (whoFor !== 'Family' || selectedFamilyMemberId) &&
+            aadhaarUri &&
+            panUri
+        );
+    }, [whoFor, selectedFamilyMemberId, aadhaarUri, panUri]);
+
     const handleBookService = async () => {
         if (!whoFor) {
-            Alert.alert(t('common.required'), t('insurance.alert_recipient_required'));
+            triggerAlert(t('common.required'), t('insurance.alert_recipient_required'));
             return;
         }
         if (whoFor === 'Family' && !selectedFamilyMemberId) {
-            Alert.alert(t('common.required'), t('nurse_care.alert_select_who', 'Please select a family member.'));
+            triggerAlert(t('common.required'), t('nurse_care.alert_select_who', 'Please select a family member.'));
             return;
         }
         if (!aadhaarUri) {
-            Alert.alert(t('common.required'), t('insurance.aadhaar_required'));
+            triggerAlert(t('common.required'), t('insurance.aadhaar_required'));
             return;
         }
         if (!panUri) {
-            Alert.alert(t('common.required'), t('insurance.pan_required'));
+            triggerAlert(t('common.required'), t('insurance.pan_required'));
             return;
         }
         if (!cityId || !serviceId) {
-            Alert.alert(t('common.error'), t('insurance.alert_init_failed'));
+            triggerAlert(t('common.error'), t('insurance.alert_init_failed'));
             return;
         }
 
@@ -283,11 +300,11 @@ export default function InsuranceScreen() {
             if (res.success && res.data) {
                 router.push({ pathname: '/service-confirmation', params: { bookingId: res.data.id } });
             } else {
-                Alert.alert(t('common.error'), res.message || t('insurance.alert_submission_failed'));
+                triggerAlert(t('common.error'), res.message || t('insurance.alert_submission_failed'));
             }
         } catch (error) {
             console.error('Insurance booking error:', error);
-            Alert.alert(t('common.error'), t('insurance.alert_request_failed'));
+            triggerAlert(t('common.error'), t('insurance.alert_request_failed'));
         } finally {
             setIsBooking(false);
         }
@@ -615,9 +632,9 @@ export default function InsuranceScreen() {
                             {/* ─── Submit Button ─── */}
                             <View style={dynamicStyles.submitContainer}>
                                 <TouchableOpacity
-                                    style={[dynamicStyles.submitButton, (isBooking || isLoadingInit) && { opacity: 0.6 }]}
-                                    activeOpacity={0.8}
-                                    disabled={isBooking || isLoadingInit}
+                                    style={[dynamicStyles.submitButton, (!isFormValid || isBooking || isLoadingInit) && { opacity: 0.6 }]}
+                                    activeOpacity={isFormValid && !isBooking && !isLoadingInit ? 0.8 : 0.5}
+                                    disabled={!isFormValid || isBooking || isLoadingInit}
                                     onPress={handleBookService}
                                 >
                                     {isLoadingInit ? (
@@ -633,6 +650,15 @@ export default function InsuranceScreen() {
                     </KeyboardAwareScrollView>
                 </KeyboardAvoidingView>
             </View>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText="OK"
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </View>
     );
 }

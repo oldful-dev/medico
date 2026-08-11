@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, ActivityIndicator, Keyboard, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform, ActivityIndicator, Keyboard, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -11,6 +11,7 @@ import { useUser } from '@/context/UserContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 const RELATIONS = ['Father', 'Mother', 'Spouse', 'Son', 'Daughter', 'Sibling', 'Dependent', 'Other'];
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-', 'Unknown'];
@@ -43,6 +44,22 @@ export default function FamilyMembersScreen() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [dobDate, setDobDate] = useState<Date | null>(null);
+
+    const [alertConfig, setAlertConfig] = React.useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false, title: '', message: '', iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
+
+    const [confirmConfig, setConfirmConfig] = React.useState<{
+        visible: boolean; title: string; message: string;
+        confirmText: string; onConfirm: () => void;
+    }>({ visible: false, title: '', message: '', confirmText: 'Delete', onConfirm: () => {} });
+
+    const triggerConfirm = (title: string, message: string, onConfirm: () => void, confirmText = 'Delete') => {
+        setConfirmConfig({ visible: true, title, message, confirmText, onConfirm });
+    };
 
     const [form, setForm] = useState({
         name: '', relation: '', gender: '', dateOfBirth: '',
@@ -123,7 +140,7 @@ export default function FamilyMembersScreen() {
 
     const saveMember = async () => {
         if (!form.name.trim() || !form.relation) {
-            Alert.alert(t('family_members.alerts.missing_info_title'), t('family_members.alerts.missing_info_msg'));
+            triggerAlert(t('family_members.alerts.missing_info_title'), t('family_members.alerts.missing_info_msg'));
             return;
         }
         setSaving(true);
@@ -138,38 +155,36 @@ export default function FamilyMembersScreen() {
             if (res.success) {
                 await fetchMembers();
                 resetForm();
-                Alert.alert(t('family_members.alerts.success_title'), editingId ? t('family_members.alerts.member_updated') : t('family_members.alerts.member_added'));
+                triggerAlert(t('family_members.alerts.success_title'), editingId ? t('family_members.alerts.member_updated') : t('family_members.alerts.member_added'), 'checkmark-circle-outline');
             } else {
-                Alert.alert(t('family_members.alerts.error_title'), res.message || t('family_members.alerts.failed_save'));
+                triggerAlert(t('family_members.alerts.error_title'), res.message || t('family_members.alerts.failed_save'));
             }
         } catch (error: any) {
-            Alert.alert(t('family_members.alerts.error_title'), error.message || t('family_members.alerts.something_went_wrong'));
+            triggerAlert(t('family_members.alerts.error_title'), error.message || t('family_members.alerts.something_went_wrong'));
         } finally {
             setSaving(false);
         }
     };
 
     const deleteMember = (member: FamilyMember) => {
-        Alert.alert(t('family_members.alerts.remove_member_title'), t('family_members.alerts.remove_member_msg', { name: member.name }), [
-            { text: t('family_members.cancel'), style: 'cancel' },
-            {
-                text: t('family_members.remove'),
-                style: 'destructive',
-                onPress: async () => {
-                    try {
-                        const res = await familyMemberService.deleteFamilyMember(userId, member.id);
-                        if (res.success) {
-                            setMembers(prev => prev.filter(m => m.id !== member.id));
-                            Alert.alert(t('family_members.alerts.success_title'), t('family_members.alerts.member_removed'));
-                        } else {
-                            Alert.alert(t('family_members.alerts.error_title'), res.message || t('family_members.alerts.failed_remove'));
-                        }
-                    } catch (error: any) {
-                        Alert.alert(t('family_members.alerts.error_title'), error.message || t('family_members.alerts.failed_remove'));
+        triggerConfirm(
+            t('family_members.alerts.remove_member_title'),
+            t('family_members.alerts.remove_member_msg', { name: member.name }),
+            async () => {
+                try {
+                    const res = await familyMemberService.deleteFamilyMember(userId, member.id);
+                    if (res.success) {
+                        setMembers(prev => prev.filter(m => m.id !== member.id));
+                        triggerAlert(t('family_members.alerts.success_title'), t('family_members.alerts.member_removed'), 'checkmark-circle-outline');
+                    } else {
+                        triggerAlert(t('family_members.alerts.error_title'), res.message || t('family_members.alerts.failed_remove'));
                     }
+                } catch (error: any) {
+                    triggerAlert(t('family_members.alerts.error_title'), error.message || t('family_members.alerts.failed_remove'));
                 }
             },
-        ]);
+            t('family_members.remove')
+        );
     };
 
     return (
@@ -397,6 +412,30 @@ export default function FamilyMembersScreen() {
                     onChange={handleDateChange}
                 />
             )}
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText="OK"
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
+
+            <CustomAlertModal
+                visible={confirmConfig.visible}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+                iconName="trash-outline"
+                buttonText="Cancel"
+                onClose={() => setConfirmConfig(prev => ({ ...prev, visible: false }))}
+                secondaryButtonText={confirmConfig.confirmText}
+                secondaryDestructive
+                onSecondaryPress={() => {
+                    setConfirmConfig(prev => ({ ...prev, visible: false }));
+                    confirmConfig.onConfirm();
+                }}
+            />
         </View>
     );
 }

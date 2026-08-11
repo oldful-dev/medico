@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, ActivityIndicator, Switch, Linking, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform, ActivityIndicator, Switch, Linking, KeyboardAvoidingView } from 'react-native';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -40,6 +41,20 @@ export default function EmergencyContactsScreen() {
 
     const contacts: EmergencyContact[] = profile?.emergencyContacts || [];
 
+    // Native Alert.alert is globally muted app-wide (see app/_layout.tsx)
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
+
+    // Delete confirmation (needs 2 real actions, so it's separate from alertConfig)
+    const [deleteConfirm, setDeleteConfirm] = useState<{ visible: boolean; contactId: string | null }>({ visible: false, contactId: null });
+
     const getTranslatedRelationship = (rel: string) => {
         if (!rel) return '';
         const key = `emergency_contacts.relationships.${rel.toLowerCase().replace(/\s+/g, '_')}`;
@@ -65,7 +80,7 @@ export default function EmergencyContactsScreen() {
 
     const addContact = async () => {
         if (!newName.trim() || !newPhone.trim() || !newRelationship) {
-            Alert.alert(t('emergency_contacts.alerts.missing_info_title'), t('emergency_contacts.alerts.missing_info_msg'));
+            triggerAlert(t('emergency_contacts.alerts.missing_info_title'), t('emergency_contacts.alerts.missing_info_msg'));
             return;
         }
         if (!profile?.id) return;
@@ -80,12 +95,12 @@ export default function EmergencyContactsScreen() {
                 const profileRes = await userService.getProfile();
                 if (profileRes.success && profileRes.data) setProfile(profileRes.data);
                 resetForm();
-                Alert.alert(t('emergency_contacts.alerts.success_title'), t('emergency_contacts.alerts.contact_added'));
+                triggerAlert(t('emergency_contacts.alerts.success_title'), t('emergency_contacts.alerts.contact_added'), 'checkmark-circle-outline');
             } else {
-                Alert.alert(t('emergency_contacts.alerts.error_title'), res.message || t('emergency_contacts.alerts.failed_add'));
+                triggerAlert(t('emergency_contacts.alerts.error_title'), res.message || t('emergency_contacts.alerts.failed_add'));
             }
         } catch (err: any) {
-            Alert.alert(t('emergency_contacts.alerts.error_title'), err.message || t('emergency_contacts.alerts.something_went_wrong'));
+            triggerAlert(t('emergency_contacts.alerts.error_title'), err.message || t('emergency_contacts.alerts.something_went_wrong'));
         } finally {
             setSaving(false);
         }
@@ -93,27 +108,27 @@ export default function EmergencyContactsScreen() {
 
     const deleteContact = (contactId: string) => {
         if (!profile?.id) return;
-        Alert.alert(t('emergency_contacts.alerts.remove_contact_title'), t('emergency_contacts.alerts.remove_contact_msg'), [
-            { text: t('emergency_contacts.cancel'), style: 'cancel' },
-            {
-                text: t('emergency_contacts.remove'), style: 'destructive', onPress: async () => {
-                    setDeletingId(contactId);
-                    try {
-                        const res = await userService.removeEmergencyContact(profile.id, contactId);
-                        if (res.success) {
-                            const profileRes = await userService.getProfile();
-                            if (profileRes.success && profileRes.data) setProfile(profileRes.data);
-                        } else {
-                            Alert.alert(t('emergency_contacts.alerts.error_title'), res.message || t('emergency_contacts.alerts.failed_remove'));
-                        }
-                    } catch (err: any) {
-                        Alert.alert(t('emergency_contacts.alerts.error_title'), err.message || t('emergency_contacts.alerts.something_went_wrong'));
-                    } finally {
-                        setDeletingId(null);
-                    }
-                }
-            },
-        ]);
+        setDeleteConfirm({ visible: true, contactId });
+    };
+
+    const confirmDeleteContact = async () => {
+        const contactId = deleteConfirm.contactId;
+        setDeleteConfirm({ visible: false, contactId: null });
+        if (!profile?.id || !contactId) return;
+        setDeletingId(contactId);
+        try {
+            const res = await userService.removeEmergencyContact(profile.id, contactId);
+            if (res.success) {
+                const profileRes = await userService.getProfile();
+                if (profileRes.success && profileRes.data) setProfile(profileRes.data);
+            } else {
+                triggerAlert(t('emergency_contacts.alerts.error_title'), res.message || t('emergency_contacts.alerts.failed_remove'));
+            }
+        } catch (err: any) {
+            triggerAlert(t('emergency_contacts.alerts.error_title'), err.message || t('emergency_contacts.alerts.something_went_wrong'));
+        } finally {
+            setDeletingId(null);
+        }
     };
 
     const getRelIcon = (rel: string): keyof typeof Ionicons.glyphMap => {
@@ -241,6 +256,27 @@ export default function EmergencyContactsScreen() {
                 </TouchableOpacity>
             </KeyboardAwareScrollView>
         </KeyboardAvoidingView>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText={t('common.ok', 'OK')}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
+
+            <CustomAlertModal
+                visible={deleteConfirm.visible}
+                title={t('emergency_contacts.alerts.remove_contact_title')}
+                message={t('emergency_contacts.alerts.remove_contact_msg')}
+                iconName="trash-outline"
+                buttonText={t('emergency_contacts.cancel')}
+                onClose={() => setDeleteConfirm({ visible: false, contactId: null })}
+                secondaryButtonText={t('emergency_contacts.remove')}
+                onSecondaryPress={confirmDeleteContact}
+                secondaryDestructive={true}
+            />
         </View>
     );
 }

@@ -1,11 +1,12 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { labService, LabOrderListItem } from '@/services/api/labService';
 
 const PRIMARY = '#02743F';
 const PRIMARY_LIGHT = '#E8F5EE';
@@ -31,6 +32,34 @@ export default function BloodTestSuccessScreen() {
     const border = isDarkMode ? '#2A2A2A' : '#E5E7EB';
     const textPrimary = isDarkMode ? '#F0F0F0' : '#1A1A1A';
     const textMuted = isDarkMode ? '#909090' : '#6B7280';
+
+    // Live status right after booking — replaces the old static "what's next"
+    // script so the first thing the customer sees reflects the real order,
+    // not a canned 3-step promise that may not match reality.
+    const [liveOrder, setLiveOrder] = useState<LabOrderListItem | null>(null);
+    const [statusLoading, setStatusLoading] = useState(true);
+
+    useEffect(() => {
+        if (!params.bookingId) { setStatusLoading(false); return; }
+        labService.getLabOrderById(params.bookingId)
+            .then(res => { if (res.success && res.data) setLiveOrder(res.data as LabOrderListItem); })
+            .catch(() => { /* fall back to generic steps below */ })
+            .finally(() => setStatusLoading(false));
+    }, [params.bookingId]);
+
+    const STATUS_STEP_CONFIG: Record<string, { icon: keyof typeof Ionicons.glyphMap; textKey: string }> = {
+        PENDING:         { icon: 'time-outline',          textKey: 'blood_test_success.status_pending' },
+        HOLD_CREATED:    { icon: 'time-outline',          textKey: 'blood_test_success.status_pending' },
+        PAYMENT_PENDING: { icon: 'card-outline',           textKey: 'blood_test_success.status_payment_pending' },
+        CONFIRMED:       { icon: 'checkmark-circle-outline', textKey: 'blood_test_success.status_confirmed' },
+        SAMPLE_COLLECTED:{ icon: 'flask-outline',           textKey: 'blood_test_success.status_sample_collected' },
+        PROCESSING:      { icon: 'flask-outline',           textKey: 'blood_test_success.status_processing' },
+        REPORT_GENERATED:{ icon: 'document-text-outline',   textKey: 'blood_test_success.status_report_ready' },
+        RESCHEDULED:     { icon: 'calendar-outline',         textKey: 'blood_test_success.status_rescheduled' },
+        FAILED:          { icon: 'alert-circle-outline',     textKey: 'blood_test_success.status_failed' },
+        MANUAL_RECOVERY_NEEDED: { icon: 'alert-circle-outline', textKey: 'blood_test_success.status_needs_attention' },
+    };
+    const liveStatusCfg = liveOrder ? STATUS_STEP_CONFIG[liveOrder.status] : null;
 
     const steps = [
         { icon: 'bicycle-outline' as const, text: t('blood_test_success.phlebotomist_step') },
@@ -91,17 +120,31 @@ export default function BloodTestSuccessScreen() {
                     </Text>
                 </View>
 
-                {/* What's next */}
+                {/* Current status (live) or generic what's-next (fallback) */}
                 <View style={[styles.card, { backgroundColor: cardBg, borderColor: border }]}>
-                    <Text style={[styles.cardHeading, { color: textPrimary }]}>{t('blood_test_success.whats_next')}</Text>
-                    {steps.map((step, i) => (
-                        <View key={i} style={styles.stepRow}>
+                    <Text style={[styles.cardHeading, { color: textPrimary }]}>
+                        {liveStatusCfg ? t('blood_test_success.current_status') : t('blood_test_success.whats_next')}
+                    </Text>
+
+                    {statusLoading ? (
+                        <ActivityIndicator size="small" color={PRIMARY} style={{ marginVertical: 8 }} />
+                    ) : liveStatusCfg ? (
+                        <View style={styles.stepRow}>
                             <View style={[styles.stepIconBox, { backgroundColor: isDarkMode ? '#1A3D2B' : PRIMARY_LIGHT }]}>
-                                <Ionicons name={step.icon} size={18} color={PRIMARY} />
+                                <Ionicons name={liveStatusCfg.icon} size={18} color={PRIMARY} />
                             </View>
-                            <Text style={[styles.stepText, { color: textPrimary }]}>{step.text}</Text>
+                            <Text style={[styles.stepText, { color: textPrimary }]}>{t(liveStatusCfg.textKey)}</Text>
                         </View>
-                    ))}
+                    ) : (
+                        steps.map((step, i) => (
+                            <View key={i} style={styles.stepRow}>
+                                <View style={[styles.stepIconBox, { backgroundColor: isDarkMode ? '#1A3D2B' : PRIMARY_LIGHT }]}>
+                                    <Ionicons name={step.icon} size={18} color={PRIMARY} />
+                                </View>
+                                <Text style={[styles.stepText, { color: textPrimary }]}>{step.text}</Text>
+                            </View>
+                        ))
+                    )}
                 </View>
             </ScrollView>
 

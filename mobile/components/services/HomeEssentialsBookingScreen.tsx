@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useUser } from '@/context/UserContext';
@@ -14,7 +15,6 @@ import CustomDateTimePicker from '@/components/common/CustomDateTimePicker';
 import ImageUploadBox from '@/components/common/ImageUploadBox';
 import { type AddressData } from '@/components/AddressPickerSection';
 import { userService } from '@/services/api/userService';
-import { safeScrollToPosition } from '@/utils/scrollUtils';
 
 // Map icons manually to match assets
 const acRepairIcon = require('@/assets/images/fa6360cf6179cebaed29a6c808bafae2d31ad753.png');
@@ -136,9 +136,24 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
   const [isBooking, setIsBooking] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(null);
 
-  const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
-  const scrollViewRef = useRef<any>(null);
-  const sectionPositions = useRef<Record<string, number>>({});
+  // Native Alert.alert is globally muted app-wide (see app/_layout.tsx)
+  const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+    visible: false,
+    title: '',
+    message: '',
+    iconName: 'warning-outline',
+  });
+  const alertCloseAction = useRef<(() => void) | null>(null);
+  const triggerAlert = (title: string, message: string, iconName = 'warning-outline', onCloseAction?: () => void) => {
+    alertCloseAction.current = onCloseAction ?? null;
+    setAlertConfig({ visible: true, title, message, iconName });
+  };
+  const closeAlert = () => {
+    setAlertConfig(prev => ({ ...prev, visible: false }));
+    const action = alertCloseAction.current;
+    alertCloseAction.current = null;
+    if (action) action();
+  };
 
   // Always fetch latest catalog data from DB when opening screen
   useEffect(() => {
@@ -242,38 +257,46 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
     return 0;
   };
 
-  const handleBook = async () => {
-    const errs: Record<string, string> = {};
+  const isFormValid = React.useMemo(() => {
+    if (!comments.trim()) return false;
+    if (!hideLocationCard && !(address && address.trim().length >= 5 && address !== 'Fetching address...')) return false;
+    if (showDatePicker && !scheduledDate) return false;
+    if (checkoutGroup === 'B' && selectedImages.length === 0) return false;
+    return true;
+  }, [comments, hideLocationCard, address, showDatePicker, scheduledDate, checkoutGroup, selectedImages]);
 
+  const handleBook = async () => {
     // 1. Validate comments field
     if (!comments.trim()) {
-      errs.comments = t('service_detail.comments_required', 'Please enter comments or details of your request.');
+      triggerAlert(t('common.required', 'Required'), t('service_detail.comments_required', 'Please enter comments or details of your request.'));
+      return;
     }
 
     // 2. Validate location if required
-    if (!hideLocationCard && (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === 'Fetching address...'))) {
-      errs.address = t('service_detail.address_required', 'Please confirm a valid service address.');
+    if (!hideLocationCard && (!address || address.trim().length < 5 || address === 'Fetching address...')) {
+      triggerAlert(t('common.required', 'Required'), t('service_detail.address_required', 'Please provide a valid address.'));
+      return;
     }
 
     // 3. Validate date if required
     if (showDatePicker && !scheduledDate) {
-      errs.date = t('service_detail.date_required', 'Please select a date and time slot.');
-    } else if (showDatePicker && scheduledDate && scheduledDate <= new Date()) {
-      errs.date = t('service_detail.invalid_time', 'Please select a future date and time.');
+      triggerAlert(t('common.required', 'Required'), t('service_detail.date_required', 'Please select a date and time slot.'));
+      return;
+    }
+
+    if (showDatePicker && scheduledDate && scheduledDate <= new Date()) {
+      triggerAlert(t('common.error', 'Error'), t('service_detail.invalid_time', 'Please select a future date and time.'));
+      return;
     }
 
     // 4. Validate photo upload if strictly required (Group B)
     if (checkoutGroup === 'B' && selectedImages.length === 0) {
-      errs.photo = t('service_detail.bill_photo_required', 'Please upload a photo of the bills.');
+      triggerAlert(t('common.required', 'Required'), t('service_detail.bill_photo_required', 'Please upload a photo of the bills.'));
+      return;
     }
 
-    if (Object.keys(errs).length > 0) {
-      setFormErrors(errs);
-      const firstErrorField = ['address', 'date', 'photo', 'comments'].find(f => errs[f]);
-      if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
-        const targetY = sectionPositions.current[firstErrorField] - 20;
-        safeScrollToPosition(scrollViewRef, targetY);
-      }
+    if (!isReady) {
+      triggerAlert(t('common.error', 'Error'), t('booking.init_incomplete', 'Service initialization failed.'));
       return;
     }
 
@@ -314,21 +337,17 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
 
         if (res.success && res.data) {
           const bookingId = res.data.id;
-          Alert.alert(
+          triggerAlert(
             t('common.success', 'Success'),
             t('service_detail.request_submitted', 'Your request has been successfully submitted!'),
-            [
-              {
-                text: t('common.ok', 'OK'),
-                onPress: () => router.replace({
-                  pathname: '/service-confirmation',
-                  params: { bookingId }
-                })
-              }
-            ]
+            'checkmark-circle-outline',
+            () => router.replace({
+              pathname: '/service-confirmation',
+              params: { bookingId }
+            })
           );
         } else {
-          Alert.alert(t('common.error', 'Error'), res.message || 'Failed to submit request.');
+          triggerAlert(t('common.error', 'Error'), res.message || 'Failed to submit request.');
         }
       } else {
         // Groups A, B, C redirect to service-checkout screen
@@ -345,7 +364,7 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
       }
     } catch (error) {
       console.error('Booking failed:', error);
-      Alert.alert(t('common.error', 'Error'), 'Failed to upload files. Please try again.');
+      triggerAlert(t('common.error', 'Error'), 'Failed to upload files. Please try again.');
     } finally {
       setIsBooking(false);
     }
@@ -375,6 +394,7 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
       onLandmarkChange={setLandmark}
       onBook={handleBook}
       isLoading={isLoadingInit || isBooking}
+      disabled={!isFormValid}
       hidePricing={isZeroPayment}
       hideLocation={hideLocationCard}
       selectedAddress={selectedAddress}
@@ -408,49 +428,47 @@ export default function HomeEssentialsBookingScreen({ slug }: HomeEssentialsBook
 
       {/* Date & Time Picker */}
       {showDatePicker && (
-        <View style={styles.card} onLayout={(e) => { sectionPositions.current['date'] = e.nativeEvent.layout.y; }}>
+        <View style={styles.card}>
           <CustomDateTimePicker
             label={t('booking.schedule_appointment', 'Schedule Appointment')}
             value={scheduledDate}
-            onDateChange={(dt) => { setScheduledDate(dt); setFormErrors(prev => ({ ...prev, date: undefined })); }}
+            onDateChange={setScheduledDate}
           />
-          {formErrors.date && (
-            <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.date}</Text>
-          )}
         </View>
       )}
 
       {/* Comments input field (mandatory for all services) */}
-      <View style={styles.card} onLayout={(e) => { sectionPositions.current['comments'] = e.nativeEvent.layout.y; }}>
+      <View style={styles.card}>
         <Text style={styles.cardTitle}>{t('service_detail.comments', 'Comments / Requirements')} *</Text>
         <TextInput
           style={styles.textArea}
           placeholder={t('service_detail.comments_placeholder', 'Describe your requirements or any instructions here...')}
           placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
           value={comments}
-          onChangeText={(text) => { setComments(text); setFormErrors(prev => ({ ...prev, comments: undefined })); }}
+          onChangeText={setComments}
           multiline
           numberOfLines={3}
         />
-        {formErrors.comments && (
-          <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: 6, fontWeight: '600' }}>⚠️ {formErrors.comments}</Text>
-        )}
       </View>
 
       {/* Photo Upload Box */}
       {showPhotoUpload && (
-        <View onLayout={(e) => { sectionPositions.current['photo'] = e.nativeEvent.layout.y; }}>
-          <ImageUploadBox
-            title={checkoutGroup === 'B' ? t('service_detail.upload_bill_photos', 'Upload Bill Copies') + ' *' : t('service_detail.upload_optional_photos', 'Upload Photos (Optional)')}
-            subtitle={t('service_detail.image_upload_subtitle', 'JPG, PNG up to 10MB')}
-            onImagesChange={(imgs) => { setSelectedImages(imgs); setFormErrors(prev => ({ ...prev, photo: undefined })); }}
-            maxImages={5}
-          />
-          {formErrors.photo && (
-            <Text style={{ color: '#D32F2F', fontSize: 12, marginTop: -8, marginBottom: 12, fontWeight: '600' }}>⚠️ {formErrors.photo}</Text>
-          )}
-        </View>
+        <ImageUploadBox
+          title={checkoutGroup === 'B' ? t('service_detail.upload_bill_photos', 'Upload Bill Copies') + ' *' : t('service_detail.upload_optional_photos', 'Upload Photos (Optional)')}
+          subtitle={t('service_detail.image_upload_subtitle', 'JPG, PNG up to 10MB')}
+          onImagesChange={setSelectedImages}
+          maxImages={5}
+        />
       )}
+
+      <CustomAlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        iconName={alertConfig.iconName as any}
+        buttonText={t('common.ok', 'OK')}
+        onClose={closeAlert}
+      />
     </ServiceDetailScreen>
   );
 }

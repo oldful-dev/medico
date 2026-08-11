@@ -326,6 +326,14 @@ export const labAPI = {
     updateOrder: (id, data) => api.post(`/labs/booking/${id}/update`, data),
     getDigitalReport: (id) => api.get(`/labs/booking/${id}/digital-report`),
     downloadReport: (id) => api.get(`/labs/booking/${id}/report`, { responseType: 'blob' }),
+    // Body: { date, time, reason? } — admin-only, backend already emits socket + FCM push
+    reschedule: (id, data) => api.put(`/labs/booking/${id}/reschedule`, data),
+    // Body: { reason? } — admin-only, also notifies Redcliffe + emits socket/FCM push
+    adminCancel: (id, data) => api.post(`/labs/booking/${id}/admin-cancel`, data),
+    getInvoiceDownloadUrl: (id) => {
+        const token = Cookies.get('adminToken') || '';
+        return `${api.defaults.baseURL || '/api'}/labs/admin/booking/${id}/invoice?token=${token}`;
+    },
 };
 
 export const waitlistAPI = {

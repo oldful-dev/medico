@@ -3,9 +3,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
     Search, Filter, Plus,
     CheckCircle2, AlertCircle, Clock, Trash2, Edit2, X, Shield, HeartPulse, User, Download, Save, ChevronDown, ChevronUp, Users,
-    Eye, EyeOff, Info, Send, UserCheck
+    Eye, EyeOff, Info
 } from "lucide-react";
-import { profilesAPI, cityAPI, labAPI, activityAPI } from "@/lib/api";
+import { profilesAPI, cityAPI } from "@/lib/api";
 import { showToast, formatDate } from "@/lib/hooks";
 import GCSUpload from "@/components/GCSUpload";
 
@@ -59,95 +59,6 @@ export default function ProfilesPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
     const [showGuide, setShowGuide] = useState(false);
-
-    // ── Assign Staff to Booking ────────────────────────
-    const [assignTarget, setAssignTarget] = useState(null);   // staff profile being assigned
-    const [assignOrders, setAssignOrders] = useState([]);     // lab orders to pick from
-    const [assignOrdersLoading, setAssignOrdersLoading] = useState(false);
-    const [assignOrderSearch, setAssignOrderSearch] = useState('');
-    const [assignForm, setAssignForm] = useState({ labOrderId: '', eventType: '', eta: '', statusDetail: '' });
-    const [assigning, setAssigning] = useState(false);
-
-    const EVENT_TYPES = [
-        { value: 'doctor_assigned',       label: '👨‍⚕️ Doctor Assigned' },
-        { value: 'caregiver_assigned',     label: '🤝 Caregiver Assigned' },
-        { value: 'nurse_assigned',         label: '💉 Nurse Assigned' },
-        { value: 'appointment_confirmed',  label: '✅ Appointment Confirmed' },
-        { value: 'sample_collected',       label: '🧪 Lab Sample Collected' },
-        { value: 'out_for_delivery',       label: '🚴 Order Out for Delivery' },
-        { value: 'medicine_delivered',     label: '📦 Medicine Delivered' },
-        { value: 'service_rescheduled',    label: '📅 Service Rescheduled' },
-        { value: 'payment_confirmed',      label: '💳 Payment Confirmed' },
-    ];
-
-    // Default event type based on staff role
-    const defaultEventForRole = (role) => {
-        if (!role) return '';
-        const r = role.toLowerCase();
-        if (r.includes('doctor')) return 'doctor_assigned';
-        if (r.includes('nurse')) return 'nurse_assigned';
-        if (r.includes('caregiver')) return 'caregiver_assigned';
-        if (r.includes('phlebotomist') || r.includes('lab')) return 'sample_collected';
-        return 'appointment_confirmed';
-    };
-
-    async function openAssignModal(profile) {
-        // Enforce restriction: Non-operational roles (like Shareholder, CEO, CTO) cannot be assigned to operational triggers
-        const pos = (profile.position || profile.role || profile.specialization || '').toLowerCase();
-        const isNonOperational = activeTab === 'management' || pos.includes('shareholder') || pos.includes('ceo') || pos.includes('cto') || pos.includes('director') || pos.includes('executive');
-
-        if (isNonOperational) {
-            showToast('⚠️ Non-operational roles (like Shareholder, CEO, CTO) cannot be assigned to operational triggers.', 'error');
-            return;
-        }
-
-        setAssignTarget(profile);
-        setAssignForm({ labOrderId: '', eventType: defaultEventForRole(profile.role || profile.specialization), eta: '', statusDetail: '' });
-        setAssignOrderSearch('');
-        setAssignOrdersLoading(true);
-        setAssignOrders([]);
-        try {
-            // Load recent CONFIRMED/PENDING lab orders to assign to
-            const res = await labAPI.getOrders({ status: 'CONFIRMED', limit: 30 });
-            setAssignOrders(res.data?.data?.orders || res.data?.data || []);
-        } catch { setAssignOrders([]); }
-        finally { setAssignOrdersLoading(false); }
-    }
-
-    async function handleAssignSubmit() {
-        if (!assignForm.labOrderId) { showToast('Select a lab order', 'error'); return; }
-        if (!assignForm.eventType) { showToast('Select an event type', 'error'); return; }
-        setAssigning(true);
-        try {
-            const staffIdValue = assignTarget.staffId || assignTarget.employeeId || assignTarget.id?.slice(0, 12).toUpperCase();
-            await activityAPI.assignStaff(assignForm.labOrderId, {
-                eventType: assignForm.eventType,
-                serviceType: 'Blood Test',
-                staffName: assignTarget.name,
-                staffId: `AYX-${(assignTarget.role || 'STF').slice(0, 3).toUpperCase()}-${staffIdValue}`,
-                staffPhone: assignTarget.phone,
-                staffPhotoUrl: assignTarget.profileImageUrl || null,
-                eta: assignForm.eta || null,
-                statusDetail: assignForm.statusDetail || null,
-            });
-            showToast(`${assignTarget.name} assigned & update pushed to user ✓`, 'success');
-            setAssignTarget(null);
-        } catch (e) {
-            showToast(e.response?.data?.message || 'Assignment failed', 'error');
-        } finally {
-            setAssigning(false);
-        }
-    }
-
-    const filteredAssignOrders = assignOrders.filter(o => {
-        if (!assignOrderSearch) return true;
-        const q = assignOrderSearch.toLowerCase();
-        return (
-            o.clientRefId?.toLowerCase().includes(q) ||
-            o.user?.name?.toLowerCase().includes(q) ||
-            o.packages?.[0]?.name?.toLowerCase().includes(q)
-        );
-    });
 
     // ── Search Debouncing ──────────────────────────────
     useEffect(() => {
@@ -642,130 +553,6 @@ export default function ProfilesPage() {
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
-            )}
-
-            {/* ══════════════════════════════════════════
-                ASSIGN STAFF TO BOOKING MODAL
-            ══════════════════════════════════════════ */}
-            {assignTarget && (
-                <div className="modal-overlay" onClick={() => setAssignTarget(null)}>
-                    <div className="modal-content" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <div>
-                                <h3>Assign to Booking</h3>
-                                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, fontWeight: 400 }}>
-                                    Pushing live update for <strong>{assignTarget.name}</strong>
-                                </div>
-                            </div>
-                            <button className="close-btn" onClick={() => setAssignTarget(null)}><X /></button>
-                        </div>
-
-                        <div className="modal-body" style={{ gap: 16 }}>
-
-                            {/* Staff preview card */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg-secondary)', borderRadius: 10, padding: 12 }}>
-                                <div className="avatar" style={{ width: 46, height: 46, fontSize: 20, flexShrink: 0 }}>
-                                    {assignTarget.profileImageUrl
-                                        ? <img src={assignTarget.profileImageUrl} alt={assignTarget.name} />
-                                        : assignTarget.name?.charAt(0)}
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: 700, fontSize: 14 }}>{assignTarget.name}</div>
-                                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{assignTarget.role || assignTarget.specialization} · {assignTarget.phone}</div>
-                                </div>
-                                <div style={{ fontSize: 11, color: 'var(--text-muted)', background: 'var(--bg-card)', padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border-color)' }}>
-                                    AYX-{(assignTarget.role || 'STF').slice(0, 3).toUpperCase()}-{assignTarget.id?.slice(0, 6).toUpperCase()}
-                                </div>
-                            </div>
-
-                            {/* Event type selector */}
-                            <div className="form-group">
-                                <label>Event Type *</label>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                                    {EVENT_TYPES.map(et => (
-                                        <button key={et.value} type="button"
-                                            onClick={() => setAssignForm(f => ({ ...f, eventType: et.value }))}
-                                            style={{
-                                                padding: '7px 10px', borderRadius: 8, border: '1.5px solid',
-                                                borderColor: assignForm.eventType === et.value ? 'var(--accent-primary)' : 'var(--border-color)',
-                                                background: assignForm.eventType === et.value ? 'var(--bg-glass)' : 'var(--bg-secondary)',
-                                                color: assignForm.eventType === et.value ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                                                cursor: 'pointer', fontSize: 12,
-                                                fontWeight: assignForm.eventType === et.value ? 700 : 400,
-                                                textAlign: 'left',
-                                            }}>
-                                            {et.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Lab order picker */}
-                            <div className="form-group">
-                                <label>Select Lab Order *</label>
-                                <input
-                                    placeholder="Search by order ID, patient name..."
-                                    value={assignOrderSearch}
-                                    onChange={e => setAssignOrderSearch(e.target.value)}
-                                    style={{ marginBottom: 8 }}
-                                />
-                                {assignOrdersLoading ? (
-                                    <div style={{ fontSize: 13, color: 'var(--text-muted)', padding: '10px 0' }}>Loading orders…</div>
-                                ) : filteredAssignOrders.length === 0 ? (
-                                    <div style={{ fontSize: 13, color: 'var(--text-muted)', padding: '10px 0' }}>No confirmed lab orders found.</div>
-                                ) : (
-                                    <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: 8 }}>
-                                        {filteredAssignOrders.map(order => (
-                                            <div key={order.id}
-                                                onClick={() => setAssignForm(f => ({ ...f, labOrderId: order.id }))}
-                                                style={{
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                                    padding: '10px 12px', cursor: 'pointer',
-                                                    borderBottom: '1px solid var(--border-color)',
-                                                    background: assignForm.labOrderId === order.id ? 'var(--bg-glass)' : 'var(--bg-card)',
-                                                    borderLeft: assignForm.labOrderId === order.id ? '3px solid var(--accent-primary)' : '3px solid transparent',
-                                                }}>
-                                                <div>
-                                                    <div style={{ fontWeight: 600, fontSize: 13 }}>{order.clientRefId}</div>
-                                                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                                                        {order.user?.name} · {order.packages?.[0]?.name || 'Blood Test'}
-                                                    </div>
-                                                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                                                        {order.slot?.date} {order.slot?.time} · {order.bookingType}
-                                                    </div>
-                                                </div>
-                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                                                    <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-muted)', fontWeight: 700 }}>{order.status}</span>
-                                                    {assignForm.labOrderId === order.id && <span style={{ fontSize: 10, color: 'var(--accent-primary)', fontWeight: 700 }}>✓ Selected</span>}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* ETA + status detail */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                <div className="form-group">
-                                    <label>ETA <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                                    <input placeholder="e.g. 20 mins" value={assignForm.eta} onChange={e => setAssignForm(f => ({ ...f, eta: e.target.value }))} />
-                                </div>
-                                <div className="form-group">
-                                    <label>Status Message <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(shown to user)</span></label>
-                                    <input placeholder="e.g. En route to your location" value={assignForm.statusDetail} onChange={e => setAssignForm(f => ({ ...f, statusDetail: e.target.value }))} />
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <div className="modal-footer">
-                            <button className="btn-secondary" onClick={() => setAssignTarget(null)}>Cancel</button>
-                            <button className="btn-primary" onClick={handleAssignSubmit} disabled={assigning}>
-                                {assigning ? 'Assigning…' : <><Send size={14} /> Assign &amp; Notify User</>}
-                            </button>
-                        </div>
                     </div>
                 </div>
             )}

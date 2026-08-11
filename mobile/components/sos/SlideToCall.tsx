@@ -6,7 +6,6 @@ import {
     PanResponder,
     StyleSheet,
     Linking,
-    Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -16,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { sosService } from '@/services/device/sosService';
 import { AnalyticsEvents } from '@/services/firebase/analyticsEvents';
+import { CustomAlertModal } from '../common/CustomAlertModal';
 
 const TRACK_WIDTH = 303;
 const TRACK_HEIGHT = 69;
@@ -35,6 +35,16 @@ export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
     const router = useRouter();
     const translateX = useRef(new Animated.Value(0)).current;
     const [showCountdown, setShowCountdown] = useState(false);
+    const [alertConfig, setAlertConfig] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+        iconName?: string;
+        secondaryButtonText?: string;
+        onSecondaryPress?: () => void;
+    }>({
+        visible: false, title: '', message: ''
+    });
 
     const panResponder = useRef(
         PanResponder.create({
@@ -80,22 +90,14 @@ export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
             // If it is our rate-limit code (403), show alert and navigate to plans
             if (err?.status === 403 || err?.statusCode === 403 || err?.message?.includes('limit exceeded')) {
                 const message = err.message || 'Universal limit exceeded. Unsubscribed accounts are strictly limited to 1 emergency SOS dispatch per month.';
-                Alert.alert(
-                    'SOS Limit Exceeded',
+                setAlertConfig({
+                    visible: true,
+                    title: 'SOS Limit Exceeded',
                     message,
-                    [
-                        {
-                            text: 'View Subscription Plans',
-                            onPress: () => {
-                                router.push('/plans');
-                            }
-                        },
-                        {
-                            text: 'Cancel',
-                            style: 'cancel'
-                        }
-                    ]
-                );
+                    iconName: 'warning-outline',
+                    secondaryButtonText: 'Cancel',
+                    onSecondaryPress: () => setAlertConfig(prev => ({ ...prev, visible: false })),
+                });
             } else {
                 console.error('SOS Backend Alert Error:', err);
                 // In case of other network issues or errors, still allow dialing
@@ -147,6 +149,22 @@ export default function SlideToCall({ onSlideComplete }: SlideToCallProps) {
                     onCancel={handleCancel}
                 />
             )}
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any || 'warning-outline'}
+                buttonText={alertConfig.secondaryButtonText ? "View Plans" : "OK"}
+                onClose={() => {
+                    setAlertConfig(prev => ({ ...prev, visible: false }));
+                    if (alertConfig.secondaryButtonText) {
+                        router.push('/plans');
+                    }
+                }}
+                secondaryButtonText={alertConfig.secondaryButtonText}
+                onSecondaryPress={alertConfig.onSecondaryPress}
+            />
         </View>
     );
 }

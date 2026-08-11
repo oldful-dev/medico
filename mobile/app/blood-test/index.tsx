@@ -14,8 +14,6 @@ import { Colors, Fonts, FontSize, Spacing, Radius, Shadow } from '@/constants/th
 import { useToast } from '@/context/ToastContext';
 import { useTranslation } from 'react-i18next';
 
-const CATEGORIES = ['All', 'Popular', 'Health Checks', 'Wellness'];
-
 const getTestIcon = (name: string): { lib: 'ion' | 'mci'; icon: string; color: string; bg: string } => {
     const n = name.toLowerCase();
     if (n.includes('urine'))                               return { lib: 'mci', icon: 'test-tube',     color: '#8B5CF6', bg: '#F3EFFE' };
@@ -60,62 +58,57 @@ const PackageCard = memo(({
                 </View>
             )}
 
-            <View style={styles.cardInner}>
-                {/* Icon */}
-                <View style={[styles.iconBox, { backgroundColor: bg }]}>
-                    <IconComp name={icon as any} size={24} color={color} />
+            {/* Icon */}
+            <View style={[styles.iconBox, { backgroundColor: bg }]}>
+                <IconComp name={icon as any} size={22} color={color} />
+            </View>
+
+            {/* Content */}
+            <View style={styles.cardBody}>
+                <Text style={[styles.cardName, { color: themeColors.textDark }]} numberOfLines={2}>
+                    {item.name}
+                </Text>
+
+                <View style={styles.metaRow}>
+                    <Ionicons name="flask-outline" size={11} color={themeColors.textMuted} />
+                    <Text style={[styles.metaText, { color: themeColors.textMuted }]} numberOfLines={1}>
+                        {item.tests_count || 0} {item.tests_count === 1 ? t('blood_test.parameter_one') : t('blood_test.parameter_other')}
+                    </Text>
                 </View>
 
-                {/* Content */}
-                <View style={styles.cardBody}>
-                    <Text style={[styles.cardName, { color: themeColors.textDark }]} numberOfLines={2}>
-                        {item.name}
-                    </Text>
-
-                    <View style={styles.metaRow}>
-                        <MaterialCommunityIcons name="package-variant-closed" size={11} color={themeColors.textMuted} />
-                        <Text style={[styles.metaText, { color: themeColors.textMuted }]}>
-                            {item.packages_count || 1} {item.packages_count === 1 ? t('blood_test.package_one') : t('blood_test.package_other')}
-                        </Text>
-                        <Text style={[styles.metaDot, { color: themeColors.textMuted }]}>·</Text>
-                        <Ionicons name="flask-outline" size={11} color={themeColors.textMuted} />
-                        <Text style={[styles.metaText, { color: themeColors.textMuted }]}>
-                            {item.tests_count || 0} {item.tests_count === 1 ? t('blood_test.parameter_one') : t('blood_test.parameter_other')}
-                        </Text>
-                        <Text style={[styles.metaDot, { color: themeColors.textMuted }]}>·</Text>
-                        <Ionicons name="home-outline" size={11} color={themeColors.textMuted} />
-                        <Text style={[styles.metaText, { color: themeColors.textMuted }]}>{t('blood_test.home_lab')}</Text>
+                {item.fasting && item.fasting_time ? (
+                    <View style={styles.fastingChip}>
+                        <Ionicons name="warning-outline" size={10} color="#D97706" />
+                        <Text style={styles.fastingChipText} numberOfLines={1}>{item.fasting_time}</Text>
                     </View>
+                ) : null}
 
-                    <View style={styles.cardFooter}>
-                        <View>
-                            {item.discounted_cost ? (
-                                <View>
-                                    <Text style={[styles.strikePrice, { color: themeColors.textMuted }]}>₹{item.cost}</Text>
-                                    <Text style={styles.finalPrice}>₹{price}</Text>
-                                </View>
-                            ) : (
-                                <Text style={styles.finalPrice}>₹{price}</Text>
-                            )}
-                        </View>
+                <View style={styles.priceBlock}>
+                    {item.discounted_cost ? (
+                        <>
+                            <Text style={[styles.strikePrice, { color: themeColors.textMuted }]}>₹{item.cost}</Text>
+                            <Text style={styles.finalPrice}>₹{price}</Text>
+                        </>
+                    ) : (
+                        <Text style={styles.finalPrice}>₹{price}</Text>
+                    )}
+                </View>
 
-                        <View style={styles.btnRow}>
-                            <TouchableOpacity
-                                style={[styles.detailsBtn, { borderColor: themeColors.primary }]}
-                                onPress={() => onViewDetails(item.code)}
-                                activeOpacity={0.75}
-                            >
-                                <Text style={[styles.detailsBtnText, { color: themeColors.primary }]}>{t('blood_test.details_btn')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.bookBtn}
-                                onPress={() => onBookNow(item)}
-                                activeOpacity={0.8}
-                            >
-                                <Text style={styles.bookBtnText}>{t('booking.book_now')}</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+                <View style={styles.btnCol}>
+                    <TouchableOpacity
+                        style={styles.bookBtn}
+                        onPress={() => onBookNow(item)}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.bookBtnText}>{t('booking.book_now')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.detailsBtn, { borderColor: themeColors.primary }]}
+                        onPress={() => onViewDetails(item.code)}
+                        activeOpacity={0.75}
+                    >
+                        <Text style={[styles.detailsBtnText, { color: themeColors.primary }]}>{t('blood_test.details_btn')}</Text>
+                    </TouchableOpacity>
                 </View>
             </View>
         </View>
@@ -136,7 +129,8 @@ export default function BloodTestScreen() {
 
     const [packages, setPackages] = useState<LabPackage[]>([]);
     const [loading, setLoading] = useState(false);
-    const [activeCategory, setActiveCategory] = useState(0);
+    const [activeCategory, setActiveCategory] = useState('all');
+    const [sortBy, setSortBy] = useState<'popular' | 'price_asc' | 'price_desc' | 'discount'>('popular');
     const [detailModalVisible, setDetailModalVisible] = useState(false);
     const [detailModalCode, setDetailModalCode] = useState('');
     const [searchText, setSearchText] = useState('');
@@ -188,10 +182,50 @@ export default function BloodTestScreen() {
         } as any);
     }, [router, addItem]);
 
-    const filteredPackages = useMemo(() =>
-        packages.filter(pkg => pkg.name.toLowerCase().includes(searchText.toLowerCase())),
-        [packages, searchText]
-    );
+    // Categories are derived from whatever Redcliffe actually returns for this
+    // catalog (category_for_web), not a static guess — so the chips never show
+    // a category with zero matching packages.
+    const categories = useMemo(() => {
+        const names = new Map<string, number>();
+        for (const pkg of packages) {
+            for (const cat of pkg.category_for_web || []) {
+                names.set(cat.name, (names.get(cat.name) || 0) + 1);
+            }
+        }
+        return Array.from(names.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8)
+            .map(([name]) => name);
+    }, [packages]);
+
+    const filteredPackages = useMemo(() => {
+        let list = packages.filter(pkg => pkg.name.toLowerCase().includes(searchText.toLowerCase()));
+
+        if (activeCategory !== 'all') {
+            list = list.filter(pkg => (pkg.category_for_web || []).some(c => c.name === activeCategory));
+        }
+
+        const sorted = [...list];
+        switch (sortBy) {
+            case 'price_asc':
+                sorted.sort((a, b) => (a.discounted_cost || a.cost) - (b.discounted_cost || b.cost));
+                break;
+            case 'price_desc':
+                sorted.sort((a, b) => (b.discounted_cost || b.cost) - (a.discounted_cost || a.cost));
+                break;
+            case 'discount':
+                sorted.sort((a, b) => {
+                    const discA = a.discounted_cost ? Math.round(((a.cost - a.discounted_cost) / a.cost) * 100) : 0;
+                    const discB = b.discounted_cost ? Math.round(((b.cost - b.discounted_cost) / b.cost) * 100) : 0;
+                    return discB - discA;
+                });
+                break;
+            default:
+                // 'popular' — keep API's natural ordering (Redcliffe returns by relevance)
+                break;
+        }
+        return sorted;
+    }, [packages, searchText, activeCategory, sortBy]);
 
     const renderItem = useCallback(({ item }: { item: LabPackage }) => (
         <PackageCard
@@ -265,20 +299,19 @@ export default function BloodTestScreen() {
                     )}
                 </View>
 
-                {/* Category chips */}
+                {/* Category chips — built from what the API actually returned */}
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.chipsRow}
                     style={styles.chipsScroll}
                 >
-                    {CATEGORIES.map((cat, idx) => {
-                        const active = activeCategory === idx;
-                        const catKeys = ['cat_all', 'cat_popular', 'cat_health_checks', 'cat_wellness'];
+                    {['all', ...categories].map((cat) => {
+                        const active = activeCategory === cat;
                         return (
                             <TouchableOpacity
-                                key={idx}
-                                onPress={() => setActiveCategory(idx)}
+                                key={cat}
+                                onPress={() => setActiveCategory(cat)}
                                 style={[
                                     styles.chip,
                                     active
@@ -288,14 +321,45 @@ export default function BloodTestScreen() {
                                 activeOpacity={0.75}
                             >
                                 <Text style={[styles.chipText, active ? { color: '#FAF7ED' } : { color: themeColors.textMuted }]}>
-                                    {t(`blood_test.${catKeys[idx]}`)}
+                                    {cat === 'all' ? t('blood_test.cat_all') : cat}
                                 </Text>
                             </TouchableOpacity>
                         );
                     })}
                 </ScrollView>
 
-                {/* List */}
+                {/* Count + Sort */}
+                <View style={styles.countSortRow}>
+                    <Text style={[styles.countLabel, { color: themeColors.textMuted }]}>
+                        {filteredPackages.length === 1
+                            ? t('blood_test.packages_count_one', { count: 1 })
+                            : t('blood_test.packages_count_other', { count: filteredPackages.length })}
+                    </Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortRow}>
+                        {([
+                            { key: 'popular', label: t('blood_test.sort_popular') },
+                            { key: 'price_asc', label: t('blood_test.sort_price_asc') },
+                            { key: 'price_desc', label: t('blood_test.sort_price_desc') },
+                            { key: 'discount', label: t('blood_test.sort_discount') },
+                        ] as const).map(opt => {
+                            const active = sortBy === opt.key;
+                            return (
+                                <TouchableOpacity
+                                    key={opt.key}
+                                    onPress={() => setSortBy(opt.key)}
+                                    style={[styles.sortChip, active && { backgroundColor: colors.primary + '1A', borderColor: colors.primary }]}
+                                    activeOpacity={0.75}
+                                >
+                                    <Text style={[styles.sortChipText, { color: active ? colors.primary : themeColors.textMuted }]}>
+                                        {opt.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </View>
+
+                {/* Grid */}
                 {loading ? (
                     <View style={styles.loadingBox}>
                         <ActivityIndicator size="large" color={colors.primary} />
@@ -306,15 +370,10 @@ export default function BloodTestScreen() {
                         data={filteredPackages}
                         renderItem={renderItem}
                         keyExtractor={item => item.code}
+                        numColumns={2}
+                        columnWrapperStyle={styles.gridRow}
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
-                        ListHeaderComponent={
-                            <Text style={[styles.countLabel, { color: themeColors.textMuted }]}>
-                                {filteredPackages.length === 1
-                                    ? t('blood_test.packages_count_one', { count: 1 })
-                                    : t('blood_test.packages_count_other', { count: filteredPackages.length })}
-                            </Text>
-                        }
                         ListEmptyComponent={
                             <View style={styles.emptyBox}>
                                 <Ionicons name="search-outline" size={42} color={themeColors.textMuted} style={{ opacity: 0.35, marginBottom: 10 }} />
@@ -437,24 +496,46 @@ const makeStyles = (themeColors: ThemeColors, isDarkMode: boolean) => StyleSheet
     },
     chipText: { fontFamily: Fonts.medium, fontSize: FontSize.bodySmall },
 
-    // Count label
+    // Count + Sort
+    countSortRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: Spacing.lg,
+        marginBottom: Spacing.sm,
+        gap: Spacing.sm,
+    },
     countLabel: {
         fontFamily: Fonts.regular,
         fontSize: FontSize.bodySmall,
-        marginBottom: Spacing.sm,
+        flexShrink: 0,
     },
+    sortRow: { gap: 6 },
+    sortChip: {
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: Radius.full,
+        borderWidth: 1,
+        borderColor: 'transparent',
+    },
+    sortChipText: { fontFamily: Fonts.medium, fontSize: 11 },
 
-    // List
+    // List (2-column grid)
     listContent: {
-        paddingHorizontal: Spacing.lg,
+        paddingHorizontal: Spacing.lg - Spacing.xs,
         paddingBottom: Spacing.xl * 2,
     },
+    gridRow: {
+        gap: Spacing.sm,
+        paddingHorizontal: Spacing.xs,
+    },
 
-    // Card
+    // Card (grid tile)
     card: {
+        flex: 1,
         borderRadius: Radius.lg,
-        marginBottom: Spacing.md,
-        padding: Spacing.md,
+        marginBottom: Spacing.sm,
+        padding: Spacing.sm,
         overflow: 'hidden',
         ...Shadow.card,
         shadowOpacity: 0.06,
@@ -465,78 +546,90 @@ const makeStyles = (themeColors: ThemeColors, isDarkMode: boolean) => StyleSheet
         top: 0,
         right: 0,
         backgroundColor: '#EF4444',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
         borderTopRightRadius: Radius.lg,
         borderBottomLeftRadius: Radius.sm,
+        zIndex: 1,
     },
     ribbonText: {
         fontFamily: Fonts.semiBold,
-        fontSize: 9,
+        fontSize: 8,
         color: '#FAF7ED',
-        letterSpacing: 0.5,
-    },
-    cardInner: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: Spacing.md,
+        letterSpacing: 0.3,
     },
     iconBox: {
-        width: 48,
-        height: 48,
+        width: 40,
+        height: 40,
         borderRadius: Radius.md,
         justifyContent: 'center',
         alignItems: 'center',
-        flexShrink: 0,
-        marginTop: 2,
+        marginBottom: 6,
     },
-    cardBody: { flex: 1, gap: 5 },
+    cardBody: { gap: 4 },
     cardName: {
         fontFamily: Fonts.semiBold,
-        fontSize: FontSize.body,
-        lineHeight: 20,
-        paddingRight: 52, // space for discount ribbon
+        fontSize: 13,
+        lineHeight: 17,
+        minHeight: 34,
     },
     metaRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        flexWrap: 'wrap',
     },
-    metaText: { fontFamily: Fonts.regular, fontSize: 11 },
+    metaText: { fontFamily: Fonts.regular, fontSize: 10.5, flexShrink: 1 },
     metaDot: { fontSize: 11, opacity: 0.5 },
-    cardFooter: {
+    fastingChip: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        gap: 3,
+        alignSelf: 'flex-start',
+        backgroundColor: '#FEF3C7',
+        borderRadius: Radius.sm,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        marginTop: 2,
+        maxWidth: '100%',
+    },
+    fastingChipText: {
+        fontFamily: Fonts.medium,
+        fontSize: 9,
+        color: '#B45309',
+    },
+    priceBlock: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        gap: 6,
         marginTop: 4,
+        flexWrap: 'wrap',
     },
     strikePrice: {
         fontFamily: Fonts.regular,
-        fontSize: 11,
+        fontSize: 10,
         textDecorationLine: 'line-through',
     },
     finalPrice: {
         fontFamily: Fonts.bold,
-        fontSize: FontSize.heading2,
+        fontSize: FontSize.body,
         color: themeColors.primary,
-        letterSpacing: -0.5,
+        letterSpacing: -0.3,
     },
-    btnRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
+    btnCol: { gap: 6, marginTop: 8 },
     detailsBtn: {
-        paddingHorizontal: Spacing.md,
-        paddingVertical: 7,
+        alignItems: 'center',
+        paddingVertical: 6,
         borderRadius: Radius.sm,
         borderWidth: 1.5,
     },
-    detailsBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall },
+    detailsBtnText: { fontFamily: Fonts.semiBold, fontSize: 11 },
     bookBtn: {
-        paddingHorizontal: Spacing.md,
-        paddingVertical: 7,
+        alignItems: 'center',
+        paddingVertical: 8,
         borderRadius: Radius.sm,
         backgroundColor: themeColors.primary,
     },
-    bookBtnText: { fontFamily: Fonts.semiBold, fontSize: FontSize.bodySmall, color: '#FAF7ED' },
+    bookBtnText: { fontFamily: Fonts.semiBold, fontSize: 11, color: '#FAF7ED' },
 
     // Loading / empty
     loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.md, paddingTop: 60 },

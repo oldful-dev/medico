@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -12,6 +12,7 @@ import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { getText } from '@/i18n/utils/getText';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 export default function RaiseTicketScreen() {
     const router = useRouter();
@@ -26,6 +27,13 @@ export default function RaiseTicketScreen() {
 
     const [myTickets,      setMyTickets]      = React.useState<SupportTicket[]>([]);
     const [loadingTickets, setLoadingTickets] = React.useState(false);
+
+    const [alertConfig, setAlertConfig] = React.useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false, title: '', message: '', iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
 
     // Ticket form state
     const [subject,      setSubject]      = React.useState('');
@@ -49,8 +57,8 @@ export default function RaiseTicketScreen() {
     }, []);
 
     const handleSubmitTicket = async () => {
-        if (!subject.trim())      return Alert.alert(t('common.required'), t('help_support.required_subject'));
-        if (!description.trim())  return Alert.alert(t('common.required'), t('help_support.required_description'));
+        if (!subject.trim())      { triggerAlert(t('common.required'), t('help_support.required_subject')); return; }
+        if (!description.trim())  { triggerAlert(t('common.required'), t('help_support.required_description')); return; }
 
         setSubmitting(true);
         try {
@@ -60,15 +68,16 @@ export default function RaiseTicketScreen() {
                 setSubject('');
                 setDescription('');
                 setCategory('service');
-                Alert.alert(
+                triggerAlert(
                     t('help_support.ticket_raised'),
-                    t('help_support.ticket_raised_message', { code: res.data.ticketCode })
+                    t('help_support.ticket_raised_message', { code: res.data.ticketCode }),
+                    'checkmark-circle-outline'
                 );
             } else {
-                Alert.alert(t('common.error'), res.message || t('help_support.failed_ticket'));
+                triggerAlert(t('common.error'), res.message || t('help_support.failed_ticket'));
             }
         } catch (err) {
-            Alert.alert(t('common.error'), t('errors.network'));
+            triggerAlert(t('common.error'), t('errors.network'));
         } finally {
             setSubmitting(false);
         }
@@ -191,6 +200,15 @@ export default function RaiseTicketScreen() {
                     <View style={styles.bottomSpacer} />
                 </KeyboardAwareScrollView>
             </View>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText="OK"
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </KeyboardAvoidingView>
     );
 }

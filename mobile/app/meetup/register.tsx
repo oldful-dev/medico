@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -10,6 +10,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useUser } from '@/context/UserContext';
 import { useTranslation } from 'react-i18next';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 const PRIMARY = '#02743F';
 
@@ -54,6 +55,13 @@ export default function MeetupRegisterScreen() {
     }>();
     const { profile } = useUser();
 
+    const [alertConfig, setAlertConfig] = React.useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false, title: '', message: '', iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
+
     const [fullName, setFullName] = useState(profile?.name || '');
     const [mobile, setMobile] = useState(profile?.phone || '');
     const [age, setAge] = useState('');
@@ -66,11 +74,11 @@ export default function MeetupRegisterScreen() {
 
     const handleContinue = () => {
         console.log('📋 [MEETUP REGISTER] handleContinue called');
-        if (!fullName.trim()) { Alert.alert(t('common.required', 'Required'), t('meetup.alert_name_required', 'Please enter your full name')); return; }
+        if (!fullName.trim()) { triggerAlert(t('common.required', 'Required'), t('meetup.alert_name_required', 'Please enter your full name')); return; }
         const phoneDigits = mobile.replace(/\D/g, '');
-        if (!mobile.trim() || phoneDigits.length < 10) { Alert.alert(t('common.required', 'Required'), t('meetup.alert_phone_invalid', 'Please enter a valid 10-digit mobile number')); return; }
-        if (!age.trim()) { Alert.alert(t('common.required', 'Required'), t('meetup.alert_age_required', 'Please enter your age')); return; }
-        if (!gender) { Alert.alert(t('common.required', 'Required'), t('meetup.alert_gender_required', 'Please select your gender')); return; }
+        if (!mobile.trim() || phoneDigits.length < 10) { triggerAlert(t('common.required', 'Required'), t('meetup.alert_phone_invalid', 'Please enter a valid 10-digit mobile number')); return; }
+        if (!age.trim()) { triggerAlert(t('common.required', 'Required'), t('meetup.alert_age_required', 'Please enter your age')); return; }
+        if (!gender) { triggerAlert(t('common.required', 'Required'), t('meetup.alert_gender_required', 'Please select your gender')); return; }
 
         const cleanMobile = phoneDigits.slice(-10);
         console.log('✅ [MEETUP REGISTER] Form validation passed');
@@ -298,6 +306,15 @@ export default function MeetupRegisterScreen() {
                     <Ionicons name="arrow-forward" size={18} color="#fff" />
                 </TouchableOpacity>
             </View>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText="OK"
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </View>
     );
 }

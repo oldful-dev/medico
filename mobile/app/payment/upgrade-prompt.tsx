@@ -47,15 +47,21 @@ export default function UpgradePromptScreen() {
     const [calcLoading, setCalcLoading] = useState(false);
     const [calculatedPrices, setCalculatedPrices] = useState<{
         totalAmount: number;
+        requiredPlanType?: "CARE" | "HOMEMAKER" | null;
+        ayuxaRevenue?: number;
+        providerRevenue?: number;
         breakdown: {
-            vendorFee: number;
-            diagnosticFee: number;
-            bookingFee: number;
-            platformFee: number;
-            taxes: number;
-            ayuxaServiceFee: number;
+            serviceFee?: number;
+            vendorFee?: number;
+            diagnosticFee?: number;
+            bookingFee?: number;
+            platformFee?: number;
+            taxes?: number;
+            ayuxaServiceFee?: number;
             benefitDiscount: number;
         };
+        benefitApplied: boolean;
+        remainingCountAfterOrder: number;
     } | null>(null);
 
     useEffect(() => {
@@ -81,16 +87,16 @@ export default function UpgradePromptScreen() {
         fetchCalculation();
     }, [params.amount, params.label]);
 
-    const bookingFee = calculatedPrices ? calculatedPrices.breakdown.bookingFee : 299;
-    const platformFee = calculatedPrices ? calculatedPrices.breakdown.platformFee : 50;
-    const taxes = calculatedPrices ? calculatedPrices.breakdown.taxes : Math.round(serviceCharge * 0.06);
+    const bookingFee = calculatedPrices?.breakdown.bookingFee ?? 299;
+    const platformFee = calculatedPrices?.breakdown.platformFee ?? 50;
+    const taxes = calculatedPrices?.breakdown.taxes ?? Math.round(serviceCharge * 0.06);
     const activeOffers = parseFloat(params.discount || '0');
 
     // Savings amount is booking + platform fees waivable by plan
     const planBenefitDiscount = bookingFee + platformFee;
 
     // Calculate total checkout price without subscription upgrade
-    const totalWithoutUpgrade = serviceCharge + bookingFee + platformFee + taxes - activeOffers;
+    const totalWithoutUpgrade = serviceCharge + bookingFee + platformFee + (taxes ?? 0) - activeOffers;
 
     const handleUpgrade = () => {
         router.push({
@@ -204,7 +210,7 @@ export default function UpgradePromptScreen() {
 
                     <View style={styles.breakdownRow}>
                         <Text style={styles.breakdownLabel}>{t('upgrade_prompt.estimated_taxes')}</Text>
-                        <Text style={styles.breakdownValue}>₹{Math.round(taxes).toLocaleString('en-IN')}</Text>
+                        <Text style={styles.breakdownValue}>₹{Math.round(taxes ?? 0).toLocaleString('en-IN')}</Text>
                     </View>
 
                     {activeOffers > 0 && (

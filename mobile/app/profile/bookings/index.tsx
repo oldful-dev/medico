@@ -116,7 +116,19 @@ export default function BookingsScreen() {
         }
     };
 
+    const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+    const isBookingUpcoming = (item: UnifiedBooking) => {
+        const scheduledDate = item.date && item.date !== 'N/A' ? new Date(item.date) : null;
+        const isFutureDated = !scheduledDate || isNaN(scheduledDate.getTime()) ? true : scheduledDate > new Date();
+        return isFutureDated && (item.status === 'PENDING' || item.status === 'CONFIRMED');
+    };
+
     const handleCancel = (item: UnifiedBooking) => {
+        if (!isBookingUpcoming(item)) {
+            Alert.alert('Error', 'This booking can no longer be cancelled.');
+            return;
+        }
         Alert.alert(
             'Cancel Booking',
             `Cancel "${item.title}" scheduled for ${item.date}?`,
@@ -124,7 +136,22 @@ export default function BookingsScreen() {
                 { text: 'Keep Booking', style: 'cancel' },
                 {
                     text: 'Cancel Booking', style: 'destructive',
-                    onPress: () => Alert.alert('Cancellation Requested', 'Our team will process your cancellation and reach out shortly.'),
+                    onPress: async () => {
+                        setCancellingId(item.id);
+                        try {
+                            const res = await labService.cancelLabOrder(item.id);
+                            if (res.success) {
+                                Alert.alert('Cancelled', 'Your booking has been cancelled.');
+                                fetchBookings();
+                            } else {
+                                Alert.alert('Error', res.message || 'Failed to cancel booking. Please try again.');
+                            }
+                        } catch {
+                            Alert.alert('Error', 'Failed to cancel booking. Please try again.');
+                        } finally {
+                            setCancellingId(null);
+                        }
+                    },
                 },
             ]
         );
@@ -147,7 +174,7 @@ export default function BookingsScreen() {
     };
 
     const renderBookingCard = ({ item }: { item: UnifiedBooking }) => {
-        const isUpcoming = item.status === 'PENDING' || item.status === 'CONFIRMED';
+        const isUpcoming = isBookingUpcoming(item);
         const staffName = getStaffName(item);
 
         return (
@@ -205,8 +232,16 @@ export default function BookingsScreen() {
                             </TouchableOpacity>
                         )}
                         {isUpcoming && (
-                            <TouchableOpacity style={styles.cancelBtn} onPress={() => handleCancel(item)}>
-                                <Text style={styles.cancelBtnText}>Cancel</Text>
+                            <TouchableOpacity
+                                style={styles.cancelBtn}
+                                onPress={() => handleCancel(item)}
+                                disabled={cancellingId === item.id}
+                            >
+                                {cancellingId === item.id ? (
+                                    <ActivityIndicator size="small" color="#DC2626" />
+                                ) : (
+                                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                                )}
                             </TouchableOpacity>
                         )}
                         <TouchableOpacity

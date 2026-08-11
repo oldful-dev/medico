@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, ActivityIndicator, ScrollView, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform, ActivityIndicator, ScrollView, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -12,6 +12,7 @@ import { locationService } from '@/services/device/locationService';
 import { LocationPickerModal } from '@/components/LocationPickerModal';
 import { useTranslation } from 'react-i18next';
 import * as Location from 'expo-location';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 const LABEL_OPTIONS = ['Home', 'Office', 'Parents Home', 'Other'];
 
@@ -76,6 +77,22 @@ export default function ManageAddressesScreen() {
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
+
+    const [alertConfig, setAlertConfig] = React.useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false, title: '', message: '', iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
+
+    const [confirmConfig, setConfirmConfig] = React.useState<{
+        visible: boolean; title: string; message: string;
+        confirmText: string; onConfirm: () => void;
+    }>({ visible: false, title: '', message: '', confirmText: 'Delete', onConfirm: () => {} });
+
+    const triggerConfirm = (title: string, message: string, onConfirm: () => void, confirmText = 'Delete') => {
+        setConfirmConfig({ visible: true, title, message, confirmText, onConfirm });
+    };
 
     // Location detection
     const [detectedAddress, setDetectedAddress] = useState<string>('');
@@ -213,7 +230,7 @@ export default function ManageAddressesScreen() {
 
     const saveAddress = async () => {
         if (!newLabel.trim() || !newLine1.trim() || !newCity.trim() || !newState.trim() || !newPincode.trim()) {
-            Alert.alert(t('manage_addresses.alerts.missing_info_title'), t('manage_addresses.alerts.missing_info_msg'));
+            triggerAlert(t('manage_addresses.alerts.missing_info_title'), t('manage_addresses.alerts.missing_info_msg'));
             return;
         }
         if (!profile?.id) return;
@@ -241,12 +258,12 @@ export default function ManageAddressesScreen() {
                 const profileRes = await userService.getProfile();
                 if (profileRes.success && profileRes.data) setProfile(profileRes.data);
                 resetForm();
-                Alert.alert(t('manage_addresses.alerts.success_title'), editingId ? t('manage_addresses.alerts.address_updated') : t('manage_addresses.alerts.address_added'));
+                triggerAlert(t('manage_addresses.alerts.success_title'), editingId ? t('manage_addresses.alerts.address_updated') : t('manage_addresses.alerts.address_added'), 'checkmark-circle-outline');
             } else {
-                Alert.alert(t('manage_addresses.alerts.error_title'), res.message || t('manage_addresses.alerts.failed_save'));
+                triggerAlert(t('manage_addresses.alerts.error_title'), res.message || t('manage_addresses.alerts.failed_save'));
             }
         } catch (err: any) {
-            Alert.alert(t('manage_addresses.alerts.error_title'), err.message || t('manage_addresses.alerts.something_went_wrong'));
+            triggerAlert(t('manage_addresses.alerts.error_title'), err.message || t('manage_addresses.alerts.something_went_wrong'));
         } finally {
             setSaving(false);
         }
@@ -254,27 +271,21 @@ export default function ManageAddressesScreen() {
 
     const deleteAddress = async (address: Address) => {
         if (!profile?.id || !address.id) return;
-        Alert.alert(
+        triggerConfirm(
             t('manage_addresses.alerts.delete_confirm_title'),
             t('manage_addresses.alerts.delete_confirm_msg'),
-            [
-                { text: t('manage_addresses.cancel'), style: 'cancel' },
-                {
-                    text: t('manage_addresses.alerts.delete_btn'),
-                    style: 'destructive',
-                    onPress: async () => {
-                        if (!profile?.id || !address.id) return;
-                        try {
-                            await userService.deleteAddress(profile.id, address.id);
-                            const profileRes = await userService.getProfile();
-                            if (profileRes.success && profileRes.data) setProfile(profileRes.data);
-                            Alert.alert(t('manage_addresses.alerts.success_title'), t('manage_addresses.alerts.address_deleted'));
-                        } catch (err: any) {
-                            Alert.alert(t('manage_addresses.alerts.error_title'), err.message || t('manage_addresses.alerts.failed_delete'));
-                        }
-                    },
-                },
-            ]
+            async () => {
+                if (!profile?.id || !address.id) return;
+                try {
+                    await userService.deleteAddress(profile.id, address.id);
+                    const profileRes = await userService.getProfile();
+                    if (profileRes.success && profileRes.data) setProfile(profileRes.data);
+                    triggerAlert(t('manage_addresses.alerts.success_title'), t('manage_addresses.alerts.address_deleted'), 'checkmark-circle-outline');
+                } catch (err: any) {
+                    triggerAlert(t('manage_addresses.alerts.error_title'), err.message || t('manage_addresses.alerts.failed_delete'));
+                }
+            },
+            t('manage_addresses.alerts.delete_btn')
         );
     };
 
@@ -285,7 +296,7 @@ export default function ManageAddressesScreen() {
             const profileRes = await userService.getProfile();
             if (profileRes.success && profileRes.data) setProfile(profileRes.data);
         } catch (err: any) {
-            Alert.alert(t('manage_addresses.alerts.error_title'), err.message || t('manage_addresses.alerts.failed_update'));
+            triggerAlert(t('manage_addresses.alerts.error_title'), err.message || t('manage_addresses.alerts.failed_update'));
         }
     };
 
@@ -681,6 +692,30 @@ export default function ManageAddressesScreen() {
                 onLocationConfirmed={handleLocationConfirmed}
                 initialLat={detectedCoords?.lat}
                 initialLng={detectedCoords?.lng}
+            />
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText="OK"
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
+
+            <CustomAlertModal
+                visible={confirmConfig.visible}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+                iconName="trash-outline"
+                buttonText="Cancel"
+                onClose={() => setConfirmConfig(prev => ({ ...prev, visible: false }))}
+                secondaryButtonText={confirmConfig.confirmText}
+                secondaryDestructive
+                onSecondaryPress={() => {
+                    setConfirmConfig(prev => ({ ...prev, visible: false }));
+                    confirmConfig.onConfirm();
+                }}
             />
         </View>
     );

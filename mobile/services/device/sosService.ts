@@ -3,7 +3,7 @@
 //  POST   /api/sos                  (trigger SOS alert with GPS)
 // ──────────────────────────────────────────────
 
-import { Linking, Alert } from 'react-native';
+import { Linking } from 'react-native';
 import * as Location from 'expo-location';
 import { apiClient, ApiResponse } from '../api/apiClient';
 
@@ -113,7 +113,7 @@ export const sosService = {
             await Linking.openURL(url);
         } catch (err) {
             console.warn('SOS: Unable to open phone dialer:', err);
-            Alert.alert('Call Failed', `Please call ${hotlineNumber} manually for emergency assistance.`);
+            throw err;
         }
     },
 

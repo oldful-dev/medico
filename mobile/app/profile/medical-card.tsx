@@ -1,5 +1,6 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Share, Platform, Linking } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Share, Platform, Linking } from 'react-native';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +37,20 @@ export default function MedicalCardScreen() {
     const { t } = useTranslation();
     const styles = makeStyles(colors, isDarkMode);
     const [loading, setLoading] = useState(false);
+
+    // Native Alert.alert is globally muted app-wide (see app/_layout.tsx)
+    const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false,
+        title: '',
+        message: '',
+        iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
+
+    // "Select folder" confirmation (needs a real action button, so separate from alertConfig)
+    const [folderPromptResolver, setFolderPromptResolver] = useState<(() => void) | null>(null);
 
     useFocusEffect(
         useCallback(() => {
@@ -159,39 +174,29 @@ ${t('medical_card.generated_on', { date: new Date().toLocaleDateString('en-IN', 
                         await FileSystem.writeAsStringAsync(fileUri, result.base64!, {
                             encoding: FileSystem.EncodingType.Base64,
                         });
-                        Alert.alert(t('medical_card.alerts.success_title'), t('medical_card.alerts.pdf_saved'));
+                        triggerAlert(t('medical_card.alerts.success_title'), t('medical_card.alerts.pdf_saved'), 'checkmark-circle-outline');
                     } catch (err) {
                         console.error('SAF write error:', err);
                         await AsyncStorage.removeItem('ayuxa_download_dir_uri');
-                        Alert.alert(t('medical_card.alerts.save_failed_title'), t('medical_card.alerts.save_failed_msg'));
+                        triggerAlert(t('medical_card.alerts.save_failed_title'), t('medical_card.alerts.save_failed_msg'));
                     }
                 };
 
                 if (!storedUri) {
-                    Alert.alert(
-                        t('medical_card.alerts.select_folder_title'),
-                        t('medical_card.alerts.select_folder_msg'),
-                        [
-                            {
-                                text: t('medical_card.alerts.select_folder_title'),
-                                onPress: async () => {
-                                    try {
-                                        const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-                                        if (permissions.granted) {
-                                            const grantedUri = permissions.directoryUri;
-                                            await AsyncStorage.setItem('ayuxa_download_dir_uri', grantedUri);
-                                            await savePdfToAndroidDir(grantedUri);
-                                        } else {
-                                            Alert.alert(t('medical_card.alerts.permission_denied_title'), t('medical_card.alerts.permission_denied_msg'));
-                                        }
-                                    } catch (err) {
-                                        Alert.alert(t('medical_card.alerts.error_title'), t('medical_card.alerts.failed_folder_select'));
-                                    }
-                                }
-                            },
-                            { text: t('common.cancel'), style: 'cancel' }
-                        ]
-                    );
+                    setFolderPromptResolver(() => async () => {
+                        try {
+                            const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                            if (permissions.granted) {
+                                const grantedUri = permissions.directoryUri;
+                                await AsyncStorage.setItem('ayuxa_download_dir_uri', grantedUri);
+                                await savePdfToAndroidDir(grantedUri);
+                            } else {
+                                triggerAlert(t('medical_card.alerts.permission_denied_title'), t('medical_card.alerts.permission_denied_msg'));
+                            }
+                        } catch (err) {
+                            triggerAlert(t('medical_card.alerts.error_title'), t('medical_card.alerts.failed_folder_select'));
+                        }
+                    });
                 } else {
                     await savePdfToAndroidDir(storedUri);
                 }
@@ -203,11 +208,11 @@ ${t('medical_card.generated_on', { date: new Date().toLocaleDateString('en-IN', 
                         UTI: 'com.adobe.pdf',
                     });
                 } else {
-                    Alert.alert(t('medical_card.alerts.sharing_not_available_title'), t('medical_card.alerts.sharing_not_available_msg'));
+                    triggerAlert(t('medical_card.alerts.sharing_not_available_title'), t('medical_card.alerts.sharing_not_available_msg'));
                 }
             }
         } catch (error) {
-            Alert.alert(t('medical_card.alerts.error_title'), t('medical_card.alerts.failed_generate'));
+            triggerAlert(t('medical_card.alerts.error_title'), t('medical_card.alerts.failed_generate'));
         }
     };
 
@@ -239,7 +244,7 @@ ${t('medical_card.generated_on', { date: new Date().toLocaleDateString('en-IN', 
                 html: htmlContent,
             });
         } catch (error) {
-            Alert.alert(t('medical_card.alerts.error_title'), t('medical_card.alerts.failed_print'));
+            triggerAlert(t('medical_card.alerts.error_title'), t('medical_card.alerts.failed_print'));
         }
     };
 
@@ -279,6 +284,14 @@ ${t('medical_card.generated_on', { date: new Date().toLocaleDateString('en-IN', 
         return (
             <View style={styles.centerContainer}>
                 <ActivityIndicator size="large" color={colors.primary} />
+                <CustomAlertModal
+                    visible={alertConfig.visible}
+                    title={alertConfig.title}
+                    message={alertConfig.message}
+                    iconName={alertConfig.iconName as any}
+                    buttonText={t('common.ok')}
+                    onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                />
             </View>
         );
     }
@@ -442,6 +455,30 @@ ${t('medical_card.generated_on', { date: new Date().toLocaleDateString('en-IN', 
 
                 <View style={styles.spacer} />
             </ScrollView>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText={t('common.ok')}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
+
+            <CustomAlertModal
+                visible={!!folderPromptResolver}
+                title={t('medical_card.alerts.select_folder_title')}
+                message={t('medical_card.alerts.select_folder_msg')}
+                iconName="folder-open-outline"
+                buttonText={t('common.cancel')}
+                onClose={() => setFolderPromptResolver(null)}
+                secondaryButtonText={t('medical_card.alerts.select_folder_title')}
+                onSecondaryPress={() => {
+                    const resolver = folderPromptResolver;
+                    setFolderPromptResolver(null);
+                    if (resolver) resolver();
+                }}
+            />
         </View>
     );
 }

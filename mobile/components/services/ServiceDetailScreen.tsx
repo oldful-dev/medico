@@ -75,6 +75,8 @@ export interface ServiceDetailScreenProps {
     onBook: () => void;
     /** Disables the book button while loading / processing */
     isLoading?: boolean;
+    /** Disables the book button when required fields are not yet filled */
+    disabled?: boolean;
     /** Label override for book button */
     bookButtonLabel?: string;
     /** Hide pricing section (for services without fixed pricing) */
@@ -105,6 +107,7 @@ export default function ServiceDetailScreen({
     onLandmarkChange,
     onBook,
     isLoading = false,
+    disabled = false,
     bookButtonLabel,
     hidePricing = false,
     hideLocation = false,
@@ -239,9 +242,9 @@ export default function ServiceDetailScreen({
                 {/* ─── Book Service Button ─── */}
                 <View style={dynamicStyles.buttonWrap}>
                     <TouchableOpacity
-                        style={[dynamicStyles.bookButton, isLoading && { opacity: 0.65 }]}
-                        activeOpacity={0.85}
-                        disabled={isLoading}
+                        style={[dynamicStyles.bookButton, (isLoading || disabled) && { opacity: 0.65 }]}
+                        activeOpacity={isLoading || disabled ? 0.65 : 0.85}
+                        disabled={isLoading || disabled}
                         onPress={onBook}
                     >
                         {isLoading ? (

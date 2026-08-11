@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -11,6 +11,7 @@ import { userService } from '@/services/api/userService';
 import { useThemeColors, ThemeColors } from '@/hooks/use-theme-colors';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { CustomAlertModal } from '@/components/common/CustomAlertModal';
 
 const GENDER_OPTIONS = ['MALE', 'FEMALE', 'OTHER'];
 
@@ -23,6 +24,13 @@ export default function EditProfileScreen() {
     const styles = makeStyles(colors, isDarkMode);
     const [saving, setSaving] = useState(false);
 
+    const [alertConfig, setAlertConfig] = React.useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+        visible: false, title: '', message: '', iconName: 'warning-outline',
+    });
+    const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+        setAlertConfig({ visible: true, title, message, iconName });
+    };
+
     const [name, setName] = useState(profile?.name || '');
     const [email, setEmail] = useState(profile?.email || '');
     const [gender, setGender] = useState(profile?.gender || '');
@@ -31,7 +39,7 @@ export default function EditProfileScreen() {
 
     const handleSave = async () => {
         if (!name.trim()) {
-            Alert.alert(t('account.required'), t('edit_profile.name_empty'));
+            triggerAlert(t('account.required'), t('edit_profile.name_empty'));
             return;
         }
         setSaving(true);
@@ -49,14 +57,13 @@ export default function EditProfileScreen() {
                 if (profileRes.success && profileRes.data) {
                     setProfile(profileRes.data);
                 }
-                Alert.alert(t('common.success'), t('edit_profile.success_msg'), [
-                    { text: t('common.ok'), onPress: () => router.back() },
-                ]);
+                triggerAlert(t('common.success'), t('edit_profile.success_msg'), 'checkmark-circle-outline');
+                setTimeout(() => router.back(), 500);
             } else {
-                Alert.alert(t('common.error'), res.message || t('edit_profile.failed_update'));
+                triggerAlert(t('common.error'), res.message || t('edit_profile.failed_update'));
             }
         } catch (err: any) {
-            Alert.alert(t('common.error'), err.message || t('common.something_wrong'));
+            triggerAlert(t('common.error'), err.message || t('common.generic_error'));
         } finally {
             setSaving(false);
         }
@@ -110,6 +117,15 @@ export default function EditProfileScreen() {
                 </TouchableOpacity>
             </KeyboardAwareScrollView>
         </KeyboardAvoidingView>
+
+            <CustomAlertModal
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                iconName={alertConfig.iconName as any}
+                buttonText="OK"
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+            />
         </View>
     );
 }

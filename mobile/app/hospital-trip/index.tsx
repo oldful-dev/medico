@@ -7,7 +7,6 @@ import {
   Image,
   Platform,
   TextInput,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
 } from "react-native";
@@ -20,8 +19,6 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "@/context/ThemeContext";
 import { useThemeColors } from "@/hooks/use-theme-colors";
 import CustomDateTimePicker from "@/components/common/CustomDateTimePicker";
-import { safeScrollToPosition } from "@/utils/scrollUtils";
-
 import { useServiceInitialization } from "@/hooks/useServiceInitialization";
 import { useUser } from "@/context/UserContext";
 import { locationService } from "@/services/device/locationService";
@@ -30,6 +27,7 @@ import {
   AddressPickerSection,
   type AddressData,
 } from "@/components/AddressPickerSection";
+import { CustomAlertModal } from "@/components/common/CustomAlertModal";
 
 // --- Figma Assets ---
 const imgEye = require("@/assets/images/e9d68d0206e443ceceadd7907cd94f1c86fcacd4.png");
@@ -72,6 +70,8 @@ export default function HospitalTripScreen() {
   const [selectedAddress, setSelectedAddress] = useState<AddressData | null>(
     null,
   );
+  const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
+  const sectionPositions = React.useRef<Record<string, number>>({});
 
   // API state (Refactored to Hook)
   const {
@@ -87,9 +87,13 @@ export default function HospitalTripScreen() {
   } = useServiceInitialization("hospital-trip");
 
   const [isBooking, setIsBooking] = useState(false);
-  const [formErrors, setFormErrors] = useState<Record<string, string | undefined>>({});
-  const scrollViewRef = React.useRef<any>(null);
-  const sectionPositions = React.useRef<Record<string, number>>({});
+
+  const [alertConfig, setAlertConfig] = useState<{ visible: boolean; title: string; message: string; iconName: string }>({
+    visible: false, title: '', message: '', iconName: 'warning-outline',
+  });
+  const triggerAlert = (title: string, message: string, iconName = 'warning-outline') => {
+    setAlertConfig({ visible: true, title, message, iconName });
+  };
 
   // Sync selectedAddress with initial fetched address on mount or when fetched
   React.useEffect(() => {
@@ -182,45 +186,49 @@ export default function HospitalTripScreen() {
     }
   };
 
+  const isFormValid = React.useMemo(() => {
+    return !!(
+      selectedSpecialist &&
+      (selectedSpecialist !== "other" || otherSpecialistText.trim()) &&
+      hospitalPreference &&
+      (hospitalPreference !== "preferred" || hospitalQuery.trim()) &&
+      (selectedDoctorType !== "preferred" || preferredDoctor.trim()) &&
+      selectedDate &&
+      (selectedAddress?.line1 || (address && address.trim().length >= 5 && address !== "Fetching address..."))
+    );
+  }, [selectedSpecialist, otherSpecialistText, hospitalPreference, hospitalQuery, selectedDoctorType, preferredDoctor, selectedDate, address, selectedAddress]);
+
   const handleBookService = async () => {
-    const errs: Record<string, string> = {};
-
     if (!selectedSpecialist) {
-      errs.specialist = t("hospital_trip.alert_select_specialist", "Please select a specialty.");
-    } else if (selectedSpecialist === "other" && !otherSpecialistText.trim()) {
-      errs.specialist = t("hospital_trip.alert_specialist_required", "Please describe your specialist requirement.");
-    }
-
-    if (!hospitalPreference) {
-      errs.hospital = t("hospital_trip.alert_select_hospital", "Please select a hospital preference.");
-    } else if (hospitalPreference === "preferred" && !hospitalQuery.trim()) {
-      errs.hospital = t("hospital_trip.alert_hospital_required", "Please enter preferred hospital name.");
-    }
-
-    if (selectedDoctorType === "preferred" && !preferredDoctor.trim()) {
-      errs.doctor = t("hospital_trip.alert_doctor_required", "Please enter preferred doctor name.");
-    }
-
-    if (!selectedDate) {
-      errs.date = t("hospital_trip.alert_date_required", "Please select a date and time slot.");
-    }
-
-    if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === "Fetching address...")) {
-      errs.address = t("hospital_trip.alert_address_required", "Please confirm a valid service address.");
-    }
-
-    if (Object.keys(errs).length > 0) {
-      setFormErrors(errs);
-      const firstErrorField = ['address', 'specialist', 'hospital', 'doctor', 'date'].find(f => errs[f]);
-      if (firstErrorField && sectionPositions.current[firstErrorField] !== undefined) {
-        const targetY = sectionPositions.current[firstErrorField] - 20;
-        safeScrollToPosition(scrollViewRef, targetY);
-      }
+      triggerAlert(t("common.required") || "Required", t("hospital_trip.alert_select_specialist", "Please select a specialty."));
       return;
     }
-
+    if (selectedSpecialist === "other" && !otherSpecialistText.trim()) {
+      triggerAlert(t("common.required") || "Required", t("hospital_trip.alert_specialist_required", "Please describe your specialist requirement."));
+      return;
+    }
+    if (!hospitalPreference) {
+      triggerAlert(t("common.required") || "Required", t("hospital_trip.alert_select_hospital", "Please select a hospital preference."));
+      return;
+    }
+    if (hospitalPreference === "preferred" && !hospitalQuery.trim()) {
+      triggerAlert(t("common.required") || "Required", t("hospital_trip.alert_hospital_required", "Please enter preferred hospital name."));
+      return;
+    }
+    if (selectedDoctorType === "preferred" && !preferredDoctor.trim()) {
+      triggerAlert(t("common.required") || "Required", t("hospital_trip.alert_doctor_required", "Please enter preferred doctor name."));
+      return;
+    }
+    if (!selectedDate) {
+      triggerAlert(t("common.required") || "Required", t("hospital_trip.alert_date_required", "Please select a date and time slot."));
+      return;
+    }
+    if (!selectedAddress?.line1 && (!address || address.trim().length < 5 || address === "Fetching address...")) {
+      triggerAlert(t("common.required") || "Required", t("hospital_trip.alert_address_required", "Please confirm a valid service address."));
+      return;
+    }
     if (!isReady) {
-      Alert.alert(t("common.error"), t("booking.init_incomplete"));
+      triggerAlert(t("common.error") || "Error", t("booking.init_incomplete") || "Service initialization failed.");
       return;
     }
     try {
@@ -271,7 +279,7 @@ export default function HospitalTripScreen() {
       });
     } catch (error) {
       console.error("Hospital trip error:", error);
-      Alert.alert(t("common.error"), t("booking.something_wrong"));
+      triggerAlert(t("common.error") || "Error", t("booking.something_wrong") || "Something went wrong. Please try again.");
     } finally {
       setIsBooking(false);
     }
@@ -315,7 +323,6 @@ export default function HospitalTripScreen() {
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
           <KeyboardAwareScrollView
-            ref={scrollViewRef}
             contentContainerStyle={dynamicStyles.scrollContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -627,10 +634,10 @@ export default function HospitalTripScreen() {
             <TouchableOpacity
               style={[
                 dynamicStyles.submitButton,
-                (isBooking || isLoadingInit) && { opacity: 0.6 },
+                (!isFormValid || isBooking || isLoadingInit) && { opacity: 0.6 },
               ]}
-              activeOpacity={0.8}
-              disabled={isBooking || isLoadingInit}
+              activeOpacity={isFormValid && !isBooking && !isLoadingInit ? 0.8 : 0.5}
+              disabled={!isFormValid || isBooking || isLoadingInit}
               onPress={handleBookService}
             >
               {isLoadingInit ? (
@@ -653,6 +660,15 @@ export default function HospitalTripScreen() {
           </KeyboardAwareScrollView>
         </KeyboardAvoidingView>
       </View>
+
+      <CustomAlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        iconName={alertConfig.iconName as any}
+        buttonText="OK"
+        onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 }
