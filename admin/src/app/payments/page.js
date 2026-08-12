@@ -1,11 +1,14 @@
 "use client";
+import { Suspense } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import PaymentsPage from "@/components/pages/PaymentsPage";
 
 export default function Page() {
     return (
         <AdminLayout>
-            <PaymentsPage />
+            <Suspense fallback={null}>
+                <PaymentsPage />
+            </Suspense>
         </AdminLayout>
     );
 }

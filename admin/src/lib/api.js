@@ -118,6 +118,7 @@ export const userAPI = {
     uploadHealthReport: (id, formData) => api.post(`/users/${id}/health-reports`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
     deleteHealthReport: (reportId) => api.delete(`/users/health-reports/${reportId}`),
     getAllHealthReports: (params) => api.get('/users/admin/health-reports', { params }),
+    getHealthReportViewUrl: (reportId) => api.get(`/users/health-reports/${reportId}/view-url`),
 };
 
 // ── Services ─────────────────────────────────────────

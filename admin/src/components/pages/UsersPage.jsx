@@ -14,7 +14,7 @@ export default function UsersPage() {
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
     const [selectedUser, setSelectedUser] = useState(null);
-    const [detailTab, setDetailTab] = useState('overview');
+    const [detailTab, setDetailTab] = useState('personal');
     const [imageViewer, setImageViewer] = useState(null);
     const limit = 20;
     const [editingUser, setEditingUser] = useState(null);
@@ -67,7 +67,7 @@ export default function UsersPage() {
     async function viewUser(id) {
         try {
             const res = await userAPI.getById(id);
-            setDetailTab('overview');
+            setDetailTab('personal');
             setSelectedUser(res.data?.data);
         } catch (e) { showToast('Failed to load user', 'error'); }
     }
@@ -309,31 +309,40 @@ export default function UsersPage() {
                             <button onClick={() => setSelectedUser(null)} className="btn btn-sm btn-secondary">✕</button>
                         </div>
                         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                            {/* Tabs Navigation */}
-                            <div className="tabs" style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--border-color)', paddingBottom: 8, marginBottom: 8, overflowX: 'auto' }}>
-                                {['overview', 'bookings', 'lab-orders', 'products', 'sos', 'payments', 'health-reports'].map(tab => (
+                            {/* Tabs Navigation — grouped per the 5-category Client & Patient structure */}
+                            <div className="tabs" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', borderBottom: '1px solid var(--border-color)', paddingBottom: 10, marginBottom: 8 }}>
+                                {[
+                                    { key: 'personal', label: 'Personal Details' },
+                                    { key: 'service-history', label: 'Service & Booking History' },
+                                    { key: 'subscriptions', label: 'Subscription Details' },
+                                    { key: 'medical', label: 'Medical & Relevant Records' },
+                                    { key: 'other', label: 'Other Info' },
+                                ].map(tab => (
                                     <button
-                                        key={tab}
+                                        key={tab.key}
                                         type="button"
-                                        className={`tab ${(!detailTab && tab === 'overview') || detailTab === tab ? 'active' : ''}`}
-                                        onClick={() => setDetailTab(tab)}
+                                        className={`tab ${(!detailTab && tab.key === 'personal') || detailTab === tab.key ? 'active' : ''}`}
+                                        onClick={() => setDetailTab(tab.key)}
                                         style={{
-                                            padding: '6px 12px',
-                                            fontSize: 12,
+                                            padding: '6px 10px',
+                                            fontSize: 11.5,
                                             fontWeight: 600,
-                                            borderRadius: 4,
-                                            border: 'none',
+                                            borderRadius: 6,
+                                            border: '1px solid var(--border-color)',
                                             cursor: 'pointer',
-                                            background: ((!detailTab && tab === 'overview') || detailTab === tab) ? 'var(--accent-primary)' : 'transparent',
-                                            color: ((!detailTab && tab === 'overview') || detailTab === tab) ? '#fff' : 'var(--text-muted)'
+                                            whiteSpace: 'nowrap',
+                                            background: ((!detailTab && tab.key === 'personal') || detailTab === tab.key) ? 'var(--accent-primary)' : 'transparent',
+                                            borderColor: ((!detailTab && tab.key === 'personal') || detailTab === tab.key) ? 'var(--accent-primary)' : 'var(--border-color)',
+                                            color: ((!detailTab && tab.key === 'personal') || detailTab === tab.key) ? '#fff' : 'var(--text-muted)'
                                         }}
                                     >
-                                        {tab.toUpperCase().replace('-', ' ')}
+                                        {tab.label}
                                     </button>
                                 ))}
                             </div>
 
-                            {(!detailTab || detailTab === 'overview') && (
+                            {/* 1. Personal Details — identity, addresses, family, emergency contacts */}
+                            {(!detailTab || detailTab === 'personal') && (
                                 <>
                                     <div className="form-row">
                                         <div className="form-group"><label className="form-label">User ID</label><div className="text-sm">{selectedUser.uniqueUserId}</div></div>
@@ -351,19 +360,6 @@ export default function UsersPage() {
                                         <div className="form-group"><label className="form-label">Health Tag</label><span className={`badge ${healthBadge[selectedUser.healthTag]}`}>{selectedUser.healthTag}</span></div>
                                         <div className="form-group"><label className="form-label">Status</label><span className={`badge ${statusBadge[selectedUser.status]}`}>{selectedUser.status}</span></div>
                                     </div>
-
-                                    {selectedUser.subscriptions?.length > 0 && (
-                                        <div className="form-group">
-                                            <label className="form-label">Active Subscriptions</label>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-                                                {selectedUser.subscriptions.map((sub, i) => (
-                                                    <div key={i} className="text-sm" style={{ padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 6, borderLeft: '4px solid var(--accent-success)' }}>
-                                                        <strong>{sub.plan?.name}</strong> — {sub.status} • Exp: {formatDate(sub.expiresAt)}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
 
                                     {selectedUser.addresses?.length > 0 && (
                                         <div className="form-group">
@@ -400,6 +396,113 @@ export default function UsersPage() {
                                             ))}
                                         </div>
                                     )}
+                                </>
+                            )}
+
+                            {/* 2. Service & Booking History — Bookings + Lab Orders + Product Orders merged */}
+                            {detailTab === 'service-history' && (
+                                <>
+                                    <div className="form-group">
+                                        <label className="form-label">Service Bookings</label>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                            {(!selectedUser.bookings || selectedUser.bookings.length === 0) ? <div className="text-muted text-sm">No bookings found</div> :
+                                                selectedUser.bookings.map((booking, i) => (
+                                                    <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{booking.bookingCode} - {booking.service?.name}</span>
+                                                            <span className="badge badge-info" style={{ fontSize: 10 }}>{booking.status}</span>
+                                                        </div>
+                                                        <div>Price: ₹{booking.totalPrice} • Created: {formatDate(booking.createdAt)}</div>
+                                                        <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Scheduled: {formatDate(booking.scheduledDate)} {booking.scheduledTime || ''}</div>
+                                                    </div>
+                                                ))
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Blood Tests & Lab Orders</label>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                            {(!selectedUser.labOrders || selectedUser.labOrders.length === 0) ? <div className="text-muted text-sm">No lab orders found</div> :
+                                                selectedUser.labOrders.map((lo, i) => (
+                                                    <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Ref: {lo.clientRefId || lo.id}</span>
+                                                            <span className="badge badge-warning" style={{ fontSize: 10 }}>{lo.status}</span>
+                                                        </div>
+                                                        <div>
+                                                            Packages: {
+                                                                Array.isArray(lo.packages)
+                                                                    ? lo.packages.map(p => p.name || p.package_name || p).join(', ')
+                                                                    : typeof lo.packages === 'string'
+                                                                        ? (() => {
+                                                                            try {
+                                                                                const parsed = JSON.parse(lo.packages);
+                                                                                return Array.isArray(parsed) ? parsed.map(p => p.name || p.package_name || p).join(', ') : parsed;
+                                                                            } catch (e) { return lo.packages; }
+                                                                        })()
+                                                                        : '—'
+                                                            }
+                                                        </div>
+                                                        <div>Total Price: ₹{lo.totalPrice || lo.amount} • Created: {formatDate(lo.createdAt)}</div>
+                                                    </div>
+                                                ))
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">Wellness Store Orders</label>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                            {(!selectedUser.productOrders || selectedUser.productOrders.length === 0) ? <div className="text-muted text-sm">No product orders found</div> :
+                                                selectedUser.productOrders.map((po, i) => (
+                                                    <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Order: #{po.orderCode || po.id}</span>
+                                                            <span className="badge badge-success" style={{ fontSize: 10 }}>{po.status}</span>
+                                                        </div>
+                                                        <div>
+                                                            Items: {
+                                                                Array.isArray(po.items)
+                                                                    ? po.items.map(it => `${it.name} (x${it.quantity || 1})`).join(', ')
+                                                                    : typeof po.items === 'string'
+                                                                        ? (() => {
+                                                                            try {
+                                                                                const parsed = JSON.parse(po.items);
+                                                                                return Array.isArray(parsed) ? parsed.map(it => `${it.name} (x${it.quantity || 1})`).join(', ') : parsed;
+                                                                            } catch (e) { return po.items; }
+                                                                        })()
+                                                                        : po.product?.name || '—'
+                                                            }
+                                                        </div>
+                                                        <div>Amount: ₹{po.amount || po.totalAmount} • Date: {formatDate(po.createdAt)}</div>
+                                                    </div>
+                                                ))
+                                            }
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* 3. Subscription Details */}
+                            {detailTab === 'subscriptions' && (
+                                <div className="form-group">
+                                    <label className="form-label">Subscriptions</label>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        {(!selectedUser.subscriptions || selectedUser.subscriptions.length === 0) ? <div className="text-muted text-sm">No subscriptions found</div> :
+                                            selectedUser.subscriptions.map((sub, i) => (
+                                                <div key={i} className="text-sm" style={{ padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 6, borderLeft: '4px solid var(--accent-success)' }}>
+                                                    <strong>{sub.plan?.name}</strong> — {sub.status} • Exp: {formatDate(sub.expiresAt)}
+                                                </div>
+                                            ))
+                                        }
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 4. Medical & Relevant Records — medical card data + health report uploads */}
+                            {detailTab === 'medical' && (
+                                <>
                                     {selectedUser.medicalCards?.length > 0 && (
                                         <div className="form-group">
                                             <label className="form-label">Medical Information</label>
@@ -424,208 +527,121 @@ export default function UsersPage() {
                                             </div>
                                         </div>
                                     )}
+
+                                    <div className="form-group">
+                                        <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span>Health Records & Medical History</span>
+                                        </label>
+
+                                        {/* Upload Form */}
+                                        <form onSubmit={handleUploadReport} style={{ background: 'var(--bg-secondary)', padding: 14, borderRadius: 8, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                            <div style={{ fontWeight: 600, fontSize: 13, borderBottom: '1px solid var(--border-color)', paddingBottom: 6 }}>Upload New Health Document</div>
+                                            <div className="form-row">
+                                                <div className="form-group">
+                                                    <label className="form-label" style={{ fontSize: 11 }}>Document Title</label>
+                                                    <input className="form-input" style={{ padding: '6px 10px', fontSize: 12 }} placeholder="e.g. Lab Report Feb, Prescription..." value={reportTitle} onChange={e => setReportTitle(e.target.value)} required />
+                                                </div>
+                                                <div className="form-group">
+                                                    <label className="form-label" style={{ fontSize: 11 }}>Category</label>
+                                                    <select className="form-select" style={{ padding: '6px 10px', fontSize: 12, height: 'auto' }} value={reportCategory} onChange={e => setReportCategory(e.target.value)}>
+                                                        <option value="Prescription">Prescription</option>
+                                                        <option value="Lab Report">Lab Report</option>
+                                                        <option value="Vaccination">Vaccination</option>
+                                                        <option value="Other">Other</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div className="form-group">
+                                                <label className="form-label" style={{ fontSize: 11 }}>Select File (PDF, JPG, PNG)</label>
+                                                <input type="file" accept=".pdf,image/*" onChange={e => setReportFile(e.target.files[0])} required style={{ fontSize: 12 }} />
+                                            </div>
+                                            <button type="submit" disabled={uploadingReport} className="btn btn-sm btn-primary" style={{ alignSelf: 'flex-start', padding: '6px 16px', fontSize: 12 }}>
+                                                {uploadingReport ? 'Uploading & Processing OCR...' : 'Upload Document'}
+                                            </button>
+                                        </form>
+
+                                        {/* Reports List */}
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                            {(!selectedUser.healthReports || selectedUser.healthReports.length === 0) ? <div className="text-muted text-sm">No health documents uploaded</div> :
+                                                selectedUser.healthReports.map((report) => (
+                                                    <div key={report.id} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                                                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{report.title}</span>
+                                                            <span className="badge badge-info" style={{ fontSize: 10 }}>{report.category || 'Other'}</span>
+                                                        </div>
+                                                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
+                                                            Uploaded: {formatDate(report.createdAt)} • By: {report.uploadedBy === selectedUser.id ? 'Client' : 'Staff / Admin'}
+                                                        </div>
+                                                        {report.ocrStatus && (
+                                                            <div style={{ fontSize: 11, marginBottom: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
+                                                                <span>OCR:</span>
+                                                                <span className={`badge ${report.ocrStatus === 'completed' ? 'badge-success' : report.ocrStatus === 'processing' ? 'badge-warning' : 'badge-danger'}`} style={{ fontSize: 9 }}>
+                                                                    {report.ocrStatus}
+                                                                </span>
+                                                                {report.flagSeverity && (
+                                                                    <span className="badge badge-danger" style={{ fontSize: 9 }}>{report.flagSeverity}</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        <div style={{ display: 'flex', gap: 8 }}>
+                                                            <a href={report.fileUrl} target="_blank" rel="noreferrer" className="btn btn-sm btn-secondary" style={{ padding: '4px 10px', fontSize: 11 }}>View Document</a>
+                                                            <button onClick={() => handleDeleteReport(report.id)} className="btn btn-sm btn-danger" style={{ padding: '4px 10px', fontSize: 11, background: '#DC2626', borderColor: '#DC2626' }}>Delete</button>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            }
+                                        </div>
+                                    </div>
                                 </>
                             )}
 
-                            {detailTab === 'bookings' && (
-                                <div className="form-group">
-                                    <label className="form-label">Service Bookings</label>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                        {(!selectedUser.bookings || selectedUser.bookings.length === 0) ? <div className="text-muted text-sm">No bookings found</div> :
-                                            selectedUser.bookings.map((booking, i) => (
-                                                <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{booking.bookingCode} - {booking.service?.name}</span>
-                                                        <span className="badge badge-info" style={{ fontSize: 10 }}>{booking.status}</span>
-                                                    </div>
-                                                    <div>Price: ₹{booking.totalPrice} • Created: {formatDate(booking.createdAt)}</div>
-                                                    <div style={{ color: 'var(--text-muted)', fontSize: 11 }}>Scheduled: {formatDate(booking.scheduledDate)} {booking.scheduledTime || ''}</div>
-                                                </div>
-                                            ))
-                                        }
-                                    </div>
-                                </div>
-                            )}
-
-                            {detailTab === 'lab-orders' && (
-                                <div className="form-group">
-                                    <label className="form-label">Blood Tests & Lab Orders</label>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                        {(!selectedUser.labOrders || selectedUser.labOrders.length === 0) ? <div className="text-muted text-sm">No lab orders found</div> :
-                                            selectedUser.labOrders.map((lo, i) => (
-                                                <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Ref: {lo.clientRefId || lo.id}</span>
-                                                        <span className="badge badge-warning" style={{ fontSize: 10 }}>{lo.status}</span>
-                                                    </div>
-                                                                                  <div>
-                                                        Packages: {
-                                                            Array.isArray(lo.packages) 
-                                                                ? lo.packages.map(p => p.name || p.package_name || p).join(', ')
-                                                                : typeof lo.packages === 'string'
-                                                                    ? (() => {
-                                                                        try {
-                                                                            const parsed = JSON.parse(lo.packages);
-                                                                            return Array.isArray(parsed) ? parsed.map(p => p.name || p.package_name || p).join(', ') : parsed;
-                                                                        } catch(e) { return lo.packages; }
-                                                                    })()
-                                                                    : '—'
-                                                        }
-                                                    </div>
-                                                    <div>Total Price: ₹{lo.totalPrice || lo.amount} • Created: {formatDate(lo.createdAt)}</div>
-                                                </div>
-                                            ))
-                                        }
-                                    </div>
-                                </div>
-                            )}
-
-                            {detailTab === 'products' && (
-                                <div className="form-group">
-                                    <label className="form-label">Wellness Store Orders</label>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                        {(!selectedUser.productOrders || selectedUser.productOrders.length === 0) ? <div className="text-muted text-sm">No product orders found</div> :
-                                            selectedUser.productOrders.map((po, i) => (
-                                                <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Order: #{po.orderCode || po.id}</span>
-                                                        <span className="badge badge-success" style={{ fontSize: 10 }}>{po.status}</span>
-                                                    </div>
-                                                    <div>
-                                                        Items: {
-                                                            Array.isArray(po.items)
-                                                                ? po.items.map(it => `${it.name} (x${it.quantity || 1})`).join(', ')
-                                                                : typeof po.items === 'string'
-                                                                    ? (() => {
-                                                                        try {
-                                                                            const parsed = JSON.parse(po.items);
-                                                                            return Array.isArray(parsed) ? parsed.map(it => `${it.name} (x${it.quantity || 1})`).join(', ') : parsed;
-                                                                        } catch(e) { return po.items; }
-                                                                    })()
-                                                                    : po.product?.name || '—'
-                                                        }
-                                                    </div>
-                                                    <div>Amount: ₹{po.amount || po.totalAmount} • Date: {formatDate(po.createdAt)}</div>
-                                                </div>
-                                            ))
-                                        }
-                                    </div>
-                                </div>
-                            )}
-
-                            {detailTab === 'sos' && (
-                                <div className="form-group">
-                                    <label className="form-label">SOS Trigger Alerts</label>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                        {(!selectedUser.sosAlerts || selectedUser.sosAlerts.length === 0) ? <div className="text-muted text-sm">No SOS alerts triggered</div> :
-                                            selectedUser.sosAlerts.map((sos, i) => (
-                                                <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13, borderLeft: '4px solid var(--accent-danger)' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Triggered Alert</span>
-                                                        <span className="badge badge-danger" style={{ fontSize: 10 }}>{sos.status}</span>
-                                                    </div>
-                                                    <div>Location: {sos.latitude}, {sos.longitude}</div>
-                                                    <div>Date: {formatDate(sos.createdAt)}</div>
-                                                </div>
-                                            ))
-                                        }
-                                    </div>
-                                </div>
-                            )}
-
-                            {detailTab === 'payments' && (
-                                <div className="form-group">
-                                    <label className="form-label">Payments Ledger</label>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                        {(!selectedUser.payments || selectedUser.payments.length === 0) ? <div className="text-muted text-sm">No payments recorded</div> :
-                                            selectedUser.payments.map((p, i) => (
-                                                <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>ID: {p.razorpayPaymentId || p.id}</span>
-                                                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                                            <span className={`badge ${p.status === 'SUCCESS' ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: 10 }}>{p.status}</span>
-                                                            {p.bookingId && p.status === 'SUCCESS' && (
-                                                                <>
-                                                                    <button className="btn btn-sm btn-secondary" style={{ padding: '2px 6px', fontSize: 11 }} title="View Invoice Inline" onClick={() => setImageViewer({ title: `Invoice: ${p.razorpayPaymentId || p.id}`, url: bookingAPI.getInvoiceDownloadUrl(p.bookingId) })}><Eye size={12} /></button>
-                                                                    <a href={bookingAPI.getInvoiceDownloadUrl(p.bookingId)} download className="btn btn-sm btn-secondary" style={{ padding: '2px 6px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} title="Download Invoice PDF" target="_blank" rel="noreferrer"><FileDown size={12} /></a>
-                                                                </>
-                                                            )}
+                            {/* 5. All Other Associated Info — SOS alerts + Payments ledger */}
+                            {detailTab === 'other' && (
+                                <>
+                                    <div className="form-group">
+                                        <label className="form-label">SOS Trigger Alerts</label>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                            {(!selectedUser.sosAlerts || selectedUser.sosAlerts.length === 0) ? <div className="text-muted text-sm">No SOS alerts triggered</div> :
+                                                selectedUser.sosAlerts.map((sos, i) => (
+                                                    <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13, borderLeft: '4px solid var(--accent-danger)' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Triggered Alert</span>
+                                                            <span className="badge badge-danger" style={{ fontSize: 10 }}>{sos.status}</span>
                                                         </div>
+                                                        <div>Location: {sos.latitude}, {sos.longitude}</div>
+                                                        <div>Date: {formatDate(sos.createdAt)}</div>
                                                     </div>
-                                                    <div>Amount: ₹{p.amount} • Purpose: {p.purpose || 'Booking Payment'}</div>
-                                                    <div>Date: {formatDate(p.createdAt)}</div>
-                                                </div>
-                                            ))
-                                        }
+                                                ))
+                                            }
+                                        </div>
                                     </div>
-                                </div>
-                            )}
 
-                            {detailTab === 'health-reports' && (
-                                <div className="form-group">
-                                    <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span>Health Records & Medical History</span>
-                                    </label>
-
-                                    {/* Upload Form */}
-                                    <form onSubmit={handleUploadReport} style={{ background: 'var(--bg-secondary)', padding: 14, borderRadius: 8, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                        <div style={{ fontWeight: 600, fontSize: 13, borderBottom: '1px solid var(--border-color)', paddingBottom: 6 }}>Upload New Health Document</div>
-                                        <div className="form-row">
-                                            <div className="form-group">
-                                                <label className="form-label" style={{ fontSize: 11 }}>Document Title</label>
-                                                <input className="form-input" style={{ padding: '6px 10px', fontSize: 12 }} placeholder="e.g. Lab Report Feb, Prescription..." value={reportTitle} onChange={e => setReportTitle(e.target.value)} required />
-                                            </div>
-                                            <div className="form-group">
-                                                <label className="form-label" style={{ fontSize: 11 }}>Category</label>
-                                                <select className="form-select" style={{ padding: '6px 10px', fontSize: 12, height: 'auto' }} value={reportCategory} onChange={e => setReportCategory(e.target.value)}>
-                                                    <option value="Prescription">Prescription</option>
-                                                    <option value="Lab Report">Lab Report</option>
-                                                    <option value="Vaccination">Vaccination</option>
-                                                    <option value="Other">Other</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div className="form-group">
-                                            <label className="form-label" style={{ fontSize: 11 }}>Select File (PDF, JPG, PNG)</label>
-                                            <input type="file" accept=".pdf,image/*" onChange={e => setReportFile(e.target.files[0])} required style={{ fontSize: 12 }} />
-                                        </div>
-                                        <button type="submit" disabled={uploadingReport} className="btn btn-sm btn-primary" style={{ alignSelf: 'flex-start', padding: '6px 16px', fontSize: 12 }}>
-                                            {uploadingReport ? 'Uploading & Processing OCR...' : 'Upload Document'}
-                                        </button>
-                                    </form>
-
-                                    {/* Reports List */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                        {(!selectedUser.healthReports || selectedUser.healthReports.length === 0) ? <div className="text-muted text-sm">No health documents uploaded</div> :
-                                            selectedUser.healthReports.map((report) => (
-                                                <div key={report.id} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{report.title}</span>
-                                                        <span className="badge badge-info" style={{ fontSize: 10 }}>{report.category || 'Other'}</span>
-                                                    </div>
-                                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
-                                                        Uploaded: {formatDate(report.createdAt)} • By: {report.uploadedBy === selectedUser.id ? 'Client' : 'Staff / Admin'}
-                                                    </div>
-                                                    {report.ocrStatus && (
-                                                        <div style={{ fontSize: 11, marginBottom: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
-                                                            <span>OCR:</span>
-                                                            <span className={`badge ${report.ocrStatus === 'completed' ? 'badge-success' : report.ocrStatus === 'processing' ? 'badge-warning' : 'badge-danger'}`} style={{ fontSize: 9 }}>
-                                                                {report.ocrStatus}
-                                                            </span>
-                                                            {report.flagSeverity && (
-                                                                <span className="badge badge-danger" style={{ fontSize: 9 }}>{report.flagSeverity}</span>
-                                                            )}
+                                    <div className="form-group">
+                                        <label className="form-label">Payments Ledger</label>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                            {(!selectedUser.payments || selectedUser.payments.length === 0) ? <div className="text-muted text-sm">No payments recorded</div> :
+                                                selectedUser.payments.map((p, i) => (
+                                                    <div key={i} style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8, fontSize: 13 }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>ID: {p.razorpayPaymentId || p.id}</span>
+                                                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                                                <span className={`badge ${p.status === 'SUCCESS' ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: 10 }}>{p.status}</span>
+                                                                {p.bookingId && p.status === 'SUCCESS' && (
+                                                                    <>
+                                                                        <button className="btn btn-sm btn-secondary" style={{ padding: '2px 6px', fontSize: 11 }} title="View Invoice Inline" onClick={() => setImageViewer({ title: `Invoice: ${p.razorpayPaymentId || p.id}`, url: bookingAPI.getInvoiceDownloadUrl(p.bookingId) })}><Eye size={12} /></button>
+                                                                        <a href={bookingAPI.getInvoiceDownloadUrl(p.bookingId)} download className="btn btn-sm btn-secondary" style={{ padding: '2px 6px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} title="Download Invoice PDF" target="_blank" rel="noreferrer"><FileDown size={12} /></a>
+                                                                    </>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    )}
-                                                    <div style={{ display: 'flex', gap: 8 }}>
-                                                        <a href={report.fileUrl} target="_blank" rel="noreferrer" className="btn btn-sm btn-secondary" style={{ padding: '4px 10px', fontSize: 11 }}>View Document</a>
-                                                        <button onClick={() => handleDeleteReport(report.id)} className="btn btn-sm btn-danger" style={{ padding: '4px 10px', fontSize: 11, background: '#DC2626', borderColor: '#DC2626' }}>Delete</button>
+                                                        <div>Amount: ₹{p.amount} • Purpose: {p.purpose || 'Booking Payment'}</div>
+                                                        <div>Date: {formatDate(p.createdAt)}</div>
                                                     </div>
-                                                </div>
-                                            ))
-                                        }
+                                                ))
+                                            }
+                                        </div>
                                     </div>
-                                </div>
+                                </>
                             )}
                         </div>
                         <div className="modal-footer">

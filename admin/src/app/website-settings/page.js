@@ -1,11 +1,11 @@
 "use client";
 import AdminLayout from "@/components/AdminLayout";
-import LabOrdersPage from "@/components/pages/LabOrdersPage";
+import WebsiteSettingsPage from "@/components/pages/WebsiteSettingsPage";
 
 export default function Page() {
     return (
         <AdminLayout>
-            <LabOrdersPage />
+            <WebsiteSettingsPage />
         </AdminLayout>
     );
 }

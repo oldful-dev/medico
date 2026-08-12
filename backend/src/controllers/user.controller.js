@@ -2,7 +2,7 @@ const prisma = require('../config/database');
 const { paginate, sendResponse, sendPaginatedResponse, generateUserId } = require('../utils/helpers');
 const { sendWelcomeNotifications } = require('../utils/notifications');
 const { generateWelcomeSLAPDF } = require('../utils/pdfGenerator');
-const { uploadFile, toCDNUrl } = require('../utils/storage.service');
+const { uploadFile, toCDNUrl, refreshSignedUrl } = require('../utils/storage.service');
 const { analyzeMedicalReportFromGCS, analyzeMedicalReportFromBuffer } = require('../utils/ocr.service');
 const { createAuditLog } = require('../middleware/audit');
 const { logger } = require('../config/logger');
@@ -997,6 +997,29 @@ const getAllHealthReports = async (req, res, next) => {
     }
 };
 
+// GET /api/users/health-reports/:reportId/view-url
+// Health-report signed URLs expire after 30 minutes (sensitive medical
+// documents), so the stored fileUrl on the row goes stale. This re-signs
+// a fresh, short-lived URL on demand for viewing.
+const getHealthReportViewUrl = async (req, res, next) => {
+    try {
+        const report = await prisma.healthReport.findUnique({
+            where: { id: req.params.reportId },
+            select: { fileUrl: true },
+        });
+        if (!report) {
+            return res.status(404).json({ success: false, message: 'Health report not found' });
+        }
+        const freshUrl = await refreshSignedUrl(report.fileUrl);
+        if (!freshUrl) {
+            return res.status(500).json({ success: false, message: 'Could not generate a fresh view URL' });
+        }
+        sendResponse(res, 200, { url: freshUrl }, 'View URL refreshed');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getUsers, getUserById, createUser, updateUser,
     blockUser, suspendUser, activateUser,
@@ -1005,4 +1028,5 @@ module.exports = {
     upsertMedicalCard, uploadHealthReport, deleteHealthReport,
     getMyProfile, updateMyProfile, registerDeviceToken, uploadProfileAvatar, getMyHealthReports, deleteProfile, deleteProfileByAdmin,
     getAllHealthReports,
+    getHealthReportViewUrl,
 };

@@ -15,6 +15,7 @@ router.put('/profile/device-token', authenticateUser, ctrl.registerDeviceToken);
 router.get('/profile/health-reports', authenticateUser, ctrl.getMyHealthReports);
 
 router.get('/admin/health-reports', authenticateAdmin, ctrl.getAllHealthReports);
+router.get('/health-reports/:reportId/view-url', authenticateAdmin, ctrl.getHealthReportViewUrl);
 router.get('/', authenticateAdmin, cityRestriction, ctrl.getUsers);
 router.get('/:id', authenticateAdmin, ctrl.getUserById);
 router.post('/', ctrl.createUser);  // Can be called post-OTP or by admin

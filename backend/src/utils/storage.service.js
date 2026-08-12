@@ -338,6 +338,37 @@ const getSignedDownloadUrl = async (storagePath, expiresMinutes = null) => {
 };
 
 // ══════════════════════════════════════════════════════════════
+//  REFRESH SIGNED URL — re-sign an expired private-file URL
+//  Accepts either a previously-signed URL (with expired token) or
+//  a plain gs://.../CDN URL, strips host + query string, and
+//  re-derives storagePath to issue a fresh signed download URL.
+// ══════════════════════════════════════════════════════════════
+const getStoragePathFromUrl = (fileUrl) => {
+    const cdnBase = (process.env.ASSETS_CDN_URL || '').replace(/\/+$/, '');
+    const gcsBase = `https://storage.googleapis.com/${gcsBucketName}/`;
+
+    // Strip query string (signed URLs carry ?X-Goog-Signature=... etc.)
+    const [urlWithoutQuery] = fileUrl.split('?');
+
+    if (cdnBase && urlWithoutQuery.startsWith(cdnBase)) {
+        return urlWithoutQuery.replace(`${cdnBase}/`, '');
+    }
+    if (urlWithoutQuery.startsWith(gcsBase)) {
+        return urlWithoutQuery.replace(gcsBase, '');
+    }
+    return null;
+};
+
+const refreshSignedUrl = async (fileUrl, expiresMinutes = null) => {
+    const storagePath = getStoragePathFromUrl(fileUrl);
+    if (!storagePath) {
+        logger.warn('refreshSignedUrl: could not derive storagePath from fileUrl:', fileUrl);
+        return null;
+    }
+    return getSignedDownloadUrl(storagePath, expiresMinutes);
+};
+
+// ══════════════════════════════════════════════════════════════
 //  DELETE FILE — GCS ONLY + CDN purge
 // ══════════════════════════════════════════════════════════════
 const deleteFile = async (fileUrl, storagePath = null) => {
@@ -413,6 +444,7 @@ module.exports = {
     uploadFile,
     getSignedUploadUrl,
     getSignedDownloadUrl,
+    refreshSignedUrl,
     makeFilePublic,
     deleteFile,
     purgeCDNCache,
