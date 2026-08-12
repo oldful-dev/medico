@@ -3293,7 +3293,10 @@
     "out_for_delivery": "ডেলিভারিতে অর্ডার",
     "medicine_delivered": "ওষুধ ডেলিভার",
     "service_rescheduled": "সেবা পুনর্নির্ধারিত",
-    "payment_confirmed": "পেমেন্ট নিশ্চিত"
+    "payment_confirmed": "পেমেন্ট নিশ্চিত",
+    "phlebo_assigned": "ফ্লেবোটমিস্ট নিযুক্ত",
+    "sample_processing": "নমুনা প্রক্রিয়াকরণ চলছে",
+    "booking_cancelled": "বুকিং বাতিল"
   },
   "membership": {
     "title": "My Memberships",

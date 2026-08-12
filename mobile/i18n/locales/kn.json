@@ -3293,7 +3293,10 @@
     "out_for_delivery": "ಆರ್ಡರ್ ಡೆಲಿವರಿಯಲ್ಲಿದೆ",
     "medicine_delivered": "ಔಷಧ ಡೆಲಿವರ್ ಆಗಿದೆ",
     "service_rescheduled": "ಸೇವೆ ಮರು ನಿಗದಿ",
-    "payment_confirmed": "ಪಾವತಿ ದೃಢಪಟ್ಟಿದೆ"
+    "payment_confirmed": "ಪಾವತಿ ದೃಢಪಟ್ಟಿದೆ",
+    "phlebo_assigned": "ಫ್ಲೆಬೋಟೊಮಿಸ್ಟ್ ನಿಯೋಜಿಸಲಾಗಿದೆ",
+    "sample_processing": "ಮಾದರಿ ಪ್ರಕ್ರಿಯೆಗೊಳ್ಳುತ್ತಿದೆ",
+    "booking_cancelled": "ಬುಕಿಂಗ್ ರದ್ದಾಗಿದೆ"
   },
   "membership": {
     "title": "ನನ್ನ ಸದಸ್ಯತೆ",

@@ -3293,7 +3293,10 @@
     "out_for_delivery": "ऑर्डर डिलीवरी पर",
     "medicine_delivered": "दवा डिलीवर हुई",
     "service_rescheduled": "सेवा पुनः निर्धारित",
-    "payment_confirmed": "भुगतान कन्फर्म"
+    "payment_confirmed": "भुगतान कन्फर्म",
+    "phlebo_assigned": "फ्लेबोटोमिस्ट नियुक्त",
+    "sample_processing": "नमूना प्रोसेसिंग में",
+    "booking_cancelled": "बुकिंग रद्द"
   },
   "membership": {
     "title": "मेरी सदस्यता",
