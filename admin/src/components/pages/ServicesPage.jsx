@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { 
-    DollarSign, Edit2, Plus, Trash2, ToggleLeft, ToggleRight, 
+import { useSearchParams } from "next/navigation";
+import {
+    DollarSign, Edit2, Plus, Trash2, ToggleLeft, ToggleRight,
     Sliders, Settings, HelpCircle, PlusCircle, Trash, Layers,
     ArrowUp, ArrowDown, Upload
 } from "lucide-react";
@@ -77,7 +78,10 @@ export default function ServicesPage() {
             setLoading(true);
             const res = await serviceAPI.getAll();
             const all = res.data?.data || [];
-            setServices(all.sort((a, b) => a.sortOrder - b.sortOrder));
+            // Home Essentials services are owned/managed exclusively by the
+            // Home Essential page (Operations) to avoid duplicate CRUD surfaces.
+            const withoutHomeEssentials = all.filter(s => s.category !== "HOME_ESSENTIALS");
+            setServices(withoutHomeEssentials.sort((a, b) => a.sortOrder - b.sortOrder));
         } catch (e) {
             console.error(e);
             showToast("Failed to load services", "error");
@@ -367,7 +371,9 @@ export default function ServicesPage() {
     const hardcodedServices = services.filter(s => !s.isDynamic);
     const dynamicServices = services.filter(s => s.isDynamic);
 
-    const [categoryFilter, setCategoryFilter] = useState("all");
+    const searchParams = useSearchParams();
+    const initialCategoryFilter = searchParams.get("type") === "dynamic" ? "dynamic" : "all";
+    const [categoryFilter, setCategoryFilter] = useState(initialCategoryFilter);
     const [searchFilter, setSearchFilter] = useState("");
 
     const platformModules = [
@@ -559,8 +565,10 @@ export default function ServicesPage() {
                                             >
                                                 <option value="CARE">Care Services (Doctor, Nurse, Physio, Hospital)</option>
                                                 <option value="DIAGNOSTICS_FITNESS">Diagnostics & Fitness</option>
-                                                <option value="HOME_ESSENTIALS">Home Essentials</option>
                                             </select>
+                                            <p className="text-muted text-xs" style={{ marginTop: 4 }}>
+                                                Home Essentials services are managed under Operations → Home Essential, not here.
+                                            </p>
                                         </div>
                                         <div className="form-group" style={{ marginBottom: 0 }}>
                                             <label className="form-label" style={{ marginBottom: 8 }}>Service Icon Type</label>
@@ -895,7 +903,7 @@ export default function ServicesPage() {
 
                                                  {["dropdown", "radio", "checkbox", "benefits"].includes(field.type) && (
                                                      <div className="form-group" style={{ marginTop: 4, marginBottom: 12 }}>
-                                                         <label className="form-label text-xs">Options List (Comma separated — format as "Option: Price" to set custom prices e.g. "Short Visit (2 Hours): 499, Full Shift (8 Hours): 1299") *</label>
+                                                         <label className="form-label text-xs">Options List (Comma separated — format as &quot;Option: Price&quot; to set custom prices e.g. &quot;Short Visit (2 Hours): 499, Full Shift (8 Hours): 1299&quot;) *</label>
                                                          <input 
                                                              type="text" 
                                                              className="form-input" 

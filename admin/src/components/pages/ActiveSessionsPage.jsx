@@ -7,12 +7,12 @@ import { sessionAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
 import Cookies from "js-cookie";
 
-export default function ActiveSessionsPage() {
+export default function ActiveSessionsPage({ lockType, title }) {
     const router = useRouter();
     const [sessions, setSessions] = useState({ totalActive: 0, adminSessions: [], userSessions: [] });
     const [loading, setLoading] = useState(true);
     const [filterState, setFilterState] = useState("");
-    const [filterType, setFilterType] = useState("all");
+    const [filterType, setFilterType] = useState(lockType || "all");
     const [autoSync, setAutoSync] = useState(true);
     const [lastSyncTime, setLastSyncTime] = useState(null);
     const [currentSessionId, setCurrentSessionId] = useState(null);
@@ -133,15 +133,15 @@ export default function ActiveSessionsPage() {
                     <ArrowLeft size={16} /> Back
                 </button>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                    Dashboard &nbsp;/&nbsp; Operations &nbsp;/&nbsp; <strong style={{ color: 'var(--text-primary)' }}>Active Sessions</strong>
+                    Dashboard &nbsp;/&nbsp; Intelligence & Control &nbsp;/&nbsp; <strong style={{ color: 'var(--text-primary)' }}>{title || "Active Sessions"}</strong>
                 </div>
             </div>
 
             {/* Header */}
             <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, margin: 0 }}>
                 <div>
-                    <h2 style={{ fontSize: '24px', fontWeight: 800 }}>Real-Time Active Sessions</h2>
-                    <p style={{ marginTop: 4 }}>Monitor live multi-device PC & Mobile sessions across all states</p>
+                    <h2 style={{ fontSize: '24px', fontWeight: 800 }}>{lockType === 'user' ? 'Live User Activity' : 'Real-Time Active Sessions'}</h2>
+                    <p style={{ marginTop: 4 }}>{lockType === 'user' ? 'Monitor live client/patient app sessions across all states' : 'Monitor live multi-device PC & Mobile sessions across all states'}</p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <button
@@ -198,19 +198,21 @@ export default function ActiveSessionsPage() {
 
             {/* Filters */}
             <div className="filter-bar" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center', padding: '16px 20px', background: 'var(--bg-secondary)', borderRadius: 12, border: '1px solid var(--border-color)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Filter Type:</label>
-                    <select
-                        value={filterType}
-                        onChange={(e) => setFilterType(e.target.value)}
-                        className="form-select"
-                        style={{ width: 160, borderRadius: 8, padding: '6px 12px' }}
-                    >
-                        <option value="all">All Sessions</option>
-                        <option value="admin">Admin Staff Only</option>
-                        <option value="user">Clients Only</option>
-                    </select>
-                </div>
+                {!lockType && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Filter Type:</label>
+                        <select
+                            value={filterType}
+                            onChange={(e) => setFilterType(e.target.value)}
+                            className="form-select"
+                            style={{ width: 160, borderRadius: 8, padding: '6px 12px' }}
+                        >
+                            <option value="all">All Sessions</option>
+                            <option value="admin">Admin Staff Only</option>
+                            <option value="user">Clients Only</option>
+                        </select>
+                    </div>
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>State:</label>
                     <select

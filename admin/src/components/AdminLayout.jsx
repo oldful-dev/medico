@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
@@ -75,12 +75,14 @@ export default function AdminLayout({ children }) {
 
     return (
         <div className={`admin-layout ${sidebarCollapsed ? 'collapsed' : ''} ${sidebarOpen ? 'sidebar-open' : ''}`}>
-            <Sidebar
-                collapsed={sidebarCollapsed}
-                open={sidebarOpen}
-                currentPath={pathname}
-                onClose={() => setSidebarOpen(false)}
-            />
+            <Suspense fallback={null}>
+                <Sidebar
+                    collapsed={sidebarCollapsed}
+                    open={sidebarOpen}
+                    currentPath={pathname}
+                    onClose={() => setSidebarOpen(false)}
+                />
+            </Suspense>
             <div className="main-content">
                 <Header
                     onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}

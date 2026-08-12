@@ -19,7 +19,7 @@ const crypto = require('crypto');
 const getPayments = async (req, res, next) => {
     try {
         const { page, limit, skip } = paginate(req.query);
-        const { status, userId, dateFrom, dateTo, search, includeDeleted } = req.query;
+        const { status, paymentMethod, userId, dateFrom, dateTo, search, includeDeleted } = req.query;
 
         const where = {};
         if (req.cityFilter) {
@@ -32,6 +32,7 @@ const getPayments = async (req, res, next) => {
             };
         }
         if (status) where.status = status;
+        if (paymentMethod) where.paymentMethod = paymentMethod;
         if (userId) where.userId = userId;
         if (search) {
             where.user = {

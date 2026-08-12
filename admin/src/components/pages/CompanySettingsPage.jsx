@@ -1,18 +1,22 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { 
-    Building2, Phone, Mail, Sliders, Briefcase, Heart, Plus, Trash2, Save, Info, CheckCircle2,
-    BookOpen, FileText, Upload, Bell
+import {
+    Building2, Phone, Mail, Save, Bell, Briefcase
 } from "lucide-react";
-import { uiConfigAPI, mediaAPI } from "@/lib/api";
+import { uiConfigAPI } from "@/lib/api";
 import { showToast } from "@/lib/hooks";
 
+// Contact Details and Notifications only — all public ayuxacare.com website
+// content (About, Blogs, Careers, Community, Reviews & Partners) moved to
+// WebsiteSettingsPage.jsx (Operations > All Website Settings). Both pages
+// share the same backend record (UIConfig key "company_global_config"), so
+// saves here still round-trip the full formData shape to avoid clobbering
+// the website-content fields on write.
 export default function CompanySettingsPage() {
     const [activeSubTab, setActiveSubTab] = useState("contact");
     const [configId, setConfigId] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    // Initial default state
     const [formData, setFormData] = useState({
         company_name: "Ayuxa Health Tech Platforms Pvt. Ltd.",
         address: "",
@@ -42,29 +46,13 @@ export default function CompanySettingsPage() {
         about_html: "",
         blogs_html: "",
         show_reviews: true,
-        partners_list: [
-            { name: 'Redcliffe Labs', color: '#E91E63' },
-            { name: 'Apollo Homecare', color: '#00BFA5' },
-            { name: 'Fortis Health', color: '#1A237E' },
-            { name: 'Manipal Hospitals', color: '#FF6D00' },
-            { name: 'MedPlus', color: '#C62828' },
-            { name: 'Portea', color: '#6A1B9A' },
-            { name: 'HealthKart', color: '#2E7D32' },
-            { name: 'Practo', color: '#1565C0' }
-        ],
-        reviews_list: [
-            { text: "The physiotherapist was incredibly professional. Booking through the app took less than a minute.", author: "Arun K.", role: "Son of patient", rating: 5 },
-            { text: "Ayuxa's 24/7 care is a lifesaver. It feels like having an extended family looking out for my parents.", author: "Priya S.", role: "Verified User", rating: 5 },
-            { text: "Quick, reliable, and transparent pricing. The doctor arrived exactly on time for the routine checkup.", author: "Rahul M.", role: "Working Professional", rating: 5 }
-        ],
+        partners_list: [],
+        reviews_list: [],
         notifications: {
             booking: { sms: '', whatsapp: '', email: '' },
             careers: { email: '' }
         }
     });
-
-    const [selectedBlogId, setSelectedBlogId] = useState("featured");
-    const [blogEditorTab, setBlogEditorTab] = useState("manager");
 
     useEffect(() => {
         const fetchConfig = async () => {
@@ -149,159 +137,6 @@ export default function CompanySettingsPage() {
         }
     };
 
-    // Career operations
-    const addCareerItem = () => {
-        const newItem = {
-            id: Date.now().toString(),
-            title: "New Job Opening",
-            department: "Operations",
-            location: "Bengaluru",
-            type: "Full Time",
-            description: "Provide short summary of duties here..."
-        };
-        setFormData(prev => ({
-            ...prev,
-            careers_list: [...prev.careers_list, newItem]
-        }));
-    };
-
-    const updateCareerItem = (id, field, value) => {
-        setFormData(prev => ({
-            ...prev,
-            careers_list: prev.careers_list.map(item => 
-                item.id === id ? { ...item, [field]: value } : item
-            )
-        }));
-    };
-
-    const removeCareerItem = (id) => {
-        setFormData(prev => ({
-            ...prev,
-            careers_list: prev.careers_list.filter(item => item.id !== id)
-        }));
-    };
-
-    // Charity initiatives operations
-    const addCharityInitiative = () => {
-        const initiatives = formData.community_content.charity_initiatives || [];
-        setFormData(prev => ({
-            ...prev,
-            community_content: {
-                ...prev.community_content,
-                charity_initiatives: [...initiatives, "New initiative description..."]
-            }
-        }));
-    };
-
-    const updateCharityInitiative = (index, value) => {
-        const initiatives = [...(formData.community_content.charity_initiatives || [])];
-        initiatives[index] = value;
-        setFormData(prev => ({
-            ...prev,
-            community_content: {
-                ...prev.community_content,
-                charity_initiatives: initiatives
-            }
-        }));
-    };
-
-    const removeCharityInitiative = (index) => {
-        const initiatives = [...(formData.community_content.charity_initiatives || [])];
-        initiatives.splice(index, 1);
-        setFormData(prev => ({
-            ...prev,
-            community_content: {
-                ...prev.community_content,
-                charity_initiatives: initiatives
-            }
-        }));
-    };
-
-    // Blog operations
-    const addBlogPost = () => {
-        const posts = formData.blogs_content?.posts || [];
-        const newPost = {
-            id: Date.now().toString(),
-            title: "New Article Title",
-            excerpt: "Article excerpt summary...",
-            author: "Author Name",
-            date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-            image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=800&auto=format&fit=crop",
-            category: "Wellness"
-        };
-        setFormData(prev => ({
-            ...prev,
-            blogs_content: {
-                ...prev.blogs_content,
-                posts: [...posts, newPost]
-            }
-        }));
-    };
-
-    const updateBlogPost = (id, field, value) => {
-        const posts = formData.blogs_content?.posts || [];
-        setFormData(prev => ({
-            ...prev,
-            blogs_content: {
-                ...prev.blogs_content,
-                posts: posts.map(post => post.id === id ? { ...post, [field]: value } : post)
-            }
-        }));
-    };
-
-    const removeBlogPost = (id) => {
-        const posts = formData.blogs_content?.posts || [];
-        setFormData(prev => ({
-            ...prev,
-            blogs_content: {
-                ...prev.blogs_content,
-                posts: posts.filter(post => post.id !== id)
-            }
-        }));
-    };
-
-    const updateFeaturedBlog = (field, value) => {
-        setFormData(prev => ({
-            ...prev,
-            blogs_content: {
-                ...prev.blogs_content,
-                featured: {
-                    ...(prev.blogs_content?.featured || {}),
-                    [field]: value
-                }
-            }
-        }));
-    };
-
-    const handleLogoUpload = async (e, index) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        const fd = new FormData();
-        fd.append("file", file);
-        fd.append("folder", "partners");
-        
-        try {
-            showToast("Uploading partner logo to GCS...", "info");
-            const res = await mediaAPI.upload(fd);
-            const url = res.data?.data?.url || res.data?.url;
-            
-            if (url) {
-                const updated = [...(formData.partners_list || [])];
-                updated[index] = { ...updated[index], logoUrl: url };
-                setFormData({ ...formData, partners_list: updated });
-                showToast("Partner logo uploaded successfully!", "success");
-            } else {
-                showToast("Upload succeeded but no URL returned", "error");
-            }
-        } catch (err) {
-            console.error("Partner logo upload failed:", err);
-            showToast("Failed to upload partner logo", "error");
-        } finally {
-            e.target.value = "";
-        }
-    };
-
     if (loading) {
         return (
             <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>
@@ -316,7 +151,7 @@ export default function CompanySettingsPage() {
                 <div className="title-group">
                     <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>Company Settings</h1>
                     <p style={{ color: "var(--text-muted)", margin: "4px 0 0", fontSize: 14 }}>
-                        Manage official contact details, careers page opportunities, and community content dynamically.
+                        Manage official contact details and internal notification recipients.
                     </p>
                 </div>
                 <div>
@@ -328,8 +163,8 @@ export default function CompanySettingsPage() {
 
             {/* TAB SELECTOR */}
             <div className="subtabs-bar" style={{ display: "flex", gap: 12, borderBottom: "1px solid var(--border-color)", paddingBottom: 12, marginBottom: 24 }}>
-                <button 
-                    onClick={() => setActiveSubTab("contact")} 
+                <button
+                    onClick={() => setActiveSubTab("contact")}
                     style={{
                         padding: "8px 16px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer",
                         fontWeight: 700, fontSize: 14,
@@ -342,78 +177,8 @@ export default function CompanySettingsPage() {
                         <Building2 size={16} /> Contact Details
                     </div>
                 </button>
-                <button 
-                    onClick={() => setActiveSubTab("about")} 
-                    style={{
-                        padding: "8px 16px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer",
-                        fontWeight: 700, fontSize: 14,
-                        background: activeSubTab === "about" ? "var(--bg-glass)" : "transparent",
-                        color: activeSubTab === "about" ? "var(--accent-primary)" : "var(--text-muted)",
-                        borderBottom: activeSubTab === "about" ? "2.5px solid var(--accent-primary)" : "none"
-                    }}
-                >
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <FileText size={16} /> About Us Page
-                    </div>
-                </button>
-                <button 
-                    onClick={() => setActiveSubTab("blogs")} 
-                    style={{
-                        padding: "8px 16px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer",
-                        fontWeight: 700, fontSize: 14,
-                        background: activeSubTab === "blogs" ? "var(--bg-glass)" : "transparent",
-                        color: activeSubTab === "blogs" ? "var(--accent-primary)" : "var(--text-muted)",
-                        borderBottom: activeSubTab === "blogs" ? "2.5px solid var(--accent-primary)" : "none"
-                    }}
-                >
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <BookOpen size={16} /> Blogs Page
-                    </div>
-                </button>
-                <button 
-                    onClick={() => setActiveSubTab("careers")} 
-                    style={{
-                        padding: "8px 16px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer",
-                        fontWeight: 700, fontSize: 14,
-                        background: activeSubTab === "careers" ? "var(--bg-glass)" : "transparent",
-                        color: activeSubTab === "careers" ? "var(--accent-primary)" : "var(--text-muted)",
-                        borderBottom: activeSubTab === "careers" ? "2.5px solid var(--accent-primary)" : "none"
-                    }}
-                >
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <Briefcase size={16} /> Careers Listings
-                    </div>
-                </button>
-                <button 
-                    onClick={() => setActiveSubTab("community")} 
-                    style={{
-                        padding: "8px 16px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer",
-                        fontWeight: 700, fontSize: 14,
-                        background: activeSubTab === "community" ? "var(--bg-glass)" : "transparent",
-                        color: activeSubTab === "community" ? "var(--accent-primary)" : "var(--text-muted)",
-                        borderBottom: activeSubTab === "community" ? "2.5px solid var(--accent-primary)" : "none"
-                    }}
-                >
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <Heart size={16} /> Community &amp; Charity
-                    </div>
-                </button>
-                <button 
-                    onClick={() => setActiveSubTab("reviews")} 
-                    style={{
-                        padding: "8px 16px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer",
-                        fontWeight: 700, fontSize: 14,
-                        background: activeSubTab === "reviews" ? "var(--bg-glass)" : "transparent",
-                        color: activeSubTab === "reviews" ? "var(--accent-primary)" : "var(--text-muted)",
-                        borderBottom: activeSubTab === "reviews" ? "2.5px solid var(--accent-primary)" : "none"
-                    }}
-                >
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <Building2 size={16} /> Reviews &amp; Partners
-                    </div>
-                </button>
-                <button 
-                    onClick={() => setActiveSubTab("notifications")} 
+                <button
+                    onClick={() => setActiveSubTab("notifications")}
                     style={{
                         padding: "8px 16px", borderRadius: "var(--radius-md)", border: "none", cursor: "pointer",
                         fontWeight: 700, fontSize: 14,
@@ -430,15 +195,15 @@ export default function CompanySettingsPage() {
 
             {/* TAB CONTENT */}
             <div className="main-card" style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-lg)", padding: 24, boxShadow: "var(--shadow-sm)" }}>
-                
-                {/* 1. CONTACT TAB */}
+
+                {/* CONTACT TAB */}
                 {activeSubTab === "contact" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
                         <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                             <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Company Name</label>
-                            <input 
-                                value={formData.company_name} 
+                            <input
+                                value={formData.company_name}
                                 onChange={e => setFormData({ ...formData, company_name: e.target.value })}
                                 style={{ width: "100%", padding: 12, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
                             />
@@ -446,9 +211,9 @@ export default function CompanySettingsPage() {
 
                         <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                             <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Company Address</label>
-                            <textarea 
+                            <textarea
                                 rows={3}
-                                value={formData.address} 
+                                value={formData.address}
                                 onChange={e => setFormData({ ...formData, address: e.target.value })}
                                 placeholder="Enter official corporate address..."
                                 style={{ width: "100%", padding: 12, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontFamily: "inherit" }}
@@ -460,8 +225,8 @@ export default function CompanySettingsPage() {
                                 <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Official Contact Number</label>
                                 <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
                                     <Phone size={16} style={{ position: "absolute", left: 12, color: "var(--text-muted)" }} />
-                                    <input 
-                                        value={formData.official_contact} 
+                                    <input
+                                        value={formData.official_contact}
                                         onChange={e => setFormData({ ...formData, official_contact: e.target.value })}
                                         placeholder="+91 94801 98108"
                                         style={{ width: "100%", padding: "12px 12px 12px 38px", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
@@ -472,8 +237,8 @@ export default function CompanySettingsPage() {
                                 <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Customer Care Number</label>
                                 <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
                                     <Phone size={16} style={{ position: "absolute", left: 12, color: "var(--text-muted)" }} />
-                                    <input 
-                                        value={formData.customer_care} 
+                                    <input
+                                        value={formData.customer_care}
                                         onChange={e => setFormData({ ...formData, customer_care: e.target.value })}
                                         placeholder="080 4728 0789"
                                         style={{ width: "100%", padding: "12px 12px 12px 38px", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
@@ -484,15 +249,15 @@ export default function CompanySettingsPage() {
 
                         <div style={{ borderTop: "1px solid var(--border-color)", marginTop: 10, paddingTop: 20 }}>
                             <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Corporate Email Directory</h3>
-                            
+
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                                 <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                                     <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Client Support Email</label>
                                     <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
                                         <Mail size={16} style={{ position: "absolute", left: 12, color: "var(--text-muted)" }} />
-                                        <input 
+                                        <input
                                             type="email"
-                                            value={formData.emails.support} 
+                                            value={formData.emails.support}
                                             onChange={e => setFormData({ ...formData, emails: { ...formData.emails, support: e.target.value } })}
                                             placeholder="support@ayuxacare.com"
                                             style={{ width: "100%", padding: "12px 12px 12px 38px", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
@@ -503,9 +268,9 @@ export default function CompanySettingsPage() {
                                     <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Investor Relations Email</label>
                                     <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
                                         <Mail size={16} style={{ position: "absolute", left: 12, color: "var(--text-muted)" }} />
-                                        <input 
+                                        <input
                                             type="email"
-                                            value={formData.emails.investor} 
+                                            value={formData.emails.investor}
                                             onChange={e => setFormData({ ...formData, emails: { ...formData.emails, investor: e.target.value } })}
                                             placeholder="office@ayuxa.co.in"
                                             style={{ width: "100%", padding: "12px 12px 12px 38px", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
@@ -519,9 +284,9 @@ export default function CompanySettingsPage() {
                                     <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Careers / Recruitment Email</label>
                                     <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
                                         <Mail size={16} style={{ position: "absolute", left: 12, color: "var(--text-muted)" }} />
-                                        <input 
+                                        <input
                                             type="email"
-                                            value={formData.emails.careers} 
+                                            value={formData.emails.careers}
                                             onChange={e => setFormData({ ...formData, emails: { ...formData.emails, careers: e.target.value } })}
                                             placeholder="careers@ayuxa.co.in"
                                             style={{ width: "100%", padding: "12px 12px 12px 38px", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
@@ -532,9 +297,9 @@ export default function CompanySettingsPage() {
                                     <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>General Enquiries Email</label>
                                     <div style={{ display: "flex", alignItems: "center", position: "relative" }}>
                                         <Mail size={16} style={{ position: "absolute", left: 12, color: "var(--text-muted)" }} />
-                                        <input 
+                                        <input
                                             type="email"
-                                            value={formData.emails.enquiries} 
+                                            value={formData.emails.enquiries}
                                             onChange={e => setFormData({ ...formData, emails: { ...formData.emails, enquiries: e.target.value } })}
                                             placeholder="ho@ayuxa.co.in"
                                             style={{ width: "100%", padding: "12px 12px 12px 38px", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
@@ -546,329 +311,7 @@ export default function CompanySettingsPage() {
                     </div>
                 )}
 
-                {/* 2. CAREERS LISTINGS TAB */}
-                {activeSubTab === "careers" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                                Define open positions to be displayed on the careers page.
-                            </div>
-                            <button className="btn-secondary" onClick={addCareerItem} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <Plus size={16} /> Add Position
-                            </button>
-                        </div>
-
-                        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                            {formData.careers_list.length === 0 ? (
-                                <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)", border: "1px dashed var(--border-color)", borderRadius: "var(--radius-md)" }}>
-                                    No open positions defined. Click &quot;Add Position&quot; to list a new opportunity.
-                                </div>
-                            ) : formData.careers_list.map((job) => (
-                                <div key={job.id} style={{ border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: 20, background: "var(--bg-secondary)", position: "relative" }}>
-                                    <button 
-                                        onClick={() => removeCareerItem(job.id)} 
-                                        style={{ position: "absolute", top: 16, right: 16, border: "none", background: "transparent", color: "var(--accent-danger)", cursor: "pointer" }}
-                                        title="Delete position"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                    
-                                    <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 16, marginBottom: 12 }}>
-                                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                            <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Job Title</label>
-                                            <input 
-                                                value={job.title} 
-                                                onChange={e => updateCareerItem(job.id, "title", e.target.value)}
-                                                style={{ width: "100%", padding: 10, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontSize: 13 }}
-                                            />
-                                        </div>
-                                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                            <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Department</label>
-                                            <input 
-                                                value={job.department} 
-                                                onChange={e => updateCareerItem(job.id, "department", e.target.value)}
-                                                style={{ width: "100%", padding: 10, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontSize: 13 }}
-                                            />
-                                        </div>
-                                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                            <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Location</label>
-                                            <input 
-                                                value={job.location} 
-                                                onChange={e => updateCareerItem(job.id, "location", e.target.value)}
-                                                style={{ width: "100%", padding: 10, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontSize: 13 }}
-                                            />
-                                        </div>
-                                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                            <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Job Type</label>
-                                            <input 
-                                                value={job.type} 
-                                                onChange={e => updateCareerItem(job.id, "type", e.target.value)}
-                                                placeholder="e.g. Full Time"
-                                                style={{ width: "100%", padding: 10, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontSize: 13 }}
-                                            />
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                        <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Description / Requirements Summary</label>
-                                        <textarea 
-                                            rows={2}
-                                            value={job.description} 
-                                            onChange={e => updateCareerItem(job.id, "description", e.target.value)}
-                                            style={{ width: "100%", padding: 10, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontSize: 13, fontFamily: "inherit" }}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* 3. COMMUNITY TAB */}
-                {activeSubTab === "community" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                            <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Charity/Community Page Title</label>
-                            <input 
-                                value={formData.community_content.title} 
-                                onChange={e => setFormData({
-                                    ...formData,
-                                    community_content: { ...formData.community_content, title: e.target.value }
-                                })}
-                                style={{ width: "100%", padding: 12, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
-                            />
-                        </div>
-
-                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                            <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Charity/Community Page Description</label>
-                            <textarea 
-                                rows={3}
-                                value={formData.community_content.description} 
-                                onChange={e => setFormData({
-                                    ...formData,
-                                    community_content: { ...formData.community_content, description: e.target.value }
-                                })}
-                                style={{ width: "100%", padding: 12, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontFamily: "inherit" }}
-                            />
-                        </div>
-
-                        <div style={{ borderTop: "1px solid var(--border-color)", marginTop: 10, paddingTop: 20 }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                                <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Charity Initiatives &amp; Activities</h3>
-                                <button className="btn-secondary" onClick={addCharityInitiative} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <Plus size={16} /> Add Initiative
-                                </button>
-                            </div>
-
-                            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                                {(formData.community_content.charity_initiatives || []).length === 0 ? (
-                                    <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)", border: "1px dashed var(--border-color)", borderRadius: "var(--radius-md)" }}>
-                                        No initiatives listed yet. Click &quot;Add Initiative&quot; to list a community action.
-                                    </div>
-                                ) : (formData.community_content.charity_initiatives || []).map((item, index) => (
-                                    <div key={index} style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                                        <input 
-                                            value={item} 
-                                            onChange={e => updateCharityInitiative(index, e.target.value)}
-                                            style={{ flex: 1, padding: 12, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none" }}
-                                        />
-                                        <button 
-                                            onClick={() => removeCharityInitiative(index)} 
-                                            style={{ border: "none", background: "transparent", color: "var(--accent-danger)", cursor: "pointer", padding: 8 }}
-                                            title="Remove initiative"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* 6. REVIEWS & PARTNERS TAB */}
-                {activeSubTab === "reviews" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-                        {/* Server UI Notice */}
-                        <div style={{ display: "flex", gap: 12, padding: 16, background: "rgba(4,131,87,0.06)", border: "1px solid rgba(4,131,87,0.15)", borderRadius: "var(--radius-md)", alignItems: "center" }}>
-                            <Info size={20} style={{ color: "var(--accent-primary)", flexShrink: 0 }} />
-                            <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: "1.4" }}>
-                                💡 <strong>Core Services Customization:</strong> The &quot;Our Core Services&quot; landing page cards are synchronized dynamically from the active mobile app services menu list. To configure, toggle, or edit service layout items, visit the <a href="/server-ui" style={{ color: "var(--accent-primary)", fontWeight: 700, textDecoration: "underline" }}>Server UI Layouts</a> manager.
-                            </div>
-                        </div>
-                        {/* Partner organizations */}
-                        <div>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                                <div>
-                                    <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Trusted Partner Organizations</h3>
-                                    <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "4px 0 0" }}>Organizations scrolling on the landing page marquee banner.</p>
-                                </div>
-                                <button className="btn-secondary" onClick={() => setFormData({ ...formData, partners_list: [...(formData.partners_list || []), { name: 'New Partner', color: '#10b981' }] })} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <Plus size={16} /> Add Partner
-                                </button>
-                            </div>
-
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                                {(formData.partners_list || []).map((partner, index) => (
-                                    <div key={index} style={{ display: "flex", gap: 12, alignItems: "center", padding: 14, background: "var(--bg-secondary)", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}>
-                                        <div style={{ display: "flex", gap: 10, alignItems: "center", flex: 2 }}>
-                                            <div style={{ position: "relative", width: 44, height: 44, background: partner.color || "var(--bg-card)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", border: "1px solid var(--border-color)", cursor: "pointer" }} onClick={() => document.getElementById(`partner-file-${index}`).click()}>
-                                                {partner.logoUrl ? (
-                                                    <img src={partner.logoUrl} alt={partner.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                                                ) : (
-                                                    <span style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>{partner.name ? partner.name[0] : 'P'}</span>
-                                                )}
-                                                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 8, display: "flex", alignItems: "center", justifyContent: "center", padding: "2px 0" }}>
-                                                    <Upload size={8} />
-                                                </div>
-                                                <input 
-                                                    id={`partner-file-${index}`}
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={e => handleLogoUpload(e, index)}
-                                                    style={{ display: "none" }}
-                                                />
-                                            </div>
-                                            <div className="form-group" style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-                                                <label style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)" }}>Partner Name</label>
-                                                <input 
-                                                    value={partner.name} 
-                                                    onChange={e => {
-                                                        const updated = [...(formData.partners_list || [])];
-                                                        updated[index].name = e.target.value;
-                                                        setFormData({ ...formData, partners_list: updated });
-                                                    }}
-                                                    style={{ width: "100%", padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13 }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="form-group" style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
-                                            <label style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)" }}>Hex Color / Logo URL</label>
-                                            <input 
-                                                value={partner.logoUrl || partner.color || ""} 
-                                                onChange={e => {
-                                                    const val = e.target.value;
-                                                    const updated = [...(formData.partners_list || [])];
-                                                    if (val.startsWith("http")) {
-                                                        updated[index].logoUrl = val;
-                                                    } else {
-                                                        updated[index].color = val;
-                                                    }
-                                                    setFormData({ ...formData, partners_list: updated });
-                                                }}
-                                                placeholder="#HEX or URL"
-                                                style={{ width: "100%", padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13 }}
-                                            />
-                                        </div>
-                                        <button 
-                                            onClick={() => {
-                                                const updated = [...(formData.partners_list || [])];
-                                                updated.splice(index, 1);
-                                                setFormData({ ...formData, partners_list: updated });
-                                            }}
-                                            style={{ alignSelf: "flex-end", marginBottom: 6, border: "none", background: "transparent", color: "var(--accent-danger)", cursor: "pointer" }}
-                                            title="Delete partner"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Customer reviews */}
-                        <div style={{ borderTop: "1px solid var(--border-color)", paddingTop: 24 }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                                <div>
-                                    <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Loved by Families (Reviews)</h3>
-                                    <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "4px 0 0" }}>Testimonials and feedback showing in the review cards.</p>
-                                </div>
-                                <button className="btn-secondary" onClick={() => setFormData({ ...formData, reviews_list: [...(formData.reviews_list || []), { text: 'New review quote text...', author: 'Customer Name', role: 'Verified User', rating: 5 }] })} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <Plus size={16} /> Add Review
-                                </button>
-                            </div>
-
-                            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                                {(formData.reviews_list || []).map((review, index) => (
-                                    <div key={index} style={{ border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: 16, background: "var(--bg-secondary)", display: "flex", flexDirection: "column", gap: 12 }}>
-                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)" }}>Review #{index + 1}</span>
-                                            <button 
-                                                onClick={() => {
-                                                    const updated = [...(formData.reviews_list || [])];
-                                                    updated.splice(index, 1);
-                                                    setFormData({ ...formData, reviews_list: updated });
-                                                }}
-                                                style={{ border: "none", background: "transparent", color: "var(--accent-danger)", cursor: "pointer" }}
-                                                title="Delete review"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-
-                                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                            <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)" }}>Review Text</label>
-                                            <textarea 
-                                                rows={2}
-                                                value={review.text} 
-                                                onChange={e => {
-                                                    const updated = [...(formData.reviews_list || [])];
-                                                    updated[index].text = e.target.value;
-                                                    setFormData({ ...formData, reviews_list: updated });
-                                                }}
-                                                style={{ width: "100%", padding: 10, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13, fontFamily: "inherit" }}
-                                            />
-                                        </div>
-
-                                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr 1fr", gap: 12 }}>
-                                            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                                <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)" }}>Author / Name</label>
-                                                <input 
-                                                    value={review.author} 
-                                                    onChange={e => {
-                                                        const updated = [...(formData.reviews_list || [])];
-                                                        updated[index].author = e.target.value;
-                                                        setFormData({ ...formData, reviews_list: updated });
-                                                    }}
-                                                    style={{ width: "100%", padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13 }}
-                                                />
-                                            </div>
-                                            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                                <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)" }}>Role / Label</label>
-                                                <input 
-                                                    value={review.role} 
-                                                    onChange={e => {
-                                                        const updated = [...(formData.reviews_list || [])];
-                                                        updated[index].role = e.target.value;
-                                                        setFormData({ ...formData, reviews_list: updated });
-                                                    }}
-                                                    style={{ width: "100%", padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13 }}
-                                                />
-                                            </div>
-                                            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                                <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)" }}>Rating (1-5)</label>
-                                                <input 
-                                                    type="number"
-                                                    min={1}
-                                                    max={5}
-                                                    value={review.rating} 
-                                                    onChange={e => {
-                                                        const updated = [...(formData.reviews_list || [])];
-                                                        updated[index].rating = parseInt(e.target.value) || 5;
-                                                        setFormData({ ...formData, reviews_list: updated });
-                                                    }}
-                                                    style={{ width: "100%", padding: 8, background: "var(--bg-card)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontSize: 13 }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                )}
-                
-                {/* 7. NOTIFICATIONS TAB */}
+                {/* NOTIFICATIONS TAB */}
                 {activeSubTab === "notifications" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
                         {/* Info Banner */}
@@ -998,320 +441,6 @@ export default function CompanySettingsPage() {
                         </div>
                     </div>
                 )}
-
-                {activeSubTab === "about" && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, minHeight: 500 }}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>About Page HTML</h3>
-                                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>HTML supported</span>
-                            </div>
-                            <textarea 
-                                rows={25}
-                                value={formData.about_html || ""} 
-                                onChange={e => setFormData({
-                                    ...formData,
-                                    about_html: e.target.value
-                                })}
-                                style={{ width: "100%", padding: 16, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontFamily: "monospace", fontSize: 13, resize: "vertical", lineHeight: 1.6 }}
-                                placeholder="<h2>About Section</h2>..."
-                            />
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                            <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Live Preview</h3>
-                            <div style={{ border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: 24, background: "#FFFCF6", overflowY: "auto", maxHeight: 535 }}>
-                                <div 
-                                    className="legal-preview"
-                                    dangerouslySetInnerHTML={{ __html: formData.about_html || "<p style='color: var(--text-muted); font-style: italic;'>No content yet.</p>" }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* BLOGS TAB */}
-                {activeSubTab === "blogs" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                        <div style={{ display: "flex", gap: 12, borderBottom: "1px solid var(--border-color)", paddingBottom: 12 }}>
-                            <button 
-                                className={`btn-subtab ${blogEditorTab === "manager" ? "active" : ""}`}
-                                onClick={() => setBlogEditorTab("manager")}
-                                style={{ padding: "8px 16px", background: blogEditorTab === "manager" ? "var(--color-primary)" : "transparent", color: blogEditorTab === "manager" ? "white" : "var(--text-muted)", border: "none", borderRadius: "var(--radius-md)", cursor: "pointer", fontWeight: 600, fontSize: 13 }}
-                            >
-                                Blog Posts Manager
-                            </button>
-                            <button 
-                                className={`btn-subtab ${blogEditorTab === "legacy" ? "active" : ""}`}
-                                onClick={() => setBlogEditorTab("legacy")}
-                                style={{ padding: "8px 16px", background: blogEditorTab === "legacy" ? "var(--color-primary)" : "transparent", color: blogEditorTab === "legacy" ? "white" : "var(--text-muted)", border: "none", borderRadius: "var(--radius-md)", cursor: "pointer", fontWeight: 600, fontSize: 13 }}
-                            >
-                                Raw HTML (Legacy Layout)
-                            </button>
-                        </div>
-
-                        {blogEditorTab === "legacy" ? (
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, minHeight: 500 }}>
-                                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                        <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Blogs Page HTML</h3>
-                                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>HTML supported</span>
-                                    </div>
-                                    <textarea 
-                                        rows={25}
-                                        value={formData.blogs_html || ""} 
-                                        onChange={e => setFormData({
-                                            ...formData,
-                                            blogs_html: e.target.value
-                                        })}
-                                        style={{ width: "100%", padding: 16, background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", outline: "none", fontFamily: "monospace", fontSize: 13, resize: "vertical", lineHeight: 1.6 }}
-                                        placeholder="<section>...</section>"
-                                    />
-                                </div>
-                                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                                    <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Live Preview</h3>
-                                    <div style={{ border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: 24, background: "#FFFCF6", overflowY: "auto", maxHeight: 535 }}>
-                                        <div 
-                                            className="legal-preview"
-                                            dangerouslySetInnerHTML={{ __html: formData.blogs_html || "<p style='color: var(--text-muted); font-style: italic;'>No content yet.</p>" }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 24, minHeight: 500 }}>
-                                {/* Left pane: Articles list */}
-                                <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-lg)", padding: 16, display: "flex", flexDirection: "column", gap: 16 }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                        <h3 style={{ fontSize: 12, fontWeight: 700, margin: 0, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Articles List</h3>
-                                        <button className="btn-secondary" onClick={addBlogPost} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", fontSize: 11 }}>
-                                            <Plus size={14} /> Add Post
-                                        </button>
-                                    </div>
-                                    
-                                    <div style={{ display: "flex", flexDirection: "column", gap: 8, overflowY: "auto", maxHeight: 450 }}>
-                                        {/* Featured post item */}
-                                        <div 
-                                            onClick={() => setSelectedBlogId("featured")}
-                                            style={{ 
-                                                padding: 12, 
-                                                borderRadius: "var(--radius-md)", 
-                                                cursor: "pointer",
-                                                background: selectedBlogId === "featured" ? "var(--color-primary-deep)" : "var(--bg-primary)",
-                                                color: selectedBlogId === "featured" ? "white" : "var(--text-primary)",
-                                                border: "1px solid var(--border-color)",
-                                                fontWeight: 600,
-                                                fontSize: 12
-                                            }}
-                                        >
-                                            ⭐ Featured Article
-                                            <div style={{ fontSize: 10, opacity: 0.8, marginTop: 4, fontWeight: 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                                {formData.blogs_content?.featured?.title || "Untitled Featured"}
-                                            </div>
-                                        </div>
-                                        
-                                        {/* List of regular posts */}
-                                        {(formData.blogs_content?.posts || []).map((post, index) => (
-                                            <div 
-                                                key={post.id}
-                                                onClick={() => setSelectedBlogId(post.id)}
-                                                style={{ 
-                                                    padding: 12, 
-                                                    borderRadius: "var(--radius-md)", 
-                                                    cursor: "pointer",
-                                                    background: selectedBlogId === post.id ? "var(--color-primary-deep)" : "var(--bg-primary)",
-                                                    color: selectedBlogId === post.id ? "white" : "var(--text-primary)",
-                                                    border: "1px solid var(--border-color)",
-                                                    display: "flex",
-                                                    justifyContent: "space-between",
-                                                    alignItems: "center",
-                                                    fontSize: 12,
-                                                    fontWeight: 600
-                                                }}
-                                            >
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <span style={{ fontSize: 10, display: "block", textTransform: "uppercase", color: selectedBlogId === post.id ? "rgba(255,255,255,0.7)" : "var(--text-muted)" }}>{post.category}</span>
-                                                    <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>
-                                                        {post.title || "Untitled Post"}
-                                                    </div>
-                                                </div>
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); removeBlogPost(post.id); }}
-                                                    style={{ border: "none", background: "transparent", color: selectedBlogId === post.id ? "white" : "var(--accent-danger)", cursor: "pointer", padding: 4, display: "flex", alignItems: "center" }}
-                                                    title="Delete Post"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Right pane: Editor Form */}
-                                <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-lg)", padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-                                    {selectedBlogId === "featured" ? (
-                                        // Editor for Featured post
-                                        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                                            <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: "var(--color-primary)" }}>Edit Featured Article</h3>
-                                            
-                                            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>Article Title</label>
-                                                <input 
-                                                    value={formData.blogs_content?.featured?.title || ""} 
-                                                    onChange={e => updateFeaturedBlog("title", e.target.value)}
-                                                    style={{ width: "100%", padding: 10, background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)" }}
-                                                />
-                                            </div>
-                                            
-                                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                                                <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                                    <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>Author Name</label>
-                                                    <input 
-                                                        value={formData.blogs_content?.featured?.author || ""} 
-                                                        onChange={e => updateFeaturedBlog("author", e.target.value)}
-                                                        style={{ width: "100%", padding: 10, background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)" }}
-                                                    />
-                                                </div>
-                                                <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                                    <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>Publish Date</label>
-                                                    <input 
-                                                        value={formData.blogs_content?.featured?.date || ""} 
-                                                        onChange={e => updateFeaturedBlog("date", e.target.value)}
-                                                        style={{ width: "100%", padding: 10, background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)" }}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>Cover Image URL</label>
-                                                <input 
-                                                    value={formData.blogs_content?.featured?.image || ""} 
-                                                    onChange={e => updateFeaturedBlog("image", e.target.value)}
-                                                    style={{ width: "100%", padding: 10, background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)" }}
-                                                />
-                                            </div>
-
-                                            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>Short Excerpt (Summary)</label>
-                                                <textarea 
-                                                    rows={2}
-                                                    value={formData.blogs_content?.featured?.excerpt || ""} 
-                                                    onChange={e => updateFeaturedBlog("excerpt", e.target.value)}
-                                                    style={{ width: "100%", padding: 10, background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontFamily: "inherit" }}
-                                                />
-                                            </div>
-
-                                            <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>Full Article Body (HTML / Paragraphs supported)</label>
-                                                <textarea 
-                                                    rows={10}
-                                                    value={formData.blogs_content?.featured?.content || ""} 
-                                                    onChange={e => updateFeaturedBlog("content", e.target.value)}
-                                                    style={{ width: "100%", padding: 10, background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontFamily: "monospace", fontSize: 13, lineHeight: 1.5 }}
-                                                    placeholder="<p>Write full article here...</p>"
-                                                />
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        // Editor for regular blog posts
-                                        (() => {
-                                            const activePost = (formData.blogs_content?.posts || []).find(p => p.id === selectedBlogId);
-                                            if (!activePost) return <div style={{ color: "var(--text-muted)" }}>Select a post from the list or click Add Post.</div>;
-                                            
-                                            return (
-                                                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                                                    <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: "var(--color-primary)" }}>Edit Blog Article</h3>
-                                                    
-                                                    <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                                        <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>Article Title</label>
-                                                        <input 
-                                                            value={activePost.title || ""} 
-                                                            onChange={e => updateBlogPost(activePost.id, "title", e.target.value)}
-                                                            style={{ width: "100%", padding: 10, background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)" }}
-                                                        />
-                                                    </div>
-
-                                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-                                                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                                            <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>Category</label>
-                                                            <input 
-                                                                value={activePost.category || ""} 
-                                                                onChange={e => updateBlogPost(activePost.id, "category", e.target.value)}
-                                                                style={{ width: "100%", padding: 10, background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)" }}
-                                                            />
-                                                        </div>
-                                                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                                            <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>Author Name</label>
-                                                            <input 
-                                                                value={activePost.author || ""} 
-                                                                onChange={e => updateBlogPost(activePost.id, "author", e.target.value)}
-                                                                style={{ width: "100%", padding: 10, background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)" }}
-                                                            />
-                                                        </div>
-                                                        <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                                            <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>Publish Date</label>
-                                                            <input 
-                                                                value={activePost.date || ""} 
-                                                                onChange={e => updateBlogPost(activePost.id, "date", e.target.value)}
-                                                                style={{ width: "100%", padding: 10, background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)" }}
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                                        <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>Cover Image URL</label>
-                                                        <input 
-                                                            value={activePost.image || ""} 
-                                                            onChange={e => updateBlogPost(activePost.id, "image", e.target.value)}
-                                                            style={{ width: "100%", padding: 10, background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)" }}
-                                                        />
-                                                    </div>
-
-                                                    <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                                        <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>Short Excerpt (Summary)</label>
-                                                        <textarea 
-                                                            rows={2}
-                                                            value={activePost.excerpt || ""} 
-                                                            onChange={e => updateBlogPost(activePost.id, "excerpt", e.target.value)}
-                                                            style={{ width: "100%", padding: 10, background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontFamily: "inherit" }}
-                                                        />
-                                                    </div>
-
-                                                    <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                                        <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)" }}>Full Article Body (HTML / Paragraphs supported)</label>
-                                                        <textarea 
-                                                            rows={10}
-                                                            value={activePost.content || ""} 
-                                                            onChange={e => updateBlogPost(activePost.id, "content", e.target.value)}
-                                                            style={{ width: "100%", padding: 10, background: "var(--bg-primary)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", fontFamily: "monospace", fontSize: 13, lineHeight: 1.5 }}
-                                                            placeholder="<p>Write full article here...</p>"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            );
-                                        })()
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-
-
-
-                <style>{`
-                    .legal-preview h1,.legal-preview h2,.legal-preview h3 { font-weight:700; margin:1.5rem 0 0.75rem; color:#111827; }
-                    .legal-preview h1 { font-size:1.8rem; }
-                    .legal-preview h2 { font-size:1.4rem; border-bottom:1px solid #f3f4f6; padding-bottom:0.5rem; }
-                    .legal-preview h3 { font-size:1.1rem; }
-                    .legal-preview p { margin-bottom:1rem; color:#4b5563; line-height: 1.6; }
-                    .legal-preview ul,.legal-preview ol { padding-left:1.5rem; margin-bottom:1rem; }
-                    .legal-preview ul { list-style:disc; }
-                    .legal-preview ol { list-style:decimal; }
-                    .legal-preview li { margin-bottom:0.4rem; color:#4b5563; }
-                    .legal-preview strong { color:#111827; }
-                    .legal-preview a { color:#10b981; text-decoration: underline; }
-                `}</style>
 
             </div>
         </div>

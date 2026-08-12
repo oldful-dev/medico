@@ -110,9 +110,34 @@ export default function MediaPage() {
         }
     }
 
-    function copyUrl(url) { 
-        navigator.clipboard.writeText(url); 
-        showToast('URL copied to clipboard'); 
+    function copyUrl(url) {
+        navigator.clipboard.writeText(url);
+        showToast('URL copied to clipboard');
+    }
+
+    // Health-report signed URLs expire after 30 minutes (sensitive medical
+    // documents), so the stored fileUrl often goes stale by the time an
+    // admin views it — fetch a freshly-signed URL on demand instead.
+    async function openClientReport(reportId) {
+        try {
+            const r = await userAPI.getHealthReportViewUrl(reportId);
+            const freshUrl = r.data?.data?.url;
+            if (!freshUrl) throw new Error('No URL returned');
+            window.open(freshUrl, '_blank', 'noreferrer');
+        } catch (e) {
+            showToast('Failed to load document — the link may be unavailable', 'error');
+        }
+    }
+
+    async function copyClientReportUrl(reportId) {
+        try {
+            const r = await userAPI.getHealthReportViewUrl(reportId);
+            const freshUrl = r.data?.data?.url;
+            if (!freshUrl) throw new Error('No URL returned');
+            copyUrl(freshUrl);
+        } catch (e) {
+            showToast('Failed to generate a fresh link', 'error');
+        }
     }
 
     const getFileIcon = (type) => { 
@@ -299,10 +324,10 @@ export default function MediaPage() {
                                     </div>
 
                                     <div style={{ display: "flex", gap: 6, marginTop: "auto", borderTop: "1px solid var(--border-color)", paddingTop: 10 }}>
-                                        <a href={report.fileUrl} target="_blank" rel="noreferrer" className="btn btn-sm btn-secondary" style={{ flex: 1, padding: 6, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                                        <button className="btn btn-sm btn-secondary" style={{ flex: 1, padding: 6, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }} onClick={() => openClientReport(report.id)}>
                                             <ExternalLink size={12} /> View File
-                                        </a>
-                                        <button className="btn btn-sm btn-secondary" style={{ padding: 6 }} onClick={() => copyUrl(report.fileUrl)}>Copy</button>
+                                        </button>
+                                        <button className="btn btn-sm btn-secondary" style={{ padding: 6 }} onClick={() => copyClientReportUrl(report.id)}>Copy</button>
                                         <button className="btn btn-sm btn-danger" style={{ padding: 6 }} onClick={() => deleteClientReport(report.id)}><Trash2 size={14} /></button>
                                     </div>
                                 </div>

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { RefreshCw, ChevronLeft, ChevronRight, Edit2, CreditCard, Smartphone, Banknote, Building2, FileDown, Eye } from "lucide-react";
 import { paymentAPI, bookingAPI, labAPI } from "@/lib/api";
 import { formatCurrency, formatDateTime, showToast } from "@/lib/hooks";
@@ -35,7 +36,11 @@ export default function PaymentsPage() {
     const [statusModal, setStatusModal] = useState(null);
     const [newStatus, setNewStatus] = useState('');
     const [updatingStatus, setUpdatingStatus] = useState(false);
-    const [statusFilter, setStatusFilter] = useState('SUCCESS');
+    const searchParams = useSearchParams();
+    const initialStatusFilter = searchParams.get('status') || 'SUCCESS';
+    const initialMethodFilter = searchParams.get('method') || '';
+    const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
+    const [methodFilter, setMethodFilter] = useState(initialMethodFilter);
     const [viewerModal, setViewerModal] = useState(null);
     const [search, setSearch] = useState("");
     const [dateFrom, setDateFrom] = useState("");
@@ -45,10 +50,11 @@ export default function PaymentsPage() {
     const loadPayments = useCallback(async () => {
         try {
             setLoading(true);
-            const r = await paymentAPI.getAll({ 
-                page, 
-                limit, 
+            const r = await paymentAPI.getAll({
+                page,
+                limit,
                 status: statusFilter || undefined,
+                paymentMethod: methodFilter || undefined,
                 search: search || undefined,
                 dateFrom: dateFrom || undefined,
                 dateTo: dateTo || undefined
@@ -60,7 +66,7 @@ export default function PaymentsPage() {
             console.error('Load payments error:', e);
             showToast('Failed to load payments', 'error');
         } finally { setLoading(false); }
-    }, [page, limit, statusFilter, search, dateFrom, dateTo]);
+    }, [page, limit, statusFilter, methodFilter, search, dateFrom, dateTo]);
 
     useEffect(() => { loadPayments(); }, [loadPayments]);
 
@@ -114,11 +120,18 @@ export default function PaymentsPage() {
                 >
                     Refund Initiated
                 </button>
-                <button 
+                <button
                     className={`btn ${statusFilter === 'REFUNDED' ? 'btn-primary' : 'btn-secondary'}`}
                     onClick={() => { setStatusFilter('REFUNDED'); setPage(1); }}
                 >
                     Refunded
+                </button>
+                <span style={{ width: 1, background: 'var(--border-color)', margin: '0 4px' }} />
+                <button
+                    className={`btn ${methodFilter === 'CASH' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => { setMethodFilter(methodFilter === 'CASH' ? '' : 'CASH'); setPage(1); }}
+                >
+                    <Banknote size={14} style={{ marginRight: 4 }} /> COD Only
                 </button>
             </div>
             <div className="filter-bar" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>

@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import useAuthStore from "@/store/useAuthStore";
 import { NAV_SECTIONS } from "@/lib/nav";
 import { X } from "lucide-react";
@@ -8,6 +9,8 @@ import { X } from "lucide-react";
 export default function Sidebar({ collapsed, open, currentPath, onClose }) {
     const { user } = useAuthStore();
     const userRole = user?.role || 'CITY_ADMIN';
+    const searchParams = useSearchParams();
+    const currentSearch = searchParams.toString();
 
     return (
         <>
@@ -37,7 +40,8 @@ export default function Sidebar({ collapsed, open, currentPath, onClose }) {
                                 {!collapsed && <div className="sidebar-section-title">{section.title}</div>}
                                 {filteredItems.map((item) => {
                                     const Icon = item.icon;
-                                    const isActive = currentPath === item.href;
+                                    const [itemPath, itemQuery = ""] = item.href.split('?');
+                                    const isActive = currentPath === itemPath && currentSearch === itemQuery;
                                     return (
                                         <Link
                                             key={item.id}
