@@ -7,6 +7,7 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /* config options here */
+  output: 'export',
   outputFileTracingRoot: path.join(__dirname, '../'),
   onDemandEntries: {
     maxInactiveAge: 0,
