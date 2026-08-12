@@ -9,6 +9,8 @@ const nextConfig = {
   /* config options here */
   output: 'export',
   outputFileTracingRoot: path.join(__dirname, '../'),
+  assetPrefix: '/',
+  basePath: '',
   onDemandEntries: {
     maxInactiveAge: 0,
   },
