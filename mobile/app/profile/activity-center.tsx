@@ -31,6 +31,9 @@ const EVENT_CONFIG_BASE: Record<string, {
     medicine_delivered:    { key: 'medicine_delivered',    icon: 'bag-check-outline',         iconColor: '#048357', iconBg: '#D1FAE5', accentColor: '#065F46', accentBg: '#ECFDF5' },
     service_rescheduled:   { key: 'service_rescheduled',   icon: 'calendar-outline',          iconColor: '#EA580C', iconBg: '#FFEDD5', accentColor: '#C2410C', accentBg: '#FFF7ED' },
     payment_confirmed:     { key: 'payment_confirmed',     icon: 'card-outline',              iconColor: '#0284C7', iconBg: '#E0F2FE', accentColor: '#0369A1', accentBg: '#F0F9FF' },
+    phlebo_assigned:       { key: 'phlebo_assigned',       icon: 'person-outline',            iconColor: '#2563EB', iconBg: '#DBEAFE', accentColor: '#1D4ED8', accentBg: '#EFF6FF' },
+    sample_processing:     { key: 'sample_processing',     icon: 'hourglass-outline',         iconColor: '#7C3AED', iconBg: '#EDE9FE', accentColor: '#6D28D9', accentBg: '#F5F3FF' },
+    booking_cancelled:     { key: 'booking_cancelled',     icon: 'close-circle-outline',      iconColor: '#DC2626', iconBg: '#FEE2E2', accentColor: '#B91C1C', accentBg: '#FEF2F2' },
 };
 
 

@@ -17,6 +17,9 @@ const VALID_EVENT_TYPES = [
     'medicine_delivered',
     'service_rescheduled',
     'payment_confirmed',
+    'phlebo_assigned',
+    'sample_processing',
+    'booking_cancelled',
 ];
 
 // POST /api/activity/lab-orders/:id/assign

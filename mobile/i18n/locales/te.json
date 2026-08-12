@@ -3293,7 +3293,10 @@
     "out_for_delivery": "ఆర్డర్ డెలివరీలో ఉంది",
     "medicine_delivered": "మందు డెలివర్ చేయబడింది",
     "service_rescheduled": "సేవ పునర్నిర్ధారించబడింది",
-    "payment_confirmed": "చెల్లింపు నిర్ధారించబడింది"
+    "payment_confirmed": "చెల్లింపు నిర్ధారించబడింది",
+    "phlebo_assigned": "ఫ్లెబోటమిస్ట్ నియమించబడ్డారు",
+    "sample_processing": "నమూనా ప్రాసెసింగ్‌లో ఉంది",
+    "booking_cancelled": "బుకింగ్ రద్దు చేయబడింది"
   },
   "membership": {
     "title": "My Memberships",

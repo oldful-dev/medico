@@ -2,8 +2,47 @@ const { Queue, Worker } = require('bullmq');
 const { connection } = require('../config/redis');
 const { logger } = require('../config/logger');
 const redcliffeService = require('../services/redcliffe.service');
+const { emitToUser } = require('../services/socket.service');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+
+// Redcliffe webhook events that only flip LabOrder.status today, with no
+// customer-visible trace of what happened. Mapped onto ActivityUpdate so
+// they render on the mobile "Live Updates" timeline the same way admin-driven
+// staff assignments already do — no real staff for these, so staffName/staffPhone
+// are system-level placeholders (staffPhone left blank so the UI's call button
+// doesn't render for a non-existent contact).
+const WEBHOOK_ACTIVITY_EVENTS = {
+    phleboassigned: { eventType: 'phlebo_assigned', statusDetail: 'Phlebotomist assigned by the lab.' },
+    pickup: { eventType: 'sample_collected', statusDetail: 'Sample collected by the phlebotomist.' },
+    samplesync: { eventType: 'sample_processing', statusDetail: 'Sample received and processing has started.' },
+    cancelled: { eventType: 'booking_cancelled', statusDetail: 'Booking was cancelled.' },
+};
+
+async function recordWebhookActivity(order, event_type) {
+    const cfg = WEBHOOK_ACTIVITY_EVENTS[event_type];
+    if (!cfg) return;
+    try {
+        const activity = await prisma.activityUpdate.create({
+            data: {
+                labOrderId: order.id,
+                eventType: cfg.eventType,
+                serviceType: 'Blood Test',
+                staffName: 'Redcliffe Labs',
+                staffId: 'redcliffe-system',
+                staffPhone: '',
+                statusDetail: cfg.statusDetail,
+            },
+        });
+        emitToUser(order.userId, 'activity_update_created', {
+            ...activity,
+            clientRefId: order.clientRefId,
+        });
+    } catch (err) {
+        // Non-fatal — the status update itself must not be blocked by this.
+        logger.error(`[Queue] Failed to record webhook activity for ${order.id} (${event_type}): ${err.message}`);
+    }
+}
 
 // Queue Definitions
 const redcliffeConfirmQueue = new Queue('redcliffe-confirm-queue', { connection });
@@ -97,31 +136,36 @@ const webhookWorker = new Worker('redcliffe-webhook-queue', async job => {
 
     let nextStatus = order.status;
     let updates = {};
+    let applied = false;
 
     switch (event_type) {
         case 'phleboassigned':
             if (order.status === 'CONFIRMED') {
                 updates.trackingLink = data.tracking_link || order.trackingLink;
+                applied = true;
             }
             break;
-            
+
         case 'pickup':
             if (['PENDING', 'CONFIRMED'].includes(order.status)) {
                 nextStatus = 'SAMPLE_COLLECTED';
+                applied = true;
             }
             break;
-            
+
         case 'samplesync':
             if (['PENDING', 'CONFIRMED', 'SAMPLE_COLLECTED'].includes(order.status)) {
                 nextStatus = 'PROCESSING';
+                applied = true;
             }
             break;
-            
+
         case 'consolidatereport':
             if (order.status !== 'REPORT_GENERATED') {
                 nextStatus = 'REPORT_GENERATED';
                 updates.reportUrl = data.report_link;
-                
+                applied = true;
+
                 // Emitting a notification job to email/whatsapp the patient
                 await notificationQueue.add('send-lab-report', {
                     userId: order.userId,
@@ -130,14 +174,15 @@ const webhookWorker = new Worker('redcliffe-webhook-queue', async job => {
                 }, { attempts: 3, backoff: { type: 'exponential', delay: 2000 }}); // Retry explicitly set here
             }
             break;
-            
+
         case 'cancelled':
             if (order.status !== 'FAILED') {
                 nextStatus = 'FAILED';
+                applied = true;
                 // Trigger operational review or refund
             }
             break;
-            
+
         default:
             logger.info(`[Queue] Unhandled webhook event_type: ${event_type}`);
             return;
@@ -152,7 +197,14 @@ const webhookWorker = new Worker('redcliffe-webhook-queue', async job => {
             processedEvents: { push: uniqueEventId }
         }
     });
-    
+
+    // Surface the change to the customer (Live Updates timeline + real-time
+    // socket push) — previously these 4 events only flipped LabOrder.status
+    // silently, invisible outside a REST refetch.
+    if (applied) {
+        await recordWebhookActivity(order, event_type);
+    }
+
     logger.info({ job: 'webhook-handler', event: event_type, booking_id, newStatus: nextStatus });
 
 }, { connection, concurrency: 10 });

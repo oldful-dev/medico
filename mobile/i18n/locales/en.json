@@ -3293,7 +3293,10 @@
     "out_for_delivery": "Order Out for Delivery",
     "medicine_delivered": "Medicine Delivered",
     "service_rescheduled": "Service Rescheduled",
-    "payment_confirmed": "Payment Confirmed"
+    "payment_confirmed": "Payment Confirmed",
+    "phlebo_assigned": "Phlebotomist Assigned",
+    "sample_processing": "Sample Processing",
+    "booking_cancelled": "Booking Cancelled"
   },
   "membership": {
     "title": "My Memberships",

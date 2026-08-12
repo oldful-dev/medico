@@ -3293,7 +3293,10 @@
     "out_for_delivery": "ഓർഡർ ഡെലിവറിയിൽ",
     "medicine_delivered": "മരുന്ന് ഡെലിവർ ചെയ്തു",
     "service_rescheduled": "സേവനം പുനഃക്രമീകരിച്ചു",
-    "payment_confirmed": "പേയ്‌മെന്റ് സ്ഥിരീകരിച്ചു"
+    "payment_confirmed": "പേയ്‌മെന്റ് സ്ഥിരീകരിച്ചു",
+    "phlebo_assigned": "ഫ്ലെബോട്ടമിസ്റ്റിനെ നിയോഗിച്ചു",
+    "sample_processing": "സാമ്പിൾ പ്രോസസ്സിംഗിലാണ്",
+    "booking_cancelled": "ബുക്കിംഗ് റദ്ദാക്കി"
   },
   "membership": {
     "title": "My Memberships",

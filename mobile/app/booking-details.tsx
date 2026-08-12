@@ -41,6 +41,9 @@ const ACTIVITY_EVENT_CONFIG: Record<string, { icon: keyof typeof Ionicons.glyphM
     medicine_delivered:    { icon: 'bag-check-outline',        color: '#048357' },
     service_rescheduled:   { icon: 'calendar-outline',         color: '#EA580C' },
     payment_confirmed:     { icon: 'card-outline',             color: '#0284C7' },
+    phlebo_assigned:       { icon: 'person-outline',            color: '#2563EB' },
+    sample_processing:     { icon: 'hourglass-outline',         color: '#7C3AED' },
+    booking_cancelled:     { icon: 'close-circle-outline',      color: '#DC2626' },
 };
 
 interface BookingDetail {

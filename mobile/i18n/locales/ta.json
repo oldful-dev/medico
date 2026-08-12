@@ -3293,7 +3293,10 @@
     "out_for_delivery": "ஆர்டர் டெலிவரியில் உள்ளது",
     "medicine_delivered": "மருந்து வழங்கப்பட்டது",
     "service_rescheduled": "சேவை மறுத்தி திட்டமிடப்பட்டது",
-    "payment_confirmed": "கட்டணம் உறுதிப்படுத்தப்பட்டது"
+    "payment_confirmed": "கட்டணம் உறுதிப்படுத்தப்பட்டது",
+    "phlebo_assigned": "ஃபிளெபோடோமிஸ்ட் நியமிக்கப்பட்டார்",
+    "sample_processing": "மாதிரி செயலாக்கத்தில் உள்ளது",
+    "booking_cancelled": "முன்பதிவு ரத்து செய்யப்பட்டது"
   },
   "membership": {
     "title": "My Memberships",
