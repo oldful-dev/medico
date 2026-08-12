@@ -8,6 +8,9 @@ const __dirname = path.dirname(__filename);
 const nextConfig = {
   /* config options here */
   outputFileTracingRoot: path.join(__dirname, '../'),
+  onDemandEntries: {
+    maxInactiveAge: 0,
+  },
 };
 
 export default nextConfig;
