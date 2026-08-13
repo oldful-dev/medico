@@ -638,14 +638,24 @@ export default function HomeScreen() {
     })();
   }, [cities, setSelectedCity, refreshData]);
 
+  // On mount, load data once — don't refetch on every focus to avoid duplication
   useEffect(() => {
     refetchAllHomeData();
-  }, [refetchAllHomeData]);
+  }, []); // Empty deps — run only once on mount
 
-  // Strict refetch ALL data when home screen comes into focus
+  // On focus, only refetch if the data is stale (older than 5 minutes)
+  // This prevents duplicate API calls from the initial mount
+  const lastRefetchRef = React.useRef<number>(Date.now());
   useFocusEffect(
     useCallback(() => {
-      refetchAllHomeData();
+      const now = Date.now();
+      const timeSinceLastRefetch = now - lastRefetchRef.current;
+      const REFETCH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+      if (timeSinceLastRefetch > REFETCH_INTERVAL) {
+        lastRefetchRef.current = now;
+        refetchAllHomeData();
+      }
     }, [refetchAllHomeData])
   );
 

@@ -55,13 +55,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
 
     const lastLoadTimeRef = useRef<number>(0);
+    const lastServicesLoadRef = useRef<number>(0);
     const THROTTLE_MS = 24 * 60 * 60 * 1000; // 24 Hours refresh interval
 
     const loadServices = useCallback(async () => {
+        const now = Date.now();
+        // Skip if services were loaded recently (within 5 minutes)
+        if (lastServicesLoadRef.current > 0 && (now - lastServicesLoadRef.current < 5 * 60 * 1000)) {
+            return;
+        }
+
         try {
             const res = await serviceCatalogService.getServices();
             if (res.success && res.data) {
                 setServices(res.data);
+                lastServicesLoadRef.current = now;
             }
         } catch (error) {
             // Session expired or token invalid — redirect to login
@@ -76,7 +84,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }, [logout, router]);
 
     const loadData = useCallback(async (force = false) => {
-        // Always load services catalog so layout is 100% dynamic
+        // Load services catalog (throttled internally)
         loadServices();
 
         if (!isAuthenticated) return;
